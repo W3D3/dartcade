@@ -17,9 +17,9 @@
     lobbyName,
     board,
     saved,
-    primary,
+    primary = null,
     secondary = null,
-    onhistory,
+    onhistory = null,
     xpSessionId = null,
     winnerId = null,
   }: {
@@ -31,11 +31,11 @@
     board: string | null
     /** The viewer played: the game is in their History. */
     saved: boolean
-    /** The main button: Rematch (the host of a lobby game), Back to lobby or Back to Play. */
-    primary: { label: string; rematch: boolean; onclick: () => void }
+    /** The main button: Rematch (the host of a lobby game), Back to lobby or Back to Play. Without buttons the screen is view-only. */
+    primary?: { label: string; rematch: boolean; onclick: () => void } | null
     /** Beside it: Back to lobby next to Rematch. */
     secondary?: { label: string; onclick: () => void } | null
-    onhistory: () => void
+    onhistory?: (() => void) | null
     /** Shows what this game paid you (progression); null: no XP chip. */
     xpSessionId?: string | null
     /** The winner's account (the winning team's first player): their celebration plays (progression); null: none. */
@@ -365,41 +365,43 @@
     {/if}
   </main>
 
-  <footer
-    class="rise r5 relative z-[2] shrink-0 box-border flex items-center gap-3 px-4 md:px-7 pt-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] border-t border-line bg-surface-1"
-  >
-    {#if saved}
-      <button
-        type="button"
-        onclick={onhistory}
-        class="ml-auto h-14 px-[22px] {secondary
-          ? 'hidden md:flex'
-          : 'flex'} items-center gap-[10px] rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
-      >
-        <RotateCcwClock size={20} />History
-      </button>
-    {/if}
-    {#if secondary}
-      <button
-        type="button"
-        onclick={secondary.onclick}
-        class="{saved
-          ? 'max-md:ml-auto'
-          : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
-      >
-        {secondary.label}
-      </button>
-    {/if}
-    <button
-      type="button"
-      onclick={primary.onclick}
-      class="{saved || secondary
-        ? ''
-        : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-[12px] border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-[0.06em] uppercase cursor-pointer hover:brightness-[1.08]"
+  {#if primary}
+    <footer
+      class="rise r5 relative z-[2] shrink-0 box-border flex items-center gap-3 px-4 md:px-7 pt-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] border-t border-line bg-surface-1"
     >
-      {#if primary.rematch}<RotateCcw size={20} strokeWidth={2.2} />{:else}<House size={20} strokeWidth={2.2} />{/if}{primary.label}
-    </button>
-  </footer>
+      {#if saved && onhistory}
+        <button
+          type="button"
+          onclick={onhistory}
+          class="ml-auto h-14 px-[22px] {secondary
+            ? 'hidden md:flex'
+            : 'flex'} items-center gap-[10px] rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+        >
+          <RotateCcwClock size={20} />History
+        </button>
+      {/if}
+      {#if secondary}
+        <button
+          type="button"
+          onclick={secondary.onclick}
+          class="{saved && onhistory
+            ? 'max-md:ml-auto'
+            : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+        >
+          {secondary.label}
+        </button>
+      {/if}
+      <button
+        type="button"
+        onclick={primary.onclick}
+        class="{(saved && onhistory) || secondary
+          ? ''
+          : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-[12px] border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-[0.06em] uppercase cursor-pointer hover:brightness-[1.08]"
+      >
+        {#if primary.rematch}<RotateCcw size={20} strokeWidth={2.2} />{:else}<House size={20} strokeWidth={2.2} />{/if}{primary.label}
+      </button>
+    </footer>
+  {/if}
 </div>
 
 <style>

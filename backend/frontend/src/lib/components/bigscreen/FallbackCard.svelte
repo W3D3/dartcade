@@ -8,5 +8,5 @@
 </script>
 
 <div class="flex size-full items-center justify-center text-center">
-  <h1 class="m-0 font-display text-[140px] font-bold uppercase leading-none tracking-[0.04em]">{title || 'Dartcade'}</h1>
+  <h1 class="m-0 font-display text-[112px] font-bold uppercase leading-none tracking-[0.04em]">{title || 'Dartcade'}</h1>
 </div>

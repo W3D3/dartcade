@@ -21,3 +21,7 @@ export function gameState(s: Snapshot | null): GameState {
     hilo: s?.gameId === 'hilo' ? s.game : null,
   }
 }
+
+/** The bull off that decides who throws first, while a game (X01, 121, Higher Lower) is still in it; null otherwise. */
+export const bullOffOf = ({ x01, p121, hilo }: GameState) =>
+  x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : hilo?.phase === 'bulloff' ? hilo.bullOff : null

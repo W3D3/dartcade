@@ -1,18 +1,20 @@
 <script lang="ts">
   // The big screen: a view-only page a TV or kiosk opens at #/big-screen/<board>?k=<token>.
   // The board's socket says what to show (idle, the live game, the held result).
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy, onMount, untrack } from 'svelte'
+  import { hideCursor } from '$lib/bigscreen/hideCursor'
   import { currentUser } from '$lib/auth'
   import { accountSettings } from '$lib/accountSettings'
   import { loadSettings } from '$lib/gameSettings'
   import { createBigScreenAudio, createSettingsMemo, kioskSettings } from '$lib/bigscreen/audio'
-  import { viewFor } from '$lib/bigscreen/select'
   import { createBigScreenStore } from '$lib/bigscreen/store'
+  import { gameState } from '$lib/gameState'
+  import { emptyHistory, trackVisits, type VisitHistory } from '$lib/visitHistory'
   import type { Snapshot } from '$lib/ws'
   import Stage from '$lib/components/bigscreen/Stage.svelte'
   import Idle from '$lib/components/bigscreen/Idle.svelte'
   import Reconnecting from '$lib/components/bigscreen/Reconnecting.svelte'
-  import FallbackCard from '$lib/components/bigscreen/FallbackCard.svelte'
+  import MatchFrame from '$lib/components/bigscreen/MatchFrame.svelte'
 
   let { params }: { params: { board: string } } = $props()
 
@@ -39,6 +41,8 @@
   const stable = $derived(memo(settings))
   let audio: ReturnType<typeof createBigScreenAudio> | null = null
   let prev: Snapshot | null = null
+  // Around the Clock's visits are tracked here, as on the match screen (X01 sends them with the snapshot)
+  let visits = $state.raw<VisitHistory>(emptyHistory())
   let asleep = $state(false)
   $effect(() => {
     audio?.destroy()
@@ -49,12 +53,19 @@
     const screen = $message?.screen
     const next = screen && screen.kind !== 'idle' ? screen.snapshot : null
     if (next) audio?.onSnapshot(prev, next)
+    const atc = gameState(next).atc
+    if (atc)
+      visits = trackVisits(
+        untrack(() => (next?.sessionId === prev?.sessionId ? visits : emptyHistory())),
+        atc,
+      )
     prev = next
   })
 
   let now = $state(Date.now())
   onMount(() => {
     const wake = () => audio?.wake()
+    const showCursor = hideCursor()
     window.addEventListener('pointerdown', wake)
     window.addEventListener('keydown', wake)
     const t = setInterval(() => {
@@ -65,30 +76,32 @@
       window.removeEventListener('pointerdown', wake)
       window.removeEventListener('keydown', wake)
       clearInterval(t)
+      showCursor()
     }
   })
 
-  const view = $derived($message ? viewFor($message.screen) : null)
+  const screen = $derived($message?.screen ?? null)
   const until = $derived($message?.screen.kind === 'result' ? $message.screen.until : null)
   const countdown = $derived.by(() => {
     const s = Math.max(0, Math.ceil(((until ?? now) - now) / 1000))
     return `Board screen in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   })
-  const detail = $derived($message?.screen.kind === 'result' ? ($message.screen.detail ?? null) : null)
+
+  // The frame stays loaded while idle, so a game starts without reloading the app inside it
+  const frameData = $derived(screen !== null && screen.kind !== 'idle' ? { screen, settings, history: visits, countdown } : null)
 </script>
 
-<div class="cursor-none">
+<div>
   <Stage>
     {#snippet children(orientation)}
-      {#if view === null}
-        <!-- connecting: a blank stage -->
-      {:else if view.kind === 'idle'}
-        <Idle name={$message?.board.name ?? ''} online={$message?.board.online ?? false} {orientation} />
-      {:else if view.kind === 'fallback'}
-        <FallbackCard snapshot={view.snapshot} />
-      {:else}
-        <view.component snapshot={view.snapshot} {orientation} {countdown} {detail} {settings} />
-      {/if}
+      <div class="relative size-full">
+        <div class="size-full" class:invisible={frameData === null}><MatchFrame data={frameData} /></div>
+        {#if screen?.kind === 'idle'}
+          <div class="absolute inset-0 bg-bg">
+            <Idle name={$message?.board.name ?? ''} online={$message?.board.online ?? false} {orientation} />
+          </div>
+        {/if}
+      </div>
     {/snippet}
   </Stage>
   {#if $stopped}

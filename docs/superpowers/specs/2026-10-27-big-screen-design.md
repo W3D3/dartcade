@@ -58,26 +58,24 @@ Follows one board. "The board's game" is the active game that has a seat on that
 | A game is active (bull off included; a lobby that is only waiting is not) | That game's big-screen layout, live                                                                                                                                          |
 | A game just ended                                                         | The **result** screen with the winner. Held for **1 minute**, or until a new game starts on the board (which cuts it short), then back to idle. The lobby closing is ignored |
 
-- **Orientation:** landscape and portrait layouts exist; the page picks by the viewport's aspect ratio.
-- **Seats:** X01 has a 2-player and a 3+-player layout (landscape and portrait), and so does its result.
-  Rules for 5+ players and teams are the builder's call, following the app's existing rule (board in the
-  middle for 2, stacked rows for 3 or more).
-- **Games with a live design in the canvas** (artboards `Presenter-*`, landscape and portrait): X01,
-  121 Checkout (`Presenter-121-*`), Around the Clock (`Presenter-ATC-*`), Higher Lower (`Presenter-HiLo-*`).
-  Cricket also has one (`Presenter-Cricket-*`), but Cricket is not a game in the repo yet; it is picked up
-  when the game exists. Each is a big-screen view per game id, registered the way `lib/gameViews/` registers
-  match views.
-- **Minigolf is the exception: it gets no big-screen design.** It uses the normal play-mode screen as it is
-  now, with the 3D course taking most of the screen, shown non-interactive. The `Presenter-Minigolf-*`
-  artboards in the canvas are ignored. For minigolf the "fallback" below is the final answer.
-- **Fallback:** a game with no big-screen design and no reusable match component (any game added later)
-  shows a centred title card, so the page never goes blank. (Narrowed in the plan: showing the whole normal
-  match screen would need a refactor of `GameDisplay.svelte`.)
-- **Result screen:** only X01 has a design (`Presenter-Win-*`: 2 players, 3+ players, landscape and
-  portrait): the winner, legs, the game-shot checkout, match stats, "Saved to History", and a **"Board screen
-  in 0:42" countdown** that is the 1-minute hold. 121 Checkout, Around the Clock and Higher Lower have no
-  result design yet: they show a generic result card (winner and placings) with the same hold. When their
-  result designs land they replace it. Minigolf always shows the generic card.
+- **Orientation:** landscape and portrait; the page picks by the viewport's aspect ratio. The stage is 1920×1080
+  (1080×1920) scaled to the screen.
+- **The match screen's own components, bigger.** The live game and the result are the match screen's components
+  (`ScoreMatch` for X01 and Around the Clock, `P121Match`, `HiloMatch`, `MinigolfMatch`, `BullOffPanel`,
+  `WinScreen`, `P121Summary`), shown view only (`viewOnly`, no callbacks) with the derivations shared through
+  `lib/matchView.ts`, so every animation (visit band, dart pop, bust, podium, confetti) and every layout rule
+  (board in the middle for 2, stacked rows for 3 or more, teams, portrait) is the match screen's. They are drawn in a
+  same-origin iframe (`#/big-screen-frame`, `routes/BigScreenFrame.svelte`) 1.25 times smaller than the stage and
+  scaled up with a transform, so media queries, `vh` sizes and breakpoints behave as in a 1536 px window. The page
+  keeps the socket, the audio and the previous snapshot and posts what the frame draws (`lib/bigscreen/frame.ts`).
+  A big-screen header (`BigHeader`, with LIVE) sits above every live game but minigolf, which is the play-mode
+  screen as it is.
+- **Fallback:** a game the frame has no component for shows a centred title card, so the page never goes blank.
+- **Result screen:** the match screen's win screen without buttons (`WinScreen`; 121 shows its session summary), scaled
+  down when it would need scrolling, and a **"Board screen in 0:42" countdown** that is the 1-minute hold. A game
+  without a win view (a forfeit, no winner) shows a generic card (winner and placings). Minigolf holds the win screen
+  until its last stroke has rolled, as the match screen does. The kiosk shows no XP, and the winner's celebration
+  plays only where someone is signed in.
 - **Connection state:** if the page loses its socket it keeps the last picture and shows a small, calm
   "reconnecting" marker, then resyncs. It never shows a raw error.
 - **Board offline:** the idle screen says so ("Board offline") instead of "Waiting for the next game".

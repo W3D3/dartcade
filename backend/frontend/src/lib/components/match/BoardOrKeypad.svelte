@@ -44,7 +44,7 @@
     /** A key with no dart selected: a new dart. */
     onDart: (segment: Segment) => void
     /** A key with a dart selected: that dart becomes the key's segment. */
-    onCorrect: (dartIndex: number, label: string) => void
+    onCorrect?: (dartIndex: number, label: string) => void
     /** The dart selected in the slots (0-based), shared with DartSlots. */
     openDart?: number | null
     /** What the game draws on the board besides the darts. */
@@ -64,7 +64,7 @@
       onDart(segment)
       return
     }
-    onCorrect(openDart, segment.name)
+    onCorrect?.(openDart, segment.name)
     openDart = null
   }
 </script>

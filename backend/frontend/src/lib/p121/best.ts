@@ -1,6 +1,7 @@
 // The viewer's all-time best of one stat in one mode (121's Highest target ever), shared by every
-// screen that shows it. Each screen refreshes it when it opens; sign-out clears it.
-import { api } from '$lib/api'
+// screen that shows it. Each screen refreshes it when it opens; sign-out clears it. A signed-out viewer
+// (the big screen's kiosk) has none, and is not sent to the sign-in page for it.
+import { quietApi } from '$lib/api/client'
 import { loadOnce, type LoadOnce } from '../loadOnce.js'
 
 export type Best = { value: number; finishedAt: string } | null
@@ -12,7 +13,7 @@ export function bestStat(mode: string, stat: string): LoadOnce<Best> {
   let store = stores.get(key)
   if (!store) {
     store = loadOnce<Best>(async () => {
-      const { data } = await api.GET('/api/games/best', { params: { query: { mode, stat } } })
+      const { data } = await quietApi.GET('/api/games/best', { params: { query: { mode, stat } } })
       return data?.best ?? null
     }, null)
     stores.set(key, store)

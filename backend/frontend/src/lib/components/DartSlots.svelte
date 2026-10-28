@@ -13,7 +13,8 @@
     popoverAbove = false,
   }: {
     slots: Slot[]
-    onCorrect: (dartIndex: number, label: string) => void
+    /** Tapping a thrown dart corrects it; without it the slots are view-only. */
+    onCorrect?: (dartIndex: number, label: string) => void
     /** Slot of a dart that just landed big (≥ 50): it pops once. */
     popIndex?: number | null
     /** The dart being corrected (bindable, so the board can highlight it). */
@@ -58,7 +59,7 @@
   }
   function pick(label: string) {
     if (openDart === null) return
-    onCorrect(openDart, label)
+    onCorrect?.(openDart, label)
     close()
   }
 
@@ -84,8 +85,9 @@
           type="button"
           onclick={() => toggle(i)}
           aria-expanded={openDart === i}
+          disabled={!onCorrect}
           aria-label={slot.aria}
-          class="{slotBox} cursor-pointer
+          class="{slotBox} cursor-pointer disabled:cursor-default
                  {slot.kind === 'thrown' ? 'bg-accent text-accent-fg border-0' : 'bg-surface-chip text-text border border-line-key'}
                  {openDart === i ? '[box-shadow:0_0_0_3px_var(--color-bg),0_0_0_5px_var(--color-accent)]' : ''}"
           class:fx-pop={popIndex === i}
