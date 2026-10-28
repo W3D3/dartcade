@@ -4,8 +4,9 @@
   // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
   import { onDestroy, onMount } from 'svelte'
-  import { Clock, Crosshair, Hourglass, LoaderCircle, Search, User, Users, X } from '@lucide/svelte'
+  import { Clock, Crosshair, Hourglass, Search, User, Users, X } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageLoading from '$lib/components/PageLoading.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
@@ -99,7 +100,7 @@
     {#if error}<ErrorText>{error}</ErrorText>{/if}
 
     {#if !profile && !error}
-      <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
+      <PageLoading />
     {:else if profile && rec}
       <div class="grid grid-cols-2 gap-[10px] md:gap-[14px] lg:grid-cols-[1.15fr_1.15fr_1fr_0.9fr]">
         {#each cards as card (card.label)}
