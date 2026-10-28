@@ -43,6 +43,7 @@
   value={date}
   onValueChange={(v: DateValue | undefined) => onchange(v ? v.toString() : '')}
   weekStartsOn={1}
+  weekdayFormat="short"
   fixedWeeks
   preventDeselect
 >
@@ -95,7 +96,8 @@
             <DatePicker.Grid class="border-collapse">
               <DatePicker.GridHead>
                 <DatePicker.GridRow class="flex">
-                  {#each weekdays as d (d)}
+                  <!-- By position: narrow weekdays repeat ("T" for Tuesday and Thursday) -->
+                  {#each weekdays as d, i (i)}
                     <DatePicker.HeadCell class="w-9 text-center text-[12px] font-medium text-text-dim">{d.slice(0, 2)}</DatePicker.HeadCell>
                   {/each}
                 </DatePicker.GridRow>
