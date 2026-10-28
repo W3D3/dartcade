@@ -412,6 +412,15 @@ export interface AuthSessionTable {
   token: string
   userId: string
   expiresAt: Date
+  createdAt: ColumnType<Date, Date | undefined, Date>
+}
+
+/** better-auth's sign-in methods per user (002_auth.sql): 'credential' (with a password hash) or a social provider like 'discord'; only what our own queries touch */
+export interface AuthAccountTable {
+  id: string
+  userId: string
+  providerId: string
+  password: string | null
 }
 
 /** A game the ranked queue started, with who played on which side (migration 039). */
@@ -426,6 +435,7 @@ export interface RankedMatchesTable {
 export interface Database {
   user: UserTable
   session: AuthSessionTable
+  account: AuthAccountTable
   boards: BoardsTable
   bridge_install_tokens: BridgeInstallTokensTable
   pairing_codes: PairingCodesTable

@@ -362,10 +362,15 @@
                     "mail",
                     "verification",
                     "contactEmail",
-                    "feedback"
+                    "feedback",
+                    "discord"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "discord": {
+                      "type": "boolean",
+                      "description": "Sign in with Discord is on (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET are set)"
+                    },
                     "feedback": {
                       "type": "boolean",
                       "description": "Bug reports can be sent from the app (POST /api/feedback)"
@@ -17088,10 +17093,22 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "signInMethods"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "signInMethods": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "password",
+                          "discord"
+                        ]
+                      },
+                      "description": "How you can sign in: with your password, through Discord, or both (Settings hides password steps without one)"
+                    },
                     "pictures": {
                       "type": "array",
                       "items": {
@@ -17107,7 +17124,9 @@
                       "description": "Your handle, shown as @name"
                     },
                     "email": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Null for a Discord account that shared no email (it has a stand-in address that gets no mail)"
                     },
                     "nameNeedsChange": {
                       "type": "boolean",
@@ -17402,10 +17421,22 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "signInMethods"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "signInMethods": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "password",
+                          "discord"
+                        ]
+                      },
+                      "description": "How you can sign in: with your password, through Discord, or both (Settings hides password steps without one)"
+                    },
                     "pictures": {
                       "type": "array",
                       "items": {
@@ -17421,7 +17452,9 @@
                       "description": "Your handle, shown as @name"
                     },
                     "email": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Null for a Discord account that shared no email (it has a stand-in address that gets no mail)"
                     },
                     "nameNeedsChange": {
                       "type": "boolean",
@@ -17720,6 +17753,214 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteMe",
+        "summary": "Delete an account without a password (Sign in with Discord only)",
+        "description": "Needs a sign-in from the last 5 minutes (Settings sends you through Discord again first). Deletes at once, like better-auth's /delete-user, and clears the session cookies. An account with a password deletes through /api/auth/delete-user instead (409 here).",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "The sign-in is older than 5 minutes; sign in with Discord again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An admin viewing as this user can't delete it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account has a password; confirm with it instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/me/avatar": {
@@ -17761,10 +18002,22 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "signInMethods"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "signInMethods": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "password",
+                          "discord"
+                        ]
+                      },
+                      "description": "How you can sign in: with your password, through Discord, or both (Settings hides password steps without one)"
+                    },
                     "pictures": {
                       "type": "array",
                       "items": {
@@ -17780,7 +18033,9 @@
                       "description": "Your handle, shown as @name"
                     },
                     "email": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Null for a Discord account that shared no email (it has a stand-in address that gets no mail)"
                     },
                     "nameNeedsChange": {
                       "type": "boolean",
@@ -40732,10 +40987,15 @@
           "mail",
           "verification",
           "contactEmail",
-          "feedback"
+          "feedback",
+          "discord"
         ],
         "additionalProperties": false,
         "properties": {
+          "discord": {
+            "type": "boolean",
+            "description": "Sign in with Discord is on (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET are set)"
+          },
           "feedback": {
             "type": "boolean",
             "description": "Bug reports can be sent from the app (POST /api/feedback)"
@@ -47859,10 +48119,22 @@
           "impersonating",
           "createdAt",
           "avatar",
-          "pictures"
+          "pictures",
+          "signInMethods"
         ],
         "additionalProperties": false,
         "properties": {
+          "signInMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "password",
+                "discord"
+              ]
+            },
+            "description": "How you can sign in: with your password, through Discord, or both (Settings hides password steps without one)"
+          },
           "pictures": {
             "type": "array",
             "items": {
@@ -47878,7 +48150,9 @@
             "description": "Your handle, shown as @name"
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a Discord account that shared no email (it has a stand-in address that gets no mail)"
           },
           "nameNeedsChange": {
             "type": "boolean",

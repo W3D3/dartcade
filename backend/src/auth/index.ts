@@ -3,6 +3,7 @@ import { db } from '../db/index.js'
 import { resolveMailConfig } from '../mail/config.js'
 import { createMailer } from '../mail/transport.js'
 import { authOptions } from './options.js'
+import { resolveDiscordConfig } from './discord.js'
 
 const trustedOrigins =
   process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
@@ -12,4 +13,6 @@ const trustedOrigins =
 export const mailConfig = resolveMailConfig(process.env)
 export const mailer = createMailer(mailConfig, (message, details) => console.warn(message, details))
 
-export const auth = betterAuth(authOptions({ db, mail: mailConfig, mailer, trustedOrigins }))
+export const discordConfig = resolveDiscordConfig(process.env)
+
+export const auth = betterAuth(authOptions({ db, mail: mailConfig, mailer, trustedOrigins, discord: discordConfig }))

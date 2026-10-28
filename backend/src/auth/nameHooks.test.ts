@@ -40,6 +40,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => 
     })
   })
 
+  const socialCtx = { path: '/callback/:id' } as Parameters<typeof hooks.user.create.before>[1]
+
+  it('records the terms for a social sign-up too, whose name already fits (discord.ts)', async () => {
+    const result = await hooks.user.create.before({ name: 'luke2', email: 'l2@example.com' }, socialCtx)
+    expect(result.data).toMatchObject({ name: 'luke2' })
+    expect(result.data.termsAcceptedAt).toBeInstanceOf(Date)
+  })
+
   it("lets better-auth's update-user change anything but the name", async () => {
     await expect(hooks.user.update.before({ emailVerified: true })).resolves.toBeUndefined()
     await expect(hooks.user.update.before({ name: 'Luke2' })).rejects.toMatchObject({ body: { message: 'Change your name in Settings' } })

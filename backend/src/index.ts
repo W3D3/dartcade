@@ -10,7 +10,7 @@ import { SessionEngine, createEngineStore } from './session/engine.js'
 import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { bootstrapAdmin } from './auth/bootstrap.js'
-import { mailConfig } from './auth/index.js'
+import { discordConfig, mailConfig } from './auth/index.js'
 import { setAccountCleanup, cleanUpAccount } from './auth/cleanup.js'
 import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
@@ -38,7 +38,9 @@ if (!(await takeInstanceLock(dbUrl))) {
   console.error('Another dartcade backend is already running on this database. Stop it first: only one may run at a time.')
   process.exit(1)
 }
-console.info(`mail: ${mailConfig.smtpUrl ? 'on' : 'off'}, email verification: ${mailConfig.verification ? 'required' : 'off'}`)
+console.info(
+  `mail: ${mailConfig.smtpUrl ? 'on' : 'off'}, email verification: ${mailConfig.verification ? 'required' : 'off'}, Sign in with Discord: ${discordConfig ? 'on' : 'off'}`,
+)
 
 // Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
 await initPhysics3d()
