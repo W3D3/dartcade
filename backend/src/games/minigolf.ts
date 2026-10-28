@@ -16,6 +16,7 @@ import { cachedShot } from './minigolfShots.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
 import { validateOptions } from './configMeta.js'
+import { nextTurn } from './turns.js'
 
 export type MinigolfConfig = {
   /** A course id, or 'mixed' for 9 random holes of all courses. */
@@ -222,12 +223,8 @@ function commitStroke(s: MinigolfState): MinigolfState {
   })
   const lastStroke = { hole: s.holeIdx, seat: s.current, stroke: balls[s.current].strokes, result }
   const next = { ...s, balls, tries: [], visitStart: null, lastStroke }
-  const k = next.order.indexOf(s.current)
-  for (let i = 1; i <= next.order.length; i++) {
-    const seat = next.order[(k + i) % next.order.length]
-    if (inPlay(balls[seat])) return { ...next, current: seat }
-  }
-  return endHole(next)
+  const turn = nextTurn(next.order, next.order.indexOf(s.current), seat => inPlay(balls[seat]))
+  return turn ? { ...next, current: turn.seat } : endHole(next)
 }
 
 function locked(s: MinigolfState): boolean {

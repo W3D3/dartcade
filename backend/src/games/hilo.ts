@@ -20,6 +20,7 @@ import { effectiveDartScore } from './outRules.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
 import { validateOptions } from './configMeta.js'
+import { nextTurn, upNext } from './turns.js'
 
 export type HiloConfig = {
   startHigh: number
@@ -148,24 +149,10 @@ function advance(s: HiloState): HiloState {
     const winner = s.lives.findIndex(l => l > 0)
     return { ...s, phase: 'finished', winner: winner === -1 ? null : winner }
   }
-  const n = s.order.length
-  for (let i = 1; i <= n; i++) {
-    const turn = (s.turn + i) % n
-    const seat = s.order[turn]
-    if (s.lives[seat] > 0) {
-      const round = s.turn + i >= n ? s.round + 1 : s.round
-      return { ...s, turn, currentPlayer: seat, round, visitTotal: 0, visitDarts: 0, missed: false }
-    }
-  }
-  return s // unreachable: stillIn >= 2 guarantees a next seat
-}
-
-// Who throws after the open visit, by the same rotation advance() would apply if it
-// committed right now; null once the game is over, or when this visit would end it.
-function upNext(s: HiloState): number | null {
-  if (s.phase === 'finished') return null
-  const after = advance(endVisit(s))
-  return after.phase === 'finished' ? null : after.currentPlayer
+  const next = nextTurn(s.order, s.turn, seat => s.lives[seat] > 0)
+  if (!next) return s // unreachable: stillIn >= 2 guarantees a next seat
+  const round = next.wrapped ? s.round + 1 : s.round
+  return { ...s, turn: next.turn, currentPlayer: next.seat, round, visitTotal: 0, visitDarts: 0, missed: false }
 }
 
 export const configMeta: Record<Exclude<keyof HiloConfig, 'bullOff'>, ConfigFieldMeta> = {
@@ -300,7 +287,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
       low: s.low,
       round: s.round,
       currentPlayer: s.currentPlayer,
-      nextPlayer: upNext(s),
+      nextPlayer: upNext(s, s => advance(endVisit(s))),
       winner: s.winner,
       visitLocked: s.missed,
       visitTotal: s.visitTotal,

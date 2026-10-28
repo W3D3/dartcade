@@ -357,9 +357,10 @@
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch, $isPortrait))
   // Portrait with teams or three or more: compact cards above the board, which give way to a waiting card
   const portraitCards = $derived(layout === 'portrait' && (teams.length > 0 || players.length > 2))
-  // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
-  const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
-  const nextPlayer = $derived(x01 ? x01.nextPlayer : atcNext)
+  // The server names who throws next (null when nobody does)
+  const nextPlayer = $derived(x01?.nextPlayer ?? atc?.nextPlayer ?? null)
+  // Around the Clock in a duel: the other player, whose target the board and its legend show too
+  const atcOther = $derived((currentPlayer + 1) % Math.max(players.length, 1))
   // On a phone the players stay in seat order; when the turn passes, keep the thrower in view
   let phonePlayers = $state<HTMLDivElement | undefined>()
   // Changes when the turn passes or the view switches; the thrower's entry carries it
@@ -437,7 +438,7 @@
   // the chain only show in the dart slots below it.
   const checkoutTargets = $derived(boardCheckoutTargets(slots, isX01))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
-  const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcNext)) : null)
+  const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcOther)) : null)
   const markers = $derived(
     !isX01 && isActive && players.length > 2 && settings.showMarkers
       ? players
@@ -460,7 +461,7 @@
         : [{ label: 'Current target', kind: 'current' }]
     return [
       { label: `${players[currentPlayer]?.name} · ${atcPlayers[currentPlayer]?.target}`, kind: 'current' },
-      { label: `${players[atcNext]?.name} · ${atcPlayers[atcNext]?.target}`, kind: 'next' },
+      { label: `${players[atcOther]?.name} · ${atcPlayers[atcOther]?.target}`, kind: 'next' },
     ]
   })
 

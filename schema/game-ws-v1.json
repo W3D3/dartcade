@@ -379,6 +379,7 @@
         "targets",
         "sequence",
         "currentPlayer",
+        "nextPlayer",
         "winner",
         "cfg",
         "currentVisitHits",
@@ -404,6 +405,11 @@
         "currentPlayer": {
           "type": "integer",
           "minimum": 0
+        },
+        "nextPlayer": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "The seat that throws after the open visit: the same one again when all three darts hit and throwAgainOnAllHit is on; null once the game is won."
         },
         "winner": {
           "type": ["integer", "null"]
