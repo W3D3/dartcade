@@ -3,6 +3,7 @@
   // a section nav over Profile, Game preferences, Boards, Lights and Caller, each its own
   // route (`#/settings/<section>`). Lights only shows behind its flag. Tablets and desktops open
   // on Profile; phones get a list of the sections first.
+  import { deviceStore } from '$lib/storage'
   import { onMount, untrack, type Component } from 'svelte'
   import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -59,13 +60,13 @@
   })
 
   // The game settings: the account's (once loaded) over this device's; changes go to both
-  let settings = $state(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
+  let settings = $state(loadSettings(deviceStore()))
   $effect(() => {
     const account = $accountSettings
     if (account) untrack(() => (settings = { ...settings, ...account }))
   })
   $effect(() => {
-    saveSettings(typeof localStorage === 'undefined' ? null : localStorage, settings)
+    saveSettings(deviceStore(), settings)
     writeThrough($state.snapshot(settings))
   })
 

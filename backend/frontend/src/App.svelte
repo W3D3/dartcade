@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { deviceStore } from '$lib/storage'
   import Router, { push, location } from 'svelte-spa-router'
   import wrap from 'svelte-spa-router/wrap'
   import { onMount } from 'svelte'
@@ -170,7 +171,7 @@
     const id = $currentUser?.id ?? null
     if (id === settingsUser) return
     settingsUser = id
-    void loadAccountSettings(id, typeof localStorage === 'undefined' ? null : localStorage)
+    void loadAccountSettings(id, deviceStore())
     if (id) void syncTimeZone()
   })
 
