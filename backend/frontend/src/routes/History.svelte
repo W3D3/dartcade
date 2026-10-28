@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { deviceStore } from '$lib/storage'
   import { onMount } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import { ChevronRight, LoaderCircle, RotateCcw } from '@lucide/svelte'
@@ -47,7 +48,7 @@
   // to 1440px and four from there, where the Board column joins. A column resized by dragging
   // keeps its width on this device until "Reset columns".
   const wide = new MediaQuery('min-width: 1440px')
-  const storage = typeof localStorage === 'undefined' ? null : localStorage
+  const storage = deviceStore()
   let columnSizing = $state<ColumnSizingState>(loadColumnSizing(storage))
   $effect(() => saveColumnSizing(storage, columnSizing))
 

@@ -9,6 +9,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
+  import { deviceStore } from '$lib/storage'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
@@ -164,7 +165,7 @@
   ]
 
   let sorting = $state<SortingState>([{ id: 'joined', desc: true }])
-  const storage = typeof localStorage === 'undefined' ? null : localStorage
+  const storage = deviceStore()
   // Verified is visible by default; a stored choice (including hiding it) wins over that
   let columnVisibility = $state<ColumnVisibilityState>(loadColumnVisibility(storage))
   $effect(() => saveColumnVisibility(storage, columnVisibility))

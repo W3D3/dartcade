@@ -1,6 +1,7 @@
 // The Customise page (`#/profile/customise/:tab`, Profile-Customise boards): its tabs, and the
 // draft you edit there before Save (your equipped look and the two layers of your picture).
 import { EQUIP_KINDS, type Equipped, type PerkKind } from '$shared/progression.js'
+import { readFlag, writeFlag } from '$lib/storage'
 
 export const TABS = ['picture', 'frame', 'banner', 'colours', 'title', 'sounds', 'celebrations'] as const
 export type Tab = (typeof TABS)[number]
@@ -82,16 +83,8 @@ export function unlockedCount(items: { id: string; open: boolean }[]): string {
 const HIDE_KEY = 'dartcade.customise.hideLocked'
 /** Hide locked, kept across tabs and visits on this device; off without storage. */
 export function loadHideLocked(): boolean {
-  try {
-    return localStorage.getItem(HIDE_KEY) === '1'
-  } catch {
-    return false
-  }
+  return readFlag(HIDE_KEY)
 }
 export function saveHideLocked(on: boolean): void {
-  try {
-    localStorage.setItem(HIDE_KEY, on ? '1' : '0')
-  } catch {
-    // No storage (private mode): it lasts the visit
-  }
+  writeFlag(HIDE_KEY, on)
 }
