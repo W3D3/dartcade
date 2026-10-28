@@ -6,6 +6,7 @@
   // server keeps them in sync): picking WDC/PDC here turns the throw order to Bull-off, and
   // picking Off there turns this back off.
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Stepper from '$lib/components/Stepper.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import type { ConfigFieldMeta } from '$lib/api'
@@ -339,23 +340,24 @@
   <div class={root}>
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2 lg:col-span-2">
       <legend class="field-label mb-2">Course</legend>
-      <div class="grid gap-2" role="radiogroup" aria-label="Course">
-        {#each courseCards as c (String(c.id))}
-          {@const on = config.course === c.id}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={on}
-            disabled={readonly}
-            onclick={() => set('course', c.id)}
-            class="flex flex-col items-start gap-[2px] rounded-[10px] border px-3 py-[10px] text-left font-[inherit] cursor-pointer disabled:cursor-default
-              {on ? 'border-accent bg-accent-tint text-text' : 'border-line-2 bg-surface-2 text-text hover:bg-surface-hover'}"
-          >
+      <!-- Option values can be anything, so each card goes by its position -->
+      <RadioGroup
+        value={String(courseCards.findIndex(c => c.id === config.course))}
+        onValueChange={(i: string) => {
+          const c = courseCards.at(Number(i))
+          if (c) set('course', c.id)
+        }}
+        disabled={readonly}
+        aria-label="Course"
+        class="grid gap-2"
+      >
+        {#each courseCards as c, i (String(c.id))}
+          <RadioGroupItem value={String(i)} variant="course">
             <span class="text-[15px] font-semibold">{c.name}</span>
             {#if c.sub}<span class="text-[13px] text-text-muted">{c.sub}</span>{/if}
-          </button>
+          </RadioGroupItem>
         {/each}
-      </div>
+      </RadioGroup>
     </fieldset>
     {#each ['tries', 'aimAssist', 'shotPreview', 'ballContact'] as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
