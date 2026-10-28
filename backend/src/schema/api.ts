@@ -988,7 +988,11 @@ export interface paths {
         get: operations["getMe"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete an account without a password (Sign in with Discord only)
+         * @description Needs a sign-in from the last 5 minutes (Settings sends you through Discord again first). Deletes at once, like better-auth's /delete-user, and clears the session cookies. An account with a password deletes through /api/auth/delete-user instead (409 here).
+         */
+        delete: operations["deleteMe"];
         options?: never;
         head?: never;
         /** Change your name (checked like name-available), or go Invisible / Online */
@@ -5520,6 +5524,53 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The sign-in is older than 5 minutes; sign in with Discord again */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description An admin viewing as this user can't delete it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The account has a password; confirm with it instead */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

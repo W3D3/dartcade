@@ -1,5 +1,4 @@
 import type { BetterAuthOptions } from 'better-auth'
-import { createAuthMiddleware } from 'better-auth/api'
 import { admin, openAPI } from 'better-auth/plugins'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -11,7 +10,6 @@ import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
 import { bannedSignIn } from './banGate.js'
 import { runAccountCleanup } from './cleanup.js'
-import { passwordlessDelete } from './deleteGate.js'
 import { discordProvider, type DiscordConfig } from './discord.js'
 
 export type AuthDeps = {
@@ -83,13 +81,7 @@ export function authOptions({ db, mail, mailer, trustedOrigins, discord = null }
     // with account_not_linked, so an unverified Discord email never takes over a password account.
     socialProviders: discord ? { discord: discordProvider(discord) } : {},
     databaseHooks: { ...nameHooks(db), ...sessionHooks(db) },
-    hooks: {
-      before: createAuthMiddleware(async ctx => {
-        termsGate(ctx)
-        if (ctx.path === '/delete-user') return passwordlessDelete(ctx)
-      }),
-      after: bannedSignIn(db),
-    },
+    hooks: { before: termsGate, after: bannedSignIn(db) },
     // Bans go only through PUT/DELETE /api/admin/users/{id}/ban, which writes the audit row and
     // closes the player's sockets, lobby and game; the admin plugin's own routes would skip that.
     disabledPaths: ['/admin/ban-user', '/admin/unban-user'],

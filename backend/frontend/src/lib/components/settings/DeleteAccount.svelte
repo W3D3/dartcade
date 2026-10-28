@@ -4,7 +4,7 @@
   // artboard). With mail on, better-auth mails a confirm link and nothing is deleted until it's
   // opened; without mail the account goes at once. An account without a password (Sign in with
   // Discord only) confirms by signing in with Discord again instead, then deletes at once
-  // (auth/deleteGate.ts on the server).
+  // (DELETE /api/me, auth/deleteGate.ts on the server).
   import { get } from 'svelte/store'
   import { Trash } from '@lucide/svelte'
   import { push, querystring } from 'svelte-spa-router'
@@ -14,6 +14,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import DiscordMark from '$lib/components/DiscordMark.svelte'
   import { authClient, currentUser } from '$lib/auth'
+  import { api } from '$lib/api'
   import { authInfo } from '$lib/authInfo'
   import { canConfirm } from '$lib/deleteAccount'
   import { CONFIRM_DELETE, discordReauth } from '$lib/discord'
@@ -67,11 +68,11 @@
     busy = true
     error = ''
     try {
-      const { error: err } = await authClient.deleteUser({})
+      const { error: err } = await api.DELETE('/api/me')
       if (err) {
         // Took too long since the sign-in: back to step one
         reauthed = false
-        error = err.message ?? 'Could not delete your account'
+        error = err.error
         return
       }
       deleted()

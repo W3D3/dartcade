@@ -38,9 +38,11 @@ import {
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
 
+const deleteAccount = vi.fn()
+
 const app = () => {
   const a = createFastify()
-  a.register(meApiPlugin, { db: {} as any })
+  a.register(meApiPlugin, { db: {} as any, deleteAccount })
   return a
 }
 
@@ -102,6 +104,38 @@ describe('/api/me', () => {
     expect(JSON.parse(res.body)).toMatchObject({ impersonating: true, isAdmin: false })
   })
 
+  describe('DELETE', () => {
+    it('deletes and passes on the cookie-clearing headers', async () => {
+      const headers = new Headers()
+      headers.append('set-cookie', 'better-auth.session_token=; Max-Age=0')
+      deleteAccount.mockResolvedValueOnce({ deleted: true, headers })
+      const res = await app().inject({ method: 'DELETE', url: '/api/me', headers: { cookie: 'c=1' } })
+      expect(res.statusCode).toBe(204)
+      expect(res.headers['set-cookie']).toEqual(['better-auth.session_token=; Max-Age=0'])
+      expect((deleteAccount.mock.calls[0][0] as Headers).get('cookie')).toBe('c=1')
+    })
+
+    it.each([
+      ['stale', 400],
+      ['has-password', 409],
+      ['signed-out', 401],
+    ])('answers %s with %i', async (reason, status) => {
+      deleteAccount.mockResolvedValueOnce({ deleted: false, reason })
+      expect((await app().inject({ method: 'DELETE', url: '/api/me' })).statusCode).toBe(status)
+    })
+
+    it('refuses an admin viewing as the account', async () => {
+      deleteAccount.mockReset()
+      vi.mocked(middleware.requireAuth).mockImplementationOnce((req, _reply, done) => {
+        req.userId = 'old'
+        req.impersonatedBy = 'boss'
+        done()
+      })
+      expect((await app().inject({ method: 'DELETE', url: '/api/me' })).statusCode).toBe(403)
+      expect(deleteAccount).not.toHaveBeenCalled()
+    })
+  })
+
   it('tells admins they are', async () => {
     vi.mocked(getAccount).mockResolvedValue({
       id: 'a',
@@ -136,7 +170,7 @@ describe('/api/me', () => {
   it('renames, tells the lobby, and answers with the account as it is now', async () => {
     const onRenamed = vi.fn().mockResolvedValue(undefined)
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onRenamed })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onRenamed })
     vi.mocked(getAccount).mockResolvedValue({
       id: 'old',
       name: 'Phil_T',
@@ -168,7 +202,7 @@ describe('/api/me', () => {
   it('goes Invisible and tells friends', async () => {
     const onChanged = vi.fn()
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged })
     vi.mocked(getAccount).mockResolvedValue({
       id: 'old',
       name: 'Phil_T',
@@ -191,7 +225,7 @@ describe('/api/me', () => {
     const onChanged = vi.fn()
     const onAvatarChanged = vi.fn().mockResolvedValue(undefined)
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged, onAvatarChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged, onAvatarChanged })
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
     const res = await a.inject({
       method: 'PATCH',
@@ -276,7 +310,7 @@ describe('/api/me/avatar', () => {
   it('uploads a JPEG and tells friends', async () => {
     const onChanged = vi.fn()
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged })
     const res = await a.inject({
       method: 'POST',
       url: '/api/me/avatar',

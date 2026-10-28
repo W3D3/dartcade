@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
+import { fromNodeHeaders } from 'better-auth/node'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { isAdmin, isModerator } from '../auth/admin.js'
@@ -21,6 +22,7 @@ import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
+import type { FreshDelete } from '../auth/deleteGate.js'
 
 type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
@@ -30,6 +32,8 @@ type Opts = FastifyPluginOptions & {
   onAvatarChanged?: (userId: string) => Promise<void>
   /** Name changed: their row in their open lobby follows it. */
   onRenamed?: (userId: string, name: string) => Promise<void>
+  /** DELETE /api/me: deletes an account without a password after a fresh sign-in (auth/deleteGate.ts). */
+  deleteAccount: (headers: Headers) => Promise<FreshDelete>
 }
 
 /** The largest upload accepted; the browser resizes to a ~256x256 JPEG first, so this is a safety net. */
@@ -94,6 +98,26 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     opts.onChanged?.(req.userId)
     return me(req.userId, typeof req.impersonatedBy === 'string')
   })
+
+  app.delete<Route<'deleteMe'>>(
+    '/api/me',
+    { preValidation: requireAuth, schema: fromSpec('deleteMe'), config: { rateLimit: { max: 3, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      if (typeof req.impersonatedBy === 'string') throw new ApiError(403, { error: "You can't delete an account you're viewing as" })
+      const result = await opts.deleteAccount(fromNodeHeaders(req.headers))
+      if (!result.deleted) {
+        switch (result.reason) {
+          case 'signed-out':
+            throw new ApiError(401, { error: 'unauthorized' })
+          case 'has-password':
+            throw new ApiError(409, { error: 'Confirm with your password' })
+          case 'stale':
+            throw new ApiError(400, { error: 'Sign in with Discord again to confirm' })
+        }
+      }
+      return reply.code(204).header('set-cookie', result.headers.getSetCookie()).send()
+    },
+  )
 
   // Uploads in a scope of their own that takes a JPEG only (as one Buffer); other bodies get a 415
   app.register((scope, _opts, registered) => {

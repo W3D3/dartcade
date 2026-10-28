@@ -2825,6 +2825,55 @@
             "$ref": "#/components/responses/TooManyRequests"
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteMe",
+        "summary": "Delete an account without a password (Sign in with Discord only)",
+        "description": "Needs a sign-in from the last 5 minutes (Settings sends you through Discord again first). Deletes at once, like better-auth's /delete-user, and clears the session cookies. An account with a password deletes through /api/auth/delete-user instead (409 here).",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "The sign-in is older than 5 minutes; sign in with Discord again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "An admin viewing as this user can't delete it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account has a password; confirm with it instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
       }
     },
     "/api/me/avatar": {

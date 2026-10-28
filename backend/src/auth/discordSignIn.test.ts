@@ -8,6 +8,7 @@ import { setAccountCleanup } from './cleanup.js'
 import { createMailer } from '../mail/transport.js'
 import type { MailConfig } from '../mail/config.js'
 import { signInMethods } from '../db/users.js'
+import { deleteWithFreshSignIn } from './deleteGate.js'
 
 // The real mailer, over a fake SMTP transport: what reaches sendMail is what would be sent
 const sendMail = vi.fn((_mail: { to: string; subject: string; text: string }) => Promise.resolve())
@@ -173,7 +174,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
   })
 
   describe('deleting an account without a password', () => {
-    it('deletes it at once after a fresh Discord sign-in, running the cleanup and mailing nothing', async () => {
+    it('deletes it at once after a fresh Discord sign-in, running the cleanup, mailing nothing and clearing the cookie', async () => {
       const auth = makeAuth(mailOn)
       const { cookie } = await discordSignIn(auth, profile('3001'))
       const user = (await userByEmail('3001@example.org'))!
@@ -183,11 +184,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
         return Promise.resolve()
       })
       sendMail.mockClear()
-      const res = await post(auth, '/delete-user', { callbackURL: '/#/login?deleted=1' }, cookie)
-      expect(res.status).toBe(200)
-      expect(await res.json()).toMatchObject({ message: 'User deleted' })
+      const res = await deleteWithFreshSignIn(auth, new Headers({ cookie }))
+      expect(res.deleted).toBe(true)
+      expect(res.deleted && res.headers.getSetCookie().some(c => /session_token=;.*Max-Age=0/.test(c))).toBe(true)
       expect(cleaned).toEqual([user.id])
       expect(await userByEmail('3001@example.org')).toBeUndefined()
+      expect(await db.selectFrom('account').select('id').where('userId', '=', user.id).execute()).toEqual([])
+      expect(await db.selectFrom('session').select('id').where('userId', '=', user.id).execute()).toEqual([])
       expect(sendMail).not.toHaveBeenCalled()
     })
 
@@ -200,10 +203,25 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
         .set({ createdAt: new Date(Date.now() - 10 * 60_000) })
         .where('userId', '=', user.id)
         .execute()
-      const res = await post(auth, '/delete-user', {}, cookie)
-      expect(res.status).toBe(400)
-      expect(await res.json()).toMatchObject({ code: 'FRESH_SIGN_IN_REQUIRED' })
+      expect(await deleteWithFreshSignIn(auth, new Headers({ cookie }))).toEqual({ deleted: false, reason: 'stale' })
       expect(await userByEmail('3002@example.org')).toBeDefined()
+    })
+
+    it('leaves an account with a password to its password', async () => {
+      const auth = makeAuth()
+      await post(auth, '/sign-up/email', { name: 'Pia', email: 'pia@example.org', password: 'doubletop-16', acceptTerms: true })
+      const signIn = await post(auth, '/sign-in/email', { email: 'pia@example.org', password: 'doubletop-16' })
+      const cookie = cookiesOf(signIn).join('; ')
+      expect(await deleteWithFreshSignIn(auth, new Headers({ cookie }))).toEqual({ deleted: false, reason: 'has-password' })
+      expect(await userByEmail('pia@example.org')).toBeDefined()
+    })
+
+    it('keeps the account when the cleanup throws', async () => {
+      const auth = makeAuth()
+      const { cookie } = await discordSignIn(auth, profile('3003'))
+      setAccountCleanup(() => Promise.reject(new Error('boom')))
+      await expect(deleteWithFreshSignIn(auth, new Headers({ cookie }))).rejects.toThrow('boom')
+      expect(await userByEmail('3003@example.org')).toBeDefined()
     })
   })
 })

@@ -44,6 +44,7 @@ import { legalApiPlugin } from './api/legal.js'
 import { loadLegal, legalValues } from './legal/load.js'
 import { createFastify } from './api/fastify.js'
 import { auth, discordConfig, mailConfig, mailer } from './auth/index.js'
+import { deleteWithFreshSignIn } from './auth/deleteGate.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
@@ -210,6 +211,7 @@ export async function buildApp({
     },
     onRenamed: (userId, name) => lobbies.renamed(userId, name),
     onAvatarChanged: userId => lobbies.profileChanged(userId),
+    deleteAccount: headers => deleteWithFreshSignIn(auth, headers),
   })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })

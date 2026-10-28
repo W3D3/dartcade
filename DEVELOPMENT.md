@@ -179,8 +179,8 @@ How accounts work with it:
   Forgot password to add a password.
 - **Deleting an account without a password** can't confirm with a password or a mailed link.
   Settings sends the player through Discord again; within five minutes of that sign-in the
-  account deletes at once (`backend/src/auth/deleteGate.ts`), with the same cleanup as any other
-  deletion. Accounts with a password delete as before.
+  account deletes at once through `DELETE /api/me` (`backend/src/auth/deleteGate.ts`), with the
+  same cleanup as any other deletion. Accounts with a password delete as before.
 
 ## Running backend tests
 
