@@ -21,6 +21,7 @@ import { checkoutHint } from '../shared/checkout.js'
 import { rankSeats } from './ranking.js'
 import { row, values } from './matchStats.js'
 import { validateOptions } from './configMeta.js'
+import { nextTurn, upNext } from './turns.js'
 
 export type P121Config = {
   startTarget: number
@@ -129,29 +130,14 @@ function giveUp(s: P121State): P121State {
 
 // The next turn in order whose seat still has tries left; the game ends when none does.
 function advance(s: P121State): P121State {
-  const n = s.order.length
-  for (let i = 1; i <= n; i++) {
-    const turn = (s.turn + i) % n
-    const seat = s.order[turn]
-    if (s.seats[seat].tries.length < s.cfg.tries) {
-      return { ...s, turn, currentPlayer: seat, visitStartLeft: s.seats[seat].left, visitDarts: 0, bust: false }
-    }
-  }
-  return { ...s, phase: 'finished', winner: rankWinner(s) }
+  const next = nextTurn(s.order, s.turn, seat => s.seats[seat].tries.length < s.cfg.tries)
+  if (!next) return { ...s, phase: 'finished', winner: rankWinner(s) }
+  return { ...s, turn: next.turn, currentPlayer: next.seat, visitStartLeft: s.seats[next.seat].left, visitDarts: 0, bust: false }
 }
 
 // The open visit is decided (a checkout or a bust) and only waits for takeout.
 function locked(s: P121State): boolean {
   return s.bust || s.seats[s.currentPlayer].left === 0
-}
-
-// Who throws after the open visit, by the same rotation advance() would apply if it
-// committed right now; null once the game is over, or when this visit would end it.
-function upNext(s: P121State): number | null {
-  if (s.phase === 'finished') return null
-  const made = s.seats[s.currentPlayer].left === 0
-  const after = advance(endVisit(s, made))
-  return after.phase === 'finished' ? null : after.currentPlayer
 }
 
 function rankKey(seat: P121Seat): [number, number, number] {
@@ -438,7 +424,7 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
       },
       phase: s.phase,
       currentPlayer: s.currentPlayer,
-      nextPlayer: upNext(s),
+      nextPlayer: upNext(s, s => advance(endVisit(s, s.seats[s.currentPlayer].left === 0))),
       winner: s.winner,
       visitLocked: locked(s),
       bust: s.bust,

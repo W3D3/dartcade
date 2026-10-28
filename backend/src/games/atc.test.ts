@@ -151,6 +151,16 @@ describe('onBoardEvent takeout.finished', () => {
     expect(state.currentPlayer).toBe(0)
   })
 
+  it('names who throws next: the same player after three hits with throwAgainOnAllHit, else the next seat', () => {
+    const cfg = { ...defaultCfg, throwAgainOnAllHit: true }
+    expect(atcModule.view(makeState({ cfg, currentVisitHits: [true, true, true], currentPlayer: 0 }), players).nextPlayer).toBe(0)
+    expect(atcModule.view(makeState({ cfg, currentVisitHits: [true, false, true], currentPlayer: 0 }), players).nextPlayer).toBe(1)
+    expect(atcModule.view(makeState({ cfg: defaultCfg, currentVisitHits: [true, true, true], currentPlayer: 1 }), players).nextPlayer).toBe(
+      0,
+    )
+    expect(atcModule.view(makeState({ cfg, currentVisitHits: [true, true, true], winner: 0 }), players).nextPlayer).toBeNull()
+  })
+
   it('throwAgainOnAllHit: advances when fewer than 3 darts were seen, even if they all hit', () => {
     // One hit, two bounce-outs the board never saw
     let s = makeState({ cfg: { ...defaultCfg, throwAgainOnAllHit: true }, currentPlayer: 0 })

@@ -138,6 +138,14 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
 }
 
 /** Targets each player has completed (the winner: all of them). */
+// Who throws after the open visit: the same player again when all three darts hit and the
+// config allows a throw again, else the next seat.
+function nextSeat(s: ATCState): number {
+  const hits = s.currentVisitHits
+  const stay = s.cfg.throwAgainOnAllHit && hits.length >= 3 && hits.every(Boolean)
+  return stay ? s.currentPlayer : (s.currentPlayer + 1) % s.playerCount
+}
+
 export function hitCounts(s: ATCState): number[] {
   return s.targets.map(t => {
     const idx = s.sequence.indexOf(t)
@@ -196,10 +204,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
       case 'takeout.finished':
       case 'visit.cleared': {
         if (s.winner !== null) return { state: s }
-        const hits = s.currentVisitHits
-        const stay = s.cfg.throwAgainOnAllHit && hits.length >= 3 && hits.every(Boolean)
-        const nextPlayer = stay ? s.currentPlayer : (s.currentPlayer + 1) % s.playerCount
-        return { state: { ...s, currentPlayer: nextPlayer, currentVisitHits: [] } }
+        return { state: { ...s, currentPlayer: nextSeat(s), currentVisitHits: [] } }
       }
 
       default:
@@ -216,6 +221,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
       targets: s.targets,
       sequence: s.sequence,
       currentPlayer: s.currentPlayer,
+      nextPlayer: s.winner === null ? nextSeat(s) : null,
       winner: s.winner,
       cfg: s.cfg,
       currentVisitHits: s.currentVisitHits,

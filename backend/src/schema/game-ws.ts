@@ -225,6 +225,10 @@ export interface AtcGame {
   targets: number[]
   sequence: number[]
   currentPlayer: number
+  /**
+   * The seat that throws after the open visit: the same one again when all three darts hit and throwAgainOnAllHit is on; null once the game is won.
+   */
+  nextPlayer: number | null
   winner: number | null
   cfg: {
     throwAgainOnAllHit: boolean
