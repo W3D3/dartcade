@@ -1,5 +1,6 @@
 <!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { Ban, ChevronRight, LoaderCircle, Search, Trash, Undo2 } from '@lucide/svelte'
@@ -213,7 +214,7 @@
           />
         </div>
         <label class="flex h-11 items-center gap-2 text-[14px] text-text">
-          <input type="checkbox" bind:checked={filters.ranked} onchange={() => void reload()} />
+          <Checkbox bind:checked={filters.ranked} onCheckedChange={() => void reload()} />
           Ranked only
         </label>
       </div>

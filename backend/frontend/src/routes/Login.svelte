@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { push, querystring } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -104,7 +105,7 @@
 
         <div class="flex md:hidden justify-between items-center min-h-[44px]">
           <label class="flex items-center gap-[10px] text-[14px] text-ink-2 cursor-pointer">
-            <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
+            <Checkbox bind:checked={keepSignedIn} />
             Keep me signed in
           </label>
           {#if $authInfo.mail}
@@ -113,7 +114,7 @@
         </div>
 
         <label class="hidden md:flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
-          <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
+          <Checkbox bind:checked={keepSignedIn} />
           Keep me signed in on this device
         </label>
       </div>

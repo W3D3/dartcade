@@ -6,6 +6,7 @@
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The hole editor".
 -->
 <script lang="ts">
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { ChevronLeft, ChevronRight, Minus, Play, Plus, Redo2, Undo2 } from '@lucide/svelte'
@@ -354,7 +355,7 @@
             <div class="flex flex-wrap items-center gap-3 text-[13px] text-text-muted">
               <span>{hint}</span>
               <label class="ml-auto flex items-center gap-2">
-                <input type="checkbox" bind:checked={heightMap} />
+                <Checkbox bind:checked={heightMap} />
                 Show height map
               </label>
             </div>

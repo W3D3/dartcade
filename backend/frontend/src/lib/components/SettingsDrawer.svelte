@@ -3,6 +3,7 @@
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import { onMount } from 'svelte'
   import { Dialog } from 'bits-ui'
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import type { BoardView, GameSettings } from '$lib/gameSettings.js'
   import type { ScoreUpdates } from '$lib/heldScore.js'
   import { loadVoiceLibrary, voiceLibrary } from '$lib/caller/voices.js'
@@ -154,7 +155,7 @@
       <div class="grid grid-cols-2 gap-x-4">
         {#each sounds as row (row.key)}
           <label class="h-11 flex items-center gap-3 cursor-pointer text-[15px]">
-            <input type="checkbox" bind:checked={settings[row.key]} class="w-6 h-6 accent-accent" />
+            <Checkbox bind:checked={settings[row.key]} class="size-6" />
             {row.label}
           </label>
         {/each}
