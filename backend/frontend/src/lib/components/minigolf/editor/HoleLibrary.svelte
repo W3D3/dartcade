@@ -2,7 +2,8 @@
   // Every hole, to reuse in the course: search, All / Official, and cards with where each comes
   // from. A card is dragged into the course by its handle (it's the page's `sortable` zone
   // "library", ids prefixed `lib:`), or added at the end with its + button.
-  import { Plus, Search } from '@lucide/svelte'
+  import { SearchInput } from '$lib/components/ui/input/index.js'
+  import { Plus } from '@lucide/svelte'
   import Chip from '$lib/components/ui/chip/chip.svelte'
   import DragHandle from '$lib/components/lobby/DragHandle.svelte'
   import { holeOf, provenance, type HoleRow } from '$lib/minigolf/editor/course'
@@ -38,16 +39,7 @@
     <h2 class="m-0 font-display font-bold text-[22px] uppercase">Hole library</h2>
     <span class="text-[12px] text-text-muted">{plural(shown.length, 'hole')}</span>
   </div>
-  <label class="flex h-10 items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
-    <Search size={16} />
-    <input
-      type="search"
-      bind:value={search}
-      placeholder="Search holes"
-      aria-label="Search holes"
-      class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
-    />
-  </label>
+  <SearchInput bind:value={search} label="Search holes" class="h-10" />
   <div class="flex gap-[6px]">
     <Chip selected={filter === 'all'} onclick={() => (filter = 'all')}>All</Chip>
     <Chip selected={filter === 'official'} onclick={() => (filter = 'official')}>Official</Chip>

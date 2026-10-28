@@ -1,9 +1,10 @@
 <!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
+  import { SearchInput } from '$lib/components/ui/input/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { Ban, ChevronRight, LoaderCircle, Search, Trash, Undo2 } from '@lucide/svelte'
+  import { Ban, ChevronRight, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
@@ -162,17 +163,7 @@
       <PageTitle trail={gamesTrail()} title="Games" sub="Every game on the platform. Open a finished one to see it leg by leg." />
 
       <div class="flex flex-wrap items-end gap-3">
-        <label class="flex h-11 w-full max-w-[300px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
-          <Search size={16} />
-          <input
-            type="search"
-            value={filters.player}
-            oninput={e => onPlayerInput(e.currentTarget.value)}
-            placeholder="Player name or account id"
-            aria-label="Player name or account id"
-            class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
-          />
-        </label>
+        <SearchInput value={filters.player} oninput={onPlayerInput} label="Player name or account id" class="w-full max-w-[300px]" />
         <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           Mode
           <Select
