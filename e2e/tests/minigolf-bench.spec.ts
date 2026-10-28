@@ -20,6 +20,7 @@ test('an admin putts once on the bench', async ({ adminPage: page }) => {
 test('switching the bench to 2D shows the flat view', async ({ adminPage: page }) => {
   await page.goto('/#/admin/minigolf')
   await expect(page.getByTestId('hole-3d')).toBeVisible(LOADS_3D)
-  await page.getByRole('combobox', { name: 'View', exact: true }).selectOption('false')
+  await page.getByRole('button', { name: 'View', exact: true }).click()
+  await page.getByRole('option', { name: '2D', exact: true }).click()
   await expect(page.getByTestId('hole-view')).toBeVisible()
 })

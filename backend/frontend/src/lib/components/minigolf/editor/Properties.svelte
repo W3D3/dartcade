@@ -5,6 +5,7 @@
   import type { Snippet } from 'svelte'
   import { Copy, Spline, Trash } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Slider } from '$lib/components/ui/slider/index.js'
   import { G } from '$shared/minigolf/3d/ground'
   import type { ElementRef } from '$shared/minigolf/checks'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
@@ -309,18 +310,18 @@
     <p class="m-0 text-[14px] text-text-muted">Shape the ground under the felt.</p>
     {@render segmented('Brush', BRUSHES, options.brush, v => (options.brush = v))}
     {#if options.brush !== 'flatten'}
-      <label class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1">
         <span class="text-[11px] label-caps text-text-dim"
           >Strength · {options.strength}% ({Math.round((options.strength / 100) * MAX_HEIGHT)} mm)</span
         >
-        <input type="range" min="5" max="100" step="5" bind:value={options.strength} />
-      </label>
+        <Slider bind:value={options.strength} min={5} max={100} step={5} label="Strength" />
+      </div>
     {/if}
     {#if options.brush === 'hill' || options.brush === 'dip' || options.brush === 'ridge'}
-      <label class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1">
         <span class="text-[11px] label-caps text-text-dim">Brush size · {options.brushSize} mm</span>
-        <input type="range" min="100" max="1200" step="50" bind:value={options.brushSize} />
-      </label>
+        <Slider bind:value={options.brushSize} min={100} max={1200} step={50} label="Brush size" />
+      </div>
     {/if}
     {#if options.brush === 'plateau'}
       {@render segmented('Ramps down to the', SIDES, options.rampSide, v => (options.rampSide = v))}

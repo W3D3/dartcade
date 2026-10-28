@@ -3,6 +3,7 @@
   // browser draws in its own colours. The list is portalled to the body and placed by bits-ui.
   import { Select } from 'bits-ui'
   import { Check, ChevronDown } from '@lucide/svelte'
+  import { cn } from '$lib/utils.js'
 
   let {
     options,
@@ -25,8 +26,10 @@
 <Select.Root type="single" {value} onValueChange={onchange} items={options}>
   <Select.Trigger
     aria-label={label}
-    class="h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-[10px] border border-line-3 bg-transparent px-3
-           text-[14px] text-text cursor-pointer font-[inherit] focus-visible:outline-2 focus-visible:outline-accent {className}"
+    class={cn(
+      'h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-[10px] border border-line-3 bg-transparent px-3 text-[14px] text-text cursor-pointer font-[inherit] focus-visible:outline-2 focus-visible:outline-accent',
+      className,
+    )}
   >
     <span class="truncate">{shown}</span>
     <ChevronDown size={16} class="shrink-0 text-text-muted" />
