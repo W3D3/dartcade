@@ -11,7 +11,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Select } from '$lib/components/ui/select/index.js'
-  import { DatePicker } from '$lib/components/ui/date-picker/index.js'
+  import { DateRangePicker } from '$lib/components/ui/date-picker/index.js'
   import { api, type GameInfo } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
@@ -200,23 +200,14 @@
           />
         </div>
         <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
-          From
-          <DatePicker
-            label="From"
-            value={filters.from}
-            onchange={(v: string) => {
-              filters.from = v
-              void reload()
-            }}
-          />
-        </div>
-        <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
-          To
-          <DatePicker
-            label="To"
-            value={filters.to}
-            onchange={(v: string) => {
-              filters.to = v
+          Dates
+          <DateRangePicker
+            label="Dates"
+            from={filters.from}
+            to={filters.to}
+            onchange={(range: { from: string; to: string }) => {
+              filters.from = range.from
+              filters.to = range.to
               void reload()
             }}
           />
