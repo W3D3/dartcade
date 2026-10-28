@@ -6,6 +6,8 @@
   import { Search, Check, Ellipsis } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type SortingState, type ColumnVisibilityState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
@@ -13,7 +15,6 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { usersTrail } from '$lib/admin/breadcrumbs'
   import { buttonVariants } from '$lib/components/ui/button/button-variants.js'
   import { DataTable, ColumnToggle, type Features } from '$lib/components/ui/data-table/index.js'
@@ -315,12 +316,8 @@
 
 <Layout title="Users">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
-      <header class="hidden md:flex flex-col gap-[6px]">
-        <Breadcrumb items={usersTrail()} />
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Users</h1>
-        <p class="m-0 text-[15px] text-text-muted">Search accounts, set their role, ban them</p>
-      </header>
+    <PageMain>
+      <PageTitle trail={usersTrail()} title="Users" sub="Search accounts, set their role, ban them" />
 
       <div class="flex flex-wrap items-center gap-3">
         <label class="flex h-11 w-full max-w-[380px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
@@ -346,7 +343,7 @@
           {/if}
         {/snippet}
       </DataTable>
-    </main>
+    </PageMain>
 
     {#if confirmAction?.kind === 'role'}
       {@const change = roleChange(confirmAction.user, confirmAction.role, confirmAction.user.id === $currentUser.id)}
