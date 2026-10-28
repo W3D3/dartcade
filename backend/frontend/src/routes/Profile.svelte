@@ -4,8 +4,9 @@
   // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
   // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
   // opens `#/profile/customise`. Friends see the streak and status; strangers see public games only (the API decides).
-  import { ArrowLeft, Flame, LoaderCircle } from '@lucide/svelte'
+  import { ArrowLeft, Flame } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageLoading from '$lib/components/PageLoading.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
@@ -71,7 +72,7 @@
       {#if banOnly}<BanNotice ban={banOnly} />{/if}
       <p class="m-0 text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
     {:else if !profile || !$profile}
-      <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
+      <PageLoading />
     {:else}
       {@const p = $profile}
       {@const colors = cardColors(p.look.colors)}
