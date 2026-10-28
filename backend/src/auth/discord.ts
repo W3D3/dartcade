@@ -1,5 +1,8 @@
 import type { DiscordOptions, DiscordProfile } from 'better-auth/social-providers'
+import type { Kysely } from 'kysely'
+import type { Database } from '../db/schema.js'
 import { cleanName } from '../users/names.js'
+import { suggestName } from '../users/account.js'
 
 export type DiscordConfig = { clientId: string; clientSecret: string } | null
 
@@ -15,7 +18,7 @@ export function resolveDiscordConfig(env: Record<string, string | undefined>): D
 /** Where a Discord account without an email (phone-only) gets its unique stand-in address; RFC 2606's .invalid never receives mail. */
 export const placeholderEmail = (discordId: string) => `${discordId}@discord.invalid`
 
-/** The Discord display name, else the username, cut to the name rules; nameHooks then makes it unique. */
+/** The Discord display name, else the username, cut to the name rules. */
 export function discordName(profile: Pick<DiscordProfile, 'global_name' | 'username'>): string {
   for (const raw of [profile.global_name, profile.username]) {
     // cleanName falls back to "player" when too little of a name is left: try the username first
@@ -26,12 +29,13 @@ export function discordName(profile: Pick<DiscordProfile, 'global_name' | 'usern
 }
 
 /** better-auth's Discord provider (scopes identify and email, its defaults). */
-export function discordProvider({ clientId, clientSecret }: NonNullable<DiscordConfig>): DiscordOptions {
+export function discordProvider({ clientId, clientSecret }: NonNullable<DiscordConfig>, db: Kysely<Database>): DiscordOptions {
   return {
     clientId,
     clientSecret,
-    mapProfileToUser: profile => ({
-      name: discordName(profile),
+    mapProfileToUser: async profile => ({
+      // Nobody typed it, so it's numbered when taken instead of refused (nameHooks still checks it)
+      name: await suggestName(db, discordName(profile), null),
       // better-auth refuses a sign-in without an email; never call a stand-in address verified
       ...(profile.email ? {} : { email: placeholderEmail(profile.id), emailVerified: false }),
     }),

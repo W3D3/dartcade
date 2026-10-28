@@ -79,7 +79,7 @@ export function authOptions({ db, mail, mailer, trustedOrigins, discord = null }
     // want: only when Discord reports the email verified (Discord is not a trustedProvider, which
     // would skip that) and the account's own email is verified too; otherwise the sign-in fails
     // with account_not_linked, so an unverified Discord email never takes over a password account.
-    socialProviders: discord ? { discord: discordProvider(discord) } : {},
+    socialProviders: discord ? { discord: discordProvider(discord, db) } : {},
     databaseHooks: { ...nameHooks(db), ...sessionHooks(db) },
     hooks: { before: termsGate, after: bannedSignIn(db) },
     // Bans go only through PUT/DELETE /api/admin/users/{id}/ban, which writes the audit row and

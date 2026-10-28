@@ -42,23 +42,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => 
 
   const socialCtx = { path: '/callback/:id' } as Parameters<typeof hooks.user.create.before>[1]
 
-  it('fits a Discord name to the rules and numbers it when taken, never refusing it, and records the terms', async () => {
-    const taken = await hooks.user.create.before({ name: 'luke', email: 'l2@example.com' }, socialCtx)
-    expect(taken.data.name).toBe('luke2')
-    expect(taken.data.termsAcceptedAt).toBeInstanceOf(Date)
-    const odd = await hooks.user.create.before({ name: 'Mighty Mike ✨ the Great Darts Legend', email: 'm@example.com' }, socialCtx)
-    expect(odd.data.name).toBe('Mighty.Mike.the.Grea')
-    const short = await hooks.user.create.before({ name: 'x', email: 'x@example.com' }, socialCtx)
-    expect(short.data.name).toBe('player')
-  })
-
-  it('refuses a .invalid email (Discord accounts without one use it) anywhere but a social sign-in', async () => {
-    await expect(hooks.user.create.before({ name: 'Imposter', email: '42@discord.invalid' }, signUpCtx)).rejects.toMatchObject({
-      body: { message: 'Use a real email address' },
-    })
-    await expect(hooks.user.create.before({ name: 'Phoneonly', email: '42@discord.invalid' }, socialCtx)).resolves.toMatchObject({
-      data: { email: '42@discord.invalid' },
-    })
+  it('records the terms for a social sign-up too, whose name already fits (discord.ts)', async () => {
+    const result = await hooks.user.create.before({ name: 'luke2', email: 'l2@example.com' }, socialCtx)
+    expect(result.data).toMatchObject({ name: 'luke2' })
+    expect(result.data.termsAcceptedAt).toBeInstanceOf(Date)
   })
 
   it("lets better-auth's update-user change anything but the name", async () => {

@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { DiscordProfile } from 'better-auth/social-providers'
 import { authOptions } from './options.js'
 import { discordName, discordProvider, resolveDiscordConfig } from './discord.js'
+
+// A free name as is: discordSignIn.test.ts numbers taken ones against a real database
+vi.mock('../users/account.js', () => ({ suggestName: (_db: unknown, name: string) => Promise.resolve(name) }))
 
 const deps = () => ({
   db: {} as Kysely<Database>,
@@ -43,7 +46,7 @@ describe('Sign in with Discord', () => {
 
 describe('the Discord profile', () => {
   const map = (profile: Partial<DiscordProfile>) =>
-    discordProvider({ clientId: 'id', clientSecret: 'secret' }).mapProfileToUser!({
+    discordProvider({ clientId: 'id', clientSecret: 'secret' }, deps().db).mapProfileToUser!({
       id: '42',
       username: 'annie',
       global_name: null,
@@ -57,8 +60,8 @@ describe('the Discord profile', () => {
     expect(discordName({ global_name: 'A very long display name indeed', username: 'x' })).toBe('A.very.long.display.')
   })
 
-  it('gives an account without an email an unverified .invalid stand-in', () => {
-    expect(map({ email: null, verified: false })).toMatchObject({ email: '42@discord.invalid', emailVerified: false })
-    expect(map({ email: 'annie@example.org', verified: true })).not.toHaveProperty('email')
+  it('gives an account without an email an unverified .invalid stand-in', async () => {
+    expect(await map({ email: null, verified: false })).toMatchObject({ name: 'annie', email: '42@discord.invalid', emailVerified: false })
+    expect(await map({ email: 'annie@example.org', verified: true })).not.toHaveProperty('email')
   })
 })

@@ -138,6 +138,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
     expect(sendMail.mock.calls.filter(([m]) => m.to.endsWith('.invalid'))).toEqual([])
   })
 
+  it('lets nobody sign up with a .invalid address', async () => {
+    const auth = makeAuth()
+    const res = await post(auth, '/sign-up/email', {
+      name: 'Imposter',
+      email: '42@discord.invalid',
+      password: 'doubletop-16',
+      acceptTerms: true,
+    })
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ message: 'Use a real email address' })
+    expect(await userByEmail('42@discord.invalid')).toBeUndefined()
+  })
+
   describe('an existing email account with the same email', () => {
     async function passwordAccount(auth: Auth, name: string, email: string, verified: boolean) {
       await post(auth, '/sign-up/email', { name, email, password: 'doubletop-16', acceptTerms: true })
