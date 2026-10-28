@@ -5,6 +5,7 @@
   // The QR code opens in a popover anchored to the button on desktop (so opening it doesn't
   // move the page), but anchored positioning has nowhere good to go on a narrow phone screen,
   // so below the `md` breakpoint it opens as a centered sheet instead.
+  import { createCopy } from '$lib/clipboard.svelte'
   import { Check, Copy, QrCode as QrIcon, RefreshCw, Share2 } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
@@ -32,7 +33,7 @@
   const link = $derived(joinLink(window.location.origin, code))
   const qrLink = $derived(qrJoinLink(window.location.origin, code))
 
-  let copied = $state(false)
+  const clip = createCopy()
   let confirmNewCode = $state(false)
   let qrSheetOpen = $state(false)
   let qrButton: HTMLButtonElement | undefined = $state()
@@ -52,15 +53,8 @@
         /* copy instead */
       }
     }
-    try {
-      await navigator.clipboard.writeText(link)
-      copied = true
-      setTimeout(() => {
-        copied = false
-      }, 2000)
-    } catch {
-      /* no clipboard: the code is on screen */
-    }
+    // No clipboard: the code is on screen
+    await clip.copy(link)
   }
 </script>
 
@@ -74,7 +68,7 @@
   </span>
   <span class="flex items-center gap-[10px] md:gap-3">
     <Button variant="key" onclick={() => void share()} class="px-[10px] md:px-3 gap-[6px] text-[13px] md:text-[14px]">
-      {#if copied}
+      {#if clip.state === 'copied'}
         <Check size={15} />Copied
       {:else}
         <span class="md:hidden flex items-center gap-[6px]"><Share2 size={15} />Share link</span>
