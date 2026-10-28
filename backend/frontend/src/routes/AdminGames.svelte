@@ -5,12 +5,13 @@
   import { push } from 'svelte-spa-router'
   import { Ban, ChevronRight, LoaderCircle, Search, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Select } from '$lib/components/ui/select/index.js'
   import { DateRangePicker } from '$lib/components/ui/date-picker/index.js'
   import { api, type GameInfo } from '$lib/api'
@@ -157,12 +158,8 @@
 
 <Layout title="Games">
   {#if $currentUser?.isModerator}
-    <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
-      <header class="hidden md:flex flex-col gap-[6px]">
-        <Breadcrumb items={gamesTrail()} />
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Games</h1>
-        <p class="m-0 text-[15px] text-text-muted">Every game on the platform. Open a finished one to see it leg by leg.</p>
-      </header>
+    <PageMain>
+      <PageTitle trail={gamesTrail()} title="Games" sub="Every game on the platform. Open a finished one to see it leg by leg." />
 
       <div class="flex flex-wrap items-end gap-3">
         <label class="flex h-11 w-full max-w-[300px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
@@ -310,7 +307,7 @@
           {/if}
         {/if}
       </section>
-    </main>
+    </PageMain>
     {#if confirming}
       <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirming = null)} />
     {/if}

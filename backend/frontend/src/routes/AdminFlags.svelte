@@ -11,6 +11,8 @@
   import { ChevronLeft, ListTree, Search, X } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type ColumnVisibilityState, type SortingState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
@@ -20,7 +22,6 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { DataTable, type Features } from '$lib/components/ui/data-table/index.js'
   import { currentUser } from '$lib/auth'
   import { refreshFlags } from '$lib/flags'
@@ -398,12 +399,8 @@
 
 <Layout title="Feature flags">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
-      <header class="hidden md:flex flex-col gap-[6px]">
-        <Breadcrumb items={trail} />
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Feature flags</h1>
-        <p class="m-0 text-[15px] text-text-muted">Turn a flag on or off at runtime, no restart. Open tabs pick it up within 30s.</p>
-      </header>
+    <PageMain>
+      <PageTitle {trail} title="Feature flags" sub="Turn a flag on or off at runtime, no restart. Open tabs pick it up within 30s." />
 
       <!-- Every flag; once one is open, a column beside its card from lg (only the card below) -->
       <div class="flex flex-col lg:flex-row gap-[14px] md:gap-4 lg:gap-5 xl:gap-6 {openFlag ? 'lg:flex-grow lg:min-h-0' : ''}">
@@ -638,7 +635,7 @@
       {#if !loading && flags.length === 0 && !listError}
         <p class="m-0 text-[15px] text-text-muted">No flags defined.</p>
       {/if}
-    </main>
+    </PageMain>
 
     {#if confirmDiscard}
       <ConfirmModal

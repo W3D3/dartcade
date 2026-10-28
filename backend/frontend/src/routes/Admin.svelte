@@ -3,7 +3,8 @@
   import { push } from 'svelte-spa-router'
   import { ChevronRight } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import { currentUser } from '$lib/auth'
   import { toolsFor } from '$lib/admin/tools'
 
@@ -14,12 +15,8 @@
 </script>
 
 <Layout title="Admin">
-  <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
-    <header class="hidden md:flex flex-col gap-[6px]">
-      <Breadcrumb items={[{ label: 'Admin' }]} />
-      <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Admin</h1>
-      <p class="m-0 text-[15px] text-text-muted">Tools for running this dartcade</p>
-    </header>
+  <PageMain>
+    <PageTitle trail={[{ label: 'Admin' }]} title="Admin" sub="Tools for running this dartcade" />
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {#each toolsFor($currentUser) as tool (tool.href)}
@@ -36,5 +33,5 @@
         </a>
       {/each}
     </div>
-  </main>
+  </PageMain>
 </Layout>
