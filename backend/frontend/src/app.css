@@ -171,6 +171,10 @@
   background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.16) 25%, transparent 25% 50%, rgba(0, 0, 0, 0.16) 50% 75%, transparent 75%);
   background-size: 20px 20px;
 }
+/* A chart's hover box: the value under the pointer (or the keyboard's point) */
+@utility chart-tooltip {
+  @apply whitespace-nowrap rounded-[10px] border border-line-popover bg-surface-inset px-2.5 py-1.5 text-[13px] text-text shadow-tooltip;
+}
 /* The label above a form control */
 @utility field-label {
   @apply text-[14px] font-medium text-ink-soft;

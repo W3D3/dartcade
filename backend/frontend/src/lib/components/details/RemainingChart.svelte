@@ -8,7 +8,7 @@
   import { Chart, Spline, Tooltip } from 'layerchart/svg'
   import type { ChartState, AnyScale } from 'layerchart'
   import { remainingTicks, type Side } from '$lib/details/x01'
-  import { flattenByX, stepFocus } from '$lib/details/chartNav'
+  import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
   import { otherColor } from '$lib/details/chartColors'
 
   type Visit = { visit: number; left: number; scored: number }
@@ -56,38 +56,16 @@
   // single source of its text; the live region repeats that text for screen readers, since
   // nothing moves focus onto the (positioned, not tabbable) tooltip itself.
   const navPoints = $derived(flattenByX(tagged, p => p.visit))
-  let focusIndex = $state<number | null>(null)
-  let chartContext = $state<PointChartState | undefined>()
-
   function describe(data: Point): string {
     if (data.visit === 0) return `${name(data.side)}: ${start} to start`
     return `${name(data.side)}, visit ${data.visit}: scored ${data.scored}, ${data.left} left`
   }
-
-  const liveText = $derived.by(() => {
-    const n = focusIndex === null ? undefined : navPoints.at(focusIndex)
-    return n ? describe(n.point) : ''
-  })
-
-  function focusPoint(index: number | null) {
-    focusIndex = index
-    const n = index === null ? undefined : navPoints.at(index)
-    if (n) chartContext?.tooltip.show({ data: n.point })
-    else chartContext?.tooltip.hide()
-  }
-
-  function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault()
-      focusPoint(stepFocus(focusIndex, 1, navPoints.length))
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault()
-      focusPoint(stepFocus(focusIndex, -1, navPoints.length))
-    } else if (e.key === 'Escape' && focusIndex !== null) {
-      e.preventDefault()
-      focusPoint(null)
-    }
-  }
+  let chartContext = $state<PointChartState | undefined>()
+  const nav = createChartNav(
+    () => navPoints,
+    describe,
+    () => chartContext,
+  )
 </script>
 
 <figure class="m-0 flex flex-col gap-2">
@@ -106,8 +84,8 @@
     role="img"
     aria-label="Points left after each visit"
     tabindex={0}
-    onkeydown={onKeydown}
-    onblur={() => focusPoint(null)}
+    onkeydown={nav.onkeydown}
+    onblur={nav.blur}
     series={chartSeries}
     x="visit"
     y="left"
@@ -150,14 +128,12 @@
     {#snippet tooltip({ context }: { context: PointChartState })}
       <Tooltip.Root variant="none" {context}>
         {#snippet children({ data }: { data: Point })}
-          <div
-            class="bg-surface-inset border border-line-popover rounded-[10px] px-2.5 py-1.5 text-text text-[13px] whitespace-nowrap shadow-tooltip"
-          >
+          <div class="chart-tooltip">
             {describe(data)}
           </div>
         {/snippet}
       </Tooltip.Root>
     {/snippet}
   </Chart>
-  <span class="sr-only" role="status" aria-live="polite">{liveText}</span>
+  <span class="sr-only" role="status" aria-live="polite">{nav.liveText}</span>
 </figure>
