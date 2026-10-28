@@ -3,12 +3,13 @@
      details card, laid out like the Play page: from lg the table narrows to a column beside the
      card, below lg the card takes the page. The open flag is in the URL (?flag=<key>). -->
 <script lang="ts">
+  import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import { get } from 'svelte/store'
   import { push, querystring, replace } from 'svelte-spa-router'
   import { Popover } from 'bits-ui'
-  import { ChevronLeft, ListTree, Search, X } from '@lucide/svelte'
+  import { ChevronLeft, ListTree, X } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type ColumnVisibilityState, type SortingState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -411,18 +412,7 @@
             : 'w-full'}"
         >
           <div class="flex items-center gap-3">
-            <label
-              class="flex h-11 max-w-[380px] min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted"
-            >
-              <Search size={16} />
-              <input
-                type="search"
-                bind:value={query}
-                placeholder="Filter by key or description"
-                aria-label="Filter by key or description"
-                class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
-              />
-            </label>
+            <SearchInput bind:value={query} label="Filter by key or description" class="max-w-[380px] min-w-0 flex-1" />
             <!-- Icon-only beside the card (and on phones), where the column has no room for the label -->
             <Button
               variant="outline"
