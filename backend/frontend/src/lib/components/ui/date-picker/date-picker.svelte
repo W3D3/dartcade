@@ -6,6 +6,7 @@
   import type { ComponentProps } from 'svelte'
   import { parseDate, type DateValue } from '@internationalized/date'
   import { CalendarDays, ChevronLeft, ChevronRight, X } from '@lucide/svelte'
+  import { segment, day, nav, field, content } from './styles.js'
 
   type SegmentPart = ComponentProps<typeof DatePicker.Segment>['part']
 
@@ -29,14 +30,6 @@
       return undefined
     }
   })
-
-  const segment = 'rounded-[4px] px-[2px] outline-none focus:bg-accent focus:text-accent-fg data-[placeholder]:text-text-dim'
-  const day =
-    'flex size-9 items-center justify-center rounded-[8px] text-[14px] text-text outline-none cursor-pointer hover:bg-surface-key ' +
-    'data-[today]:border data-[today]:border-line-strong data-[selected]:bg-accent data-[selected]:text-accent-fg ' +
-    'data-[outside-month]:pointer-events-none data-[outside-month]:opacity-30 data-[disabled]:opacity-30 data-[unavailable]:opacity-30'
-  const nav =
-    'flex size-8 items-center justify-center rounded-[8px] border-0 bg-transparent text-text-muted cursor-pointer hover:bg-surface-key'
 </script>
 
 <DatePicker.Root
@@ -47,9 +40,7 @@
   fixedWeeks
   preventDeselect
 >
-  <div
-    class="flex h-11 items-center gap-2 rounded-[10px] border border-line-3 px-3 text-[14px] text-text focus-within:outline-2 focus-within:outline-accent {className}"
-  >
+  <div class="{field} {className}">
     <DatePicker.Input aria-label={label} class="flex items-center">
       {#snippet children({ segments }: { segments: { part: SegmentPart; value: string }[] })}
         <!-- By position: a date has two identical separators ("/" or "."), so part + value isn't unique -->
@@ -80,11 +71,7 @@
     </DatePicker.Trigger>
   </div>
   <DatePicker.Portal>
-    <DatePicker.Content
-      sideOffset={6}
-      collisionPadding={8}
-      class="z-[60] rounded-[12px] border border-line-popover bg-surface-inset p-3 shadow-[0_18px_48px_rgba(0,0,0,0.55)]"
-    >
+    <DatePicker.Content sideOffset={6} collisionPadding={8} class={content}>
       <DatePicker.Calendar>
         {#snippet children({ months, weekdays }: { months: Month<DateValue>[]; weekdays: string[] })}
           <DatePicker.Header class="mb-2 flex items-center justify-between">

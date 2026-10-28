@@ -1,2 +1,3 @@
 import Root from './date-picker.svelte'
-export { Root, Root as DatePicker }
+import RangeRoot from './date-range-picker.svelte'
+export { Root, Root as DatePicker, RangeRoot as DateRangePicker }
