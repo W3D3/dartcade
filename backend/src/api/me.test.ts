@@ -16,7 +16,6 @@ vi.mock('../db/users.js', () => ({
   getAccount: vi.fn(),
   getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }),
   setInvisible: vi.fn(),
-  signInMethods: vi.fn().mockResolvedValue(['password']),
   setAvatar: vi.fn(),
   setAvatarUpload: vi.fn(),
   getPreferences: vi.fn(),
@@ -58,6 +57,7 @@ beforeEach(() => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
@@ -104,6 +104,7 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ email: null })
@@ -161,6 +162,7 @@ describe('/api/me', () => {
       role: 'admin',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true, isModerator: true })
@@ -177,6 +179,7 @@ describe('/api/me', () => {
       role: 'moderator',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: false, isModerator: true })
@@ -195,6 +198,7 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
@@ -227,6 +231,7 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      signInMethods: ['password'],
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)

@@ -11,7 +11,6 @@ import {
   setAvatar,
   setAvatarUpload,
   setInvisible,
-  signInMethods,
   updatePreferences,
   UnknownAvatarFinishError,
 } from '../db/users.js'
@@ -64,7 +63,6 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       isAdmin: isAdmin({ role }),
       isModerator: isModerator({ role }),
       impersonating,
-      signInMethods: await signInMethods(db, userId),
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
       // Pictures are rewards only while progression is on
       pictures: (await progressionOn(userId)) ? await unlockedPictures(db, userId) : AVATAR_FINISHES.map(f => f.id),

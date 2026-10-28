@@ -19,15 +19,8 @@ export type Account = {
   /** When the account was made, ISO 8601. */
   createdAt: string
   avatar: Avatar
-}
-
-/** How the account can sign in (better-auth's account rows): with its password, through Discord, or both. */
-export async function signInMethods(db: Kysely<Database>, userId: string): Promise<('password' | 'discord')[]> {
-  const rows = await db.selectFrom('account').select(['providerId', 'password']).where('userId', '=', userId).execute()
-  return [
-    ...(rows.some(r => r.providerId === 'credential' && r.password) ? (['password'] as const) : []),
-    ...(rows.some(r => r.providerId === 'discord') ? (['discord'] as const) : []),
-  ]
+  /** How the account can sign in (better-auth's account rows): with its password, through Discord, or both. */
+  signInMethods: ('password' | 'discord')[]
 }
 
 /** The Avatar union shape from the avatar_* columns (migrations 031, 038). */
@@ -62,6 +55,27 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       'avatar_preset',
       'avatar_background',
       'avatar_version',
+      eb =>
+        eb
+          .exists(
+            eb
+              .selectFrom('account')
+              .select('account.id')
+              .whereRef('account.userId', '=', 'user.id')
+              .where('account.providerId', '=', 'credential')
+              .where('account.password', 'is not', null),
+          )
+          .as('has_password'),
+      eb =>
+        eb
+          .exists(
+            eb
+              .selectFrom('account')
+              .select('account.id')
+              .whereRef('account.userId', '=', 'user.id')
+              .where('account.providerId', '=', 'discord'),
+          )
+          .as('has_discord'),
     ])
     .where('id', '=', userId)
     .executeTakeFirst()
@@ -75,6 +89,7 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       role: row.role,
       createdAt: row.createdAt.toISOString(),
       avatar: toAvatar(row),
+      signInMethods: [...(row.has_password ? (['password'] as const) : []), ...(row.has_discord ? (['discord'] as const) : [])],
     }
   )
 }
