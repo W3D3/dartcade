@@ -6,7 +6,7 @@ test('121: a solo session played to the end with manual darts ends on the summar
   await startGame(page, {
     mode: '121',
     setup: async page => {
-      await page.locator('main').getByRole('button', { name: '5', exact: true }).click()
+      await page.locator('main').getByRole('radio', { name: '5', exact: true }).click()
     },
   })
 

@@ -63,7 +63,7 @@ test('an admin turns 121 on for everyone at runtime, and a player sees it with n
   await expect(admin).toHaveURL(new RegExp(`\\?flag=${FLAG_KEY.replaceAll('.', '\\.')}$`))
   const panel = admin.getByRole('region', { name: FLAG_KEY })
   await expect(panel.getByRole('heading', { name: FLAG_KEY })).toBeVisible()
-  await panel.getByRole('button', { name: 'Everyone', exact: true }).click()
+  await panel.getByRole('radio', { name: 'Everyone', exact: true }).click()
   await panel.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(panel.getByText('Live now', { exact: false })).toBeVisible()
 
@@ -72,7 +72,7 @@ test('an admin turns 121 on for everyone at runtime, and a player sees it with n
   await expect(card).toBeVisible()
 
   // The admin sets it back to its default (admins-only)
-  await panel.getByRole('button', { name: /^Default/ }).click()
+  await panel.getByRole('radio', { name: /^Default/ }).click()
   await panel.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(panel.getByText('Live now', { exact: false })).toBeVisible()
 

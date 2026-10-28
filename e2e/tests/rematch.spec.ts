@@ -7,7 +7,7 @@ test('Rematch on the win screen starts the same game again', async ({ authedPage
     mode: 'X01',
     setup: async page => {
       const main = page.locator('main')
-      await main.getByRole('button', { name: '301', exact: true }).click()
+      await main.getByRole('radio', { name: '301', exact: true }).click()
       // The stepper never disables at its floor (it just stays at 1): click down until it reads 1 leg
       const fewer = main.getByRole('button', { name: 'Fewer legs' })
       const legs = fewer.locator('xpath=following-sibling::span[1]')

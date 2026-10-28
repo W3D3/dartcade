@@ -3,7 +3,7 @@ import { startGame } from '../fixtures/lobby.js'
 
 test('X01 manual dart entry shows bust state', async ({ authedPage: page }) => {
   // A solo X01 game from 301, manual entry
-  await startGame(page, { mode: 'X01', setup: page => page.locator('main').getByRole('button', { name: '301', exact: true }).click() })
+  await startGame(page, { mode: 'X01', setup: page => page.locator('main').getByRole('radio', { name: '301', exact: true }).click() })
 
   // Entry view auto-activates for boardless sessions
   await expect(page.locator('button[aria-label="Single 1"]')).toBeVisible()

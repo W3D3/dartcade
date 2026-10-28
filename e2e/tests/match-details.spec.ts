@@ -8,7 +8,7 @@ async function finishSoloX01(page: Page): Promise<void> {
     mode: 'X01',
     setup: async page => {
       const main = page.locator('main')
-      await main.getByRole('button', { name: '301', exact: true }).click()
+      await main.getByRole('radio', { name: '301', exact: true }).click()
       const fewer = main.getByRole('button', { name: 'Fewer legs' })
       const legs = fewer.locator('xpath=following-sibling::span[1]')
       const isOne = async () => /^1\s*leg$/.test(((await legs.textContent()) ?? '').trim())
