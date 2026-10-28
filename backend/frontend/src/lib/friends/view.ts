@@ -12,27 +12,6 @@ export type RowAction = 'in-lobby' | 'join' | 'invite' | 'invited' | null
 
 export const FRIENDS_TABS: readonly FriendsTab[] = ['all', 'online', 'requests']
 
-/** The element id of a Friends tab (the tab panel is labelled by the selected one). */
-export const friendsTabId = (t: FriendsTab): string => `friends-tab-${t}`
-
-/** The tab a key moves to (Left/Right wrap, Home/End), or null for any other key. */
-export function tabAfterKey(key: string, current: FriendsTab): FriendsTab | null {
-  const i = FRIENDS_TABS.indexOf(current)
-  const n = FRIENDS_TABS.length
-  switch (key) {
-    case 'ArrowRight':
-      return FRIENDS_TABS[(i + 1) % n] ?? null
-    case 'ArrowLeft':
-      return FRIENDS_TABS[(i - 1 + n) % n] ?? null
-    case 'Home':
-      return FRIENDS_TABS[0] ?? null
-    case 'End':
-      return FRIENDS_TABS[n - 1] ?? null
-    default:
-      return null
-  }
-}
-
 export const isOnline = (f: Friend): boolean => f.status.kind !== 'offline'
 
 /** The line under a friend's name: "In Friday darts", "Playing X01", "Online", "Offline". */

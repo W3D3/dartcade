@@ -4,7 +4,7 @@ import FriendRow from '../components/friends/FriendRow.svelte'
 import RequestsPanel from '../components/friends/RequestsPanel.svelte'
 import AddFriendCard from '../components/friends/AddFriendCard.svelte'
 import StatusDot from '../components/friends/StatusDot.svelte'
-import FriendsTabs from '../components/friends/FriendsTabs.svelte'
+import FriendsTabsHarness from './fixtures/FriendsTabsHarness.svelte'
 
 const lena = {
   id: 'lena',
@@ -92,10 +92,12 @@ describe('StatusDot', () => {
 })
 
 describe('FriendsTabs', () => {
-  it('controls the panel, with only the selected tab in the tab order', () => {
-    const out = render(FriendsTabs, { props: { tab: 'online', counts: { all: 3, online: 2, requests: 1 }, panelId: 'p' } }).body
-    expect(out.match(/aria-controls="p"/g)).toHaveLength(3)
-    expect(out).toMatch(/id="friends-tab-online"[^>]*aria-selected="true"[^>]*tabindex="0"/)
-    expect(out).toMatch(/id="friends-tab-all"[^>]*aria-selected="false"[^>]*tabindex="-1"/)
+  // Server-rendered: bits-ui wires aria-controls and the roving tab order once it mounts
+  it('marks the selected tab and renders the panel it controls', () => {
+    const out = render(FriendsTabsHarness, { props: { tab: 'online', counts: { all: 3, online: 2, requests: 1 } } }).body
+    expect(out.match(/role="tab"/g)).toHaveLength(3)
+    expect(out).toMatch(/aria-selected="true"[^>]*>(<!---->)?Online · 2/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?All · 3/)
+    expect(out).toMatch(/id="p" role="tabpanel"/)
   })
 })
