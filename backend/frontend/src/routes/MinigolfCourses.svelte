@@ -5,6 +5,7 @@
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The course editor".
 -->
 <script lang="ts">
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -326,22 +327,29 @@
                 class="h-[38px] rounded-[10px] border border-line-2 bg-bg px-3 text-[14px] text-ink-2 outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
               />
             </div>
-            <div class="flex items-center gap-2 text-[13px] text-text-muted" role="radiogroup" aria-label="Difficulty">
+            <RadioGroup
+              value={String(content.difficulty)}
+              onValueChange={(v: string) => {
+                const d = DIFFICULTY.find(x => String(x.value) === v)
+                if (d) edit({ difficulty: d.value })
+              }}
+              orientation="horizontal"
+              aria-label="Difficulty"
+              class="flex items-center gap-2 text-[13px] text-text-muted"
+            >
               Difficulty
               {#each DIFFICULTY as d (d.value)}
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={content.difficulty === d.value}
+                <RadioGroupItem
+                  value={String(d.value)}
                   aria-label={d.label}
                   title={d.label}
-                  onclick={() => edit({ difficulty: d.value })}
-                  class="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 cursor-pointer"
-                  ><span class="h-[10px] w-[10px] rounded-full {d.value <= content.difficulty ? 'bg-accent' : 'bg-line-3'}"></span></button
+                  class="flex h-6 w-6 items-center justify-center"
+                  ><span class="h-[10px] w-[10px] rounded-full {d.value <= content.difficulty ? 'bg-accent' : 'bg-line-3'}"
+                  ></span></RadioGroupItem
                 >
               {/each}
               <span class="text-text">{DIFFICULTY[content.difficulty - 1]?.label}</span>
-            </div>
+            </RadioGroup>
             <CourseHoles
               items={moves.people}
               courseId={courseId ?? ''}

@@ -1,6 +1,7 @@
 <script lang="ts">
   // The hole editor's Properties panel: the selection's fields (with Duplicate and Delete) under
   // the Select tool, otherwise the active tool's options for what it places next.
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import type { Snippet } from 'svelte'
   import { Copy, Spline, Trash } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -162,18 +163,20 @@
 )}
   <div class="flex flex-col gap-1">
     <span class="text-[11px] label-caps text-text-dim">{label}</span>
-    <div role="radiogroup" aria-label={label} class="flex gap-1 rounded-[10px] bg-surface-inset p-1">
+    <RadioGroup
+      value={current ?? ''}
+      onValueChange={(v: string) => {
+        const it = items.find(i => i.value === v)
+        if (it) onpick(it.value)
+      }}
+      orientation="horizontal"
+      aria-label={label}
+      class="flex gap-1 rounded-[10px] bg-surface-inset p-1"
+    >
       {#each items as it (it.value)}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={current === it.value}
-          onclick={() => onpick(it.value)}
-          class="h-8 flex-grow rounded-[8px] border-0 px-2 text-[13px] font-semibold cursor-pointer
-                 {current === it.value ? 'bg-surface-2 text-text' : 'bg-transparent text-text-muted hover:text-text'}">{it.label}</button
-        >
+        <RadioGroupItem value={it.value} variant="segment">{it.label}</RadioGroupItem>
       {/each}
-    </div>
+    </RadioGroup>
   </div>
 {/snippet}
 

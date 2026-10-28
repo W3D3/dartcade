@@ -9,6 +9,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import StatCard from '$lib/components/ranked/StatCard.svelte'
@@ -229,18 +230,16 @@
               >
             </div>
 
-            <div role="radiogroup" aria-label="Queue" class="grid grid-cols-2 gap-[10px] md:gap-3">
+            <RadioGroup
+              value={queue}
+              onValueChange={(v: string) => (queue = v === '2v2' ? '2v2' : '1v1')}
+              orientation="horizontal"
+              aria-label="Queue"
+              class="grid grid-cols-2 gap-[10px] md:gap-3"
+            >
               {#each queues as opt (opt.id)}
                 {@const on = queue === opt.id}
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onclick={() => (queue = opt.id)}
-                  class="box-border flex min-w-0 cursor-pointer flex-col gap-1 rounded-[12px] px-3 py-[10px] text-left font-[inherit] md:min-h-[84px] md:px-[14px] md:py-3 {on
-                    ? 'border-2 border-accent bg-surface-active text-text'
-                    : 'border border-line-chip bg-transparent text-ink-2'}"
-                >
+                <RadioGroupItem value={opt.id} variant="card">
                   <span class="flex items-center gap-[10px]">
                     <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
                       {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
@@ -255,27 +254,24 @@
                   {#if opt.hint}<span class="text-[11px] text-warn md:text-[12px]"
                       ><span class="md:hidden">{opt.hintShort}</span><span class="hidden md:inline">{opt.hint}</span></span
                     >{/if}
-                </button>
+                </RadioGroupItem>
               {/each}
-            </div>
+            </RadioGroup>
 
-            <div role="radiogroup" aria-label="Format" class="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
+            <RadioGroup
+              value={String(firstTo)}
+              onValueChange={(v: string) => (firstTo = v === '3' ? 3 : 2)}
+              orientation="horizontal"
+              aria-label="Format"
+              class="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center"
+            >
               <span class="mr-1 hidden text-[13px] text-text-muted md:inline">Format</span>
               {#each formats as f (f.value)}
-                {@const on = firstTo === f.value}
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onclick={() => (firstTo = f.value)}
-                  class="flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-3 font-[inherit] text-[13px] font-semibold md:px-[14px] md:text-[14px] {on
-                    ? 'border border-accent-line-strong bg-surface-paused text-text'
-                    : 'border border-line-chip bg-transparent text-ink-2'}"
-                >
+                <RadioGroupItem value={String(f.value)} variant="chip">
                   {f.label}<span class="hidden text-[12px] font-normal text-text-dim md:inline">{f.hint}</span>
-                </button>
+                </RadioGroupItem>
               {/each}
-            </div>
+            </RadioGroup>
 
             <span class="flex items-center justify-center gap-2 text-[12px] text-ink-2 md:hidden"
               ><Clock size={14} class="flex-shrink-0" />{visit} · {reserve}</span
