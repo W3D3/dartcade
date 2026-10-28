@@ -1,7 +1,7 @@
 <script lang="ts">
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
-  import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
+  import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
   import BigScreenButton from '$lib/components/BigScreenButton.svelte'
   import { flag } from '$lib/flags'
 
@@ -71,7 +71,7 @@
   const dotBg = $derived(DOT_BG[dotColor])
   const dotText = $derived(DOT_TEXT[dotColor])
   const isRunning = $derived(bmStatus?.running === true)
-  const bmLabel = $derived(bmStatus?.status ?? (board.online ? '—' : 'Offline'))
+  const bmLabel = $derived(bmStatusLabel(bmStatus?.status ?? null, board.online))
 </script>
 
 <svelte:window {onkeydown} />

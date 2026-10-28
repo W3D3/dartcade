@@ -12,9 +12,11 @@
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { Snapshot } from '$lib/ws'
   import BigHeader from './BigHeader.svelte'
+  import type { BoardState } from '$lib/bigscreen/frame'
   import GenericResult from './GenericResult.svelte'
 
-  let { snapshot, detail, countdown }: { snapshot: Snapshot; detail: GameDetail | null; countdown: string } = $props()
+  let { snapshot, detail, countdown, board }: { snapshot: Snapshot; detail: GameDetail | null; countdown: string; board: BoardState } =
+    $props()
 
   const progression = flag('progression.enabled')
   const view = $derived(getGameView(snapshot.gameId))
@@ -52,7 +54,7 @@
 <svelte:window onresize={measure} />
 
 {#if win || p121}
-  {#if p121}<BigHeader title={view.title} meta={winMeta(snapshot)} board={sharedBoard(snapshot)} final />{/if}
+  {#if p121}<BigHeader title={view.title} meta={winMeta(snapshot)} board={sharedBoard(snapshot)} bm={board} final />{/if}
   <div bind:this={box} class="min-h-0 flex-1 overflow-hidden">
     <div class="flex origin-top-left flex-col" style="width:{100 / fit}%;height:{100 / fit}%;transform:scale({fit})">
       {#if win}

@@ -44,3 +44,6 @@ export const DOT_TEXT: Record<DotColor, string> = {
   red: 'text-bm-red',
   gray: 'text-bm-gray',
 }
+
+/** What the status dot's label says: Board Manager's status, a dash while an online board has none yet, "Offline" otherwise. */
+export const bmStatusLabel = (status: string | null, online: boolean): string => status ?? (online ? '—' : 'Offline')

@@ -88,7 +88,11 @@
   })
 
   // The frame stays loaded while idle, so a game starts without reloading the app inside it
-  const frameData = $derived(screen !== null && screen.kind !== 'idle' ? { screen, settings, history: visits, countdown } : null)
+  const frameData = $derived(
+    screen !== null && screen.kind !== 'idle'
+      ? { screen, board: $message?.board ?? { online: false }, settings, history: visits, countdown }
+      : null,
+  )
 </script>
 
 <div>

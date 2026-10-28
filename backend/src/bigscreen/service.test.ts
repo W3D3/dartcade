@@ -13,6 +13,7 @@ const make = (over: Partial<BigScreenDeps> = {}) =>
     getSnapshot: id => ({ id }) as never,
     loadBoard: b => Promise.resolve(board(b)),
     isOnline: () => online,
+    boardStatus: () => Promise.resolve(null),
     now: Date.now,
     setTimer: setTimeout,
     warn: () => undefined,
@@ -230,5 +231,74 @@ describe('BigScreenService', () => {
       expect(got.at(-1)!.screen.kind).toBe('result')
       s.close()
     })
+  })
+})
+
+describe('BigScreenService board status', () => {
+  const statuses = (got: BigScreenMessage[]) => got.map(m => m.board.status)
+
+  it('asks an online board at once and every 3 s, and pushes only when the status changed', async () => {
+    let status: string | null = 'Running'
+    const boardStatus = vi.fn(() => Promise.resolve(status))
+    const s = make({ boardStatus })
+    const got: BigScreenMessage[] = []
+    s.add('b1', m => got.push(m))
+    await flush()
+    expect(boardStatus).toHaveBeenCalledTimes(1)
+    expect(statuses(got)).toEqual([undefined, 'Running'])
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(boardStatus).toHaveBeenCalledTimes(2)
+    expect(got).toHaveLength(2)
+    status = 'Takeout'
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(statuses(got)).toEqual([undefined, 'Running', 'Takeout'])
+    s.close()
+  })
+
+  it('stops asking when the last follower leaves, and not before', async () => {
+    const boardStatus = vi.fn(() => Promise.resolve('Running'))
+    const s = make({ boardStatus })
+    const offA = s.add('b1', () => undefined)
+    const offB = s.add('b1', () => undefined)
+    await flush()
+    offA()
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(boardStatus).toHaveBeenCalledTimes(2)
+    offB()
+    await vi.advanceTimersByTimeAsync(9000)
+    expect(boardStatus).toHaveBeenCalledTimes(2)
+    s.close()
+  })
+
+  it('does not ask an offline board, drops its status, and asks again once it is back', async () => {
+    const boardStatus = vi.fn(() => Promise.resolve('Running'))
+    const s = make({ boardStatus })
+    const got: BigScreenMessage[] = []
+    s.add('b1', m => got.push(m))
+    await flush()
+    online = false
+    s.onBoardPresence('b1')
+    await flush()
+    expect(got.at(-1)?.board).toEqual({ id: 'b1', name: 'Board b1', online: false })
+    await vi.advanceTimersByTimeAsync(9000)
+    expect(boardStatus).toHaveBeenCalledTimes(1)
+    online = true
+    s.onBoardPresence('b1')
+    await flush()
+    expect(boardStatus).toHaveBeenCalledTimes(2)
+    expect(got.at(-1)?.board.status).toBe('Running')
+    s.close()
+  })
+
+  it('keeps polling after a failed ask', async () => {
+    const warn = vi.fn()
+    const boardStatus = vi.fn().mockRejectedValueOnce(new Error('bridge')).mockResolvedValue('Running')
+    const s = make({ boardStatus, warn })
+    s.add('b1', () => undefined)
+    await flush()
+    expect(warn).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(boardStatus).toHaveBeenCalledTimes(2)
+    s.close()
   })
 })

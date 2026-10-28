@@ -8797,6 +8797,10 @@
             },
             "online": {
               "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "description": "The board's Board Manager status (Running, Throw, Takeout, Calibrating, Stopped...) while the board is online and says; absent otherwise."
             }
           }
         },

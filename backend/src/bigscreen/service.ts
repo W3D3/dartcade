@@ -13,6 +13,8 @@ export type BigScreenDeps = {
   /** The board's name and its owner's account settings (one query); undefined: the board is gone. Read on every push, so a rename or a settings change reaches a running screen. */
   loadBoard(boardId: string): Promise<Board | undefined>
   isOnline(boardId: string): boolean
+  /** The board's Board Manager status, asked of its bridge; null when it cannot say. */
+  boardStatus(boardId: string): Promise<string | null>
   now: () => number
   setTimer: typeof setTimeout
   /** Called when building a push fails; that push is dropped. */
@@ -24,7 +26,12 @@ type Close = (code: WsCloseCode, reason: string) => void
 type Followers = {
   sends: Map<Send, { close: Close; viaToken: boolean }>
   timer?: ReturnType<typeof setTimeout>
+  /** The board's Board Manager status, polled while the board is online (absent: offline or unknown). */
+  status?: string
+  statusTimer?: ReturnType<typeof setTimeout>
 }
+/** How often a followed, online board is asked for its status. */
+const STATUS_POLL_MS = 3000
 /** A finished game held on its boards: the result screen until `until`, with the saved game once it is stored. */
 type Held = { sessionId: string; until: number; detail?: GameDetail }
 
@@ -41,10 +48,12 @@ export class BigScreenService {
     const followers = f
     followers.sends.set(send, { close, viaToken })
     void this.push(boardId, [send])
+    if (followers.sends.size === 1) this.pollStatus(boardId)
     return () => {
       followers.sends.delete(send)
       if (followers.sends.size === 0 && this.boards.get(boardId) === followers) {
         clearTimeout(followers.timer)
+        clearTimeout(followers.statusTimer)
         this.boards.delete(boardId)
       }
     }
@@ -63,7 +72,9 @@ export class BigScreenService {
 
   /** The bridge of a board connected or dropped: its online flag changed. */
   onBoardPresence(boardId: string): void {
-    if (this.boards.has(boardId)) void this.push(boardId)
+    if (!this.boards.has(boardId)) return
+    void this.push(boardId)
+    this.pollStatus(boardId)
   }
 
   /**
@@ -96,7 +107,10 @@ export class BigScreenService {
 
   close(): void {
     this.held.clear()
-    for (const f of this.boards.values()) clearTimeout(f.timer)
+    for (const f of this.boards.values()) {
+      clearTimeout(f.timer)
+      clearTimeout(f.statusTimer)
+    }
     this.boards.clear()
   }
 
@@ -112,6 +126,42 @@ export class BigScreenService {
     }
     // shortcut: the held result lives in memory only, a restart inside the minute shows idle
     return { screen: { kind: 'result', snapshot, until: h.until, ...(h.detail ? { detail: h.detail } : {}) }, until: h.until }
+  }
+
+  /**
+   * Asks an online board for its status every STATUS_POLL_MS while anyone follows it, and pushes when it
+   * changed; an offline board has none, and is asked again when its bridge connects.
+   */
+  private pollStatus(boardId: string): void {
+    const f = this.boards.get(boardId)
+    if (!f) return
+    clearTimeout(f.statusTimer)
+    f.statusTimer = undefined
+    if (!this.deps.isOnline(boardId)) {
+      this.setStatus(boardId, f, undefined)
+      return
+    }
+    const again = () => {
+      if (this.boards.get(boardId) === f && this.deps.isOnline(boardId))
+        f.statusTimer = this.deps.setTimer(() => this.pollStatus(boardId), STATUS_POLL_MS)
+    }
+    this.deps.boardStatus(boardId).then(
+      status => {
+        if (this.boards.get(boardId) !== f) return
+        this.setStatus(boardId, f, status ?? undefined)
+        again()
+      },
+      (err: unknown) => {
+        this.deps.warn(err)
+        again()
+      },
+    )
+  }
+
+  private setStatus(boardId: string, f: Followers, status: string | undefined): void {
+    if (f.status === status) return
+    f.status = status
+    void this.push(boardId)
   }
 
   private async push(boardId: string, only?: Send[]): Promise<void> {
@@ -130,7 +180,12 @@ export class BigScreenService {
       f.timer = until === undefined ? undefined : this.deps.setTimer(() => void this.push(boardId), Math.max(0, until - now))
       const msg: BigScreenMessage = {
         type: 'big_screen',
-        board: { id: boardId, name: board.name, online: this.deps.isOnline(boardId) },
+        board: {
+          id: boardId,
+          name: board.name,
+          online: this.deps.isOnline(boardId),
+          ...(f.status === undefined ? {} : { status: f.status }),
+        },
         prefs: board.prefs,
         screen,
       }

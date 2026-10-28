@@ -70,6 +70,9 @@ Follows one board. "The board's game" is the active game that has a seat on that
   keeps the socket, the audio and the previous snapshot and posts what the frame draws (`lib/bigscreen/frame.ts`).
   A big-screen header (`BigHeader`, with LIVE) sits above every live game but minigolf, which is the play-mode
   screen as it is.
+- **Board status:** the header shows the board's Board Manager status (the dot and label of the board menu) beside
+  the LIVE or MATCH OVER badge. The kiosk has no session, so the board socket pushes it: the service asks the bridge
+  every 3 s while someone follows an online board and pushes only a change (`board.status` in `board-ws-v1.json`).
 - **Fallback:** a game the frame has no component for shows a centred title card, so the page never goes blank.
 - **Result screen:** the match screen's win screen without buttons (`WinScreen`; 121 shows its session summary), scaled
   down when it would need scrolling, and a **"Board screen in 0:42" countdown** that is the 1-minute hold. A game

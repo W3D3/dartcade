@@ -40,6 +40,7 @@ async function serve(): Promise<number> {
     getSnapshot: id => ({ id }) as never,
     loadBoard: id => Promise.resolve(boards[id] ? { name: `Board ${id}`, prefs: {} } : undefined),
     isOnline: () => true,
+    boardStatus: () => Promise.resolve(null),
     now: Date.now,
     setTimer: setTimeout,
     warn: () => undefined,
