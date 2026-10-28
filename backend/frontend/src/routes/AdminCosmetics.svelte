@@ -1,8 +1,8 @@
 <!-- Admin Cosmetics page (`#/admin/cosmetics`): every cosmetic in the shared catalogue, grouped by
      kind, with its preview, id, what unlocks it and where it comes from. Read-only; no API. -->
 <script lang="ts">
+  import { SearchInput } from '$lib/components/ui/input/index.js'
   import { push } from 'svelte-spa-router'
-  import { Search } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
@@ -27,16 +27,7 @@
     <PageMain>
       <PageTitle trail={cosmeticsTrail()} title="Cosmetics" sub="Every reward in the game, and how it unlocks" />
 
-      <label class="flex h-11 w-full max-w-[380px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
-        <Search size={16} />
-        <input
-          type="search"
-          bind:value={q}
-          placeholder="Search by name, id or unlock"
-          aria-label="Search by name, id or unlock"
-          class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
-        />
-      </label>
+      <SearchInput bind:value={q} label="Search by name, id or unlock" class="w-full max-w-[380px]" />
 
       {#each groups.filter(g => g.perks.length > 0) as g (g.kind)}
         <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="cos-{g.kind}">

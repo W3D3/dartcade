@@ -1,9 +1,10 @@
 <!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP, ban and unban them. -->
 <script lang="ts">
+  import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { DropdownMenu } from 'bits-ui'
-  import { Search, Check, Ellipsis } from '@lucide/svelte'
+  import { Check, Ellipsis } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type SortingState, type ColumnVisibilityState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -320,17 +321,7 @@
       <PageTitle trail={usersTrail()} title="Users" sub="Search accounts, set their role, ban them" />
 
       <div class="flex flex-wrap items-center gap-3">
-        <label class="flex h-11 w-full max-w-[380px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
-          <Search size={16} />
-          <input
-            type="search"
-            value={q}
-            oninput={e => onSearchInput(e.currentTarget.value)}
-            placeholder="Search by name or email"
-            aria-label="Search by name or email"
-            class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
-          />
-        </label>
+        <SearchInput value={q} oninput={onSearchInput} label="Search by name or email" class="w-full max-w-[380px]" />
         <ColumnToggle columns={COLUMN_TOGGLES} bind:visibility={columnVisibility} />
       </div>
 
