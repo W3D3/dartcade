@@ -1,9 +1,8 @@
 // The 121 session summary (P121-Summary): one seat's saved detail shaped for the screen, the
-// best-run line, and the standings when only the snapshot is there (a spectator).
+// best-run line, and the standings from the final snapshot (what a spectator sees too).
 import type { P121Detail } from '../api'
-import type { P121Game } from '../api/game-ws'
+import type { P121Game, SeatPlace } from '../api/game-ws'
 import { plural } from '../fmt.js'
-import { rank } from '../winScreen.js'
 
 export type P121SummaryData = {
   reached: number
@@ -56,28 +55,9 @@ export function bestRunLine(d: P121SummaryData, missRule: 'reset' | 'down' | 'st
   return `Best run: ${plural(r.length, 'checkout')} in a row, ${r.from} → ${r.to} · ${miss}`
 }
 
-/** Standings, best first. The saved game's placements once it loads (they know who forfeited);
- *  until then ranked from the snapshot like the server: the winner, then highest made, more
- *  checkouts, fewer darts, and seats that gave up share last place. */
-export function snapshotStandings(
-  game: P121Game,
-  players: { name: string }[],
-  forfeited: boolean[],
-  saved: { seat: number; placement: number }[] | null = null,
-): P121Standing[] {
-  const key = game.seats.map(s => {
-    const made = s.tries.filter(t => t.made)
-    return { high: s.highestMade ?? 0, made: made.length, darts: made.reduce((n, t) => n + t.darts, 0) }
-  })
-  const out = (i: number) => (forfeited[i] ? 1 : 0)
-  const ranked = rank(
-    game.seats.length,
-    game.winner,
-    (a, b) => out(a) - out(b) || key[b].high - key[a].high || key[b].made - key[a].made || key[a].darts - key[b].darts,
-  )
-  const live = game.seats.length - forfeited.filter(Boolean).length
-  const placeOf = (i: number) => saved?.find(p => p.seat === i)?.placement ?? (forfeited[i] ? live + 1 : ranked[i])
+/** Standings, best first, by the server's places (the final snapshot's `results`). */
+export function snapshotStandings(game: P121Game, players: { name: string }[], results: SeatPlace[] | null): P121Standing[] {
   return game.seats
-    .map((s, i) => ({ name: players[i]?.name ?? '', placement: placeOf(i), highestMade: s.highestMade }))
+    .map((s, i) => ({ name: players[i]?.name ?? '', placement: results?.[i]?.placement ?? i + 1, highestMade: s.highestMade }))
     .sort((a, b) => a.placement - b.placement)
 }

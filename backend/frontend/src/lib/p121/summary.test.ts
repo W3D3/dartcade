@@ -132,46 +132,20 @@ describe('snapshotStandings', () => {
   }
   const game = (seats: Seat[], winner: number) => ({ seats, winner }) as unknown as P121Game
 
-  it('puts the winner first, then highest made, more checkouts, fewer darts', () => {
-    const g = game(
-      [seat([made(121, 9, 'D20')]), seat([made(121, 6, 'D8'), made(122, 6, 'D8')]), seat([made(121, 5, 'D8')]), seat([miss(121)])],
-      1,
-    )
-    const names = [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }]
-    expect(snapshotStandings(g, names, [false, false, false, false])).toEqual([
-      { name: 'B', placement: 1, highestMade: 122 },
-      { name: 'C', placement: 2, highestMade: 121 },
-      { name: 'A', placement: 3, highestMade: 121 },
-      { name: 'D', placement: 4, highestMade: null },
-    ])
-  })
-
-  // A forfeit ends the game with no winner; the seat that gave up comes last, even ahead on targets
-  const forfeit = game(
-    [seat([made(121, 4, 'D8'), made(122, 4, 'D8')]), seat([made(121, 9, 'D20')]), seat([miss(121)])],
-    null as unknown as number,
-  )
   const three = [{ name: 'A' }, { name: 'B' }, { name: 'C' }]
+  const g = game([seat([made(121, 4, 'D8'), made(122, 4, 'D8')]), seat([made(121, 9, 'D20')]), seat([miss(121)])], 1)
 
-  it('puts a seat that gave up last, sharing last place', () => {
-    expect(snapshotStandings(forfeit, three, [true, false, false])).toEqual([
-      { name: 'B', placement: 1, highestMade: 121 },
-      { name: 'C', placement: 2, highestMade: null },
-      { name: 'A', placement: 3, highestMade: 122 },
-    ])
-    expect(snapshotStandings(forfeit, three, [true, false, true]).map(s => [s.name, s.placement])).toEqual([
-      ['B', 1],
-      ['A', 2],
-      ['C', 2],
-    ])
-  })
-
-  it("takes the saved game's placements once they load", () => {
-    const saved = [
-      { seat: 0, placement: 3 },
-      { seat: 1, placement: 2 },
-      { seat: 2, placement: 1 },
+  // The ranking itself is the server's (p121.ts summarize, forfeits via results()); this only orders by it
+  it("orders by the server's places, ties in seat order", () => {
+    const results = [
+      { placement: 2, forfeited: true },
+      { placement: 1, forfeited: false },
+      { placement: 2, forfeited: true },
     ]
-    expect(snapshotStandings(forfeit, three, [false, false, false], saved).map(s => s.name)).toEqual(['C', 'B', 'A'])
+    expect(snapshotStandings(g, three, results)).toEqual([
+      { name: 'B', placement: 1, highestMade: 121 },
+      { name: 'A', placement: 2, highestMade: 122 },
+      { name: 'C', placement: 2, highestMade: null },
+    ])
   })
 })

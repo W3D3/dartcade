@@ -68,6 +68,7 @@
   },
   "bmStatus": null,
   "status": "active",
+  "results": null,
   "finishPending": false,
   "canUndoVisit": false,
   "scoreBased": true,

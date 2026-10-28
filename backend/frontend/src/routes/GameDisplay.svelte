@@ -999,12 +999,7 @@
           seat={snapshot.mySeats[0] ?? 0}
           missRule={p121.cfg.missRule}
           startTarget={p121.cfg.startTarget}
-          standings={snapshotStandings(
-            p121,
-            players,
-            snapshot.seats.map(s => s.forfeited),
-            saved?.game.players ?? null,
-          )}
+          standings={snapshotStandings(p121, players, snapshot.results)}
           loading={snapshot.mySeats.length > 0 && !savedFailed}
           primary={{
             label: winButtons.primary === 'rematch' ? 'Play again' : WIN_LABELS[winButtons.primary],
