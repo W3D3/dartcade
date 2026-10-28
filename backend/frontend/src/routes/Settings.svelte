@@ -6,6 +6,8 @@
   import { onMount, untrack, type Component } from 'svelte'
   import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
   import FeedbackCard from '$lib/components/settings/FeedbackCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
@@ -73,12 +75,9 @@
 </script>
 
 <Layout {title}>
-  <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
+  <PageMain>
     <header class="hidden md:flex flex-col gap-[18px]">
-      <div class="flex flex-col gap-[6px]">
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Settings</h1>
-        <p class="m-0 text-[15px] text-text-muted">Account settings follow you to every board and device.</p>
-      </div>
+      <PageTitle as="div" title="Settings" sub="Account settings follow you to every board and device." />
       <nav aria-label="Settings sections" class="flex gap-1 border-b border-line overflow-x-auto [scrollbar-width:none]">
         {#each visible as s (s.id)}
           {@const Icon = ICONS[s.id]}
@@ -165,5 +164,5 @@
           >{/if}
       </p>
     {/if}
-  </main>
+  </PageMain>
 </Layout>
