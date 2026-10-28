@@ -15,6 +15,8 @@
   import Playtest from '$lib/components/minigolf/Playtest.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { Toggle } from '$lib/components/ui/toggle/index.js'
+  import { Select } from '$lib/components/ui/select/index.js'
+  import { Slider } from '$lib/components/ui/slider/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { minigolfBenchTrail } from '$lib/admin/breadcrumbs'
   import {
@@ -97,6 +99,14 @@
   let felt = $state<'stripes' | 'checker'>('checker')
   let shading = $state<'toon' | 'smooth'>('toon')
   let relief = $state(1)
+  const FELTS = [
+    { value: 'checker' as const, label: 'Checker' },
+    { value: 'stripes' as const, label: 'Stripes' },
+  ]
+  const SHADINGS = [
+    { value: 'toon' as const, label: 'Toon' },
+    { value: 'smooth' as const, label: 'Smooth' },
+  ]
   let placing = $state(false)
   let debug = $state(false)
   let forces = $state(false)
@@ -184,7 +194,8 @@
     void shoot(hit.coords)
   }
 
-  const SELECT = 'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-2 text-text text-[15px] font-[inherit]'
+  // The bench's row is h-9 buttons: its selects match
+  const SELECT = 'h-9 min-w-0 border-line-2 bg-surface-2 px-2 text-[15px]'
 </script>
 
 <Layout title="Minigolf bench">
@@ -198,25 +209,33 @@
           <h1 class="m-0 mr-2 hidden font-display font-bold text-[36px] leading-none uppercase tracking-[0.02em] md:block">
             Minigolf bench
           </h1>
-          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-            <span class="sr-only md:not-sr-only">Course</span>
-            <select
+          <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="hidden md:inline" aria-hidden="true">Course</span>
+            <Select
+              label="Course"
               class={SELECT}
-              bind:value={courseId}
-              onchange={() => {
+              value={courseId}
+              options={courses.map(c => ({ value: c.id, label: c.name }))}
+              onchange={(v: string) => {
+                courseId = v
                 holeIdx = 0
                 pickHole()
               }}
-            >
-              {#each courses as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
-            </select>
-          </label>
-          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-            <span class="sr-only md:not-sr-only">Hole</span>
-            <select class="{SELECT} min-w-0 max-w-[46vw] md:max-w-none" bind:value={holeIdx} onchange={pickHole}>
-              {#each course.holes as h, i (h.id)}<option value={i}>{i + 1}. {h.name} · par {h.par}</option>{/each}
-            </select>
-          </label>
+            />
+          </div>
+          <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="hidden md:inline" aria-hidden="true">Hole</span>
+            <Select
+              label="Hole"
+              class="{SELECT} max-w-[46vw] md:max-w-none"
+              value={String(holeIdx)}
+              options={course.holes.map((h, i) => ({ value: String(i), label: `${i + 1}. ${h.name} · par ${h.par}` }))}
+              onchange={(v: string) => {
+                holeIdx = Number(v)
+                pickHole()
+              }}
+            />
+          </div>
           {#if !playtest}
             <span class="ml-auto font-display font-bold text-[24px] uppercase md:text-[28px]" data-testid="strokes" aria-live="polite">
               {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
@@ -233,32 +252,44 @@
           <Toggle bind:pressed={placing} disabled={bench.rolling}>Place ball</Toggle>
           <Toggle bind:pressed={debug}>Debug</Toggle>
           <Toggle bind:pressed={forces}>Forces</Toggle>
-          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-            <span class="sr-only md:not-sr-only">View</span>
-            <select class={SELECT} bind:value={view3d}>
-              <option value={true}>3D</option>
-              <option value={false}>2D</option>
-            </select>
-          </label>
+          <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="hidden md:inline" aria-hidden="true">View</span>
+            <Select
+              label="View"
+              class={SELECT}
+              value={view3d ? '3d' : '2d'}
+              options={[
+                { value: '3d', label: '3D' },
+                { value: '2d', label: '2D' },
+              ]}
+              onchange={(v: string) => (view3d = v === '3d')}
+            />
+          </div>
           {#if view3d}
-            <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-              <span class="sr-only md:not-sr-only">Felt</span>
-              <select class={SELECT} bind:value={felt}>
-                <option value="checker">Checker</option>
-                <option value="stripes">Stripes</option>
-              </select>
-            </label>
-            <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-              <span class="sr-only md:not-sr-only">Shading</span>
-              <select class={SELECT} bind:value={shading}>
-                <option value="toon">Toon</option>
-                <option value="smooth">Smooth</option>
-              </select>
-            </label>
-            <label class="flex items-center gap-2 text-[15px] text-text-muted">
-              Relief ×{relief}
-              <input type="range" min="1" max="5" step="0.5" bind:value={relief} class="w-24" />
-            </label>
+            <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+              <span class="hidden md:inline" aria-hidden="true">Felt</span>
+              <Select
+                label="Felt"
+                class={SELECT}
+                value={felt}
+                options={FELTS}
+                onchange={(v: string) => (felt = FELTS.find(f => f.value === v)?.value ?? felt)}
+              />
+            </div>
+            <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+              <span class="hidden md:inline" aria-hidden="true">Shading</span>
+              <Select
+                label="Shading"
+                class={SELECT}
+                value={shading}
+                options={SHADINGS}
+                onchange={(v: string) => (shading = SHADINGS.find(s => s.value === v)?.value ?? shading)}
+              />
+            </div>
+            <div class="flex items-center gap-2 text-[15px] text-text-muted">
+              <span aria-hidden="true">Relief ×{relief}</span>
+              <Slider bind:value={relief} min={1} max={5} step={0.5} label="Relief" class="w-24" />
+            </div>
             <Toggle bind:pressed={freeCamera}>Free camera</Toggle>
           {/if}
           <Toggle bind:pressed={assist}>Aim assist</Toggle>
