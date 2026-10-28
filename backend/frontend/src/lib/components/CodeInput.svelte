@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { normalizePairingCode, extractPairingCode, CODE_LENGTH } from '$lib/pairing'
+  // A bridge pairing code: its charset upper-cased as it's typed, and a code pulled out of a pasted log line.
+  import { PinInput } from '$lib/components/ui/pin-input/index.js'
+  import { normalizePairingCode, extractPairingCode, CODE_CHARSET, CODE_LENGTH } from '$lib/pairing'
 
   let {
     value = $bindable(''),
@@ -20,67 +22,30 @@
     label?: string
   } = $props()
 
-  let focused = $state(false)
-  let inputEl: HTMLInputElement | undefined
-
-  const activeIndex = $derived(Math.min(value.length, length - 1))
-
-  function onInput(e: Event & { currentTarget: HTMLInputElement }) {
-    value = normalizePairingCode(e.currentTarget.value)
-    oninput?.(value)
-  }
-
-  function onPaste(e: ClipboardEvent) {
-    const text = e.clipboardData?.getData('text') ?? ''
-    const extracted = extractPairingCode(text)
-    if (extracted) {
-      e.preventDefault()
-      value = extracted
-      oninput?.(value)
-    }
-  }
+  // Lower case is typed too, and upper-cased on the way in
+  const pattern = `^[${CODE_CHARSET}${CODE_CHARSET.toLowerCase()}]*$`
+  let inputRef = $state<HTMLInputElement | null>(null)
 
   export function focus() {
-    inputEl?.focus()
+    inputRef?.focus()
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="relative flex items-center gap-2" onclick={() => inputEl?.focus()}>
-  {#each Array(length) as _, i (i)}
-    {#if groupAt > 0 && i === groupAt}
-      <span class="text-text-dim font-mono px-0.5">–</span>
-    {/if}
-    <div
-      class="flex-1 aspect-[3/4] max-w-[46px] flex items-center justify-center rounded-[10px]
-             font-mono text-[24px] font-semibold border transition-colors
-             {invalid
-        ? 'border-live bg-live/5 text-text'
-        : i === activeIndex && focused
-          ? 'border-accent bg-surface-2 text-text'
-          : 'border-line-2 bg-surface-2 text-text'}"
-    >
-      {value[i] ?? ''}
-      {#if i === activeIndex && focused && !value[i]}
-        <span class="w-[2px] h-[26px] bg-accent animate-pulse"></span>
-      {/if}
-    </div>
-  {/each}
-  <input
-    bind:this={inputEl}
-    {value}
-    oninput={onInput}
-    onpaste={onPaste}
-    onfocus={() => {
-      focused = true
-      onfocus?.()
-    }}
-    onblur={() => (focused = false)}
-    inputmode="text"
-    autocapitalize="characters"
-    autocomplete="off"
-    spellcheck="false"
-    aria-label={label}
-    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-  />
-</div>
+<PinInput
+  bind:inputRef
+  {value}
+  onValueChange={(v: string) => {
+    value = normalizePairingCode(v)
+    oninput?.(value)
+  }}
+  maxlength={length}
+  {groupAt}
+  {invalid}
+  {pattern}
+  pasteTransformer={extractPairingCode}
+  onfocus={() => onfocus?.()}
+  inputmode="text"
+  autocapitalize="characters"
+  spellcheck="false"
+  aria-label={label}
+/>
