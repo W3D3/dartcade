@@ -7,7 +7,8 @@ import { defaultSettings } from '../gameSettings'
 const drawer = (gameId: string, scoreBased = false) =>
   render(SettingsDrawer, { props: { settings: { ...defaultSettings }, gameId, scoreBased, onclose: () => {} } }).body
 const switches = (html: string) => [...html.matchAll(/id="setting-(\w+)"/g)].map(m => m[1])
-const sounds = (html: string) => [...html.matchAll(/<input type="checkbox"[^>]*>\s*(?:<!---->)?\s*([^<]+?)\s*</g)].map(m => m[1])
+const sounds = (html: string) =>
+  [...html.matchAll(/role="checkbox"[^>]*>[\s\S]*?<\/button>(?:\s|<!--[^>]*-->)*([^<]+?)\s*</g)].map(m => m[1])
 
 describe('settings drawer rows follow the game', () => {
   it('Around the Clock: only other players’ targets, no bust', () => {

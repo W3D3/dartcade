@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -102,7 +103,7 @@
           <PasswordStrength {password} />
         </div>
         <label class="flex items-start gap-[10px] text-[15px] leading-[1.45] text-ink-2 min-h-[44px] cursor-pointer">
-          <input type="checkbox" bind:checked={acceptTerms} class="mt-[2px] w-[18px] h-[18px] m-0 accent-accent flex-shrink-0" />
+          <Checkbox bind:checked={acceptTerms} class="mt-[2px]" />
           <span
             >I agree to the <a href="#/terms">Terms</a> and
             <a href="#/privacy">Privacy Policy</a>.</span

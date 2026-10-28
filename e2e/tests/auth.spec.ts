@@ -14,7 +14,7 @@ test('register with new email redirects to app', async ({ page }) => {
   await page.fill('#reg-name', u.name)
   await page.fill('#reg-email', u.email)
   await page.fill('#reg-password', u.password)
-  await page.click('input[type="checkbox"]') // accept terms
+  await page.getByRole('checkbox').click() // accept terms
   await page.click('button[type="submit"]')
   // Successful registration redirects to CreateSession (#/)
   await page.waitForURL('**/#/')

@@ -5,6 +5,7 @@
   import { currentUser } from '$lib/auth'
   import Chip from '$lib/components/ui/chip/chip.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
   import { buildReport, canSend, closeFeedback, feedbackDialog, MESSAGE_MAX, pageContext, type FeedbackForm } from '$lib/feedback/report'
 
@@ -80,7 +81,7 @@
 
         {#if dialog.screenshot}
           <label class="flex items-center gap-3 cursor-pointer text-[14px]">
-            <input type="checkbox" bind:checked={form.includeScreenshot} class="w-5 h-5 accent-accent" />
+            <Checkbox bind:checked={form.includeScreenshot} class="size-5" />
             Include a screenshot of this page
           </label>
           {#if form.includeScreenshot}
