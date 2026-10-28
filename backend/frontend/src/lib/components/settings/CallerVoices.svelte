@@ -3,6 +3,7 @@
   // the user's packs (sample, delete), the built-in voices, and importing a pack from a zip
   // (drop or choose, with upload progress). The server keeps the packs and
   // decides what an import keeps; this shows what it says.
+  import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
   import { LoaderCircle, Play, Trash, Upload, Volume2 } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -33,7 +34,7 @@
   } = $props()
 
   const autodartsOn = flag('caller.autodartsImport')
-  let copyState = $state<'idle' | 'copied' | 'failed'>('idle')
+  const clip = createCopy(0)
 
   const lib = $derived($voiceLibrary)
   const storage = $derived(storageUse(lib.usage))
@@ -302,19 +303,12 @@
             <div class="flex flex-col gap-2">
               <pre
                 class="m-0 max-h-40 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
-              <Button
-                type="button"
-                variant="key"
-                class="self-start h-10 px-4 rounded-[9px]"
-                onclick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(consoleSnippet)
-                    copyState = 'copied'
-                  } catch {
-                    copyState = 'failed'
-                  }
-                }}
-                >{copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed — select the code above' : 'Copy code'}</Button
+              <Button type="button" variant="key" class="self-start h-10 px-4 rounded-[9px]" onclick={() => void clip.copy(consoleSnippet)}
+                >{clip.state === 'copied'
+                  ? 'Copied'
+                  : clip.state === 'failed'
+                    ? 'Copy failed — select the code above'
+                    : 'Copy code'}</Button
               >
             </div>
           </details>

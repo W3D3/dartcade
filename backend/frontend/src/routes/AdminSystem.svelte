@@ -1,6 +1,7 @@
 <!-- Admin System page (`#/admin/system`): build, runtime, database, live counts and config of this server,
      refreshed every 10 s while visible, with a Copy debug info button for bug reports. -->
 <script lang="ts">
+  import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy, onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { Copy, RefreshCw } from '@lucide/svelte'
@@ -22,7 +23,7 @@
 
   let system = $state<AdminSystem | null>(null)
   let loadError = $state('')
-  let copyState = $state<'idle' | 'copied' | 'failed'>('idle')
+  const clip = createCopy(0)
 
   async function refresh(): Promise<void> {
     const s = await loadSystem()
@@ -58,12 +59,7 @@
 
   async function copyDebugInfo(): Promise<void> {
     if (!system) return
-    try {
-      await navigator.clipboard.writeText(debugMarkdown(system, { userAgent: navigator.userAgent, spa: SPA_BUILD }))
-      copyState = 'copied'
-    } catch {
-      copyState = 'failed'
-    }
+    await clip.copy(debugMarkdown(system, { userAgent: navigator.userAgent, spa: SPA_BUILD }))
   }
 
   const stale = $derived(isStale(SPA_BUILD, $serverVersion))
@@ -86,9 +82,9 @@
             <RefreshCw size={16} />
           </Button>
           <Button variant="outline" size="md" class="font-semibold" disabled={!system} onclick={() => void copyDebugInfo()}>
-            <Copy size={16} />{copyState === 'copied'
+            <Copy size={16} />{clip.state === 'copied'
               ? 'Copied'
-              : copyState === 'failed'
+              : clip.state === 'failed'
                 ? 'Copy failed — select the text below'
                 : 'Copy debug info'}
           </Button>
@@ -96,7 +92,7 @@
       </header>
 
       {#if loadError}<ErrorText>{loadError}</ErrorText>{/if}
-      {#if copyState === 'failed' && system}
+      {#if clip.state === 'failed' && system}
         <pre
           class="m-0 max-h-60 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{debugMarkdown(
             system,
