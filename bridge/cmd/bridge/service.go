@@ -170,13 +170,18 @@ func runServiceCommand(action string, argv []string) error {
 		if err := secureDir(*stateDir); err != nil {
 			return fmt.Errorf("prepare %s: %w", *stateDir, err)
 		}
+		cfgPath := filepath.Join(*stateDir, "bridge.toml")
 		for key, val := range map[string]string{"install_token": *installToken, "token": *token} {
 			if val == "" {
 				continue
 			}
-			if err := setConfigKey(filepath.Join(*stateDir, "bridge.toml"), key, val); err != nil {
+			if err := setConfigKey(cfgPath, key, val); err != nil {
 				return fmt.Errorf("save %s: %w", key, err)
 			}
+		}
+		// A reinstall finds the state dir owned by the service's dynamic user
+		if err := chownLike(cfgPath, *stateDir); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("give %s to the service: %w", cfgPath, err)
 		}
 		// Installing again replaces the service, so new settings take effect
 		_ = service.Control(svc, "stop")
