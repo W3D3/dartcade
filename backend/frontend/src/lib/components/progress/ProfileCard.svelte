@@ -1,10 +1,9 @@
 <script lang="ts">
   // The profile card (Profile-Popup, Player-Profile boards): the player's banner, their picture in
   // the avatar with the online-status ring (never a cosmetic), their name in the card colour's
-  // accent, title, level, rank and (for friends) day streak, three numbers, and the actions. The
-  // popup shows it, and your profile and the Progress page show yours as a live preview (`look`
+  // accent, title, level, rank and (for friends) day streak, and three numbers. A
+  // player's name previews it on hover, and your profile and the Progress page show yours as a live preview (`look`
   // and `avatar` override the stored ones).
-  import type { Snippet } from 'svelte'
   import { Flame } from '@lucide/svelte'
   import StatusRing from '../friends/StatusRing.svelte'
   import Avatar from '../Avatar.svelte'
@@ -22,13 +21,11 @@
     look = profile.look,
     avatar = profile.avatar,
     status = null,
-    actions,
   }: {
     profile: PlayerProfile
     look?: Equipped
     avatar?: PlayerProfile['avatar']
     status?: DotKind | null
-    actions?: Snippet
   } = $props()
 
   const colors = $derived(cardColors(look.colors))
@@ -88,6 +85,5 @@
         <dd class="m-0 font-display font-bold text-[26px] leading-none">{profile.relation === 'self' ? profile.matches : (h2h ?? '—')}</dd>
       </div>
     </dl>
-    {#if actions}<div class="mt-[18px] flex gap-[10px]">{@render actions()}</div>{/if}
   </div>
 </div>
