@@ -3,6 +3,7 @@
   // the Find a match panel (Searching while your search runs: MM-Searching, MM-Duo), and your last
   // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
+  import { fmtAvg } from '$lib/playerStats'
   import { onDestroy, onMount } from 'svelte'
   import { Clock, Crosshair, Hourglass, Search, User, Users, X } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -121,7 +122,7 @@
         <StatCard
           label="Online average"
           shortLabel="Online avg"
-          value={profile.onlineAverage === null ? '–' : profile.onlineAverage.toFixed(1)}
+          value={fmtAvg(profile.onlineAverage)}
           aria="Online average: {profile.onlineAverage ?? 'none yet'}"
         >
           <span class="text-[11px] text-text-muted md:text-[13px] md:whitespace-nowrap"
