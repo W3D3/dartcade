@@ -10,8 +10,7 @@
   import type { Segment } from '$lib/api'
   import type { HiloGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
-  import DartBoard from '$lib/components/DartBoard.svelte'
-  import DartKeypad from '$lib/components/DartKeypad.svelte'
+  import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
   import HiloPanel from '$lib/components/hilo/HiloPanel.svelte'
   import HiloPhoneCard from '$lib/components/hilo/HiloPhoneCard.svelte'
@@ -83,41 +82,25 @@
     darts.length === 0 ? null : game.visitLocked ? 'Missed · −1 life' : toGo > 0 ? `${ZONE_PILL[zone]} · ${toGo} to go` : ZONE_PILL[zone],
   )
   const red = $derived(game.visitLocked || zone === 'danger')
-  // With a thrown dart selected, a key replaces it (as on GameDisplay's phone keypad)
-  function keyDart(segment: Segment): void {
-    if (openDart === null) {
-      onDart(segment)
-      return
-    }
-    onCorrect(openDart, segment.name)
-    openDart = null
-  }
 </script>
 
 {#snippet board()}
-  {#if keypad}
-    <div class="flex-1 min-h-0 min-w-0">
-      <DartKeypad
-        onDart={keyDart}
-        replacing={openDart}
-        dartCount={darts.length}
-        {locked}
-        disabled={!canThrow}
-        {canUndo}
-        {onUndo}
-        nextLabel={next.label}
-        nextEnabled={next.enabled}
-        nextProminent={next.prominent}
-        {onNext}
-      />
-    </div>
-  {:else}
-    <div class="flex-1 min-h-[160px] min-w-0 w-full [container-type:size] flex items-center justify-center">
-      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
-        <DartBoard {darts} onBoardClick={canThrow && !locked ? onBoardClick : undefined} selectedDart={openDart} />
-      </div>
-    </div>
-  {/if}
+  <BoardOrKeypad
+    {keypad}
+    {darts}
+    {canThrow}
+    {locked}
+    {canUndo}
+    {next}
+    {onUndo}
+    {onNext}
+    {onBoardClick}
+    {onDart}
+    {onCorrect}
+    bind:openDart
+    class="min-h-[160px] min-w-0"
+    keypadClass="min-h-0 min-w-0"
+  />
 {/snippet}
 
 {#snippet band()}

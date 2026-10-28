@@ -7,7 +7,7 @@
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
   import { afterGameRoute, endControl, leaveRefused, winActions, type WinAction } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
-  import DartBoard from '../lib/components/DartBoard.svelte'
+  import BoardOrKeypad from '../lib/components/match/BoardOrKeypad.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
@@ -54,7 +54,6 @@
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
-  import DartKeypad from '../lib/components/DartKeypad.svelte'
   import type { NoticeMessage } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
   import {
@@ -493,15 +492,6 @@
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
     send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
-  // Phone keypad: with a thrown dart selected, the key replaces it; otherwise it adds a dart
-  function keypadDart(segment: Segment) {
-    if (correcting === null) {
-      addManualDart(segment)
-      return
-    }
-    send({ type: 'correct_dart', visitIndex: correcting, segment })
-    correcting = null
-  }
   const correct = (dartIndex: number, label: string) =>
     canThrow && send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
   // Any dart of the open visit can be dragged on the board to correct it
@@ -607,26 +597,38 @@
   {/if}
 {/snippet}
 
-{#snippet board(minHeight: string, maxWidth: string)}
-  <!-- The board takes the height the column has left (capped by its width) -->
-  <div class="flex-1 {minHeight} w-full [container-type:size] flex items-center justify-center">
-    <div class="relative aspect-square {maxWidth}" style="width: min(100cqw, 100cqh)">
-      <DartBoard
-        {darts}
-        dim={!isX01}
-        target={boardTarget}
-        nextTarget={boardNext}
-        playerMarkers={markers}
-        checkoutTargets={isActive ? checkoutTargets : []}
-        onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-        selectedDart={correcting}
-        onDartMove={canThrow ? moveDart : undefined}
-        {cameraSrc}
-      />
-      <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
-    </div>
-  </div>
+{#snippet board(minHeight: string, maxWidth: string, keypadClass = 'min-h-0', onKey = false)}
+  <BoardOrKeypad
+    keypad={onKey}
+    {darts}
+    {canThrow}
+    {locked}
+    {canUndo}
+    {next}
+    onUndo={undo}
+    onNext={advance}
+    onBoardClick={addBoardDart}
+    onDart={canThrow ? addManualDart : () => {}}
+    onCorrect={correct}
+    bind:openDart={correcting}
+    board={{
+      dim: !isX01,
+      target: boardTarget,
+      nextTarget: boardNext,
+      playerMarkers: markers,
+      checkoutTargets: isActive ? checkoutTargets : [],
+      onDartMove: canThrow ? moveDart : undefined,
+      cameraSrc,
+    }}
+    class={minHeight}
+    square={maxWidth}
+    {keypadClass}
+  >
+    {#snippet over()}<BoardViewToggle bind:settings {snapshot} {cameraVersions} />{/snippet}
+  </BoardOrKeypad>
 {/snippet}
+
+{#snippet keypadView(keypadClass: string)}{@render board('', '', keypadClass, true)}{/snippet}
 
 {#snippet portraitCenter()}
   <!-- Portrait (Match-Vertical): this visit and the slots in one strip, the controls, then the board fills the rest -->
@@ -636,20 +638,7 @@
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
   </div>
   {#if keypad}
-    <div class="flex-1 min-h-0">
-      <DartKeypad
-        onDart={canThrow ? addManualDart : () => {}}
-        dartCount={darts.length}
-        {locked}
-        disabled={!canThrow}
-        {canUndo}
-        onUndo={undo}
-        nextLabel={next.label}
-        nextEnabled={next.enabled}
-        nextProminent={next.prominent}
-        onNext={advance}
-      />
-    </div>
+    {@render keypadView('min-h-0')}
   {:else}
     {#if turn}
       <TurnStatusBar status={turn} />
@@ -682,21 +671,7 @@
     {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
   </div>
   {#if keypad}
-    <div class="flex-1 min-h-[220px]">
-      <DartKeypad
-        onDart={canThrow ? keypadDart : () => {}}
-        dartCount={darts.length}
-        {locked}
-        replacing={correcting}
-        disabled={!canThrow}
-        {canUndo}
-        onUndo={undo}
-        nextLabel={next.label}
-        nextEnabled={next.enabled}
-        nextProminent={next.prominent}
-        onNext={advance}
-      />
-    </div>
+    {@render keypadView('min-h-[220px]')}
   {:else if turn}
     <TurnStatusBar status={turn} compact />
   {:else}
@@ -707,20 +682,7 @@
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
   {#if keypad}
-    <div class="flex-1 min-h-0">
-      <DartKeypad
-        onDart={canThrow ? addManualDart : () => {}}
-        dartCount={darts.length}
-        {locked}
-        disabled={!canThrow}
-        {canUndo}
-        onUndo={undo}
-        nextLabel={next.label}
-        nextEnabled={next.enabled}
-        nextProminent={next.prominent}
-        onNext={advance}
-      />
-    </div>
+    {@render keypadView('min-h-0')}
   {:else if remote.kind === 'waiting' && variant === 'party'}
     <!-- Rows have no room for an overlay: the waiting card takes the board's place -->
     <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>

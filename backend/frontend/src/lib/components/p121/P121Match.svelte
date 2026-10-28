@@ -9,8 +9,7 @@
   import type { P121Game } from '$lib/api/game-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import ControlBar from '$lib/components/ControlBar.svelte'
-  import DartBoard from '$lib/components/DartBoard.svelte'
-  import DartKeypad from '$lib/components/DartKeypad.svelte'
+  import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import P121Ladder from '$lib/components/p121/P121Ladder.svelte'
@@ -91,46 +90,25 @@
   const nextLabel = $derived(
     !solo ? next.label : made ? (lastTry ? 'Finish' : `Next: ${cur.target + 1}`) : next.label === 'Next player' ? 'Next visit' : next.label,
   )
-  // With a thrown dart selected, a key replaces it (as on GameDisplay's phone keypad)
-  function keyDart(segment: Segment): void {
-    if (openDart === null) {
-      onDart(segment)
-      return
-    }
-    onCorrect(openDart, segment.name)
-    openDart = null
-  }
 </script>
 
 {#snippet board()}
-  {#if keypad}
-    <div class="flex-1 min-h-[220px]">
-      <DartKeypad
-        onDart={keyDart}
-        replacing={openDart}
-        dartCount={darts.length}
-        {locked}
-        disabled={!canThrow}
-        {canUndo}
-        {onUndo}
-        {nextLabel}
-        nextEnabled={next.enabled}
-        nextProminent={next.prominent}
-        {onNext}
-      />
-    </div>
-  {:else}
-    <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
-      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
-        <DartBoard
-          {darts}
-          checkoutTargets={playing ? boardCheckoutTargets(slots, true) : []}
-          onBoardClick={canThrow && !locked ? onBoardClick : undefined}
-          selectedDart={openDart}
-        />
-      </div>
-    </div>
-  {/if}
+  <BoardOrKeypad
+    {keypad}
+    {darts}
+    {canThrow}
+    {locked}
+    {canUndo}
+    next={{ ...next, label: nextLabel }}
+    {onUndo}
+    {onNext}
+    {onBoardClick}
+    {onDart}
+    {onCorrect}
+    bind:openDart
+    board={{ checkoutTargets: playing ? boardCheckoutTargets(slots, true) : [] }}
+    keypadClass="min-h-[220px]"
+  />
 {/snippet}
 
 {#snippet giveUp()}
