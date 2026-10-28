@@ -13,7 +13,7 @@
   import type { GameDetail } from '$lib/api'
   import { raceSeries } from '$lib/details/atc'
   import { targetLabel } from '$lib/details/stats'
-  import { flattenByX, stepFocus } from '$lib/details/chartNav'
+  import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
   import { otherColor } from '$lib/details/chartColors'
 
   /** Tagged with its seat: the tooltip names the player from the point it's on. `hit`: a target
@@ -95,37 +95,15 @@
       p => p.darts,
     ),
   )
-  let focusIndex = $state<number | null>(null)
-  let chartContext = $state<RaceChartState | undefined>()
-
   function describe(data: RacePoint): string {
     return `${nameOf(data.seat)}: ${data.hits} targets after ${data.darts} darts`
   }
-
-  const liveText = $derived.by(() => {
-    const n = focusIndex === null ? undefined : navPoints.at(focusIndex)
-    return n ? describe(n.point) : ''
-  })
-
-  function focusPoint(index: number | null) {
-    focusIndex = index
-    const n = index === null ? undefined : navPoints.at(index)
-    if (n) chartContext?.tooltip.show({ data: n.point })
-    else chartContext?.tooltip.hide()
-  }
-
-  function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault()
-      focusPoint(stepFocus(focusIndex, 1, navPoints.length))
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault()
-      focusPoint(stepFocus(focusIndex, -1, navPoints.length))
-    } else if (e.key === 'Escape' && focusIndex !== null) {
-      e.preventDefault()
-      focusPoint(null)
-    }
-  }
+  let chartContext = $state<RaceChartState | undefined>()
+  const nav = createChartNav(
+    () => navPoints,
+    describe,
+    () => chartContext,
+  )
 
   const tickLabel = 'fill-text-dim font-mono text-[12px]'
 </script>
@@ -154,8 +132,8 @@
           role="img"
           aria-label="Targets hit against darts thrown"
           tabindex={0}
-          onkeydown={onKeydown}
-          onblur={() => focusPoint(null)}
+          onkeydown={nav.onkeydown}
+          onblur={nav.blur}
           series={chartSeries}
           x="darts"
           y="hits"
@@ -211,9 +189,7 @@
           {#snippet tooltip({ context }: { context: RaceChartState })}
             <Tooltip.Root variant="none" {context}>
               {#snippet children({ data }: { data: RacePoint })}
-                <div
-                  class="bg-surface-inset border border-line-popover rounded-[10px] px-2.5 py-1.5 text-text text-[13px] whitespace-nowrap shadow-tooltip"
-                >
+                <div class="chart-tooltip">
                   {describe(data)}
                 </div>
               {/snippet}
@@ -222,6 +198,6 @@
         </Chart>
       </div>
     </figure>
-    <span class="sr-only" role="status" aria-live="polite">{liveText}</span>
+    <span class="sr-only" role="status" aria-live="polite">{nav.liveText}</span>
   </section>
 {/if}

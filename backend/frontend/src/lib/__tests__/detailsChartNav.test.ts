@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flattenByX, stepFocus } from '../details/chartNav.js'
+import { flattenByX, stepFocus } from '../details/chartNav.svelte.js'
 
 describe('flattenByX', () => {
   it('merges every series into one list ordered by x, not grouped by series', () => {
