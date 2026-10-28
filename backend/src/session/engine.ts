@@ -583,22 +583,13 @@ export class SessionEngine {
       // The status pill follows the board of the seat that's up
       bmStatus: upBoard === null ? null : (session.boardStatus.get(upBoard) ?? null),
     }
-    // The module's id tells which view (and snapshot shape) it produces; the shape per
-    // game is also checked by snapshot.contract.test.ts and checkSnapshot()
+    // The module's id tells which view (and snapshot shape) it produces. TypeScript can't pair a
+    // module's id with its own view through the AnyGameModule union, so the cast states it; the
+    // shape per game is checked by snapshot.contract.test.ts and checkSnapshot()
     const mod = session.module
-    if (mod.id === 'x01') {
-      return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
-    }
-    if (mod.id === 'minigolf') {
-      return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
-    }
-    if (mod.id === 'p121') {
-      return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
-    }
-    if (mod.id === 'hilo') {
-      return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
-    }
-    return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
+    const game = { ...mod.view(session.currentState, session.players), ...engineFields }
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- the id/view pairing, as above
+    return { ...common, gameId: mod.id, game } as Snapshot
   }
 
   getSession(sessionId: string): Session | undefined {
