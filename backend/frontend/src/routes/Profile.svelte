@@ -13,6 +13,7 @@
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
+  import { fmtAvg } from '$lib/playerStats'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
   import {
     CARD_SURFACE,
@@ -172,7 +173,7 @@
           <section aria-label="Averages" class="card box-border grid grid-cols-2 sm:grid-cols-3 gap-4 p-[18px] md:p-[22px]">
             <div class="flex flex-col gap-1">
               <span class="text-[12px] label-caps text-text-dim">3-dart avg</span>
-              <span class="font-display font-bold text-[34px] leading-none">{p.average?.toFixed(1) ?? '—'}</span>
+              <span class="font-display font-bold text-[34px] leading-none">{fmtAvg(p.average ?? null)}</span>
               <span class="text-[12px] text-text-muted">X01, last 20 games</span>
             </div>
             <div class="flex flex-col gap-1">
