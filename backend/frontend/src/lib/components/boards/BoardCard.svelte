@@ -17,7 +17,7 @@
   type="button"
   onclick={onselect}
   aria-pressed={active}
-  class="text-left box-border p-[22px] md:max-xl:p-5 rounded-[14px] flex flex-col gap-[18px] md:max-xl:gap-4 transition-colors
+  class="text-left box-border p-4 rounded-[12px] flex flex-col gap-3 transition-colors
          outline-none focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]
          {justPaired || active ? 'bg-surface-2 border-2 border-accent' : 'bg-surface-2 border border-line-2 hover:border-line'}"
 >
@@ -46,16 +46,16 @@
   </div>
 
   <div class="flex flex-col gap-1">
-    <h2 class="m-0 font-display font-bold text-[32px] md:max-xl:text-[30px] leading-none uppercase">{board.name}</h2>
+    <h2 class="m-0 font-display font-bold text-[24px] leading-none uppercase">{board.name}</h2>
     {#if board.ip}
       <span class="font-mono text-[13px] text-text-muted">{bmHost(board)}{board.bmVersion ? ` · ${fmtVersion(board.bmVersion)}` : ''}</span>
     {/if}
   </div>
 
-  <dl class="m-0 mt-auto grid {lights === undefined ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pt-4 md:max-xl:pt-[14px] border-t border-line-2">
+  <dl class="m-0 mt-auto grid {lights === undefined ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pt-3 border-t border-line-2">
     <div>
       <dt class="text-[12px] text-text-dim">Bridge</dt>
-      <dd class="mt-1 m-0 text-[15px] font-semibold">
+      <dd class="mt-0.5 m-0 text-[14px] font-semibold">
         {fmtVersion(board.bridgeVersion) ?? '—'}{#if board.bridgeUpdate.available}<span class="block text-[12px] font-medium text-accent"
             >Update</span
           >{/if}
@@ -63,12 +63,12 @@
     </div>
     <div>
       <dt class="text-[12px] text-text-dim">Games</dt>
-      <dd class="mt-1 m-0 text-[15px] font-semibold">—</dd>
+      <dd class="mt-0.5 m-0 text-[14px] font-semibold">—</dd>
     </div>
     {#if lights !== undefined}
       <div>
         <dt class="text-[12px] text-text-dim">Lights</dt>
-        <dd class="mt-1 m-0 text-[15px] font-semibold">{lights ? `${lights} device${lights === 1 ? '' : 's'}` : '—'}</dd>
+        <dd class="mt-0.5 m-0 text-[14px] font-semibold">{lights ? `${lights} device${lights === 1 ? '' : 's'}` : '—'}</dd>
       </div>
     {/if}
   </dl>
