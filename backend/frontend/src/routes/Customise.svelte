@@ -6,9 +6,10 @@
   // what unlocks them and can't be picked. Behind progression.enabled, like Profile.
   import { deviceStore } from '$lib/storage'
   import type { Snippet } from 'svelte'
-  import { LoaderCircle, PartyPopper, Trophy, Volume2, VolumeX } from '@lucide/svelte'
+  import { PartyPopper, Trophy, Volume2, VolumeX } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
+  import PageLoading from '$lib/components/PageLoading.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import FinishPicture from '$lib/components/FinishPicture.svelte'
@@ -267,7 +268,7 @@
     {#if !$progression}
       <p class="m-0 text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
     {:else if !look || !$profile}
-      <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
+      <PageLoading />
     {:else}
       <div class="flex items-center gap-4 min-w-0">
         <nav aria-label="Customise" class="flex gap-1 lg:gap-[6px] min-w-0 overflow-x-auto [scrollbar-width:none]">

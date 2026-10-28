@@ -4,8 +4,9 @@
   // locked ones grey until hovered or focused), and the rewards off the track; each opens its details
   // (RewardDetails), where you apply it. `#/progress/rewards/15`
   // opens it at level 15. Behind progression.enabled, like Progress.
-  import { Check, Lock, LoaderCircle } from '@lucide/svelte'
+  import { Check, Lock } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageLoading from '$lib/components/PageLoading.svelte'
   import PerkPreview from '$lib/components/progress/PerkPreview.svelte'
   import RewardDetails from '$lib/components/progress/RewardDetails.svelte'
   import { flag } from '$lib/flags'
@@ -85,7 +86,7 @@
     {#if !$progression}
       <p class="m-0 text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
     {:else if $progress === null}
-      <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
+      <PageLoading />
     {:else}
       <div class="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <section
