@@ -1,9 +1,11 @@
 // What the caller says, decided from the previous and the new snapshot. The server decides the
-// game; this only picks words. A visit is called once, when it's over (see visitOver).
+// game; this only picks words. How a visit ended is read in $shared/visitOutcome (the lights read it too).
 
 import type { Snapshot, X01Game } from '$lib/api/game-ws'
-import { visitOver } from '../heldScore.js'
 import { canCheckOut } from '$shared/checkout.js'
+import { committed, isOver, legsPlayed, visitEnd, visitOutcome, type VisitOutcome } from '$shared/visitOutcome.js'
+
+export { legsOf } from '$shared/visitOutcome.js'
 
 type VisitGame = Pick<X01Game, 'currentPlayer' | 'phase' | 'bustThisVisit' | 'visitLocked' | 'currentVisitDarts' | 'totalVisits'> &
   Partial<Pick<X01Game, 'legs' | 'firstTo' | 'teams'>>
@@ -40,15 +42,6 @@ export function callGame(s: Snapshot): CallGame | null {
 export type Call = (string | string[])[][]
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
-// What the visit took off the score, not the dart faces: darts before a double/master in score nothing.
-const visitTotal = (g: CallGame) =>
-  'visitTotal' in g ? g.visitTotal : (g.visitStartScores[g.currentPlayer] ?? 0) - g.scores[g.currentPlayer]
-const legsPlayed = (g: CallGame) => (g.teams ? sum(g.teams.map(t => t.legs)) : sum(g.legs ?? []))
-/** The legs won so far by a seat's team (or the seat itself, outside a team game). */
-export const legsOf = (g: CallGame, seat: number) => {
-  const teamLegs = g.teams?.find(t => t.seats.includes(seat))?.legs
-  return teamLegs !== undefined ? teamLegs : g.legs?.[seat] || 0
-}
 
 export function callsFor(before: CallGame | null, after: CallGame): Call {
   if (before === null) {
@@ -61,38 +54,33 @@ export function callsFor(before: CallGame | null, after: CallGame): Call {
   if (before.phase === 'bulloff') return after.phase === 'game' ? [['gameon']] : []
   if (before.phase !== 'game') return []
 
-  const wasOver = visitOver(before.visitLocked, before.currentVisitDarts.length)
-  if (wasOver) {
+  if (isOver(before)) {
     // A correction in a visit that is already over: if the visit wasn't committed and is still over
     // for the same player, compare the calls; if they differ, announce the new one.
-    const committed = sum(after.totalVisits) > sum(before.totalVisits)
-    if (!committed && after.currentPlayer === before.currentPlayer && visitOver(after.visitLocked, after.currentVisitDarts.length)) {
-      const beforeCall = endOfVisit(before)
-      const afterCall = endOfVisit(after)
+    if (!committed(before, after) && after.currentPlayer === before.currentPlayer && isOver(after)) {
+      const beforeCall = callOf(visitEnd(before))
+      const afterCall = callOf(visitEnd(after))
       if (JSON.stringify(beforeCall) !== JSON.stringify(afterCall)) return afterCall
     }
     return []
   }
-  const committed = sum(after.totalVisits) > sum(before.totalVisits)
-  if (committed) return [[String(visitTotal(before))]]
-  const sameVisit = after.currentPlayer === before.currentPlayer
-  if (sameVisit && visitOver(after.visitLocked, after.currentVisitDarts.length)) return endOfVisit(after)
-  return []
+  const outcome = visitOutcome(before, after)
+  return outcome ? callOf(outcome) : []
 }
 
-function endOfVisit(g: CallGame): Call {
-  // Prefer a dedicated "busted" clip; a voice without one (e.g. most Autodarts packs) falls back
-  // to its own "No score" clip, same as the real Autodarts caller does on a bust.
-  if (g.bustThisVisit) return [['busted', '0']]
-  const cp = g.currentPlayer
-  if ('scores' in g && g.visitLocked && g.scores[cp] === 0) {
-    // A game without legs (121 Checkout): the target made, nothing more to say
-    if (g.firstTo === undefined) return [['gameshot']]
-    if (legsOf(g, cp) + 1 >= g.firstTo) return [['matchshot', 'gameshot']]
-    // Legs count up at the takeout, so g still has the old count: this is the leg just won
-    return [['gameshot'], ['and'], [`leg_${legsPlayed(g) + 1}`]]
+function callOf(o: VisitOutcome): Call {
+  switch (o.kind) {
+    case 'bust':
+      // Prefer a dedicated "busted" clip; a voice without one (e.g. most Autodarts packs) falls back
+      // to its own "No score" clip, same as the real Autodarts caller does on a bust.
+      return [['busted', '0']]
+    case 'checkout':
+      // A game without legs (121 Checkout): the target made, nothing more to say
+      if (o.leg === null) return [['gameshot']]
+      return o.match ? [['matchshot', 'gameshot']] : [['gameshot'], ['and'], [`leg_${o.leg}`]]
+    case 'visit':
+      return [[String(o.total)]]
   }
-  return [[String(visitTotal(g))]]
 }
 
 /** What the next thrower needs and in which leg, when they can finish it. */
@@ -102,7 +90,7 @@ export type Checkout = { seat: number; remaining: number; leg: number }
  *  visit was committed (an undo or a correction), at a new leg or the end, and on a fresh page. */
 export function checkoutFor(before: CallGame | null, after: CallGame): Checkout | null {
   if (before?.phase !== 'game' || after.phase !== 'game' || !('scores' in after)) return null
-  if (sum(after.totalVisits) <= sum(before.totalVisits)) return null
+  if (!committed(before, after)) return null
   const leg = legsPlayed(after)
   if (leg !== legsPlayed(before)) return null
   const seat = after.currentPlayer

@@ -3,10 +3,9 @@
 // takeout / next player. The server decides every number; this only picks
 // when the big score shows it.
 
-export type ScoreUpdates = 'dart' | 'visit'
+import { visitOver } from '$shared/visitOutcome.js'
 
-/** A visit is over at its third dart or when it's locked (a bust or a checkout); else at the takeout. */
-export const visitOver = (locked: boolean, darts: number): boolean => locked || darts >= 3
+export type ScoreUpdates = 'dart' | 'visit'
 
 export function shownScore(o: {
   mode: ScoreUpdates
