@@ -5,6 +5,7 @@
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The course editor".
 -->
 <script lang="ts">
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { Plus } from '@lucide/svelte'
@@ -260,7 +261,7 @@
         <!-- The courses -->
         <nav aria-label="Courses" class="flex flex-col gap-3">
           <Button variant="outline" disabled={busy} onclick={() => void newCourse()}><Plus size={16} />New course</Button>
-          {#if listError}<p class="m-0 text-[14px] text-live-text">{listError}</p>{/if}
+          {#if listError}<ErrorText>{listError}</ErrorText>{/if}
           {#if gone}<p role="status" class="m-0 rounded-[10px] border border-line-2 bg-surface-2 p-3 text-[14px]">
               {gone} is gone: someone deleted it.
             </p>{/if}

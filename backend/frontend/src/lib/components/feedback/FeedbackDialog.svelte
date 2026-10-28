@@ -1,6 +1,7 @@
 <script lang="ts">
   // Report a bug or give feedback (the Alpha badge, Settings → Profile). Mounted once in Layout;
   // openFeedback() took the page's screenshot before this opened.
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import Chip from '$lib/components/ui/chip/chip.svelte'
@@ -113,7 +114,7 @@
           </dl>
         </details>
 
-        {#if error}<p class="m-0 text-[13px] text-live-text" role="alert">{error}</p>{/if}
+        {#if error}<ErrorText class="text-[13px]">{error}</ErrorText>{/if}
       </form>
     {/if}
     {#snippet footer()}

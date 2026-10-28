@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
@@ -64,7 +65,7 @@
           </div>
 
           {#if error}
-            <p role="alert" class="m-0 text-[14px] text-live-text">{error}</p>
+            <ErrorText>{error}</ErrorText>
           {/if}
 
           <Button type="submit" variant="primary" disabled={loading} class="w-full">Send reset link</Button>

@@ -3,6 +3,7 @@
   // lobby): Choose players saves the game as your lobby's next game and goes there, opening a
   // lobby when you have none; New lobby starts over with a fresh one while you're alone in yours.
   // A member of someone else's lobby sees its planned game read-only.
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { tick, untrack } from 'svelte'
   import { fly } from 'svelte/transition'
   import { ChevronLeft, Users } from '@lucide/svelte'
@@ -368,7 +369,7 @@
               <span class="hidden md:inline-flex items-center gap-[6px] text-[13px] text-text-dim">
                 <Users size={14} aria-hidden="true" />Players, teams and throw order come next, in the lobby
               </span>
-              {#if error}<span class="mb-2 md:mb-0 text-[14px] text-live-text">{error}</span>{/if}
+              {#if error}<ErrorText class="mb-2 md:mb-0">{error}</ErrorText>{/if}
             </span>
             <div class="flex flex-col gap-2 md:flex-shrink-0">
               <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
