@@ -18,6 +18,7 @@
   import ProfileCard from '$lib/components/progress/ProfileCard.svelte'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Switch } from '$lib/components/ui/switch/index.js'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { loadSettings } from '$lib/gameSettings'
@@ -134,25 +135,9 @@
 </script>
 
 {#snippet hideSwitch(cls: string)}
-  <button
-    type="button"
-    role="switch"
-    aria-checked={hideLocked}
-    onclick={toggleHide}
-    class="{cls} items-center gap-2 bg-transparent border-0 p-0 font-[inherit] text-[13px] text-ink-2 whitespace-nowrap cursor-pointer"
-  >
-    <span
-      class="relative w-[34px] h-5 shrink-0 rounded-full border transition-colors motion-reduce:transition-none {hideLocked
-        ? 'bg-accent border-accent'
-        : 'bg-surface-key border-line-chip'}"
-    >
-      <span
-        class="absolute top-[2px] left-[2px] size-[14px] rounded-full transition-transform motion-reduce:transition-none {hideLocked
-          ? 'translate-x-[14px] bg-accent-fg'
-          : 'bg-text-muted'}"
-      ></span>
-    </span>Hide locked
-  </button>
+  <label class="{cls} items-center gap-2 text-[13px] text-ink-2 whitespace-nowrap cursor-pointer">
+    <Switch size="sm" checked={hideLocked} onCheckedChange={toggleHide} />Hide locked
+  </label>
 {/snippet}
 
 <!-- A grid's heading: its name, subtitle and count; on a phone the Hide locked switch too -->
