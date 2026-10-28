@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { deviceStore } from '$lib/storage'
   import { onMount, onDestroy, untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
@@ -84,7 +85,7 @@
   import { initial } from '$lib/fmt'
 
   // ── Settings and sound ────────────────────────────────────────────────────
-  let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
+  let settings = $state<GameSettings>(loadSettings(deviceStore()))
   // The account's settings loading after this page opened (sign-in) win; the drawer's changes go to
   // the account too, or the next load would put the account's older values back
   const accountAtOpen = get(accountSettings)

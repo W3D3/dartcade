@@ -4,6 +4,7 @@
   // your card and in a lobby row, and saved together (only what changed) or dropped on Cancel.
   // Switching tabs keeps the draft: it's one route, so the page stays mounted. Locked options show
   // what unlocks them and can't be picked. Behind progression.enabled, like Profile.
+  import { deviceStore } from '$lib/storage'
   import type { Snippet } from 'svelte'
   import { LoaderCircle, PartyPopper, Trophy, Volume2, VolumeX } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
@@ -105,7 +106,7 @@
 
   // A sound pack plays its sample and a celebration plays over the card when picked (at this
   // device's effects volume; `run` replays it)
-  const packs = createSoundPacks(() => loadSettings(typeof localStorage === 'undefined' ? null : localStorage).effectsVolume)
+  const packs = createSoundPacks(() => loadSettings(deviceStore()).effectsVolume)
   let party = $state<{ id: string; run: number } | null>(null)
   function pickPerk(kind: PerkKind, id: string) {
     if (!look) return
