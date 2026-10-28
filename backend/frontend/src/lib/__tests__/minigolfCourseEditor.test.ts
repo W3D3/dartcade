@@ -14,11 +14,6 @@ import {
 import { holeChecks } from '$shared/minigolf/checks'
 import { toHole, type DraftStatus } from '$lib/minigolf/editor/store.svelte'
 
-// PopoverMenu pulls in bits-ui's barrel, which this toolchain's SSR can't compile (see lobbyAccessPanel.test.ts)
-vi.mock('bits-ui', () => ({
-  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-  Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-}))
 const user = writable<{ isAdmin: boolean } | null>(null)
 vi.mock('$lib/auth', () => ({ currentUser: user }))
 vi.mock('$lib/components/Layout.svelte', () => import('./fixtures/PassthroughLayout.svelte'))

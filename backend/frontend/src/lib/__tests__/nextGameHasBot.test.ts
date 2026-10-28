@@ -7,12 +7,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
-// Same bits-ui SSR crash worked around in gameSettingsBotSpeed.test.ts: a transitive import of
-// bits-ui's whole barrel breaks this toolchain's SSR CSS preprocessing outside the main pipeline.
-vi.mock('bits-ui', () => ({
-  Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-}))
-
 vi.mock('../components/lobby/NextGameSettingsPanel.svelte', () => ({
   default: (renderer: { push: (content: string) => void }, props: { hasBot?: boolean }) => {
     renderer.push(`<div data-testid="panel" data-has-bot="${String(props.hasBot)}"></div>`)

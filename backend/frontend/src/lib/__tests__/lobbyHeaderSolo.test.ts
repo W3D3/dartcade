@@ -1,24 +1,9 @@
 // The lobby header while solo: the code to invite with and Close lobby (it's always visible now),
 // but no Leave: there's nobody to hand it to.
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 import LobbyHeader from '../components/lobby/LobbyHeader.svelte'
-
-// JoinCodeCard's tooltip pulls in bits-ui's barrel, which crashes SSR here (see lobbyAccessPanel.test.ts)
-vi.mock('bits-ui', () => ({
-  Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-  Dialog: {
-    Root: () => {},
-    Trigger: () => {},
-    Portal: () => {},
-    Content: () => {},
-    Overlay: () => {},
-    Title: () => {},
-    Description: () => {},
-  },
-}))
 
 const member = (id: string, name: string): LobbyPerson => ({
   id,

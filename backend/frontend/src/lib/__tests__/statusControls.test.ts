@@ -1,14 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import StatusCard from '../components/friends/StatusCard.svelte'
 import InvisibleBanner from '../components/friends/InvisibleBanner.svelte'
-
-// StatusCard's SegmentedControl pulls in bits-ui's Tooltip, whose barrel import crashes this
-// toolchain's SSR CSS preprocessing (a pre-existing Vite 6 / @sveltejs/vite-plugin-svelte 5
-// issue, unrelated to this component; see lobbyAccessPanel.test.ts for the same workaround).
-vi.mock('bits-ui', () => ({
-  Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-}))
 
 describe('status controls', () => {
   it('the Friends card explains the choice', () => {
