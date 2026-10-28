@@ -114,9 +114,7 @@
         {#if error}<ErrorText>{error}</ErrorText>{/if}
         <div class="flex gap-3 justify-end">
           <Button type="button" variant="outline" onclick={close}>Cancel</Button>
-          <Button type="submit" variant="accent" class="bg-live text-[#fff]" disabled={busy || !canConfirm(typed, name, password)}>
-            Delete account
-          </Button>
+          <Button type="submit" variant="danger" disabled={busy || !canConfirm(typed, name, password)}>Delete account</Button>
         </div>
       </form>
     {/if}
