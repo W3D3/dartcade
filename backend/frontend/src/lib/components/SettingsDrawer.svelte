@@ -12,6 +12,7 @@
   import VolumeSlider from './settings/VolumeSlider.svelte'
   import VoiceSelect from './settings/VoiceSelect.svelte'
   import OptionSelect from './settings/OptionSelect.svelte'
+  import SegmentedControl from './SegmentedControl.svelte'
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
   import { drawerRows } from '$lib/gameViews/settings.js'
 
@@ -101,19 +102,7 @@
             }}
           />
         </div>
-        <div role="radiogroup" aria-labelledby="setting-boardView" class="hidden sm:flex gap-1 p-1 bg-bg rounded-[10px]">
-          {#each boardViews as opt (opt.value)}
-            {@const on = settings.boardView === opt.value}
-            <button
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onclick={() => (settings.boardView = opt.value)}
-              class="flex-1 h-10 whitespace-nowrap rounded-[7px] text-[15px] border-0 cursor-pointer transition-colors
-                   {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button
-            >
-          {/each}
-        </div>
+        <SegmentedControl labelledby="setting-boardView" options={boardViews} bind:value={settings.boardView} class="hidden sm:flex" />
       </div>
       {#if gameId === 'x01'}
         <div class="flex flex-col gap-2">
@@ -121,19 +110,7 @@
             <span id="setting-scoreUpdates" class="text-[15px] text-text">Score left</span>
             <span class="text-[13px] text-text-dim">When the big score counts down</span>
           </span>
-          <div role="radiogroup" aria-labelledby="setting-scoreUpdates" class="flex gap-1 p-1 bg-bg rounded-[10px]">
-            {#each scoreUpdates as opt (opt.value)}
-              {@const on = settings.scoreUpdates === opt.value}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onclick={() => (settings.scoreUpdates = opt.value)}
-                class="flex-1 h-10 rounded-[7px] text-[15px] border-0 cursor-pointer transition-colors
-                     {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button
-              >
-            {/each}
-          </div>
+          <SegmentedControl labelledby="setting-scoreUpdates" options={scoreUpdates} bind:value={settings.scoreUpdates} />
         </div>
       {/if}
     </section>

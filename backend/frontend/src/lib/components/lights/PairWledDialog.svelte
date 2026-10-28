@@ -10,6 +10,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Slider } from '$lib/components/ui/slider/index.js'
   import OptionSelect from '$lib/components/settings/OptionSelect.svelte'
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { api, type Board, type FoundWledDevice, type WledDevice } from '$lib/api'
   import { segmentHint } from '$lib/lights/view'
@@ -191,21 +192,7 @@
 
       <div class="flex flex-col gap-3">
         <span id="pair-segment" class="text-[15px] font-semibold">Segments</span>
-        <div role="radiogroup" aria-labelledby="pair-segment" class="flex gap-1 p-1 bg-bg rounded-[10px]">
-          {#each segmentOptions as opt (opt.value)}
-            {@const on = pairing.segmentMode === opt.value}
-            <button
-              type="button"
-              role="radio"
-              aria-checked={on}
-              disabled={opt.disabled}
-              onclick={() => (pairing.segmentMode = opt.value)}
-              class="flex-1 min-h-10 px-1 py-1.5 rounded-[7px] text-[14px] text-center leading-tight border-0 cursor-pointer
-                   transition-colors disabled:opacity-40 disabled:cursor-not-allowed
-                   {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button
-            >
-          {/each}
-        </div>
+        <SegmentedControl labelledby="pair-segment" options={segmentOptions} bind:value={pairing.segmentMode} />
         <span class="font-mono text-[12px] text-text-dim">{segmentHint(leds, pairing.segmentMode, seats, segments)}</span>
         {#if pairing.segmentMode === 'perSeat'}
           <span class="text-[12px] text-text-muted">
