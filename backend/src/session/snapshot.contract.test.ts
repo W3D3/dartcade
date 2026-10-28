@@ -9,6 +9,7 @@ import { minigolfModule } from '../games/minigolf.js'
 import { p121Module } from '../games/p121.js'
 import { hiloModule } from '../games/hilo.js'
 import { SnapshotSchema } from '../schema/zod.js'
+import { gameList } from '../games/index.js'
 
 // ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
 // module object, whose `default` is the plugin (at runtime module.exports.default is the
@@ -50,6 +51,22 @@ function expectValid(snap: unknown) {
 }
 
 describe('snapshots match schema/game-ws-v1.json', () => {
+  // Every registered game, so a new one is checked without a case of its own here.
+  // Minigolf plays the built-in test course (no database).
+  const configFor = (id: string): Record<string, unknown> => (id === 'minigolf' ? { course: 'test' } : {})
+  it.each(gameList.map(m => [m.id, m] as const))('%s, fresh and after a visit', async (id, mod) => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', id, { ...mod.defaultConfig, ...configFor(id) }, players)
+    expectValid(e.getSnapshot(sessionId))
+    const onBoard = { ...dart(0.3), dart: { ...dart(0.3).dart, coords: { x: 0, y: 0.3 } } }
+    await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', onBoard])
+    expectValid(e.getSnapshot(sessionId))
+    await play(e, ['takeout.finished', {}])
+    const after = e.getSnapshot(sessionId)
+    expectValid(after)
+    expect(SnapshotSchema.safeParse(after).success).toBe(true)
+  })
+
   it('ATC, fresh and mid-visit', async () => {
     const e = engine()
     const { sessionId } = await e.create('u1', 'board-1', 'atc', atcModule.defaultConfig, players)
