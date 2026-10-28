@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy, onMount } from 'svelte'
   import { ChevronRight, CircleCheck, LoaderCircle } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -29,7 +30,7 @@
   // svelte-ignore state_referenced_locally
   let helpExpanded = $state(initialCode === '')
   let loading = $state(false)
-  let copied = $state(false)
+  const clip = createCopy(1500)
   let errorKind = $state<null | 'expired' | 'notfound' | 'used' | 'network'>(null)
 
   // Install mode: the user runs a command with a one-time install token; the board it creates shows up here to be named.
@@ -99,14 +100,8 @@
     if (errorKind && errorKind !== 'network') errorKind = null
   }
 
-  async function copyCommand() {
-    try {
-      await navigator.clipboard.writeText(mode === 'install' ? command : 'dartcade-bridge')
-      copied = true
-      setTimeout(() => (copied = false), 1500)
-    } catch {
-      /* clipboard unavailable */
-    }
+  function copyCommand() {
+    void clip.copy(mode === 'install' ? command : 'dartcade-bridge')
   }
 
   async function submit() {
@@ -158,7 +153,7 @@
           <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
             <span class="text-[12px] text-text-dim">{OS_LABELS[os]}</span>
             <button type="button" onclick={copyCommand} disabled={!token} class="text-[12px] text-accent hover:underline">
-              {copied ? 'Copied' : 'Copy command'}
+              {clip.state === 'copied' ? 'Copied' : 'Copy command'}
             </button>
           </div>
           <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{token
@@ -201,7 +196,7 @@
         <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
           <span class="text-[12px] text-text-dim">On the board's machine</span>
           <button type="button" onclick={copyCommand} class="text-[12px] text-accent hover:underline">
-            {copied ? 'Copied' : 'Copy command'}
+            {clip.state === 'copied' ? 'Copied' : 'Copy command'}
           </button>
         </div>
         <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
