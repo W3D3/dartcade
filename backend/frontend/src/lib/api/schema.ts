@@ -2999,7 +2999,8 @@ export interface components {
             id: string;
             /** @description Your handle, shown as @name */
             name: string;
-            email: string;
+            /** @description Null for a Discord account that shared no email (it has a stand-in address that gets no mail) */
+            email: string | null;
             /** @description Your name broke the rules or duplicated an older one when names became unique: pick a new one first */
             nameNeedsChange: boolean;
             /** @description A free name close to yours, while nameNeedsChange */

@@ -9319,7 +9319,9 @@
             "description": "Your handle, shown as @name"
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a Discord account that shared no email (it has a stand-in address that gets no mail)"
           },
           "nameNeedsChange": {
             "type": "boolean",

@@ -20,6 +20,7 @@ import { hasPerk, unlockedPictures } from '../db/progression.js'
 import { AVATAR_FINISHES, isAvatarFinish } from '../shared/avatarFinishes.js'
 import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
+import { undeliverable } from '../mail/transport.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import type { FreshDelete } from '../auth/deleteGate.js'
@@ -59,6 +60,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     const { role, ...rest } = account
     return {
       ...rest,
+      email: undeliverable(account.email) ? null : account.email,
       isAdmin: isAdmin({ role }),
       isModerator: isModerator({ role }),
       impersonating,

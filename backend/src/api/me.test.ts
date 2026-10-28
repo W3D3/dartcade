@@ -94,6 +94,21 @@ describe('/api/me', () => {
     })
   })
 
+  it('shows no email for a Discord account that shared none (its .invalid stand-in)', async () => {
+    vi.mocked(getAccount).mockResolvedValueOnce({
+      id: 'd',
+      name: 'Phoneonly',
+      email: '42@discord.invalid',
+      nameNeedsChange: false,
+      invisible: false,
+      role: null,
+      createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body)).toMatchObject({ email: null })
+  })
+
   it('says when an admin is viewing the app as this account', async () => {
     vi.mocked(middleware.requireAuth).mockImplementationOnce((req, _reply, done) => {
       req.userId = 'old'

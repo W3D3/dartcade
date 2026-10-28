@@ -22,11 +22,10 @@
     <dl class="m-0 flex flex-col">
       <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
         <dt class="text-[14px] text-text-muted">Email</dt>
-        {#if user.email.endsWith('.invalid')}
-          <!-- The stand-in for a Discord account without an email (backend auth/discord.ts) -->
-          <dd class="m-0 text-[14px] text-text-dim">Not shared by Discord</dd>
-        {:else}
+        {#if user.email}
           <dd class="m-0 min-w-0 truncate font-mono text-[14px] text-ink-2">{user.email}</dd>
+        {:else}
+          <dd class="m-0 text-[14px] text-text-dim">Not shared by Discord</dd>
         {/if}
       </div>
       <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
