@@ -40,6 +40,13 @@ describe('DeleteAccount', () => {
     expect(out).not.toContain('delete-account-password')
   })
 
+  it('stays closed for an account without a password that has not just signed in again', () => {
+    currentUser.set(me(['discord']))
+    const out = render(DeleteAccount).body
+    expect(out).toContain('Danger zone')
+    expect(out).not.toContain('This removes your profile')
+  })
+
   it("doesn't skip the password for an account that has one, whatever the address says", () => {
     currentUser.set(me(['password', 'discord']))
     route.querystring.set('confirmDelete=1')
