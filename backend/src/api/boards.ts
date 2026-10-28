@@ -5,7 +5,8 @@ import type { Database } from '../db/schema.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { BigScreenService } from '../bigscreen/service.js'
 import { requireAuth } from '../auth/middleware.js'
-import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw/connections.js'
+import { bridgeConnections, type BmRequest } from '../bridge-gw/connections.js'
+import { askBoard, BM_TIMEOUT_MS, stateOf } from '../boards/bmState.js'
 import {
   getBoardsByOwner,
   insertBoard,
@@ -24,22 +25,10 @@ import { cameraStills, type CameraStills } from '../camera/store.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
 import type { Session } from '../session/types.js'
 import type { Route } from './route.js'
-import { z } from 'zod'
 import { bridgeUpdateFor, type BridgeReleases } from '../boards/bridgeRelease.js'
 import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 
-/** How long the bridge may take to answer a Board Manager call (its own HTTP timeout is 10 s). */
-const BM_TIMEOUT_MS = 12_000
 const bigScreenOff = (reply: FastifyReply) => reply.code(409).send({ error: 'the big screen is off for this board' })
-
-// Board Manager's /api/state, as far as we pass it on: each field falls back on its own
-const BmStateSchema = z
-  .object({
-    status: z.string().nullable().catch(null).default(null),
-    running: z.boolean().catch(false).default(false),
-    event: z.string().nullable().catch(null).default(null),
-  })
-  .catch({ status: null, running: false, event: null })
 
 type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
@@ -102,22 +91,12 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     timeoutMs: number,
     reply: { code(n: number): { send(b: { error: string }): unknown } },
   ) {
-    if (!bridgeConnections.isOnline(id)) {
-      reply.code(503).send({ error: 'board offline' })
+    const answer = await askBoard(id, req, timeoutMs)
+    if (!answer.ok) {
+      reply.code(answer.code).send({ error: answer.error })
       return null
     }
-    const res: BmResponse | null = await bridgeConnections.request(id, req, timeoutMs)
-    if (!res) {
-      reply.code(503).send({ error: 'board did not answer (update its bridge)' })
-      return null
-    }
-    if (res.status === undefined) {
-      // Kept to the log: the bridge's error names hosts on the board's network
-      console.warn('Board Manager call failed', { boardId: id, op: req.op, error: res.error })
-      reply.code(502).send({ error: 'Board Manager request failed' })
-      return null
-    }
-    return { ...res, status: res.status }
+    return answer.res
   }
 
   app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
@@ -282,8 +261,9 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!(await ownBoard(id, req.userId, reply))) return reply
       const res = await callBoard(id, { op: 'state' }, BM_TIMEOUT_MS, reply)
       if (!res) return reply
-      if (res.status < 200 || res.status >= 300) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
-      return reply.send(BmStateSchema.parse(res.state))
+      const state = stateOf(res)
+      if (!state) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
+      return reply.send(state)
     },
   )
 

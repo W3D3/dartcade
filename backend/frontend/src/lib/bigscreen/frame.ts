@@ -12,9 +12,13 @@ export const FRAME_READY = 'bigscreen.ready'
 /** The page was tapped or typed on: the frame's own audio wakes up too (it has its own AudioContext). */
 export const FRAME_WAKE = 'bigscreen.wake'
 
+/** The board's connection and Board Manager status, for the header. */
+export type BoardState = { online: boolean; status?: string }
+
 export type FrameState = {
   screen: Exclude<BigScreenState['screen'], { kind: 'idle' }>
   settings: GameSettings
+  board: BoardState
   /** Around the Clock's visits, tracked by the page. */
   history: VisitHistory
   countdown: string

@@ -51,7 +51,15 @@
           "type": "object",
           "required": ["id", "name", "online"],
           "additionalProperties": false,
-          "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "online": { "type": "boolean" } }
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "online": { "type": "boolean" },
+            "status": {
+              "type": "string",
+              "description": "The board's Board Manager status (Running, Throw, Takeout, Calibrating, Stopped...) while the board is online and says; absent otherwise."
+            }
+          }
         },
         "prefs": {
           "type": "object",

@@ -48,10 +48,11 @@
   {#if data}
     {@const screen = data.screen}
     {#if screen.kind === 'result' && pending === null}
-      <Result snapshot={screen.snapshot} detail={screen.detail ?? null} countdown={data.countdown} />
+      <Result snapshot={screen.snapshot} detail={screen.detail ?? null} countdown={data.countdown} board={data.board} />
     {:else}
       <Live
         snapshot={screen.snapshot}
+        board={data.board}
         settings={data.settings}
         history={data.history}
         onrolled={(key: string) => (rolled = { session, key })}

@@ -650,6 +650,10 @@ export interface BigScreenMessage {
     id: string
     name: string
     online: boolean
+    /**
+     * The board's Board Manager status (Running, Throw, Takeout, Calibrating, Stopped...) while the board is online and says; absent otherwise.
+     */
+    status?: string
   }
   /**
    * The board owner's account settings (Preferences in api-v1.yaml).

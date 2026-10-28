@@ -20,6 +20,7 @@ import { boardOwner, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
+import { boardStatus } from './boards/bmState.js'
 import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
@@ -102,6 +103,7 @@ const bigScreen = new BigScreenService({
     return b && { name: b.name, prefs: b.preferences ?? {} }
   },
   isOnline: id => bridgeConnections.isOnline(id),
+  boardStatus: id => boardStatus(id, 5_000),
   now: Date.now,
   setTimer: setTimeout,
   warn: err => {

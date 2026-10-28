@@ -17,14 +17,22 @@
   import type { VisitHistory } from '$lib/visitHistory'
   import type { Snapshot } from '$lib/ws'
   import BigHeader from './BigHeader.svelte'
+  import type { BoardState } from '$lib/bigscreen/frame'
   import FallbackCard from './FallbackCard.svelte'
 
   let {
     snapshot,
+    board,
     settings,
     history,
     onrolled,
-  }: { snapshot: Snapshot; settings: GameSettings; history: VisitHistory; onrolled?: (key: string) => void } = $props()
+  }: {
+    snapshot: Snapshot
+    board: BoardState
+    settings: GameSettings
+    history: VisitHistory
+    onrolled?: (key: string) => void
+  } = $props()
 
   const current = $derived(gameState(snapshot))
   const { x01, atc, p121, hilo, minigolf } = $derived(current)
@@ -55,7 +63,7 @@
     settings={shown}
   />
 {:else}
-  <BigHeader title={view.title} meta={view.meta(snapshot)} board={sharedBoard(snapshot)} />
+  <BigHeader title={view.title} meta={view.meta(snapshot)} board={sharedBoard(snapshot)} bm={board} />
   {#if bullOff}
     <BullOffPanel players={snapshot.players} bots={snapshot.seats.map(s => s.bot)} {bullOff} manual={false} send={noop} viewOnly />
   {:else if x01 || atc}
