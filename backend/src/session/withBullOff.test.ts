@@ -108,6 +108,13 @@ describe('withBullOff', () => {
     expect(s.game.current).toBe(1)
   })
 
+  it('accepts its own bull off options, or none, and refuses any other', () => {
+    const two = [{ name: 'A' }, { name: 'B' }]
+    expect(game.validate!({ bullOff: 'pdc' }, two)).toBeNull()
+    expect(game.validate!({}, two)).toBeNull()
+    expect(game.validate!({ bullOff: 'bdo' as 'off' }, two)).toBe('Unknown bull off')
+  })
+
   it('does not start a bull off for a single player', () => {
     expect(game.validate!({ bullOff: 'wdc' }, [{ name: 'A' }])).toMatch(/at least two players/)
     expect(game.init({ bullOff: 'wdc' }, [{ name: 'A' }]).stage).toBe('game')

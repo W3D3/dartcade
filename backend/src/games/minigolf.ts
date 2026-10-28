@@ -15,6 +15,7 @@ import type { Hole, OtherBall, PathPt, Pt, ShotResult } from '../shared/minigolf
 import { cachedShot } from './minigolfShots.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
+import { validateOptions } from './configMeta.js'
 
 export type MinigolfConfig = {
   /** A course id, or 'mixed' for 9 random holes of all courses. */
@@ -258,14 +259,9 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   validate(cfg) {
     if (typeof cfg.course !== 'string' || cfg.course === '') return 'Unknown course'
     if (!(Number.isInteger(cfg.maxStrokes) && cfg.maxStrokes >= 3 && cfg.maxStrokes <= 10)) return 'Max strokes must be between 3 and 10'
-    // Each other option must be one of its values (strict, so '3' isn't 3); missing (saved before
-    // the option existed) plays its default, as init does. The course's options are live (DB).
-    const values: Record<string, unknown> = cfg
-    for (const [key, meta] of Object.entries(configMeta)) {
-      if (key === 'course' || !meta.options || values[key] === undefined) continue
-      if (!meta.options.some(o => o.value === values[key])) return `Unknown ${meta.label.toLowerCase()}`
-    }
-    return null
+    // Each other option must be one of its values; missing (saved before the option existed) plays
+    // its default, as init does. The course's options are live (DB).
+    return validateOptions(cfg, configMeta, { skip: ['course'], allowMissing: true })
   },
 
   // Always from the course, over anything the config brings along (a client's, or a rematch's)

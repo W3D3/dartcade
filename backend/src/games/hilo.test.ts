@@ -313,6 +313,7 @@ describe('validate', () => {
     expect(hiloGame.validate!({ ...cfg, startHigh: 181 }, two)).not.toBeNull()
     expect(hiloGame.validate!({ ...cfg, lives: 8 }, two)).not.toBeNull()
     expect(hiloGame.validate!({ ...cfg, lives: '3' as unknown as number }, two)).not.toBeNull()
-    expect(hiloGame.validate!({ ...cfg, bullOff: 'bdo' as HiloConfig['bullOff'] }, two)).not.toBeNull()
+    // The bull off is the wrapper's to check
+    expect(hiloModule.validate!({ ...cfg, bullOff: 'bdo' as HiloConfig['bullOff'] }, two)).toBe('Unknown bull off')
   })
 })

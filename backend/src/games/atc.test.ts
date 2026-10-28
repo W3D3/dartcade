@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { atcModule, buildSequence } from './atc.js'
+import { atcModule, buildSequence, configMeta } from './atc.js'
 import type { ATCConfig, ATCState } from './atc.js'
 import type { BoardEvent, Player } from '../session/types.js'
 import { seededRng } from '../session/rng.js'
@@ -386,5 +386,17 @@ describe('random order', () => {
     expect(a.sequence).toEqual(b.sequence)
     expect(a.sequence).not.toEqual(buildSequence({ ...cfg, order: 'asc' }))
     expect([...a.sequence].sort((x, y) => x - y)).toEqual(buildSequence({ ...cfg, order: 'asc' }))
+  })
+})
+
+describe('validate', () => {
+  it('passes the defaults and a config saved before an option existed', () => {
+    expect(atcModule.validate!(atcModule.defaultConfig, [{ name: 'A' }])).toBeNull()
+    expect(atcModule.validate!({ order: 'desc' } as ATCConfig, [{ name: 'A' }])).toBeNull()
+  })
+  it('refuses a value that is not one of its options', () => {
+    const bad = { ...atcModule.defaultConfig, order: 'sideways' as ATCConfig['order'] }
+    expect(atcModule.validate!(bad, [{ name: 'A' }])).toBe(`Unknown ${configMeta.order.label.toLowerCase()}`)
+    expect(atcModule.validate!({ ...atcModule.defaultConfig, throwAgainOnAllHit: 1 as unknown as boolean }, [{ name: 'A' }])).not.toBeNull()
   })
 })

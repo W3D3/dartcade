@@ -19,6 +19,7 @@ import { withBullOff } from '../session/withBullOff.js'
 import { effectiveDartScore } from './outRules.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
+import { validateOptions } from './configMeta.js'
 
 export type HiloConfig = {
   startHigh: number
@@ -211,13 +212,8 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
     if (!isInt(cfg.startLow) || cfg.startLow < 0 || cfg.startLow > 180) return 'Low bar must be 0-180'
     if (cfg.startLow >= cfg.startHigh) return 'Low bar must be below the high bar'
     if (!isInt(cfg.lives) || cfg.lives < 1 || cfg.lives > 7) return 'Lives must be 1-7'
-    if (!['off', 'wdc', 'pdc'].includes(cfg.bullOff)) return 'Unknown bull off'
-    for (const [key, meta] of Object.entries(configMeta)) {
-      if (!meta.options) continue
-      const values: Record<string, unknown> = cfg
-      if (!meta.options.some(o => o.value === values[key])) return `Unknown ${meta.label.toLowerCase()}`
-    }
-    return null
+    // The bull off is checked by withBullOff
+    return validateOptions(cfg, configMeta)
   },
 
   init(cfg: HiloConfig, players: Player[]): HiloState {
