@@ -2,7 +2,7 @@
   // Minigolf match details section: two title-tabs like X01Section's, "Summary" (the scorecard) and
   // "Shots" (one hole at a time, picked by its number: everyone's strokes on it, as between holes).
   // Summary is the default; neither the view nor the hole is in the URL.
-  import { Tabs } from 'bits-ui'
+  import * as Tabs from '$lib/components/ui/tabs/index.js'
   import type { GameDetail } from '$lib/api'
   import Scorecard from '$lib/components/minigolf/Scorecard.svelte'
   import HoleShots from '$lib/components/minigolf/HoleShots.svelte'
@@ -23,11 +23,7 @@
     <h2 class="sr-only">Match view</h2>
     <Tabs.List aria-label="Match view" class="flex items-end gap-[22px]">
       {#each [{ key: 'summary', label: 'Summary' }, { key: 'shots', label: 'Shots' }] as t (t.key)}
-        <Tabs.Trigger
-          value={t.key}
-          class="cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 pb-[6px] font-display text-[24px] font-bold uppercase leading-none text-text-dim hover:text-text data-[state=active]:text-text data-[state=active]:shadow-[inset_0_-3px_0_var(--color-accent)] md:text-[32px]"
-          >{t.label}</Tabs.Trigger
-        >
+        <Tabs.Trigger variant="title" value={t.key}>{t.label}</Tabs.Trigger>
       {/each}
     </Tabs.List>
 
@@ -41,10 +37,12 @@
         <!-- Scrolls sideways on a phone rather than wrapping into a second row -->
         <Tabs.List aria-label="Hole" class="scrollbar-themed flex max-w-full gap-1 self-start overflow-x-auto rounded-[10px] bg-bg p-1">
           {#each golf.holes as h, i (i)}
+            <!-- The picked hole fills in the accent, like X01's leg selector -->
             <Tabs.Trigger
+              variant="pill"
               value={String(i)}
               aria-label="Hole {i + 1}, {h.name}"
-              class="h-10 min-w-11 shrink-0 cursor-pointer rounded-[7px] border-0 bg-transparent px-3 font-[inherit] text-[15px] text-ink-2 data-[state=active]:bg-accent data-[state=active]:font-bold data-[state=active]:text-accent-fg"
+              class="h-10 min-w-11 shrink-0 px-3 text-[15px] hover:text-ink-2 data-[state=active]:bg-accent data-[state=active]:font-bold data-[state=active]:text-accent-fg"
               >{i + 1}</Tabs.Trigger
             >
           {/each}

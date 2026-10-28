@@ -3,7 +3,6 @@ import type { Friend } from '../api/lobby-ws'
 import {
   incomingMeta,
   joinRefusal,
-  tabAfterKey,
   outgoingMeta,
   parseFriendName,
   rowAction,
@@ -96,20 +95,5 @@ describe('joinRefusal', () => {
     expect(joinRefusal(403, { error: 'x' })).toBe("You can't join that lobby without its code any more")
     expect(joinRefusal(404, { error: 'x' })).toBe('That lobby has closed')
     expect(joinRefusal(409, { error: 'x', code: 'active_session', sessionId: 's1' })).toBe('You already have a game running')
-  })
-})
-
-describe('tabAfterKey', () => {
-  it('moves along the tabs with the arrows, wrapping, and jumps with Home and End', () => {
-    expect(tabAfterKey('ArrowRight', 'all')).toBe('online')
-    expect(tabAfterKey('ArrowRight', 'requests')).toBe('all')
-    expect(tabAfterKey('ArrowLeft', 'all')).toBe('requests')
-    expect(tabAfterKey('ArrowLeft', 'online')).toBe('all')
-    expect(tabAfterKey('Home', 'requests')).toBe('all')
-    expect(tabAfterKey('End', 'all')).toBe('requests')
-  })
-  it('ignores other keys', () => {
-    expect(tabAfterKey('Enter', 'all')).toBeNull()
-    expect(tabAfterKey('ArrowDown', 'online')).toBeNull()
   })
 })

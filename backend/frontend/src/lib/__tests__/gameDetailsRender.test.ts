@@ -259,11 +259,11 @@ describe('X01Section', () => {
     expect(out).toContain('role="tablist"')
     expect(out).toContain('aria-label="Match view"')
     expect(out.match(/role="tab"/g)).toHaveLength(3)
-    expect(out).toMatch(/aria-selected="false"[^>]*>Leg stats/)
-    expect(out).toMatch(/aria-selected="true"[^>]*>Breakdown/)
-    expect(out).toMatch(/aria-selected="false"[^>]*>Heatmap/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Leg stats/)
+    expect(out).toMatch(/aria-selected="true"[^>]*>(<!---->)?Breakdown/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Heatmap/)
     // The unselected tab hovers to the artboard's full-brightness text, not a middling one.
-    expect(out).toMatch(/text-text-dim hover:text-text[^>]*>Heatmap/)
+    expect(out).toMatch(/text-text-dim hover:text-text[^>]*>(<!---->)?Heatmap/)
     expect(out).toContain('role="tabpanel"')
     // The leg selector sits between the title-tabs and the panel, Match first, then Leg 1 — a
     // single-leg game still shows both (not a plain "Leg 1" label any more).

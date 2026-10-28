@@ -20,7 +20,8 @@
   import { me } from '$lib/lobby/sockets'
   import { createFriendActions } from '$lib/friends/controller.svelte'
   import { setInvisible } from '$lib/presence'
-  import { friendsTabId, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
+  import { FRIENDS_TABS, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
+  import * as Tabs from '$lib/components/ui/tabs/index.js'
 
   const invisible = $derived($currentUser?.invisible ?? false)
   const list = $derived($me?.friends ?? { friends: [], incoming: [], outgoing: [] })
@@ -30,6 +31,7 @@
   const myLobbyId = $derived($me?.lobby?.id ?? null)
   const noRequests = $derived(list.incoming.length === 0 && list.outgoing.length === 0)
   let tab = $state<FriendsTab>('all')
+  const pickTab = (v: string) => (tab = FRIENDS_TABS.find(t => t === v) ?? tab)
   const actions = createFriendActions(() => myLobbyId)
   // Ticks so "10 min ago" ages while the page is open
   let now = $state(new Date())
@@ -56,105 +58,104 @@
   <main
     class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
   >
-    <header class="hidden md:flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-      <div class="flex flex-col gap-[6px]">
-        <h1 class="m-0 font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Friends</h1>
-        <p class="m-0 text-[15px] text-text-muted">
-          <strong class="text-text font-semibold">{counts.online} online</strong> · {counts.all}
-          {counts.all === 1 ? 'friend' : 'friends'} <span class="hidden xl:inline">· invite them to your lobby from here.</span>
-        </p>
-      </div>
-      <FriendsTabs bind:tab {counts} panelId="friends-panel" />
-    </header>
-    {#if invisible}<InvisibleBanner ongoonline={() => void actions.once(() => setInvisible(false))} />{/if}
-    {#if actions.error}<ErrorText>{actions.error}</ErrorText>{/if}
+    <!-- contents: the header's tabs and the panel they control stay the page's own flex children -->
+    <Tabs.Root value={tab} onValueChange={pickTab} class="contents">
+      <header class="hidden md:flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div class="flex flex-col gap-[6px]">
+          <h1 class="m-0 font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Friends</h1>
+          <p class="m-0 text-[15px] text-text-muted">
+            <strong class="text-text font-semibold">{counts.online} online</strong> · {counts.all}
+            {counts.all === 1 ? 'friend' : 'friends'} <span class="hidden xl:inline">· invite them to your lobby from here.</span>
+          </p>
+        </div>
+        <FriendsTabs {counts} />
+      </header>
+      {#if invisible}<InvisibleBanner ongoonline={() => void actions.once(() => setInvisible(false))} />{/if}
+      {#if actions.error}<ErrorText>{actions.error}</ErrorText>{/if}
 
-    <div
-      class="flex flex-col gap-[14px] md:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
-    >
       <div
-        id="friends-panel"
-        role="tabpanel"
-        aria-labelledby={friendsTabId(tab)}
-        class="order-2 lg:order-none flex flex-col gap-[14px] md:gap-5 min-w-0"
+        class="flex flex-col gap-[14px] md:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
       >
-        {#if loaded && list.friends.length === 0}
-          <div class={tab === 'requests' ? 'md:hidden' : ''}>
-            <EmptyState
-              title="No friends yet"
-              text="Add a friend by their name. Once they accept, you see each other's status and can join each other's lobbies."
-            >
-              {#snippet icon()}<UsersRound size={24} />{/snippet}
-            </EmptyState>
-          </div>
-        {:else}
-          {#if tab === 'online' && groups.online.length === 0}
-            <p class="hidden md:block m-0 text-[15px] text-text-muted">Nobody's online right now.</p>
+        <!-- One panel whatever the tab (phones show every list stacked); it follows the selected tab -->
+        <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-none flex flex-col gap-[14px] md:gap-5 min-w-0">
+          {#if loaded && list.friends.length === 0}
+            <div class={tab === 'requests' ? 'md:hidden' : ''}>
+              <EmptyState
+                title="No friends yet"
+                text="Add a friend by their name. Once they accept, you see each other's status and can join each other's lobbies."
+              >
+                {#snippet icon()}<UsersRound size={24} />{/snippet}
+              </EmptyState>
+            </div>
+          {:else}
+            {#if tab === 'online' && groups.online.length === 0}
+              <p class="hidden md:block m-0 text-[15px] text-text-muted">Nobody's online right now.</p>
+            {/if}
+            <FriendsSection
+              title="Online"
+              friends={groups.online}
+              inALobby={myLobbyId !== null}
+              {busy}
+              {...rowHandlers}
+              class={tab === 'requests' ? 'md:hidden' : ''}
+            />
+            <FriendsSection
+              title="Offline"
+              friends={groups.offline}
+              inALobby={myLobbyId !== null}
+              {busy}
+              {...rowHandlers}
+              class={tab === 'all' ? '' : 'md:hidden'}
+            />
           {/if}
-          <FriendsSection
-            title="Online"
-            friends={groups.online}
-            inALobby={myLobbyId !== null}
-            {busy}
-            {...rowHandlers}
-            class={tab === 'requests' ? 'md:hidden' : ''}
-          />
-          <FriendsSection
-            title="Offline"
-            friends={groups.offline}
-            inALobby={myLobbyId !== null}
-            {busy}
-            {...rowHandlers}
-            class={tab === 'all' ? '' : 'md:hidden'}
-          />
-        {/if}
-        {#if tab === 'requests'}
-          <div class="hidden md:block">
+          {#if tab === 'requests'}
+            <div class="hidden md:block">
+              <RequestsPanel
+                incoming={list.incoming}
+                outgoing={list.outgoing}
+                {now}
+                emptyText="No open requests."
+                {busy}
+                onanswer={actions.answer}
+                oncancel={actions.cancel}
+              />
+            </div>
+          {/if}
+        </Tabs.Content>
+
+        <aside class="order-1 lg:order-none flex flex-col gap-[14px] md:gap-4 min-w-0">
+          <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
+             Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
+          <div class="order-first md:order-last">
+            <StatusCard {invisible} onchange={(v: boolean) => actions.once(() => setInvisible(v))} />
+          </div>
+          <AddFriendCard />
+          <section
+            aria-label="Friend requests"
+            class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:card {noRequests ? 'max-md:hidden' : ''}"
+          >
+            <div class="flex items-baseline justify-between gap-3">
+              <h2
+                class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
+              >
+                Requests<span class="md:hidden">{` · ${list.incoming.length} for you · ${list.outgoing.length} sent`}</span>
+              </h2>
+              <span class="hidden md:inline text-[12px] text-text-dim">{list.incoming.length} for you · {list.outgoing.length} sent</span>
+            </div>
             <RequestsPanel
               incoming={list.incoming}
               outgoing={list.outgoing}
               {now}
-              emptyText="No open requests."
+              headings={false}
+              emptyText="No requests for you right now."
               {busy}
               onanswer={actions.answer}
               oncancel={actions.cancel}
             />
-          </div>
-        {/if}
+          </section>
+        </aside>
       </div>
-
-      <aside class="order-1 lg:order-none flex flex-col gap-[14px] md:gap-4 min-w-0">
-        <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
-             Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
-        <div class="order-first md:order-last">
-          <StatusCard {invisible} onchange={(v: boolean) => actions.once(() => setInvisible(v))} />
-        </div>
-        <AddFriendCard />
-        <section
-          aria-label="Friend requests"
-          class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:card {noRequests ? 'max-md:hidden' : ''}"
-        >
-          <div class="flex items-baseline justify-between gap-3">
-            <h2
-              class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
-            >
-              Requests<span class="md:hidden">{` · ${list.incoming.length} for you · ${list.outgoing.length} sent`}</span>
-            </h2>
-            <span class="hidden md:inline text-[12px] text-text-dim">{list.incoming.length} for you · {list.outgoing.length} sent</span>
-          </div>
-          <RequestsPanel
-            incoming={list.incoming}
-            outgoing={list.outgoing}
-            {now}
-            headings={false}
-            emptyText="No requests for you right now."
-            {busy}
-            onanswer={actions.answer}
-            oncancel={actions.cancel}
-          />
-        </section>
-      </aside>
-    </div>
+    </Tabs.Root>
   </main>
 </Layout>
 
