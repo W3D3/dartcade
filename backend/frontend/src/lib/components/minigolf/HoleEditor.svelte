@@ -3,6 +3,7 @@
   away; an invalid one shows why and keeps the last good hole. Copy, then paste into the course file.
 -->
 <script lang="ts">
+  import { createCopy } from '$lib/clipboard.svelte'
   import { untrack } from 'svelte'
   import { parseHole } from '$lib/minigolf/bench'
   import type { Hole } from '$shared/minigolf/types'
@@ -11,7 +12,7 @@
 
   let text = $state(untrack(() => JSON.stringify(hole, null, 2)))
   let errors = $state<string[]>([])
-  let copied = $state(false)
+  const clip = createCopy()
   /** The hole this text came from, so an edit we passed up doesn't overwrite the text. */
   let shown: Hole = untrack(() => hole)
 
@@ -37,12 +38,6 @@
       onChange(r.hole)
     }, 300)
   }
-
-  async function copy(): Promise<void> {
-    await navigator.clipboard.writeText(text)
-    copied = true
-    setTimeout(() => (copied = false), 2000)
-  }
 </script>
 
 <section class="flex flex-col gap-2" aria-label="Hole JSON">
@@ -60,6 +55,6 @@
   <button
     type="button"
     class="self-start h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium font-[inherit] cursor-pointer hover:bg-surface-hover"
-    onclick={() => void copy()}>{copied ? 'Copied' : 'Copy'}</button
+    onclick={() => void clip.copy(text)}>{clip.state === 'copied' ? 'Copied' : 'Copy'}</button
   >
 </section>

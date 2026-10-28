@@ -3,6 +3,7 @@
   values to paste into backend/src/shared/minigolf/physics.ts.
 -->
 <script lang="ts">
+  import { createCopy } from '$lib/clipboard.svelte'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { powerAt } from '$shared/minigolf/shot'
 
@@ -31,12 +32,7 @@
       .join(' '),
   )
 
-  let copied = $state(false)
-  async function copy(): Promise<void> {
-    await navigator.clipboard.writeText(JSON.stringify(physics, null, 2))
-    copied = true
-    setTimeout(() => (copied = false), 2000)
-  }
+  const clip = createCopy()
 
   const BUTTON =
     'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium font-[inherit] cursor-pointer hover:bg-surface-hover'
@@ -68,6 +64,8 @@
   </figure>
   <div class="flex gap-2">
     <button type="button" class={BUTTON} onclick={() => (physics = { ...DEFAULT_PHYSICS })}>Reset</button>
-    <button type="button" class={BUTTON} onclick={() => void copy()}>{copied ? 'Copied' : 'Copy as JSON'}</button>
+    <button type="button" class={BUTTON} onclick={() => void clip.copy(JSON.stringify(physics, null, 2))}
+      >{clip.state === 'copied' ? 'Copied' : 'Copy as JSON'}</button
+    >
   </div>
 </section>
