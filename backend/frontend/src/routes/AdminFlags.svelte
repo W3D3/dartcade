@@ -14,6 +14,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
+  import { readFlag, writeFlag } from '$lib/storage'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
@@ -113,21 +114,10 @@
 
   // Group by feature: a header row per feature, remembered per device (storage may be blocked)
   const GROUP_KEY = 'dartcade.adminFlags.groupByFeature'
-  let grouped = $state(readGrouped())
-  function readGrouped(): boolean {
-    try {
-      return localStorage.getItem(GROUP_KEY) !== '0'
-    } catch {
-      return true
-    }
-  }
+  let grouped = $state(readFlag(GROUP_KEY, true))
   function setGrouped(on: boolean): void {
     grouped = on
-    try {
-      localStorage.setItem(GROUP_KEY, on ? '1' : '0')
-    } catch {
-      // Not remembered: it still applies until the page is left
-    }
+    writeFlag(GROUP_KEY, on)
   }
 
   const helper = createColumnHelper<Features, AdminFlag>()

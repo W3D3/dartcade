@@ -2,6 +2,7 @@
   // The side nav's "Connect your board" card (Onboarding-NoBoard), for accounts with no paired
   // board. Its button opens pairing on the Boards page; "Hide for now" hides it on this device.
   // `compact` is the Play page's row version for phones and tablets, which have no side nav.
+  import { readFlag, writeFlag } from '$lib/storage'
   import { ChevronRight, Target, X } from '@lucide/svelte'
   import { currentUser } from '$lib/auth'
   import { hasBoards } from '$lib/hasBoards'
@@ -25,20 +26,12 @@
 
   function stored(k: string | null): boolean {
     if (k === null) return true
-    try {
-      return localStorage.getItem(k) === '1'
-    } catch {
-      return false
-    }
+    return readFlag(k)
   }
 
   function hide() {
     dismissedKey = key
-    try {
-      if (key) localStorage.setItem(key, '1')
-    } catch {
-      /* hidden until the page reloads */
-    }
+    if (key) writeFlag(key, true)
   }
 </script>
 
