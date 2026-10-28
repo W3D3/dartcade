@@ -30,6 +30,6 @@
   </label>
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={oncancel}>Keep it</Button>
-    <Button variant="accent" size="lg" class="flex-1 bg-live text-[#fff]" onclick={() => onconfirm(reason)}>Invalidate</Button>
+    <Button variant="danger" size="lg" class="flex-1" onclick={() => onconfirm(reason)}>Invalidate</Button>
   {/snippet}
 </Modal>
