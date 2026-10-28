@@ -5,6 +5,7 @@
   // only for what happens while you look: the bar slides when progress moves, and a challenge you
   // just finished (`fresh`) stamps its check in with a small burst. An unfinished daily can be
   // rerolled once a day.
+  import { Progress } from '$lib/components/ui/progress/index.js'
   import { Check, LoaderCircle } from '@lucide/svelte'
   import XpBadge from './XpBadge.svelte'
   import type { ChallengeItem } from '$lib/progress/challenges'
@@ -29,7 +30,6 @@
     await onclaim(claimButton.getBoundingClientRect())
     claiming = false
   }
-  const pct = $derived((item.progress / item.target) * 100)
   const close = $derived(!item.completed && item.target > 1 && item.target - item.progress === 1)
   // The burst's pieces: where each flies, its colour and shape
   const BURST = [
@@ -120,16 +120,15 @@
         >+{item.xp}<XpBadge /></span
       >
     </div>
-    <div
-      class="h-2 rounded-full bg-surface-inset overflow-hidden"
-      role="progressbar"
+    <Progress
       aria-label="{item.progress} of {item.target}"
-      aria-valuemin={0}
-      aria-valuemax={item.target}
-      aria-valuenow={item.progress}
-    >
-      <div class="fill h-full rounded-full bar-stripes {close ? 'bg-gold' : 'bg-accent'}" style="width: {pct}%"></div>
-    </div>
+      value={item.progress}
+      max={item.target}
+      class="h-2 rounded-full bg-surface-inset"
+      fill="rounded-full bar-stripes transition-[width] duration-[800ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none {close
+        ? 'bg-gold'
+        : 'bg-accent'}"
+    />
   </li>
 {/if}
 
@@ -140,9 +139,6 @@
     box-shadow:
       0 0 0 1px rgba(198, 242, 78, 0.12),
       0 6px 24px -10px rgba(198, 242, 78, 0.5);
-  }
-  .fill {
-    transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .claim {
     animation: glow 1.8s ease-in-out infinite;
@@ -228,9 +224,6 @@
     .stamp,
     .claim {
       animation: none;
-    }
-    .fill {
-      transition: none;
     }
     .ring,
     .piece,

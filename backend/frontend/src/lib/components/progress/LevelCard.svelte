@@ -4,6 +4,7 @@
   // New XP plays in: a claim's "+N XP" flies from its button into the bar, then the total counts
   // up and the bar fills (running past the end on a level-up). A level-up pops the number, bursts
   // confetti from it and names what the new level unlocked. Reduced motion shows the end state.
+  import { Progress } from '$lib/components/ui/progress/index.js'
   import { ChevronRight, X } from '@lucide/svelte'
   import confetti from 'canvas-confetti'
   import { untrack } from 'svelte'
@@ -40,7 +41,7 @@
   let flying = $state<{ total: number; from: DOMRect } | null>(null)
   let up = $state<{ level: number; perks: Perk[] } | null>(null)
   let popping = $state(false)
-  let bar: HTMLElement | undefined = $state()
+  let bar = $state<HTMLElement | null>(null)
   let levelNumber: HTMLElement | undefined = $state()
   let equipped = $state(false)
   const newTitle = $derived(up?.perks.find(p => p.kind === 'title') ?? null)
@@ -189,17 +190,13 @@
         >
       {/key}
     {/if}
-    <div
-      bind:this={bar}
-      class="h-4 rounded-full bg-surface-inset overflow-hidden"
-      role="progressbar"
+    <Progress
+      bind:ref={bar}
       aria-label="XP to level {v.level + 1}"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(v.pct)}
-    >
-      <div class="h-full rounded-full bg-accent bar-stripes" style="width: {v.pct}%"></div>
-    </div>
+      value={v.pct}
+      class="h-4 rounded-full bg-surface-inset"
+      fill="rounded-full bg-accent bar-stripes"
+    />
     <div class="flex justify-between text-[13px] text-text-muted">
       <span>Level {v.level}</span><span class="font-semibold text-text tabular-nums">{v.toGo}</span><span>Level {v.level + 1}</span>
     </div>

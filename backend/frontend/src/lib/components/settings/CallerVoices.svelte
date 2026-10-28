@@ -3,6 +3,7 @@
   // the user's packs (sample, delete), the built-in voices, and importing a pack from a zip
   // (drop or choose, with upload progress). The server keeps the packs and
   // decides what an import keeps; this shows what it says.
+  import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
   import { LoaderCircle, Play, Trash, Upload, Volume2 } from '@lucide/svelte'
@@ -253,16 +254,12 @@
               >
             {/if}
           </div>
-          <span
-            role="progressbar"
+          <Progress
             aria-label="Uploading {upload.name}"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={pct}
-            class="block h-1 rounded-[2px] bg-line overflow-hidden"
-          >
-            <span class="block h-full bg-accent transition-[width]" style:width="{pct}%"></span>
-          </span>
+            value={pct}
+            class="h-1 rounded-[2px] bg-line"
+            fill="bg-accent transition-[width]"
+          />
           <span class="text-[12px] leading-[1.45] text-text-dim"
             >Only the audio clips are kept, so the voice will be smaller than the zip. You can leave this page; the import keeps going.</span
           >
