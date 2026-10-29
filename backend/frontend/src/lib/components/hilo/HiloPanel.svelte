@@ -6,12 +6,10 @@
 <script lang="ts">
   import { X } from '@lucide/svelte'
   import type { HiloGame } from '$lib/api/game-ws'
-  import Avatar from '$lib/components/Avatar.svelte'
-  import PlayerPill from '$lib/components/PlayerPill.svelte'
+  import PanelShell from '$lib/components/PanelShell.svelte'
   import Hearts from '$lib/components/hilo/Hearts.svelte'
   import { ordinal, plural } from '$lib/fmt'
   import { needsLine, outcomeText } from '$lib/hilo/view'
-  import { LOST_CARD, playerCard } from '$lib/playerCard'
 
   let {
     game,
@@ -37,36 +35,21 @@
   const lit = $derived(active || justLost)
   // The open visit's row, once a dart is in
   const throwing = $derived(active && game.currentVisitDarts.length > 0)
-  const card = $derived(justLost ? LOST_CARD : playerCard(active))
   // Lit (thrower, life lost) or quiet colours for a visit's result
   const resultTone = (lost: boolean) => (lost ? (lit ? 'text-live-text' : 'text-[#e0827a]') : lit ? 'text-accent' : 'text-[#a7c45a]')
   const state = $derived(justLost ? 'just lost a life' : active ? 'throwing' : upNext ? 'up next' : s.out ? 'out' : 'waiting')
+  const pill = $derived(justLost ? 'lost' : s.out ? 'out' : active ? 'throwing' : upNext ? 'up-next' : null)
 </script>
 
-<section
-  aria-label="{name}, {state}, {s.lives} of {plural(game.cfg.lives, 'life', 'lives')}"
-  class="flex-1 min-w-[220px] min-h-0 box-border p-4 xl:p-[26px] rounded-[18px] flex flex-col gap-3 xl:gap-[18px] {card}"
+<PanelShell
+  {name}
+  {active}
+  {pill}
+  pillLabel={s.out ? `Out${s.place ? ` · ${ordinal(s.place)}` : ''}` : undefined}
+  tone={justLost ? 'lost' : null}
+  label="{name}, {state}, {s.lives} of {plural(game.cfg.lives, 'life', 'lives')}"
+  class="min-w-[220px]"
 >
-  <!-- Narrow panels (below xl): the pill wraps under the name rather than cutting it short -->
-  <div class="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0">
-    <span class="flex items-center gap-3 min-w-0 max-w-full">
-      <Avatar {name} tone={active ? 'accent' : 'default'} size={40} />
-      <span class="text-[22px] font-semibold truncate {lit ? 'text-text' : 'text-ink-2'}">{name}</span>
-    </span>
-    <span class="ml-auto">
-      {#if justLost}
-        <span class="inline-flex items-center h-7 px-3 rounded-full bg-live text-bg text-[13px] font-bold uppercase tracking-[0.08em]"
-          >−1 life</span
-        >
-      {:else if s.out}
-        <span
-          class="inline-flex items-center h-7 px-3 rounded-full bg-surface-paused text-text-dim text-[13px] font-bold uppercase tracking-[0.08em]"
-          >Out{s.place ? ` · ${ordinal(s.place)}` : ''}</span
-        >
-      {:else if active}<PlayerPill kind="throwing" />{:else if upNext}<PlayerPill kind="up-next" />{/if}
-    </span>
-  </div>
-
   <div class="flex flex-col gap-2">
     <span class="text-[13px] label-caps text-text-muted">Lives · {s.lives} of {game.cfg.lives}</span>
     <Hearts lives={s.lives} total={game.cfg.lives} tone={lit ? 'accent' : 'muted'} {justLost} size="w-9 h-9 xl:w-12 xl:h-12" />
@@ -128,4 +111,4 @@
       {/if}
     </div>
   {/if}
-</section>
+</PanelShell>

@@ -1,13 +1,16 @@
 <script lang="ts">
   import { Trophy } from '@lucide/svelte'
   import type { PillKind } from './pills.js'
-  let { kind, small = false }: { kind: PillKind; small?: boolean } = $props()
+  /** `label`: a different text for the kind's look (Higher Lower's "Out · 2nd", 121's "Done"). */
+  let { kind, small = false, label }: { kind: PillKind; small?: boolean; label?: string } = $props()
   const LABEL: Record<PillKind, string> = {
     throwing: 'Throwing',
     'up-next': 'Up next',
     practice: 'Practice',
     leading: 'Leading',
     winner: 'Winner',
+    lost: '−1 life',
+    out: 'Out',
   }
 </script>
 
@@ -16,12 +19,16 @@
              {small ? 'h-[26px] px-[10px] text-[12px]' : 'h-7 px-3 text-[13px]'}
              {kind === 'throwing' || kind === 'winner'
     ? 'bg-accent text-accent-fg font-bold'
-    : kind === 'leading'
-      ? 'border border-line-pip text-text font-bold'
-      : 'border border-line-chip text-text-dim font-semibold'}"
+    : kind === 'lost'
+      ? 'bg-live text-bg font-bold'
+      : kind === 'out'
+        ? 'bg-surface-paused text-text-dim font-bold'
+        : kind === 'leading'
+          ? 'border border-line-pip text-text font-bold'
+          : 'border border-line-chip text-text-dim font-semibold'}"
 >
   {#if kind === 'leading'}
     <Trophy size={13} />
   {/if}
-  {LABEL[kind]}
+  {label ?? LABEL[kind]}
 </span>

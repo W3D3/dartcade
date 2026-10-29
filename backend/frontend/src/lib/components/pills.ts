@@ -1,1 +1,1 @@
-export type PillKind = 'throwing' | 'up-next' | 'practice' | 'leading' | 'winner'
+export type PillKind = 'throwing' | 'up-next' | 'practice' | 'leading' | 'winner' | 'lost' | 'out'

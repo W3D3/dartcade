@@ -6,7 +6,7 @@
 <script lang="ts">
   import { Check, X } from '@lucide/svelte'
   import type { P121Game } from '$lib/api/game-ws'
-  import Avatar from '$lib/components/Avatar.svelte'
+  import PanelShell from '$lib/components/PanelShell.svelte'
   import { plural } from '$lib/fmt'
   import { playerCard } from '$lib/playerCard'
   import { p121Banner, p121Hint, p121Pips } from '$lib/p121/view'
@@ -19,6 +19,7 @@
     active,
     visitDarts = 0,
     variant = 'solo',
+    portrait = false,
     checkout,
   }: {
     game: P121Game
@@ -29,6 +30,8 @@
     /** Darts in the open visit; 0 for anyone not throwing. */
     visitDarts?: number
     variant?: 'solo' | 'side' | 'phone'
+    /** The portrait layout: the shell's portrait sizes. */
+    portrait?: boolean
     checkout?: CheckoutPrefs
   } = $props()
 
@@ -88,15 +91,11 @@
   {/if}
 {/snippet}
 
-<section
-  aria-label="Target {s.target}, {s.left} left, {used} of {game.cfg.dartsPerTry} darts used"
-  class="box-border rounded-[18px] flex flex-col min-w-0 {playerCard(active)} {variant === 'solo'
-    ? 'w-[300px] xl:w-[400px] shrink-0 px-[22px] py-5 gap-4 xl:px-[26px] xl:py-6'
-    : phone
-      ? 'px-4 py-3 gap-2'
-      : 'flex-1 p-[18px] gap-3 xl:p-6'}"
->
-  {#if phone}
+{#if phone}
+  <section
+    aria-label="Target {s.target}, {s.left} left, {used} of {game.cfg.dartsPerTry} darts used"
+    class="box-border rounded-[18px] flex flex-col min-w-0 px-4 py-3 gap-2 {playerCard(active)}"
+  >
     <div class="flex items-center justify-between">
       <span class={label}>Left</span>
       <span class="flex items-baseline gap-[6px]">
@@ -110,15 +109,23 @@
       {@render pipRow('w-[14px] h-[14px]')}
     </div>
     {@render hintLine()}
-  {:else}
-    <div class="flex items-center gap-3 min-w-0">
-      <Avatar {name} tone={active ? 'accent' : 'default'} size={40} />
-      <span class="text-[22px] font-semibold truncate">{name}</span>
-      <span class="ml-auto flex items-baseline gap-[6px]">
+  </section>
+{:else}
+  <PanelShell
+    {name}
+    {active}
+    pill={null}
+    solo={variant === 'solo'}
+    {portrait}
+    class={variant === 'solo' ? 'w-[300px] xl:w-[400px]' : ''}
+    label="Target {s.target}, {s.left} left, {used} of {game.cfg.dartsPerTry} darts used"
+  >
+    {#snippet aside()}
+      <span class="flex items-baseline gap-[6px]">
         <span class={label}>Target</span>
-        <span class="font-display font-bold text-[34px] text-accent">{s.target}</span>
+        <span class="font-display font-bold text-[34px] leading-none text-accent">{s.target}</span>
       </span>
-    </div>
+    {/snippet}
     <div class="flex flex-col">
       <span class={label}>Left</span>
       <span
@@ -149,5 +156,5 @@
         {/each}
       </div>
     {/if}
-  {/if}
-</section>
+  </PanelShell>
+{/if}

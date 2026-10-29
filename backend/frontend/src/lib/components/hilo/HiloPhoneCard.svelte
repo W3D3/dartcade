@@ -5,11 +5,11 @@
 <script lang="ts">
   import type { HiloGame } from '$lib/api/game-ws'
   import Avatar from '$lib/components/Avatar.svelte'
-  import PlayerPill from '$lib/components/PlayerPill.svelte'
+  import PhoneCardShell from '$lib/components/PhoneCardShell.svelte'
   import Hearts from '$lib/components/hilo/Hearts.svelte'
   import { ordinal, plural } from '$lib/fmt'
   import { needsLine, outcomeText } from '$lib/hilo/view'
-  import { LOST_CARD, playerCard } from '$lib/playerCard'
+  import { playerCard } from '$lib/playerCard'
 
   let {
     game,
@@ -31,16 +31,8 @@
 </script>
 
 {#if active}
-  <section
-    aria-label="{name}, throwing, {lives}"
-    class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-[16px] flex flex-col gap-[10px] {playerCard(true)}"
-  >
-    <div class="flex items-center gap-2 min-w-0">
-      <Avatar {name} tone="accent" size={30} />
-      <span class="text-[16px] font-semibold truncate">{name}</span>
-      <PlayerPill kind="throwing" small />
-      <span class="ml-auto"><Hearts lives={s.lives} total={game.cfg.lives} size="w-[26px] h-[26px]" /></span>
-    </div>
+  <PhoneCardShell {name} label="{name}, throwing, {lives}" pill="throwing" seat={null} class="gap-[10px]">
+    {#snippet aside()}<span class="ml-auto"><Hearts lives={s.lives} total={game.cfg.lives} size="w-[26px] h-[26px]" /></span>{/snippet}
     <div class="flex items-baseline justify-between gap-[10px]">
       <span class="flex flex-col gap-[1px]">
         <span class="text-[10px] label-caps text-text-muted">Needs</span>
@@ -53,13 +45,14 @@
         </span>
       {/if}
     </div>
-  </section>
+  </PhoneCardShell>
 {:else}
   <section
     aria-label="{name}, {sub ? `${sub}, ` : ''}{lives}"
-    class="shrink-0 h-[58px] box-border px-[14px] rounded-[12px] flex items-center gap-[10px] {justLost
-      ? LOST_CARD
-      : playerCard(false)} {s.out ? 'opacity-60' : ''}"
+    class="shrink-0 h-[58px] box-border px-[14px] rounded-[12px] flex items-center gap-[10px] {playerCard(
+      false,
+      justLost ? 'lost' : null,
+    )} {s.out ? 'opacity-60' : ''}"
   >
     <Avatar {name} size={32} />
     <span class="flex flex-col gap-[2px] min-w-0">
