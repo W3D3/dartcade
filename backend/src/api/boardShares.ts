@@ -1,5 +1,6 @@
 // Board-share invites: an owner invites an accepted friend to use their board, the friend accepts
-// or declines. This task only covers the API surface; a shared board isn't usable yet (Task 3).
+// or declines. Once accepted, the grantee can pick the board for a session or lobby seat (Task 3)
+// and flip its lights master switch (Task 4); device management and owner-only controls stay out.
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'

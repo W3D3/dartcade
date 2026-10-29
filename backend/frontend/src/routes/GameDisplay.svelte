@@ -109,7 +109,8 @@
   async function loadOwnBoards() {
     try {
       const { data } = await api.GET('/api/boards')
-      if (data) myOwnBoards = data.boards
+      // Owner-only controls (status/start/stop/reset/calibrate): exclude boards shared by a friend
+      if (data) myOwnBoards = data.boards.filter(b => !b.sharedBy)
     } catch {
       /* keep the list */
     }
