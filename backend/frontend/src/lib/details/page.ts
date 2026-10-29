@@ -84,13 +84,17 @@ export function detailSides(d: GameDetail): DetailSide[] {
 type Headline = { big: string; caption: string }
 const NO_HEADLINE: Headline = { big: '', caption: '' }
 
+// Legs won per side, for the modes played in legs
+function legsHeadline(d: GameDetail, sides: DetailSide[]): Headline {
+  const firstTo = typeof d.game.config.firstTo === 'number' ? d.game.config.firstTo : null
+  const legs = sides.map(s => (Object.hasOwn(s.values, 'legsWon') ? s.values.legsWon : 0))
+  return { big: legs.join('–'), caption: firstTo === null ? 'Legs' : `Legs · first to ${firstTo}` }
+}
+
 /** Each mode's result card headline: the score in big type and what it counts. */
 const HEADLINE = {
-  x01: (d, sides) => {
-    const firstTo = typeof d.game.config.firstTo === 'number' ? d.game.config.firstTo : null
-    const legs = sides.map(s => (Object.hasOwn(s.values, 'legsWon') ? s.values.legsWon : 0))
-    return { big: legs.join('–'), caption: firstTo === null ? 'Legs' : `Legs · first to ${firstTo}` }
-  },
+  x01: legsHeadline,
+  cricket: legsHeadline,
   atc: (_d, sides) => {
     const winner = sides.find(s => s.placement === 1) ?? sides[0]
     return { big: '', caption: atcResult(winner.values) }

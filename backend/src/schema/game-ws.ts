@@ -234,6 +234,90 @@ export type HiloSnapshot = SnapshotBase & {
   game: HiloGame
 }
 /**
+ * Cricket view plus the engine's per-session fields and the bull off.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "CricketGame".
+ */
+export type CricketGame = EngineGameFields & {
+  config: {
+    mode: 'standard' | 'cutthroat'
+    firstTo: number
+    botSpeed: 'fast' | 'normal' | 'slow'
+  }
+  phase: 'bulloff' | 'game' | 'finished'
+  /**
+   * The seven Cricket targets, in board order: 20, 19, 18, 17, 16, 15, 25 (bull).
+   */
+  targets: number[]
+  /**
+   * Per seat: its team's marks on each target (0-3).
+   */
+  marks: number[][]
+  /**
+   * Per seat: its team's points.
+   */
+  points: number[]
+  /**
+   * Per seat: its team's legs.
+   */
+  legs: number[]
+  firstTo: number
+  /**
+   * Per target: every team has opened it.
+   */
+  closed: boolean[]
+  /**
+   * Per target: the current thrower's team has opened it and some other team hasn't.
+   */
+  scorable: boolean[]
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit; null once the game is over, and when this visit would win the last leg.
+   */
+  nextPlayer: number | null
+  round: number
+  /**
+   * A seat: the winning team's first seat.
+   */
+  winner: number | null
+  visitLocked: boolean
+  /**
+   * Per seat: counted marks (MPR).
+   */
+  marksScored: number[]
+  /**
+   * Per seat: darts in committed visits.
+   */
+  dartsThrown: number[]
+  /**
+   * Per seat: their last committed visit, kept across legs; null before their first.
+   */
+  lastVisit: (CricketVisit | null)[]
+  bullOff: BullOffView | null
+  /**
+   * Only in a team game: each team with its shared marks and legs.
+   */
+  teams?: {
+    id: TeamId
+    name: string
+    /**
+     * The team's seats in its own throwing order.
+     */
+    seats: number[]
+    points: number
+    legs: number
+  }[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "CricketSnapshot".
+ */
+export type CricketSnapshot = SnapshotBase & {
+  gameId: 'cricket'
+  game: CricketGame
+}
+/**
  * A point in course space, [x, y]: millimetres, x right, y down.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -378,7 +462,7 @@ export type MinigolfSnapshot = SnapshotBase & {
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "Snapshot".
  */
-export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot
+export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
@@ -710,6 +794,18 @@ export interface HiloResult {
   outcome: 'high' | 'low' | 'between' | 'miss'
   high: number
   low: number
+}
+/**
+ * A committed Cricket visit: marks counted and points scored, for the chalkboard.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "CricketVisit".
+ */
+export interface CricketVisit {
+  seat: number
+  marks: number
+  points: number
+  darts: number
 }
 /**
  * A hole's geometry (see backend/src/shared/minigolf/types.ts).

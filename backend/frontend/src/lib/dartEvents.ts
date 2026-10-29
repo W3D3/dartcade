@@ -31,6 +31,12 @@ function eventGame(s: Snapshot): EventGame {
     case 'minigolf':
       // Every dart is a putt
       return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(() => true) }
+    case 'cricket': {
+      // A hit is a dart on one of the targets (the bullseye arrives as 50)
+      const targets = s.game.targets
+      const hit = (d: Dart) => d.segment.multiplier > 0 && targets.includes(d.segment.number === 50 ? 25 : d.segment.number)
+      return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(hit) }
+    }
   }
 }
 

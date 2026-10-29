@@ -1211,6 +1211,256 @@
       ],
       "unevaluatedProperties": false
     },
+    "CricketVisit": {
+      "title": "CricketVisit",
+      "description": "A committed Cricket visit: marks counted and points scored, for the chalkboard.",
+      "type": "object",
+      "required": ["seat", "marks", "points", "darts"],
+      "additionalProperties": false,
+      "properties": {
+        "seat": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "marks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "darts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "CricketGame": {
+      "title": "CricketGame",
+      "description": "Cricket view plus the engine's per-session fields and the bull off.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "config",
+            "phase",
+            "targets",
+            "marks",
+            "points",
+            "legs",
+            "firstTo",
+            "closed",
+            "scorable",
+            "currentPlayer",
+            "nextPlayer",
+            "round",
+            "winner",
+            "visitLocked",
+            "marksScored",
+            "dartsThrown",
+            "lastVisit",
+            "bullOff"
+          ],
+          "properties": {
+            "config": {
+              "type": "object",
+              "required": ["mode", "firstTo", "botSpeed"],
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["standard", "cutthroat"]
+                },
+                "firstTo": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "botSpeed": {
+                  "type": "string",
+                  "enum": ["fast", "normal", "slow"]
+                }
+              }
+            },
+            "phase": {
+              "type": "string",
+              "enum": ["bulloff", "game", "finished"]
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "The seven Cricket targets, in board order: 20, 19, 18, 17, 16, 15, 25 (bull)."
+            },
+            "marks": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
+                }
+              },
+              "description": "Per seat: its team's marks on each target (0-3)."
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: its team's points."
+            },
+            "legs": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: its team's legs."
+            },
+            "firstTo": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "closed": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              },
+              "description": "Per target: every team has opened it."
+            },
+            "scorable": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              },
+              "description": "Per target: the current thrower's team has opened it and some other team hasn't."
+            },
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit; null once the game is over, and when this visit would win the last leg."
+            },
+            "round": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "winner": {
+              "type": ["integer", "null"],
+              "description": "A seat: the winning team's first seat."
+            },
+            "visitLocked": {
+              "type": "boolean"
+            },
+            "marksScored": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: counted marks (MPR)."
+            },
+            "dartsThrown": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: darts in committed visits."
+            },
+            "lastVisit": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CricketVisit"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": "Per seat: their last committed visit, kept across legs; null before their first."
+            },
+            "bullOff": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BullOffView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "teams": {
+              "type": "array",
+              "description": "Only in a team game: each team with its shared marks and legs.",
+              "items": {
+                "type": "object",
+                "required": ["id", "name", "seats", "points", "legs"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "common-v1.json#/$defs/TeamId"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "seats": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "description": "The team's seats in its own throwing order."
+                  },
+                  "points": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "legs": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "CricketSnapshot": {
+      "title": "CricketSnapshot",
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
+        },
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "cricket"
+            },
+            "game": {
+              "$ref": "#/$defs/CricketGame"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "MinigolfPt": {
       "title": "MinigolfPt",
       "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -1861,6 +2111,9 @@
         },
         {
           "$ref": "#/$defs/HiloSnapshot"
+        },
+        {
+          "$ref": "#/$defs/CricketSnapshot"
         }
       ]
     },

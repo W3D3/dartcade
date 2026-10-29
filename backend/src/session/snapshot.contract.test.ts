@@ -9,6 +9,7 @@ import { atcModule } from '../games/atc.js'
 import { minigolfModule } from '../games/minigolf.js'
 import { p121Module } from '../games/p121.js'
 import { hiloModule } from '../games/hilo.js'
+import { cricketModule } from '../games/cricket.js'
 import { SnapshotSchema } from '../schema/zod.js'
 import { gameList } from '../games/index.js'
 
@@ -177,6 +178,14 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     await play(e, ['visit.opened', { visit_id: 'a' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
     expectValid(e.getSnapshot(sessionId))
     await play(e, ['visit.opened', { visit_id: 'b' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
+    expectValid(e.getSnapshot(sessionId))
+  })
+
+  it('Cricket, after a visit', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'cricket', cricketModule.defaultConfig, players)
+    expectValid(e.getSnapshot(sessionId))
+    await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
     expectValid(e.getSnapshot(sessionId))
   })
 

@@ -66,11 +66,13 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'cricket',
+    glyph: 'CRI',
     name: 'Cricket',
     desc: 'Close 15 to 20 and bull, then score.',
     cat: 'classic',
     img: cricketImg,
-    available: false,
+    available: true,
+    flag: 'gamemode.cricket.enabled',
   },
   {
     id: 'minigolf',

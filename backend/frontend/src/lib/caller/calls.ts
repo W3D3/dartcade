@@ -33,6 +33,7 @@ export function callGame(s: Snapshot): CallGame | null {
       return { ...s.game, bustThisVisit: s.game.visitLocked }
     case 'atc':
     case 'minigolf':
+    case 'cricket':
       return null
   }
 }

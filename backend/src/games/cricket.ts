@@ -1,5 +1,5 @@
 // Cricket's reducer: wires cricketRules (marks, scoring, leg win) into a GameModule, copying
-// X01's shape for legs and teams. The view is a placeholder for task 3.
+// X01's shape for legs and teams.
 import type {
   CommittedVisit,
   CricketDetail,
@@ -11,9 +11,10 @@ import type {
   SummaryContext,
 } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
+import type { CricketView } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
 import { validateOptions } from './configMeta.js'
-import { nextTurn } from './turns.js'
+import { nextTurn, upNext } from './turns.js'
 import { cricketMatchStats } from './cricketStats.js'
 import { rankSeats } from './ranking.js'
 import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
@@ -28,8 +29,6 @@ export type CricketConfig = {
 
 /** A committed visit: marks counted and points scored, for the chalkboard. */
 export type CricketVisitRecord = { seat: number; marks: number; points: number; darts: number }
-
-type CricketView = Record<string, unknown>
 
 const TEAM_IDS = ['A', 'B'] as const
 
@@ -259,8 +258,42 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
     return { state: s }
   },
 
-  view(): CricketView {
-    return {}
+  // Per seat: each seat shows its team's marks, points and legs (in a team game the winner is
+  // a seat: the winning team's first seat, as X01; `teams` has the team results).
+  view(s: CricketState): CricketView {
+    const myTeam = s.teamOf[s.currentPlayer]
+    const closed = TARGETS.map((_, i) => s.board.marks.every(row => row[i] >= OPEN))
+    const scorable = TARGETS.map(
+      (_, i) => s.board.marks[myTeam][i] >= OPEN && s.board.marks.some((row, t) => t !== myTeam && row[i] < OPEN),
+    )
+    const view: CricketView = {
+      config: { mode: s.cfg.mode, firstTo: s.cfg.firstTo, botSpeed: s.cfg.botSpeed },
+      phase: s.phase,
+      targets: [...s.board.targets],
+      marks: s.teamOf.map(t => s.board.marks[t]),
+      points: s.teamOf.map(t => s.board.points[t]),
+      legs: s.teamOf.map(t => s.legs[t]),
+      firstTo: s.cfg.firstTo,
+      closed,
+      scorable,
+      currentPlayer: s.currentPlayer,
+      nextPlayer: upNext(s, commit),
+      round: s.round,
+      winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
+      visitLocked: s.legWonBy !== null,
+      marksScored: s.marksScored,
+      dartsThrown: s.dartsThrown,
+      lastVisit: s.lastVisit,
+    }
+    if (s.cfg.format !== 'teams') return view
+    const teams = seatsByTeam(s.teamOf).map((seats, t) => ({
+      id: TEAM_IDS[t],
+      name: `Team ${TEAM_IDS[t]}`,
+      seats,
+      points: s.board.points[t],
+      legs: s.legs[t],
+    }))
+    return { ...view, teams }
   },
 
   getLeg(s: CricketState): number {

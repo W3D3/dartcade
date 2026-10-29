@@ -13,6 +13,6 @@ describe('game registry', () => {
   it('gives an unknown mode a neutral title', () => {
     expect(getGameView('atc').title).toBe('Around the Clock')
     expect(getGameView('atc').shortTitle).toBe('ATC')
-    expect(getGameView('cricket').title).toBe('Game')
+    expect(getGameView('soccer').title).toBe('Game')
   })
 })

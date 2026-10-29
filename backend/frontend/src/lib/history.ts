@@ -81,6 +81,10 @@ const LIST_STAT = {
     return value(livesLeft, livesLeft === 1 ? 'life left' : 'lives left')
   },
   minigolf: me => value(stat(me, 'strokes'), 'strokes'),
+  cricket: me => {
+    const mpr = stat(me, 'mpr')
+    return mpr === undefined ? null : { value: mpr.toFixed(1), label: 'MPR' }
+  },
 } satisfies Record<GameId, (me: GameSeat) => ListStat>
 
 /** The one number the list shows per game mode. */
@@ -167,6 +171,11 @@ const MODE_TILES = {
       plain('Best round', strokes ? String(strokes.min) : NONE, strokes ? 'strokes' : null),
       plain('Holes in one', aces ? String(aces.sum) : NONE),
     ]
+  },
+  cricket: s => {
+    const mpr = modeStat(s, 'cricket', 'mpr')
+    const marks = modeStat(s, 'cricket', 'marksScored')
+    return [plain('MPR', mpr ? mpr.avg.toFixed(1) : NONE), plain('Marks scored', marks ? String(marks.sum) : NONE)]
   },
 } satisfies Record<GameId, (s: GameStats) => Tile[]>
 

@@ -44,6 +44,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Higher Lower on the Play page.',
     defaultRule: 'admins',
   },
+  'gamemode.cricket.enabled': {
+    kind: 'boolean',
+    description: 'Shows Cricket on the Play page.',
+    defaultRule: 'admins',
+  },
   'matchmaking.enabled': {
     kind: 'boolean',
     description: 'Turns on ranked play: the Matchmaking page, ratings and ranks.',
@@ -142,6 +147,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('gamemode.hilo.enabled', isAdmin),
+    },
+    'gamemode.cricket.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('gamemode.cricket.enabled', isAdmin),
     },
     'matchmaking.enabled': {
       variants: { on: true, off: false },

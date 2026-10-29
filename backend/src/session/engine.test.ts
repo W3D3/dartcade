@@ -3,10 +3,11 @@ import { SessionEngine, type SnapshotView } from './engine.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError } from './errors.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
-import type { HiloGame, P121Game, X01Game } from '../schema/game-ws.js'
+import type { CricketGame, HiloGame, P121Game, X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 import { p121Module } from '../games/p121.js'
 import { hiloModule } from '../games/hilo.js'
+import { cricketModule } from '../games/cricket.js'
 import { atcModule } from '../games/atc.js'
 import type { Seat } from './types.js'
 import { seededRng, shuffle } from './rng.js'
@@ -386,6 +387,60 @@ describe('onBridgeEvent', () => {
       expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
       await dart(seg('S5', 5, 1))
       expect(game().visitTotal).toBe(10)
+    })
+  })
+
+  describe('cricket on a camera board', () => {
+    const seg = (name: string, number: number, multiplier: number) => ({ name, number, bed: 'Single', multiplier })
+    const MISS = seg('Miss', 0, 0)
+    async function start(cfgOverrides: Record<string, unknown> = {}) {
+      const store = makeStore()
+      const engine = new SessionEngine(store, push)
+      const config = { ...cricketModule.defaultConfig, ...cfgOverrides }
+      const { sessionId } = await engine.create('user-1', 'board-1', 'cricket', config, [{ name: 'Alice' }, { name: 'Bob' }])
+      let seq = 0
+      let openId = 'v0'
+      let index = 0
+      const dart = async (d: ReturnType<typeof seg>) => {
+        await engine.onBridgeEvent('board-1', 'dart.detected', {
+          visit_id: openId,
+          index: index++,
+          source_seq: ++seq,
+          dart: { segment: d, score: d.number * d.multiplier },
+        })
+      }
+      const visit = async (...darts: ReturnType<typeof seg>[]) => {
+        openId = `v${seq}`
+        index = 0
+        await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: openId })
+        for (const d of darts) await dart(d)
+      }
+      const game = () => engine.getSnapshot(sessionId)!.game as CricketGame
+      return { store, engine, sessionId, visit, dart, game }
+    }
+
+    it('seat 0 needs only the bull to win the last leg: a bullseye then outer bull wins it, a third dart is dropped, Finish ends the game', async () => {
+      const { store, engine, sessionId, visit, dart, game } = await start()
+      // Seat 0 opens 20-15 across two visits; seat 1 only misses in between.
+      await visit(seg('T20', 20, 3), seg('T19', 19, 3), seg('T18', 18, 3))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await visit(MISS, MISS, MISS)
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await visit(seg('T17', 17, 3), seg('T16', 16, 3), seg('T15', 15, 3))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await visit(MISS, MISS, MISS)
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      // The last visit: bullseye (2 marks) then outer bull (1 mark) opens the bull, winning the leg.
+      await visit(seg('Bull', 50, 1))
+      await dart(seg('Outer', 25, 1))
+      expect(game().marks[0][6]).toBe(3)
+      expect(game().visitLocked).toBe(true)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(true)
+      await dart(MISS) // dropped: the visit is held for Finish
+      expect(game().marks[0][6]).toBe(3)
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+      expect(store.finishSession).toHaveBeenCalled()
+      expect(game().winner).toBe(0)
     })
   })
 

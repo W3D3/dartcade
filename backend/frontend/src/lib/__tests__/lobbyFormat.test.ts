@@ -44,7 +44,8 @@ describe('lobby text', () => {
     expect(gameName('atc')).toBe('Around the Clock')
     expect(gameName('p121')).toBe('121')
     expect(gameName('hilo')).toBe('Higher Lower')
-    expect(gameName('cricket')).toBe('cricket')
+    expect(gameName('cricket')).toBe('Cricket')
+    expect(gameName('soccer')).toBe('soccer')
   })
 
   it('sums up the next game', () => {
@@ -79,6 +80,11 @@ describe('lobby text', () => {
       '60 / 15 · 1 life · Bull off (PDC)',
     )
     expect(nextGameSummary({ gameId: 'hilo', config: { startHigh: '41' } })).toBe('')
+    expect(nextGameSummary({ gameId: 'cricket', config: { mode: 'cutthroat', firstTo: 3 } })).toBe('Cut-throat · First to 3')
+    expect(nextGameSummary({ gameId: 'cricket', config: { mode: 'standard', firstTo: 1, bullOff: 'wdc' } }, { firstTo: 3 })).toBe(
+      'Standard · First to 1 · Bull off (WDC)',
+    )
+    expect(nextGameSummary({ gameId: 'cricket', config: { mode: 'standard', firstTo: '3' } })).toBe('')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 'lots' } })).toBe('')
     expect(nextGameSummary(null)).toBe('')
   })
@@ -320,6 +326,7 @@ describe('invite lines', () => {
       'X01 · 501 · Double out · First to 3 legs',
     )
     expect(nextGameLine({ gameId: 'hilo', config: { startHigh: 41, startLow: 21, lives: 3 } })).toBe('Higher Lower · 41 / 21 · 3 lives')
+    expect(nextGameLine({ gameId: 'cricket', config: { mode: 'cutthroat', firstTo: 3 } })).toBe('Cricket · Cut-throat · First to 3')
     expect(nextGameLine({ gameId: 'soccer', config: {} })).toBe('soccer')
   })
 

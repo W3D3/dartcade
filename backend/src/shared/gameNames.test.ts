@@ -9,6 +9,6 @@ describe('game names', () => {
 
   it('falls back to the id for a mode this build does not know', () => {
     expect(gameTitle('atc')).toBe('Around the Clock')
-    expect(gameTitle('cricket')).toBe('cricket')
+    expect(gameTitle('soccer')).toBe('soccer')
   })
 })

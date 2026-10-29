@@ -6,6 +6,7 @@ export const GAME_NAMES = {
   p121: { title: '121', short: '121' },
   hilo: { title: 'Higher Lower', short: 'Higher Lower' },
   minigolf: { title: 'Minigolf', short: 'Minigolf' },
+  cricket: { title: 'Cricket', short: 'Cricket' },
 } as const satisfies Record<string, { title: string; short: string }>
 
 export type GameId = keyof typeof GAME_NAMES
