@@ -67,10 +67,12 @@ The browser parses every snapshot against `schema/game-ws-v1.json` and drops the
 recognise. A game the schema doesn't describe never reaches the screen.
 
 1. In `schema/game-ws-v1.json`:
-   - a `<Id>Game` def for your view, including the engine fields `currentVisitDarts`, `totalDarts`
-     and `totalVisits`, plus `bullOff` if you used `withBullOff`
-   - a `<Id>Snapshot` def, copied from another game's: the five copies differ only in `gameId.const`
-     and `game.$ref`
+   - a `<Id>Game` def for your view: `allOf` `EngineGameFields` (the engine's `currentVisitDarts`,
+     `totalDarts` and `totalVisits`) plus your own fields, under `unevaluatedProperties: false`. Add
+     `bullOff` if you used `withBullOff`.
+   - a `<Id>Snapshot` def: `allOf` `SnapshotBase` (every field a snapshot shares) plus your
+     `gameId` const and `game` `$ref`, under `unevaluatedProperties: false`. Copy another game's:
+     it's a few lines.
    - an entry in `Snapshot.oneOf`
    - a `UserAction` branch for each action of your own, for example `p121_give_up`
 2. In `schema/api-v1.yaml`: a `<Id>Detail` schema with `mode: enum [<id>]`. Add it to the
@@ -183,6 +185,4 @@ design decision first:
   are an adapter plus a choice of looks.
 - **Win screen stats:** the duel rows are built per game. They show different stats from the
   game's `matchStats` on purpose.
-- **Snapshot schema defs:** the five per-game `*Snapshot` defs in the schema are copies, because
-  `additionalProperties: false` rules out a shared `allOf` base.
 - **Minigolf:** it has its own full-screen match layout.

@@ -66,14 +66,15 @@ async function genWs() {
 // zod schemas for parsing incoming data. Two rewrites before converting:
 // - oneOf → anyOf: json-schema-to-zod turns oneOf into z.any().superRefine(...), which infers `any`.
 //   Ours are discriminated by const fields, so anyOf accepts exactly the same data.
-// - additionalProperties: false is dropped: zod objects then strip unknown fields (tolerant
-//   reader) instead of rejecting the whole message. ajv (checkSnapshot, Fastify) stays strict.
+// - additionalProperties: false and unevaluatedProperties: false are dropped: zod objects then strip
+//   unknown fields (tolerant reader) instead of rejecting the whole message. ajv (checkSnapshot,
+//   Fastify) stays strict.
 function prepForZod(s) {
   if (Array.isArray(s)) return s.map(prepForZod)
   if (!s || typeof s !== 'object') return s
   return Object.fromEntries(
     Object.entries(s)
-      .filter(([k, v]) => !(k === 'additionalProperties' && v === false))
+      .filter(([k, v]) => !((k === 'additionalProperties' || k === 'unevaluatedProperties') && v === false))
       .map(([k, v]) => [k === 'oneOf' ? 'anyOf' : k, prepForZod(v)]),
   )
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { Ajv } from 'ajv'
+// The 2019-09 build: game-ws-v1.json uses unevaluatedProperties, which the default draft-07 Ajv ignores
+import { Ajv2019 } from 'ajv/dist/2019.js'
 import addFormatsModule from 'ajv-formats'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { SessionEngine, type EngineStore } from './engine.js'
@@ -16,7 +17,7 @@ import { gameList } from '../games/index.js'
 // plugin itself too).
 const addFormats = addFormatsModule.default
 
-const ajv = new Ajv({ strict: false, allErrors: true })
+const ajv = new Ajv2019({ strict: false, allErrors: true })
 addFormats(ajv)
 const validate = ajv.compile(wsSchema.$defs.Snapshot)
 
@@ -65,6 +66,24 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     const after = e.getSnapshot(sessionId)
     expectValid(after)
     expect(SnapshotSchema.safeParse(after).success).toBe(true)
+  })
+
+  // The envelope is one shared SnapshotBase: the per-game branches must still reject what doesn't belong
+  it('stays strict: an unknown field, a missing shared field or another game under this gameId is refused', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'x01', x01Module.defaultConfig, players)
+    const snap = e.getSnapshot(sessionId)
+    const other = engine()
+    const atc = other.getSnapshot((await other.create('u1', 'board-1', 'atc', atcModule.defaultConfig, players)).sessionId)
+    expectValid(snap)
+    expect(validate({ ...snap, surprise: 1 })).toBe(false)
+    const { seats: _seats, ...noSeats } = snap ?? {}
+    expect(validate(noSeats)).toBe(false)
+    expect(validate({ ...snap, gameId: 'atc' })).toBe(false)
+    expect(validate({ ...snap, game: atc?.game })).toBe(false)
+    // The browser's zod stays a tolerant reader: an unknown field is dropped, not refused
+    const parsed = SnapshotSchema.safeParse({ ...snap, surprise: 1 })
+    expect(parsed.success && !('surprise' in parsed.data)).toBe(true)
   })
 
   it('ATC, fresh and mid-visit', async () => {
