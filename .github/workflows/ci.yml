@@ -189,3 +189,75 @@ jobs:
           { echo '<!-- e2e-report -->'; echo '### e2e smoke tests are passing again'; } > /tmp/e2e-comment.md
           gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@/tmp/e2e-comment.md >/dev/null
         working-directory: e2e
+
+  ui-changed:
+    # Whether the PR touches anything the match screens draw (scripts/ui-changed.sh). test-visual is
+    # skipped otherwise: an `if:`-skipped job still satisfies a required check, a workflow-level
+    # `paths:` filter would leave it waiting forever.
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.diff.outputs.ui }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: scripts/ui-changed.sh "$BASE" >> "$GITHUB_OUTPUT"
+
+  test-visual:
+    # Every game mode's match screen against the images in e2e/visual/__screenshots__ (scripts/visual.sh:
+    # the e2e stack on the host, Playwright in the pinned image). A screen that changed without its
+    # image being updated fails here; `npm run visual:update` in e2e/ rewrites them. A pinned runner,
+    # so a new default image can't change the host side under the comparison.
+    needs: ui-changed
+    if: needs.ui-changed.outputs.ui == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Install e2e dependencies
+        run: npm ci
+        working-directory: e2e
+      - name: Compare the match screens
+        run: scripts/visual.sh
+      - name: Upload the visual report on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: visual-report
+          path: e2e/visual-report/
+          retention-days: 7
+      - name: Comment the failure on the PR
+        # One comment per PR, edited on each run, as test-e2e does
+        if: ${{ failure() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo '<!-- visual-report -->'
+            echo '### Match screens changed'
+            echo
+            node ../scripts/summarize-e2e-failures.mjs visual-results.json
+            echo
+            echo "Expected, actual and diff for each: [the run]($RUN_URL), \`visual-report\` artifact."
+            echo 'If the change is intended, run `npm run visual:update` in `e2e/` and commit the images with it.'
+          } > /tmp/visual-comment.md
+          ../scripts/upsert-pr-comment.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "<!-- visual-report -->" /tmp/visual-comment.md
+        working-directory: e2e
+      - name: Clear a stale visual failure comment
+        if: ${{ success() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- visual-report -->"))][0].id // empty')
+          [ -z "$id" ] && exit 0
+          { echo '<!-- visual-report -->'; echo '### Match screens match again'; } > /tmp/visual-comment.md
+          gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@/tmp/visual-comment.md >/dev/null
+        working-directory: e2e
