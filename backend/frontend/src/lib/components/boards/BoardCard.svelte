@@ -48,7 +48,7 @@
   <div class="flex flex-col gap-1">
     <h2 class="m-0 font-display font-bold text-[32px] md:max-xl:text-[30px] leading-none uppercase">{board.name}</h2>
     {#if board.ip}
-      <span class="font-mono text-[13px] text-text-muted">{bmHost(board)}</span>
+      <span class="font-mono text-[13px] text-text-muted">{bmHost(board)}{board.bmVersion ? ` · ${fmtVersion(board.bmVersion)}` : ''}</span>
     {/if}
   </div>
 
