@@ -126,8 +126,14 @@ Write `lib/components/<id>/<Id>Match.svelte` and add an `{:else if <id>}` branch
 - **`BoardOrKeypad`** (`lib/components/match/`): the dartboard in the largest square that fits,
   or the keypad when the header's Enter view is on, and the key that replaces a selected dart.
   Pass what your game draws on the board (targets, markers, camera).
-- **Player cards:** `PanelShell`, `RowShell` and `PhoneCardShell` (`lib/components/`), as X01 and
-  Around the Clock use them, and the shared card tones in `lib/playerCard.ts`.
+- **Player cards:** `PanelShell` (one or two players), `RowShell` (stacked rows) and
+  `PhoneCardShell` (the thrower's card on a phone), in `lib/components/`. Every game uses them for
+  the header: avatar, name, the board in remote games, and the pill. The game's own content goes in
+  `children`, and a value beside the name, such as 121's target, goes in `aside`. A state beyond
+  throwing or waiting is a `tone` (`lost`, `out`, from `lib/playerCard.ts`). The pill is a
+  `PlayerPill` kind; pass `pillLabel` when its text differs ("Out · 2nd", "Done"). Pass `label`
+  when the card's accessible name should say more than "throwing" or "waiting". A layout's own
+  width goes in `class`.
 - **Around the board:** `DartSlots`, `ControlBar` and the `TurnStatusBar`, `WaitingCard`,
   `BoardCaption` and `OfflineNotice` that remote games need.
 
@@ -169,9 +175,6 @@ Write `lib/components/<id>/<Id>Match.svelte` and add an `{:else if <id>}` branch
 These parts are not shared yet. Moving them would change how a game looks or behaves, so it needs a
 design decision first:
 
-- **Player headers:** Higher Lower's and 121's player panels, rows and phone cards are their own.
-  Their sizes differ from the shells: a fixed 40 px avatar and 22 px name instead of sizes that
-  change by breakpoint.
 - **Remote-game cues:** only X01 and Around the Clock show the remote-game cues (`TurnStatusBar`,
   `WaitingCard`, `BoardCaption`, `OfflineNotice`). GameDisplay places them per layout inside its
   centre column.

@@ -12,7 +12,7 @@
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
-  import Avatar from '$lib/components/Avatar.svelte'
+  import RowShell from '$lib/components/RowShell.svelte'
   import P121Ladder from '$lib/components/p121/P121Ladder.svelte'
   import P121PlayerCard from '$lib/components/p121/P121PlayerCard.svelte'
   import P121SessionPanel from '$lib/components/p121/P121SessionPanel.svelte'
@@ -20,7 +20,6 @@
   import { plural } from '$lib/fmt'
   import type { GameSettings } from '$lib/gameSettings'
   import type { MatchLayout } from '$lib/matchLayout'
-  import { playerCard } from '$lib/playerCard'
   import type { CheckoutPrefs } from '$shared/checkout.js'
 
   let {
@@ -201,7 +200,16 @@
     <div class="shrink-0 grid gap-3 lg:gap-4 {game.seats.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
       {#each game.seats as _, i (i)}
         <div class="min-w-0 flex flex-col gap-3">
-          <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
+          <P121PlayerCard
+            {game}
+            seat={i}
+            name={name(i)}
+            active={i === cp && playing}
+            visitDarts={vd(i)}
+            variant="side"
+            portrait
+            {checkout}
+          />
           <P121Ladder {game} seat={i} variant="dots" />
         </div>
       {/each}
@@ -247,25 +255,27 @@
 <MatchFrame {layout} phone={phoneLayout} portrait={portraitLayout} solo={soloLayout} duel={duelLayout} party={partyLayout} />
 {#snippet rows()}
   {#each game.seats as s, i (i)}
-    <section
-      aria-label="{name(i)}, target {s.target}, {s.left} left"
-      class="rounded-[14px] box-border px-5 py-4 flex flex-col gap-3 {playerCard(i === cp && playing)}"
-    >
-      <div class="flex items-center gap-4 min-w-0">
-        <Avatar name={name(i)} tone={i === cp && playing ? 'accent' : 'default'} size={36} />
-        <span class="text-[19px] font-semibold truncate">{name(i)}</span>
-        {#if s.done}<span class="rounded-full bg-surface-chip px-2 py-[2px] text-[12px] label-caps text-text-muted">done</span>{/if}
-        <span class="ml-auto flex items-baseline gap-[6px]">
+    <!-- As tall as its content: the list scrolls rather than stretching the rows -->
+    <div class="shrink-0">
+      <RowShell
+        name={name(i)}
+        active={i === cp && playing}
+        pill={s.done ? 'out' : null}
+        pillLabel="Done"
+        label="{name(i)}, target {s.target}, {s.left} left"
+        class="py-4 grid-cols-[minmax(0,1fr)_auto_110px]"
+      >
+        <span class="flex items-baseline gap-[6px]">
           <span class="text-[12px] label-caps text-text-dim">Target</span>
           <span class="font-display font-bold text-[28px] text-accent">{s.target}</span>
         </span>
-        <span class="flex items-baseline gap-[6px] w-[110px] justify-end">
+        <span class="flex items-baseline gap-[6px] justify-end">
           <span class="text-[12px] label-caps text-text-dim">Left</span>
           <span class="font-display font-bold text-[44px] leading-none">{s.left}</span>
         </span>
-      </div>
-      <P121Ladder {game} seat={i} variant="dots" visitDarts={vd(i)} />
-    </section>
+        <div class="col-span-full"><P121Ladder {game} seat={i} variant="dots" visitDarts={vd(i)} /></div>
+      </RowShell>
+    </div>
   {/each}
 {/snippet}
 
