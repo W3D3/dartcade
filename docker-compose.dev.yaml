@@ -38,6 +38,8 @@ services:
       BETTER_AUTH_URL: http://localhost:3000
       # The address other machines (a board's kiosk) reach the app at, from .env; unset: BETTER_AUTH_URL
       PUBLIC_URL: ${DARTCADE_PUBLIC_URL:-}
+      # Every browser reaches the backend through Vite, i.e. from one address: no per-client limit worth having
+      RATE_LIMIT_MAX: '10000'
       # Extra origins (e.g. this machine's tailnet address) come from .env
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173,${DARTCADE_EXTRA_ORIGINS:-}
       VOICE_STORAGE_LIMIT_MB: ${VOICE_STORAGE_LIMIT_MB:-50}
