@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
   "$id": "game-ws/v1",
   "title": "GameWs",
   "description": "Messages on the game WebSocket (/ws?sessionId=\u2026) between the browser and the backend. Server \u2192 client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client \u2192 server: ClientMessage. The server closes the socket with a WsCloseCode.",
@@ -114,119 +114,12 @@
         }
       }
     },
-    "X01Game": {
-      "title": "X01Game",
-      "description": "X01 view plus the engine's per-session fields and the bull off.",
+    "EngineGameFields": {
+      "title": "EngineGameFields",
+      "description": "What the session engine adds to every game's view: the open visit's darts and each seat's darts and visits so far.",
       "type": "object",
-      "required": [
-        "scores",
-        "legs",
-        "firstTo",
-        "currentPlayer",
-        "nextPlayer",
-        "round",
-        "phase",
-        "winner",
-        "opened",
-        "bustThisVisit",
-        "config",
-        "visitLocked",
-        "bullOff",
-        "currentVisitDarts",
-        "totalDarts",
-        "totalVisits",
-        "pointsScored",
-        "dartsThrown",
-        "legVisits",
-        "lastVisit",
-        "checkoutAttempts",
-        "checkoutHits",
-        "visitStartScores"
-      ],
-      "additionalProperties": false,
+      "required": ["currentVisitDarts", "totalDarts", "totalVisits"],
       "properties": {
-        "scores": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "legs": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "firstTo": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "currentPlayer": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "nextPlayer": {
-          "type": ["integer", "null"],
-          "minimum": 0,
-          "description": "The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off."
-        },
-        "round": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "phase": {
-          "type": "string",
-          "enum": ["bulloff", "game", "finished"]
-        },
-        "winner": {
-          "type": ["integer", "null"]
-        },
-        "opened": {
-          "type": "array",
-          "items": {
-            "type": "boolean"
-          }
-        },
-        "bustThisVisit": {
-          "type": "boolean"
-        },
-        "config": {
-          "type": "object",
-          "required": ["outMode", "startScore", "inMode", "botSpeed"],
-          "additionalProperties": false,
-          "properties": {
-            "outMode": {
-              "type": "string",
-              "enum": ["straight", "double", "master"]
-            },
-            "startScore": {
-              "type": "integer",
-              "minimum": 2
-            },
-            "inMode": {
-              "type": "string",
-              "enum": ["straight", "double", "master"]
-            },
-            "botSpeed": {
-              "type": "string",
-              "enum": ["fast", "normal", "slow"]
-            }
-          }
-        },
-        "visitLocked": {
-          "type": "boolean"
-        },
-        "bullOff": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BullOffView"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "currentVisitDarts": {
           "type": "array",
           "items": {
@@ -246,100 +139,219 @@
             "type": "integer",
             "minimum": 0
           }
+        }
+      }
+    },
+    "X01Game": {
+      "title": "X01Game",
+      "description": "X01 view plus the engine's per-session fields and the bull off.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
         },
-        "pointsScored": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Per seat: points scored in committed visits (busts count 0)."
-        },
-        "dartsThrown": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Per seat: darts in committed visits; with pointsScored, the match average."
-        },
-        "legVisits": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/X01Visit"
-          },
-          "description": "This leg's committed visits, in throwing order."
-        },
-        "lastVisit": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/$defs/X01Visit"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "description": "Per seat: their last committed visit, kept across legs; null before their first."
-        },
-        "checkoutAttempts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Per seat: darts thrown on a one-dart finish, wherever they landed."
-        },
-        "checkoutHits": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Per seat: of those, the darts that finished the leg."
-        },
-        "visitStartScores": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "description": "Per seat: the team's score when its open (or next) visit started."
-        },
-        "teams": {
-          "type": "array",
-          "description": "Only in a team game: each team with its shared score and legs.",
-          "items": {
-            "type": "object",
-            "required": ["id", "name", "seats", "score", "legs"],
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "$ref": "common-v1.json#/$defs/TeamId"
-              },
-              "name": {
-                "type": "string"
-              },
-              "seats": {
-                "type": "array",
-                "items": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "description": "The team's seats in its own throwing order."
-              },
-              "score": {
+        {
+          "type": "object",
+          "required": [
+            "scores",
+            "legs",
+            "firstTo",
+            "currentPlayer",
+            "nextPlayer",
+            "round",
+            "phase",
+            "winner",
+            "opened",
+            "bustThisVisit",
+            "config",
+            "visitLocked",
+            "bullOff",
+            "pointsScored",
+            "dartsThrown",
+            "legVisits",
+            "lastVisit",
+            "checkoutAttempts",
+            "checkoutHits",
+            "visitStartScores"
+          ],
+          "properties": {
+            "scores": {
+              "type": "array",
+              "items": {
                 "type": "integer"
-              },
-              "legs": {
+              }
+            },
+            "legs": {
+              "type": "array",
+              "items": {
                 "type": "integer",
                 "minimum": 0
+              }
+            },
+            "firstTo": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off."
+            },
+            "round": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "phase": {
+              "type": "string",
+              "enum": ["bulloff", "game", "finished"]
+            },
+            "winner": {
+              "type": ["integer", "null"]
+            },
+            "opened": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "bustThisVisit": {
+              "type": "boolean"
+            },
+            "config": {
+              "type": "object",
+              "required": ["outMode", "startScore", "inMode", "botSpeed"],
+              "additionalProperties": false,
+              "properties": {
+                "outMode": {
+                  "type": "string",
+                  "enum": ["straight", "double", "master"]
+                },
+                "startScore": {
+                  "type": "integer",
+                  "minimum": 2
+                },
+                "inMode": {
+                  "type": "string",
+                  "enum": ["straight", "double", "master"]
+                },
+                "botSpeed": {
+                  "type": "string",
+                  "enum": ["fast", "normal", "slow"]
+                }
+              }
+            },
+            "visitLocked": {
+              "type": "boolean"
+            },
+            "bullOff": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BullOffView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "pointsScored": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: points scored in committed visits (busts count 0)."
+            },
+            "dartsThrown": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: darts in committed visits; with pointsScored, the match average."
+            },
+            "legVisits": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/X01Visit"
+              },
+              "description": "This leg's committed visits, in throwing order."
+            },
+            "lastVisit": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/X01Visit"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": "Per seat: their last committed visit, kept across legs; null before their first."
+            },
+            "checkoutAttempts": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: darts thrown on a one-dart finish, wherever they landed."
+            },
+            "checkoutHits": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Per seat: of those, the darts that finished the leg."
+            },
+            "visitStartScores": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "Per seat: the team's score when its open (or next) visit started."
+            },
+            "teams": {
+              "type": "array",
+              "description": "Only in a team game: each team with its shared score and legs.",
+              "items": {
+                "type": "object",
+                "required": ["id", "name", "seats", "score", "legs"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "common-v1.json#/$defs/TeamId"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "seats": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "description": "The team's seats in its own throwing order."
+                  },
+                  "score": {
+                    "type": "integer"
+                  },
+                  "legs": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
               }
             }
           }
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "X01Visit": {
       "title": "X01Visit",
@@ -374,101 +386,76 @@
     "AtcGame": {
       "title": "AtcGame",
       "description": "Around the Clock view plus the engine's per-session fields.",
-      "type": "object",
-      "required": [
-        "targets",
-        "sequence",
-        "currentPlayer",
-        "nextPlayer",
-        "winner",
-        "cfg",
-        "currentVisitHits",
-        "hitCounts",
-        "currentVisitDarts",
-        "totalDarts",
-        "totalVisits"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "targets": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
         },
-        "sequence": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "currentPlayer": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "nextPlayer": {
-          "type": ["integer", "null"],
-          "minimum": 0,
-          "description": "The seat that throws after the open visit: the same one again when all three darts hit and throwAgainOnAllHit is on; null once the game is won."
-        },
-        "winner": {
-          "type": ["integer", "null"]
-        },
-        "cfg": {
+        {
           "type": "object",
-          "required": ["throwAgainOnAllHit", "finishOn", "multiplierAdvances", "order"],
-          "additionalProperties": false,
+          "required": ["targets", "sequence", "currentPlayer", "nextPlayer", "winner", "cfg", "currentVisitHits", "hitCounts"],
           "properties": {
-            "throwAgainOnAllHit": {
-              "type": "boolean"
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
             },
-            "finishOn": {
-              "type": "string",
-              "enum": ["twenty", "single_bull", "bull"]
+            "sequence": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
             },
-            "multiplierAdvances": {
-              "type": "boolean"
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
             },
-            "order": {
-              "type": "string",
-              "enum": ["asc", "desc", "random"]
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit: the same one again when all three darts hit and throwAgainOnAllHit is on; null once the game is won."
+            },
+            "winner": {
+              "type": ["integer", "null"]
+            },
+            "cfg": {
+              "type": "object",
+              "required": ["throwAgainOnAllHit", "finishOn", "multiplierAdvances", "order"],
+              "additionalProperties": false,
+              "properties": {
+                "throwAgainOnAllHit": {
+                  "type": "boolean"
+                },
+                "finishOn": {
+                  "type": "string",
+                  "enum": ["twenty", "single_bull", "bull"]
+                },
+                "multiplierAdvances": {
+                  "type": "boolean"
+                },
+                "order": {
+                  "type": "string",
+                  "enum": ["asc", "desc", "random"]
+                }
+              }
+            },
+            "currentVisitHits": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "hitCounts": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
-        },
-        "currentVisitHits": {
-          "type": "array",
-          "items": {
-            "type": "boolean"
-          }
-        },
-        "hitCounts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "currentVisitDarts": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Dart"
-          }
-        },
-        "totalDarts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "totalVisits": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "P121Try": {
       "title": "P121Try",
@@ -525,178 +512,162 @@
     "P121Game": {
       "title": "P121Game",
       "description": "121 Checkout view plus the engine's per-session fields and the bull off.",
-      "type": "object",
-      "required": [
-        "cfg",
-        "phase",
-        "currentPlayer",
-        "nextPlayer",
-        "winner",
-        "visitLocked",
-        "bust",
-        "visitStartLeft",
-        "seats",
-        "lastResult",
-        "bullOff",
-        "currentVisitDarts",
-        "totalDarts",
-        "totalVisits"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "cfg": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
+        },
+        {
           "type": "object",
-          "required": ["startTarget", "tries", "dartsPerTry", "outMode", "missRule", "lock"],
-          "additionalProperties": false,
+          "required": [
+            "cfg",
+            "phase",
+            "currentPlayer",
+            "nextPlayer",
+            "winner",
+            "visitLocked",
+            "bust",
+            "visitStartLeft",
+            "seats",
+            "lastResult",
+            "bullOff"
+          ],
           "properties": {
-            "startTarget": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "tries": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "dartsPerTry": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "outMode": {
-              "type": "string",
-              "enum": ["straight", "double", "master"]
-            },
-            "missRule": {
-              "type": "string",
-              "enum": ["reset", "down", "stay"]
-            },
-            "lock": {
-              "type": "boolean"
-            }
-          }
-        },
-        "phase": {
-          "type": "string",
-          "enum": ["bulloff", "game", "finished"]
-        },
-        "currentPlayer": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "nextPlayer": {
-          "type": ["integer", "null"],
-          "minimum": 0,
-          "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
-        },
-        "winner": {
-          "type": ["integer", "null"]
-        },
-        "visitLocked": {
-          "type": "boolean"
-        },
-        "bust": {
-          "type": "boolean"
-        },
-        "visitStartLeft": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["target", "left", "darts", "visits", "floor", "tries", "made", "highestMade", "avgDarts", "done"],
-            "additionalProperties": false,
-            "properties": {
-              "target": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "left": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "darts": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "visits": {
-                "type": "array",
-                "items": {
+            "cfg": {
+              "type": "object",
+              "required": ["startTarget", "tries", "dartsPerTry", "outMode", "missRule", "lock"],
+              "additionalProperties": false,
+              "properties": {
+                "startTarget": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 1
+                },
+                "tries": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "dartsPerTry": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "outMode": {
+                  "type": "string",
+                  "enum": ["straight", "double", "master"]
+                },
+                "missRule": {
+                  "type": "string",
+                  "enum": ["reset", "down", "stay"]
+                },
+                "lock": {
+                  "type": "boolean"
                 }
-              },
-              "floor": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "tries": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/P121Try"
-                }
-              },
-              "made": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "Count of made tries."
-              },
-              "highestMade": {
-                "type": ["integer", "null"],
-                "description": "The highest target checked out; null before the first."
-              },
-              "avgDarts": {
-                "type": ["number", "null"],
-                "description": "Mean darts over made tries; null before the first."
-              },
-              "done": {
-                "type": "boolean",
-                "description": "Every try is used up."
               }
-            }
-          }
-        },
-        "lastResult": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/P121Result"
             },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "bullOff": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BullOffView"
+            "phase": {
+              "type": "string",
+              "enum": ["bulloff", "game", "finished"]
             },
-            {
-              "type": "null"
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+            },
+            "winner": {
+              "type": ["integer", "null"]
+            },
+            "visitLocked": {
+              "type": "boolean"
+            },
+            "bust": {
+              "type": "boolean"
+            },
+            "visitStartLeft": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["target", "left", "darts", "visits", "floor", "tries", "made", "highestMade", "avgDarts", "done"],
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "left": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "darts": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "visits": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "floor": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "tries": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/P121Try"
+                    }
+                  },
+                  "made": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Count of made tries."
+                  },
+                  "highestMade": {
+                    "type": ["integer", "null"],
+                    "description": "The highest target checked out; null before the first."
+                  },
+                  "avgDarts": {
+                    "type": ["number", "null"],
+                    "description": "Mean darts over made tries; null before the first."
+                  },
+                  "done": {
+                    "type": "boolean",
+                    "description": "Every try is used up."
+                  }
+                }
+              }
+            },
+            "lastResult": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/P121Result"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "bullOff": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BullOffView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
-          ]
-        },
-        "currentVisitDarts": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Dart"
-          }
-        },
-        "totalDarts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "totalVisits": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
           }
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "SeatInfo": {
       "title": "SeatInfo",
@@ -852,18 +823,17 @@
         }
       }
     },
-    "X01Snapshot": {
-      "title": "X01Snapshot",
+    "SnapshotBase": {
+      "title": "SnapshotBase",
+      "description": "The envelope every game's snapshot shares; each <Game>Snapshot adds its gameId and game.",
       "type": "object",
       "required": [
         "type",
         "sessionId",
-        "gameId",
         "boardId",
         "lobbyId",
         "lobbyName",
         "players",
-        "game",
         "bmStatus",
         "status",
         "finishPending",
@@ -874,16 +844,12 @@
         "mySeats",
         "results"
       ],
-      "additionalProperties": false,
       "properties": {
         "type": {
           "const": "snapshot"
         },
         "sessionId": {
           "type": "string"
-        },
-        "gameId": {
-          "const": "x01"
         },
         "boardId": {
           "type": ["string", "null"]
@@ -901,9 +867,6 @@
           "items": {
             "$ref": "common-v1.json#/$defs/Player"
           }
-        },
-        "game": {
-          "$ref": "#/$defs/X01Game"
         },
         "bmStatus": {
           "anyOf": [
@@ -958,220 +921,69 @@
           "description": "Seats the viewer controls."
         }
       }
+    },
+    "X01Snapshot": {
+      "title": "X01Snapshot",
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
+        },
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "x01"
+            },
+            "game": {
+              "$ref": "#/$defs/X01Game"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
     },
     "AtcSnapshot": {
       "title": "AtcSnapshot",
-      "type": "object",
-      "required": [
-        "type",
-        "sessionId",
-        "gameId",
-        "boardId",
-        "lobbyId",
-        "lobbyName",
-        "players",
-        "game",
-        "bmStatus",
-        "status",
-        "finishPending",
-        "canUndoVisit",
-        "scoreBased",
-        "ownerUserId",
-        "seats",
-        "mySeats",
-        "results"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "snapshot"
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
         },
-        "sessionId": {
-          "type": "string"
-        },
-        "gameId": {
-          "const": "atc"
-        },
-        "boardId": {
-          "type": ["string", "null"]
-        },
-        "lobbyId": {
-          "type": ["string", "null"],
-          "description": "The lobby the game was started from; null for a local game."
-        },
-        "lobbyName": {
-          "type": ["string", "null"],
-          "description": "The lobby's name, for the match header; null for a local game."
-        },
-        "players": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Player"
-          }
-        },
-        "game": {
-          "$ref": "#/$defs/AtcGame"
-        },
-        "bmStatus": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BmStatus"
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "atc"
             },
-            {
-              "type": "null"
+            "game": {
+              "$ref": "#/$defs/AtcGame"
             }
-          ],
-          "description": "Status of the board of the seat that's up."
-        },
-        "status": {
-          "$ref": "#/$defs/SessionStatus"
-        },
-        "results": {
-          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/$defs/SeatPlace"
           }
-        },
-        "finishPending": {
-          "type": "boolean",
-          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
-        },
-        "canUndoVisit": {
-          "type": "boolean",
-          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
-        },
-        "ownerUserId": {
-          "type": "string",
-          "description": "The host: starts the bull off, aborts the game."
-        },
-        "scoreBased": {
-          "type": "boolean",
-          "description": "The game has a running score the caller announces (the game module's scoreBased)."
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SeatInfo"
-          },
-          "description": "Same order as players."
-        },
-        "mySeats": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Seats the viewer controls."
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "P121Snapshot": {
       "title": "P121Snapshot",
-      "type": "object",
-      "required": [
-        "type",
-        "sessionId",
-        "gameId",
-        "boardId",
-        "lobbyId",
-        "lobbyName",
-        "players",
-        "game",
-        "bmStatus",
-        "status",
-        "finishPending",
-        "canUndoVisit",
-        "scoreBased",
-        "ownerUserId",
-        "seats",
-        "mySeats",
-        "results"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "snapshot"
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
         },
-        "sessionId": {
-          "type": "string"
-        },
-        "gameId": {
-          "const": "p121"
-        },
-        "boardId": {
-          "type": ["string", "null"]
-        },
-        "lobbyId": {
-          "type": ["string", "null"],
-          "description": "The lobby the game was started from; null for a local game."
-        },
-        "lobbyName": {
-          "type": ["string", "null"],
-          "description": "The lobby's name, for the match header; null for a local game."
-        },
-        "players": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Player"
-          }
-        },
-        "game": {
-          "$ref": "#/$defs/P121Game"
-        },
-        "bmStatus": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BmStatus"
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "p121"
             },
-            {
-              "type": "null"
+            "game": {
+              "$ref": "#/$defs/P121Game"
             }
-          ],
-          "description": "Status of the board of the seat that's up."
-        },
-        "status": {
-          "$ref": "#/$defs/SessionStatus"
-        },
-        "results": {
-          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/$defs/SeatPlace"
           }
-        },
-        "finishPending": {
-          "type": "boolean",
-          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
-        },
-        "canUndoVisit": {
-          "type": "boolean",
-          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
-        },
-        "ownerUserId": {
-          "type": "string",
-          "description": "The host: starts the bull off, aborts the game."
-        },
-        "scoreBased": {
-          "type": "boolean",
-          "description": "The game has a running score the caller announces (the game module's scoreBased)."
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SeatInfo"
-          },
-          "description": "Same order as players."
-        },
-        "mySeats": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Seats the viewer controls."
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "HiloVisit": {
       "title": "HiloVisit",
@@ -1228,278 +1040,176 @@
     "HiloGame": {
       "title": "HiloGame",
       "description": "Higher Lower view plus the engine's per-session fields and the bull off.",
-      "type": "object",
-      "required": [
-        "cfg",
-        "phase",
-        "high",
-        "low",
-        "round",
-        "currentPlayer",
-        "nextPlayer",
-        "winner",
-        "visitLocked",
-        "visitTotal",
-        "seats",
-        "lastResult",
-        "bullOff",
-        "currentVisitDarts",
-        "totalDarts",
-        "totalVisits"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "cfg": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
+        },
+        {
           "type": "object",
-          "required": ["startHigh", "startLow", "lives", "t1Zero", "matchExtremes", "keepBarsOnLifeLost"],
-          "additionalProperties": false,
+          "required": [
+            "cfg",
+            "phase",
+            "high",
+            "low",
+            "round",
+            "currentPlayer",
+            "nextPlayer",
+            "winner",
+            "visitLocked",
+            "visitTotal",
+            "seats",
+            "lastResult",
+            "bullOff"
+          ],
           "properties": {
-            "startHigh": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 180
-            },
-            "startLow": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 180
-            },
-            "lives": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 7
-            },
-            "t1Zero": {
-              "type": "boolean"
-            },
-            "matchExtremes": {
-              "type": "boolean"
-            },
-            "keepBarsOnLifeLost": {
-              "type": "boolean",
-              "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
-            }
-          }
-        },
-        "phase": {
-          "type": "string",
-          "enum": ["bulloff", "game", "finished"]
-        },
-        "high": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 180
-        },
-        "low": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 180
-        },
-        "round": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "currentPlayer": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "nextPlayer": {
-          "type": ["integer", "null"],
-          "minimum": 0,
-          "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
-        },
-        "winner": {
-          "type": ["integer", "null"]
-        },
-        "visitLocked": {
-          "type": "boolean"
-        },
-        "visitTotal": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "The open visit's running total."
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["lives", "out", "place", "outRound", "visits"],
-            "additionalProperties": false,
-            "properties": {
-              "lives": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "out": {
-                "type": "boolean"
-              },
-              "place": {
-                "type": ["integer", "null"],
-                "minimum": 1,
-                "description": "The seat's placement once it's out, or the winner once the game is finished; null otherwise."
-              },
-              "outRound": {
-                "type": ["integer", "null"],
-                "minimum": 1,
-                "description": "The round the seat went out in; null while it's still in."
-              },
-              "visits": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/HiloVisit"
+            "cfg": {
+              "type": "object",
+              "required": ["startHigh", "startLow", "lives", "t1Zero", "matchExtremes", "keepBarsOnLifeLost"],
+              "additionalProperties": false,
+              "properties": {
+                "startHigh": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 180
+                },
+                "startLow": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 180
+                },
+                "lives": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "t1Zero": {
+                  "type": "boolean"
+                },
+                "matchExtremes": {
+                  "type": "boolean"
+                },
+                "keepBarsOnLifeLost": {
+                  "type": "boolean",
+                  "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
                 }
               }
-            }
-          }
-        },
-        "lastResult": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/HiloResult"
             },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "bullOff": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BullOffView"
+            "phase": {
+              "type": "string",
+              "enum": ["bulloff", "game", "finished"]
             },
-            {
-              "type": "null"
+            "high": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "low": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "round": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+            },
+            "winner": {
+              "type": ["integer", "null"]
+            },
+            "visitLocked": {
+              "type": "boolean"
+            },
+            "visitTotal": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The open visit's running total."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["lives", "out", "place", "outRound", "visits"],
+                "additionalProperties": false,
+                "properties": {
+                  "lives": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "out": {
+                    "type": "boolean"
+                  },
+                  "place": {
+                    "type": ["integer", "null"],
+                    "minimum": 1,
+                    "description": "The seat's placement once it's out, or the winner once the game is finished; null otherwise."
+                  },
+                  "outRound": {
+                    "type": ["integer", "null"],
+                    "minimum": 1,
+                    "description": "The round the seat went out in; null while it's still in."
+                  },
+                  "visits": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/HiloVisit"
+                    }
+                  }
+                }
+              }
+            },
+            "lastResult": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/HiloResult"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "bullOff": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BullOffView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
-          ]
-        },
-        "currentVisitDarts": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Dart"
-          }
-        },
-        "totalDarts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "totalVisits": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
           }
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "HiloSnapshot": {
       "title": "HiloSnapshot",
-      "type": "object",
-      "required": [
-        "type",
-        "sessionId",
-        "gameId",
-        "boardId",
-        "lobbyId",
-        "lobbyName",
-        "players",
-        "game",
-        "bmStatus",
-        "status",
-        "finishPending",
-        "canUndoVisit",
-        "scoreBased",
-        "ownerUserId",
-        "seats",
-        "mySeats",
-        "results"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "snapshot"
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
         },
-        "sessionId": {
-          "type": "string"
-        },
-        "gameId": {
-          "const": "hilo"
-        },
-        "boardId": {
-          "type": ["string", "null"]
-        },
-        "lobbyId": {
-          "type": ["string", "null"],
-          "description": "The lobby the game was started from; null for a local game."
-        },
-        "lobbyName": {
-          "type": ["string", "null"],
-          "description": "The lobby's name, for the match header; null for a local game."
-        },
-        "players": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Player"
-          }
-        },
-        "game": {
-          "$ref": "#/$defs/HiloGame"
-        },
-        "bmStatus": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BmStatus"
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "hilo"
             },
-            {
-              "type": "null"
+            "game": {
+              "$ref": "#/$defs/HiloGame"
             }
-          ],
-          "description": "Status of the board of the seat that's up."
-        },
-        "status": {
-          "$ref": "#/$defs/SessionStatus"
-        },
-        "results": {
-          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/$defs/SeatPlace"
           }
-        },
-        "finishPending": {
-          "type": "boolean",
-          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
-        },
-        "canUndoVisit": {
-          "type": "boolean",
-          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
-        },
-        "ownerUserId": {
-          "type": "string",
-          "description": "The host: starts the bull off, aborts the game."
-        },
-        "scoreBased": {
-          "type": "boolean",
-          "description": "The game has a running score the caller announces (the game module's scoreBased)."
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SeatInfo"
-          },
-          "description": "Same order as players."
-        },
-        "mySeats": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Seats the viewer controls."
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "MinigolfPt": {
       "title": "MinigolfPt",
@@ -1737,198 +1447,307 @@
     "MinigolfGame": {
       "title": "MinigolfGame",
       "description": "Minigolf view plus the engine's per-session fields.",
-      "type": "object",
-      "required": [
-        "winner",
-        "finished",
-        "currentPlayer",
-        "visitLocked",
-        "config",
-        "courseName",
-        "holeIdx",
-        "holeCount",
-        "hole",
-        "pars",
-        "holeNames",
-        "order",
-        "balls",
-        "scores",
-        "totals",
-        "toPar",
-        "tries",
-        "lastHole",
-        "currentVisitDarts",
-        "totalDarts",
-        "totalVisits",
-        "shotHidden",
-        "lastStroke",
-        "reach",
-        "paused"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "winner": {
-          "type": ["integer", "null"]
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
         },
-        "finished": {
-          "type": "boolean"
-        },
-        "currentPlayer": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "visitLocked": {
-          "type": "boolean",
-          "description": "No more darts this visit (all tries thrown, or the game is over)."
-        },
-        "config": {
+        {
           "type": "object",
-          "required": ["course", "tries", "maxStrokes", "ballContact", "aimAssist", "shotPreview"],
-          "additionalProperties": false,
+          "required": [
+            "winner",
+            "finished",
+            "currentPlayer",
+            "visitLocked",
+            "config",
+            "courseName",
+            "holeIdx",
+            "holeCount",
+            "hole",
+            "pars",
+            "holeNames",
+            "order",
+            "balls",
+            "scores",
+            "totals",
+            "toPar",
+            "tries",
+            "lastHole",
+            "shotHidden",
+            "lastStroke",
+            "reach",
+            "paused"
+          ],
           "properties": {
-            "course": {
+            "winner": {
+              "type": ["integer", "null"]
+            },
+            "finished": {
+              "type": "boolean"
+            },
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "visitLocked": {
+              "type": "boolean",
+              "description": "No more darts this visit (all tries thrown, or the game is over)."
+            },
+            "config": {
+              "type": "object",
+              "required": ["course", "tries", "maxStrokes", "ballContact", "aimAssist", "shotPreview"],
+              "additionalProperties": false,
+              "properties": {
+                "course": {
+                  "type": "string"
+                },
+                "tries": {
+                  "enum": [1, 3]
+                },
+                "maxStrokes": {
+                  "type": "integer"
+                },
+                "ballContact": {
+                  "type": "boolean"
+                },
+                "aimAssist": {
+                  "type": "boolean"
+                },
+                "shotPreview": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "courseName": {
               "type": "string"
             },
-            "tries": {
-              "enum": [1, 3]
+            "holeIdx": {
+              "type": "integer",
+              "minimum": 0
             },
-            "maxStrokes": {
-              "type": "integer"
+            "holeCount": {
+              "type": "integer",
+              "minimum": 1
             },
-            "ballContact": {
-              "type": "boolean"
+            "hole": {
+              "$ref": "#/$defs/MinigolfHole"
             },
-            "aimAssist": {
-              "type": "boolean"
+            "pars": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
             },
-            "shotPreview": {
-              "type": "boolean"
-            }
-          }
-        },
-        "courseName": {
-          "type": "string"
-        },
-        "holeIdx": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "holeCount": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "hole": {
-          "$ref": "#/$defs/MinigolfHole"
-        },
-        "pars": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "holeNames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "order": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Seats in turn order on this hole."
-        },
-        "balls": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["at", "strokes", "status"],
-            "additionalProperties": false,
-            "properties": {
-              "at": {
-                "$ref": "#/$defs/MinigolfPt"
-              },
-              "strokes": {
+            "holeNames": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "order": {
+              "type": "array",
+              "items": {
                 "type": "integer",
                 "minimum": 0
               },
-              "status": {
-                "enum": ["waiting", "playing", "holed", "done"]
-              }
-            }
-          },
-          "description": "Per seat, this hole. waiting: not putted yet (in hand); done: max strokes reached."
-        },
-        "scores": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": ["integer", "null"]
-            }
-          },
-          "description": "Strokes per hole, then per seat; null until the hole is over."
-        },
-        "totals": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "toPar": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "tries": {
-          "type": "array",
-          "description": "The open visit's tries; the last one counts at takeout.",
-          "items": {
-            "type": "object",
-            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "aim", "hits"],
-            "additionalProperties": false,
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "coords": {
-                "anyOf": [
-                  {
-                    "$ref": "common-v1.json#/$defs/Coords"
+              "description": "Seats in turn order on this hole."
+            },
+            "balls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["at", "strokes", "status"],
+                "additionalProperties": false,
+                "properties": {
+                  "at": {
+                    "$ref": "#/$defs/MinigolfPt"
                   },
-                  {
-                    "type": "null"
+                  "strokes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "status": {
+                    "enum": ["waiting", "playing", "holed", "done"]
                   }
-                ]
-              },
-              "power": {
-                "type": ["number", "null"]
-              },
-              "holed": {
-                "type": "boolean"
-              },
-              "missed": {
-                "type": "boolean"
-              },
-              "path": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/MinigolfPathPt"
                 }
               },
-              "others": {
+              "description": "Per seat, this hole. waiting: not putted yet (in hand); done: max strokes reached."
+            },
+            "scores": {
+              "type": "array",
+              "items": {
                 "type": "array",
                 "items": {
+                  "type": ["integer", "null"]
+                }
+              },
+              "description": "Strokes per hole, then per seat; null until the hole is over."
+            },
+            "totals": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "toPar": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "tries": {
+              "type": "array",
+              "description": "The open visit's tries; the last one counts at takeout.",
+              "items": {
+                "type": "object",
+                "required": ["label", "coords", "power", "holed", "missed", "path", "others", "aim", "hits"],
+                "additionalProperties": false,
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "coords": {
+                    "anyOf": [
+                      {
+                        "$ref": "common-v1.json#/$defs/Coords"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "power": {
+                    "type": ["number", "null"]
+                  },
+                  "holed": {
+                    "type": "boolean"
+                  },
+                  "missed": {
+                    "type": "boolean"
+                  },
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/MinigolfPathPt"
+                    }
+                  },
+                  "others": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["seat", "path", "holed"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seat": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "path": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/MinigolfPathPt"
+                          }
+                        },
+                        "holed": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "aim": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["dir", "roll"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "dir": {
+                            "$ref": "#/$defs/MinigolfPt"
+                          },
+                          "roll": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "With shot preview, until the stroke is kept, and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt."
+                  },
+                  "hits": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "description": "When the ball knocked into something, in path samples (for its sound)."
+                  }
+                }
+              }
+            },
+            "lastHole": {
+              "anyOf": [
+                {
                   "type": "object",
-                  "required": ["seat", "path", "holed"],
+                  "required": ["index", "scores", "paths", "hole"],
                   "additionalProperties": false,
                   "properties": {
+                    "index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "scores": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "paths": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/MinigolfPathPt"
+                          }
+                        }
+                      }
+                    },
+                    "hole": {
+                      "$ref": "#/$defs/MinigolfHole"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The hole just finished: scores and every stroke's path per seat, for the scorecard."
+            },
+            "shotHidden": {
+              "type": "boolean",
+              "description": "Darts are left: the tries carry no outcome (only, with shot preview, an aim line)."
+            },
+            "lastStroke": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": ["hole", "seat", "stroke", "path", "others", "hits", "holed"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "hole": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "seat": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "stroke": {
+                      "type": "integer",
+                      "minimum": 1
                     },
                     "path": {
                       "type": "array",
@@ -1936,304 +1755,93 @@
                         "$ref": "#/$defs/MinigolfPathPt"
                       }
                     },
+                    "others": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["seat", "path", "holed"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "seat": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "path": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/$defs/MinigolfPathPt"
+                            }
+                          },
+                          "holed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "hits": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "description": "When the ball knocked into something, in path samples (for its sound)."
+                    },
                     "holed": {
                       "type": "boolean"
                     }
                   }
-                }
-              },
-              "aim": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "required": ["dir", "roll"],
-                    "additionalProperties": false,
-                    "properties": {
-                      "dir": {
-                        "$ref": "#/$defs/MinigolfPt"
-                      },
-                      "roll": {
-                        "type": "number",
-                        "minimum": 0
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "With shot preview, until the stroke is kept, and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt."
-              },
-              "hits": {
-                "type": "array",
-                "items": {
-                  "type": "number",
-                  "minimum": 0
                 },
-                "description": "When the ball knocked into something, in path samples (for its sound)."
-              }
-            }
-          }
-        },
-        "lastHole": {
-          "anyOf": [
-            {
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
+            },
+            "reach": {
               "type": "object",
-              "required": ["index", "scores", "paths", "hole"],
+              "required": ["treble", "double"],
               "additionalProperties": false,
+              "description": "How far a putt rolls on flat felt (mm) for a dart in the middle of the treble ring and at the double wire: the aim overlay's rings.",
               "properties": {
-                "index": {
+                "treble": {
                   "type": "integer",
                   "minimum": 0
                 },
-                "scores": {
-                  "type": "array",
-                  "items": {
-                    "type": "integer"
-                  }
-                },
-                "paths": {
-                  "type": "array",
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/$defs/MinigolfPathPt"
-                      }
-                    }
-                  }
-                },
-                "hole": {
-                  "$ref": "#/$defs/MinigolfHole"
+                "double": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               }
             },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The hole just finished: scores and every stroke's path per seat, for the scorecard."
-        },
-        "currentVisitDarts": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Dart"
-          }
-        },
-        "totalDarts": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "totalVisits": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "shotHidden": {
-          "type": "boolean",
-          "description": "Darts are left: the tries carry no outcome (only, with shot preview, an aim line)."
-        },
-        "lastStroke": {
-          "anyOf": [
-            {
-              "type": "object",
-              "required": ["hole", "seat", "stroke", "path", "others", "hits", "holed"],
-              "additionalProperties": false,
-              "properties": {
-                "hole": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "seat": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "stroke": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "path": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/MinigolfPathPt"
-                  }
-                },
-                "others": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": ["seat", "path", "holed"],
-                    "additionalProperties": false,
-                    "properties": {
-                      "seat": {
-                        "type": "integer",
-                        "minimum": 0
-                      },
-                      "path": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/$defs/MinigolfPathPt"
-                        }
-                      },
-                      "holed": {
-                        "type": "boolean"
-                      }
-                    }
-                  }
-                },
-                "hits": {
-                  "type": "array",
-                  "items": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "description": "When the ball knocked into something, in path samples (for its sound)."
-                },
-                "holed": {
-                  "type": "boolean"
-                }
-              }
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
-        },
-        "reach": {
-          "type": "object",
-          "required": ["treble", "double"],
-          "additionalProperties": false,
-          "description": "How far a putt rolls on flat felt (mm) for a dart in the middle of the treble ring and at the double wire: the aim overlay's rings.",
-          "properties": {
-            "treble": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "double": {
-              "type": "integer",
-              "minimum": 0
+            "paused": {
+              "type": "boolean",
+              "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
             }
           }
-        },
-        "paused": {
-          "type": "boolean",
-          "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "MinigolfSnapshot": {
       "title": "MinigolfSnapshot",
-      "type": "object",
-      "required": [
-        "type",
-        "sessionId",
-        "gameId",
-        "boardId",
-        "lobbyId",
-        "lobbyName",
-        "players",
-        "game",
-        "bmStatus",
-        "status",
-        "finishPending",
-        "canUndoVisit",
-        "scoreBased",
-        "ownerUserId",
-        "seats",
-        "mySeats",
-        "results"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "snapshot"
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
         },
-        "sessionId": {
-          "type": "string"
-        },
-        "gameId": {
-          "const": "minigolf"
-        },
-        "boardId": {
-          "type": ["string", "null"]
-        },
-        "lobbyId": {
-          "type": ["string", "null"],
-          "description": "The lobby the game was started from; null for a local game."
-        },
-        "lobbyName": {
-          "type": ["string", "null"],
-          "description": "The lobby's name, for the match header; null for a local game."
-        },
-        "players": {
-          "type": "array",
-          "items": {
-            "$ref": "common-v1.json#/$defs/Player"
-          }
-        },
-        "game": {
-          "$ref": "#/$defs/MinigolfGame"
-        },
-        "bmStatus": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/BmStatus"
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": {
+              "const": "minigolf"
             },
-            {
-              "type": "null"
+            "game": {
+              "$ref": "#/$defs/MinigolfGame"
             }
-          ],
-          "description": "Status of the board of the seat that's up."
-        },
-        "status": {
-          "$ref": "#/$defs/SessionStatus"
-        },
-        "results": {
-          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "#/$defs/SeatPlace"
           }
-        },
-        "finishPending": {
-          "type": "boolean",
-          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
-        },
-        "canUndoVisit": {
-          "type": "boolean",
-          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
-        },
-        "ownerUserId": {
-          "type": "string",
-          "description": "The host: starts the bull off, aborts the game."
-        },
-        "scoreBased": {
-          "type": "boolean",
-          "description": "The game has a running score the caller announces (the game module's scoreBased)."
-        },
-        "seats": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SeatInfo"
-          },
-          "description": "Same order as players."
-        },
-        "mySeats": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "description": "Seats the viewer controls."
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "Snapshot": {
       "title": "Snapshot",
