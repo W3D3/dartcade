@@ -37,7 +37,7 @@ and folds them into the game's state. So:
 A game module (`backend/src/games/`) supplies its setup (`init`, default config and the setup
 form), how it reacts to board events and player actions, the view it sends to browsers, and what
 the history shows (placements, stats, per-mode detail). `withBullOff` wraps any game in a bull off
-that decides the throwing order. [`AGENTS.md`](AGENTS.md) has the step-by-step for adding a game.
+that decides the throwing order. [`docs/adding-a-game-mode.md`](docs/adding-a-game-mode.md) has the step-by-step for adding a game.
 
 A game can opt into **teams** (`teams: true`, `teamsOf`) so two teams share one score instead of
 every seat playing for itself; each seat still keeps its own controller, board and stats. The
