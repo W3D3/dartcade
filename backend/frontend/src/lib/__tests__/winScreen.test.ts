@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { sharedBoard, winMeta, winView } from '../winScreen.js'
-import type { GameDetail, HiloGame, Snapshot, StatRow } from '../api'
+import type { CricketGame, GameDetail, HiloGame, Snapshot, StatRow } from '../api'
 
 const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?: boolean } = {}) => ({
   controllerUserId: 'u1',
@@ -198,6 +198,8 @@ describe('winView', () => {
       // Fewer darts is better: the bar leans to the winner's 15
       { label: 'Best leg', values: ['15 darts', '17 darts'], share: expect.closeTo(0.53, 2) },
     ])
+    // Cricket's own marks table; every other mode carries nothing here
+    expect(v.cricketMarks).toBeUndefined()
   })
 
   it('X01 duel: a dash and a full bar when the runner-up never finished a leg', () => {
@@ -453,6 +455,7 @@ describe('hiloWin', () => {
     expect(v.checkout).toBeNull()
     expect(v.legs).toEqual([])
     expect(v.columns).toEqual(['Lives', 'Bars moved', 'Out in'])
+    expect(v.cricketMarks).toBeUndefined()
   })
 
   it('party: placed by place, highest and lowest bar set across everyone', () => {
@@ -548,5 +551,175 @@ describe('hiloWin', () => {
       0,
     )
     expect(winMeta(snap)).toBe('41 / 21 · 3 lives · Christoph vs Guest 1')
+  })
+})
+
+type CricketFixture = {
+  mode?: 'standard' | 'cutthroat'
+  firstTo?: number
+  legs?: number[]
+  points?: number[]
+  marksScored?: number[]
+  dartsThrown?: number[]
+  winner?: number | null
+  teams?: { id: 'A' | 'B'; name: string; seats: number[] }[]
+  forfeited?: number[]
+  guests?: number[]
+  marks?: number[][]
+  closed?: boolean[]
+  /** The server's places per seat; seat order without */
+  places?: number[]
+}
+
+function cricket(players: string[], o: CricketFixture = {}): Snapshot & { game: CricketGame } {
+  const n = players.length
+  const zeros = () => players.map(() => 0)
+  const game: Record<string, unknown> = {
+    config: { mode: o.mode ?? 'standard', firstTo: o.firstTo ?? 3, botSpeed: 'normal' },
+    phase: 'finished',
+    targets: [20, 19, 18, 17, 16, 15, 25],
+    marks: o.marks ?? Array.from({ length: n }, () => [0, 0, 0, 0, 0, 0, 0]),
+    points: o.points ?? zeros(),
+    legs: o.legs ?? zeros(),
+    firstTo: o.firstTo ?? 3,
+    closed: o.closed ?? Array(7).fill(false),
+    scorable: Array(7).fill(false),
+    currentPlayer: 0,
+    nextPlayer: null,
+    round: 10,
+    winner: o.winner ?? null,
+    visitLocked: false,
+    marksScored: o.marksScored ?? zeros(),
+    dartsThrown: o.dartsThrown ?? zeros(),
+    lastVisit: players.map(() => null),
+    bullOff: null,
+    currentVisitDarts: [],
+    totalDarts: zeros(),
+    totalVisits: zeros(),
+  }
+  if (o.teams) game.teams = o.teams
+  return {
+    type: 'snapshot',
+    sessionId: 's1',
+    gameId: 'cricket',
+    boardId: 'b1',
+    lobbyId: null,
+    lobbyName: null,
+    players: players.map(name => ({ name })),
+    game,
+    bmStatus: null,
+    status: 'finished',
+    finishPending: false,
+    canUndoVisit: false,
+    ownerUserId: 'u1',
+    seats: players.map((_, i) =>
+      seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}`, forfeited: o.forfeited?.includes(i) ?? false }),
+    ),
+    mySeats: [0],
+    results: players.map((_, i) => ({ placement: o.places?.[i] ?? i + 1, forfeited: o.forfeited?.includes(i) ?? false })),
+  } as unknown as Snapshot & { game: CricketGame }
+}
+
+describe('cricketWin', () => {
+  it('duel: the winner first, MPR/points/legs cells, and the three duel stats', () => {
+    const marks = [
+      [3, 3, 3, 3, 3, 3, 3],
+      [3, 3, 3, 2, 0, 1, 0],
+    ]
+    const closed = [true, true, true, false, false, false, false]
+    const snap = cricket(['Christoph', 'Guest 1'], {
+      winner: 0,
+      legs: [3, 1],
+      points: [366, 242],
+      marksScored: [60, 45],
+      dartsThrown: [60, 75],
+      guests: [1],
+      marks,
+      closed,
+    })
+    const v = winView(snap, null)!
+    expect(v.mode).toBe('cricket')
+    expect(v.layout).toBe('duel')
+    expect(v.kicker).toBe('Cricket')
+    expect(v.scoreLabel).toBe('Legs')
+    expect(v.columns).toEqual(['MPR', 'Points', 'Legs'])
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.guest, c.sub, c.cells])).toEqual([
+      ['Christoph', 1, 3, false, '3.0 MPR · 60 darts', ['3.0', '366', '3']],
+      ['Guest 1', 2, 1, true, '1.8 MPR · 75 darts', ['1.8', '242', '1']],
+    ])
+    // firstTo is 3 here (a race), so Points is only the deciding leg's, not the match's
+    expect(v.stats).toEqual([
+      { label: 'MPR', values: ['3.0', '1.8'], share: expect.closeTo(0.625, 2) },
+      { label: 'Points · last leg', values: ['366', '242'], share: expect.closeTo(0.602, 2) },
+      { label: 'Marks', values: ['60', '45'], share: expect.closeTo(0.571, 2) },
+    ])
+    expect(v.checkout).toBeNull()
+    expect(v.legs).toEqual([])
+    // The final snapshot's own board (the reducer keeps the last leg's marks once the match
+    // ends): no GameDetail needed, unlike the details page's per-leg table
+    expect(v.cricketMarks?.game.marks).toEqual(marks)
+    expect(v.cricketMarks?.game.closed).toEqual(closed)
+    expect(v.cricketMarks?.sides.map(s => [s.seat, s.name])).toEqual([
+      [0, 'Christoph'],
+      [1, 'Guest 1'],
+    ])
+  })
+
+  it('a single-leg duel keeps the plain Points label', () => {
+    const snap = cricket(['Christoph', 'Guest 1'], {
+      firstTo: 1,
+      winner: 0,
+      legs: [1, 0],
+      points: [120, 80],
+      marksScored: [30, 25],
+      dartsThrown: [30, 30],
+      guests: [1],
+    })
+    const v = winView(snap, null)!
+    expect(v.stats.find(s => s.label.startsWith('Points'))?.label).toBe('Points')
+  })
+
+  it("cut-throat party: in the server's places (the winner, then the fewest points)", () => {
+    const snap = cricket(['A', 'B', 'C', 'D'], {
+      places: [4, 2, 1, 3],
+      mode: 'cutthroat',
+      firstTo: 1,
+      winner: 2,
+      legs: [0, 0, 1, 0],
+      points: [50, 10, 999, 30],
+      marksScored: [20, 30, 45, 25],
+      dartsThrown: [30, 30, 30, 30],
+    })
+    const v = winView(snap, null)!
+    expect(v.layout).toBe('party')
+    expect(v.kicker).toBe('Cut-throat cricket')
+    expect(v.scoreLabel).toBe('Points')
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.cells])).toEqual([
+      ['C', 1, 999, ['4.5', '999', '1']],
+      ['B', 2, 10, ['3.0', '10', '0']],
+      ['D', 3, 30, ['2.5', '30', '0']],
+      ['A', 4, 50, ['2.0', '50', '0']],
+    ])
+  })
+
+  it("a forfeit: the forfeited seat, last in the server's places, says Forfeited; winner null", () => {
+    const snap = cricket(['Christoph', 'Guest 1'], {
+      legs: [1, 2],
+      points: [100, 500],
+      forfeited: [1],
+      guests: [1],
+    })
+    expect(snap.game.winner).toBeNull()
+    const v = winView(snap, null)!
+    expect(v).not.toBeNull()
+    expect(v.competitors.map(c => [c.name, c.placement, c.sub])).toEqual([
+      ['Christoph', 1, '0.0 MPR · 0 darts'],
+      ['Guest 1', 2, 'Forfeited'],
+    ])
+  })
+
+  it('names the rules, and both players in a duel', () => {
+    const snap = cricket(['Christoph', 'Guest 1'], { winner: 0, legs: [3, 1] })
+    expect(winMeta(snap)).toBe('Standard · First to 3 · Christoph vs Guest 1')
   })
 })

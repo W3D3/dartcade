@@ -8,6 +8,7 @@ import X01Legs from '../components/details/X01Legs.svelte'
 import X01Section from '../components/details/X01Section.svelte'
 import X01LegStats from '../components/details/X01LegStats.svelte'
 import AtcTargets from '../components/details/AtcTargets.svelte'
+import CricketSection from '../components/details/CricketSection.svelte'
 import RaceChart from '../components/details/RaceChart.svelte'
 import HeatBoard from '../components/details/HeatBoard.svelte'
 import HeatmapView from '../components/details/HeatmapView.svelte'
@@ -422,6 +423,83 @@ describe('Around the Clock sections', () => {
     const out = render(RaceChart, { props: { detail: atc(), highlight: 0 } }).body
     expect(out).toContain('Race to the Bull')
     expect(out).toContain('<path')
+  })
+})
+
+describe('CricketSection', () => {
+  const cricket = (): GameDetail => {
+    const d = game(2)
+    d.game.mode = 'cricket'
+    d.game.config = { mode: 'standard', firstTo: 3, botSpeed: 'normal' }
+    d.detail = {
+      mode: 'cricket',
+      targets: [20, 19, 18, 17, 16, 15, 25],
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: 0,
+          marks: [
+            [3, 3, 3, 3, 3, 3, 3],
+            [3, 3, 3, 2, 0, 1, 0],
+          ],
+          points: [87, 40],
+          visits: [{ visit: 0, seat: 0, committedAt: '2026-10-26T20:00:00.000Z', darts: [], marks: 3, points: 20 }],
+        },
+        {
+          leg: 1,
+          starter: 1,
+          winner: 1,
+          marks: [
+            [3, 3, 3, 1, 0, 0, 0],
+            [3, 3, 3, 3, 3, 3, 3],
+          ],
+          points: [57, 64],
+          visits: [{ visit: 0, seat: 1, committedAt: '2026-10-26T20:10:00.000Z', darts: [], marks: 3, points: 20 }],
+        },
+      ],
+    }
+    return d
+  }
+
+  it('shows the last leg by default, with a selector for the others', () => {
+    const out = render(CricketSection, { props: { detail: cricket() } }).body
+    expect(out).toContain('Final marks')
+    // Leg 2 (the last) is the default: its winner (P1) and score show
+    expect(out).toContain('P1')
+    expect(out).toContain('64')
+    expect(out).toContain('Leg 1')
+    expect(out).toContain('Leg 2')
+  })
+
+  it('names the team, not the player, when a team game ends a leg', () => {
+    const d = game(4)
+    d.game.mode = 'cricket'
+    d.game.config = { mode: 'standard', firstTo: 3, botSpeed: 'normal' }
+    d.detail = {
+      mode: 'cricket',
+      targets: [20, 19, 18, 17, 16, 15, 25],
+      // Team A sits at seat 1 (not seat 0), so a seat-indexed winner would land on Team B
+      teams: [
+        { id: 'A', name: 'Team A', seats: [1, 3] },
+        { id: 'B', name: 'Team B', seats: [0, 2] },
+      ],
+      legs: [
+        {
+          leg: 0,
+          starter: 1,
+          winner: 1, // seat 1, on Team A
+          marks: [
+            [3, 3, 3, 3, 3, 3, 3],
+            [3, 3, 3, 2, 0, 1, 0],
+          ],
+          points: [87, 40],
+          visits: [{ visit: 0, seat: 1, committedAt: '2026-10-26T20:00:00.000Z', darts: [], marks: 3, points: 20 }],
+        },
+      ],
+    }
+    const out = render(CricketSection, { props: { detail: d } }).body
+    expect(out).toMatch(/<strong[^>]*>Team A<\/strong> won leg 1/)
   })
 })
 
