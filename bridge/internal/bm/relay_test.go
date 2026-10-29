@@ -43,6 +43,14 @@ func TestRelayStateAndCamera(t *testing.T) {
 		t.Fatalf("state %+v", res)
 	}
 
+	// Board Manager 2 wording comes out as 1.x wording
+	res, _ = relayTo(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"status":"takeoutInProgress","event":"throwDetected","running":true}`))
+	}, schema.BmRequestData{Id: "s", Op: schema.BmRequestDataOpState})
+	if res.State["status"] != "Takeout in progress" || res.State["event"] != "Throw detected" {
+		t.Fatalf("state %+v", res)
+	}
+
 	cam := 1
 	frame := []byte{0xff, 0xd8, 0xff}
 	res, hits := relayTo(t, func(w http.ResponseWriter, r *http.Request) {

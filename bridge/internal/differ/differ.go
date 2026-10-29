@@ -135,14 +135,14 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	// 4. Takeout signals from state — only if visit open, not already in takeout, numThrows > 0
 	// NOTE: status="Takeout" on 3rd dart is board.status ONLY (diff-rules §8); NOT a takeout signal.
 	if !s.InTakeout && !s.VisitID.IsZero() && cur.NumThrows > 0 {
-		if cur.Status == "Takeout in progress" {
+		if cur.Status == bm.StatusTakeoutInProgress {
 			s.InTakeout = true
 			s.TakeoutStartedAt = frame.RecvWall
 			evs = append(evs, Event{Kind: "takeout.started", Data: &schema.TakeoutStartedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
 				Trigger: schema.TakeoutStartedDataTriggerStatusTakeoutInProgress,
 			}, RecvWall: wall, RecvMonoNs: mono})
-		} else if cur.Event == "Takeout started" {
+		} else if cur.Event == bm.EventTakeoutStarted {
 			s.InTakeout = true
 			s.TakeoutStartedAt = frame.RecvWall
 			evs = append(evs, Event{Kind: "takeout.started", Data: &schema.TakeoutStartedData{
@@ -214,7 +214,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 			}, RecvWall: wall, RecvMonoNs: mono})
 		} else {
 			reason := schema.VisitClearedDataReasonUnknown
-			if cur.Event == "Manual reset" {
+			if cur.Event == bm.EventManualReset {
 				reason = schema.VisitClearedDataReasonManualReset
 			}
 			evs = append(evs, Event{Kind: "visit.cleared", Data: &schema.VisitClearedData{

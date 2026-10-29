@@ -20,6 +20,12 @@ const cameraTimeout = 3 * time.Second
 // maxRelayBody caps what one relayed call reads (a camera frame is well under it).
 const maxRelayBody = 4 << 20
 
+// The /api/state fields whose wording Board Manager 2 changed (the json tags of BMStateData).
+const (
+	stateStatusKey = "status"
+	stateEventKey  = "event"
+)
+
 // relayClient never follows a redirect: the backend asked for this Board Manager, not another host.
 var relayClient = &http.Client{
 	Timeout:       httpTimeout,
@@ -53,6 +59,12 @@ func (c *Client) Relay(ctx context.Context, req schema.BmRequestData) schema.BmR
 			var state map[string]any
 			if err := json.Unmarshal(body, &state); err != nil {
 				return fail(fmt.Errorf("parse /api/state: %w", err))
+			}
+			// Board Manager 2 camelCases these; the status pill and the lights know the 1.x wording
+			for _, k := range []string{stateStatusKey, stateEventKey} {
+				if v, ok := state[k].(string); ok {
+					state[k] = sentenceCase(v)
+				}
 			}
 			res.State = state
 		}
