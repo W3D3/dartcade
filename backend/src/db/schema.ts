@@ -254,6 +254,16 @@ export interface FriendshipsTable {
   responded_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }
 
+/** A board shared with a friend: pending invite or accepted access (migration 042). */
+export interface BoardSharesTable {
+  id: string
+  board_id: string
+  friend_user_id: string
+  status: ColumnType<string, string | undefined, string>
+  created_at: ColumnType<Date, never, never>
+  responded_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
 /** A player's rating in one ranked mode (migration 020). */
 export interface RankedRatingsTable {
   user_id: string
@@ -449,6 +459,7 @@ export interface Database {
   voice_packs: VoicePacksTable
   voice_pack_clips: VoicePackClipsTable
   friendships: FriendshipsTable
+  board_shares: BoardSharesTable
   ranked_ratings: RankedRatingsTable
   ranked_results: RankedResultsTable
   minigolf_holes: MinigolfHolesTable
