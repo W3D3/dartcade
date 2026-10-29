@@ -215,7 +215,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 		BootID:        bootID,
 		BoardID:       client.BoardID(),
 		BMVersion:     client.BMVersion(),
-		BMUrl:         cfg.BoardURL,
+		BMUrl:         bm.Reachable(cfg.BoardURL, cfg.BackendURL),
 		BridgeVersion: buildVersion(),
 		OutboxPath:    outboxPath(cfgPath),
 		Updatable:     updater.Unavailable == "",
