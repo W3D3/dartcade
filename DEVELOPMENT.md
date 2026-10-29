@@ -179,6 +179,54 @@ tears the stack down. `SCREENSHOTS_REUSE=1` keeps the stack between runs; add a 
 screenshots -- 04`) to retake one file's shots. Scenes live in `e2e/screenshots/`. The camera stills
 (`docs/camera`) and the score animations (`docs/score-fx`) need a real board and are taken by hand.
 
+## Visual regression
+
+Every game mode's match screen is checked against images committed in `e2e/visual/__screenshots__`.
+The `test-visual` CI job fails a PR when a screen changed and its image wasn't updated.
+It runs only when the PR touches something the screens draw. That's the SPA, the server, the
+schemas, or the visual check itself, minus tests and Markdown. A PR that only changes docs, the
+bridge or tests skips it (`scripts/ui-changed.sh` decides; run it with a base commit to see why).
+
+The scenes are in `e2e/visual/match-screens.spec.ts`:
+
+- every mode with 2 players on a desktop (board and keypad), a phone and an upright screen
+- every mode with 3 players on a desktop
+- X01, Around the Clock and 121 solo
+- X01 teams, and X01 with 2 players below the duel width
+
+Each scene is a fresh local game with fixed player names. To check the screens:
+
+```bash
+cd e2e && npm ci && npm run visual
+```
+
+When a change is meant to alter a screen, rewrite the images and commit them with the change. The PR diff
+then shows each image before and after:
+
+```bash
+cd e2e && npm run visual:update
+```
+
+Both commands call `scripts/visual.sh`. Add Playwright arguments to run some of the scenes, for example
+`scripts/visual.sh -g hilo` or `scripts/visual.sh --update -g x01-teams`.
+
+The script starts the e2e stack (`docker-compose.e2e.yaml`, :5174) if it isn't running and leaves it
+running. Stop it with `docker compose -f docker-compose.e2e.yaml down`. The script signs in an admin made
+for the check (`visual@test.local`), because the flagged game modes are on only for admins. It then runs
+Playwright inside the pinned image `mcr.microsoft.com/playwright:v1.63.0-noble`.
+
+**Why the container:** text rendering differs between machines and browser builds. CI runs the same
+image, so images made on any machine compare cleanly in CI. It also works on NixOS, where Playwright's
+own Chromium doesn't run.
+
+Keep the image tag and `@playwright/test` in `e2e/package.json` on the same version. Renovate moves
+them together in one PR, which fails the visual check until `npm run visual:update` has run on it. Commit
+the new images to that PR.
+
+A failing run leaves expected, actual and a diff of each screen in `e2e/visual-report` (CI uploads it as
+the `visual-report` artifact). A few pixels of anti-aliasing flicker are tolerated (`maxDiffPixels` in
+`e2e/visual.config.ts`); a changed word is about 200 pixels.
+
 ## Bridge (Go)
 
 ```bash
