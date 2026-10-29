@@ -17,6 +17,14 @@ type BMFrame struct {
 	GapMs      int64 // only on bm_reconnect
 }
 
+// The status and event wording the differ acts on: Board Manager 1's, which Board Manager 2's
+// camelCase values are converted to (BMStateData.UnmarshalJSON).
+const (
+	StatusTakeoutInProgress = "Takeout in progress"
+	EventTakeoutStarted     = "Takeout started"
+	EventManualReset        = "Manual reset"
+)
+
 // BMStateData is the payload of a Board Manager "state" frame.
 type BMStateData struct {
 	Connected bool      `json:"connected"`
