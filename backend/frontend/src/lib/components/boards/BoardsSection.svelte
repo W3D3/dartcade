@@ -446,6 +446,7 @@
               {bmHost(selected)}
               <ExternalLink size={12} />
             </a>
+            {#if selected.bmVersion}<span class="ml-2 text-text-muted">{fmtVersion(selected.bmVersion)}</span>{/if}
           {:else}—{/if}
         </dd>
       </div>
