@@ -6,6 +6,7 @@
   import Avatar from './Avatar.svelte'
   import GameXpChip from './progress/GameXpChip.svelte'
   import Celebration from './progress/Celebration.svelte'
+  import MarksGrid from './cricket/MarksGrid.svelte'
   import { profileOf } from '$lib/progress/profiles'
   import { cardColors } from '$lib/progress/look'
   import type { Competitor, WinView } from '$lib/winScreen'
@@ -241,6 +242,16 @@
                 </span>
               </div>
             {/each}
+          </section>
+        {/if}
+
+        {#if view.cricketMarks}
+          <section
+            aria-label="Final marks"
+            class="rise r3 min-h-[360px] md:min-h-[420px] box-border rounded-[16px] bg-[rgba(21,23,19,0.88)] border border-line-2 px-3 md:px-5 pt-4 pb-2"
+          >
+            <!-- The match just ended: nothing here should draw in, so `from` is `marks` itself -->
+            <MarksGrid game={view.cricketMarks.game} sides={view.cricketMarks.sides} from={view.cricketMarks.game.marks} variant="duel" />
           </section>
         {/if}
 

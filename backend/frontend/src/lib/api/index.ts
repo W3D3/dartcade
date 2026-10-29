@@ -32,7 +32,18 @@ export type FoundWledDevice = Schemas['FoundWledDevice']
 export type LightProfile = Schemas['LightProfile']
 export type LightRule = Schemas['LightRule']
 
-export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame, MinigolfGame, MinigolfHole, HiloGame } from './game-ws'
+export type {
+  Snapshot,
+  UserAction,
+  Segment,
+  BullOffView,
+  X01Game,
+  AtcGame,
+  MinigolfGame,
+  MinigolfHole,
+  HiloGame,
+  CricketGame,
+} from './game-ws'
 export { WsCloseCode } from './game-ws'
 export { api, createApi } from './client'
 export { runBoardAction, type BoardAction } from './boardActions'

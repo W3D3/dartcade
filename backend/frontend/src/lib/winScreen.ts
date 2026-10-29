@@ -1,13 +1,14 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
 // Placements are the server's (the final snapshot's `results`); the X01 match stats (the details
 // page's, from the server) and the legs come from the saved game, once it loads.
-import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
+import type { AtcGame, CricketGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
 import { rulesOf } from './gameViews/rules.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
 import { outcomeText } from './hilo/view.js'
+import { cricketMpr, cricketSides, type CricketSide } from './cricket/view.js'
 import { plural } from './fmt.js'
 
 type X01Detail = Extract<GameDetail['detail'], { mode: 'x01' }>
@@ -33,7 +34,7 @@ export type WinLeg = { n: number; name: string; guest: boolean; byWinner: boolea
 export type StatRow = { label: string; values: [string, string]; share: number }
 
 export type WinView = {
-  mode: 'x01' | 'atc' | 'minigolf' | 'hilo'
+  mode: 'x01' | 'atc' | 'minigolf' | 'hilo' | 'cricket'
   layout: 'duel' | 'party'
   /** By placement: the winner first. */
   competitors: Competitor[]
@@ -53,6 +54,9 @@ export type WinView = {
   columns: string[]
   /** Party highlights. */
   highlights: { name: string; guest: boolean; label: string; text: string }[]
+  /** Cricket only: the last leg's final marks, for the win screen's own MarksGrid (never
+   *  animated there — the match is already over). */
+  cricketMarks?: { game: CricketGame; sides: CricketSide[] }
 }
 
 const pair = (a: string, b: string): [string, string] => [a, b]
@@ -385,6 +389,72 @@ export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinVie
   }
 }
 
+/** Cricket's win screen: the server's places; the big number is legs once there's a race to win
+ *  (firstTo > 1), else points, since a single-leg game has nothing else to show. */
+export function cricketWin(snapshot: Snapshot & { game: CricketGame }): WinView {
+  const g = snapshot.game
+  const seatsOf: number[][] = g.teams ? g.teams.map(t => t.seats) : snapshot.players.map((_, i) => [i])
+  const forfeited = seatsOf.map(seats => seats.some(s => snapshot.seats[s]?.forfeited))
+  const legs = seatsOf.map(s => g.legs[s[0]] ?? 0)
+  const points = seatsOf.map(s => g.points[s[0]] ?? 0)
+  const cutthroat = g.config.mode === 'cutthroat'
+  // A side shares its best seat's place
+  const place = placesOf(snapshot)
+  const places = seatsOf.map(s => Math.min(...s.map(i => place[i])))
+
+  const darts = seatsOf.map(s => s.reduce((a, i) => a + (g.dartsThrown[i] ?? 0), 0))
+  const marksScored = seatsOf.map(s => s.reduce((a, i) => a + (g.marksScored[i] ?? 0), 0))
+  const mpr = seatsOf.map(s => cricketMpr(g, s))
+
+  const competitors = byPlacement(
+    seatsOf.map((seats, i): Competitor => ({
+      name: g.teams?.[i].name ?? snapshot.players[seats[0]].name,
+      guest: !g.teams && snapshot.seats[seats[0]]?.userId === null,
+      members: g.teams ? seats.map(s => snapshot.players[s].name) : [],
+      seats,
+      placement: places[i],
+      score: g.firstTo > 1 ? legs[i] : points[i],
+      sub: forfeited[i] ? 'Forfeited' : `${mpr[i]} MPR · ${plural(darts[i], 'dart')}`,
+      cells: [mpr[i], String(points[i]), String(legs[i])],
+    })),
+  )
+  // Side index of the placed 1st/2nd competitors, to pull their raw numbers for the duel stats
+  const order = competitors.map(c => seatsOf.findIndex(s => s === c.seats))
+  const w = order[0]
+  const r = order.at(1)
+
+  return {
+    mode: 'cricket',
+    layout: seatsOf.length > 2 ? 'party' : 'duel',
+    competitors,
+    kicker: cutthroat ? 'Cut-throat cricket' : 'Cricket',
+    scoreLabel: g.firstTo > 1 ? 'Legs' : 'Points',
+    note: 'The rest ranked by legs, then by points',
+    checkout: null,
+    legs: [],
+    stats:
+      r === undefined
+        ? []
+        : [
+            { label: 'MPR', values: pair(mpr[w], mpr[r]), share: share(Number(mpr[w]), Number(mpr[r])) },
+            {
+              // The game's board (and its points) resets every leg: with a race to win, this is
+              // only the deciding leg's points, not the match's.
+              label: g.firstTo > 1 ? 'Points · last leg' : 'Points',
+              values: pair(String(points[w]), String(points[r])),
+              share: cutthroat ? share(points[r], points[w]) : share(points[w], points[r]),
+            },
+            { label: 'Marks', values: pair(String(marksScored[w]), String(marksScored[r])), share: share(marksScored[w], marksScored[r]) },
+          ],
+    columns: ['MPR', 'Points', 'Legs'],
+    highlights: [],
+    // The reducer keeps the last leg's board once the match ends, so the final snapshot's own
+    // marks/closed are that leg's final marks: no saved game needed, unlike the per-leg table
+    // on the details page.
+    cricketMarks: { game: g, sides: cricketSides(g, snapshot.players) },
+  }
+}
+
 /** The win screen once a won game has ended (not while its winning visit waits for Finish); null before, or when nobody won. */
 export function winView(snapshot: Snapshot | null, detail: GameDetail | null): WinView | null {
   if (!snapshot || snapshot.status !== 'finished') return null
@@ -404,9 +474,9 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
     // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
     case 'p121':
       return null
-    // Cricket has no win screen of its own yet
+    // A forfeit ends Cricket without a winner too: the server's places rank the forfeited side last
     case 'cricket':
-      return null
+      return cricketWin(snapshot)
     default: {
       // A new game id fails to compile here until it says how it wins
       const _unknown: never = snapshot
