@@ -137,7 +137,7 @@ export async function buildApp({
 
   await app.register(fastifyWebsocket, { options: { maxPayload: WS_MAX_PAYLOAD } })
   // RATE_LIMIT_MAX: the e2e stack raises it, since every test browser shares one IP
-  await app.register(rateLimit, { max: Number(process.env.RATE_LIMIT_MAX) || 200, timeWindow: '1 minute' })
+  await app.register(rateLimit, { max: Number(process.env.RATE_LIMIT_MAX) || 1000, timeWindow: '1 minute' })
 
   // API docs: our spec plus better-auth's generated one, in one Swagger UI
   if (!isOpenApiDocument(bundledSpec)) throw new Error('schema/api-v1.bundled.json is not an OpenAPI document')
