@@ -60,6 +60,12 @@ type AdminUserId = string
 // BoardId defines model for BoardId.
 type BoardId = string
 
+// BoardShareId defines model for BoardShareId.
+type BoardShareId = string
+
+// BoardShareInviteId defines model for BoardShareInviteId.
+type BoardShareInviteId = string
+
 // FlagKey defines model for FlagKey.
 type FlagKey = string
 

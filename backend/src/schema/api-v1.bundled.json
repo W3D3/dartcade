@@ -1683,6 +1683,208 @@
         }
       }
     },
+    "/api/boards/{id}/shares": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "get": {
+        "operationId": "listBoardShares",
+        "summary": "Who has (or is invited to) this board, owner only",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "200": {
+            "description": "The grantees",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardShareList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "shareBoard",
+        "summary": "Invite an accepted friend to use this board, owner only",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareBoardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invite sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardGrantee"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/shares/{shareId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        },
+        {
+          "$ref": "#/components/parameters/BoardShareId"
+        }
+      ],
+      "delete": {
+        "operationId": "revokeBoardShare",
+        "summary": "Revoke (or cancel a pending) share, owner only",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/board-shares/incoming": {
+      "get": {
+        "operationId": "listIncomingBoardShares",
+        "summary": "Board-share invites waiting for you to accept or decline",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "200": {
+            "description": "The invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingBoardShareList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/board-shares/{id}/accept": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardShareInviteId"
+        }
+      ],
+      "post": {
+        "operationId": "acceptBoardShare",
+        "summary": "Accept a board-share invite sent to you",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "204": {
+            "description": "Accepted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/board-shares/{id}/decline": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardShareInviteId"
+        }
+      ],
+      "post": {
+        "operationId": "declineBoardShare",
+        "summary": "Decline a board-share invite sent to you",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "204": {
+            "description": "Declined"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/pairing/request": {
       "post": {
         "operationId": "requestPairing",
@@ -5338,6 +5540,24 @@
           "minLength": 1
         }
       },
+      "BoardShareId": {
+        "name": "shareId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "BoardShareInviteId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
       "FriendUserId": {
         "name": "userId",
         "in": "path",
@@ -5880,6 +6100,114 @@
               "already_friends",
               "already_requested"
             ]
+          }
+        }
+      },
+      "ShareBoardRequest": {
+        "type": "object",
+        "required": [
+          "friendUserId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "friendUserId": {
+            "type": "string"
+          }
+        }
+      },
+      "BoardGrantee": {
+        "type": "object",
+        "required": [
+          "id",
+          "friendUserId",
+          "friendName",
+          "status",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "friendUserId": {
+            "type": "string"
+          },
+          "friendName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BoardShareList": {
+        "type": "object",
+        "required": [
+          "shares"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "shares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardGrantee"
+            }
+          }
+        }
+      },
+      "IncomingBoardShare": {
+        "type": "object",
+        "required": [
+          "id",
+          "boardId",
+          "boardName",
+          "ownerUserId",
+          "ownerName",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "boardId": {
+            "type": "string"
+          },
+          "boardName": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IncomingBoardShareList": {
+        "type": "object",
+        "required": [
+          "shares"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "shares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomingBoardShare"
+            }
           }
         }
       },
@@ -8053,7 +8381,8 @@
           "ip",
           "bmUrl",
           "bridgeUpdate",
-          "bigScreen"
+          "bigScreen",
+          "sharedBy"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8100,6 +8429,11 @@
           },
           "bigScreen": {
             "$ref": "#/components/schemas/BoardBigScreen"
+          },
+          "sharedBy": {
+            "type": "string",
+            "nullable": true,
+            "description": "The owner's name, when this board was shared with you rather than being your own"
           }
         }
       },

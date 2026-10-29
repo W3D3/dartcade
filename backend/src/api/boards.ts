@@ -132,6 +132,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
             updatable: conn?.bridgeUpdatable ?? false,
             status: bridgeUpdates.get(b.id) ?? undefined,
           },
+          // Always one's own board here; a shared board (Task 3) will carry the owner's name instead.
+          sharedBy: null,
         }
       }),
     }

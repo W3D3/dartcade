@@ -608,6 +608,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        /** Who has (or is invited to) this board, owner only */
+        get: operations["listBoardShares"];
+        put?: never;
+        /** Invite an accepted friend to use this board, owner only */
+        post: operations["shareBoard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/shares/{shareId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                shareId: components["parameters"]["BoardShareId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke (or cancel a pending) share, owner only */
+        delete: operations["revokeBoardShare"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/board-shares/incoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Board-share invites waiting for you to accept or decline */
+        get: operations["listIncomingBoardShares"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/board-shares/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardShareInviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a board-share invite sent to you */
+        post: operations["acceptBoardShare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/board-shares/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardShareInviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline a board-share invite sent to you */
+        post: operations["declineBoardShare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pairing/request": {
         parameters: {
             query?: never;
@@ -2079,6 +2174,33 @@ export interface components {
             /** @enum {string} */
             code?: "already_friends" | "already_requested";
         };
+        ShareBoardRequest: {
+            friendUserId: string;
+        };
+        BoardGrantee: {
+            id: string;
+            friendUserId: string;
+            friendName: string;
+            /** @enum {string} */
+            status: "pending" | "accepted";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        BoardShareList: {
+            shares: components["schemas"]["BoardGrantee"][];
+        };
+        IncomingBoardShare: {
+            id: string;
+            boardId: string;
+            boardName: string;
+            ownerUserId: string;
+            ownerName: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        IncomingBoardShareList: {
+            shares: components["schemas"]["IncomingBoardShare"][];
+        };
         /** @enum {string} */
         RankedMode: "1v1" | "2v2";
         RankedSearchRequest: {
@@ -2690,6 +2812,8 @@ export interface components {
             bmUrl: string | null;
             bridgeUpdate: components["schemas"]["BridgeUpdate"];
             bigScreen: components["schemas"]["BoardBigScreen"];
+            /** @description The owner's name, when this board was shared with you rather than being your own */
+            sharedBy: string | null;
         };
         BoardBigScreen: {
             mode: components["schemas"]["BigScreenMode"];
@@ -3924,6 +4048,8 @@ export interface components {
         /** @description Lobby code; case, dashes and spaces are ignored */
         LobbyCode: string;
         FriendRequestId: string;
+        BoardShareId: string;
+        BoardShareInviteId: string;
         FriendUserId: string;
         MinigolfCourseId: string;
         MinigolfHoleId: string;
@@ -4908,6 +5034,157 @@ export interface operations {
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    listBoardShares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The grantees */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardShareList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    shareBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareBoardRequest"];
+            };
+        };
+        responses: {
+            /** @description Invite sent */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardGrantee"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    revokeBoardShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                shareId: components["parameters"]["BoardShareId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listIncomingBoardShares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invites */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomingBoardShareList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptBoardShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardShareInviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineBoardShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardShareInviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     requestPairing: {
