@@ -41,15 +41,21 @@ Prefer to run it yourself? [Self-host dartcade](docs/SELFHOSTING.md) with Docker
 
 - **X01**: 301, 501, 701 and more, singles or Team A vs Team B, with the usual rule variants.
 - **Around the Clock**: race around 1–20, with a few variants of its own.
+- **Minigolf**: your dart is the putter, on courses built with a hole editor and real physics.
+- **121 Checkout**: a checkout drill, chase your best streak.
+- **Higher Lower**: land above the high bar or below the low bar to keep your lives.
 
 ### Playing
 
 - **Hands-free on your board**, or enter darts yourself by tap or keypad — with easy dart correction via mouse or touch.
 - **Modern match screens**: scores, averages, a chalkboard, checkout suggestions
   and leg dots, on desktop or phone.
-- **A caller for X01**, with a built-in voice or your own imported voice pack.
+- **A caller for X01**, with a built-in voice or your own imported Autodarts voice pack.
 - **Online lobbies**, invite friends and play across boards.
 - **Friends**, with requests and live online status, so you always know who's up for a game.
+- **Ranked matchmaking**: queue for a rated 1v1 or 2v2 and climb the rank ladder.
+- **Levels and challenges**: XP, day streaks and cosmetics for your profile.
+- **Lights**: pair a WLED strip and let your games flash and glow with the action.
 
 ### Boards and history
 
@@ -59,8 +65,7 @@ Prefer to run it yourself? [Self-host dartcade](docs/SELFHOSTING.md) with Docker
 
 ## Coming next
 
-- **Matchmaking** with ratings.
-- **More minigames**, such as soccer and challenge modes.
+- **More minigames**, such as Cricket, Killer and Soccer.
 
 ## Learn more
 
