@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cricketMeta, markGlyph, targetLabel, targetState } from './view.js'
+import { cricketMeta, cricketMpr, cricketSides, dartMarks, legNumber, markGlyph, targetLabel, targetState } from './view.js'
 import type { CricketGame } from '../api/game-ws'
 
 const game = (o: Partial<CricketGame> = {}): CricketGame => ({
@@ -129,5 +129,55 @@ describe('targetState', () => {
       ],
     })
     expect(targetState(g, 1, 0)).toBe('score')
+  })
+})
+
+describe('dartMarks', () => {
+  const targets = [20, 19, 18, 17, 16, 15, 25]
+  it('counts a treble 3, a double 2 and a single 1 on a target, nothing elsewhere', () => {
+    expect(dartMarks({ number: 19, multiplier: 3 }, targets)).toBe(3)
+    expect(dartMarks({ number: 18, multiplier: 2 }, targets)).toBe(2)
+    expect(dartMarks({ number: 5, multiplier: 3 }, targets)).toBe(0)
+    expect(dartMarks({ number: 20, multiplier: 0 }, targets)).toBe(0)
+  })
+  it('counts the outer bull 1 and the bullseye 2, however it is reported', () => {
+    expect(dartMarks({ number: 25, multiplier: 1 }, targets)).toBe(1)
+    expect(dartMarks({ number: 25, multiplier: 2 }, targets)).toBe(2)
+    expect(dartMarks({ number: 50, multiplier: 1 }, targets)).toBe(2)
+  })
+})
+
+describe('cricketSides', () => {
+  it('is a side per player, or per team with its members', () => {
+    const players = [{ name: 'Ann' }, { name: 'Ben' }, { name: 'Cat' }, { name: 'Dan' }]
+    expect(cricketSides(game(), players.slice(0, 2))).toEqual([
+      { seat: 0, seats: [0], name: 'Ann', members: null },
+      { seat: 1, seats: [1], name: 'Ben', members: null },
+    ])
+    const teams = [
+      { id: 'A' as const, name: 'Team A', seats: [0, 2], points: 0, legs: 0 },
+      { id: 'B' as const, name: 'Team B', seats: [1, 3], points: 0, legs: 0 },
+    ]
+    expect(cricketSides(game({ teams }), players)[1]).toEqual({ seat: 1, seats: [1, 3], name: 'Team B', members: 'Ben · Dan' })
+  })
+})
+
+describe('cricketMpr', () => {
+  it("is marks per three darts, counting the thrower's open visit", () => {
+    expect(cricketMpr(game({ marksScored: [0, 0], dartsThrown: [0, 0] }), [1])).toBe('0.0')
+    expect(cricketMpr(game({ marksScored: [0, 7], dartsThrown: [0, 9] }), [1])).toBe('2.3')
+    const open = game({ currentPlayer: 1, marksScored: [0, 10], dartsThrown: [0, 9], currentVisitDarts: [{}, {}, {}] as never })
+    expect(cricketMpr(open, [1])).toBe('2.5')
+  })
+})
+
+describe('legNumber', () => {
+  it('counts the legs played so far, a team once', () => {
+    expect(legNumber(game({ legs: [1, 2] }))).toBe(4)
+    const teams = [
+      { id: 'A' as const, name: 'Team A', seats: [0, 2], points: 0, legs: 1 },
+      { id: 'B' as const, name: 'Team B', seats: [1, 3], points: 0, legs: 0 },
+    ]
+    expect(legNumber(game({ legs: [1, 0, 1, 0], teams }))).toBe(2)
   })
 })

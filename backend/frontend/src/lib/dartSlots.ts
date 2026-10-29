@@ -2,6 +2,8 @@
 import { parseLabel } from './dartUtils.js'
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
 import { nextTargetIndex } from '$shared/atc.js'
+import { dartMarks } from './cricket/view.js'
+import { plural } from './fmt.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
@@ -114,11 +116,7 @@ export function atcSlots(o: {
  */
 export function hiloSlots(o: { darts: ThrownDart[]; hint: { need: number; high: number } | null; locked?: boolean }): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, (d.score ?? 0) > 0, String(d.score ?? 0)))
-  if (o.locked)
-    return [
-      ...done,
-      ...openSlots(done.length, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${done.length + k + 1}: not thrown` })),
-    ]
+  if (o.locked) return [...done, ...notThrown(done.length)]
   const left = 3 - done.length
   if (!o.hint || left === 0) return [...done, ...openSlots(done.length, [])]
   const { need, high } = o.hint
@@ -127,6 +125,22 @@ export function hiloSlots(o: { darts: ThrownDart[]; hint: { need: number; high: 
   const [next, ...rest] = openSlots(done.length, [{ label: `${need}+`, foot }])
   const aria = `Dart ${done.length + 1}: needs ${need} or more ${within ? `${within} ` : ''}to beat HIGH ${high}`
   return [...done, { ...next, aria }, ...rest]
+}
+
+/** A visit that is over early: the slots from `from` on are not thrown, with no next dart. */
+function notThrown(from: number): Slot[] {
+  return openSlots(from, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${from + k + 1}: not thrown` }))
+}
+
+/** Cricket: the thrown darts with the marks each is worth ("3 marks"), then the next dart. A visit
+ *  that won the leg is over: the slots left are not thrown. */
+export function cricketSlots(o: { darts: ThrownDart[]; targets: readonly number[]; locked: boolean }): Slot[] {
+  const done = o.darts.slice(0, 3).map((d, i): Slot => {
+    const m = dartMarks(d.segment ?? {}, o.targets)
+    const marks = m ? plural(m, 'mark') : 'no mark'
+    return { ...thrownSlot(d, i, m > 0, m ? marks : '0'), aria: `Dart ${i + 1}: ${d.segment?.name || 'Miss'}, ${marks}. Correct this dart` }
+  })
+  return [...done, ...(o.locked ? notThrown(done.length) : openSlots(done.length, []))]
 }
 
 /** The checkout labels to highlight on the board: only X01's next suggested dart. ATC's

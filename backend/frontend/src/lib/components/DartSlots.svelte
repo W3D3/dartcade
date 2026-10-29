@@ -93,8 +93,10 @@
           class:fx-pop={popIndex === i}
         >
           <span class={slotLabel}>{slot.label}</span>
-          <span class="font-display font-bold text-[14px] md:text-[30px] leading-none {slot.kind === 'miss' ? 'text-text-muted' : ''}"
-            >{slot.points}</span
+          <span
+            class="font-display font-bold text-[14px] md:text-[30px] leading-none whitespace-nowrap {slot.kind === 'miss'
+              ? 'text-text-muted'
+              : ''}">{slot.points}</span
           >
         </button>
       {:else}

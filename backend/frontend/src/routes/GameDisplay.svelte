@@ -12,6 +12,7 @@
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import P121Match from '$lib/components/p121/P121Match.svelte'
   import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
+  import CricketMatch from '$lib/components/cricket/CricketMatch.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { snapshotStandings } from '$lib/p121/summary'
   import { pendingRoll } from '$lib/minigolf/match'
@@ -247,6 +248,7 @@
   const minigolf = $derived(current.minigolf)
   const p121 = $derived(current.p121)
   const hilo = $derived(current.hilo)
+  const cricket = $derived(current.cricket)
   const game = $derived(snapshot?.game ?? null)
   const isX01 = $derived(x01 !== null)
   // 121 ends on its session summary (P121Summary), not the win screen
@@ -302,8 +304,10 @@
   // excludes a bot: the host may still need to correct a misdetected bot throw.
   const canUndo = $derived(connected && isActive && myTurn && (darts.length > 0 || snapshot?.canUndoVisit === true))
   // A visit that wins a leg (not the match): same check as the leg-won caller line in endOfVisit
+  // (Cricket's locked visit won the leg; nextPlayer is null when it wins the match)
   const legWon = $derived(
-    x01 !== null && x01.visitLocked && x01.scores[x01.currentPlayer] === 0 && legsOf(x01, x01.currentPlayer) + 1 < x01.firstTo,
+    (x01 !== null && x01.visitLocked && x01.scores[x01.currentPlayer] === 0 && legsOf(x01, x01.currentPlayer) + 1 < x01.firstTo) ||
+      (cricket?.visitLocked === true && cricket.nextPlayer !== null),
   )
   const next = $derived(
     nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending, legWon }),
@@ -513,6 +517,23 @@
       {:else if hilo}
         <HiloMatch
           game={hilo}
+          {players}
+          {darts}
+          {layout}
+          {canThrow}
+          {locked}
+          {canUndo}
+          {next}
+          onUndo={undo}
+          onNext={advance}
+          onBoardClick={addBoardDart}
+          onCorrect={correct}
+          {keypad}
+          onDart={canThrow ? addManualDart : () => {}}
+        />
+      {:else if cricket}
+        <CricketMatch
+          game={cricket}
           {players}
           {darts}
           {layout}

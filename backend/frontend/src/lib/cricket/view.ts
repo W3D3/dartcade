@@ -40,3 +40,38 @@ export function targetState(game: CricketGame, seat: number, i: number): 'need' 
   if (game.scorable[i] && sameTeam(game, seat, game.currentPlayer)) return 'score'
   return game.marks[seat][i] < 3 ? 'need' : 'done'
 }
+
+/** The marks a dart is worth on the targets (the backend's `marksFor`): its multiplier on a
+ *  target, the bullseye 2 however it's reported (50, or a double 25), nothing elsewhere. */
+export function dartMarks(segment: { number?: number; multiplier?: number }, targets: readonly number[]): number {
+  if (segment.number === 50) return targets.includes(25) ? 2 : 0
+  return targets.includes(segment.number ?? 0) ? (segment.multiplier ?? 0) : 0
+}
+
+/** One column of the marks table: a player, or a team with its members. `seat` is the seat
+ *  whose marks, points and legs the side shows (a team's seats all share them). */
+export type CricketSide = { seat: number; seats: number[]; name: string; members: string | null }
+
+export function cricketSides(game: CricketGame, players: { name: string }[]): CricketSide[] {
+  if (game.teams)
+    return game.teams.map(t => ({
+      seat: t.seats[0],
+      seats: t.seats,
+      name: t.name,
+      members: t.seats.map(s => players[s]?.name ?? '').join(' · '),
+    }))
+  return game.marks.map((_, i) => ({ seat: i, seats: [i], name: players[i]?.name ?? '', members: null }))
+}
+
+/** Marks per round (three darts) of these seats, the thrower's open visit included: "2.3". */
+export function cricketMpr(game: CricketGame, seats: number[]): string {
+  const sum = (xs: number[]) => seats.reduce((n, s) => n + (xs[s] ?? 0), 0)
+  const darts = sum(game.dartsThrown) + (seats.includes(game.currentPlayer) ? game.currentVisitDarts.length : 0)
+  return (darts ? (sum(game.marksScored) / darts) * 3 : 0).toFixed(1)
+}
+
+/** The leg being played: 1 + the legs won so far. */
+export function legNumber(game: CricketGame): number {
+  const won = game.teams ? game.teams.map(t => t.legs) : game.legs
+  return won.reduce((n, l) => n + l, 1)
+}
