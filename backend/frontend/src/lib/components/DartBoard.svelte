@@ -21,6 +21,7 @@
     target = null,
     nextTarget = null,
     dim = false,
+    inPlay = null,
     playerMarkers = [],
     checkoutTargets = [],
     onBoardClick,
@@ -42,6 +43,9 @@
     nextTarget?: number | null
     /** Dim the board so the target stands out (ATC). */
     dim?: boolean
+    /** Cricket: the numbers the thrower can score on (tinted lime) and still needs (lit); every
+     *  other number, closed or not in play, is dimmed. 25 is the bull. */
+    inPlay?: { score: number[]; open: number[] } | null
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
@@ -449,6 +453,29 @@
 
         {#if dim}
           <circle cx="0" cy="0" r="1.12" fill="var(--color-bg-deep)" fill-opacity="0.45" style="pointer-events:none" />
+        {/if}
+
+        {#if inPlay}
+          {@const lit = (n: number) => inPlay.score.includes(n) || inPlay.open.includes(n)}
+          <g fill="var(--color-bg-deep)" fill-opacity="0.66" style="pointer-events:none">
+            {#each sectors as { num, a1, a2 } (num)}
+              {#if !lit(num)}<path data-board="dim" d={sectorPath(R.bull25, R.db, a1, a2)} />{/if}
+            {/each}
+            {#if !lit(25)}<circle data-board="dim" cx="0" cy="0" r={R.bull25} />{/if}
+          </g>
+          <g
+            fill="var(--color-accent)"
+            fill-opacity="0.42"
+            stroke="var(--color-accent)"
+            stroke-width="0.018"
+            stroke-linejoin="round"
+            style="pointer-events:none"
+          >
+            {#each sectors as { num, a1, a2 } (num)}
+              {#if inPlay.score.includes(num)}<path data-board="score" d={sectorPath(R.bull25, R.db, a1, a2)} />{/if}
+            {/each}
+            {#if inPlay.score.includes(25)}<circle data-board="score" cx="0" cy="0" r={R.bull25} />{/if}
+          </g>
         {/if}
 
         <!-- ATC targets: thrower's in lime, next player's dashed white -->
