@@ -2909,6 +2909,51 @@ components:
               place: { type: integer, minimum: 1 }
               outRound: { type: integer, minimum: 1, nullable: true, description: The round the seat went out in; null while still in }
               livesLeft: { type: integer, minimum: 0 }
+    CricketDetail:
+      type: object
+      required: [mode, targets, legs]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [cricket] }
+        targets:
+          type: array
+          description: The targets in play, in board order (20 … 15, 25)
+          items: { type: integer }
+        teams:
+          type: array
+          description: Only in a team game
+          items: { $ref: '#/components/schemas/TeamView' }
+        legs:
+          type: array
+          items:
+            type: object
+            required: [leg, starter, winner, marks, points, visits]
+            additionalProperties: false
+            properties:
+              leg: { type: integer, minimum: 0 }
+              starter: { type: integer, minimum: 0, description: Seat that threw first in this leg }
+              winner: { type: integer, minimum: 0, nullable: true, description: 'null: the leg is still open' }
+              marks:
+                type: array
+                description: Per team, at the leg's end
+                items: { type: array, items: { type: integer, minimum: 0 } }
+              points:
+                type: array
+                description: Per team, at the leg's end
+                items: { type: integer, minimum: 0 }
+              visits:
+                type: array
+                items:
+                  type: object
+                  required: [visit, seat, committedAt, darts, marks, points]
+                  additionalProperties: false
+                  properties:
+                    visit: { type: integer, minimum: 0 }
+                    seat: { type: integer, minimum: 0 }
+                    committedAt: { type: string, format: date-time }
+                    darts: { type: array, items: { $ref: '#/components/schemas/HistoryDart' } }
+                    marks: { type: integer, minimum: 0 }
+                    points: { type: integer, minimum: 0 }
     AtcDetail:
       type: object
       required: [mode, visits, progress, sequence]
@@ -3373,6 +3418,7 @@ components:
             - $ref: '#/components/schemas/MinigolfDetail'
             - $ref: '#/components/schemas/P121Detail'
             - $ref: '#/components/schemas/HiloDetail'
+            - $ref: '#/components/schemas/CricketDetail'
           discriminator:
             propertyName: mode
             mapping:
@@ -3381,6 +3427,7 @@ components:
               minigolf: '#/components/schemas/MinigolfDetail'
               p121: '#/components/schemas/P121Detail'
               hilo: '#/components/schemas/HiloDetail'
+              cricket: '#/components/schemas/CricketDetail'
         stats: { $ref: '#/components/schemas/MatchStats' }
     AdminGameDetail:
       type: object

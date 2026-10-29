@@ -1,12 +1,23 @@
 // Cricket's reducer: wires cricketRules (marks, scoring, leg win) into a GameModule, copying
-// X01's shape for legs and teams. View and detail are placeholders for tasks 3 and 4.
-import type { GameModule, BoardEvent, Player, ConfigFieldMeta } from '../session/types.js'
+// X01's shape for legs and teams. The view is a placeholder for task 3.
+import type {
+  CommittedVisit,
+  CricketDetail,
+  GameModule,
+  BoardEvent,
+  Player,
+  ConfigFieldMeta,
+  SeatResult,
+  SummaryContext,
+} from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { Rng } from '../session/rng.js'
 import { validateOptions } from './configMeta.js'
 import { nextTurn } from './turns.js'
-import { legStart, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
-import { TARGETS, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
+import { cricketMatchStats } from './cricketStats.js'
+import { rankSeats } from './ranking.js'
+import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
+import { OPEN, TARGETS, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
 
 export type CricketConfig = {
   mode: CricketMode
@@ -19,6 +30,8 @@ export type CricketConfig = {
 export type CricketVisitRecord = { seat: number; marks: number; points: number; darts: number }
 
 type CricketView = Record<string, unknown>
+
+const TEAM_IDS = ['A', 'B'] as const
 
 /**
  * `board` and `legs` are per team (index: `teamOf[seat]`); in singles every seat is its own
@@ -147,7 +160,7 @@ export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStar
 }
 
 /** Cricket without a bull off; `cricketModule` below adds it. */
-export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, 'cricket'> = {
+export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, 'cricket', CricketDetail> = {
   id: 'cricket',
   version: 1,
   defaultConfig: {
@@ -259,13 +272,64 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
     return [...new Set(s.order)]
   },
 
-  summarize() {
-    return []
+  // Teams are ranked (in singles every seat is a team); every seat shares its team's place.
+  // Standard: more legs, then more points, then more targets opened wins each tie; cut-throat
+  // flips points (fewer first, since the lowest score wins).
+  summarize(s: CricketState, ctx: SummaryContext): SeatResult[] {
+    const openedCount = (t: number) => s.board.marks[t].filter(m => m >= OPEN).length
+    const teamPlaces = rankSeats(teamCount(s.teamOf), s.winner, (a, b) => {
+      if (s.legs[b] !== s.legs[a]) return s.legs[b] - s.legs[a]
+      const points = s.cfg.mode === 'standard' ? s.board.points[b] - s.board.points[a] : s.board.points[a] - s.board.points[b]
+      if (points !== 0) return points
+      return openedCount(b) - openedCount(a)
+    })
+    const placements = seatPlacements(s.teamOf, teamPlaces)
+    return placements.map((placement, i) => {
+      const darts = ctx.totalDarts[i] ?? 0
+      return {
+        placement,
+        stats: {
+          mpr: darts > 0 ? (s.marksScored[i] / darts) * 3 : 0,
+          marksScored: s.marksScored[i],
+          dartsThrown: darts,
+          legsWon: s.legs[s.teamOf[i]],
+          points: s.board.points[s.teamOf[i]],
+        },
+      }
+    })
   },
 
-  detail() {
-    return null
+  detail(visits: CommittedVisit<CricketState>[], final: CricketState): CricketDetail {
+    const legs: CricketDetail['legs'] = []
+    for (const v of visits) {
+      if (v.phase !== 'game') continue
+      let leg = legs.find(l => l.leg === v.leg)
+      if (!leg) {
+        leg = { leg: v.leg, starter: v.seat, winner: null, marks: [], points: [], visits: [] }
+        legs.push(leg)
+      }
+      // Cut-throat with 3+ players: a team can win on another team's dart, so check every
+      // team's legs, not just the thrower's.
+      const won = v.after.legs.findIndex((l, t) => l > v.start.legs[t])
+      if (won >= 0) leg.winner = v.start.teamOf.indexOf(won)
+      leg.marks = v.end.board.marks
+      leg.points = v.end.board.points
+      leg.visits.push({
+        visit: v.visit,
+        seat: v.seat,
+        committedAt: v.committedAt,
+        darts: v.darts,
+        marks: v.end.visitMarks,
+        points: v.end.visitPoints,
+      })
+    }
+    const targets = [...final.board.targets]
+    if (final.cfg.format !== 'teams') return { mode: 'cricket', targets, legs }
+    const teams = seatsByTeam(final.teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats }))
+    return { mode: 'cricket', targets, teams, legs }
   },
+
+  matchStats: cricketMatchStats,
 }
 
 /** Cricket with an optional bull off deciding the throwing order. */

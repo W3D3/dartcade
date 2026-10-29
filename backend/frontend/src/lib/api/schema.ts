@@ -2295,6 +2295,37 @@ export interface components {
                 livesLeft: number;
             }[];
         };
+        CricketDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "cricket";
+            /** @description The targets in play, in board order (20 … 15, 25) */
+            targets: number[];
+            /** @description Only in a team game */
+            teams?: components["schemas"]["TeamView"][];
+            legs: {
+                leg: number;
+                /** @description Seat that threw first in this leg */
+                starter: number;
+                /** @description null: the leg is still open */
+                winner: number | null;
+                /** @description Per team, at the leg's end */
+                marks: number[][];
+                /** @description Per team, at the leg's end */
+                points: number[];
+                visits: {
+                    visit: number;
+                    seat: number;
+                    /** Format: date-time */
+                    committedAt: string;
+                    darts: components["schemas"]["HistoryDart"][];
+                    marks: number;
+                    points: number;
+                }[];
+            }[];
+        };
         AtcDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -2612,7 +2643,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         AdminGameDetail: {
