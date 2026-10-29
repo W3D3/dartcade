@@ -63,6 +63,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     await db.deleteFrom('lobby_people').execute()
     await db.deleteFrom('lobbies').execute()
     await db.deleteFrom('friendships').execute()
+    await db.deleteFrom('board_shares').execute()
     online.clear()
     for (const b of ['living', 'lenas', 'garage']) online.add(b)
     engineStore = makeStore()
@@ -883,6 +884,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.updatePerson('max', id, (await person('Max')).id, { boardId: 'garage' })).rejects.toMatchObject({
         statusCode: 403,
       })
+    })
+
+    it('the host gives out a board shared with them (not owned) once accepted; refuses without a share', async () => {
+      // Without a share, Lena's board isn't the host's to give (and nobody sits there to make it "the lobby's")
+      await expect(lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'lenas' })).rejects.toMatchObject({
+        statusCode: 403,
+      })
+      await db.insertInto('board_shares').values({ id: 'share-1', board_id: 'lenas', friend_user_id: 'chris', status: 'accepted' }).execute()
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'lenas' })
+      expect(await person('Max')).toMatchObject({ boardId: 'lenas' })
     })
 
     it('refuses a board that is in another game', async () => {

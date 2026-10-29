@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
+import type { BoardTarget } from './rules.js'
 import {
   assignTeams,
   canMove,
@@ -84,14 +85,14 @@ const guest = person({
   boardOwnerUserId: 'lena',
   position: 3,
 })
-const living = { boardId: 'living', ownerUserId: 'chris' }
-const garage = { boardId: 'garage', ownerUserId: 'chris' }
-const lenas = { boardId: 'lenas', ownerUserId: 'lena' }
+const living = { boardId: 'living', ownerUserId: 'chris', sharedWithUserIds: [] }
+const garage = { boardId: 'garage', ownerUserId: 'chris', sharedWithUserIds: [] }
+const lenas = { boardId: 'lenas', ownerUserId: 'lena', sharedWithUserIds: [] }
 const lobby = lobbyOf([chris, lena, max, guest])
 
 describe('canSetBoard', () => {
   // Chris hosts at his Living room, Lena at her place with her guest, Max on Manual
-  const set = (actor: string, p: LobbyPerson, target: typeof living | null) => canSetBoard(lobby, actor, p, target)
+  const set = (actor: string, p: LobbyPerson, target: BoardTarget | null) => canSetBoard(lobby, actor, p, target)
 
   it('anyone gives a person on Manual one of their own boards', () => {
     expect(set('chris', max, living)).toBe(true)
@@ -141,6 +142,19 @@ describe('canSetBoard', () => {
     expect(set('chris', bot, living)).toBe(false) // its own adder, the host, giving one of their own boards
     expect(set('lena', bot, lenas)).toBe(false) // another board owner
     expect(set('chris', bot, null)).toBe(false) // even "to Manual" (a no-op, but still refused as a patch)
+  })
+
+  it("a board owner's friend with an accepted share can give it out too", () => {
+    // Chris's garage, which nobody in the lobby sits at (so it isn't already "the lobby's")
+    const garageSharedWithLena = { ...garage, sharedWithUserIds: ['lena'] }
+    expect(set('lena', max, garageSharedWithLena)).toBe(true)
+    expect(set('max', max, garageSharedWithLena)).toBe(false) // max has no share
+  })
+
+  it("sharing doesn't grant the true owner's separate right to reclaim the board from Manual", () => {
+    const maxOnLiving = person({ id: 'x', userId: 'max', addedByUserId: 'max', boardId: 'living', boardOwnerUserId: 'chris' })
+    // lena has a share on 'living' but canSetBoard's null-target branch never looks at sharedWithUserIds
+    expect(set('lena', maxOnLiving, null)).toBe(false)
   })
 })
 

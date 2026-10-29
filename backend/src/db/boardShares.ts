@@ -1,6 +1,7 @@
 import { type Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import type { Database } from './schema.js'
+import type { components } from '../schema/api.js'
 
 export type BoardShareRow = {
   id: string
@@ -34,6 +35,7 @@ export type SharedBoardRow = {
   hardware_id: string | null
   created_at: Date
   owner_name: string
+  big_screen_mode: components['schemas']['BigScreenMode']
 }
 
 /** Throws on a duplicate (board_id, friend_user_id). */
@@ -168,7 +170,14 @@ export function sharedBoardsFor(db: Kysely<Database>, userId: string): Promise<S
     .selectFrom('board_shares')
     .innerJoin('boards', 'boards.id', 'board_shares.board_id')
     .innerJoin('user', 'user.id', 'boards.owner_user_id')
-    .select(['boards.id', 'boards.name', 'boards.hardware_id', 'boards.created_at', 'user.name as owner_name'])
+    .select([
+      'boards.id',
+      'boards.name',
+      'boards.hardware_id',
+      'boards.created_at',
+      'user.name as owner_name',
+      'boards.big_screen_mode',
+    ])
     .where('board_shares.friend_user_id', '=', userId)
     .where('board_shares.status', '=', 'accepted')
     .execute()

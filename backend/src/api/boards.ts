@@ -19,12 +19,14 @@ import {
 import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
 import { openBigScreen, stopBigScreen } from '../boards/bigScreenOpen.js'
 import { findOwnBoard } from '../boards/own.js'
+import { sharedBoardsFor } from '../db/boardShares.js'
 import { newBoardToken } from '../boards/token.js'
 import { fromSpec } from './spec.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
 import type { Session } from '../session/types.js'
 import type { Route } from './route.js'
+import type { components } from '../schema/api.js'
 import { bridgeUpdateFor, type BridgeReleases } from '../boards/bridgeRelease.js'
 import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 
@@ -99,43 +101,57 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     return answer.res
   }
 
-  app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
-    const rows = await getBoardsByOwner(db, req.userId)
+  // One board's view: both owned and shared rows carry id/name/hardware_id/created_at, and
+  // the big-screen mode (an owner's setting that still applies to a friend using the board);
+  // bridgeConnections/bigScreenState are keyed by board id, not by ownership, so a shared
+  // board reads them the same way.
+  function boardView(
+    b: {
+      id: string
+      name: string
+      hardware_id: string | null
+      created_at: Date
+      big_screen_mode: components['schemas']['BigScreenMode']
+    },
+    sharedBy: string | null,
+  ) {
+    const conn = bridgeConnections.get(b.id)
+    const screen = bigScreenState.get(b.id)
     const offered = bridgeReleases.offered()
+    const bm = conn?.bmUrl
+      ? (() => {
+          try {
+            return new URL(conn.bmUrl)
+          } catch {
+            return null
+          }
+        })()
+      : null
     return {
-      boards: rows.map(b => {
-        const conn = bridgeConnections.get(b.id)
-        const screen = bigScreenState.get(b.id)
-        const bm = conn?.bmUrl
-          ? (() => {
-              try {
-                return new URL(conn.bmUrl)
-              } catch {
-                return null
-              }
-            })()
-          : null
-        return {
-          id: b.id,
-          name: b.name,
-          hardwareId: b.hardware_id,
-          online: bridgeConnections.isOnline(b.id),
-          bridgeVersion: conn?.bridgeVersion ?? null,
-          bmVersion: conn?.bmVersion ?? null,
-          createdAt: new Date(b.created_at).toISOString(),
-          ip: bm?.hostname ?? null,
-          // Full Board Manager origin (incl. port) for linking
-          bmUrl: bm?.origin ?? null,
-          bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
-          bridgeUpdate: {
-            available: bridgeUpdateFor(conn?.bridgeVersion, offered),
-            updatable: conn?.bridgeUpdatable ?? false,
-            status: bridgeUpdates.get(b.id) ?? undefined,
-          },
-          // Always one's own board here; a shared board (Task 3) will carry the owner's name instead.
-          sharedBy: null,
-        }
-      }),
+      id: b.id,
+      name: b.name,
+      hardwareId: b.hardware_id,
+      online: bridgeConnections.isOnline(b.id),
+      bridgeVersion: conn?.bridgeVersion ?? null,
+      bmVersion: conn?.bmVersion ?? null,
+      createdAt: new Date(b.created_at).toISOString(),
+      ip: bm?.hostname ?? null,
+      // Full Board Manager origin (incl. port) for linking
+      bmUrl: bm?.origin ?? null,
+      bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
+      bridgeUpdate: {
+        available: bridgeUpdateFor(conn?.bridgeVersion, offered),
+        updatable: conn?.bridgeUpdatable ?? false,
+        status: bridgeUpdates.get(b.id) ?? undefined,
+      },
+      sharedBy,
+    }
+  }
+
+  app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
+    const [owned, shared] = await Promise.all([getBoardsByOwner(db, req.userId), sharedBoardsFor(db, req.userId)])
+    return {
+      boards: [...owned.map(b => boardView(b, null)), ...shared.map(b => boardView(b, b.owner_name))],
     }
   })
 

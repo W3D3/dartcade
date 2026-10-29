@@ -16,8 +16,10 @@ vi.mock('../db/queries.js', () => ({
 }))
 
 vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }) }))
+vi.mock('../db/boardShares.js', () => ({ hasAcceptedBoardShare: vi.fn() }))
 
 import * as queries from '../db/queries.js'
+import { hasAcceptedBoardShare } from '../db/boardShares.js'
 import { getRoleAndEmail } from '../db/users.js'
 import { setupFlags } from '../flags/index.js'
 import * as middleware from '../auth/middleware.js'
@@ -150,6 +152,18 @@ describe('POST /api/sessions ownership', () => {
       payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(403)
+  })
+
+  it('returns 201 for a board owned by another user who shared it with an accepted invite', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other-user', name: 'Living room' } as any)
+    vi.mocked(hasAcceptedBoardShare).mockResolvedValue(true)
+    const { app } = makeApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
+    })
+    expect(res.statusCode).toBe(201)
   })
 })
 

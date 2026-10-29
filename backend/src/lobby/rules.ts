@@ -3,8 +3,8 @@ import type { GameConfig } from '../session/types.js'
 import type { LobbyPerson, LobbyState, NextGame, TeamId, ThrowOrder } from './types.js'
 import { shuffle } from '../session/rng.js'
 
-/** A board someone picks for a person: its id and owner. */
-export type BoardTarget = { boardId: string; ownerUserId: string }
+/** A board someone picks for a person: its id, its owner, and who it's shared with (accepted shares only). */
+export type BoardTarget = { boardId: string; ownerUserId: string; sharedWithUserIds: readonly string[] }
 
 /** Who acts for a person: a member for themselves, a guest's adder for the guest. */
 export const controllerOf = (p: LobbyPerson): string => p.userId ?? p.addedByUserId
@@ -45,7 +45,9 @@ export const isSharedBoard = (lobby: LobbyState, target: BoardTarget): boolean =
  * The board rule (spec, Decisions → Boards, relaxed by #345). You put yourself (a guest's
  * adder: the guest) on one of your own boards or one the lobby shares. Anyone gives a person
  * on Manual one of their own boards, and the host gives anyone theirs. Once someone has a
- * board, the board's owner can take it back (to Manual). `target` null means Manual.
+ * board, the board's owner can take it back (to Manual). `target` null means Manual. A
+ * friend with an accepted share on the board acts like its owner for giving it out, but not
+ * for reclaiming it from Manual (the null branch only ever looks at the true owner).
  */
 export function canSetBoard(lobby: LobbyState, actorUserId: string, person: LobbyPerson, target: BoardTarget | null): boolean {
   // A bot never has a board (the scheduler drives it, with no board to throw on): not even a
@@ -53,7 +55,7 @@ export function canSetBoard(lobby: LobbyState, actorUserId: string, person: Lobb
   if (person.bot !== null) return false
   const controls = controllerOf(person) === actorUserId
   if (target === null) return controls || (person.boardId !== null && person.boardOwnerUserId === actorUserId)
-  if (target.ownerUserId !== actorUserId) return controls && isSharedBoard(lobby, target)
+  if (target.ownerUserId !== actorUserId && !target.sharedWithUserIds.includes(actorUserId)) return controls && isSharedBoard(lobby, target)
   return controls || person.boardId === null || isHost(lobby, actorUserId)
 }
 

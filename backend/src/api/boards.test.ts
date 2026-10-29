@@ -41,8 +41,11 @@ vi.mock('../flags/index.js', () => ({
   loadFlagUser: vi.fn().mockResolvedValue(null),
 }))
 
+vi.mock('../db/boardShares.js', () => ({ sharedBoardsFor: vi.fn().mockResolvedValue([]) }))
+
 import * as flags from '../flags/index.js'
 import * as queries from '../db/queries.js'
+import * as boardShares from '../db/boardShares.js'
 import * as connections from '../bridge-gw/connections.js'
 import * as middleware from '../auth/middleware.js'
 
@@ -92,6 +95,30 @@ describe('GET /api/boards', () => {
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body).boards[0].id).toBe('board-1')
+  })
+
+  it('lists owned and shared boards together, without duplicates, only shared ones tagged', async () => {
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
+      {
+        id: 'own-1',
+        name: 'Mine',
+        hardware_id: null,
+        created_at: new Date(),
+        owner_user_id: 'user-1',
+        token_hash: 'h',
+        lights_enabled: true,
+        big_screen_mode: 'off' as const,
+        big_screen_token_hash: null,
+      },
+    ])
+    vi.mocked(boardShares.sharedBoardsFor).mockResolvedValue([
+      { id: 'shared-1', name: "Chris's", hardware_id: null, created_at: new Date(), owner_name: 'Christoph', big_screen_mode: 'off' },
+    ])
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards' })
+    const boards = JSON.parse(res.body).boards
+    expect(boards).toHaveLength(2)
+    expect(boards.find((b: any) => b.id === 'own-1').sharedBy).toBeNull()
+    expect(boards.find((b: any) => b.id === 'shared-1').sharedBy).toBe('Christoph')
   })
 })
 
