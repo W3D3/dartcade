@@ -47,12 +47,27 @@ export async function insertBoardShareInvite(
     .values({ id: ulid(), board_id: boardId, friend_user_id: friendUserId })
     .returningAll()
     .executeTakeFirstOrThrow()
-  return row as BoardShareRow
+  return {
+    id: row.id,
+    board_id: row.board_id,
+    friend_user_id: row.friend_user_id,
+    status: row.status === 'accepted' ? 'accepted' : 'pending',
+    created_at: row.created_at,
+    responded_at: row.responded_at,
+  }
 }
 
 export async function getBoardShare(db: Kysely<Database>, id: string): Promise<BoardShareRow | undefined> {
   const row = await db.selectFrom('board_shares').selectAll().where('id', '=', id).executeTakeFirst()
-  return row as BoardShareRow | undefined
+  if (row === undefined) return undefined
+  return {
+    id: row.id,
+    board_id: row.board_id,
+    friend_user_id: row.friend_user_id,
+    status: row.status === 'accepted' ? 'accepted' : 'pending',
+    created_at: row.created_at,
+    responded_at: row.responded_at,
+  }
 }
 
 /** False if missing or already answered. */
@@ -109,12 +124,12 @@ export async function granteesOfBoard(db: Kysely<Database>, boardId: string): Pr
     ])
     .where('board_shares.board_id', '=', boardId)
     .orderBy('board_shares.created_at', 'desc')
-    .execute() as any[]
-  return rows.map((r: any) => ({
+    .execute()
+  return rows.map(r => ({
     id: r.id,
     friendUserId: r.friend_user_id,
     friendName: r.friend_name,
-    status: r.status as 'pending' | 'accepted',
+    status: r.status === 'accepted' ? 'accepted' : 'pending',
     createdAt: r.created_at,
   }))
 }
@@ -136,8 +151,8 @@ export async function incomingSharesFor(db: Kysely<Database>, userId: string): P
     .where('board_shares.friend_user_id', '=', userId)
     .where('board_shares.status', '=', 'pending')
     .orderBy('board_shares.created_at', 'desc')
-    .execute() as any[]
-  return rows.map((r: any) => ({
+    .execute()
+  return rows.map(r => ({
     id: r.id,
     boardId: r.board_id,
     boardName: r.board_name,
@@ -148,7 +163,7 @@ export async function incomingSharesFor(db: Kysely<Database>, userId: string): P
 }
 
 /** Accepted only. */
-export async function sharedBoardsFor(db: Kysely<Database>, userId: string): Promise<SharedBoardRow[]> {
+export function sharedBoardsFor(db: Kysely<Database>, userId: string): Promise<SharedBoardRow[]> {
   return db
     .selectFrom('board_shares')
     .innerJoin('boards', 'boards.id', 'board_shares.board_id')
@@ -156,5 +171,5 @@ export async function sharedBoardsFor(db: Kysely<Database>, userId: string): Pro
     .select(['boards.id', 'boards.name', 'boards.hardware_id', 'boards.created_at', 'user.name as owner_name'])
     .where('board_shares.friend_user_id', '=', userId)
     .where('board_shares.status', '=', 'accepted')
-    .execute() as any
+    .execute()
 }
