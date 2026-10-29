@@ -17,12 +17,26 @@
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
+  import PendingBoardInvites from '$lib/components/boards/PendingBoardInvites.svelte'
+  import BoardGrantees from '$lib/components/boards/BoardGrantees.svelte'
+  import ShareBoardModal from '$lib/components/boards/ShareBoardModal.svelte'
+  import SettingSwitch from '$lib/components/SettingSwitch.svelte'
   import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
+  import {
+    listIncomingBoardShares,
+    acceptBoardShare,
+    declineBoardShare,
+    listBoardShares,
+    shareBoard,
+    revokeBoardShare,
+    type IncomingBoardShare,
+    type BoardGrantee,
+  } from '$lib/boardShares'
   import { me } from '$lib/lobby/sockets'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
   import { isTablet } from '$lib/viewport'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
-  import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
+  import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction, type BoardLights } from '$lib/api'
 
   let boards = $state<Board[]>([])
   let selectedId = $state<string | null>(null)
@@ -89,8 +103,87 @@
   }
 
   $effect(() => {
-    if (selected?.online && selected.id) startStatusPoll(selected.id)
+    // Not reachable for a board shared with you, not owned (owner-only route)
+    if (selected?.online && !selected.sharedBy) startStatusPoll(selected.id)
     else stopStatusPoll()
+  })
+
+  // Board sharing: invites waiting for you (shown above the grid), and the selected board's
+  // grantee list (owner only) or lights toggle (a shared board you don't own)
+  let incomingInvites = $state<IncomingBoardShare[]>([])
+  let grantees = $state<BoardGrantee[]>([])
+  let shareModalOpen = $state(false)
+  let shareError = $state<string | null>(null)
+  let sharedLights = $state<BoardLights | null>(null)
+  let sharedLightsError = $state<string | null>(null)
+
+  async function loadIncomingInvites() {
+    incomingInvites = await listIncomingBoardShares()
+  }
+
+  async function onAcceptInvite(id: string) {
+    await acceptBoardShare(id)
+    await loadIncomingInvites()
+    await refetchBoards()
+  }
+
+  async function onDeclineInvite(id: string) {
+    await declineBoardShare(id)
+    await loadIncomingInvites()
+  }
+
+  async function loadGrantees(boardId: string) {
+    grantees = await listBoardShares(boardId)
+  }
+
+  async function onRevokeShare(shareId: string) {
+    if (!selected) return
+    await revokeBoardShare(selected.id, shareId)
+    await loadGrantees(selected.id)
+  }
+
+  async function onShareBoardConfirm(friendUserId: string) {
+    if (!selected) return
+    shareError = await shareBoard(selected.id, friendUserId)
+    if (!shareError) {
+      shareModalOpen = false
+      await loadGrantees(selected.id)
+    }
+  }
+
+  $effect(() => {
+    if (selected && !selected.sharedBy) void loadGrantees(selected.id)
+    else grantees = []
+  })
+
+  async function loadSharedLights(boardId: string) {
+    try {
+      const { data } = await api.GET('/api/boards/{id}/lights', { params: { path: { id: boardId } } })
+      sharedLights = data ?? null
+    } catch {
+      sharedLights = null
+    }
+  }
+
+  async function setSharedLightsEnabled(enabled: boolean) {
+    if (!selected || !sharedLights) return
+    const id = selected.id
+    const prev = sharedLights.enabled
+    sharedLightsError = null
+    sharedLights = { ...sharedLights, enabled }
+    const { error } = await api.PUT('/api/boards/{id}/lights', { params: { path: { id } }, body: { enabled } }).catch(() => ({ error: true }))
+    if (!error) return
+    // The board (or its lights) may have moved on while this was in flight; only undo our own change
+    const current = selected.id === id ? sharedLights : null
+    if (current) {
+      sharedLights = { ...current, enabled: prev }
+      sharedLightsError = 'Could not save that'
+    }
+  }
+
+  $effect(() => {
+    if ($lightsOn && selected?.sharedBy) void loadSharedLights(selected.id)
+    else sharedLights = null
   })
 
   const currentBoard = (): Board | null => selected ?? null
@@ -166,7 +259,8 @@
   $effect(() => {
     const id = selectedId
     events = []
-    if (!id) return
+    // Not reachable for a board shared with you, not owned (owner-only route)
+    if (!id || selected?.sharedBy) return
     void loadEvents(id)
     eventsInterval = setInterval(() => void loadEvents(id), 1500)
     return () => {
@@ -279,6 +373,7 @@
     cameraInterval = setInterval(() => {
       cameraTs = Date.now()
     }, 1000)
+    void loadIncomingInvites()
     const { data } = await api.GET('/api/boards')
     if (!data) return // 401 is redirected to login by the client
     boards = data.boards
@@ -373,15 +468,18 @@
 {/snippet}
 
 {#snippet renameButton()}
-  <button
-    type="button"
-    onclick={startEdit}
-    aria-label="Rename board"
-    class="shrink-0 {$isTablet ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center rounded-[10px] border border-line-3
+  <!-- Not reachable for a board shared with you, not owned (owner-only route) -->
+  {#if !selected?.sharedBy}
+    <button
+      type="button"
+      onclick={startEdit}
+      aria-label="Rename board"
+      class="shrink-0 {$isTablet ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center rounded-[10px] border border-line-3
            bg-transparent text-text cursor-pointer transition-colors hover:bg-surface-active"
-  >
-    <Pencil size={14} />
-  </button>
+    >
+      <Pencil size={14} />
+    </button>
+  {/if}
 {/snippet}
 
 {#snippet barName()}
@@ -389,7 +487,22 @@
 {/snippet}
 
 {#snippet boardDetails()}
-  {#if selected}
+  {#if selected?.sharedBy}
+    <!-- Shared with you, not owned: none of the owner-only routes (cameras, BM controls, events,
+         rename, unpair) are reachable, so this is a much smaller view -->
+    <p class="m-0 text-[14px] text-text-muted">Shared by {selected.sharedBy}</p>
+    {#if $lightsOn && sharedLights}
+      <div class="flex items-center gap-3 px-[10px] py-2 pl-[14px] rounded-[12px] card [&>div]:flex-1">
+        <SettingSwitch
+          id="shared-lights-{selected.id}"
+          label="Lights"
+          checked={sharedLights.enabled}
+          onchange={(checked: boolean) => void setSharedLightsEnabled(checked)}
+        />
+      </div>
+      {#if sharedLightsError}<ErrorText>{sharedLightsError}</ErrorText>{/if}
+    {/if}
+  {:else if selected}
     <!-- Camera tiles -->
     <div class="grid grid-cols-3 gap-2">
       {#each [0, 1, 2] as camIndex (camIndex)}
@@ -529,6 +642,15 @@
       {/if}
     </dl>
 
+    <BoardGrantees
+      {grantees}
+      onrevoke={onRevokeShare}
+      onshare={() => {
+        shareError = null
+        shareModalOpen = true
+      }}
+    />
+
     <!-- Live events -->
     <div class="flex flex-col gap-3 flex-grow min-h-0">
       <div class="flex items-center justify-between">
@@ -581,16 +703,19 @@
   >
     Play on this board
   </button>
-  <button
-    type="button"
-    onclick={() => {
-      confirmUnpair = true
-    }}
-    class="h-12 px-5 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px]
+  <!-- Not reachable for a board shared with you, not owned (owner-only route) -->
+  {#if !selected?.sharedBy}
+    <button
+      type="button"
+      onclick={() => {
+        confirmUnpair = true
+      }}
+      class="h-12 px-5 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px]
            font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active"
-  >
-    Unpair
-  </button>
+    >
+      Unpair
+    </button>
+  {/if}
 {/snippet}
 
 <div class="flex flex-grow flex-col gap-4 md:gap-7 min-w-0">
@@ -619,6 +744,8 @@
         Pair new board
       </Button>
     </header>
+
+    <PendingBoardInvites invites={incomingInvites} onaccept={onAcceptInvite} ondecline={onDeclineInvite} />
 
     <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0 xl:items-start">
       <!-- Board grid; tablets add the pairing card to it -->
@@ -677,6 +804,18 @@
       onconfirm={unpair}
       oncancel={() => {
         confirmUnpair = false
+      }}
+    />
+  {/if}
+
+  {#if shareModalOpen && selected}
+    <ShareBoardModal
+      friends={$me?.friends?.friends ?? []}
+      alreadyShared={grantees.map(g => g.friendUserId)}
+      error={shareError}
+      onshare={onShareBoardConfirm}
+      onclose={() => {
+        shareModalOpen = false
       }}
     />
   {/if}
