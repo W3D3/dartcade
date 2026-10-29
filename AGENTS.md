@@ -38,6 +38,9 @@ corrected dart replays the open visit cleanly.
 | Backend entry point, plugin wiring | `backend/src/index.ts` |
 | Session engine: visits, manual darts, corrections, rebuild on restart | `backend/src/session/engine.ts`, `refold.ts` |
 | Game module interface, events and user actions | `backend/src/session/types.ts` |
+| Shared game-module helpers (config checks, turn order, names) | `backend/src/games/configMeta.ts` (`validateOptions`), `games/turns.ts` (`nextTurn`, `upNext`), `backend/src/shared/gameNames.ts` (one name per mode, server and SPA); a finished game's places reach the client in the snapshot's `results` |
+| Per-game tables on the client (one entry per mode, kept complete by the compiler) | `lib/gameViews/rules.ts` (rules line for header, win screen, history and lobby), `gameViews/index.ts`, `gameViews/settings.ts`, `history.ts`, `details/page.ts`, `winScreen.ts`, `dartEvents.ts`, `caller/calls.ts`; a visit's outcome for the caller and the lights in `backend/src/shared/visitOutcome.ts` |
+| Match screen frame shared by the modes | `lib/components/match/MatchFrame.svelte` (the `<main>` per `matchLayout`), `match/BoardOrKeypad.svelte` (board or keypad, replacing a selected dart); how to add a mode: `docs/adding-a-game-mode.md` |
 | Bull off (wraps any game via `withBullOff`) | `backend/src/session/bullOff.ts`, `withBullOff.ts` |
 | Who may act for a seat, who may watch a game | `backend/src/session/access.ts` |
 | Game modules (register new ones in `index.ts`) | `backend/src/games/` |
@@ -83,29 +86,23 @@ corrected dart replays the open visit cleanly.
 
 ## Adding a game
 
-1. Write a `GameModule` in `backend/src/games/<id>.ts`: `init` (use the `rng` it gets for
-   anything random), `onBoardEvent`, `onUserAction`, `view`, `defaultConfig`/`configMeta`
-   for the setup form, and for the history `version`, `summarize` (placement and stats per
-   seat), `detail` (its per-mode detail; add the schema to `schema/api-v1.yaml` and the
-   `GameDetail.detail` union), `matchStats` (rows and values for the details page; see
-   `backend/src/games/matchStats.ts`) and `getLeg` if it has legs. Keep it a pure reducer: games
-   are rebuilt by replaying their input log. Wrap it with `withBullOff` if it needs a
-   throwing order. `summarize` must also work on a game that isn't won (no winner): a
-   forfeit ends games early and ranks seats by it.
-2. Register it in `backend/src/games/index.ts`.
-3. Describe its view in `schema/game-ws-v1.json` (a `<Id>Game` def and a branch of
-   `Snapshot`) and run `npm run gen:api` at the repo root. The browser parses every
-   snapshot against that schema and drops ones for games it doesn't know.
-4. Frontend: the header title and meta line go in `backend/frontend/src/lib/gameViews/`
-   (`index.ts`, `meta.ts`); panels, rows and slots are picked by game id in
-   `GameDisplay.svelte`.
-5. To let the game be played in teams (Team A vs Team B sharing one score; see X01 for the
-   worked example): set `teams: true` on the `GameModule` and add `teamsOf(s)` (the team index
-   of every seat). Read `cfg.format`/`cfg.teams` through `backend/src/games/teams.ts`
-   (`teamOfSeats`, `seatsByTeam`, `turnOrder`, `seatPlacements`, `teamForfeitPlacements`) rather
-   than branching on them directly, so singles and teams stay one code path. Everything outside
-   the game — the lobby, `startPlan`, `GameSettings`, the Teams panel — only reads the `teams`
-   flag; it never decides teams itself.
+Follow [`docs/adding-a-game-mode.md`](docs/adding-a-game-mode.md): what to write, the shared
+pieces to reuse, and a checklist of every file a new mode touches. The short version:
+
+1. A pure-reducer `GameModule` in `backend/src/games/<id>.ts` (replays must give the same
+   state), registered in `games/index.ts`, its name in `backend/src/shared/gameNames.ts`.
+   Reuse `validateOptions` (`games/configMeta.ts`), `nextTurn`/`upNext` (`games/turns.ts`),
+   `withBullOff`, `games/teams.ts`, `games/outRules.ts` and the `games/matchStats.ts` helpers
+   rather than writing your own. `summarize` must work without a winner (a forfeit).
+2. Its view and detail in `schema/game-ws-v1.json` and `schema/api-v1.yaml`, then
+   `npm run gen:api`.
+3. On the client, fill the per-game tables the compiler insists on (`lib/gameViews/rules.ts`,
+   `gameViews/index.ts`, `gameViews/settings.ts`, `history.ts`, `details/page.ts`, `winScreen.ts`,
+   `dartEvents.ts`, `caller/calls.ts`), then build the match screen from `MatchFrame` and
+   `BoardOrKeypad` (`lib/components/match/`) and the player-card shells.
+4. Teams: `teams: true` plus `teamsOf(s)`, and read `cfg.format`/`cfg.teams` only through
+   `games/teams.ts`, so singles and teams stay one code path; nothing outside the game decides
+   teams.
 
 ## Running and testing
 
