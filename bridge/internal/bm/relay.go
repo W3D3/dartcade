@@ -54,6 +54,12 @@ func (c *Client) Relay(ctx context.Context, req schema.BmRequestData) schema.BmR
 			if err := json.Unmarshal(body, &state); err != nil {
 				return fail(fmt.Errorf("parse /api/state: %w", err))
 			}
+			// Board Manager 2 camelCases these; the status pill and the lights know the 1.x wording
+			for _, k := range []string{"status", "event"} {
+				if v, ok := state[k].(string); ok {
+					state[k] = sentenceCase(v)
+				}
+			}
 			res.State = state
 		}
 	case schema.BmRequestDataOpCamera:
