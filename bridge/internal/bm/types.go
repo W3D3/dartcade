@@ -2,7 +2,9 @@ package bm
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
+	"unicode"
 )
 
 // BMFrame is the common envelope for every frame the BM client emits.
@@ -23,6 +25,73 @@ type BMStateData struct {
 	Running   bool      `json:"running"`
 	Status    string    `json:"status"`
 	Throws    []BMThrow `json:"throws"`
+}
+
+// UnmarshalJSON reads both Board Manager formats. Board Manager 2 camelCases the status and
+// event values ("throwDetected") and drops numThrows; they are turned back into the 1.x
+// wording ("Throw detected") the differ and the backend know.
+func (d *BMStateData) UnmarshalJSON(b []byte) error {
+	type plain BMStateData
+	var raw struct {
+		plain
+		NumThrows *int `json:"numThrows"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	*d = BMStateData(raw.plain)
+	d.Event, d.Status = sentenceCase(d.Event), sentenceCase(d.Status)
+	d.NumThrows = len(d.Throws)
+	if raw.NumThrows != nil {
+		d.NumThrows = *raw.NumThrows
+	}
+	return nil
+}
+
+// sentenceCase turns "takeoutInProgress" into "Takeout in progress"; 1.x wording passes through.
+func sentenceCase(s string) string {
+	if s == "" || strings.Contains(s, " ") {
+		return s
+	}
+	var b strings.Builder
+	for i, r := range s {
+		switch {
+		case i == 0:
+			b.WriteRune(unicode.ToUpper(r))
+		case unicode.IsUpper(r):
+			b.WriteRune(' ')
+			b.WriteRune(unicode.ToLower(r))
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// UnmarshalJSON reads both formats: 1.x nests segment and coords, Board Manager 2 flattens
+// them (segmentName, segmentNumber, bed, multiplier, coordsX, coordsY).
+func (t *BMThrow) UnmarshalJSON(b []byte) error {
+	type plain BMThrow
+	var raw struct {
+		plain
+		SegmentName   string   `json:"segmentName"`
+		SegmentNumber int      `json:"segmentNumber"`
+		Bed           string   `json:"bed"`
+		Multiplier    int      `json:"multiplier"`
+		CoordsX       *float64 `json:"coordsX"`
+		CoordsY       *float64 `json:"coordsY"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	*t = BMThrow(raw.plain)
+	if raw.SegmentName != "" {
+		t.Segment = BMSegment{Name: raw.SegmentName, Number: raw.SegmentNumber, Bed: raw.Bed, Multiplier: raw.Multiplier}
+	}
+	if raw.CoordsX != nil && raw.CoordsY != nil {
+		t.Coords = &BMCoords{X: *raw.CoordsX, Y: *raw.CoordsY}
+	}
+	return nil
 }
 
 // BMThrow is one dart in a state frame.

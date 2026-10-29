@@ -134,6 +134,8 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 	var cfg struct {
 		Auth struct {
 			BoardID string `json:"board_id"`
+			// Board Manager 2 camelCases its config keys
+			BoardIDv2 string `json:"boardId"`
 		} `json:"auth"`
 		Cam struct {
 			Cams []string `json:"cams"`
@@ -143,6 +145,9 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 		return fmt.Errorf("decode /api/config: %w", err)
 	}
 
+	if cfg.Auth.BoardID == "" {
+		cfg.Auth.BoardID = cfg.Auth.BoardIDv2
+	}
 	prev, _ := c.boardID.Load().(string)
 	if prev != "" && prev != cfg.Auth.BoardID {
 		return fmt.Errorf("board_id changed from %s to %s — restart required", prev, cfg.Auth.BoardID)
