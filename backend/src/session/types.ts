@@ -88,6 +88,7 @@ export type AtcDetail = components['schemas']['AtcDetail']
 export type MinigolfDetail = components['schemas']['MinigolfDetail']
 export type P121Detail = components['schemas']['P121Detail']
 export type HiloDetail = components['schemas']['HiloDetail']
+export type CricketDetail = components['schemas']['CricketDetail']
 export type MatchStats = components['schemas']['MatchStats']
 export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'

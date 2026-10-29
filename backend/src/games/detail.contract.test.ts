@@ -7,6 +7,7 @@ import { atcModule } from './atc.js'
 import { minigolfModule } from './minigolf.js'
 import { p121Game, type P121Config } from './p121.js'
 import { hiloGame, type HiloConfig } from './hilo.js'
+import { cricketGame, type CricketConfig } from './cricket.js'
 import type { BoardEvent } from '../session/types.js'
 import { gameList } from './index.js'
 import { seededRng } from '../session/rng.js'
@@ -194,6 +195,33 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     const validateDetail = ajv.compile(schemas.HiloDetail)
     expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
     const m = hiloGame.matchStats!([], s)
+    const validateStats = ajv.compile(schemas.MatchStats)
+    expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
+  })
+  it('CricketDetail and MatchStats', () => {
+    const cricketCfg: CricketConfig = { mode: 'standard', firstTo: 1, bullOff: 'off', botSpeed: 'normal', format: 'singles' }
+    const open: BoardEvent = { kind: 'visit.opened', data: {} }
+    const takeoutEvent: BoardEvent = { kind: 'takeout.finished', data: {} }
+    const cricketDart = (number: number, multiplier: number, index: number): BoardEvent =>
+      ({
+        kind: 'dart.detected',
+        data: {
+          visit_id: 'v',
+          index,
+          dart: { segment: { name: '', number, bed: '', multiplier }, score: number * multiplier },
+          source_seq: 1,
+        },
+      }) as any
+    let s = cricketGame.init(cricketCfg, [{ name: 'A' }])
+    s = cricketGame.onBoardEvent(s, open).state
+    s = cricketGame.onBoardEvent(s, cricketDart(20, 3, 0)).state
+    s = cricketGame.onBoardEvent(s, cricketDart(20, 3, 1)).state
+    s = cricketGame.onBoardEvent(s, cricketDart(20, 1, 2)).state
+    s = cricketGame.onBoardEvent(s, takeoutEvent).state
+    const d = cricketGame.detail([], s)
+    const validateDetail = ajv.compile(schemas.CricketDetail)
+    expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
+    const m = cricketGame.matchStats!([], s)
     const validateStats = ajv.compile(schemas.MatchStats)
     expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
   })

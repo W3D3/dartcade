@@ -2851,6 +2851,251 @@
                               }
                             }
                           }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "mode",
+                            "targets",
+                            "legs"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "cricket"
+                              ]
+                            },
+                            "targets": {
+                              "type": "array",
+                              "description": "The targets in play, in board order (20 … 15, 25)",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "teams": {
+                              "type": "array",
+                              "description": "Only in a team game",
+                              "items": {
+                                "title": "TeamView",
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "seats"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "title": "TeamId",
+                                    "type": "string",
+                                    "enum": [
+                                      "A",
+                                      "B"
+                                    ]
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "seats": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "description": "The team's seats in its own throwing order."
+                                  }
+                                }
+                              }
+                            },
+                            "legs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "leg",
+                                  "starter",
+                                  "winner",
+                                  "marks",
+                                  "points",
+                                  "visits"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "leg": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "starter": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "Seat that threw first in this leg"
+                                  },
+                                  "winner": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "nullable": true,
+                                    "description": "null: the leg is still open"
+                                  },
+                                  "marks": {
+                                    "type": "array",
+                                    "description": "Per team, at the leg's end",
+                                    "items": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  "points": {
+                                    "type": "array",
+                                    "description": "Per team, at the leg's end",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "visits": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "visit",
+                                        "seat",
+                                        "committedAt",
+                                        "darts",
+                                        "marks",
+                                        "points"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "seat": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "committedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "darts": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "index",
+                                              "segment",
+                                              "coords",
+                                              "source",
+                                              "corrected",
+                                              "thrownAt"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "index": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 2,
+                                                "description": "Position in the visit"
+                                              },
+                                              "segment": {
+                                                "title": "Segment",
+                                                "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                                "type": "object",
+                                                "required": [
+                                                  "name",
+                                                  "number",
+                                                  "bed",
+                                                  "multiplier"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "name": {
+                                                    "type": "string"
+                                                  },
+                                                  "number": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 50
+                                                  },
+                                                  "bed": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "SingleInner",
+                                                      "SingleOuter",
+                                                      "Single",
+                                                      "Double",
+                                                      "Triple",
+                                                      "Outside"
+                                                    ]
+                                                  },
+                                                  "multiplier": {
+                                                    "type": "integer",
+                                                    "enum": [
+                                                      0,
+                                                      1,
+                                                      2,
+                                                      3
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "coords": {
+                                                "type": "object",
+                                                "nullable": true,
+                                                "required": [
+                                                  "x",
+                                                  "y"
+                                                ],
+                                                "additionalProperties": false,
+                                                "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                                "properties": {
+                                                  "x": {
+                                                    "type": "number"
+                                                  },
+                                                  "y": {
+                                                    "type": "number"
+                                                  }
+                                                }
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "camera",
+                                                  "manual"
+                                                ]
+                                              },
+                                              "corrected": {
+                                                "type": "boolean",
+                                                "description": "A correction (camera or by hand) changed this dart"
+                                              },
+                                              "thrownAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "marks": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "points": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       ],
                       "discriminator": {
@@ -2860,7 +3105,8 @@
                           "atc": "#/components/schemas/AtcDetail",
                           "minigolf": "#/components/schemas/MinigolfDetail",
                           "p121": "#/components/schemas/P121Detail",
-                          "hilo": "#/components/schemas/HiloDetail"
+                          "hilo": "#/components/schemas/HiloDetail",
+                          "cricket": "#/components/schemas/CricketDetail"
                         }
                       }
                     },
@@ -13273,6 +13519,251 @@
                               }
                             }
                           }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "mode",
+                            "targets",
+                            "legs"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "cricket"
+                              ]
+                            },
+                            "targets": {
+                              "type": "array",
+                              "description": "The targets in play, in board order (20 … 15, 25)",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "teams": {
+                              "type": "array",
+                              "description": "Only in a team game",
+                              "items": {
+                                "title": "TeamView",
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "seats"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "title": "TeamId",
+                                    "type": "string",
+                                    "enum": [
+                                      "A",
+                                      "B"
+                                    ]
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "seats": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "description": "The team's seats in its own throwing order."
+                                  }
+                                }
+                              }
+                            },
+                            "legs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "leg",
+                                  "starter",
+                                  "winner",
+                                  "marks",
+                                  "points",
+                                  "visits"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "leg": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "starter": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "Seat that threw first in this leg"
+                                  },
+                                  "winner": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "nullable": true,
+                                    "description": "null: the leg is still open"
+                                  },
+                                  "marks": {
+                                    "type": "array",
+                                    "description": "Per team, at the leg's end",
+                                    "items": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  "points": {
+                                    "type": "array",
+                                    "description": "Per team, at the leg's end",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "visits": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "visit",
+                                        "seat",
+                                        "committedAt",
+                                        "darts",
+                                        "marks",
+                                        "points"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "seat": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "committedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "darts": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "index",
+                                              "segment",
+                                              "coords",
+                                              "source",
+                                              "corrected",
+                                              "thrownAt"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "index": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 2,
+                                                "description": "Position in the visit"
+                                              },
+                                              "segment": {
+                                                "title": "Segment",
+                                                "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                                "type": "object",
+                                                "required": [
+                                                  "name",
+                                                  "number",
+                                                  "bed",
+                                                  "multiplier"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "name": {
+                                                    "type": "string"
+                                                  },
+                                                  "number": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 50
+                                                  },
+                                                  "bed": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "SingleInner",
+                                                      "SingleOuter",
+                                                      "Single",
+                                                      "Double",
+                                                      "Triple",
+                                                      "Outside"
+                                                    ]
+                                                  },
+                                                  "multiplier": {
+                                                    "type": "integer",
+                                                    "enum": [
+                                                      0,
+                                                      1,
+                                                      2,
+                                                      3
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "coords": {
+                                                "type": "object",
+                                                "nullable": true,
+                                                "required": [
+                                                  "x",
+                                                  "y"
+                                                ],
+                                                "additionalProperties": false,
+                                                "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                                "properties": {
+                                                  "x": {
+                                                    "type": "number"
+                                                  },
+                                                  "y": {
+                                                    "type": "number"
+                                                  }
+                                                }
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "camera",
+                                                  "manual"
+                                                ]
+                                              },
+                                              "corrected": {
+                                                "type": "boolean",
+                                                "description": "A correction (camera or by hand) changed this dart"
+                                              },
+                                              "thrownAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "marks": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "points": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       ],
                       "discriminator": {
@@ -13282,7 +13773,8 @@
                           "atc": "#/components/schemas/AtcDetail",
                           "minigolf": "#/components/schemas/MinigolfDetail",
                           "p121": "#/components/schemas/P121Detail",
-                          "hilo": "#/components/schemas/HiloDetail"
+                          "hilo": "#/components/schemas/HiloDetail",
+                          "cricket": "#/components/schemas/CricketDetail"
                         }
                       }
                     },
@@ -40984,6 +41476,251 @@
           }
         }
       },
+      "CricketDetail": {
+        "type": "object",
+        "required": [
+          "mode",
+          "targets",
+          "legs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "cricket"
+            ]
+          },
+          "targets": {
+            "type": "array",
+            "description": "The targets in play, in board order (20 … 15, 25)",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "teams": {
+            "type": "array",
+            "description": "Only in a team game",
+            "items": {
+              "title": "TeamView",
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "seats"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "TeamId",
+                  "type": "string",
+                  "enum": [
+                    "A",
+                    "B"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "seats": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "description": "The team's seats in its own throwing order."
+                }
+              }
+            }
+          },
+          "legs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "leg",
+                "starter",
+                "winner",
+                "marks",
+                "points",
+                "visits"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "leg": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "starter": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Seat that threw first in this leg"
+                },
+                "winner": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true,
+                  "description": "null: the leg is still open"
+                },
+                "marks": {
+                  "type": "array",
+                  "description": "Per team, at the leg's end",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "points": {
+                  "type": "array",
+                  "description": "Per team, at the leg's end",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "visits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "visit",
+                      "seat",
+                      "committedAt",
+                      "darts",
+                      "marks",
+                      "points"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "visit": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "seat": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "committedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "darts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "index",
+                            "segment",
+                            "coords",
+                            "source",
+                            "corrected",
+                            "thrownAt"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "index": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2,
+                              "description": "Position in the visit"
+                            },
+                            "segment": {
+                              "title": "Segment",
+                              "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "number",
+                                "bed",
+                                "multiplier"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 50
+                                },
+                                "bed": {
+                                  "type": "string",
+                                  "enum": [
+                                    "SingleInner",
+                                    "SingleOuter",
+                                    "Single",
+                                    "Double",
+                                    "Triple",
+                                    "Outside"
+                                  ]
+                                },
+                                "multiplier": {
+                                  "type": "integer",
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2,
+                                    3
+                                  ]
+                                }
+                              }
+                            },
+                            "coords": {
+                              "type": "object",
+                              "nullable": true,
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "camera",
+                                "manual"
+                              ]
+                            },
+                            "corrected": {
+                              "type": "boolean",
+                              "description": "A correction (camera or by hand) changed this dart"
+                            },
+                            "thrownAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "points": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "AtcDetail": {
         "type": "object",
         "required": [
@@ -44049,6 +44786,251 @@
                     }
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "targets",
+                  "legs"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "cricket"
+                    ]
+                  },
+                  "targets": {
+                    "type": "array",
+                    "description": "The targets in play, in board order (20 … 15, 25)",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "teams": {
+                    "type": "array",
+                    "description": "Only in a team game",
+                    "items": {
+                      "title": "TeamView",
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "title": "TeamId",
+                          "type": "string",
+                          "enum": [
+                            "A",
+                            "B"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "description": "The team's seats in its own throwing order."
+                        }
+                      }
+                    }
+                  },
+                  "legs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "leg",
+                        "starter",
+                        "winner",
+                        "marks",
+                        "points",
+                        "visits"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "leg": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "starter": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Seat that threw first in this leg"
+                        },
+                        "winner": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true,
+                          "description": "null: the leg is still open"
+                        },
+                        "marks": {
+                          "type": "array",
+                          "description": "Per team, at the leg's end",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        },
+                        "points": {
+                          "type": "array",
+                          "description": "Per team, at the leg's end",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "visits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "visit",
+                              "seat",
+                              "committedAt",
+                              "darts",
+                              "marks",
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "seat": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "committedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "darts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "index",
+                                    "segment",
+                                    "coords",
+                                    "source",
+                                    "corrected",
+                                    "thrownAt"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2,
+                                      "description": "Position in the visit"
+                                    },
+                                    "segment": {
+                                      "title": "Segment",
+                                      "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                      "type": "object",
+                                      "required": [
+                                        "name",
+                                        "number",
+                                        "bed",
+                                        "multiplier"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 50
+                                        },
+                                        "bed": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SingleInner",
+                                            "SingleOuter",
+                                            "Single",
+                                            "Double",
+                                            "Triple",
+                                            "Outside"
+                                          ]
+                                        },
+                                        "multiplier": {
+                                          "type": "integer",
+                                          "enum": [
+                                            0,
+                                            1,
+                                            2,
+                                            3
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "coords": {
+                                      "type": "object",
+                                      "nullable": true,
+                                      "required": [
+                                        "x",
+                                        "y"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                      "properties": {
+                                        "x": {
+                                          "type": "number"
+                                        },
+                                        "y": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "camera",
+                                        "manual"
+                                      ]
+                                    },
+                                    "corrected": {
+                                      "type": "boolean",
+                                      "description": "A correction (camera or by hand) changed this dart"
+                                    },
+                                    "thrownAt": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "marks": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "points": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             ],
             "discriminator": {
@@ -44058,7 +45040,8 @@
                 "atc": "#/components/schemas/AtcDetail",
                 "minigolf": "#/components/schemas/MinigolfDetail",
                 "p121": "#/components/schemas/P121Detail",
-                "hilo": "#/components/schemas/HiloDetail"
+                "hilo": "#/components/schemas/HiloDetail",
+                "cricket": "#/components/schemas/CricketDetail"
               }
             }
           },
@@ -45333,6 +46316,251 @@
                     }
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "targets",
+                  "legs"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "cricket"
+                    ]
+                  },
+                  "targets": {
+                    "type": "array",
+                    "description": "The targets in play, in board order (20 … 15, 25)",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "teams": {
+                    "type": "array",
+                    "description": "Only in a team game",
+                    "items": {
+                      "title": "TeamView",
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "title": "TeamId",
+                          "type": "string",
+                          "enum": [
+                            "A",
+                            "B"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "description": "The team's seats in its own throwing order."
+                        }
+                      }
+                    }
+                  },
+                  "legs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "leg",
+                        "starter",
+                        "winner",
+                        "marks",
+                        "points",
+                        "visits"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "leg": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "starter": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Seat that threw first in this leg"
+                        },
+                        "winner": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true,
+                          "description": "null: the leg is still open"
+                        },
+                        "marks": {
+                          "type": "array",
+                          "description": "Per team, at the leg's end",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        },
+                        "points": {
+                          "type": "array",
+                          "description": "Per team, at the leg's end",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "visits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "visit",
+                              "seat",
+                              "committedAt",
+                              "darts",
+                              "marks",
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "seat": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "committedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "darts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "index",
+                                    "segment",
+                                    "coords",
+                                    "source",
+                                    "corrected",
+                                    "thrownAt"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2,
+                                      "description": "Position in the visit"
+                                    },
+                                    "segment": {
+                                      "title": "Segment",
+                                      "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                      "type": "object",
+                                      "required": [
+                                        "name",
+                                        "number",
+                                        "bed",
+                                        "multiplier"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 50
+                                        },
+                                        "bed": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SingleInner",
+                                            "SingleOuter",
+                                            "Single",
+                                            "Double",
+                                            "Triple",
+                                            "Outside"
+                                          ]
+                                        },
+                                        "multiplier": {
+                                          "type": "integer",
+                                          "enum": [
+                                            0,
+                                            1,
+                                            2,
+                                            3
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "coords": {
+                                      "type": "object",
+                                      "nullable": true,
+                                      "required": [
+                                        "x",
+                                        "y"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                      "properties": {
+                                        "x": {
+                                          "type": "number"
+                                        },
+                                        "y": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "camera",
+                                        "manual"
+                                      ]
+                                    },
+                                    "corrected": {
+                                      "type": "boolean",
+                                      "description": "A correction (camera or by hand) changed this dart"
+                                    },
+                                    "thrownAt": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "marks": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "points": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             ],
             "discriminator": {
@@ -45342,7 +46570,8 @@
                 "atc": "#/components/schemas/AtcDetail",
                 "minigolf": "#/components/schemas/MinigolfDetail",
                 "p121": "#/components/schemas/P121Detail",
-                "hilo": "#/components/schemas/HiloDetail"
+                "hilo": "#/components/schemas/HiloDetail",
+                "cricket": "#/components/schemas/CricketDetail"
               }
             }
           },
@@ -55679,6 +56908,251 @@
                 }
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "mode",
+              "targets",
+              "legs"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "cricket"
+                ]
+              },
+              "targets": {
+                "type": "array",
+                "description": "The targets in play, in board order (20 … 15, 25)",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "teams": {
+                "type": "array",
+                "description": "Only in a team game",
+                "items": {
+                  "title": "TeamView",
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "title": "TeamId",
+                      "type": "string",
+                      "enum": [
+                        "A",
+                        "B"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "seats": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "description": "The team's seats in its own throwing order."
+                    }
+                  }
+                }
+              },
+              "legs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "leg",
+                    "starter",
+                    "winner",
+                    "marks",
+                    "points",
+                    "visits"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "leg": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "starter": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Seat that threw first in this leg"
+                    },
+                    "winner": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "nullable": true,
+                      "description": "null: the leg is still open"
+                    },
+                    "marks": {
+                      "type": "array",
+                      "description": "Per team, at the leg's end",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "points": {
+                      "type": "array",
+                      "description": "Per team, at the leg's end",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "visits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "visit",
+                          "seat",
+                          "committedAt",
+                          "darts",
+                          "marks",
+                          "points"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "visit": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "seat": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "committedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "index",
+                                "segment",
+                                "coords",
+                                "source",
+                                "corrected",
+                                "thrownAt"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "index": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2,
+                                  "description": "Position in the visit"
+                                },
+                                "segment": {
+                                  "title": "Segment",
+                                  "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                  "type": "object",
+                                  "required": [
+                                    "name",
+                                    "number",
+                                    "bed",
+                                    "multiplier"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 50
+                                    },
+                                    "bed": {
+                                      "type": "string",
+                                      "enum": [
+                                        "SingleInner",
+                                        "SingleOuter",
+                                        "Single",
+                                        "Double",
+                                        "Triple",
+                                        "Outside"
+                                      ]
+                                    },
+                                    "multiplier": {
+                                      "type": "integer",
+                                      "enum": [
+                                        0,
+                                        1,
+                                        2,
+                                        3
+                                      ]
+                                    }
+                                  }
+                                },
+                                "coords": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "required": [
+                                    "x",
+                                    "y"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                  "properties": {
+                                    "x": {
+                                      "type": "number"
+                                    },
+                                    "y": {
+                                      "type": "number"
+                                    }
+                                  }
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "camera",
+                                    "manual"
+                                  ]
+                                },
+                                "corrected": {
+                                  "type": "boolean",
+                                  "description": "A correction (camera or by hand) changed this dart"
+                                },
+                                "thrownAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              }
+                            }
+                          },
+                          "marks": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "points": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         ],
         "discriminator": {
@@ -55688,7 +57162,8 @@
             "atc": "#/components/schemas/AtcDetail",
             "minigolf": "#/components/schemas/MinigolfDetail",
             "p121": "#/components/schemas/P121Detail",
-            "hilo": "#/components/schemas/HiloDetail"
+            "hilo": "#/components/schemas/HiloDetail",
+            "cricket": "#/components/schemas/CricketDetail"
           }
         }
       },
