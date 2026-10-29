@@ -34,4 +34,12 @@ describe('NextGameSummary', () => {
     expect(body).toContain('Higher Lower')
     expect(body).toContain('41 / 21 · 3 lives')
   })
+
+  it("shows Cricket's glyph, name and rules", () => {
+    const config = { mode: 'cutthroat', firstTo: 3 }
+    const body = text(render(NextGameSummary, { props: { lobby: lobby('cricket', config), pickedBy: 'Host' } }).body)
+    expect(body).toContain(' CRI ')
+    expect(body).toContain('Cricket')
+    expect(body).toContain('Cut-throat · First to 3')
+  })
 })

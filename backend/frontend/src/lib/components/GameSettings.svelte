@@ -336,6 +336,92 @@
       {/if}
     {/each}
   </div>
+{:else if gameId === 'cricket'}
+  <div class={root}>
+    {#if meta.mode}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
+          {meta.mode.label}
+          {#if meta.mode.tooltip}
+            <Tooltip text={meta.mode.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl
+          options={meta.mode.options ?? []}
+          value={config.mode}
+          disabled={readonly}
+          defaultValue={defaults.mode}
+          onchange={v => set('mode', v)}
+        />
+      </fieldset>
+    {/if}
+
+    <div class="flex justify-between items-center">
+      <span class="field-label">{meta.firstTo?.label ?? 'First to'}</span>
+      <Stepper
+        value={num(config.firstTo, 1)}
+        label="legs"
+        unit={n => (n === 1 ? 'leg' : 'legs')}
+        highlight={isNonDefault('firstTo')}
+        disabled={readonly}
+        onchange={n => set('firstTo', n)}
+      />
+    </div>
+
+    {#if meta.bullOff}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
+          {meta.bullOff.label}
+          {#if meta.bullOff.tooltip}
+            <Tooltip text={meta.bullOff.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl
+          options={meta.bullOff.options ?? []}
+          value={config.bullOff}
+          disabled={readonly}
+          defaultValue={defaults.bullOff}
+          onchange={v => set('bullOff', v)}
+        />
+      </fieldset>
+    {/if}
+
+    {#if teams && meta.format}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
+          {meta.format.label}
+          {#if meta.format.tooltip}
+            <Tooltip text={meta.format.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl
+          options={meta.format.options ?? []}
+          value={config.format}
+          disabled={readonly}
+          defaultValue={defaults.format}
+          onchange={v => set('format', v)}
+        />
+      </fieldset>
+    {/if}
+
+    {#if hasBot && meta.botSpeed}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
+          {meta.botSpeed.label}
+          {#if meta.botSpeed.tooltip}
+            <Tooltip text={meta.botSpeed.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl
+          options={meta.botSpeed.options ?? []}
+          value={config.botSpeed}
+          disabled={readonly}
+          defaultValue={defaults.botSpeed}
+          onchange={v => set('botSpeed', v)}
+        />
+      </fieldset>
+    {/if}
+  </div>
 {:else if gameId === 'minigolf'}
   <div class={root}>
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2 lg:col-span-2">

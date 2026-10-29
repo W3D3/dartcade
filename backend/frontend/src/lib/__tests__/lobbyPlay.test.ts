@@ -70,6 +70,7 @@ describe('chosenGame', () => {
     { id: 'minigolf', configMeta: meta('course', 'tries', 'maxStrokes', 'ballContact', 'aimAssist', 'shotPreview') },
     { id: 'p121', configMeta: meta('startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff') },
     { id: 'hilo', configMeta: meta('startHigh', 'startLow', 'lives', 't1Zero', 'matchExtremes', 'keepBarsOnLifeLost', 'bullOff') },
+    { id: 'cricket', configMeta: meta('format', 'mode', 'bullOff', 'botSpeed', 'firstTo') },
     { id: 'newmode', configMeta: meta('rounds', 'bullOff') },
   ]
 
@@ -145,6 +146,22 @@ describe('chosenGame', () => {
     expect(chosenGame(games, 'hilo', config)).toEqual({
       gameId: 'hilo',
       config: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, keepBarsOnLifeLost: false, bullOff: 'off' },
+    })
+  })
+
+  it("keeps Cricket's own fields, and only those", () => {
+    const config = {
+      format: 'singles',
+      mode: 'cutthroat',
+      bullOff: 'off',
+      botSpeed: 'normal',
+      firstTo: 3,
+      // Not in the cricket whitelist: must not leak into the saved config
+      startScore: 501,
+    }
+    expect(chosenGame(games, 'cricket', config)).toEqual({
+      gameId: 'cricket',
+      config: { format: 'singles', mode: 'cutthroat', bullOff: 'off', botSpeed: 'normal', firstTo: 3 },
     })
   })
 
