@@ -59,6 +59,9 @@ describe('rulesLine', () => {
     expect(rulesLine(game({ mode: 'hilo', config: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true } }))).toBe(
       '41 / 21 · 3 lives',
     )
+    expect(rulesLine(game({ mode: 'cricket', config: { mode: 'cutthroat', firstTo: 3, botSpeed: 'normal' } }))).toBe(
+      'Cut-throat · First to 3',
+    )
   })
   it('names the course for Minigolf', () => {
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'test', tries: 3, ballContact: false } }))).toBe(
@@ -152,6 +155,11 @@ describe('historyStat', () => {
     expect(historyStat(tied)).toEqual({ value: '2', label: 'lives left' })
     expect(historyStat({ ...tied, mySeat: 1 })).toEqual({ value: '1', label: 'life left' })
   })
+
+  it('Cricket: MPR to one decimal', () => {
+    const cricket = (stats: Record<string, number>) => game({ mode: 'cricket', players: [{ ...game().players[0], stats }] })
+    expect(historyStat(cricket({ mpr: 2.42, marksScored: 29, dartsThrown: 36 }))).toEqual({ value: '2.4', label: 'MPR' })
+  })
 })
 
 describe('playerBadges', () => {
@@ -241,6 +249,12 @@ describe('statTiles', () => {
         contested: 2,
         stats: { highestSet: agg(65, 60, 70, 130), lowestSet: agg(10, 5, 15, 20), dartsThrown: agg(30, 25, 35, 60) },
       },
+      cricket: {
+        matches: 1,
+        wins: 1,
+        contested: 1,
+        stats: { mpr: agg(2.42, 2.42, 2.42, 2.42), marksScored: agg(29, 29, 29, 29), dartsThrown: agg(36, 36, 36, 36) },
+      },
     },
     ...o,
   })
@@ -249,7 +263,7 @@ describe('statTiles', () => {
     expect(statTiles(stats(), null, title)).toEqual([
       { label: 'Matches · 30 days', value: '23', note: null, trend: null },
       { label: 'Won', value: '14', note: '64%', trend: null },
-      { label: 'Darts thrown', value: '3,632', note: null, trend: null },
+      { label: 'Darts thrown', value: '3,668', note: null, trend: null },
       { label: 'Most played', value: 'X01', note: '12 matches', trend: null },
     ])
   })
@@ -283,6 +297,14 @@ describe('statTiles', () => {
       { label: 'Won', value: '1', note: '50%', trend: null },
       { label: 'Highest set', value: '70', note: null, trend: null },
       { label: 'Lowest set', value: '5', note: null, trend: null },
+    ])
+  })
+  it('Cricket: its matches, won, MPR, marks scored', () => {
+    expect(statTiles(stats(), 'cricket', title)).toEqual([
+      { label: 'cricket matches · 30 days', value: '1', note: null, trend: null },
+      { label: 'Won', value: '1', note: '100%', trend: null },
+      { label: 'MPR', value: '2.4', note: null, trend: null },
+      { label: 'Marks scored', value: '29', note: null, trend: null },
     ])
   })
   it('shows – without data, and only matches and won for an unknown mode', () => {

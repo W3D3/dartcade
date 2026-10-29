@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cricketGame } from './cricket.js'
+import { cricketGame, cricketModule } from './cricket.js'
 import type { CricketConfig, CricketState } from './cricket.js'
 import type { BoardEvent } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
@@ -149,6 +149,29 @@ describe('rounds', () => {
   })
 })
 
+describe('view', () => {
+  it('after one dart: marks, scorable (for the thrower, still up) and closed', () => {
+    let s = duo()
+    s = cricketGame.onBoardEvent(s, opened).state
+    s = cricketGame.onBoardEvent(s, dart(20, 3, 0)).state
+    const v = cricketGame.view(s, []) as any
+    expect(v.marks[0][0]).toBe(3)
+    expect(v.scorable[0]).toBe(true)
+    expect(v.closed.every((c: boolean) => !c)).toBe(true)
+  })
+
+  it('a 2v2 view: both seats of a team share marks and points, and teams is present', () => {
+    const four = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }, { name: 'B2' }]
+    let s = cricketGame.init({ ...cfg, format: 'teams', teams: [0, 1, 0, 1] }, four)
+    s = cricketGame.onBoardEvent(s, opened).state
+    s = cricketGame.onBoardEvent(s, dart(20, 3, 0)).state
+    const v = cricketGame.view(s, []) as any
+    expect(v.marks[0]).toEqual(v.marks[2])
+    expect(v.points[0]).toEqual(v.points[2])
+    expect(v.teams).toHaveLength(2)
+  })
+})
+
 describe('summarize', () => {
   it('a finished 2-player game: placements 1 and 2, exact mpr', () => {
     const s = sweep(duo())
@@ -235,5 +258,12 @@ describe('detail', () => {
 
     const d = cricketGame.detail(visits, s)
     expect(d.legs[0].winner).toBe(1)
+  })
+})
+
+describe('cricketModule (with a bull off)', () => {
+  it('stages a bull off before the game starts', () => {
+    const s = cricketModule.init({ ...cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
+    expect(s.stage).toBe('bulloff')
   })
 })

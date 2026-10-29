@@ -75,6 +75,7 @@ export function winMeta(snapshot: Snapshot): string {
     const g = snapshot.game
     return rulesOf('minigolf', g.config, n, { course: { name: g.courseName, holes: g.holeCount } }) + vs
   }
+  if (snapshot.gameId === 'cricket') return rulesOf('cricket', snapshot.game.config, n) + vs
   return rulesOf(snapshot.gameId, snapshot.game.cfg, n) + vs
 }
 
@@ -402,6 +403,9 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
       return snapshot.game.winner === null ? null : atcWin(snapshot)
     // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
     case 'p121':
+      return null
+    // Cricket has no win screen of its own yet
+    case 'cricket':
       return null
     default: {
       // A new game id fails to compile here until it says how it wins

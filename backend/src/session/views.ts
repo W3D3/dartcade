@@ -1,4 +1,4 @@
-import type { AtcGame, BullOffView, HiloGame, MinigolfGame, P121Game, X01Game } from '../schema/game-ws.js'
+import type { AtcGame, BullOffView, CricketGame, HiloGame, MinigolfGame, P121Game, X01Game } from '../schema/game-ws.js'
 
 /** Fields the engine adds to every game's view (see SessionEngine.getSnapshot). */
 export type EngineViewField = 'currentVisitDarts' | 'totalDarts' | 'totalVisits'
@@ -29,3 +29,9 @@ export type HiloView = Omit<HiloGame, EngineViewField | 'bullOff'>
 
 /** What hiloModule.view() (Higher Lower with the bull off) returns. */
 export type HiloModuleView = HiloView & BullOffViewField
+
+/** What cricketGame.view() returns; withBullOff adds `bullOff` (and may set phase to 'bulloff'). */
+export type CricketView = Omit<CricketGame, EngineViewField | 'bullOff'>
+
+/** What cricketModule.view() (Cricket with the bull off) returns. */
+export type CricketModuleView = CricketView & BullOffViewField

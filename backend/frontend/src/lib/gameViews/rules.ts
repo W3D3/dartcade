@@ -4,7 +4,7 @@
 import { z } from 'zod'
 import { isGameId, type GameId } from '$shared/gameNames'
 import { COURSES } from '$shared/minigolf/courses/index'
-import { atcRules, hiloRules, minigolfRules, p121Rules, x01Rules } from './meta.js'
+import { atcRules, cricketRules, hiloRules, minigolfRules, p121Rules, x01Rules } from './meta.js'
 
 const int = z.number().int()
 const ModeSchema = z.enum(['straight', 'double', 'master'])
@@ -22,6 +22,7 @@ export const AtcConfigSchema = z.object({
 })
 export const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: int, outMode: ModeSchema.catch('double') })
 export const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
+export const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
 export const MinigolfConfigSchema = z.object({
   course: z.string().catch(''),
   tries: int.catch(3),
@@ -75,6 +76,10 @@ const RULES = {
   hilo: config => {
     const c = HiloConfigSchema.safeParse(config)
     return c.success ? hiloRules(c.data) : ''
+  },
+  cricket: config => {
+    const c = CricketConfigSchema.safeParse(config)
+    return c.success ? cricketRules(c.data) : ''
   },
   minigolf: (config, players, { course }) => {
     const c = MinigolfConfigSchema.safeParse(config)

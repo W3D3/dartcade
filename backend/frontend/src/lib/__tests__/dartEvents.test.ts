@@ -54,6 +54,13 @@ describe('snapshotEvent', () => {
     })
     // Minigolf: every dart is a putt, so it only ever hits
     expect(snapshotEvent(snap('minigolf', {}), snap('minigolf', { currentVisitDarts: [dart(0, 0)] }))).toEqual({ kind: 'hit', seat: 0 })
+    // Cricket: a dart off the targets is a miss, a bullseye (50) and a treble on a target hit
+    const targets = [20, 19, 18, 17, 16, 15, 25]
+    const cricket = (d: ReturnType<typeof dart>) =>
+      snapshotEvent(snap('cricket', { targets }), snap('cricket', { targets, currentVisitDarts: [d] }))
+    expect(cricket(dart(14, 3))).toEqual({ kind: 'miss', seat: 0 })
+    expect(cricket(dart(20, 3))).toEqual({ kind: 'treble', seat: 0 })
+    expect(cricket(dart(50, 1))).toEqual({ kind: 'hit', seat: 0 })
   })
 
   it('busts a 121 Checkout visit and a lost Higher Lower life, for the seat that threw it', () => {

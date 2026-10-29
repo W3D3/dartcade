@@ -68,6 +68,8 @@ function seatCountOf(snap: Snapshot): number {
       return snap.game.seats.length
     case 'minigolf':
       return snap.game.balls.length
+    case 'cricket':
+      return snap.game.marks.length
   }
 }
 

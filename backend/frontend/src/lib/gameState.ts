@@ -19,9 +19,10 @@ export function gameState(s: Snapshot | null): GameState {
     minigolf: s?.gameId === 'minigolf' ? s.game : null,
     p121: s?.gameId === 'p121' ? s.game : null,
     hilo: s?.gameId === 'hilo' ? s.game : null,
+    cricket: s?.gameId === 'cricket' ? s.game : null,
   }
 }
 
-/** The bull off that decides who throws first, while a game (X01, 121, Higher Lower) is still in it; null otherwise. */
-export const bullOffOf = ({ x01, p121, hilo }: GameState) =>
-  x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : hilo?.phase === 'bulloff' ? hilo.bullOff : null
+/** The bull off that decides who throws first, while a game (X01, 121, Higher Lower, Cricket) is still in it; null otherwise. */
+export const bullOffOf = ({ x01, p121, hilo, cricket }: GameState) =>
+  [x01, p121, hilo, cricket].find(g => g?.phase === 'bulloff')?.bullOff ?? null

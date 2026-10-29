@@ -3,6 +3,7 @@ import type { Snapshot } from '../api/game-ws'
 import { GAME_NAMES, isGameId } from '$shared/gameNames'
 import { p121Meta } from '../p121/view.js'
 import { hiloMeta } from '../hilo/view.js'
+import { cricketMeta } from '../cricket/view.js'
 import { x01Meta, atcMeta, minigolfMeta } from './meta.js'
 
 export interface GameView {
@@ -25,6 +26,8 @@ function meta(s: Snapshot): string {
       return p121Meta(s.game, s.game.currentPlayer)
     case 'hilo':
       return hiloMeta(s.game, s.players.length)
+    case 'cricket':
+      return cricketMeta(s.game, s.players.length)
     default: {
       // A new game id fails to compile here until it has a line; one from a newer server gets none
       const _unknown: never = s

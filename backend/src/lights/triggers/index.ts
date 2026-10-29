@@ -30,6 +30,7 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
     case 'minigolf':
       return minigolfTriggers(before?.gameId === 'minigolf' ? before.game : null, after.game)
     case 'p121':
+    case 'cricket':
       return []
   }
 }

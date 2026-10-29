@@ -34,6 +34,13 @@ export function hiloRules(r: { startHigh: number; startLow: number; lives: numbe
   return `${r.startHigh} / ${r.startLow} · ${plural(r.lives, 'life', 'lives')}`
 }
 
+const CRICKET_MODE_LABEL: Record<'standard' | 'cutthroat', string> = { standard: 'Standard', cutthroat: 'Cut-throat' }
+
+/** The Cricket rules as one line, shared by the header and the lobby's next-game line, e.g. "Cut-throat · First to 3". */
+export function cricketRules(r: { mode: 'standard' | 'cutthroat'; firstTo: number }): string {
+  return `${CRICKET_MODE_LABEL[r.mode]} · First to ${r.firstTo}`
+}
+
 /** The Around the Clock rules as one line, e.g. "1–20, then Bull · any segment counts". */
 export function atcRules(r: AtcRules, playerCount: number): string {
   const order = r.order === 'desc' ? '20–1' : r.order === 'random' ? 'Random order' : '1–20'
