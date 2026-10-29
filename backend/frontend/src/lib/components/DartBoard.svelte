@@ -227,6 +227,9 @@
   const aimed = $derived(aim ? boardAt(aim.at) : null)
   const shown = $derived(aim ? shownAt(aim.finger, aim.offset, BOX) : null)
   const zoomBox = $derived(aim && shown ? viewBoxFor(aim.at, shown, AIM_ZOOM, BOX.half) : null)
+  // A dart's label sits right of its dot; near the right edge of the view (zoomed or not) it flips left
+  const LABEL_ROOM = 0.3
+  const viewRight = $derived(zoomBox ? zoomBox.x + zoomBox.w : 1.15)
   // Off the board's round background: lifting there places nothing
   const aimOff = $derived(aimed !== null && Math.hypot(aimed.x, aimed.y) > 1.12)
 
@@ -616,8 +619,9 @@
                 stroke-width="0.006"
               />
               <text
-                x={pos.x + 0.06}
+                x={pos.x + (pos.x + LABEL_ROOM > viewRight ? -0.06 : 0.06)}
                 y={-pos.y}
+                text-anchor={pos.x + LABEL_ROOM > viewRight ? 'end' : 'start'}
                 dy="0.35em"
                 fill="#ffffff"
                 stroke="#000000"
