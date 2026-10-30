@@ -138,5 +138,11 @@ export function createCaller(volume: () => number) {
     silence()
   }
 
-  return { say, stop }
+  /** Seconds until the last clip scheduled so far has ended (0 when none is playing). */
+  function remaining(): number {
+    const ctx = audioContext()
+    return ctx ? Math.max(0, endsAt - ctx.currentTime) : 0
+  }
+
+  return { say, stop, remaining }
 }

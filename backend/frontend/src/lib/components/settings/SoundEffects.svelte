@@ -27,18 +27,14 @@
   const options = $derived(packOptions($progress?.perks.unlocked ?? [], $anyPack, settings.soundPack))
   const preview = createSoundPacks(() => settings.effectsVolume)
   const beeps = createSounds(() => settings.effectsVolume)
-  // A row's button stays disabled while its sound rings (the longest recipes run under a second)
-  let playing = $state<string | null>(null)
-  let playingTimer: ReturnType<typeof setTimeout> | undefined
   /** Plays what a match would for this row: the chosen pack's sound, else the beep. */
   function playRow(row: (typeof sounds)[number]) {
-    playing = row.key
-    clearTimeout(playingTimer)
-    playingTimer = setTimeout(() => (playing = null), row.key === 'soundBust' || row.key === 'soundSwitch' ? 900 : 500)
     const pack = packs ? settings.soundPack : null
     // 'sound.none' is the default: the beeps
     if (pack && pack in SOUND_PACKS && 'dart' in row) preview.play(pack, row.dart)
     else beeps[row.beep]()
+    // How long it rings: the bust and the switch jingle run longer than a hit
+    return row.key === 'soundBust' || row.key === 'soundSwitch' ? 0.9 : 0.5
   }
   function pickPack(v: string) {
     settings.soundPack = v === EACH ? null : v
@@ -69,7 +65,6 @@
         sub={'sub' in row ? row.sub : undefined}
         bind:checked={settings[row.key]}
         onpreview={() => playRow(row)}
-        previewing={playing === row.key}
       />
     {/each}
   </div>

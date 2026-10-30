@@ -119,6 +119,17 @@ describe('createCaller', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('reports how long the call still has to ring, nothing once it is stopped', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok('180')))
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    expect(caller.remaining()).toBe(0)
+    await caller.say([['180']], { '180': ['/c/180'] })
+    expect(caller.remaining()).toBeGreaterThan(0.5)
+    caller.stop()
+    expect(caller.remaining()).toBe(0)
+  })
+
   it('drops a call still loading when the next one comes', async () => {
     let release: (v: unknown) => void = () => undefined
     const slow = new Promise(r => {

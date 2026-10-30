@@ -6,7 +6,8 @@
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
-  import { LoaderCircle, Play, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { LoaderCircle, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import PreviewButton from '$lib/components/PreviewButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { createCaller } from '$lib/caller/player.js'
@@ -51,9 +52,11 @@
   onDestroy(() => {
     caller.stop()
   })
-  function sample(id: string) {
+  /** Says pack `id`'s sample; resolves once it has loaded and started, with how long it rings. */
+  async function sample(id: string) {
     audioContext()
-    void saySample(caller, id)
+    await saySample(caller, id)
+    return caller.remaining()
   }
 
   // ── Delete ──
@@ -163,14 +166,12 @@
                     >{/if}
                 </span>
               </span>
-              <button
-                type="button"
-                onclick={() => sample(p.id)}
-                aria-label="Play a sample of {p.name}"
-                class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[9px] border border-line-chip bg-transparent text-ink-2 cursor-pointer"
-              >
-                <Play size={14} fill="currentColor" strokeWidth={0} />
-              </button>
+              <PreviewButton
+                label="Play a sample of {p.name}"
+                onplay={() => sample(p.id)}
+                iconSize={14}
+                class="size-10 rounded-[9px] border border-line-chip text-ink-2"
+              />
               <button
                 type="button"
                 onclick={() => void remove(p.id)}
