@@ -24,7 +24,7 @@ export function flagMode(flag: AdminFlag): FlagMode {
 
 /** What "Default" means for this flag right now, e.g. "Default (admins)". */
 export function defaultLabel(flag: AdminFlag): string {
-  if (flag.default.envOn) return 'Default (everyone)'
+  if (flag.default.envOn || flag.default.rule === 'everyone') return 'Default (everyone)'
   return flag.default.rule === 'admins' ? 'Default (admins)' : 'Default (off)'
 }
 

@@ -17,7 +17,8 @@
   const summary = $derived($me?.lobby ?? null)
   const view = $derived(summary ? indicatorView(summary) : null)
 
-  const onPlay = $derived($location === '/')
+  // The Create lobby button is left off the Play page, which has its own
+  const onPlay = $derived($location === '/play')
   let error = $state('')
 
   async function create() {

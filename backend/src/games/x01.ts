@@ -69,6 +69,10 @@ export type X01State = {
   pointsScored: number[]
   /** Each player's highest checkout (the score left when the checkout visit started); 0 = none yet. */
   bestCheckout: number[]
+  /** Each player's committed visits that scored 180 (a bust never does). */
+  count180: number[]
+  /** Each player's checkouts from 100 or more: the legs they won from a visit that opened on 100+. */
+  tonOuts: number[]
   /** Darts thrown in the open visit, scoring or not. */
   visitDarts: number
   /** This leg's committed visits, in throwing order. */
@@ -92,7 +96,9 @@ function withVisitScored(s: X01State): number[] {
 }
 
 // Ends the open visit for its thrower: its record and the per-player totals that count it
-function committedVisit(s: X01State): Pick<X01State, 'pointsScored' | 'dartsThrown' | 'legVisits' | 'lastVisit' | 'visitDarts'> {
+function committedVisit(
+  s: X01State,
+): Pick<X01State, 'pointsScored' | 'dartsThrown' | 'legVisits' | 'lastVisit' | 'visitDarts' | 'count180'> {
   const cp = s.currentPlayer
   const t = s.teamOf[cp]
   const record: X01VisitRecord = {
@@ -107,6 +113,7 @@ function committedVisit(s: X01State): Pick<X01State, 'pointsScored' | 'dartsThro
     dartsThrown: s.dartsThrown.map((d, i) => (i === cp ? d + s.visitDarts : d)),
     legVisits: [...s.legVisits, record],
     lastVisit: s.lastVisit.map((v, i) => (i === cp ? record : v)),
+    count180: s.count180.map((c, i) => (i === cp && !record.bust && record.scored === 180 ? c + 1 : c)),
     visitDarts: 0,
   }
 }
@@ -287,6 +294,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       playerCount: n,
       pointsScored: Array<number>(n).fill(0),
       bestCheckout: Array<number>(n).fill(0),
+      count180: Array<number>(n).fill(0),
+      tonOuts: Array<number>(n).fill(0),
       visitDarts: 0,
       legVisits: [],
       lastVisit: Array<X01VisitRecord | null>(n).fill(null),
@@ -362,10 +371,11 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         if (s.scores[t] === 0) {
           const legs = s.legs.map((l, i) => (i === t ? l + 1 : l))
           const bestCheckout = s.bestCheckout.map((b, i) => (i === cp ? Math.max(b, s.visitOpenedScores[t]) : b))
+          const tonOuts = s.tonOuts.map((n, i) => (i === cp && s.visitOpenedScores[t] >= 100 ? n + 1 : n))
           if (legs[t] >= s.cfg.firstTo) {
-            return { state: { ...s, ...done, legs, winner: t, phase: 'finished', bestCheckout } }
+            return { state: { ...s, ...done, legs, winner: t, phase: 'finished', bestCheckout, tonOuts } }
           }
-          return { state: { ...s, ...done, legs, bestCheckout, ...freshLeg(s, legs) } }
+          return { state: { ...s, ...done, legs, bestCheckout, tonOuts, ...freshLeg(s, legs) } }
         }
 
         const { nextPlayer, turn, round } = nextTurn(s)
@@ -462,6 +472,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           pointsScored: s.pointsScored[i],
           // Only for players who checked out a leg, so min/avg over games stay meaningful
           ...(s.bestCheckout[i] > 0 && { bestCheckout: s.bestCheckout[i] }),
+          // Only when there is something to count, like bestCheckout: Home reads the checkout rate, the friend feed the rest
+          ...(s.checkoutAttempts[i] > 0 && { checkoutAttempts: s.checkoutAttempts[i], checkoutHits: s.checkoutHits[i] }),
+          ...(s.count180[i] > 0 && { count180: s.count180[i] }),
+          ...(s.tonOuts[i] > 0 && { tonOuts: s.tonOuts[i] }),
         },
       }
     })

@@ -1,5 +1,6 @@
 import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
+import { deleteActivityForGame } from './activity.js'
 import { recalculateRatings } from './ranked.js'
 import { revokeGameXp } from './progression.js'
 import type { Database } from './schema.js'
@@ -199,6 +200,9 @@ export async function invalidateGame(
       .where('id', '=', id)
       .execute()
     await revokeGameXp(trx, id)
+    // Events are cheap, not a record: restoring the game does not write them again, and the ratings
+    // replayed below do not rewrite the rank_up events of later games (a week of feed at most)
+    await deleteActivityForGame(trx, id)
     for (const mode of modes) await recalculateRatings(trx, mode)
     await trx
       .insertInto('admin_audit')

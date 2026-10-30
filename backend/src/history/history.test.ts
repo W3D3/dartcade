@@ -41,7 +41,26 @@ describe('aggregateStats', () => {
       30,
       now,
     )
-    expect(s.modes.x01.stats.average).toEqual({ avg: 70, min: 60, max: 80, sum: 140, previousAvg: 50 })
+    expect(s.modes.x01.stats.average).toMatchObject({ avg: 70, min: 60, max: 80, sum: 140, previousAvg: 50 })
+  })
+
+  it('lists the average of each UTC day with a game, oldest first, for the period only', () => {
+    const at = (day: number, hour: number) => new Date(Date.UTC(2026, 9, day, hour))
+    const s = aggregateStats(
+      [
+        row({ finishedAt: at(26, 20), stats: { average: 60 } }),
+        row({ finishedAt: at(25, 9), stats: { average: 50 } }),
+        row({ finishedAt: at(26, 8), stats: { average: 80 } }),
+        row({ finishedAt: at(26, 9), stats: { dartsThrown: 30 } }),
+        row({ finishedAt: daysAgo(45), stats: { average: 10 } }),
+      ],
+      30,
+      new Date(Date.UTC(2026, 9, 27)),
+    )
+    expect(s.modes.x01.stats.average.byDay).toEqual([
+      { day: '2026-10-25', avg: 50 },
+      { day: '2026-10-26', avg: 70 },
+    ])
   })
 
   it('previousAvg is null without earlier games', () => {

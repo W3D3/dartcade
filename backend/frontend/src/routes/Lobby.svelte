@@ -177,7 +177,7 @@
     const me = mine
     rematch = false
     if (step === 'play') {
-      void replace('/')
+      void replace('/play')
       return
     }
     void replace('/lobby')

@@ -37,6 +37,8 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     playerCount: 2,
     pointsScored: Array<number>(n).fill(0),
     bestCheckout: Array<number>(n).fill(0),
+    count180: Array<number>(n).fill(0),
+    tonOuts: Array<number>(n).fill(0),
     visitDarts: 0,
     legVisits: [],
     lastVisit: Array<null>(n).fill(null),
@@ -954,6 +956,19 @@ describe('checkout darts', () => {
     expect(s.checkoutHits).toEqual([1, 0])
   })
 
+  it('keeps the tries and hits in the seat summary, for the checkout rate over many games', () => {
+    const s = throwAll(on(40, { cfg: { ...defaultCfg, firstTo: 1 } }), [S20, D10])
+    const total = { totalDarts: [2, 0], totalVisits: [1, 0] }
+    expect(x01Game.summarize(x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state, total)[0].stats).toMatchObject({
+      checkoutAttempts: 2,
+      checkoutHits: 1,
+    })
+    // A seat that never faced a finish has neither key
+    expect(x01Game.summarize(x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state, total)[1].stats).not.toHaveProperty(
+      'checkoutAttempts',
+    )
+  })
+
   it('a dart on a score that needs more than one dart is not an attempt', () => {
     expect(throwAll(on(170), [T20]).checkoutAttempts).toEqual([0, 0])
     // 41: S1 leaves 40 (not an attempt), then D20 on 40 (attempt, hit)
@@ -1011,5 +1026,61 @@ describe('checkout darts', () => {
 
   it('init starts the counts at zero', () => {
     expect(x01Game.init(defaultCfg, players)).toMatchObject({ checkoutAttempts: [0, 0], checkoutHits: [0, 0] })
+  })
+})
+
+describe('180s and ton-plus outs', () => {
+  const totals = (n: number) => ({ totalDarts: Array<number>(n).fill(3), totalVisits: Array<number>(n).fill(1) })
+  const oneLeg = { ...defaultCfg, firstTo: 1 }
+
+  it('counts a 180 visit in the summary', () => {
+    const s = playVisit(makeState(), [T20, T20, T20])
+    expect(s.count180).toEqual([1, 0])
+    expect(x01Game.summarize(s, totals(2))[0].stats.count180).toBe(1)
+  })
+
+  it('leaves the keys out when there is nothing to count', () => {
+    const s = playVisit(makeState(), [T20, S20, S1])
+    const stats = x01Game.summarize(s, totals(2))[0].stats
+    expect(stats).not.toHaveProperty('count180')
+    expect(stats).not.toHaveProperty('tonOuts')
+  })
+
+  it('does not count a bust, even one thrown with 180 worth of darts', () => {
+    const s = playVisit(makeState({ scores: [170, 501], visitOpenedScores: [170, 501] }), [T20, T20, T20])
+    expect(s.count180[0]).toBe(0)
+  })
+
+  it('counts a checkout from 100 or more as a ton-plus out', () => {
+    const s = playVisit(makeState({ cfg: oneLeg, scores: [120, 501], visitOpenedScores: [120, 501] }), [T20, S20, D20])
+    expect(s.tonOuts).toEqual([1, 0])
+    const stats = x01Game.summarize(s, totals(2))[0].stats
+    expect(stats.tonOuts).toBe(1)
+    expect(stats.bestCheckout).toBe(120)
+  })
+
+  it('does not count a checkout below 100', () => {
+    const s = playVisit(makeState({ cfg: oneLeg, scores: [60, 501], visitOpenedScores: [60, 501] }), [S20, D20])
+    expect(s.tonOuts).toEqual([0, 0])
+  })
+
+  it('counts a ton-plus out that wins a leg but not the game', () => {
+    const cfg = { ...defaultCfg, firstTo: 2 }
+    const s = playVisit(makeState({ cfg, scores: [100, 501], visitOpenedScores: [100, 501] }), [
+      dartEvent(20, 'Single', 1),
+      dartEvent(20, 'Triple', 3),
+      D10,
+    ])
+    expect(s.legs).toEqual([1, 0])
+    expect(s.tonOuts).toEqual([1, 0])
+  })
+
+  it('in a team game credits the thrower, not their partner', () => {
+    const s = playVisit(makeState({ playerCount: 4, teamOf: [0, 1, 0, 1], order: [0, 1, 2, 3], turn: 2, currentPlayer: 2 }), [
+      T20,
+      T20,
+      T20,
+    ])
+    expect(s.count180).toEqual([0, 0, 1, 0])
   })
 })

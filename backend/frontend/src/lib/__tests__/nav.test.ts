@@ -21,8 +21,52 @@ describe('navTabs', () => {
   })
 
   it('puts the pending invites on the Play tab', () => {
-    expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
-    expect(navTabs(null, 0)[0]).toEqual({ href: '/', label: 'Play', icon: 'play' })
+    expect(navTabs(null, 2)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
+    expect(navTabs(null, 0)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play' })
+  })
+})
+
+describe('Home in the nav', () => {
+  it('puts Home first, before Play, while Home is on', () => {
+    expect(navTabs('s1', 0, false, null, true).map(t => [t.label, t.href])).toEqual([
+      ['Home', '/'],
+      ['Play', '/play'],
+      ['Live', '/session/s1'],
+      ['Tournaments', '/tournaments'],
+      ['History', '/history'],
+    ])
+    expect(navTabs(null, 0, false, null, true)[0]).toEqual({ href: '/', label: 'Home', icon: 'home' })
+  })
+
+  it('keeps the invites badge on Play', () => {
+    expect(navTabs(null, 2, false, null, true)[1]).toMatchObject({ label: 'Play', href: '/play', badge: 2 })
+    expect(navTabs(null, 2, false, null, true)[0]).not.toHaveProperty('badge')
+  })
+
+  it('is the old nav without it: no Home, Play first (always at /play)', () => {
+    expect(navTabs('s1').map(t => [t.label, t.href])[0]).toEqual(['Play', '/play'])
+  })
+
+  it('shows in the tablet rail and the desktop side nav too', () => {
+    expect(
+      railTabs('s1', 0, false, null, false, true)
+        .map(t => t.label)
+        .slice(0, 2),
+    ).toEqual(['Home', 'Play'])
+    expect(
+      sideLinks('s1', false, false, null, true)
+        .map(l => [l.label, l.href])
+        .slice(0, 2),
+    ).toEqual([
+      ['Home', '/'],
+      ['Play', '/play'],
+    ])
+  })
+
+  it('tells Home from Play by the route', () => {
+    expect(isActiveRoute('/', '/')).toBe(true)
+    expect(isActiveRoute('/play', '/')).toBe(false)
+    expect(isActiveRoute('/play', '/play')).toBe(true)
   })
 })
 

@@ -12,7 +12,7 @@ import {
   recordRankedResult,
   x01Average,
 } from './ranked.js'
-import { rankIndexFor } from '../shared/ranked.js'
+import { rankIndexFor, rankThreshold } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
@@ -69,15 +69,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     await db
       .insertInto('user')
       .values(
-        ['chris', 'anna', 'lena', 'ben', 'tom', 'ida', 'sam', 'tim', 'ruth', 'sam2', 'tim2', 'ruth2', 'zoe', 'yan', 'eli', 'liv'].map(
-          id => ({
-            id,
-            name: id[0].toUpperCase() + id.slice(1),
-            email: `${id}@x`,
-            emailVerified: false,
-            image: null,
-          }),
-        ),
+        [
+          'chris',
+          'anna',
+          'lena',
+          'ben',
+          'tom',
+          'ida',
+          'sam',
+          'tim',
+          'ruth',
+          'sam2',
+          'tim2',
+          'ruth2',
+          'zoe',
+          'yan',
+          'eli',
+          'liv',
+          'cal',
+          'dee',
+        ].map(id => ({
+          id,
+          name: id[0].toUpperCase() + id.slice(1),
+          email: `${id}@x`,
+          emailVerified: false,
+          image: null,
+        })),
       )
       .execute()
   })
@@ -118,6 +135,26 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect((await getRatings(db, 'chris'))['1v1']).toMatchObject({ rating: 1227, matches: 1, wins: 1, streak: 1, rankIndex: null })
     expect((await getRatings(db, 'anna'))['1v1']).toMatchObject({ rating: 1173, matches: 1, wins: 0, streak: -1 })
     expect((await getRatings(db, 'chris'))['2v2'].matches).toBe(0)
+  })
+
+  it('writes a rank_up for the player who climbs a stage, once, and none for the one who stays', async () => {
+    const edge = { mode: '1v1' as const, rating: rankThreshold(5) - 1, rank_index: 4, matches: 10, wins: 5, streak: 0 }
+    await db
+      .insertInto('ranked_ratings')
+      .values([
+        { user_id: 'cal', ...edge },
+        { user_id: 'dee', ...edge },
+      ])
+      .execute()
+    const g = await game()
+    const sides = duel('cal', 'dee', 50, 50)
+    await recordRankedResult(db, { sessionId: g, mode: '1v1', at: at(11), sides })
+    await recordRankedResult(db, { sessionId: g, mode: '1v1', at: at(11), sides })
+    expect((await getRatings(db, 'cal'))['1v1'].rankIndex).toBe(5)
+    expect((await getRatings(db, 'dee'))['1v1'].rankIndex).toBe(4)
+    expect(await db.selectFrom('friend_activity').select(['user_id', 'kind', 'payload']).where('game_id', '=', g).execute()).toEqual([
+      { user_id: 'cal', kind: 'rank_up', payload: { mode: '1v1', rankIndex: 5 } },
+    ])
   })
 
   it('two calls for one game at once: the second changes nothing and does not throw', async () => {

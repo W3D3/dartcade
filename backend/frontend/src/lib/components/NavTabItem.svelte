@@ -1,7 +1,7 @@
 <script lang="ts">
   // One item of the phone tab bar and the tablet rail: icon over label, the Live dot, the invites badge.
   // A disabled tab (Live with no game running, Tournaments until it ships) is a dimmed span, not a link.
-  import { Clock, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
+  import { Clock, House, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
   import type { NavTab } from '$lib/nav'
   import NavBadge from './NavBadge.svelte'
 
@@ -29,7 +29,8 @@
   {#if tab.badge}
     <NavBadge count={tab.badge} label={tab.badgeLabel ?? ''} class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1" />
   {/if}
-  {#if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
+  {#if tab.icon === 'home'}<House size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
+  {:else if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'ranked'}<Swords size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'live'}<Radio size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'tournaments'}<Trophy size={22} strokeWidth={1.8} />
