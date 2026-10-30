@@ -567,6 +567,30 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/BoardUnavailable' }
 
+  /api/boards/{id}/auto-start:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    patch:
+      operationId: setBoardAutoStart
+      summary: Set whether a lobby game starts the board's stopped Board Manager session (owner only)
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BoardAutoStartRequest' }
+      responses:
+        '200':
+          description: The new setting
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardAutoStartRequest' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -3536,7 +3560,7 @@ components:
 
     Board:
       type: object
-      required: [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl, bridgeUpdate, bigScreen]
+      required: [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl, bridgeUpdate, bigScreen, autoStart]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -3550,6 +3574,13 @@ components:
         bmUrl: { type: string, nullable: true, description: 'Board Manager origin incl. port, e.g. http://192.168.0.109:3180' }
         bridgeUpdate: { $ref: '#/components/schemas/BridgeUpdate' }
         bigScreen: { $ref: '#/components/schemas/BoardBigScreen' }
+        autoStart: { type: boolean, description: A lobby game starts the board's stopped Board Manager session }
+    BoardAutoStartRequest:
+      type: object
+      required: [autoStart]
+      additionalProperties: false
+      properties:
+        autoStart: { type: boolean }
     BoardBigScreen:
       type: object
       required: [mode, running, helper]

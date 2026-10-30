@@ -54,6 +54,8 @@ export type LobbyDeps = {
   onStatusChange?: (userIds: string[]) => void
   /** Boards picked in or dropped from a lobby, or whose lobby closed (the lights follow). */
   onBoardsChanged?: (boardIds: string[]) => void
+  /** A game started: start its boards' stopped Board Manager sessions (not awaited). */
+  autoStartBoards?: (boardIds: string[]) => Promise<void>
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
   gameAvailable?: (userId: string, gameId: string) => Promise<boolean>
 }
@@ -922,6 +924,8 @@ export class LobbyService {
     }
     await q.setPlaying(this.db, lobby.id, plan.personIds)
     await this.refreshAndPublish(lobby.id)
+    const boardIds = plan.seats.flatMap(s => (s.boardId === null ? [] : [s.boardId]))
+    void this.deps.autoStartBoards?.(boardIds)
     return { sessionId }
   }
 

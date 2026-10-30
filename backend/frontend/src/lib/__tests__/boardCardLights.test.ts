@@ -14,6 +14,7 @@ const board = {
   bmUrl: null,
   bridgeUpdate: { available: null, updatable: false },
   bigScreen: { mode: 'off' as const, running: false, helper: false },
+  autoStart: true,
 }
 
 const card = (lights?: number) => render(BoardCard, { props: { board, active: false, justPaired: false, onselect: () => {}, lights } }).body

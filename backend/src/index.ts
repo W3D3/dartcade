@@ -21,6 +21,7 @@ import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
 import { boardStatus } from './boards/bmState.js'
+import { autoStartBoards } from './boards/autoStart.js'
 import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
@@ -168,6 +169,7 @@ const lobbies: LobbyService = new LobbyService({
   engine,
   hub,
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
+  autoStartBoards: boardIds => autoStartBoards(db, boardIds, warn),
   gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
   warn: (message, details) => {
     warn(message, details)

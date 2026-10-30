@@ -13,6 +13,7 @@ import {
   getBoardById,
   deleteBoard,
   renameBoard,
+  setAutoStart,
   setBigScreenMode,
   hasActiveSessionOnBoard,
 } from '../db/queries.js'
@@ -126,6 +127,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           ip: bm?.hostname ?? null,
           // Full Board Manager origin (incl. port) for linking
           bmUrl: bm?.origin ?? null,
+          autoStart: b.auto_start,
           bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
           bridgeUpdate: {
             available: bridgeUpdateFor(conn?.bridgeVersion, offered),
@@ -192,6 +194,18 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await renameBoard(db, id, name)
       return reply.send({ id, name })
+    },
+  )
+
+  app.patch<Route<'setBoardAutoStart'>>(
+    '/api/boards/:id/auto-start',
+    { preValidation: requireAuth, schema: fromSpec('setBoardAutoStart') },
+    async (req, reply) => {
+      const { id } = req.params
+      const { autoStart } = req.body
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      await setAutoStart(db, id, autoStart)
+      return reply.send({ autoStart })
     },
   )
 

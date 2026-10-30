@@ -84,6 +84,7 @@ describe('GET /api/boards', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        auto_start: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -210,6 +211,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        auto_start: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -238,6 +240,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        auto_start: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -260,6 +263,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        auto_start: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -469,6 +473,7 @@ describe('PATCH /api/boards/:id', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    auto_start: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -505,6 +510,7 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    auto_start: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -687,6 +693,7 @@ describe('GET /api/boards/:id/events', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    auto_start: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -718,6 +725,7 @@ describe('boards: spec enforcement', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    auto_start: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -758,6 +766,7 @@ describe('POST /api/boards/:id/bridge-update', () => {
       owner_user_id: 'user-1',
       token_hash: 'hash',
       lights_enabled: true,
+      auto_start: true,
       big_screen_mode: 'off' as const,
       big_screen_token_hash: null,
     })

@@ -12,6 +12,7 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
+  import AutoStartSwitch from './AutoStartSwitch.svelte'
   import BigScreenSetup from './BigScreenSetup.svelte'
   import BoardCard from '$lib/components/boards/BoardCard.svelte'
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
@@ -505,6 +506,7 @@
         <dt class="text-text-muted">Paired</dt>
         <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
       </div>
+      <AutoStartSwitch board={selected} onchanged={refetchBoards} />
       {#if $bigScreenOn}
         <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
       {/if}
