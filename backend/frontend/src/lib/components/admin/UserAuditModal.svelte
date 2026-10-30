@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import { auditLabel, listUserAudit, type AdminUser, type AuditEntry } from '$lib/admin/users'
+  import { auditDetail, auditLabel, listUserAudit, type AdminUser, type AuditEntry } from '$lib/admin/users'
 
   let { user, onclose }: { user: AdminUser; onclose: () => void } = $props()
 
@@ -30,6 +30,7 @@
       {#each entries as e (e.id)}
         <li class="flex flex-col gap-0.5">
           <span class="text-[14px] text-text">{auditLabel(e.action)}</span>
+          {#if auditDetail(e.action, e.detail)}<span class="text-[13px] text-text">{auditDetail(e.action, e.detail)}</span>{/if}
           <span class="text-[13px] text-text-muted">
             {e.admin?.name ?? 'A removed admin'} · {new Date(e.createdAt).toLocaleString()}
             {#if !e.action.startsWith('user.')}· game {e.target}{/if}
