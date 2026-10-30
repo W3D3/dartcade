@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { callsFor, callGame, pickClips, checkoutFor, requirePart, createCheckoutMemory, type CallGame } from '../caller/calls.js'
+import { callsFor, callGame, pickClips, checkoutFor, legPart, requirePart, createCheckoutMemory, type CallGame } from '../caller/calls.js'
 import type { Snapshot } from '../api/game-ws.js'
 
 const dart = (score: number) => ({ score }) as CallGame['currentVisitDarts'][number]
@@ -42,9 +42,9 @@ describe('callsFor', () => {
   it('a checkout says game shot and the leg just won; the last leg says match shot', () => {
     const before = game({ scores: [40, 501], currentVisitDarts: [dart(0)] })
     const leg = game({ scores: [0, 501], currentVisitDarts: [dart(0), dart(40)], visitLocked: true })
-    expect(callsFor(before, leg)).toEqual([['gameshot'], ['and'], ['leg_1']])
+    expect(callsFor(before, leg)).toEqual([legPart(1)])
     const second = game({ ...leg, firstTo: 3, legs: [0, 1] })
-    expect(callsFor(game({ ...before, firstTo: 3, legs: [0, 1] }), second)).toEqual([['gameshot'], ['and'], ['leg_2']])
+    expect(callsFor(game({ ...before, firstTo: 3, legs: [0, 1] }), second)).toEqual([legPart(2)])
     const match = game({ ...leg, legs: [1, 1] })
     expect(callsFor(game({ ...before, legs: [1, 1] }), match)).toEqual([['matchshot', 'gameshot']])
   })
@@ -65,7 +65,7 @@ describe('callsFor', () => {
     const after = game({ ...before, scores: [0, 101, 0, 101], visitLocked: true, currentVisitDarts: [dart(40)], teams })
     expect(callsFor(before, after)).toEqual([['matchshot', 'gameshot']])
     // First to 3: Team A's checkout wins the second leg, not the third
-    expect(callsFor({ ...before, firstTo: 3 }, { ...after, firstTo: 3 })).toEqual([['gameshot'], ['and'], ['leg_2']])
+    expect(callsFor({ ...before, firstTo: 3 }, { ...after, firstTo: 3 })).toEqual([legPart(2)])
   })
 
   it('an undo that reopens a visit says nothing; the visit is called again when it ends again', () => {
@@ -150,8 +150,17 @@ describe('pickClips', () => {
   })
   it('missing keys fall back or are skipped', () => {
     expect(pickClips([['matchshot', 'gameshot']], clips, () => 0)).toEqual(['g'])
-    expect(pickClips([['gameshot'], ['and'], ['leg_2']], clips, () => 0)).toEqual(['g'])
+    expect(pickClips([legPart(2)], clips, () => 0)).toEqual(['g'])
     expect(pickClips([['busted']], clips, () => 0)).toEqual([])
+  })
+
+  it('a leg call prefers its own clip, then stitches what the voice has', () => {
+    const first = () => 0
+    const all = { gameshot_leg_2: ['own'], gameshot: ['g'], and: ['a'], leg_2: ['l'] }
+    expect(pickClips([legPart(2)], all, first)).toEqual(['own'])
+    expect(pickClips([legPart(2)], { gameshot: ['g'], and: ['a'], leg_2: ['l'] }, first)).toEqual(['g', 'a', 'l'])
+    expect(pickClips([legPart(2)], { gameshot: ['g'], leg_2: ['l'] }, first)).toEqual(['g', 'l'])
+    expect(pickClips([legPart(2)], { gameshot: ['g'], and: ['a'] }, first)).toEqual(['g'])
   })
 
   describe('pickClips with phrases', () => {

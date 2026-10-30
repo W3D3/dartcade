@@ -18,6 +18,7 @@ describe('the caller sound catalogue', () => {
       'matchshot',
       'and',
       'you_require',
+      'gameshot_leg_1',
       '0',
       '60',
       '180',
