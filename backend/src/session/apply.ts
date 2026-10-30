@@ -118,17 +118,28 @@ function applyBoardEvent(session: Session, event: BoardEvent, at: Date): ApplyOu
 
     case 'takeout.finished':
     case 'visit.cleared':
+      if (isManualReset(event)) return clearOpenDarts(session)
       return commit(session, event, at)
 
     case 'board.resync':
-      countDarts(session, session.currentState, -dartEvents(session).length)
-      session.openVisitEvents = []
-      session.openDarts = []
-      return NONE
+      return clearOpenDarts(session)
 
     case 'board.status':
       return NONE
   }
+}
+
+/** The board's Reset button: it wipes the darts, but the visit and the turn go on. */
+export function isManualReset(event: BoardEvent): boolean {
+  const data = event.data
+  return event.kind === 'visit.cleared' && typeof data === 'object' && data !== null && 'reason' in data && data.reason === 'manual_reset'
+}
+
+function clearOpenDarts(session: Session): ApplyOutcome {
+  countDarts(session, session.currentState, -dartEvents(session).length)
+  session.openVisitEvents = []
+  session.openDarts = []
+  return NONE
 }
 
 function applyUserAction(session: Session, action: UserAction, at: Date): ApplyOutcome {

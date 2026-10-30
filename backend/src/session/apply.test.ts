@@ -108,6 +108,16 @@ describe('applyInput', () => {
     expect(s.totalDarts).toEqual([0])
   })
 
+  it('a manual reset drops the open darts without ending the visit', () => {
+    const s = session(atcModule, atcModule.defaultConfig)
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0), t(1))
+    const out = applyInput(s, board('visit.cleared', { visit_id: 'v1', reason: 'manual_reset' }), t(2))
+    expect(out.committed).toBeNull()
+    expect(s.openDarts).toEqual([])
+    expect(s.totalVisits).toEqual([0])
+  })
+
   it('reports the win', () => {
     const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 301, outMode: 'straight', firstTo: 1 })
     s.committedState = { ...(s.committedState as object), game: { ...(s.committedState as any).game, scores: [1] } }
