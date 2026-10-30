@@ -22,6 +22,7 @@ test('a long live events log scrolls inside the selected-board panel', async ({ 
     ip: '192.168.0.109',
     bmUrl: 'http://192.168.0.109:3180',
     bridgeUpdate: { available: null, updatable: true },
+    autoStart: true,
   }
   const event = (i: number) => ({
     at: new Date(Date.UTC(2026, 9, 26, 18, 0, i)).toISOString(),
