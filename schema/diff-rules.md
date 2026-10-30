@@ -66,7 +66,9 @@ reaches 0. (Rule 4 still applies to the darts left on the board.)
 If `len(cur) == 0` and `len(prev) > 0`:
 
 - If the frame's `event` is `"Manual reset"` or a `POST /api/reset` command was recently
-  issued: emit `visit.cleared`.
+  issued: emit `visit.cleared` with reason `manual_reset`. The backend drops the open darts
+  and keeps the visit and the turn; only a takeout (or `visit.cleared` with another reason)
+  ends the visit.
 - Otherwise: emit `takeout.finished` (with `duration_ms` measured from `takeout.started`).
 
 ### 7. Takeout started (motion signal)
