@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  auditDetail,
   createUserSearch,
   joinedDate,
   lastLoginText,
@@ -180,5 +181,22 @@ describe('grantSummary', () => {
   it('says the new level, total and unlock count', () => {
     expect(grantSummary({ xp: 58800, level: 50, unlocked: ['a', 'b'] })).toBe('Now level 50 · 58,800 XP · 2 new unlocks')
     expect(grantSummary({ xp: 1000, level: 4, unlocked: ['a'] })).toBe('Now level 4 · 1,000 XP · 1 new unlock')
+  })
+})
+
+describe('auditDetail', () => {
+  it('says what each known action did', () => {
+    expect(auditDetail('user.ban', { category: 'cheating', note: 'typed-in 180s', until: null })).toBe('Closed for cheating · typed-in 180s')
+    expect(auditDetail('user.unban', { was: null })).toBeNull()
+    expect(auditDetail('user.unban', { was: { category: 'cheating', until: null } })).toBe('Was: Closed for cheating')
+    expect(auditDetail('user.grantXp', { amount: 10000 })).toBe('+10,000 XP')
+    expect(auditDetail('game.invalidate', { reason: 'bot play' })).toBe('Reason: bot play')
+    expect(auditDetail('game.delete', { wasInvalidatedFor: 'bot play' })).toBe('Had been invalidated: bot play')
+  })
+
+  it('shows nothing for an unknown action or a detail it cannot read', () => {
+    expect(auditDetail('user.impersonate', {})).toBeNull()
+    expect(auditDetail('user.ban', null)).toBeNull()
+    expect(auditDetail('game.invalidate', { reason: null })).toBeNull()
   })
 })
