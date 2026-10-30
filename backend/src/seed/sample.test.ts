@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
 import { openTestSchema } from '../db/testSchema.js'
-import { listFinishedGames } from '../db/history.js'
+import { getFinishedGame, listFinishedGames } from '../db/history.js'
+import { closePool } from '../games/minigolfPool.js'
+import { gameList } from '../games/index.js'
+import { storedDetail } from '../history/detail.js'
 import type { Database } from '../db/schema.js'
 import { seedSample } from './sample.js'
 
@@ -15,6 +18,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
     ;({ db, close } = await openTestSchema('seed_sample_test'))
   })
   afterAll(async () => {
+    await closePool()
     await close()
   })
 
@@ -53,8 +57,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
       const { games } = await listFinishedGames(db, name.toLowerCase(), { limit: 50, after: null })
       expect(games.length, name).toBeGreaterThan(0)
     }
+    const played = await db.selectFrom('game_sessions').select(['id', 'game_id']).execute()
+    expect(new Set(played.map(g => g.game_id))).toEqual(new Set(gameList.map(m => m.id)))
+    // Each one's details page replays it
+    for (const { id, game_id } of played) {
+      const game = await getFinishedGame(db, id)
+      const warn = (msg: string, details: unknown) => {
+        throw new Error(`${game_id} ${id}: ${msg} ${JSON.stringify(details)}`)
+      }
+      expect(game && (await storedDetail(db, game, warn)), game_id).toBeTruthy()
+    }
 
     await seedSample(db)
     expect(await counts()).toEqual(first)
-  })
+  }, 60_000)
 })
