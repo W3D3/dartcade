@@ -1864,6 +1864,27 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+    patch:
+      operationId: renameVoicePack
+      summary: Rename one of the signed-in user's voice packs
+      description: An import is named after its file; this gives it a name of the user's own.
+      tags: [voices]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '204': { description: Renamed }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
     delete:
       operationId: deleteVoicePack
       summary: Remove one of the signed-in user's voice packs

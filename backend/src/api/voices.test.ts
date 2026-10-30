@@ -316,6 +316,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(404)
   })
 
+  it('renames a pack, trims the name, and only for its owner', async () => {
+    const app = makeApp()
+    const pack = (await upload(app)).json()
+    const rename = (name: string, user = 'a') =>
+      app.inject({ method: 'PATCH', url: `/api/voice-packs/${pack.id}`, headers: { 'x-user': user }, payload: { name } })
+    expect((await rename('  Arthur in the pub  ')).statusCode).toBe(204)
+    const [listed] = (await get(app, '/api/voice-packs')).json().packs
+    expect(listed.name).toBe('Arthur in the pub')
+    expect((await get(app, `/api/voice-packs/${pack.id}`)).json().name).toBe('Arthur in the pub')
+    expect((await rename('   ')).statusCode).toBe(400)
+    expect((await rename('')).statusCode).toBe(400)
+    expect((await rename('Mine now', 'b')).statusCode).toBe(404)
+    expect((await get(app, '/api/voice-packs')).json().packs[0].name).toBe('Arthur in the pub')
+  })
+
   it('leaves clips out of the rate limit', async () => {
     const app = createFastify()
     await app.register(rateLimit, { max: 2, timeWindow: '1 minute' })

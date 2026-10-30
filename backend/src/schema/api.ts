@@ -1479,7 +1479,11 @@ export interface paths {
         delete: operations["deleteVoicePack"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename one of the signed-in user's voice packs
+         * @description An import is named after its file; this gives it a name of the user's own.
+         */
+        patch: operations["renameVoicePack"];
         trace?: never;
     };
     "/api/voice-clips/{sha256}": {
@@ -6482,6 +6486,36 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    renameVoicePack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["VoicePackId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Renamed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];

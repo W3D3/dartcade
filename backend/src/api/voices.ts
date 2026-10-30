@@ -12,6 +12,7 @@ import {
   packManifest,
   clipFor,
   deletePack,
+  renamePack,
   usage,
   reserveImport,
   VoiceLimitError,
@@ -149,6 +150,17 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const manifest = await packManifest(db, req.userId, req.params.id)
       if (!manifest) return reply.code(404).send({ error: 'not found' })
       return reply.send(manifest)
+    },
+  )
+
+  app.patch<Route<'renameVoicePack'>>(
+    '/api/voice-packs/:id',
+    { preValidation: requireAuth, schema: fromSpec('renameVoicePack') },
+    async (req, reply) => {
+      const name = req.body.name.trim()
+      if (!name) return reply.code(400).send({ error: 'The name is empty' })
+      if (!(await renamePack(db, req.userId, req.params.id, name))) return reply.code(404).send({ error: 'not found' })
+      return reply.code(204).send()
     },
   )
 

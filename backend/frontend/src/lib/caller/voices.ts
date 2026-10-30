@@ -262,3 +262,17 @@ export function storageUse(u: VoicePackList['usage']) {
     percent: u.bytes > 0 && u.limitBytes > 0 ? Math.max(percent, 1) : percent,
   }
 }
+
+/** Renames one of the user's packs; null when done, or what went wrong. */
+export async function renameVoicePack(id: string, name: string): Promise<string | null> {
+  const trimmed = name.trim()
+  if (!trimmed) return 'Give the voice a name.'
+  try {
+    const { response } = await api.PATCH('/api/voice-packs/{id}', { params: { path: { id } }, body: { name: trimmed } })
+    if (!response.ok) return response.status === 404 ? 'That voice is gone.' : `The voice couldn't be renamed (${response.status}).`
+    await loadVoiceLibrary()
+    return null
+  } catch {
+    return "The voice couldn't be renamed. Check the connection."
+  }
+}
