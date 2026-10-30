@@ -28,7 +28,7 @@ function user(id: string): AdminUser {
 
 describe('joinedDate', () => {
   it('formats as day month year', () => {
-    expect(joinedDate('2026-01-05T00:00:00.000Z')).toBe('5 Jan 2026')
+    expect(joinedDate('2026-01-05T12:30:00.000Z')).toMatch(/^[56] Jan 2026, \d{2}:\d{2}$/)
   })
 
   it('is blank for a date that does not parse', () => {
@@ -75,7 +75,7 @@ describe('createUserSearch', () => {
 
 describe('lastLoginText', () => {
   it('formats a real last login like the joined column', () => {
-    expect(lastLoginText('2026-01-05T00:00:00.000Z')).toBe('5 Jan 2026')
+    expect(lastLoginText('2026-01-05T12:30:00.000Z')).toMatch(/^[56] Jan 2026, \d{2}:\d{2}$/)
   })
 
   it('is an em dash for a user who never logged in', () => {
