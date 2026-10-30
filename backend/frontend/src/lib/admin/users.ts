@@ -128,13 +128,15 @@ export async function unbanUser(id: string): Promise<{ user: AdminUser } | { err
   return res.data ? { user: res.data } : { error: res.error.error }
 }
 
-/** "17 Oct 2026", for the joined column. Blank for an unparsable date. */
+/** "17 Oct 2026, 14:05", for the joined column. Blank for an unparsable date. */
 export function joinedDate(iso: string): string {
   const d = new Date(iso)
-  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return isNaN(d.getTime())
+    ? ''
+    : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-/** The last login column's text: the joined-style date, or "—" for a user who never signed back in. */
+/** The last login column's text: the joined-style date and time, or "—" for a user who never signed back in. */
 export function lastLoginText(iso: string | null): string {
   return iso === null ? '—' : joinedDate(iso)
 }

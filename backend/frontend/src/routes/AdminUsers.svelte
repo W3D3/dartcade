@@ -215,10 +215,10 @@
 </script>
 
 {#snippet userCell(user: AdminUser)}
-  <div class="flex min-w-0 items-center gap-3">
+  <a href="#/profile/{user.id}" class="flex min-w-0 items-center gap-3 no-underline hover:underline">
     <Avatar name={user.name} avatar={user.avatar} userId={user.id} size={32} />
     <span class="truncate text-[14px] font-semibold text-text">{user.name}</span>
-  </div>
+  </a>
 {/snippet}
 
 {#snippet verifiedCell(verified: boolean)}
