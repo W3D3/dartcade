@@ -386,5 +386,40 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
         { admin_user_id: 'admin', detail: { was: { category: 'spamming', until: null } } },
       ])
     })
+
+    it('lists what was done to an account and to its games, newest first, admin-only', async () => {
+      await db
+        .insertInto('admin_audit')
+        .values([
+          {
+            admin_user_id: 'admin',
+            action: 'game.invalidate',
+            target: 'g1',
+            detail: JSON.stringify({ ownerUserId: 'cheat', players: [] }),
+          },
+          {
+            admin_user_id: 'admin',
+            action: 'game.invalidate',
+            target: 'g2',
+            detail: JSON.stringify({ ownerUserId: 'x', players: [{ user_id: 'cheat' }] }),
+          },
+          {
+            admin_user_id: 'admin',
+            action: 'game.invalidate',
+            target: 'g3',
+            detail: JSON.stringify({ ownerUserId: 'x', players: [{ user_id: 'player' }] }),
+          },
+        ])
+        .execute()
+      const get = (headers: Record<string, string>) => app().inject({ method: 'GET', url: '/api/admin/users/cheat/audit', headers })
+      expect((await get(asPlayer)).statusCode).toBe(403)
+      expect((await get({ 'x-user': 'mod' })).statusCode).toBe(403)
+      const { entries } = JSON.parse((await get(asAdmin)).body)
+      const targets = entries.map((e: { target: string }) => e.target)
+      expect(targets.slice(0, 2)).toEqual(['g2', 'g1'])
+      expect(targets).not.toContain('g3')
+      expect(targets).toContain('cheat')
+      expect(entries[0].admin).toEqual({ id: 'admin', name: expect.any(String) })
+    })
   })
 })

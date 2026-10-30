@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listUsers, getUser, setRole, setVerified, banUser, unbanUser, type AdminUserRow } from '../db/adminUsers.js'
+import { listUsers, getUser, setRole, setVerified, listUserAudit, banUser, unbanUser, type AdminUserRow } from '../db/adminUsers.js'
 import { grantXp } from '../db/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -38,6 +38,14 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
   app.get<Route<'listAdminUsers'>>('/api/admin/users', { preValidation: adminOnly, schema: fromSpec('listAdminUsers') }, async req => ({
     users: (await listUsers(db, req.query.q)).map(serialize),
   }))
+
+  app.get<Route<'listUserAudit'>>(
+    '/api/admin/users/:id/audit',
+    { preValidation: adminOnly, schema: fromSpec('listUserAudit') },
+    async req => ({
+      entries: (await listUserAudit(db, req.params.id)).map(e => ({ ...e, createdAt: e.createdAt.toISOString() })),
+    }),
+  )
 
   app.put<Route<'setUserRole'>>('/api/admin/users/:id/role', { preValidation: adminOnly, schema: fromSpec('setUserRole') }, async req => {
     const result = await setRole(db, req.params.id, req.body.role)

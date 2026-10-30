@@ -13,6 +13,7 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
+  import UserAuditModal from '$lib/components/admin/UserAuditModal.svelte'
   import BanUserModal from '$lib/components/admin/BanUserModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -47,6 +48,7 @@
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
 
+  let auditUser = $state<AdminUser | null>(null)
   let q = $state('')
   let users = $state<AdminUser[]>([])
   let loading = $state(false)
@@ -283,6 +285,12 @@
           >
             Give XP
           </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => (auditUser = user)}
+            class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
+          >
+            Audit log
+          </DropdownMenu.Item>
           {#if canViewAs(user)}
             <DropdownMenu.Item
               onSelect={() => void pickViewAs(user)}
@@ -336,6 +344,10 @@
         {/snippet}
       </DataTable>
     </PageMain>
+
+    {#if auditUser}
+      <UserAuditModal user={auditUser} onclose={() => (auditUser = null)} />
+    {/if}
 
     {#if confirmAction?.kind === 'role'}
       {@const change = roleChange(confirmAction.user, confirmAction.role, confirmAction.user.id === $currentUser.id)}
