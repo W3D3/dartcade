@@ -29,8 +29,13 @@ func TestDialSendsTheTokenAsABearerHeader(t *testing.T) {
 	defer srv.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http") + "/bridge?x=1", Token: token}).Start(ctx) //nolint
+	stopped := make(chan struct{})
+	// Wait for Start to return: it logs through the global logger, which the next test swaps out.
+	defer func() { cancel(); <-stopped }()
+	go func() {
+		defer close(stopped)
+		New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http") + "/bridge?x=1", Token: token}).Start(ctx) //nolint
+	}()
 	select {
 	case r := <-got:
 		if h := r.Header.Get("Authorization"); h != "Bearer "+token {
