@@ -145,6 +145,10 @@ would be much bigger than the problem.
 - Release notes start as one line per merged PR, taken from its title (`cliff.toml`, written by the
   Release workflow on a `v*` tag). Write PR titles for players and self-hosters. Internal PRs use
   `ci`, `docs`, `test`, `refactor` or `chore`, or the `dev`/`preview` scope, and are left out.
+- Dependencies are pinned (exact npm versions, GitHub Action commit SHAs, Docker image digests, mise tool
+  versions) and Renovate (`renovate.json`) updates them in `chore(deps)` PRs, which the release notes leave
+  out. Add a dependency with an exact version, not a range. Rapier and polyclip-ts stay at one version in
+  backend and frontend; Renovate bumps them together.
 - A PR with a big feature (a new game, page or flow) or a significant UI change adds a screenshot
   of it under `docs/<feature>/`, or updates the one already there, so `docs/`, the README and the
   release notes show the app as it is.
