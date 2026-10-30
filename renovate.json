@@ -1,34 +1,77 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:best-practices", ":pinDependencies"],
   "schedule": ["before 6am on Monday"],
   "timezone": "Europe/Vienna",
-  "docker-compose": {
-    "enabled": true
-  },
+  "rangeStrategy": "pin",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "ignorePaths": ["spike/**"],
+  "postUpdateOptions": ["gomodTidy"],
   "packageRules": [
     {
-      "description": "Group Docker base image patch/minor updates",
+      "description": "Group non-major Docker image updates (Dockerfiles, compose files, CI service containers)",
       "matchManagers": ["dockerfile", "docker-compose"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
       "groupName": "Docker base images (non-major)"
     },
     {
-      "description": "Group all non-major npm updates into one PR",
+      "description": "Group non-major GitHub Actions updates and digest pins",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "groupName": "GitHub Actions (non-major)"
+    },
+    {
+      "description": "Group non-major npm updates into one PR",
       "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["minor", "patch", "pin"],
       "groupName": "npm dependencies (non-major)"
     },
     {
-      "description": "Group all non-major Go updates into one PR",
+      "description": "Group non-major Go module updates into one PR",
       "matchManagers": ["gomod"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "Go dependencies (non-major)"
     },
     {
-      "description": "Separate major bumps — one PR each",
+      "description": "Rapier and polyclip-ts must be the same version in backend and frontend (AGENTS.md), so they update together, majors included",
+      "matchPackageNames": ["@dimforge/rapier3d-deterministic-compat", "polyclip-ts"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "minigolf physics (backend and frontend)"
+    },
+    {
+      "description": "Svelte, Vite and their plugins and test runners move together",
+      "matchPackageNames": [
+        "svelte",
+        "svelte-check",
+        "svelte-eslint-parser",
+        "eslint-plugin-svelte",
+        "vite",
+        "vitest",
+        "/^@sveltejs\\//",
+        "/^@vitest\\//"
+      ],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "Svelte and Vite"
+    },
+    {
+      "description": "three and its types are versioned in lockstep",
+      "matchPackageNames": ["three", "@types/three"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "three"
+    },
+    {
+      "description": "Node.js: the Docker images, mise and the Node typings share a major",
+      "matchPackageNames": ["node", "@types/node"],
       "matchUpdateTypes": ["major"],
-      "groupName": null
+      "groupName": "Node.js runtime"
+    },
+    {
+      "description": "Go toolchain: the golang image, mise's go and the go directive share a minor",
+      "matchPackageNames": ["go", "golang"],
+      "matchUpdateTypes": ["major", "minor"],
+      "groupName": "Go toolchain"
     }
   ]
 }
