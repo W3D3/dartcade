@@ -70,7 +70,12 @@ export const SOUND_PACKS: Record<string, Pack> = {
     bust: s => notes(s, [494, 392, 311, 233], 0.1, 0.11, 'square', 0.12),
   },
   'sound.stadium': {
-    hit: s => s.noise(0.14, { type: 'bandpass', freq: 1600, q: 0.8 }, 0.5),
+    // A volley of claps: bursts one after another add energy at the same peak (loudness follows
+    // energy, not peak), where a single click is quiet
+    hit: s => {
+      ;[0, 0.07, 0.15, 0.24].forEach(d => s.noise(0.25, { type: 'bandpass', freq: 1400, q: 0.6 }, 0.6, d))
+      s.noise(0.3, { type: 'highpass', freq: 2500 }, 0.3, 0.03)
+    },
     treble: s => {
       s.noise(1.6, { type: 'bandpass', freq: 850, q: 0.5 }, 0.7, 0, 0.25)
       s.noise(1.3, { type: 'highpass', freq: 2500 }, 0.2, 0.1, 0.2)
@@ -95,7 +100,7 @@ export const SOUND_PACKS: Record<string, Pack> = {
 export const PEAK_DB: Record<string, Partial<Record<DartSound, number>>> = {
   'sound.pub': { hit: 3.5, treble: 3.7, miss: -1, bust: 1.3 },
   'sound.arcade': { hit: -18.5, double: -18.5, treble: -18.5, miss: -19, bust: -19 },
-  'sound.stadium': { hit: -10.8, treble: -4.9, miss: -16.3, bust: -11.4 },
+  'sound.stadium': { hit: -6.5, treble: -4.9, miss: -16.3, bust: -11.4 },
   'sound.legend': { hit: -8.3, double: -6.2, treble: -6.8, miss: -12.8, bust: -8.5 },
 }
 
