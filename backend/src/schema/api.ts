@@ -956,6 +956,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * What admins and moderators did to an account or its games, newest first (admin)
+         * @description Entries whose target is the account, or a game they own or played in. At most 200.
+         */
+        get: operations["listUserAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{id}/ban": {
         parameters: {
             query?: never;
@@ -3186,6 +3208,25 @@ export interface components {
             level: number;
             /** @description Perk ids this grant unlocked */
             unlocked: string[];
+        };
+        UserAuditResponse: {
+            entries: components["schemas"]["UserAuditEntry"][];
+        };
+        UserAuditEntry: {
+            id: string;
+            /** @description e.g. user.ban, user.grantXp, game.invalidate */
+            action: string;
+            /** @description The account or game id it was done to */
+            target: string;
+            /** @description What the action recorded */
+            detail: unknown;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Who did it; null once their account is gone */
+            admin: {
+                id: string;
+                name: string;
+            } | null;
         };
         /** @description [min, max], number flags only */
         FlagRange: number[];
@@ -5671,6 +5712,31 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listUserAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The audit entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAuditResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -1,5 +1,5 @@
 // Admin user management: list accounts, set their role (admin, moderator, none), give them XP, ban them (schema/api-v1.yaml, tag admin).
-import { api, type AdminUser } from '$lib/api'
+import { api, type AdminUser, type UserAuditEntry } from '$lib/api'
 import type { BanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 import { xpForLevel } from '$shared/progression.js'
@@ -98,6 +98,29 @@ export type XpGrant = { xp: number; level: number; unlocked: string[] }
 export async function grantXp(id: string, amount: number): Promise<{ grant: XpGrant } | { error: string }> {
   const res = await api.POST('/api/admin/users/{id}/xp', { params: { path: { id } }, body: { amount } })
   return res.data ? { grant: res.data } : { error: res.error.error }
+}
+
+export type AuditEntry = UserAuditEntry
+
+/** What admins did to an account or its games, newest first. Null: the request failed. */
+export async function listUserAudit(id: string): Promise<AuditEntry[] | null> {
+  const res = await api.GET('/api/admin/users/{id}/audit', { params: { path: { id } } })
+  return res.data?.entries ?? null
+}
+
+const AUDIT_LABELS: Record<string, string> = {
+  'user.ban': 'Banned',
+  'user.unban': 'Unbanned',
+  'user.grantXp': 'Gave XP',
+  'user.impersonate': 'Viewed as them',
+  'game.invalidate': 'Invalidated a game',
+  'game.restore': 'Restored a game',
+  'game.delete': 'Deleted a game',
+}
+
+/** "Banned", "Invalidated a game": the action in words; an unknown one shows as recorded. */
+export function auditLabel(action: string): string {
+  return AUDIT_LABELS[action] ?? action
 }
 
 // The list doesn't carry an account's XP, so "level 50" is what level 50 costs from zero

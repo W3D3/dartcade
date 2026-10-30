@@ -166,3 +166,42 @@ export async function unbanUser(db: Kysely<Database>, adminUserId: string, id: s
     return 'ok'
   })
 }
+
+export interface UserAuditRow {
+  id: string
+  action: string
+  target: string
+  detail: unknown
+  createdAt: Date
+  admin: { id: string; name: string } | null
+}
+
+/**
+ * What admins did to this account (target = their id) or to a game they own or played in (the
+ * game audit rows carry `ownerUserId` and `players[].user_id` in their detail), newest first.
+ */
+export async function listUserAudit(db: Kysely<Database>, userId: string, limit = 200): Promise<UserAuditRow[]> {
+  const rows = await db
+    .selectFrom('admin_audit as a')
+    .leftJoin('user as u', 'u.id', 'a.admin_user_id')
+    .select(['a.id', 'a.action', 'a.target', 'a.detail', 'a.created_at', 'u.id as adminId', 'u.name as adminName'])
+    .where(eb =>
+      eb.or([
+        eb('a.target', '=', userId),
+        eb(sql`a.detail->>'ownerUserId'`, '=', userId),
+        sql<boolean>`a.detail->'players' @> ${JSON.stringify([{ user_id: userId }])}::jsonb`,
+      ]),
+    )
+    .orderBy('a.created_at', 'desc')
+    .orderBy('a.id', 'desc')
+    .limit(limit)
+    .execute()
+  return rows.map(r => ({
+    id: r.id,
+    action: r.action,
+    target: r.target,
+    detail: r.detail,
+    createdAt: r.created_at,
+    admin: r.adminId && r.adminName ? { id: r.adminId, name: r.adminName } : null,
+  }))
+}
