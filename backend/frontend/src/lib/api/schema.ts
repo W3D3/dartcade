@@ -2215,6 +2215,13 @@ export interface components {
                 par: number;
                 /** @description The hole's outline, [x, y] in millimetres */
                 outline: components["schemas"]["MinigolfDetailPt"][];
+                /** @description The walls on the felt */
+                walls: {
+                    points: components["schemas"]["MinigolfDetailPt"][];
+                    closed?: boolean;
+                    /** @description Millimetres */
+                    thickness?: number;
+                }[];
                 cup: {
                     at: components["schemas"]["MinigolfDetailPt"];
                     r: number;

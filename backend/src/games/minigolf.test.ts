@@ -285,6 +285,8 @@ describe('minigolf', () => {
     const d = M.detail([record(s0, s1), record(s1, s2)], s2)
     const [first, second, third] = d.holes
     expect(first).toMatchObject({ name: straight.name, outline: straight.outline, cup: straight.cup })
+    expect(d.holes.map(h => h.walls.length)).toEqual(s2.holes.map(h => h.walls.length))
+    expect(d.holes.some(h => h.walls.length > 0)).toBe(true)
     expect(first.paths).toHaveLength(1)
     expect(first.paths[0]).toHaveLength(1)
     expect(first.paths[0][0].length).toBeGreaterThan(1)
