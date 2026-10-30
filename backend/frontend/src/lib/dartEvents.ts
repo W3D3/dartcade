@@ -4,7 +4,8 @@
 import type { Dart, Snapshot } from '$lib/api/game-ws'
 
 export type DartSound = 'hit' | 'double' | 'treble' | 'miss' | 'bust'
-export type DartEvent = { kind: DartSound | 'switch'; seat: number }
+/** `number` is the segment of a treble, which decides whether it gets the treble sound. */
+export type DartEvent = { kind: DartSound | 'switch'; seat: number; number?: number }
 /** What the events read of a game: the seat up, the open visit's darts, the seat whose visit just
  *  went bust (null for none), and which darts hit (left out: a dart that scores is a hit). */
 export type EventGame = {
@@ -46,15 +47,16 @@ export function snapshotEvent(before: Snapshot, after: Snapshot): DartEvent | nu
   return dartEvent(eventGame(before), eventGame(after))
 }
 
-/** Which sound a dart plays under the switches: a treble falls back to the hit when trebles have
- *  none of their own; null when its switch is off. */
+/** Which sound a dart plays under the switches: a treble of a number not above `trebleAbove` (or
+ *  with the treble sound off) plays the hit; null when its switch is off. */
 export function dartSound(
   kind: DartSound,
-  on: { soundHit: boolean; soundTreble: boolean; soundMiss: boolean; soundBust: boolean },
+  on: { soundHit: boolean; soundTreble: boolean; trebleAbove: number; soundMiss: boolean; soundBust: boolean },
+  number = 0,
 ): DartSound | null {
   if (kind === 'bust') return on.soundBust ? 'bust' : null
   if (kind === 'miss') return on.soundMiss ? 'miss' : null
-  if (kind === 'treble' && on.soundTreble) return 'treble'
+  if (kind === 'treble' && on.soundTreble && number > on.trebleAbove) return 'treble'
   return on.soundHit ? (kind === 'treble' ? 'hit' : kind) : null
 }
 
@@ -69,7 +71,8 @@ export function dartEvent(before: EventGame, after: EventGame): DartEvent | null
     // Around the Clock: a hit is the target, whatever the bed; otherwise anything that scores
     const hit = after.currentVisitHits ? after.currentVisitHits.at(i) === true : dart.score > 0
     if (!hit) return { kind: 'miss', seat }
-    return { kind: dart.segment.multiplier === 3 ? 'treble' : dart.segment.multiplier === 2 ? 'double' : 'hit', seat }
+    if (dart.segment.multiplier === 3) return { kind: 'treble', seat, number: dart.segment.number }
+    return { kind: dart.segment.multiplier === 2 ? 'double' : 'hit', seat }
   }
   if (after.currentPlayer !== before.currentPlayer) return { kind: 'switch', seat }
   return null

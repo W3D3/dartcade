@@ -51,7 +51,7 @@ export function playDartSound(
     if (settings.soundSwitch) sounds.switchPlayer()
     return
   }
-  const sound = dartSound(e.kind, settings)
+  const sound = dartSound(e.kind, settings, e.number)
   if (!sound || pack?.(e, sound)) return
   if (sound === 'bust') sounds.bust()
   else if (sound === 'miss') sounds.miss()

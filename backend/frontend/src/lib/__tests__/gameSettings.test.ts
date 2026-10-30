@@ -3,6 +3,15 @@ import { defaultSettings, loadSettings, parseSettings, saveSettings, SETTINGS_KE
 
 const store = (value: string | null) => ({ getItem: (k: string) => (k === SETTINGS_KEY ? value : null) })
 
+describe('trebleAbove', () => {
+  it('defaults to 6 (T7 is the first treble with a sound) and falls back for values outside 0-19', () => {
+    expect(defaultSettings.trebleAbove).toBe(6)
+    expect(parseSettings({ trebleAbove: 12 }).trebleAbove).toBe(12)
+    expect(parseSettings({ trebleAbove: 0 }).trebleAbove).toBe(0)
+    for (const v of [-1, 20, 7.5, 'x']) expect(parseSettings({ trebleAbove: v }).trebleAbove).toBe(6)
+  })
+})
+
 describe('loadSettings', () => {
   it('returns the defaults without storage or stored value', () => {
     expect(loadSettings(null)).toEqual(defaultSettings)
