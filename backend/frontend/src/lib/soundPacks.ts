@@ -28,20 +28,37 @@ const chime = (s: Synth, f: number, vol: number, delay = 0) => {
   tone(s, f * 2.76, 0.5, 'sine', vol * 0.3, delay)
 }
 
+/** The pub's impact: `pitch` scales the body and crack, `vol` the whole, `delay` seconds in. */
+const pubHit = (s: Synth, pitch = 1, vol = 1, delay = 0) => {
+  s.glide(380 * pitch, 110 * pitch, 0.55, 'square', 0.9 * vol, delay)
+  s.glide(170 * pitch, 50 * pitch, 0.5, 'sine', 0.5 * vol, delay)
+  s.noise(0.3, { type: 'bandpass', freq: 1800 * pitch, q: 0.9 }, 0.35 * vol, delay)
+  s.noise(0.04, { type: 'highpass', freq: 3000 }, 0.3 * vol, delay)
+}
+
 /** Every pack's recipes, by perk id; 'sound.none' has none. */
 export const SOUND_PACKS: Record<string, Pack> = {
+  // Hard impacts: a square-wave body and a noise crack hold far more energy than a thin spike at the
+  // same peak, and the body sits where a laptop or tablet speaker can play it
   'sound.pub': {
-    hit: s => {
-      s.glide(150, 55, 0.14, 'sine', 0.9)
-      s.noise(0.05, { type: 'lowpass', freq: 900 }, 0.35)
+    hit: s => pubHit(s),
+    // Two impacts, the second higher, and a bell on top: not the hit again
+    treble: s => {
+      pubHit(s)
+      pubHit(s, 1.4, 0.8, 0.1)
+      chime(s, 1568, 0.25, 0.1)
     },
     miss: s => {
-      tone(s, 210, 0.09, 'square', 0.18)
-      s.noise(0.1, { type: 'bandpass', freq: 380, q: 2 }, 0.6)
+      s.glide(260, 80, 0.45, 'square', 0.8)
+      s.noise(0.25, { type: 'lowpass', freq: 1200 }, 0.4)
+      s.noise(0.06, { type: 'bandpass', freq: 900, q: 1 }, 0.3)
     },
     bust: s => {
-      s.glide(260, 80, 0.8, 'triangle', 0.35)
-      s.glide(254, 76, 0.8, 'triangle', 0.25)
+      s.noise(0.25, { type: 'bandpass', freq: 1600 }, 0.35)
+      s.glide(260, 80, 0.8, 'triangle', 0.3)
+      s.glide(254, 76, 0.8, 'triangle', 0.22)
+      s.glide(780, 240, 0.8, 'triangle', 0.4)
+      s.glide(762, 228, 0.8, 'triangle', 0.28)
     },
   },
   'sound.arcade': {
@@ -75,7 +92,7 @@ export const SOUND_PACKS: Record<string, Pack> = {
 /** Each recipe's peak at gain 1 (dBFS), rendered in Chrome; a pack without a double or treble plays
  *  its hit. A new or changed recipe needs its peak measured again. */
 export const PEAK_DB: Record<string, Partial<Record<DartSound, number>>> = {
-  'sound.pub': { hit: -0.2, miss: -13.7, bust: -4.9 },
+  'sound.pub': { hit: 3.5, treble: 3.7, miss: -1, bust: 1.3 },
   'sound.arcade': { hit: -18.5, double: -18.5, treble: -18.5, miss: -19, bust: -19 },
   'sound.stadium': { hit: -10.8, treble: -4.9, miss: -16.3, bust: -11.4 },
   'sound.legend': { hit: -8.3, double: -6.2, treble: -6.8, miss: -12.8, bust: -8.5 },
