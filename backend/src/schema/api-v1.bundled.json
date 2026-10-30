@@ -1200,6 +1200,57 @@
         }
       }
     },
+    "/api/boards/{id}/auto-start": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "patch": {
+        "operationId": "setBoardAutoStart",
+        "summary": "Set whether a lobby game starts the board's stopped Board Manager session (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardAutoStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardAutoStartRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/boards/{id}/lights": {
       "parameters": [
         {
@@ -8228,7 +8279,8 @@
           "ip",
           "bmUrl",
           "bridgeUpdate",
-          "bigScreen"
+          "bigScreen",
+          "autoStart"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8275,6 +8327,22 @@
           },
           "bigScreen": {
             "$ref": "#/components/schemas/BoardBigScreen"
+          },
+          "autoStart": {
+            "type": "boolean",
+            "description": "A lobby game starts the board's stopped Board Manager session"
+          }
+        }
+      },
+      "BoardAutoStartRequest": {
+        "type": "object",
+        "required": [
+          "autoStart"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "autoStart": {
+            "type": "boolean"
           }
         }
       },

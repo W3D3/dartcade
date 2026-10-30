@@ -3514,7 +3514,8 @@
                           "ip",
                           "bmUrl",
                           "bridgeUpdate",
-                          "bigScreen"
+                          "bigScreen",
+                          "autoStart"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -3634,6 +3635,10 @@
                                 "description": "The bridge machine can open the big screen on its own display"
                               }
                             }
+                          },
+                          "autoStart": {
+                            "type": "boolean",
+                            "description": "A lobby game starts the board's stopped Board Manager session"
                           }
                         }
                       }
@@ -7657,6 +7662,261 @@
           },
           "503": {
             "description": "The board is offline or unreachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/auto-start": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "patch": {
+        "operationId": "setBoardAutoStart",
+        "summary": "Set whether a lobby game starts the board's stopped Board Manager session (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "autoStart"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "autoStart": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "autoStart"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "autoStart": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
@@ -47498,7 +47758,8 @@
           "ip",
           "bmUrl",
           "bridgeUpdate",
-          "bigScreen"
+          "bigScreen",
+          "autoStart"
         ],
         "additionalProperties": false,
         "properties": {
@@ -47618,6 +47879,22 @@
                 "description": "The bridge machine can open the big screen on its own display"
               }
             }
+          },
+          "autoStart": {
+            "type": "boolean",
+            "description": "A lobby game starts the board's stopped Board Manager session"
+          }
+        }
+      },
+      "BoardAutoStartRequest": {
+        "type": "object",
+        "required": [
+          "autoStart"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "autoStart": {
+            "type": "boolean"
           }
         }
       },
@@ -47815,7 +48092,8 @@
                 "ip",
                 "bmUrl",
                 "bridgeUpdate",
-                "bigScreen"
+                "bigScreen",
+                "autoStart"
               ],
               "additionalProperties": false,
               "properties": {
@@ -47935,6 +48213,10 @@
                       "description": "The bridge machine can open the big screen on its own display"
                     }
                   }
+                },
+                "autoStart": {
+                  "type": "boolean",
+                  "description": "A lobby game starts the board's stopped Board Manager session"
                 }
               }
             }

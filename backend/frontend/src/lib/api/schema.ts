@@ -472,6 +472,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/auto-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set whether a lobby game starts the board's stopped Board Manager session (owner only) */
+        patch: operations["setBoardAutoStart"];
+        trace?: never;
+    };
     "/api/boards/{id}/lights": {
         parameters: {
             query?: never;
@@ -2725,6 +2744,11 @@ export interface components {
             bmUrl: string | null;
             bridgeUpdate: components["schemas"]["BridgeUpdate"];
             bigScreen: components["schemas"]["BoardBigScreen"];
+            /** @description A lobby game starts the board's stopped Board Manager session */
+            autoStart: boolean;
+        };
+        BoardAutoStartRequest: {
+            autoStart: boolean;
         };
         BoardBigScreen: {
             mode: components["schemas"]["BigScreenMode"];
@@ -4662,6 +4686,37 @@ export interface operations {
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    setBoardAutoStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardAutoStartRequest"];
+            };
+        };
+        responses: {
+            /** @description The new setting */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardAutoStartRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getBoardLights: {
