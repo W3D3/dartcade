@@ -2,6 +2,7 @@
   import { ChevronLeft, Grid3x3, Settings, Target, X } from '@lucide/svelte'
   // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, paused, board, settings, end.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import type { Board } from '$lib/api'
   import type { GameSettings } from '$lib/gameSettings.js'
@@ -51,8 +52,6 @@
   } = $props()
 
   let showSettings = $state(false)
-  const outline =
-    'h-11 flex items-center gap-2 rounded-[10px] border border-line-strong bg-transparent text-[14px] font-medium cursor-pointer shrink-0'
 </script>
 
 {#if compact}
@@ -87,45 +86,40 @@
     </div>
     <span class="ml-auto flex items-center gap-[6px] shrink-0">
       {#if showViewToggle}
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="icon"
           onclick={() => onviewmode(viewMode === 'board' ? 'entry' : 'board')}
           aria-label={viewMode === 'board' ? 'Enter darts by number' : 'Enter darts on the board'}
-          class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip bg-transparent text-ink-2 cursor-pointer"
         >
           {#if viewMode === 'board'}<Grid3x3 size={19} />{:else}<Target size={19} />{/if}
-        </button>
+        </Button>
       {/if}
       {#if canEnd}
-        <button
-          type="button"
-          onclick={onend}
-          aria-label={endMode === 'end' ? 'End game' : 'Leave game'}
-          class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip bg-transparent text-live-text cursor-pointer"
-        >
+        <Button variant="destructive" size="icon" onclick={onend} aria-label={endMode === 'end' ? 'End game' : 'Leave game'}>
           <X size={18} />
-        </button>
+        </Button>
       {/if}
       {#each boards as b (b.id)}<BoardStatusPanel board={b} compact />{/each}
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="icon"
         onclick={() => (showSettings = !showSettings)}
         aria-label="Game settings"
         aria-haspopup="dialog"
         aria-expanded={showSettings}
-        class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip cursor-pointer
-             {showSettings ? 'bg-surface-key text-text' : 'bg-transparent text-ink-2'}"
+        pressed={showSettings}
       >
         <Settings size={19} />
-      </button>
+      </Button>
     </span>
   </header>
 {:else}
   <header class="h-[60px] px-5 gap-[14px] xl:h-16 xl:px-7 xl:gap-6 shrink-0 box-border flex items-center border-b border-line bg-surface-1">
-    <button type="button" onclick={onleave} class="{outline} pl-[10px] pr-[14px] text-ink-2">
+    <Button variant="outline" size="md" onclick={onleave} class="pl-[10px] pr-[14px] text-ink-2">
       <ChevronLeft size={18} />
       Leave
-    </button>
+    </Button>
 
     <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
       <h1 class="m-0 font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
@@ -134,7 +128,11 @@
 
     <div class="ml-auto flex items-center gap-[10px] xl:gap-4 shrink-0">
       {#if showViewToggle}
-        <div class="h-11 box-border flex items-center p-[3px] bg-bg rounded-[10px] border border-line-strong" role="group" aria-label="Dart entry">
+        <div
+          class="h-11 box-border flex items-center p-[3px] bg-bg rounded-[10px] border border-line-strong"
+          role="group"
+          aria-label="Dart entry"
+        >
           {#each [{ m: 'board', label: 'Board' }, { m: 'entry', label: 'Enter' }] as const as o (o.m)}
             <button
               type="button"
@@ -159,23 +157,23 @@
         <BoardStatusPanel board={b} />
       {/each}
 
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="icon"
         onclick={() => (showSettings = !showSettings)}
         aria-label="Game settings"
         aria-haspopup="dialog"
         aria-expanded={showSettings}
-        class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-strong cursor-pointer transition-colors
-             {showSettings ? 'bg-surface-key text-text' : 'bg-transparent text-ink-2 hover:text-text'}"
+        pressed={showSettings}
       >
         <Settings size={22} />
-      </button>
+      </Button>
 
       {#if canEnd}
-        <button type="button" onclick={onend} class="{outline} px-[14px] text-live-text ml-2 xl:ml-4">
+        <Button variant="destructive" size="md" onclick={onend} class="ml-2 xl:ml-4">
           <X size={14} />
           {endMode === 'end' ? 'End' : 'Leave'}
-        </button>
+        </Button>
       {/if}
     </div>
   </header>
