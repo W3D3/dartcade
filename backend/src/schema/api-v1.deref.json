@@ -2495,6 +2495,7 @@
                                   "name",
                                   "par",
                                   "outline",
+                                  "walls",
                                   "cup",
                                   "paths"
                                 ],
@@ -2518,6 +2519,38 @@
                                       },
                                       "minItems": 2,
                                       "maxItems": 2
+                                    }
+                                  },
+                                  "walls": {
+                                    "type": "array",
+                                    "description": "The walls on the felt",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "points"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "points": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        },
+                                        "closed": {
+                                          "type": "boolean"
+                                        },
+                                        "thickness": {
+                                          "type": "number",
+                                          "description": "Millimetres"
+                                        }
+                                      }
                                     }
                                   },
                                   "cup": {
@@ -13423,6 +13456,7 @@
                                   "name",
                                   "par",
                                   "outline",
+                                  "walls",
                                   "cup",
                                   "paths"
                                 ],
@@ -13446,6 +13480,38 @@
                                       },
                                       "minItems": 2,
                                       "maxItems": 2
+                                    }
+                                  },
+                                  "walls": {
+                                    "type": "array",
+                                    "description": "The walls on the felt",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "points"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "points": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        },
+                                        "closed": {
+                                          "type": "boolean"
+                                        },
+                                        "thickness": {
+                                          "type": "number",
+                                          "description": "Millimetres"
+                                        }
+                                      }
                                     }
                                   },
                                   "cup": {
@@ -41560,6 +41626,7 @@
                 "name",
                 "par",
                 "outline",
+                "walls",
                 "cup",
                 "paths"
               ],
@@ -41583,6 +41650,38 @@
                     },
                     "minItems": 2,
                     "maxItems": 2
+                  }
+                },
+                "walls": {
+                  "type": "array",
+                  "description": "The walls on the felt",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "points"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "points": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "closed": {
+                        "type": "boolean"
+                      },
+                      "thickness": {
+                        "type": "number",
+                        "description": "Millimetres"
+                      }
+                    }
                   }
                 },
                 "cup": {
@@ -44871,6 +44970,7 @@
                         "name",
                         "par",
                         "outline",
+                        "walls",
                         "cup",
                         "paths"
                       ],
@@ -44894,6 +44994,38 @@
                             },
                             "minItems": 2,
                             "maxItems": 2
+                          }
+                        },
+                        "walls": {
+                          "type": "array",
+                          "description": "The walls on the felt",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "points": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "thickness": {
+                                "type": "number",
+                                "description": "Millimetres"
+                              }
+                            }
                           }
                         },
                         "cup": {
@@ -46401,6 +46533,7 @@
                         "name",
                         "par",
                         "outline",
+                        "walls",
                         "cup",
                         "paths"
                       ],
@@ -46424,6 +46557,38 @@
                             },
                             "minItems": 2,
                             "maxItems": 2
+                          }
+                        },
+                        "walls": {
+                          "type": "array",
+                          "description": "The walls on the felt",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "points": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "thickness": {
+                                "type": "number",
+                                "description": "Millimetres"
+                              }
+                            }
                           }
                         },
                         "cup": {
@@ -57012,6 +57177,7 @@
                     "name",
                     "par",
                     "outline",
+                    "walls",
                     "cup",
                     "paths"
                   ],
@@ -57035,6 +57201,38 @@
                         },
                         "minItems": 2,
                         "maxItems": 2
+                      }
+                    },
+                    "walls": {
+                      "type": "array",
+                      "description": "The walls on the felt",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "points"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "points": {
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "closed": {
+                            "type": "boolean"
+                          },
+                          "thickness": {
+                            "type": "number",
+                            "description": "Millimetres"
+                          }
+                        }
                       }
                     },
                     "cup": {

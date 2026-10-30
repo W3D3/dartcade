@@ -12,7 +12,7 @@ type Built = { detail: Detail; stats: MatchStats }
 
 // Bump when a mode's detail() or matchStats() output changes without its module version: every
 // stored detail is then rebuilt on its next load
-const DETAIL_VERSION = 1
+const DETAIL_VERSION = 2
 
 // The builds under way, so two first loads of a game replay it once
 const building = new Map<string, Promise<Built | null>>()

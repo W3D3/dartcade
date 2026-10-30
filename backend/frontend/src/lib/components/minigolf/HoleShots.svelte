@@ -15,7 +15,11 @@
     label,
     height = 'max-h-[300px]',
   }: {
-    hole: { outline: number[][]; cup: { at: number[]; r: number } }
+    hole: {
+      outline: number[][]
+      walls: { points: number[][]; closed?: boolean; thickness?: number }[]
+      cup: { at: number[]; r: number }
+    }
     /** Per seat, every stroke's path. */
     paths: number[][][][]
     scores: (number | null)[]
@@ -36,6 +40,20 @@
 <figure class="m-0 flex flex-col gap-2">
   <svg {viewBox} class="{height} w-full rounded-xl bg-bg-deep" role="img" aria-label={label}>
     <polygon points={pts(hole.outline)} fill="#2a7045" stroke="#e9dfc4" stroke-width="20" stroke-linejoin="round" />
+    {#each hole.walls as w, i (i)}
+      {#if w.closed}
+        <polygon points={pts(w.points)} fill="#e9dfc4" stroke="#e9dfc4" stroke-width={w.thickness ?? 20} stroke-linejoin="round" />
+      {:else}
+        <polyline
+          points={pts(w.points)}
+          fill="none"
+          stroke="#e9dfc4"
+          stroke-width={w.thickness ?? 20}
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      {/if}
+    {/each}
     <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r} fill="#050604" />
     {#each paths as strokes, seat (seat)}
       {#each strokes as path, k (k)}

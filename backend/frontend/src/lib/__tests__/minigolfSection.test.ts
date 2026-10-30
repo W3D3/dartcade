@@ -15,7 +15,7 @@ const putt = [
   [250, 2750],
   [250, 300],
 ]
-const hole = (name: string, paths: number[][][][]) => ({ name, par: 2, outline, cup, paths })
+const hole = (name: string, paths: number[][][][]) => ({ name, par: 2, outline, walls: [], cup, paths })
 const players = [
   { seat: 1, name: 'Phil' },
   { seat: 0, name: 'Luke' },
@@ -58,11 +58,29 @@ describe('MinigolfSection', () => {
 })
 
 describe('HoleShots', () => {
-  it("draws every stroke in its seat's colour and lists each player's score", () => {
+  it("draws the walls, every stroke in its seat's colour and lists each player's score", () => {
     const { body } = render(HoleShots, {
-      props: { hole: { outline, cup }, paths: [[putt], []], scores: [1, null], players: [{ name: 'Luke' }, { name: 'Phil' }], label: 'x' },
+      props: {
+        hole: {
+          outline,
+          walls: [
+            {
+              points: [
+                [0, 200],
+                [300, 200],
+              ],
+            },
+          ],
+          cup,
+        },
+        paths: [[putt], []],
+        scores: [1, null],
+        players: [{ name: 'Luke' }, { name: 'Phil' }],
+        label: 'x',
+      },
     })
-    expect(body.match(/<polyline/g)).toHaveLength(1)
+    // The wall and Luke's putt
+    expect(body.match(/<polyline/g)).toHaveLength(2)
     expect(body).toMatch(/Luke · 1[\s\S]*Phil · –/)
   })
 })
