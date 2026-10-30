@@ -2,10 +2,10 @@
   // A person's round avatar: their initial, a preset (the Dartcade mark in one finish on a disc in
   // another, drawn by FinishPicture), an uploaded photo, or a robot glyph
   // for a bot (coloured by its level — calm green at Level 1 up to intense red at Level 10 —
-  // instead of the name-hash colour). `avatar` (and
-  // `userId`, to build the photo's URL) is the profile picture they've set, if any — omit it (or
-  // pass 'none') to always show the initial, which is what every caller that hasn't been updated
-  // yet still does. Tones: the default chip (name colour, or the bot's
+  // instead of the name-hash colour). `face` is
+  // whose picture to draw (their avatar and, for an upload, the userId its URL needs): required,
+  // so a call site can't forget it. Pass null, or an avatar of kind 'none', for initials only.
+  // Tones: the default chip (name colour, or the bot's
   // level colour), `accent` for the thrower or yourself, `guest` dashed, `quiet` a darker chip
   // (bull off) — these restyle the fallback (initials, or a bot's glyph) the same way for a bot
   // as for a human, except `guest`: a bot has no account either (`userId: null`, same as a
@@ -18,12 +18,11 @@
   import { Bot as BotIcon } from '@lucide/svelte'
   import { avatarColor } from '$lib/avatarColor'
   import FinishPicture from './FinishPicture.svelte'
-  import type { components } from '$lib/api/schema'
+  import type { Face } from '$lib/face'
   import { botAvatarColor } from '$lib/botAvatarColor'
   import { initial } from '$lib/fmt'
 
   type Tone = 'default' | 'accent' | 'guest' | 'quiet'
-  type AvatarValue = components['schemas']['Avatar']
 
   let {
     name,
@@ -32,8 +31,7 @@
     guest = false,
     size,
     class: className = '',
-    avatar = null,
-    userId = null,
+    face,
   }: {
     name: string
     /** A bot seat: shows a robot glyph coloured by level instead of the name's initial/colour. */
@@ -44,15 +42,15 @@
     /** Width and height in px; 36 unless `class` sets the size. */
     size?: number
     class?: string
-    /** Their profile picture; omit (or 'none') to always show the initial. */
-    avatar?: AvatarValue | null
-    /** Whose photo to fetch; required when avatar.kind is 'upload'. */
-    userId?: string | null
+    /** Whose picture to draw; null (or kind 'none') shows the initial. */
+    face: Face | null
   } = $props()
 
   // A real picture (a preset, or an uploaded photo) always shows as chosen — tone
   // only restyles the fallback chip (initials, or a bot's glyph), never hides a picture that's
   // actually set (Settings' own preview needs to show the real thing, not a forced accent green).
+  const avatar = $derived(face?.avatar)
+  const userId = $derived(face?.userId)
   const hasPicture = $derived(avatar?.kind === 'preset' || avatar?.kind === 'upload')
 
   const TONE: Record<Exclude<Tone, 'default'>, string> = {

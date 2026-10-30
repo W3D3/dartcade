@@ -1,6 +1,7 @@
 <script lang="ts">
   // The live game: the match screen's own components, view only, under the big screen's header (minigolf: as it is).
   // Lives in the frame (routes/BigScreenFrame.svelte), so its media queries see the frame's window.
+  import { whoOf } from '$lib/face'
   import BullOffPanel from '$lib/components/BullOffPanel.svelte'
   import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
@@ -65,7 +66,7 @@
 {:else}
   <BigHeader title={view.title} meta={view.meta(snapshot)} board={sharedBoard(snapshot)} bm={board} />
   {#if bullOff}
-    <BullOffPanel players={snapshot.players} bots={snapshot.seats.map(s => s.bot)} {bullOff} manual={false} send={noop} viewOnly />
+    <BullOffPanel players={snapshot.players} who={whoOf(snapshot)} {bullOff} manual={false} send={noop} viewOnly />
   {:else if x01 || atc}
     <ScoreMatch {snapshot} {mv} {layout} settings={shown} viewOnly />
   {:else if p121}
@@ -73,6 +74,7 @@
       {...VIEW_ONLY}
       game={p121}
       players={snapshot.players}
+      who={whoOf(snapshot)}
       darts={p121.currentVisitDarts}
       {layout}
       locked={p121.visitLocked}
@@ -80,7 +82,7 @@
       checkout={mv.checkout}
     />
   {:else if hilo}
-    <HiloMatch {...VIEW_ONLY} game={hilo} players={snapshot.players} darts={hilo.currentVisitDarts} {layout} locked={hilo.visitLocked} />
+    <HiloMatch {...VIEW_ONLY} game={hilo} who={whoOf(snapshot)} darts={hilo.currentVisitDarts} {layout} locked={hilo.visitLocked} />
   {:else}
     <FallbackCard {snapshot} />
   {/if}

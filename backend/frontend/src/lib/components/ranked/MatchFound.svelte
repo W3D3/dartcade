@@ -80,9 +80,9 @@
           <div
             class="box-border flex flex-1 flex-col items-center justify-center gap-2 rounded-[14px] border border-line-2 bg-surface-1 px-3 py-4"
           >
-            <Avatar name={seat.name ?? ''} size={duo ? 44 : 64} tone={seat.you ? 'accent' : 'default'} />
+            <Avatar name={seat.person?.name ?? ''} face={seat.person} size={duo ? 44 : 64} tone={seat.you ? 'accent' : 'default'} />
             <span class="max-w-full truncate text-[17px] font-semibold md:text-[20px]"
-              >{seat.name}{#if seat.you}<span class="text-[13px] font-medium text-accent">&nbsp;· you</span>{/if}</span
+              >{seat.person?.name}{#if seat.you}<span class="text-[13px] font-medium text-accent">&nbsp;· you</span>{/if}</span
             >
             <span class="text-[12px] {seat.accepted ? 'text-accent' : 'text-text-dim'}"
               >{seat.accepted ? 'Accepted' : seat.you ? 'Your call' : 'Waiting'}</span

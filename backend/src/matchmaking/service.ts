@@ -1,7 +1,7 @@
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { getUsersByIds } from '../db/queries.js'
+import { getAccountsByIds, type Avatar } from '../db/users.js'
 import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
 import { insertRankedMatch, matchRatings, recordRankedGame, unrecordedRankedGames } from '../db/ranked.js'
 import type { GameEnded, SessionEngine } from '../session/engine.js'
@@ -35,7 +35,7 @@ export class MatchmakingError extends ApiError {
   }
 }
 
-type Player = { userId: string; name: string; rating: number; placing: boolean }
+type Player = { userId: string; name: string; avatar: Avatar; rating: number; placing: boolean }
 /** A search: the matcher's entry, with who is in it. */
 type Search = Entry & { players: Player[] }
 /** A match the queue found, waiting for everyone to accept. */
@@ -177,8 +177,16 @@ export class MatchmakingService {
         expiresAt: new Date(found.expiresAt).toISOString(),
         range: found.range,
         stakes: me === undefined || me.placing ? null : stakes(own.rating, other.rating),
-        yours: own.players.map(p => ({ name: p.name, accepted: found.accepted.has(p.userId), you: p.userId === userId })),
-        theirs: other.players.map(p => ({ name: null, accepted: found.accepted.has(p.userId), you: false })),
+        yours: own.players.map(p => ({
+          person: { userId: p.userId, name: p.name, guest: false, avatar: p.avatar },
+          accepted: found.accepted.has(p.userId),
+          you: p.userId === userId,
+        })),
+        theirs: other.players.map(p => ({
+          person: null,
+          accepted: found.accepted.has(p.userId),
+          you: false,
+        })),
       }
     }
     return msg
@@ -196,11 +204,12 @@ export class MatchmakingService {
       this.assertFree(userId, true)
       const userIds = req.mode === '1v1' ? [userId] : await this.duoOf(userId)
       for (const u of userIds) this.assertFree(u, u === userId)
-      const [ratings, users] = await Promise.all([matchRatings(this.deps.db, userIds, req.mode), getUsersByIds(this.deps.db, userIds)])
+      const [ratings, users] = await Promise.all([matchRatings(this.deps.db, userIds, req.mode), getAccountsByIds(this.deps.db, userIds)])
       const players = userIds.map(u => {
         const r = ratings.get(u)
         if (!r) throw new Error(`no rating for ${u}`)
-        return { userId: u, name: users.find(x => x.id === u)?.name ?? '', ...r }
+        const account = users.find(x => x.id === u)
+        return { userId: u, name: account?.name ?? '', avatar: account?.avatar ?? { kind: 'none' as const }, ...r }
       })
       // Checked again: someone may have started searching or playing while the ratings loaded
       for (const u of userIds) this.assertFree(u, u === userId)

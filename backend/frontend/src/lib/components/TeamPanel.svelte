@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   // One team of a team game (X01): its players, the shared score, can finish, team and match
   // averages, darts, and the team's visits marked by who threw them. Match-Teams on the canvas.
   import type { Snippet } from 'svelte'
@@ -15,7 +16,7 @@
   let {
     team,
     seats,
-    bots,
+    who,
     chalkboard,
     compact = false,
     overlay,
@@ -23,8 +24,8 @@
     team: X01TeamView
     /** Per seat (the snapshot's seat order): its board line in a remote game, else null. */
     seats: (SeatLine | null)[]
-    /** Per seat (the snapshot's seat order): its bot info, else null. */
-    bots: ({ level: number } | null)[]
+    /** Per seat (the snapshot's seat order): its bot and picture. */
+    who: Who[]
     chalkboard: boolean
     /** Phones (side by side) and narrow screens (stacked): smaller score that shrinks to fit the
      * panel's width, no chalkboard, and only the team avg and darts, not the match-wide stats. */
@@ -70,7 +71,7 @@
 
   <div class="flex flex-col gap-[6px]">
     {#each team.members as m (m.seat)}
-      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} bot={bots[m.seat] ?? null} {compact} />
+      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} who={who[m.seat]} {compact} />
     {/each}
   </div>
 

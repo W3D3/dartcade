@@ -7,6 +7,7 @@
   Portrait screens keep the duel or party layout.
 -->
 <script lang="ts">
+  import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { CricketGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
@@ -24,6 +25,7 @@
   let {
     game,
     players,
+    who,
     darts,
     layout,
     canThrow,
@@ -39,6 +41,8 @@
   }: {
     game: CricketGame
     players: { name: string }[]
+    /** Per seat: its name, bot and picture. */
+    who: Who[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
     layout: MatchLayout
@@ -57,6 +61,8 @@
 
   const cp = $derived(game.currentPlayer)
   const sides = $derived(cricketSides(game, players))
+  // A team has no single picture: its panel shows initials
+  const faceOf = (s: { seat: number; members: string | null }) => (s.members === null ? who[s.seat].face : null)
   // `layout` only tracks teams for X01 (see matchView), so a cricket 2v2 arrives as 'party';
   // go by the side count and the narrow breakpoint directly instead.
   const variant = $derived(layout === 'phone' ? 'phone' : sides.length === 2 && !$isNarrowMatch ? 'duel' : 'party')
@@ -128,7 +134,7 @@
 
 {#snippet phoneLayout()}
   <div class="shrink-0 grid grid-cols-2 gap-2">
-    {#each sides as s (s.seat)}<CricketPanel {game} side={s} active={isUp(s)} upNext={upNext(s)} size="sm" />{/each}
+    {#each sides as s (s.seat)}<CricketPanel {game} side={s} face={faceOf(s)} active={isUp(s)} upNext={upNext(s)} size="sm" />{/each}
   </div>
   {@render table('shrink-0 rounded-[14px] px-2 pt-[10px] pb-1')}
   {@render board(false)}
@@ -139,8 +145,8 @@
 {#snippet duelLayout()}
   {@const other = sides.find(s => s !== thrower) ?? sides[1]}
   <div class="w-[300px] xl:w-[392px] shrink-0 min-h-0 overflow-y-auto flex flex-col {compact ? 'gap-3' : 'gap-4'}">
-    <CricketPanel {game} side={thrower} active={isUp(thrower)} upNext={upNext(thrower)} size="lg" {compact} />
-    <CricketPanel {game} side={other} active={false} upNext={upNext(other)} size="md" {compact} />
+    <CricketPanel {game} side={thrower} face={faceOf(thrower)} active={isUp(thrower)} upNext={upNext(thrower)} size="lg" {compact} />
+    <CricketPanel {game} side={other} face={faceOf(other)} active={false} upNext={upNext(other)} size="md" {compact} />
     {@render board(true)}
   </div>
   <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
