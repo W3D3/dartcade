@@ -35,9 +35,9 @@ cd scripts/caller-voice
 node generate.mjs
 ```
 
-This reads `lines.json` (the lines per key — darts scores 0-180, `gameshot`/`matchshot`/
-`busted`/`gameon` variants, `leg_1`…`leg_15`, `bulling_start`, `and`, `you_require`,
-`require_1`…`require_180`), synthesises each line with
+This reads `lines.json` (the lines per key — dart scores (all that three darts can make), `gameshot`/`matchshot`/
+`busted`/`gameon` variants, `gameshot_leg_1`…`gameshot_leg_15` ("Game shot, and the nth leg"), `bulling_start`,
+`require_N`), synthesises each line with
 Kokoro, and for every clip:
 
 1. Trims leading/trailing silence (`silenceremove`).
