@@ -4098,7 +4098,6 @@ components:
         soundMiss: { type: boolean }
         soundSwitch: { type: boolean }
         soundBust: { type: boolean }
-        soundWin: { type: boolean }
         soundPack:
           {
             type: string,

@@ -10,13 +10,13 @@ export interface DrawerRows {
   sounds: Key[]
 }
 
-const dartSounds: Key[] = ['soundHit', 'soundTreble', 'soundMiss', 'soundSwitch', 'soundWin']
-const withBust: Key[] = ['soundHit', 'soundTreble', 'soundMiss', 'soundSwitch', 'soundBust', 'soundWin']
+const dartSounds: Key[] = ['soundHit', 'soundTreble', 'soundMiss', 'soundSwitch']
+const withBust: Key[] = ['soundHit', 'soundTreble', 'soundMiss', 'soundSwitch', 'soundBust']
 
 const rows = {
   x01: { display: ['checkoutSuggestions', 'visitSum', 'chalkboard'], sounds: withBust },
   atc: { display: ['showMarkers'], sounds: dartSounds },
-  minigolf: { display: ['aimDial', 'slowMotion'], sounds: ['soundHit', 'soundMiss', 'soundSwitch', 'soundBall', 'soundWin'] },
+  minigolf: { display: ['aimDial', 'slowMotion'], sounds: ['soundHit', 'soundMiss', 'soundSwitch', 'soundBall'] },
   p121: { display: ['checkoutSuggestions'], sounds: withBust },
   // A lost life plays the bust sound
   hilo: { display: [], sounds: withBust },

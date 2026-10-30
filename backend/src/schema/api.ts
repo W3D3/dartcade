@@ -3140,7 +3140,6 @@ export interface components {
             soundMiss?: boolean;
             soundSwitch?: boolean;
             soundBust?: boolean;
-            soundWin?: boolean;
             /** @description A sound pack perk id that plays for every dart on your screen; null: each thrower's own */
             soundPack?: string | null;
             /** @description The caller is on in new games */

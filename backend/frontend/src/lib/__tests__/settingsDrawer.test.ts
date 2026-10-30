@@ -14,7 +14,7 @@ describe('settings drawer rows follow the game', () => {
   it('Around the Clock: only other players’ targets, no bust', () => {
     const html = drawer('atc')
     expect(switches(html)).toEqual(['showMarkers', 'boardView'])
-    expect(sounds(html)).toEqual(['Hit', 'Treble', 'Miss', 'Player switch', 'Win'])
+    expect(sounds(html)).toEqual(['Hit', 'Treble', 'Miss', 'Player switch'])
   })
 
   it('X01: checkout, visit sum, chalkboard, score left, bust and the caller', () => {
@@ -23,13 +23,13 @@ describe('settings drawer rows follow the game', () => {
       expect.arrayContaining(['checkoutSuggestions', 'visitSum', 'chalkboard', 'boardView', 'scoreUpdates', 'callerOn']),
     )
     expect(switches(html)).not.toContain('showMarkers')
-    expect(sounds(html)).toEqual(['Hit', 'Treble', 'Miss', 'Player switch', 'Bust', 'Win'])
+    expect(sounds(html)).toEqual(['Hit', 'Treble', 'Miss', 'Player switch', 'Bust'])
   })
 
   it('Minigolf: its own display rows and the ball sound', () => {
     const html = drawer('minigolf')
     expect(switches(html)).toEqual(['aimDial', 'slowMotion', 'boardView'])
-    expect(sounds(html)).toEqual(['Hit', 'Miss', 'Player switch', 'Ball', 'Win'])
+    expect(sounds(html)).toEqual(['Hit', 'Miss', 'Player switch', 'Ball'])
   })
 
   it('121: checkout suggestions, bust and the caller, no X01 board rows', () => {

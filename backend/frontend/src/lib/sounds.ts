@@ -84,13 +84,13 @@ export function createSounds(volume: () => number) {
     /** A treble: the hit's ping, then a higher one. */
     treble: () => [880, 1320].forEach((f, i) => tone(f, 0.1, 'sine', TARGET, i * 0.07)),
     miss: () => tone(200, 0.18, 'sawtooth', TARGET),
-    switchPlayer: () => tone(440, 0.08, 'sine', TARGET),
+    /** The turn passing: a rising four-note arpeggio, longer and brighter than any dart sound, so it
+     *  can be told apart when the turn is yours in an online game. */
+    switchPlayer: () => [587, 784, 988, 1175].forEach((f, i) => tone(f, i === 3 ? 0.5 : 0.14, 'triangle', TARGET, i * 0.1)),
     bust: () => tone(150, 0.35, 'square', TARGET),
     /** The ball knocking into a rail, bumper or ball. */
     knock: () => tone(1400, 0.035, 'triangle', TARGET),
     /** The ball dropping into the cup: a falling plop. */
     cup: () => glide(700, 180, 0.22, 'sine', TARGET),
-    /** A short rising fanfare. */
-    win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.45 : 0.16, 'triangle', TARGET, i * 0.13)),
   }
 }

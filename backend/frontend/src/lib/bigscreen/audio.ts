@@ -28,7 +28,7 @@ export function createSettingsMemo(): (s: GameSettings) => GameSettings {
 export interface BigScreenAudioOptions {
   settings: GameSettings
   caller?: Parameters<typeof createSnapshotCaller>[0]['caller'] & { stop(): void }
-  sounds?: Pick<ReturnType<typeof createSounds>, 'hit' | 'treble' | 'miss' | 'bust' | 'switchPlayer' | 'win'>
+  sounds?: Pick<ReturnType<typeof createSounds>, 'hit' | 'treble' | 'miss' | 'bust' | 'switchPlayer'>
   loadClips?: (voice: string | null) => Promise<Clips>
   /** No signed-in user here (a kiosk): custom voice packs cannot be fetched. */
   kiosk?: boolean
@@ -50,7 +50,6 @@ export function createBigScreenAudio(opts: BigScreenAudioOptions) {
       snapshotCaller.onSnapshot(prev, next)
       if (!prev || prev.sessionId !== next.sessionId) return
       playDartSound(snapshotEvent(prev, next), settings, sounds)
-      if (next.status === 'finished' && prev.status !== 'finished' && settings.soundWin) sounds.win()
     },
     /** True while the browser keeps audio asleep (nobody has tapped the page yet). */
     asleep: audioAsleep,

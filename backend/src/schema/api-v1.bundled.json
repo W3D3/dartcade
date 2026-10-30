@@ -9679,9 +9679,6 @@
           "soundBust": {
             "type": "boolean"
           },
-          "soundWin": {
-            "type": "boolean"
-          },
           "soundPack": {
             "type": "string",
             "minLength": 1,

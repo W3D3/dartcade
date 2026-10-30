@@ -27,7 +27,7 @@ const x01 = (o: Record<string, unknown>) =>
 
 function setup(prefs: Record<string, unknown>) {
   const caller = { say: vi.fn(), stop: vi.fn() }
-  const sounds = { hit: vi.fn(), treble: vi.fn(), miss: vi.fn(), bust: vi.fn(), switchPlayer: vi.fn(), win: vi.fn() }
+  const sounds = { hit: vi.fn(), treble: vi.fn(), miss: vi.fn(), bust: vi.fn(), switchPlayer: vi.fn() }
   const audio = createBigScreenAudio({ settings: kioskSettings(prefs), caller, sounds, loadClips: () => Promise.resolve({}) })
   return { caller, sounds, audio }
 }

@@ -381,16 +381,6 @@
     minigolfRolled = key
   }
   const win = $derived(minigolfHold ? null : winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
-  // The win fanfare, once, when a game played here is won (not when opening a finished one)
-  let sawPlay = false
-  let fanfare = false
-  $effect(() => {
-    if (snapshot?.status === 'active') sawPlay = true
-    if ((win || p121Finished) && sawPlay && !fanfare) {
-      fanfare = true
-      if (settings.soundWin) sounds.win()
-    }
-  })
 
   /** The win screen's button: the session is already finished and released, so a refused
    * DELETE here blocks nothing. Only the host sends it (anyone else's always 403s). */
