@@ -19708,6 +19708,12 @@
                       "type": "boolean",
                       "description": "Trebles get their own sound; off: they play the hit sound"
                     },
+                    "trebleAbove": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 19,
+                      "description": "Only trebles of a number above this get the treble sound; the others play the hit sound. 0: every treble"
+                    },
                     "soundMiss": {
                       "type": "boolean"
                     },
@@ -19930,6 +19936,12 @@
                     "type": "boolean",
                     "description": "Trebles get their own sound; off: they play the hit sound"
                   },
+                  "trebleAbove": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 19,
+                    "description": "Only trebles of a number above this get the treble sound; the others play the hit sound. 0: every treble"
+                  },
                   "soundMiss": {
                     "type": "boolean"
                   },
@@ -20066,6 +20078,12 @@
                     "soundTreble": {
                       "type": "boolean",
                       "description": "Trebles get their own sound; off: they play the hit sound"
+                    },
+                    "trebleAbove": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 19,
+                      "description": "Only trebles of a number above this get the treble sound; the others play the hit sound. 0: every treble"
                     },
                     "soundMiss": {
                       "type": "boolean"
@@ -50819,6 +50837,12 @@
           "soundTreble": {
             "type": "boolean",
             "description": "Trebles get their own sound; off: they play the hit sound"
+          },
+          "trebleAbove": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 19,
+            "description": "Only trebles of a number above this get the treble sound; the others play the hit sound. 0: every treble"
           },
           "soundMiss": {
             "type": "boolean"
