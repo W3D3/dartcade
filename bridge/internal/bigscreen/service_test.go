@@ -134,10 +134,11 @@ func TestAnnounceResendsLastStatusWithoutStartup(t *testing.T) {
 	if m := next(t, ch); m.data.Startup == nil || !*m.data.Startup {
 		t.Fatalf("got %+v", m)
 	}
+	// report forgets startup just after sending, so an Announce right away may still carry it.
 	var st schema.BigScreenStatusData
 	for i := 0; i < 200; i++ {
 		s.Announce()
-		if st = next(t, ch).data; st.Helper {
+		if st = next(t, ch).data; st.Helper && st.Startup == nil {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
