@@ -20,6 +20,7 @@
     "spike/",
     "fixtures/",
     "backend/src/mail/templates/*.mjml",
+    "backend/src/auth/disposableDomains.ts",
     "package-lock.json",
     "dist/",
     "AGENTS.md",
