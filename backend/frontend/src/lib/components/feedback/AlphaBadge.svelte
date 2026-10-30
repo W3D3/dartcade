@@ -3,11 +3,14 @@
   import { authInfo } from '$lib/authInfo'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { openFeedback } from '$lib/feedback/report'
+  import { preview } from '$lib/preview'
 
   let { interactive = false }: { interactive?: boolean } = $props()
 </script>
 
-{#if interactive && $authInfo.feedback}
+{#if $preview}
+  <!-- A PR preview shows the PR badge instead -->
+{:else if interactive && $authInfo.feedback}
   <button
     type="button"
     onclick={() => void openFeedback()}
