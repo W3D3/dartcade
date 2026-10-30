@@ -229,7 +229,7 @@
   function playSounds(e: DartEvent | null) {
     // A sound pack (yours for everyone, or the thrower's own) only replaces the beep
     playDartSound(e, settings, sounds, (ev, sound) => {
-      const pack = settings.soundEffects ? (settings.soundPack ?? seatSounds[ev.seat] ?? 'sound.none') : 'sound.none'
+      const pack = settings.soundPack ?? seatSounds[ev.seat] ?? 'sound.none'
       if (pack === 'sound.none') return false
       packs.play(pack, sound)
       return true

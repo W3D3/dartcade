@@ -5,8 +5,8 @@
   // (sounds.anyPack: any pack, locked or not).
   import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
-  import { audioContext, createSounds } from '$lib/sounds.js'
-  import { createSoundPacks, EACH_PACK as EACH, packOptions } from '$lib/soundPacks'
+  import { createSounds } from '$lib/sounds.js'
+  import { createSoundPacks, EACH_PACK as EACH, packOptions, SOUND_PACKS } from '$lib/soundPacks'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
@@ -36,8 +36,9 @@
     playing = row.key
     clearTimeout(playingTimer)
     playingTimer = setTimeout(() => (playing = null), row.key === 'soundBust' || row.key === 'soundWin' ? 900 : 500)
-    const pack = packs && settings.soundEffects ? settings.soundPack : null
-    if (pack && 'dart' in row) preview.play(pack, row.dart)
+    const pack = packs ? settings.soundPack : null
+    // 'sound.none' is the default: the beeps
+    if (pack && pack in SOUND_PACKS && 'dart' in row) preview.play(pack, row.dart)
     else beeps[row.beep]()
   }
   function pickPack(v: string) {
@@ -52,6 +53,15 @@
   class="gap-5 max-w-[720px]"
 >
   <VolumeSlider bind:value={settings.effectsVolume} label="Effects volume" />
+  {#if packs}
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-col gap-[2px]">
+        <span id="pref-soundPack" class="text-[15px]">Sound pack for every dart</span>
+        <span class="text-[13px] text-text-dim">Yours for every player on this screen, or each thrower's own</span>
+      </div>
+      <Select {options} value={settings.soundPack ?? EACH} onchange={pickPack} label="Sound pack for every dart" />
+    </div>
+  {/if}
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
     {#each sounds as row (row.key)}
       <SettingSwitch
@@ -64,24 +74,4 @@
       />
     {/each}
   </div>
-  {#if packs}
-    <SettingSwitch
-      id="pref-soundEffects"
-      label="Sound packs"
-      sub="Darts play a sound pack instead of the beeps"
-      bind:checked={settings.soundEffects}
-      onchange={() => {
-        audioContext()
-      }}
-    />
-    {#if settings.soundEffects}
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-col gap-[2px]">
-          <span id="pref-soundPack" class="text-[15px]">Sound pack for every dart</span>
-          <span class="text-[13px] text-text-dim">Yours for every player on this screen, or each thrower's own</span>
-        </div>
-        <Select {options} value={settings.soundPack ?? EACH} onchange={pickPack} label="Sound pack for every dart" />
-      </div>
-    {/if}
-  {/if}
 </SettingsCard>
