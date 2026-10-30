@@ -84,11 +84,11 @@
     aria-label={compact ? `Board ${board.name}: status and controls` : undefined}
     class="flex items-center gap-[8px] {compact
       ? 'w-11 h-11 justify-center rounded-[10px]'
-      : 'h-9 px-3 rounded-[8px]'} text-[13px] font-[inherit] cursor-pointer
+      : 'h-11 px-3 rounded-[10px]'} text-[14px] font-[inherit] cursor-pointer
            transition-colors border
            {open
       ? 'bg-surface-active border-accent/50 text-text'
-      : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}"
+      : 'bg-transparent border-line-strong text-ink-2 hover:text-text'}"
   >
     {#if isSpinning}
       <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
