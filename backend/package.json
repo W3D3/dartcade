@@ -26,7 +26,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "better-auth": "1.7.6",
-    "better-auth-vetto": "^0.2.1",
+    "better-auth-vetto": "0.2.1",
     "fastify": "4.29.1",
     "kysely": "0.28.17",
     "marked": "18.1.1",
