@@ -1,5 +1,6 @@
 import type { BetterAuthOptions } from 'better-auth'
 import { admin, openAPI } from 'better-auth/plugins'
+import { vetto } from 'better-auth-vetto'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { MailConfig } from '../mail/config.js'
@@ -87,6 +88,16 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
     advanced: { ipAddress: { ipAddressHeaders: ['x-dartcade-client-ip'] }, database: { validateSchema: false } },
     // Generates better-auth's own OpenAPI document (served at /api/auth/open-api/generate-schema);
     // Swagger UI at /api/docs shows it next to ours, so its built-in reference page is off.
-    plugins: [openAPI({ disableDefaultReference: true }), admin()],
+    plugins: [
+      openAPI({ disableDefaultReference: true }),
+      admin(),
+      // Refuses disposable email domains on sign-up and email change (offline list). `DISPOSABLE_EMAIL_ALLOW`: domains to let through anyway.
+      vetto({
+        message: 'Please use a permanent email address',
+        allow: process.env.DISPOSABLE_EMAIL_ALLOW?.split(',')
+          .map(d => d.trim().toLowerCase())
+          .filter(Boolean),
+      }),
+    ],
   } satisfies BetterAuthOptions
 }

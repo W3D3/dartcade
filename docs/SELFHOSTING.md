@@ -52,14 +52,15 @@ ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=<something-secret> \
 docker compose up -d
 ```
 
-| Variable                        | Required    | Description                                                                                      |
-| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
-| `POSTGRES_PASSWORD`             | Yes         | Postgres's password for the `dartgames` user                                                     |
-| `BRIDGE_SECRET`                 | Yes         | Shared secret the bridge authenticates with                                                      |
-| `BETTER_AUTH_SECRET`            | Yes         | Signs and encrypts sessions and cookies (better-auth); any long random string                    |
-| `BETTER_AUTH_URL`               | Yes         | This dartcade's public URL, e.g. `https://dartcade.example.com`                                  |
-| `BETTER_AUTH_TRUSTED_ORIGINS`   | Yes         | Comma-separated origins allowed to sign in; your public URL (add more for a staging domain, say) |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First start | Creates the first admin account on startup (at least 8 characters) — see "First start" below     |
+| Variable                        | Required    | Description                                                                                              |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`             | Yes         | Postgres's password for the `dartgames` user                                                             |
+| `BRIDGE_SECRET`                 | Yes         | Shared secret the bridge authenticates with                                                              |
+| `BETTER_AUTH_SECRET`            | Yes         | Signs and encrypts sessions and cookies (better-auth); any long random string                            |
+| `BETTER_AUTH_URL`               | Yes         | This dartcade's public URL, e.g. `https://dartcade.example.com`                                          |
+| `BETTER_AUTH_TRUSTED_ORIGINS`   | Yes         | Comma-separated origins allowed to sign in; your public URL (add more for a staging domain, say)         |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First start | Creates the first admin account on startup (at least 8 characters) — see "First start" below             |
+| `DISPOSABLE_EMAIL_ALLOW`        | No          | Sign-up refuses disposable email domains. Comma-separated domains (subdomains too) to let through anyway |
 
 Put it behind a reverse proxy with TLS (e.g. Caddy or nginx) so the frontend and bridges can
 reach it over `https://`/`wss://`. More env vars worth knowing about (all optional, see
