@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
-import { findOwnBoard } from '../boards/own.js'
+import { findOwnBoard, findAccessibleBoard } from '../boards/own.js'
 import { getBoardsByOwner } from '../db/queries.js'
 import {
   listWledDevices,
@@ -117,6 +117,23 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     return null
   }
 
+  /** The board if the lights.enabled flag is on for its owner and it exists and the caller owns it
+   *  or has an accepted share on it; otherwise sends 404/403 and returns null. The flag belongs to
+   *  the board's owner: a shared friend should not lose the on/off toggle because their own account
+   *  lacks the flag the owner already has. */
+  async function accessibleBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
+    const access = await findAccessibleBoard(db, id, userId)
+    if (!('board' in access)) {
+      reply.code(access.problem === 'not_found' ? 404 : 403).send({ error: access.problem === 'not_found' ? 'not found' : 'forbidden' })
+      return null
+    }
+    if (!(await flagEnabled('lights.enabled', await loadFlagUser(db, access.board.owner_user_id)))) {
+      reply.code(404).send({ error: 'not found' })
+      return null
+    }
+    return access.board
+  }
+
   /** The bridge is connected and new enough to run wled messages. */
   const bridgeReady = (id: string) => isOnline(id) && supportsLights(bridgeVersion(id))
 
@@ -128,7 +145,7 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     { preValidation: requireAuth, schema: fromSpec('getBoardLights') },
     async (req, reply) => {
       const { id } = req.params
-      const board = await ownBoard(id, req.userId, reply)
+      const board = await accessibleBoard(id, req.userId, reply)
       if (!board) return reply
 
       const [enabled, devices, otherBoards] = await Promise.all([
@@ -166,7 +183,7 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     { preValidation: requireAuth, schema: fromSpec('setBoardLights') },
     async (req, reply) => {
       const { id } = req.params
-      const board = await ownBoard(id, req.userId, reply)
+      const board = await accessibleBoard(id, req.userId, reply)
       if (!board) return reply
       await setLightsEnabled(db, id, req.body.enabled)
       notifyChanged(id, req.log)

@@ -31,6 +31,8 @@ export type WledDevice = Schemas['WledDevice']
 export type FoundWledDevice = Schemas['FoundWledDevice']
 export type LightProfile = Schemas['LightProfile']
 export type LightRule = Schemas['LightRule']
+export type BoardGrantee = Schemas['BoardGrantee']
+export type IncomingBoardShare = Schemas['IncomingBoardShare']
 
 export type {
   Snapshot,

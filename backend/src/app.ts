@@ -15,6 +15,7 @@ import { lobbyGwPlugin } from './browser-gw/lobby.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
+import { boardSharesApiPlugin } from './api/boardShares.js'
 import { bridgeReleases } from './boards/bridgeRelease.js'
 import { buildInfo } from './system/info.js'
 import { lightsApiPlugin } from './api/lights.js'
@@ -247,6 +248,7 @@ export async function buildApp({
     bridgeReleases: releases,
     bigScreen,
   })
+  await app.register(boardSharesApiPlugin, { db })
   await app.register(lightsApiPlugin, { db, lights })
   await app.register(pairingApiPlugin, { db })
   await app.register(voicesApiPlugin, { db })

@@ -98,7 +98,9 @@
       loaded = true
       return
     }
-    boards = res.data.boards
+    // Device management (scan/add/remove/test, LAN hosts) is owner-only; a shared board's friend only
+    // gets the master switch, already on the Boards page
+    boards = res.data.boards.filter(b => !b.sharedBy)
     loaded = true
     const fromQuery = new URLSearchParams($querystring).get('board')
     const matched = fromQuery ? boards.find(b => b.id === fromQuery) : undefined

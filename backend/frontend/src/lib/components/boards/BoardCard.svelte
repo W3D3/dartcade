@@ -50,6 +50,9 @@
     {#if board.ip}
       <span class="font-mono text-[13px] text-text-muted">{bmHost(board)}{board.bmVersion ? ` · ${fmtVersion(board.bmVersion)}` : ''}</span>
     {/if}
+    {#if board.sharedBy}
+      <span class="text-[12px] text-text-dim">Shared by {board.sharedBy}</span>
+    {/if}
   </div>
 
   <dl class="m-0 mt-auto grid {lights === undefined ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pt-3 border-t border-line-2">

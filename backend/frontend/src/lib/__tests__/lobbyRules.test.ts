@@ -157,6 +157,13 @@ describe('lobby rules for the screens', () => {
     ])
   })
 
+  it("board menu: one of your boards shared with you shows its owner's name instead of Your", () => {
+    const shared = [{ id: 'living', name: 'Living room', online: true, ownerName: 'Christoph' }]
+    expect(boardChoices(lobby, max, 'chris', shared).map(b => [b.boardId, b.detail])).toEqual([
+      ['living', "Christoph's board · online"],
+    ])
+  })
+
   it("board status: the lobby's live status wins for a board someone sits on", () => {
     // Christoph sits on Living room, which the lobby says went offline; nobody is on Garage
     expect(withLiveStatus(own, lobby).map(b => [b.id, b.online])).toEqual([

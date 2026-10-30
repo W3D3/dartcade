@@ -3,7 +3,8 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
-import { findOwnBoard } from '../boards/own.js'
+import { findAccessibleBoard } from '../boards/own.js'
+import { sharedFriendIdsOfBoard } from '../db/boardShares.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import type { GameEnded, GameStarted, SessionEngine } from '../session/engine.js'
@@ -700,13 +701,13 @@ export class LobbyService {
     return session && session.lobbyId !== lobby.id ? null : boardId
   }
 
-  // A board the user owns that isn't in another game
+  // A board the user owns or has an accepted share on, that isn't in another game
   private async ownFreeBoard(lobbyId: string, userId: string, boardId: string): Promise<{ id: string; name: string }> {
-    const own = await findOwnBoard(this.db, boardId, userId)
+    const own = await findAccessibleBoard(this.db, boardId, userId)
     if (!('board' in own)) {
       throw own.problem === 'not_found'
         ? LobbyError.badRequest('board not found')
-        : LobbyError.forbidden('you can only pick your own boards')
+        : LobbyError.forbidden('you can only pick a board you own or have access to')
     }
     this.assertBoardFree(lobbyId, own.board.id)
     return { id: own.board.id, name: own.board.name }
@@ -767,11 +768,12 @@ export class LobbyService {
   ): Promise<BoardChange | undefined> {
     const target = boardId === null ? null : await getBoardById(this.db, boardId)
     if (target === undefined) throw LobbyError.badRequest('board not found')
+    const sharedWithUserIds = target === null ? [] : await sharedFriendIdsOfBoard(this.db, target.id)
     const allowed = rules.canSetBoard(
       lobby,
       userId,
       person,
-      target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id },
+      target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id, sharedWithUserIds },
     )
     if (!allowed)
       throw LobbyError.forbidden(

@@ -46,7 +46,8 @@
 
   async function checkForBoard(known: Set<string>) {
     const boards = (await api.GET('/api/boards').catch(() => null))?.data?.boards ?? []
-    const board = boards.find(b => !known.has(b.id))
+    // A friend's board-share invite accepting mid-poll must not be mistaken for the board just paired
+    const board = boards.find(b => !known.has(b.id) && !b.sharedBy)
     if (board) {
       found = board
       clearInterval(poll)

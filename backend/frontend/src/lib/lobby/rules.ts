@@ -9,9 +9,9 @@ export type PersonPatch = components['schemas']['UpdatePersonRequest']
 /** A change to the lobby (PATCH /api/lobbies/:id, the host): name, throw order, next game, a new code. */
 export type LobbyPatch = components['schemas']['UpdateLobbyRequest']
 
-/** One of the viewer's own paired boards. */
-/** online: whether the board's bridge is connected (as /api/boards last said). */
-export type OwnBoard = { id: string; name: string; online: boolean }
+/** One of the viewer's own paired boards, or one shared with them. */
+/** online: whether the board's bridge is connected (as /api/boards last said). ownerName: set for a shared board. */
+export type OwnBoard = { id: string; name: string; online: boolean; ownerName?: string | null }
 
 /**
  * Your boards with the lobby's live status for those someone sits on: the lobby pushes it,
@@ -99,7 +99,7 @@ export function boardChoices(lobby: Lobby, p: LobbyPerson, viewerId: string | nu
       choices.push({
         boardId: b.id,
         label: b.name,
-        detail: `Your board · ${onlineText(b.online)}`,
+        detail: `${b.ownerName ? `${b.ownerName}'s` : 'Your'} board · ${onlineText(b.online)}`,
         current: p.boardId === b.id,
         online: b.online,
       })

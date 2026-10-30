@@ -54,8 +54,8 @@
     phase = 'open'
   }
 
-  const toOwnBoards = (boards: { id: string; name: string; online: boolean }[] = []): OwnBoard[] =>
-    boards.map(b => ({ id: b.id, name: b.name, online: b.online }))
+  const toOwnBoards = (boards: { id: string; name: string; online: boolean; sharedBy: string | null }[] = []): OwnBoard[] =>
+    boards.map(b => ({ id: b.id, name: b.name, online: b.online, ownerName: b.sharedBy }))
 
   /** Fresh online status for the board menus; a failed load keeps what we had. */
   async function reloadBoards() {

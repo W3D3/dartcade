@@ -22,11 +22,13 @@ vi.mock('../db/lights.js', () => ({
   getLightsEnabled: vi.fn(),
   setLightsEnabled: vi.fn(),
 }))
+vi.mock('../db/boardShares.js', () => ({ hasAcceptedBoardShare: vi.fn() }))
 // The route gate reads the flag user through here; a non-admin by default, like sessions.test.ts.
 vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }) }))
 
 import * as queries from '../db/queries.js'
 import * as dbLights from '../db/lights.js'
+import * as boardShares from '../db/boardShares.js'
 
 // vi.clearAllMocks() only resets call history, not an implementation a test installed with
 // mockResolvedValue/mockImplementation (mockResolvedValueOnce is the exception: it self-clears).
@@ -42,6 +44,7 @@ beforeEach(async () => {
   vi.mocked(dbLights.deleteWledDevice).mockReset()
   vi.mocked(dbLights.getLightsEnabled).mockReset().mockResolvedValue(true)
   vi.mocked(dbLights.setLightsEnabled).mockReset().mockResolvedValue(undefined)
+  vi.mocked(boardShares.hasAcceptedBoardShare).mockReset().mockResolvedValue(false)
   // On for everyone by default, so the rest of this file can ignore the flag; the "flag off" test
   // below overrides it.
   await setupFlags(new Set(['lights.enabled']))
@@ -126,6 +129,23 @@ describe('ownership: 403/404', () => {
       const res = await app.inject({ method: r.method, url: r.url, payload: r.payload })
       expect(res.statusCode).toBe(403)
     }
+  })
+})
+
+describe('a board shared with the caller (not owned)', () => {
+  it('may see and toggle the lights master switch', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board({ owner_user_id: 'chris' }) as any)
+    vi.mocked(boardShares.hasAcceptedBoardShare).mockResolvedValue(true)
+    const { app } = makeApp()
+    expect((await app.inject({ method: 'GET', url: '/api/boards/board-1/lights' })).statusCode).toBe(200)
+    expect((await app.inject({ method: 'PUT', url: '/api/boards/board-1/lights', payload: { enabled: false } })).statusCode).toBe(204)
+  })
+
+  it('still 403s device management', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board({ owner_user_id: 'chris' }) as any)
+    vi.mocked(boardShares.hasAcceptedBoardShare).mockResolvedValue(true)
+    const { app } = makeApp()
+    expect((await app.inject({ method: 'POST', url: '/api/boards/board-1/lights/scan' })).statusCode).toBe(403)
   })
 })
 
