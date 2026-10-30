@@ -28,7 +28,6 @@ export interface GameSettings {
   /** A fanfare when the game is won. */
   soundWin: boolean
   /** The thrower's sound pack (a progression reward) when a dart lands or a visit busts. */
-  soundEffects: boolean
   /** A sound pack (perk id) for every dart on this screen; null: each thrower's own. */
   soundPack: string | null
   /** 0–1, the sound packs' own volume. */
@@ -92,7 +91,6 @@ export const defaultSettings: GameSettings = {
   soundBust: false,
   soundBall: false,
   soundWin: false,
-  soundEffects: true,
   soundPack: null,
   effectsVolume: 0.5,
   aimDial: true,
@@ -147,7 +145,6 @@ const SettingsSchema = z
     soundBust: flag(d.soundBust),
     soundBall: flag(d.soundBall),
     soundWin: flag(d.soundWin),
-    soundEffects: flag(d.soundEffects),
     soundPack: z.string().min(1).nullable().catch(null).default(null),
     effectsVolume: unit(d.effectsVolume),
     aimDial: flag(d.aimDial),
