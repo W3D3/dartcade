@@ -18,15 +18,13 @@ export const CATALOGUE: CatalogueGroup[] = [
   {
     id: 'calls',
     title: 'Calls',
-    hint: 'The start of a game, a won leg or match, a bust, and the words in between',
+    hint: 'The start of a game, a won leg or match, and a bust',
     keys: [
       { key: 'gameon', label: 'Game on' },
       { key: 'bulling_start', label: 'Bull up' },
       { key: 'busted', label: 'Busted' },
       { key: 'gameshot', label: 'Game shot' },
       { key: 'matchshot', label: 'Match shot' },
-      { key: 'and', label: 'And' },
-      { key: 'you_require', label: 'You require' },
     ],
   },
   {
@@ -44,8 +42,18 @@ export const CATALOGUE: CatalogueGroup[] = [
   {
     id: 'legs',
     title: 'Legs',
-    hint: 'The leg just won, after “Game shot and”',
-    keys: range(1, LEG_KEYS).map(n => ({ key: `leg_${n}`, label: `Leg ${n}` })),
+    hint: '“Game shot, and the nth leg”, as one clip',
+    keys: range(1, LEG_KEYS).map(n => ({ key: `gameshot_leg_${n}`, label: `Leg ${n}` })),
+  },
+  {
+    id: 'stitching',
+    title: 'Stitching',
+    hint: 'Words to build a call from when a pack has no whole clip for it: game shot, “and”, the leg number, “you require”',
+    keys: [
+      { key: 'and', label: 'And' },
+      { key: 'you_require', label: 'You require' },
+      ...range(1, LEG_KEYS).map(n => ({ key: `leg_${n}`, label: `Leg ${n}` })),
+    ],
   },
 ]
 

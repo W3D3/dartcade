@@ -78,7 +78,7 @@ function callOf(o: VisitOutcome): Call {
     case 'checkout':
       // A game without legs (121 Checkout): the target made, nothing more to say
       if (o.leg === null) return [['gameshot']]
-      return o.match ? [['matchshot', 'gameshot']] : [['gameshot'], ['and'], [`leg_${o.leg}`]]
+      return o.match ? [['matchshot', 'gameshot']] : [legPart(o.leg)]
     case 'visit':
       return [[String(o.total)]]
   }
@@ -98,6 +98,15 @@ export function checkoutFor(before: CallGame | null, after: CallGame): Checkout 
   const remaining = after.teams?.find(t => t.seats.includes(seat))?.score ?? after.scores[seat]
   return canCheckOut(remaining, after.config.outMode) ? { seat, remaining, leg } : null
 }
+
+/** "Game shot, and the nth leg": the voice's own clip, else stitched from the clips it has (a pack without
+ *  "and" or the leg number still says what it can). */
+export const legPart = (n: number): (string | string[])[] => [
+  `gameshot_leg_${n}`,
+  ['gameshot', 'and', `leg_${n}`],
+  ['gameshot', `leg_${n}`],
+  'gameshot',
+]
 
 /** "You require N": the whole phrase, else the lead-in and the number. */
 export const requirePart = (n: number): (string | string[])[] => [`require_${n}`, ['you_require', String(n)]]
