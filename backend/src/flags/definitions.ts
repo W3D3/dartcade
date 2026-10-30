@@ -86,6 +86,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: "Lets players import Autodarts' caller voices in Settings → Caller.",
     defaultRule: 'admins',
   },
+  'caller.packDetails': {
+    kind: 'boolean',
+    description:
+      'Adds a Details button to each imported voice pack in Settings → Caller: every sound the caller can use, with a preview of each one the pack has.',
+    defaultRule: 'admins',
+  },
   'avatar.upload.enabled': {
     kind: 'boolean',
     description: 'Lets players upload a photo as their avatar through the API. There is no UI for it for now.',
@@ -195,6 +201,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('caller.autodartsImport', isAdmin),
+    },
+    'caller.packDetails': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('caller.packDetails', isAdmin),
     },
     'avatar.upload.enabled': {
       variants: { on: true, off: false },

@@ -6,7 +6,7 @@
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
-  import { LoaderCircle, Pencil, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { ListMusic, LoaderCircle, Pencil, Trash, Upload, Volume2 } from '@lucide/svelte'
   import { Input } from '$lib/components/ui/input/index.js'
   import PreviewButton from '$lib/components/PreviewButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -38,6 +38,7 @@
   } = $props()
 
   const autodartsOn = flag('caller.autodartsImport')
+  const packDetails = flag('caller.packDetails')
   const clip = createCopy(0)
 
   const lib = $derived($voiceLibrary)
@@ -161,6 +162,31 @@
       <p class="m-0 text-[14px] text-text-dim">Importing voices is turned off on this server.</p>
     {/if}
 
+    {#if $packDetails && lib.builtins.length}
+      <div class="flex flex-col gap-2">
+        <span class="text-[12px] font-semibold label-caps text-text-dim">Built-in · {lib.builtins.length}</span>
+        <ul class="m-0 p-0 list-none flex flex-col gap-[6px]">
+          {#each lib.builtins as b (b.id)}
+            <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-[10px] bg-surface-row border border-line">
+              <span class="w-[38px] h-[38px] shrink-0 rounded-[9px] bg-surface-paused text-accent flex items-center justify-center">
+                <Volume2 size={20} strokeWidth={1.8} />
+              </span>
+              <span class="flex-grow min-w-0 truncate text-[15px] font-semibold text-text">{b.name}</span>
+              <Button
+                href="#/voice-packs/builtin:{b.id}"
+                variant="quiet"
+                aria-label="Details of {b.name}"
+                class="h-10 px-[10px] md:px-3 gap-[6px] rounded-[9px] border border-line-chip text-ink-2 text-[14px] font-semibold"
+              >
+                <ListMusic size={16} strokeWidth={1.8} />
+                <span class="hidden md:inline">Details</span>
+              </Button>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
     <div class="flex flex-col gap-2">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Your packs · {lib.packs.length}</span>
       {#if lib.packs.length}
@@ -218,6 +244,17 @@
               >
                 <Pencil size={14} />
               </Button>
+              {#if $packDetails}
+                <Button
+                  href="#/voice-packs/{p.id}"
+                  variant="quiet"
+                  aria-label="Details of {p.name}"
+                  class="h-10 px-[10px] md:px-3 gap-[6px] rounded-[9px] border border-line-chip text-ink-2 text-[14px] font-semibold"
+                >
+                  <ListMusic size={16} strokeWidth={1.8} />
+                  <span class="hidden md:inline">Details</span>
+                </Button>
+              {/if}
               <button
                 type="button"
                 onclick={() => void remove(p.id)}
