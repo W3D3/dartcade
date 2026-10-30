@@ -1,9 +1,8 @@
 <script lang="ts">
   import { ChevronLeft, Grid3x3, Settings, Target, X } from '@lucide/svelte'
-  // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, end, live or paused, board, settings.
+  // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, paused, board, settings, end.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
-  import { Badge } from '$lib/components/ui/badge/index.js'
   import type { Board } from '$lib/api'
   import type { GameSettings } from '$lib/gameSettings.js'
   import type { MyBoard } from '$lib/remote'
@@ -39,9 +38,9 @@
     /** The host ends the game for everyone; anyone else with seats leaves (forfeits them). */
     endMode?: 'end' | 'leave'
     showViewToggle?: boolean
-    /** The phone header: back, title with LIVE and meta, keypad toggle, end, settings. */
+    /** The phone header: back, title and meta, keypad toggle, end, settings. */
     compact?: boolean
-    /** The game waits for a disconnected player: PAUSED instead of LIVE. */
+    /** The game waits for a disconnected player: the bar says PAUSED. */
     paused?: boolean
     /** Remote games: the viewer's own board, and whether its bridge is connected. */
     myBoard?: MyBoard | null
@@ -81,12 +80,6 @@
             class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-[0.04em] whitespace-nowrap"
           >
             <span class="w-[6px] h-[6px] box-border rounded-full border-[1.5px] border-warn"></span>BOARD OFFLINE
-          </span>
-        {:else}
-          <span
-            class="h-[18px] px-[6px] inline-flex items-center gap-1 rounded-full bg-live-soft text-live-text text-[10px] font-bold tracking-[0.1em]"
-          >
-            <span class="w-[6px] h-[6px] rounded-full bg-live"></span>LIVE
           </span>
         {/if}
       </span>
@@ -141,24 +134,17 @@
 
     <div class="ml-auto flex items-center gap-[10px] xl:gap-4 shrink-0">
       {#if showViewToggle}
-        <div class="flex items-center p-[3px] bg-bg rounded-[10px] border border-line-2" role="group" aria-label="Dart entry">
+        <div class="h-11 box-border flex items-center p-[3px] bg-bg rounded-[10px] border border-line-strong" role="group" aria-label="Dart entry">
           {#each [{ m: 'board', label: 'Board' }, { m: 'entry', label: 'Enter' }] as const as o (o.m)}
             <button
               type="button"
               onclick={() => onviewmode(o.m)}
               aria-pressed={viewMode === o.m}
-              class="h-9 px-3 rounded-[7px] text-[14px] font-medium border-0 cursor-pointer transition-colors
+              class="h-full px-3 rounded-[7px] text-[14px] font-medium border-0 cursor-pointer transition-colors
                    {viewMode === o.m ? 'bg-surface-key text-text' : 'bg-transparent text-text-dim hover:text-ink-2'}">{o.label}</button
             >
           {/each}
         </div>
-      {/if}
-
-      {#if canEnd}
-        <button type="button" onclick={onend} class="{outline} px-[14px] text-live-text">
-          <X size={14} />
-          {endMode === 'end' ? 'End' : 'Leave'}
-        </button>
       {/if}
 
       {#if paused}
@@ -167,8 +153,6 @@
         >
           <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
         </span>
-      {:else}
-        <Badge variant="live" class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px]">LIVE</Badge>
       {/if}
 
       {#each boards as b (b.id)}
@@ -186,6 +170,13 @@
       >
         <Settings size={22} />
       </button>
+
+      {#if canEnd}
+        <button type="button" onclick={onend} class="{outline} px-[14px] text-live-text ml-2 xl:ml-4">
+          <X size={14} />
+          {endMode === 'end' ? 'End' : 'Leave'}
+        </button>
+      {/if}
     </div>
   </header>
 {/if}
