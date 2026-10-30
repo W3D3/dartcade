@@ -391,6 +391,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
       await db
         .insertInto('admin_audit')
         .values([
+          { admin_user_id: 'admin', action: 'user.grantXp', target: 'cheat', detail: JSON.stringify({ amount: 5 }) },
           {
             admin_user_id: 'admin',
             action: 'game.invalidate',
