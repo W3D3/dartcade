@@ -3172,6 +3172,8 @@ export interface components {
             soundHit?: boolean;
             /** @description Trebles get their own sound; off: they play the hit sound */
             soundTreble?: boolean;
+            /** @description Only trebles of a number above this get the treble sound; the others play the hit sound. 0: every treble */
+            trebleAbove?: number;
             soundMiss?: boolean;
             soundSwitch?: boolean;
             soundBust?: boolean;

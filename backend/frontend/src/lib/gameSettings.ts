@@ -20,6 +20,8 @@ export interface GameSettings {
   soundHit: boolean
   /** Trebles get their own sound; off: they play the hit sound (when that's on). */
   soundTreble: boolean
+  /** Only trebles of a number above this get the treble sound, the rest play the hit; 0–19, default 6 (T7 is the first), 0: every treble. */
+  trebleAbove: number
   soundMiss: boolean
   soundSwitch: boolean
   soundBust: boolean
@@ -84,6 +86,7 @@ export const defaultSettings: GameSettings = {
   volume: 0.7,
   soundHit: false,
   soundTreble: false,
+  trebleAbove: 6,
   soundMiss: false,
   soundSwitch: false,
   soundBust: false,
@@ -137,6 +140,7 @@ const SettingsSchema = z
     volume: unit(d.volume),
     soundHit: flag(d.soundHit),
     soundTreble: flag(d.soundTreble),
+    trebleAbove: z.number().int().min(0).max(19).catch(d.trebleAbove).default(d.trebleAbove),
     soundMiss: flag(d.soundMiss),
     soundSwitch: flag(d.soundSwitch),
     soundBust: flag(d.soundBust),

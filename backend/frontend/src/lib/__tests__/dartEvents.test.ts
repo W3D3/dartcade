@@ -16,7 +16,7 @@ describe('dartEvent', () => {
     expect(dartEvent(game(), game({ currentVisitDarts: [dart(20, 1)] }))).toEqual({ kind: 'hit', seat: 1 })
     expect(dartEvent(game(), game({ currentVisitDarts: [dart(16, 2)] }))).toEqual({ kind: 'double', seat: 1 })
     const one = game({ currentVisitDarts: [dart(20, 1)] })
-    expect(dartEvent(one, game({ currentVisitDarts: [dart(20, 1), dart(19, 3)] }))).toEqual({ kind: 'treble', seat: 1 })
+    expect(dartEvent(one, game({ currentVisitDarts: [dart(20, 1), dart(19, 3)] }))).toEqual({ kind: 'treble', seat: 1, number: 19 })
     expect(dartEvent(game(), game({ currentVisitDarts: [dart(0, 0)] }))).toEqual({ kind: 'miss', seat: 1 })
   })
 
@@ -46,11 +46,12 @@ describe('snapshotEvent', () => {
   it('sounds the darts of every game mode, not only X01 and Around the Clock', () => {
     const thrown = { currentVisitDarts: [dart(20, 3)] }
     for (const id of ['x01', 'p121', 'hilo'] as const) {
-      expect(snapshotEvent(snap(id, {}), snap(id, thrown))).toEqual({ kind: 'treble', seat: 0 })
+      expect(snapshotEvent(snap(id, {}), snap(id, thrown))).toEqual({ kind: 'treble', seat: 0, number: 20 })
     }
     expect(snapshotEvent(snap('atc', { currentVisitHits: [] }), snap('atc', { ...thrown, currentVisitHits: [true] }))).toEqual({
       kind: 'treble',
       seat: 0,
+      number: 20,
     })
     // Minigolf: every dart is a putt, so it only ever hits
     expect(snapshotEvent(snap('minigolf', {}), snap('minigolf', { currentVisitDarts: [dart(0, 0)] }))).toEqual({ kind: 'hit', seat: 0 })
@@ -59,7 +60,7 @@ describe('snapshotEvent', () => {
     const cricket = (d: ReturnType<typeof dart>) =>
       snapshotEvent(snap('cricket', { targets }), snap('cricket', { targets, currentVisitDarts: [d] }))
     expect(cricket(dart(14, 3))).toEqual({ kind: 'miss', seat: 0 })
-    expect(cricket(dart(20, 3))).toEqual({ kind: 'treble', seat: 0 })
+    expect(cricket(dart(20, 3))).toEqual({ kind: 'treble', seat: 0, number: 20 })
     expect(cricket(dart(50, 1))).toEqual({ kind: 'hit', seat: 0 })
   })
 
@@ -84,12 +85,23 @@ describe('sound packs', () => {
 })
 
 describe('dartSound', () => {
-  const all = { soundHit: true, soundTreble: true, soundMiss: true, soundBust: true }
+  const all = { soundHit: true, soundTreble: true, trebleAbove: 0, soundMiss: true, soundBust: true }
   it('gives a treble its own sound while trebles have one', () => {
-    expect(dartSound('treble', all)).toBe('treble')
+    expect(dartSound('treble', all, 20)).toBe('treble')
+  })
+  it('gives every treble the treble sound with the threshold at 0', () => {
+    for (const n of [1, 6, 7, 20]) expect(dartSound('treble', all, n)).toBe('treble')
+  })
+  it('plays a treble of a number not above the threshold as a hit', () => {
+    const above6 = { ...all, trebleAbove: 6 }
+    expect(dartSound('treble', above6, 6)).toBe('hit')
+    expect(dartSound('treble', above6, 7)).toBe('treble')
+    expect(dartSound('treble', { ...all, trebleAbove: 19 }, 20)).toBe('treble')
+    expect(dartSound('treble', { ...all, trebleAbove: 19 }, 19)).toBe('hit')
+    expect(dartSound('treble', { ...above6, soundHit: false }, 6)).toBeNull()
   })
   it('falls back to the hit for a treble with the treble sound off, and to nothing with the hit off too', () => {
-    expect(dartSound('treble', { ...all, soundTreble: false })).toBe('hit')
+    expect(dartSound('treble', { ...all, soundTreble: false }, 20)).toBe('hit')
     expect(dartSound('treble', { ...all, soundTreble: false, soundHit: false })).toBeNull()
   })
   it('follows each switch', () => {

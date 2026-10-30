@@ -4,12 +4,13 @@
   // sound packs instead of the beeps: each thrower's own, or one of yours (or the beeps) for everyone
   // (sounds.anyPack: any pack, locked or not).
   import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
-  import type { GameSettings } from '$lib/gameSettings.js'
+  import { parseSettings, type GameSettings } from '$lib/gameSettings.js'
   import { createSounds } from '$lib/sounds.js'
   import { createSoundPacks, EACH_PACK as EACH, packOptions, SOUND_PACKS } from '$lib/soundPacks'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
+  import { Input } from '$lib/components/ui/input/index.js'
   import Select from '$lib/components/ui/select/select.svelte'
   import VolumeSlider from './VolumeSlider.svelte'
 
@@ -23,6 +24,7 @@
     { key: 'soundBust', label: 'Bust', beep: 'bust', dart: 'bust' },
   ] as const
 
+  let trebleInput = $state<HTMLInputElement | null>(null)
   const anyPack = flag('sounds.anyPack')
   const options = $derived(packOptions($progress?.perks.unlocked ?? [], $anyPack, settings.soundPack))
   const preview = createSoundPacks(() => settings.effectsVolume)
@@ -68,4 +70,22 @@
       />
     {/each}
   </div>
+  {#if settings.soundTreble}
+    <div class="flex items-center justify-between gap-4">
+      <label for="pref-trebleAbove" class="flex flex-col gap-[2px]">
+        <span class="text-[15px] text-text">Treble sound above</span>
+        <span class="text-[13px] text-text-dim">Smaller trebles play the hit sound. 0: every treble</span>
+      </label>
+      <Input
+        id="pref-trebleAbove"
+        type="number"
+        min={0}
+        max={19}
+        class="w-20"
+        value={settings.trebleAbove}
+        bind:ref={trebleInput}
+        onchange={() => (settings = parseSettings({ ...settings, trebleAbove: trebleInput?.valueAsNumber }))}
+      />
+    </div>
+  {/if}
 </SettingsCard>
