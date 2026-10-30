@@ -10,7 +10,7 @@ export const termsGate = createAuthMiddleware(async ctx => {
   const body: unknown = ctx.body
   const acceptTerms = body && typeof body === 'object' && 'acceptTerms' in body ? body.acceptTerms : undefined
   if (acceptTerms !== true) throw new APIError('BAD_REQUEST', { message: TERMS_REQUIRED })
-  assertPermanentEmail(
+  await assertPermanentEmail(
     body && typeof body === 'object' && 'email' in body ? body.email : undefined,
     parseAllow(process.env.DISPOSABLE_EMAIL_ALLOW),
   )

@@ -1,12 +1,65 @@
 import { APIError } from 'better-auth/api'
-import { DISPOSABLE_DOMAINS } from './disposableDomains.js'
 
 export const DISPOSABLE_EMAIL = 'Please use a permanent email address'
 
-const blocked = new Set(DISPOSABLE_DOMAINS.split('\n').filter(Boolean))
+export const BLOCKLIST_URL =
+  'https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf'
+const FRESH_MS = 24 * 60 * 60_000
+const RETRY_MS = 5 * 60_000
+const FIRST_WAIT_MS = 5_000
+
+async function defaultFetch(): Promise<string> {
+  const res = await fetch(BLOCKLIST_URL, { headers: { 'user-agent': 'dartcade' }, signal: AbortSignal.timeout(10_000) })
+  if (!res.ok) throw new Error(`GitHub answered ${res.status}`)
+  return res.text()
+}
+
+/**
+ * The disposable-email-domains blocklist, fetched from GitHub and cached in memory for a day (retried
+ * after 5 minutes on a failure). Fails open: until a fetch has worked, nothing is blocked, so an
+ * offline self-hoster can still sign up. `domains()` answers from the cache and refreshes it in the background.
+ */
+export function disposableList(fetchList: () => Promise<string> = defaultFetch) {
+  let cached: Set<string> | null = null
+  let nextAt = 0
+  let inFlight: Promise<void> | null = null
+
+  function refresh(): Promise<void> {
+    inFlight ??= fetchList()
+      .then(text => {
+        cached = new Set(
+          text
+            .split('\n')
+            .map(l => l.trim().toLowerCase())
+            .filter(Boolean),
+        )
+        nextAt = Date.now() + FRESH_MS
+      })
+      .catch((err: unknown) => {
+        console.warn('Could not fetch the disposable email domain list', err)
+        nextAt = Date.now() + RETRY_MS
+      })
+      .finally(() => {
+        inFlight = null
+      })
+    return inFlight
+  }
+
+  return {
+    async domains(): Promise<ReadonlySet<string>> {
+      if (Date.now() >= nextAt) {
+        const pending = refresh()
+        // Only the very first sign-up waits (briefly) for the list
+        if (!cached) await Promise.race([pending, new Promise(r => setTimeout(r, FIRST_WAIT_MS).unref())])
+      }
+      return cached ?? new Set()
+    },
+  }
+}
+export const sharedList = disposableList()
 
 /** Whether the address is on a listed domain, or a subdomain of one, and not allowed by the operator. */
-export function isDisposable(email: string, allow: readonly string[] = []): boolean {
+export function isDisposable(email: string, blocked: ReadonlySet<string>, allow: readonly string[] = []): boolean {
   const labels = email
     .slice(email.lastIndexOf('@') + 1)
     .trim()
@@ -29,7 +82,7 @@ export function parseAllow(value: string | undefined): string[] {
 }
 
 /** Sign-up with a throwaway address is refused; existing accounts are untouched. */
-export function assertPermanentEmail(email: unknown, allow: readonly string[]): void {
-  if (typeof email === 'string' && !allow.includes('*') && isDisposable(email, allow))
-    throw new APIError('BAD_REQUEST', { message: DISPOSABLE_EMAIL })
+export async function assertPermanentEmail(email: unknown, allow: readonly string[], list = sharedList): Promise<void> {
+  if (typeof email !== 'string' || allow.includes('*')) return
+  if (isDisposable(email, await list.domains(), allow)) throw new APIError('BAD_REQUEST', { message: DISPOSABLE_EMAIL })
 }
