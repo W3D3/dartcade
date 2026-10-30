@@ -21,6 +21,7 @@
   import Invites from './routes/Invites.svelte'
   import Settings from './routes/Settings.svelte'
   import Friends from './routes/Friends.svelte'
+  import VoicePackDetails from './routes/VoicePackDetails.svelte'
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
@@ -98,6 +99,7 @@
     '/invites': Invites,
     '/settings': Settings,
     '/settings/:section': Settings,
+    '/voice-packs/:id': VoicePackDetails,
     '/friends': Friends,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
