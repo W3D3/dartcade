@@ -1,6 +1,7 @@
 <script lang="ts">
   import { deviceStore } from '$lib/storage'
   import { onMount, onDestroy, untrack } from 'svelte'
+  import { whoOf } from '$lib/face'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import ErrorText from '../lib/components/ErrorText.svelte'
@@ -279,7 +280,7 @@
   const canThrow = $derived(connected && isActive && canThrowNow(snapshot))
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
-  const bots = $derived(snapshot?.seats.map(s => s.bot) ?? [])
+  const who = $derived(snapshot ? whoOf(snapshot) : [])
   // The keypad: picked with Enter on your turn (also while your board is offline: the drawn board
   // takes manual darts too). Someone else's turn always shows the board, live.
   const keypad = $derived(picksView(remote) && viewMode === 'entry')
@@ -465,7 +466,7 @@
           secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         />
       {:else if bullOff}
-        <BullOffPanel {players} {bots} {bullOff} manual={boardId === null} {send} />
+        <BullOffPanel {players} {who} {bullOff} manual={boardId === null} {send} />
       {:else if minigolf}
         <MinigolfMatch
           game={minigolf}
@@ -488,6 +489,7 @@
         <P121Match
           game={p121}
           {players}
+          {who}
           {darts}
           {layout}
           {canThrow}
@@ -507,7 +509,7 @@
       {:else if hilo}
         <HiloMatch
           game={hilo}
-          {players}
+          {who}
           {darts}
           {layout}
           {canThrow}
@@ -525,6 +527,7 @@
         <CricketMatch
           game={cricket}
           {players}
+          {who}
           {darts}
           {layout}
           {canThrow}

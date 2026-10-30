@@ -338,7 +338,7 @@
                       ? 'bg-accent-tint text-accent'
                       : 'bg-live-soft text-live-text'}">{r.won ? 'W' : 'L'}</span
                   >
-                  <Avatar name={r.name} avatar={r.opponent?.avatar} userId={r.opponent?.userId} size={30} />
+                  <Avatar name={r.name} face={r.opponent} size={30} />
                   <span class="flex min-w-0 flex-grow flex-col gap-px">
                     <a href="#/history/{r.key}" class="truncate text-[15px] font-semibold text-text no-underline">{r.name}</a>
                     <span class="truncate text-[12px] text-text-dim">{r.meta}</span>

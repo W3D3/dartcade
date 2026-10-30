@@ -10,6 +10,7 @@ import type { Kysely } from 'kysely'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from './errors.js'
 import type { Database } from '../db/schema.js'
+import { getAvatars, type Avatar } from '../db/users.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
@@ -70,6 +71,7 @@ export type SnapshotView = {
   isBoardOnline: (boardId: string) => boolean
 }
 
+const NO_AVATAR: Avatar = { kind: 'none' }
 const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), disconnectedAt: () => null, isBoardOnline: () => false }
 
 // Where an input came from: the bridge event it was, and the board it was thrown on
@@ -84,6 +86,8 @@ export interface EngineStore {
   deleteDarts(sessionId: string, visit: number): Promise<void>
   finishSession(id: string, finishedAt: Date, results: FinishedSeat[]): Promise<void>
   abortSession(id: string, finishedAt: Date, abortedByUserId: string | null): Promise<void>
+  /** The profile pictures of these accounts, for the seats of the snapshot. */
+  getAvatars(userIds: string[]): Promise<Map<string, Avatar>>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
@@ -96,6 +100,7 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
     deleteDarts: (id, visit) => queries.deleteGameDarts(db, id, visit),
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
     abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
+    getAvatars: ids => getAvatars(db, ids),
   }
 }
 
@@ -149,6 +154,7 @@ function seatViews(session: Session, view: SnapshotView) {
     return {
       controllerUserId: s.controllerUserId,
       userId: s.userId,
+      avatar: (s.userId === null ? undefined : session.avatars.get(s.userId)) ?? NO_AVATAR,
       boardId: s.boardId,
       boardName: s.boardName,
       boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
@@ -174,6 +180,14 @@ export class SessionEngine {
   private readonly queues = new KeyedQueue()
 
   private bots: BotScheduler | undefined
+
+  /** The account changed their picture: the game they play shows the new one. */
+  async avatarChanged(userId: string): Promise<void> {
+    const session = this.byUser.get(userId)
+    if (!session) return
+    for (const [id, avatar] of await this.store.getAvatars([userId])) session.avatars.set(id, avatar)
+    this.push(session.id)
+  }
 
   constructor(
     private readonly store: EngineStore,
@@ -236,7 +250,8 @@ export class SessionEngine {
     // What's stored is what restarts and history replay, so they never prepare it again
     const config = mod.prepareConfig ? await mod.prepareConfig(spec.config, seededRng(seed ^ 0x9e3779b9)) : spec.config
     // Another create may have claimed a player or board while that ran
-    if (mod.prepareConfig) this.assertFree(spec)
+    const avatars = await this.store.getAvatars(distinct(spec.seats.map(s => s.userId)))
+    this.assertFree(spec)
     // Stored in this order, so a replay needs no shuffle of its own
     const seats = spec.shuffleSeats === true ? shuffle(spec.seats, seededRng(seed)) : spec.seats
     const lobbyId = spec.lobbyId ?? null
@@ -251,6 +266,7 @@ export class SessionEngine {
       createdAt: new Date(),
       lobbyId,
       lobbyName: spec.lobbyName ?? null,
+      avatars,
     })
     // Claim the players and boards before the next await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
@@ -530,6 +546,7 @@ export class SessionEngine {
       boardName: p.board_name,
       bot: p.bot_level === null ? null : { level: p.bot_level },
     }))
+    const avatars = await this.store.getAvatars(distinct(seats.map(s => s.userId)))
     const session = newSession({
       id: row.id,
       ownerUserId: owner,
@@ -542,6 +559,7 @@ export class SessionEngine {
       lobbyId: row.lobby_id,
       lobbyName: row.lobby_name,
       version: row.game_version,
+      avatars,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)

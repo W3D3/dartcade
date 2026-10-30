@@ -144,7 +144,7 @@
       </div>
       {#if preview}<LobbyPreviewCard
           name={preview.name}
-          hostName={preview.hostName}
+          host={preview.host}
           boardNames={preview.boardNames}
           peopleCount={preview.peopleCount}
         />{/if}

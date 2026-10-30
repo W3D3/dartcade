@@ -34,7 +34,7 @@
   class="flex items-center gap-3 md:gap-[14px] min-h-[58px] md:min-h-[68px] box-border pl-3 pr-1 md:pl-[14px] md:pr-2 rounded-[12px] bg-surface-panel border border-line"
 >
   <span class="relative shrink-0 flex m-1">
-    <Avatar name={friend.name} avatar={friend.avatar} userId={friend.id} size={$isPhone ? 38 : 44} />
+    <Avatar name={friend.name} face={{ avatar: friend.avatar, userId: friend.id }} size={$isPhone ? 38 : 44} />
     <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 flex-grow">

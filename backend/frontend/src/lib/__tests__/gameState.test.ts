@@ -20,6 +20,7 @@ const base = {
     {
       controllerUserId: 'u1',
       userId: null,
+      avatar: { kind: 'none' as const },
       boardId: 'b1',
       boardName: 'Board',
       boardOnline: true,

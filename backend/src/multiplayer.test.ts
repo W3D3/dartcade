@@ -14,6 +14,7 @@ const store: EngineStore = {
   deleteDarts: vi.fn().mockResolvedValue(undefined),
   finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
+  getAvatars: vi.fn().mockResolvedValue(new Map()),
 }
 const sock = () => ({ readyState: 1, send: vi.fn() }) as any
 const last = (ws: { send: { mock: { calls: unknown[][] } } }) => JSON.parse(String(ws.send.mock.calls.at(-1)?.[0]))

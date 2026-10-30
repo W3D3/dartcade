@@ -42,7 +42,7 @@
   {#if handle}{@render handle()}{/if}
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
   <span class="relative flex">
-    <Avatar name={person.name} bot={person.bot} guest={person.userId === null} avatar={person.avatar} userId={person.userId} />
+    <Avatar name={person.name} bot={person.bot} guest={person.userId === null} face={person} />
     <!-- Members only: lime while they have the lobby open, grey while away -->
     {#if person.presence}<StatusRing kind={person.presence === 'online' ? 'online' : 'offline'} />{/if}
   </span>
