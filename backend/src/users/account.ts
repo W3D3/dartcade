@@ -2,10 +2,13 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { ApiError } from '../api/errors.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
-import { isNameTaken, setName } from '../db/users.js'
+import { getNameState, isNameTaken, setName } from '../db/users.js'
 import { NAME_RULE, cleanName, isValidName, normalizeName, numbered } from './names.js'
 
 const SUGGESTION_TRIES = 50
+
+export const NAME_COOLDOWN_DAYS = 90
+const DAY_MS = 86_400_000
 
 export const NAME_TAKEN = 'That name is taken'
 
@@ -31,12 +34,18 @@ export async function suggestName(db: Kysely<Database>, current: string, selfId:
   return numbered(base, 1000 + Math.floor(Math.random() * 9000))
 }
 
-/** Changes the user's name (PATCH /api/me); returns it as stored. */
+/** Changes the user's name (PATCH /api/me); returns it as stored. One change per NAME_COOLDOWN_DAYS; the first, and fixing a flagged name, are free. */
 export async function renameUser(db: Kysely<Database>, userId: string, raw: string): Promise<string> {
+  const state = await getNameState(db, userId)
+  // Fixing a flagged name is free and starts no cooldown
+  const counts = !state?.name_needs_change
+  const last = counts ? state?.name_changed_at : null
+  const daysLeft = last ? Math.ceil((last.getTime() + NAME_COOLDOWN_DAYS * DAY_MS - Date.now()) / DAY_MS) : 0
+  if (daysLeft > 0) throw new ApiError(429, { error: `You can change your name again in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` })
   const check = await checkName(db, raw, userId)
   if (!check.ok) throw check.reason === 'invalid' ? new ApiError(400, { error: NAME_RULE }) : new ApiError(409, { error: NAME_TAKEN })
   try {
-    await setName(db, userId, check.name)
+    await setName(db, userId, check.name, counts)
   } catch (err) {
     // Someone took it between the check and the write (the unique index)
     if (pgErrorCode(err) === UNIQUE_VIOLATION) throw new ApiError(409, { error: NAME_TAKEN })

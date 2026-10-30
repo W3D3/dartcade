@@ -15,6 +15,8 @@ export interface UserTable {
   updatedAt: ColumnType<Date, never, never>
   /** Broke the name rules or duplicated an older name when names became unique (migration 013): pick a new one. */
   name_needs_change: ColumnType<boolean, boolean | undefined, boolean>
+  /** Last rename by the user (migration 043); null until a rename that counts against the cooldown. */
+  name_changed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
   /** Friends see this user as offline (migration 016). */
   invisible: ColumnType<boolean, boolean | undefined, boolean>
   /** Account-wide preferences, only the ones set (migration 022; API schema Preferences). */
