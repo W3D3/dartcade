@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The caller's voice in the game settings drawer: the user's packs ("Your voices", with their
-  // clip counts) and the built-in voices, as a menu that opens upwards (Settings-InGame board).
+  // The caller's voice in the game settings drawer: the built-in voices and, below them, the user's
+  // packs ("Your voices", with their clip counts), as a menu that opens upwards (Settings-InGame board).
   import { BUILTIN_PREFIX, DEFAULT_BUILTIN, type BuiltinVoice } from '$lib/caller/voices.js'
   import type { VoicePackSummary } from '$lib/api'
   import { audioContext } from '$lib/sounds.js'
@@ -24,8 +24,8 @@
 
   const builtinValue = (id: string) => `${BUILTIN_PREFIX}${id}`
   const groups = $derived([
-    { heading: 'Your voices', options: packs.map(p => ({ value: p.id, label: p.name, meta: `${p.clips.toLocaleString('en-US')} clips` })) },
     { heading: 'Built-in', options: builtins.map(b => ({ value: builtinValue(b.id), label: b.name })) },
+    { heading: 'Your voices', options: packs.map(p => ({ value: p.id, label: p.name, meta: `${p.clips.toLocaleString('en-US')} clips` })) },
   ])
   // No pick (or a pack deleted since) reads as the default built-in voice
   const shown = $derived(value !== null && groups.some(g => g.options.some(o => o.value === value)) ? value : builtinValue(DEFAULT_BUILTIN))
