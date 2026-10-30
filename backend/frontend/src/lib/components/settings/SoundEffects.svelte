@@ -5,7 +5,7 @@
   // (sounds.anyPack: any pack, locked or not).
   import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
-  import { audioContext } from '$lib/sounds.js'
+  import { audioContext, createSounds } from '$lib/sounds.js'
   import { createSoundPacks } from '$lib/soundPacks'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
@@ -17,12 +17,12 @@
   let { settings = $bindable(), packs = false }: { settings: GameSettings; packs?: boolean } = $props()
 
   const sounds = [
-    { key: 'soundHit', label: 'Hit' },
-    { key: 'soundTreble', label: 'Treble', sub: 'Off: trebles play the hit sound' },
-    { key: 'soundMiss', label: 'Miss' },
-    { key: 'soundSwitch', label: 'Player switch' },
-    { key: 'soundBust', label: 'Bust' },
-    { key: 'soundWin', label: 'Win' },
+    { key: 'soundHit', label: 'Hit', beep: 'hit', dart: 'hit' },
+    { key: 'soundTreble', label: 'Treble', sub: 'Off: trebles play the hit sound', beep: 'treble', dart: 'treble' },
+    { key: 'soundMiss', label: 'Miss', beep: 'miss', dart: 'miss' },
+    { key: 'soundSwitch', label: 'Player switch', beep: 'switchPlayer' },
+    { key: 'soundBust', label: 'Bust', beep: 'bust', dart: 'bust' },
+    { key: 'soundWin', label: 'Win', beep: 'win' },
   ] as const
 
   const anyPack = flag('sounds.anyPack')
@@ -34,12 +34,21 @@
       .map(p => ({ value: p.id, label: p.name })),
   ])
   const preview = createSoundPacks(() => settings.effectsVolume)
+  const beeps = createSounds(() => settings.effectsVolume)
+  // A row's button stays disabled while its sound rings (the longest recipes run under a second)
+  let playing = $state<string | null>(null)
+  let playingTimer: ReturnType<typeof setTimeout> | undefined
+  /** Plays what a match would for this row: the chosen pack's sound, else the beep. */
+  function playRow(row: (typeof sounds)[number]) {
+    playing = row.key
+    clearTimeout(playingTimer)
+    playingTimer = setTimeout(() => (playing = null), row.key === 'soundBust' || row.key === 'soundWin' ? 900 : 500)
+    const pack = packs && settings.soundEffects ? settings.soundPack : null
+    if (pack && 'dart' in row) preview.play(pack, row.dart)
+    else beeps[row.beep]()
+  }
   function pickPack(v: string) {
     settings.soundPack = v === EACH ? null : v
-    if (settings.soundPack) {
-      audioContext()
-      preview.preview(settings.soundPack)
-    }
   }
 </script>
 
@@ -52,7 +61,14 @@
   <VolumeSlider bind:value={settings.effectsVolume} label="Effects volume" />
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
     {#each sounds as row (row.key)}
-      <SettingSwitch id="pref-{row.key}" label={row.label} sub={'sub' in row ? row.sub : undefined} bind:checked={settings[row.key]} />
+      <SettingSwitch
+        id="pref-{row.key}"
+        label={row.label}
+        sub={'sub' in row ? row.sub : undefined}
+        bind:checked={settings[row.key]}
+        onpreview={() => playRow(row)}
+        previewing={playing === row.key}
+      />
     {/each}
   </div>
   {#if packs}
