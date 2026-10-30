@@ -132,8 +132,16 @@
     }
   })
 
+  /** Keep a dot inside the visible, round board area (the view is clipped to it), so a dart
+   *  dropped or recorded past the edge stays on screen and can be grabbed again. Board units, y up. */
+  function inView(p: { x: number; y: number }): { x: number; y: number } {
+    const lim = 1.06 / zoom
+    const r = Math.hypot(p.x, p.y)
+    return r <= lim ? p : { x: (p.x * lim) / r, y: (p.y * lim) / r }
+  }
+
   function dartPos(dart: (typeof darts)[0]): { x: number; y: number } | null {
-    if (dart.coords) return dart.coords
+    if (dart.coords) return inView(dart.coords)
     const { bed, number } = dart.segment
     if (number === 25) return { x: 0, y: (R.bull50 + R.bull25) / 2 }
     if (number === 50) return { x: 0, y: R.bull50 / 2 }
@@ -164,7 +172,7 @@
     const ctm = svgEl.getScreenCTM()
     if (!ctm) return null
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
-    return { x: p.x / zoom, y: -p.y / zoom }
+    return inView({ x: p.x / zoom, y: -p.y / zoom })
   }
 
   function boardClick(e: MouseEvent) {
@@ -231,6 +239,9 @@
   const aimed = $derived(aim ? boardAt(aim.at) : null)
   const shown = $derived(aim ? shownAt(aim.finger, aim.offset, BOX) : null)
   const zoomBox = $derived(aim && shown ? viewBoxFor(aim.at, shown, AIM_ZOOM, BOX.half) : null)
+  // A dart's label sits right of its dot; near the right edge of the view (zoomed or not) it flips left
+  const LABEL_ROOM = 0.3
+  const viewRight = $derived(zoomBox ? zoomBox.x + zoomBox.w : 1.15)
   // Off the board's round background: lifting there places nothing
   const aimOff = $derived(aimed !== null && Math.hypot(aimed.x, aimed.y) > 1.12)
 
@@ -284,7 +295,7 @@
     cancelHold()
     if (!aim) return
     const { dart } = aim
-    const at = aimed
+    const at = aimed && inView(aimed)
     const off = aimOff
     stopAim()
     drag = null
@@ -643,8 +654,9 @@
                 stroke-width="0.006"
               />
               <text
-                x={pos.x + 0.06}
+                x={pos.x + (pos.x + LABEL_ROOM > viewRight ? -0.06 : 0.06)}
                 y={-pos.y}
+                text-anchor={pos.x + LABEL_ROOM > viewRight ? 'end' : 'start'}
                 dy="0.35em"
                 fill="#ffffff"
                 stroke="#000000"
