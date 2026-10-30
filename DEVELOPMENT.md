@@ -210,7 +210,7 @@ cd e2e && npm run visual:update
 Both commands call `scripts/visual.sh`. Add Playwright arguments to run some of the scenes, for example
 `scripts/visual.sh -g hilo` or `scripts/visual.sh --update -g x01-teams`.
 
-The script starts the e2e stack (`docker-compose.e2e.yaml`, :5174) if it isn't running and leaves it
+The script starts the e2e stack (`docker-compose.e2e.yaml`, :5174; set `E2E_FRONTEND_PORT` and `E2E_BACKEND_PORT` when 5174 or 3001 is taken, as on a machine running AO, whose daemon uses 3001) if it isn't running and leaves it
 running. Stop it with `docker compose -f docker-compose.e2e.yaml down`. The script signs in an admin made
 for the check (`visual@test.local`), because the flagged game modes are on only for admins. It then runs
 Playwright inside the pinned image `mcr.microsoft.com/playwright:v1.63.0-noble`.

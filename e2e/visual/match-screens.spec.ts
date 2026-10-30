@@ -6,7 +6,7 @@ import type { Browser, Page } from '@playwright/test'
 
 /** Created and made admin by scripts/visual.sh: the game modes behind flags are on for admins. */
 const ACCOUNT = { email: 'visual@test.local', password: 'VisualPass1!' }
-const HEADERS = { Origin: 'http://localhost:5174' }
+const HEADERS = { Origin: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}` }
 const NAMES = ['Anna', 'Ben', 'Cleo', 'Dan']
 const VIEW = {
   desktop: { width: 1180, height: 820 },

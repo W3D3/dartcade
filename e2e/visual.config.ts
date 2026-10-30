@@ -11,7 +11,7 @@ export default defineConfig({
   retries: 0,
   timeout: 60_000,
   use: {
-    baseURL: 'http://localhost:5174',
+    baseURL: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`,
     locale: 'en-GB',
     timezoneId: 'Europe/Vienna',
     deviceScaleFactor: 1,
