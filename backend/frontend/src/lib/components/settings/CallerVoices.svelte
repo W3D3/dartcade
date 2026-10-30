@@ -6,7 +6,8 @@
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
-  import { LoaderCircle, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { LoaderCircle, Pencil, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { Input } from '$lib/components/ui/input/index.js'
   import PreviewButton from '$lib/components/PreviewButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -18,6 +19,7 @@
     deleteVoicePack,
     formatMB,
     keptText,
+    renameVoicePack,
     saySample,
     storageUse,
     uploadVoicePack,
@@ -57,6 +59,16 @@
     audioContext()
     await saySample(caller, id)
     return caller.remaining()
+  }
+
+  // ── Rename ──
+  let renaming = $state<{ id: string; value: string } | null>(null)
+  let renameError = $state<string | null>(null)
+  async function saveRename() {
+    if (!renaming) return
+    const { id, value } = renaming
+    renameError = await renameVoicePack(id, value)
+    if (renameError === null) renaming = null
   }
 
   // ── Delete ──
@@ -159,7 +171,29 @@
                 <Volume2 size={20} strokeWidth={1.8} />
               </span>
               <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
-                <span class="text-[15px] font-semibold truncate">{p.name}</span>
+                {#if renaming?.id === p.id}
+                  <form
+                    class="flex items-center gap-2"
+                    onsubmit={e => {
+                      e.preventDefault()
+                      void saveRename()
+                    }}
+                  >
+                    <Input
+                      bind:value={renaming.value}
+                      aria-label="Name of {p.name}"
+                      maxlength={100}
+                      class="h-9 min-w-0"
+                      onkeydown={(e: KeyboardEvent) => {
+                        if (e.key === 'Escape') renaming = null
+                      }}
+                    />
+                    <Button type="submit" variant="accent" size="sm">Save</Button>
+                    <Button variant="ghost" size="sm" onclick={() => (renaming = null)}>Cancel</Button>
+                  </form>
+                {:else}
+                  <span class="text-[15px] font-semibold truncate">{p.name}</span>
+                {/if}
                 <span class="text-[12px] text-text-muted">
                   {p.clips.toLocaleString('en-US')} clips · {formatMB(p.bytes)} MB{#if p.id === current}&nbsp;· <span class="text-accent"
                       >your voice</span
@@ -172,6 +206,18 @@
                 iconSize={14}
                 class="size-10 rounded-[9px] border border-line-chip text-ink-2"
               />
+              <Button
+                variant="quiet"
+                size="icon-sm"
+                aria-label="Rename {p.name}"
+                class="size-10 rounded-[9px] border border-line-chip text-ink-2"
+                onclick={() => {
+                  renameError = null
+                  renaming = { id: p.id, value: p.name }
+                }}
+              >
+                <Pencil size={14} />
+              </Button>
               <button
                 type="button"
                 onclick={() => void remove(p.id)}
@@ -191,6 +237,7 @@
           >No imported voices yet.{lib.builtins.length ? ' The built-in voice is always there.' : ''}</span
         >
       {/if}
+      {#if renameError}<ErrorText>{renameError}</ErrorText>{/if}
       {#if deleteError}<ErrorText>{deleteError}</ErrorText>{/if}
       {#if builtinLine}<span class="text-[12px] text-text-dim">{builtinLine}</span>{/if}
     </div>

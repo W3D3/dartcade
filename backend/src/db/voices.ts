@@ -148,6 +148,12 @@ export async function getVoiceClipOf(
   return row ?? null
 }
 
+/** Renames a pack of the user's; false if it isn't theirs. */
+export async function renameVoicePack(db: Kysely<Database>, ownerId: string, packId: string, name: string): Promise<boolean> {
+  const res = await db.updateTable('voice_packs').set({ name }).where('id', '=', packId).where('owner_id', '=', ownerId).executeTakeFirst()
+  return res.numUpdatedRows > 0n
+}
+
 /** Deletes a pack of the user's and the files no pack uses any more; false if it isn't theirs. */
 export async function deleteVoicePack(db: Kysely<Database>, ownerId: string, packId: string): Promise<boolean> {
   return db.transaction().execute(async trx => {

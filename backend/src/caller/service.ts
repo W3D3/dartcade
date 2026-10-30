@@ -13,6 +13,7 @@ import {
   getVoicePackClips,
   getVoiceClipOf,
   deleteVoicePack,
+  renameVoicePack,
   type NewVoiceClip,
   type VoicePackRow,
 } from '../db/voices.js'
@@ -141,6 +142,10 @@ export async function packManifest(db: Kysely<Database>, userId: string, packId:
 
 export function clipFor(db: Kysely<Database>, userId: string, sha256: string): Promise<{ bytes: Buffer; mime: string } | null> {
   return getVoiceClipOf(db, userId, sha256)
+}
+
+export function renamePack(db: Kysely<Database>, userId: string, packId: string, name: string): Promise<boolean> {
+  return renameVoicePack(db, userId, packId, name)
 }
 
 export function deletePack(db: Kysely<Database>, userId: string, packId: string): Promise<boolean> {
