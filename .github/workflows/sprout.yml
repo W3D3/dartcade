@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   preview:
-    uses: simpros/sprout/.github/workflows/preview.yml@v0.9.0
+    uses: simpros/sprout/.github/workflows/preview.yml@396f3923e226bc198d0a31af9e26eea31f2b0a94 # v0.9.0
     with:
       sprout_version: v0.9.0
       app_context: backend

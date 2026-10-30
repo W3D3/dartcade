@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -22,8 +22,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: npm ci
         working-directory: backend
       - run: npm run typecheck
@@ -38,8 +38,8 @@ jobs:
   test-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: npm ci
         working-directory: backend/frontend
       - run: npm run typecheck
@@ -52,8 +52,8 @@ jobs:
   test-bridge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Go code is gofmt-formatted
         run: '[ -z "$(gofmt -l .)" ] || { gofmt -l .; echo "::error::Run gofmt -w . in bridge/ and commit the result"; exit 1; }'
         working-directory: bridge
@@ -63,8 +63,8 @@ jobs:
   check-generated:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: npm ci
       - run: npm run lint:api
       - run: npm run format:check
@@ -80,7 +80,7 @@ jobs:
       pull-requests: write
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -93,10 +93,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Shipped migrations are unchanged; new ones are numbered after them
         run: scripts/check-migrations.sh origin/${{ github.base_ref }}
       - run: npm ci
@@ -135,8 +135,8 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Install e2e dependencies
         run: npm ci
         working-directory: e2e
@@ -148,7 +148,7 @@ jobs:
         working-directory: e2e
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report
           path: e2e/playwright-report/

@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM node:22-alpine AS frontend-build
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -15,7 +15,7 @@ ARG BUILD_TIME=
 RUN VITE_APP_VERSION=$VERSION VITE_APP_COMMIT=$COMMIT VITE_APP_BUILD_TIME=$BUILD_TIME npm run build
 
 # Stage 2: Build backend
-FROM node:22-alpine AS backend-build
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS backend-build
 WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -24,7 +24,7 @@ COPY src/ ./src/
 RUN npx tsc
 
 # Stage 3: Runtime
-FROM node:22-alpine AS runtime
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS runtime
 WORKDIR /app
 COPY --from=backend-build /app/node_modules ./node_modules
 COPY --from=backend-build /app/dist ./dist
