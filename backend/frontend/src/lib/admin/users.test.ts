@@ -186,7 +186,9 @@ describe('grantSummary', () => {
 
 describe('auditDetail', () => {
   it('says what each known action did', () => {
-    expect(auditDetail('user.ban', { category: 'cheating', note: 'typed-in 180s', until: null })).toBe('Closed for cheating · typed-in 180s')
+    expect(auditDetail('user.ban', { category: 'cheating', note: 'typed-in 180s', until: null })).toBe(
+      'Closed for cheating · typed-in 180s',
+    )
     expect(auditDetail('user.unban', { was: null })).toBeNull()
     expect(auditDetail('user.unban', { was: { category: 'cheating', until: null } })).toBe('Was: Closed for cheating')
     expect(auditDetail('user.grantXp', { amount: 10000 })).toBe('+10,000 XP')
