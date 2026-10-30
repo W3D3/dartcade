@@ -108,14 +108,12 @@ describe('applyInput', () => {
     expect(s.totalDarts).toEqual([0])
   })
 
-  it('a manual reset drops the open darts without ending the visit', () => {
+  it("an old log's manual-reset visit.cleared still ends the visit", () => {
     const s = session(atcModule, atcModule.defaultConfig)
     applyInput(s, board('visit.opened'), t(0))
     applyInput(s, dart(S1, 0), t(1))
     const out = applyInput(s, board('visit.cleared', { visit_id: 'v1', reason: 'manual_reset' }), t(2))
-    expect(out.committed).toBeNull()
-    expect(s.openDarts).toEqual([])
-    expect(s.totalVisits).toEqual([0])
+    expect(out.committed).not.toBeNull()
   })
 
   it('reports the win', () => {

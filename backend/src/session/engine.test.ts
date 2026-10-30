@@ -213,6 +213,20 @@ describe('onBridgeEvent', () => {
     expect(session.currentState).toEqual(session.committedState)
   })
 
+  it('a manual reset keeps the seat up and is logged as a resync', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }, { name: 'Bob' }])
+    const session = engine.getSession(sessionId)!
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+    await engine.onBridgeEvent('board-1', 'visit.cleared', { visit_id: 'v1', reason: 'manual_reset' })
+    expect(session.openVisitEvents).toHaveLength(0)
+    expect(session.module.getCurrentPlayer(session.committedState)).toBe(0)
+    const logged = store.appendEvent.mock.calls.map(c => JSON.stringify(c))
+    expect(logged.some(c => c.includes('board.resync'))).toBe(true)
+    expect(logged.some(c => c.includes('visit.cleared'))).toBe(false)
+  })
+
   describe('121 on a camera board', () => {
     const seg = (name: string, number: number, multiplier: number) => ({ name, number, bed: 'Single', multiplier })
     const MISS = seg('Miss', 0, 0)

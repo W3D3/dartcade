@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { applyInput, awaitsFinish, isManualReset, overflowsVisit, takeoutWins, type GameInput } from './apply.js'
+import { applyInput, awaitsFinish, overflowsVisit, takeoutWins, type GameInput } from './apply.js'
 import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
@@ -25,6 +25,10 @@ export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
 const HELD = new Set(['visit.opened', 'dart.detected', 'takeout.finished', 'visit.cleared'])
 /** Board events that end a visit: dropped when they're stale (dartsLeftOnBoard), held when they'd decide the game (takeoutWins, takeoutHeld). */
 const TAKEOUTS = new Set(['takeout.finished', 'visit.cleared'])
+
+function isManualReset(data: unknown): boolean {
+  return typeof data === 'object' && data !== null && 'reason' in data && data.reason === 'manual_reset'
+}
 
 /** A game ended: the lobby it came from resets and logs it (see LobbyService.onGameEnded). */
 export type GameEnded = {
@@ -307,9 +311,12 @@ export class SessionEngine {
     return this.queues.run(sessionId, task)
   }
 
-  async onBridgeEvent(boardId: string, kind: string, data: unknown, bridgeEventId: string | null = null): Promise<void> {
+  async onBridgeEvent(boardId: string, rawKind: string, data: unknown, bridgeEventId: string | null = null): Promise<void> {
     const session = this.byBoard.get(boardId)
     if (!session) return
+    // The board's Reset button clears the darts but keeps the visit: logged as the resync that
+    // does exactly that (older logs hold it as visit.cleared, which still ends the visit)
+    const kind = rawKind === 'visit.cleared' && isManualReset(data) ? 'board.resync' : rawKind
     const event = parseBoardEvent(kind, data)
     if (!event && (kind === 'dart.detected' || kind === 'dart.corrected')) {
       this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
@@ -371,7 +378,7 @@ export class SessionEngine {
     if (input.source === 'board' && HELD.has(input.event.kind) && (session.takeoutHeld || awaitsFinish(session))) return false
     // Darts pulled after Next player ended their visit: the next visit goes on (dropped
     // unlogged too, so older logs, where this ended the next visit, replay as played)
-    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && !isManualReset(input.event) && session.dartsLeftOnBoard) {
+    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && session.dartsLeftOnBoard) {
       session.dartsLeftOnBoard = false
       return false
     }
@@ -381,7 +388,7 @@ export class SessionEngine {
     // An early takeout (an undetected dart) would decide the game too: it waits for Finish and
     // freezes the visit (the board's next events belong to the next visit). True: the snapshot
     // now shows Finish pending.
-    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && !isManualReset(input.event) && takeoutWins(session)) {
+    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && takeoutWins(session)) {
       session.takeoutHeld = true
       return true
     }
