@@ -174,7 +174,7 @@
   "gameshot": ["Game shot!"],
   "matchshot": ["Game shot, and the match!"],
   "busted": ["No score"],
-  "gameon": ["Game on!", "Let's play darts!", "New game, let's go!"],
+  "gameon": ["Game on", "Let's play darts!", "New game, let's go!"],
   "bulling_start": ["Bull up to throw first"],
   "require_1": ["You require one"],
   "require_2": ["You require two"],
