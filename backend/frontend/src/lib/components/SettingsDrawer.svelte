@@ -49,7 +49,6 @@
     { key: 'soundSwitch', label: 'Player switch' },
     { key: 'soundBust', label: 'Bust' },
     { key: 'soundBall', label: 'Ball' },
-    { key: 'soundWin', label: 'Win' },
   ] as const
   const sounds = $derived(allSounds.filter(r => shown.sounds.includes(r.key)))
 

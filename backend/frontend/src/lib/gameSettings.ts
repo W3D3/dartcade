@@ -25,8 +25,6 @@ export interface GameSettings {
   soundBust: boolean
   /** Minigolf: the ball knocking into things and dropping into the cup. */
   soundBall: boolean
-  /** A fanfare when the game is won. */
-  soundWin: boolean
   /** The thrower's sound pack (a progression reward) when a dart lands or a visit busts. */
   /** A sound pack (perk id) for every dart on this screen; null: each thrower's own. */
   soundPack: string | null
@@ -90,7 +88,6 @@ export const defaultSettings: GameSettings = {
   soundSwitch: false,
   soundBust: false,
   soundBall: false,
-  soundWin: false,
   soundPack: null,
   effectsVolume: 0.5,
   aimDial: true,
@@ -144,7 +141,6 @@ const SettingsSchema = z
     soundSwitch: flag(d.soundSwitch),
     soundBust: flag(d.soundBust),
     soundBall: flag(d.soundBall),
-    soundWin: flag(d.soundWin),
     soundPack: z.string().min(1).nullable().catch(null).default(null),
     effectsVolume: unit(d.effectsVolume),
     aimDial: flag(d.aimDial),

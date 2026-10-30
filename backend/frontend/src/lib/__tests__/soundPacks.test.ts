@@ -160,7 +160,7 @@ describe('level matching', () => {
   it('brings every beep to the target peak at full volume', async () => {
     const { createSounds, TARGET_DB } = await load()
     const sounds = createSounds(() => 1)
-    for (const name of ['hit', 'treble', 'miss', 'switchPlayer', 'bust', 'knock', 'cup', 'win'] as const) {
+    for (const name of ['hit', 'treble', 'miss', 'switchPlayer', 'bust', 'knock', 'cup'] as const) {
       const before = gains.length
       sounds[name]()
       // A beep's tones are full-scale waves: the peak is the gain each one starts at

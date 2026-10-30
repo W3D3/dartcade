@@ -19391,9 +19391,6 @@
                     "soundBust": {
                       "type": "boolean"
                     },
-                    "soundWin": {
-                      "type": "boolean"
-                    },
                     "soundPack": {
                       "type": "string",
                       "minLength": 1,
@@ -19616,9 +19613,6 @@
                   "soundBust": {
                     "type": "boolean"
                   },
-                  "soundWin": {
-                    "type": "boolean"
-                  },
                   "soundPack": {
                     "type": "string",
                     "minLength": 1,
@@ -19754,9 +19748,6 @@
                       "type": "boolean"
                     },
                     "soundBust": {
-                      "type": "boolean"
-                    },
-                    "soundWin": {
                       "type": "boolean"
                     },
                     "soundPack": {
@@ -50199,9 +50190,6 @@
             "type": "boolean"
           },
           "soundBust": {
-            "type": "boolean"
-          },
-          "soundWin": {
             "type": "boolean"
           },
           "soundPack": {

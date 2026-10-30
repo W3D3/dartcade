@@ -21,7 +21,6 @@
     { key: 'soundMiss', label: 'Miss', beep: 'miss', dart: 'miss' },
     { key: 'soundSwitch', label: 'Player switch', beep: 'switchPlayer' },
     { key: 'soundBust', label: 'Bust', beep: 'bust', dart: 'bust' },
-    { key: 'soundWin', label: 'Win', beep: 'win' },
   ] as const
 
   const anyPack = flag('sounds.anyPack')
@@ -35,7 +34,7 @@
   function playRow(row: (typeof sounds)[number]) {
     playing = row.key
     clearTimeout(playingTimer)
-    playingTimer = setTimeout(() => (playing = null), row.key === 'soundBust' || row.key === 'soundWin' ? 900 : 500)
+    playingTimer = setTimeout(() => (playing = null), row.key === 'soundBust' || row.key === 'soundSwitch' ? 900 : 500)
     const pack = packs ? settings.soundPack : null
     // 'sound.none' is the default: the beeps
     if (pack && pack in SOUND_PACKS && 'dart' in row) preview.play(pack, row.dart)
