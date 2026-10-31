@@ -4,7 +4,6 @@
   just lost a life red.
 -->
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import { X } from '@lucide/svelte'
   import type { HiloGame } from '$lib/api/game-ws'
   import PanelShell from '$lib/components/PanelShell.svelte'
@@ -15,21 +14,20 @@
   let {
     game,
     seat,
-    who,
+    name,
     active,
     upNext,
     justLost,
   }: {
     game: HiloGame
     seat: number
-    who: Who
+    name: string
     /** Throwing now. */
     active: boolean
     upNext: boolean
     /** Lost a life in the visit that just ended (the LifeLost moment). */
     justLost: boolean
   } = $props()
-  const name = $derived(who.name)
 
   const s = $derived(game.seats[seat])
   const last = $derived(s.visits.at(-1))
@@ -44,7 +42,7 @@
 </script>
 
 <PanelShell
-  {who}
+  {name}
   {active}
   {pill}
   pillLabel={s.out ? `Out${s.place ? ` · ${ordinal(s.place)}` : ''}` : undefined}

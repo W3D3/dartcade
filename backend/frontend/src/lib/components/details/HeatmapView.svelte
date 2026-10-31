@@ -25,8 +25,7 @@
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
   const players = $derived([...detail.game.players].sort((a, b) => a.seat - b.seat))
-  const playerOf = (seat: number) => players.find(p => p.seat === seat)
-  const playerName = (seat: number) => playerOf(seat)?.name ?? ''
+  const playerName = (seat: number) => players.find(p => p.seat === seat)?.name ?? ''
   const playerGuest = (seat: number) => {
     const p = players.find(p => p.seat === seat)
     return p !== undefined && p.userId === null && seat !== detail.game.mySeat
@@ -80,7 +79,7 @@
               class="h-10 inline-flex items-center gap-2 pl-[5px] pr-3 rounded-full cursor-pointer font-[inherit] text-[14px] font-semibold text-text
                      {selectedSeat === seat ? 'border-2 border-accent bg-accent-tint' : 'border border-line-chip bg-transparent'}"
             >
-              <Avatar name={playerName(seat)} guest={playerGuest(seat)} bot={playerBot(seat)} face={playerOf(seat) ?? null} size={24} />
+              <Avatar name={playerName(seat)} guest={playerGuest(seat)} bot={playerBot(seat)} size={24} />
               {playerName(seat)}
             </button>
           {/each}

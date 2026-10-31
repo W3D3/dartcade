@@ -100,7 +100,7 @@
         <div class="flex flex-col gap-4 px-5 pb-5 md:px-7 md:pb-6">
           <!-- Only the avatar overlaps the banner -->
           <span class="relative -mt-12 flex size-24 shrink-0 rounded-full" style="box-shadow: 0 0 0 5px {CARD_SURFACE}">
-            <Avatar name={p.name} face={{ avatar: p.avatar, userId: p.id }} size={96} />
+            <Avatar name={p.name} avatar={p.avatar} userId={p.id} size={96} />
             <CardFrame frame={p.look.frame} />
             {#if dot}<StatusRing kind={dot} />{/if}
           </span>

@@ -17,7 +17,9 @@
   <div class="flex flex-wrap gap-2">
     {#each lobby.people as p (p.id)}
       <ToggleChip size="md" on={p.plays} onclick={() => onplays(p.id, !p.plays)}>
-        <Avatar name={p.name} bot={p.bot} guest={p.userId === null} face={p} size={28} /><span class="min-w-0 truncate">{p.name}</span>
+        <Avatar name={p.name} bot={p.bot} guest={p.userId === null} avatar={p.avatar} userId={p.userId} size={28} /><span
+          class="min-w-0 truncate">{p.name}</span
+        >
         {#if !p.plays}<span class="shrink-0 text-[12px]">· sits out</span>{/if}
       </ToggleChip>
     {/each}

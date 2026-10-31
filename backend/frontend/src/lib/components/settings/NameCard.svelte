@@ -61,12 +61,7 @@
     <div class="flex flex-col gap-2 px-4 py-[14px] rounded-[12px] bg-surface-1 border border-line">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
       <div class="flex items-center gap-3 min-w-0">
-        <Avatar
-          name={preview}
-          tone="accent"
-          face={$currentUser ? { avatar: $currentUser.avatar, userId: $currentUser.id } : null}
-          size={36}
-        />
+        <Avatar name={preview} tone="accent" avatar={$currentUser?.avatar} userId={$currentUser?.id} size={36} />
         <span class="flex flex-col gap-px min-w-0">
           <span class="text-[15px] font-semibold truncate">{preview}</span>
           <span class="font-mono text-[12px] text-accent truncate">@{preview}</span>

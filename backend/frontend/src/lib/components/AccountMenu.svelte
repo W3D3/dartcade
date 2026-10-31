@@ -55,7 +55,7 @@
 
 {#snippet avatar(size: number)}
   <span class="relative shrink-0 m-1">
-    <Avatar {name} {size} face={$currentUser ? { avatar: $currentUser.avatar, userId: $currentUser.id } : null} />
+    <Avatar {name} {size} avatar={$currentUser?.avatar} userId={$currentUser?.id} />
     <StatusRing kind={invisible ? 'offline' : 'online'} />
   </span>
 {/snippet}

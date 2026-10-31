@@ -30,8 +30,8 @@
           <td class="{ranked ? 'px-2' : 'px-4'} py-3"
             ><span class="flex items-center gap-2"
               ><ProfilePopover userId={s.userId} name={s.name}
-                ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} face={s} /><span class="font-semibold whitespace-nowrap"
-                  >{s.name}</span
+                ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} avatar={s.avatar} userId={s.userId} /><span
+                  class="font-semibold whitespace-nowrap">{s.name}</span
                 ></ProfilePopover
               >{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span>{/if}</span
             ></td

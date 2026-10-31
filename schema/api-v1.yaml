@@ -4465,12 +4465,12 @@ components:
         code: { type: string, description: '6 characters; shown as K7Q4-MD' }
     LobbyPreview:
       type: object
-      required: [id, name, host, peopleCount, faces, nextGame, boardNames]
+      required: [id, name, hostName, peopleCount, faces, nextGame, boardNames]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
-        host: { type: object, nullable: true, allOf: [{ $ref: '#/components/schemas/LobbyFace' }] }
+        hostName: { type: string, nullable: true }
         peopleCount: { type: integer, minimum: 0 }
         faces: { type: array, items: { $ref: '#/components/schemas/LobbyFace' } }
         nextGame:
@@ -4603,16 +4603,17 @@ components:
         offlineBoards: { type: array, items: { type: string }, description: 'board_offline: the boards that are offline' }
     Invite:
       type: object
-      required: [id, lobbyId, lobbyName, inviter, createdAt, host, peopleCount, faces, nextGame, boardNames]
+      required: [id, lobbyId, lobbyName, inviterUserId, inviterName, createdAt, hostName, peopleCount, faces, nextGame, boardNames]
       additionalProperties: false
       description: Same shape as PendingInvite in schema/lobby-ws-v1.json
       properties:
         id: { type: string }
         lobbyId: { type: string }
         lobbyName: { type: string }
-        inviter: { type: object, nullable: true, allOf: [{ $ref: '#/components/schemas/LobbyFace' }] }
+        inviterUserId: { type: string, nullable: true }
+        inviterName: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
-        host: { type: object, nullable: true, allOf: [{ $ref: '#/components/schemas/LobbyFace' }] }
+        hostName: { type: string, nullable: true }
         peopleCount: { type: integer, minimum: 0 }
         faces: { type: array, items: { $ref: '#/components/schemas/LobbyFace' } }
         nextGame:

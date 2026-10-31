@@ -17,7 +17,8 @@
     <Avatar
       name={face.name}
       guest={face.guest}
-      face={{ avatar: face.avatar ?? { kind: 'none' }, userId: face.userId }}
+      avatar={face.avatar}
+      userId={face.userId}
       {size}
       class="-ml-[6px] {face.guest ? 'bg-surface-active' : 'ring-2 ring-surface-active'}"
     />

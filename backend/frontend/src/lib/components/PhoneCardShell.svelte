@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   // Frame of the thrower's card on a phone: the card, and its header with the avatar, name (and board
   // in remote games) and pill, plus an optional `aside` at its end. The game's content goes in `children`.
   import type { Snippet } from 'svelte'
@@ -11,7 +10,7 @@
   import { ACTIVE_CARD } from '$lib/playerCard'
 
   let {
-    who,
+    name,
     label,
     pill,
     seat,
@@ -19,7 +18,7 @@
     aside,
     children,
   }: {
-    who: Who
+    name: string
     /** The card's accessible name. */
     label: string
     pill: PillKind | null
@@ -29,12 +28,11 @@
     aside?: Snippet
     children: Snippet
   } = $props()
-  const name = $derived(who.name)
 </script>
 
 <section aria-label={label} class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-[16px] {ACTIVE_CARD} flex flex-col {className}">
   <div class="flex items-center gap-2 min-w-0">
-    <Avatar name={who.name} bot={who.bot} face={who.face} tone="accent" size={30} />
+    <Avatar {name} tone="accent" size={30} />
     <PlayerName {name} {seat} stacked nameClass="text-[16px]" youClass="text-[12px]" gap="gap-[1px]" seatSize="sm" />
     {#if pill}<PlayerPill kind={pill} small />{/if}
     {@render aside?.()}

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   // An Around the Clock player of three or more in the portrait layout, X01Card's counterpart: the
   // target with darts and hit rate beside it, then the progress strip.
   import PanelShell from './PanelShell.svelte'
@@ -10,13 +9,15 @@
   import type { SeatLine } from '$lib/remote'
 
   let {
-    who,
+    name,
+    bot = null,
     p,
     active,
     pill,
     seat = null,
   }: {
-    who: Who
+    name: string
+    bot?: { level: number } | null
     p: AtcPlayerView
     active: boolean
     pill: PillKind | null
@@ -30,7 +31,7 @@
   ])
 </script>
 
-<PanelShell {who} {active} portrait {pill} {seat} pillInRow>
+<PanelShell {name} {bot} {active} portrait {pill} {seat} pillInRow>
   <div class="flex items-end justify-between gap-3 min-w-0">
     <span class="font-display font-bold text-[min(30cqi,9vh)] leading-[0.82] tracking-[-0.02em] {active ? 'text-accent' : 'text-ink-3'}"
       ><RollingNumber value={p.target} normal="up" progress={p.done} /></span

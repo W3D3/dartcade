@@ -212,16 +212,7 @@ describe('lobby rules for the screens', () => {
   it('lists the accounts already in the lobby or invited, so the add field skips them', () => {
     const invited = {
       ...lobby,
-      invites: [
-        {
-          id: 'i1',
-          userId: 'phil',
-          name: 'Phil',
-          avatar: { kind: 'none' as const },
-          invitedByUserId: 'chris',
-          createdAt: '2026-10-02T19:41:00.000Z',
-        },
-      ],
+      invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }],
     }
     expect(alreadyInOrInvited(invited)).toEqual(['chris', 'lena', 'max', 'phil'])
   })

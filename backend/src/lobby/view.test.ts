@@ -14,7 +14,6 @@ const store = (): EngineStore => ({
   deleteDarts: vi.fn().mockResolvedValue(undefined),
   finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
-  getAvatars: vi.fn().mockResolvedValue(new Map()),
 })
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p',
@@ -69,7 +68,7 @@ const lobby: LobbyState = {
     }),
     person({ id: 'g', name: 'Guest 1', ready: true }),
   ],
-  invites: [{ id: 'i1', userId: 'lena', name: 'Lena', avatar: { kind: 'none' }, invitedByUserId: 'chris', createdAt: at }],
+  invites: [{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at }],
   activity: [{ id: '7', at, kind: 'joined', actorUserId: 'max', actorName: 'Max', data: { name: 'Max' } }],
 }
 
@@ -83,9 +82,7 @@ describe('lobbyView', () => {
     ])
     expect(view).toMatchObject({ currentSessionId: null, createdAt: at.toISOString() })
     expect(view.access).toBe('friends')
-    expect(view.invites).toEqual([
-      { id: 'i1', userId: 'lena', name: 'Lena', avatar: { kind: 'none' }, invitedByUserId: 'chris', createdAt: at.toISOString() },
-    ])
+    expect(view.invites).toEqual([{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at.toISOString() }])
     expect(() => {
       checkLobbyMessage({ type: 'lobby', lobby: view }, () => undefined)
     }).not.toThrow()
@@ -155,7 +152,7 @@ describe('lobbyView', () => {
     const solo: LobbyState = {
       ...lobby,
       people: [person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' }), person({ id: 'g', name: 'Guest 1' })],
-      invites: [{ id: 'i1', userId: 'lena', name: 'Lena', avatar: { kind: 'none' }, invitedByUserId: 'chris', createdAt: at }],
+      invites: [{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at }],
     }
     const view = lobbyView(solo, { online: new Set(), isBoardOnline: () => false, sessionId: null })
     expect(view.solo).toBe(true)
@@ -202,18 +199,7 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'max', undefined)).toMatchObject({ sessionId: null, gameId: null, youThrowNext: false, leg: null })
     const me = {
       type: 'me' as const,
-      invites: [
-        inviteView(
-          {
-            id: 'i1',
-            lobbyId: 'l1',
-            lobbyName: 'L',
-            inviter: null,
-            createdAt: at,
-          },
-          lobby,
-        ),
-      ],
+      invites: [inviteView({ id: 'i1', lobbyId: 'l1', lobbyName: 'L', inviterUserId: null, inviterName: null, createdAt: at }, lobby)],
       game: null,
       lobby: lobbySummary(lobby, 'chris', session),
     }
@@ -228,7 +214,7 @@ describe('lobbySummary', () => {
       people: [...lobby.people, person({ id: 'a', name: 'Anna', boardName: 'Garage' }), person({ id: 'b', name: 'Ben' })],
     }
     expect(lobbyGlance(more)).toEqual({
-      host: { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+      hostName: 'Christoph',
       peopleCount: 5,
       faces: [
         { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },

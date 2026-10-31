@@ -23,7 +23,8 @@
         <Avatar
           name={user.name}
           tone="accent"
-          face={{ avatar: user.avatar, userId: user.id }}
+          avatar={user.avatar}
+          userId={user.id}
           class="w-14 h-14 md:w-[72px] md:h-[72px] text-[24px] md:text-[30px]"
         />
         <div class="flex flex-col gap-[3px] min-w-0">

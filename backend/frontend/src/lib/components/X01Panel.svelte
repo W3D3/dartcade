@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import PanelShell from './PanelShell.svelte'
   import LegPips from './LegPips.svelte'
   import Chalkboard from './Chalkboard.svelte'
@@ -11,7 +10,8 @@
   import type { Snippet } from 'svelte'
 
   let {
-    who,
+    name,
+    bot = null,
     p,
     active,
     solo = false,
@@ -21,7 +21,8 @@
     chalkboard,
     waiting,
   }: {
-    who: Who
+    name: string
+    bot?: { level: number } | null
     p: X01PlayerView
     active: boolean
     solo?: boolean
@@ -42,7 +43,7 @@
   const valueSize = $derived(solo ? 'text-[44px]' : portrait ? 'text-[30px] lg:text-[40px]' : 'text-[30px] xl:text-[44px]')
 </script>
 
-<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} pillInRow={solo}>
+<PanelShell {name} {bot} {active} {solo} {portrait} {pill} {seat} {waiting} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

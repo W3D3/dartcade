@@ -256,7 +256,6 @@
         "id",
         "userId",
         "name",
-        "avatar",
         "invitedByUserId",
         "createdAt"
       ],
@@ -270,72 +269,6 @@
         },
         "name": {
           "type": "string"
-        },
-        "avatar": {
-          "title": "Avatar",
-          "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-          "oneOf": [
-            {
-              "type": "object",
-              "required": [
-                "kind"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "none"
-                  ]
-                }
-              }
-            },
-            {
-              "type": "object",
-              "required": [
-                "kind",
-                "foreground",
-                "background"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "preset"
-                  ]
-                },
-                "foreground": {
-                  "type": "string",
-                  "description": "The finish of the mark in front"
-                },
-                "background": {
-                  "type": "string",
-                  "description": "The finish of the disc behind it"
-                }
-              }
-            },
-            {
-              "type": "object",
-              "required": [
-                "kind",
-                "version"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "upload"
-                  ]
-                },
-                "version": {
-                  "type": "integer",
-                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                }
-              }
-            }
-          ]
         },
         "invitedByUserId": {
           "type": [
@@ -848,7 +781,6 @@
               "id",
               "userId",
               "name",
-              "avatar",
               "invitedByUserId",
               "createdAt"
             ],
@@ -862,72 +794,6 @@
               },
               "name": {
                 "type": "string"
-              },
-              "avatar": {
-                "title": "Avatar",
-                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "none"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind",
-                      "foreground",
-                      "background"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "preset"
-                        ]
-                      },
-                      "foreground": {
-                        "type": "string",
-                        "description": "The finish of the mark in front"
-                      },
-                      "background": {
-                        "type": "string",
-                        "description": "The finish of the disc behind it"
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind",
-                      "version"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "upload"
-                        ]
-                      },
-                      "version": {
-                        "type": "integer",
-                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                      }
-                    }
-                  }
-                ]
               },
               "invitedByUserId": {
                 "type": [
@@ -1406,7 +1272,6 @@
                   "id",
                   "userId",
                   "name",
-                  "avatar",
                   "invitedByUserId",
                   "createdAt"
                 ],
@@ -1420,72 +1285,6 @@
                   },
                   "name": {
                     "type": "string"
-                  },
-                  "avatar": {
-                    "title": "Avatar",
-                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "invitedByUserId": {
                     "type": [
@@ -1987,7 +1786,6 @@
                       "id",
                       "userId",
                       "name",
-                      "avatar",
                       "invitedByUserId",
                       "createdAt"
                     ],
@@ -2001,72 +1799,6 @@
                       },
                       "name": {
                         "type": "string"
-                      },
-                      "avatar": {
-                        "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "invitedByUserId": {
                         "type": [
@@ -2242,9 +1974,10 @@
         "id",
         "lobbyId",
         "lobbyName",
-        "inviter",
+        "inviterUserId",
+        "inviterName",
         "createdAt",
-        "host",
+        "hostName",
         "peopleCount",
         "faces",
         "nextGame",
@@ -2261,209 +1994,26 @@
         "lobbyName": {
           "type": "string"
         },
-        "inviter": {
-          "anyOf": [
-            {
-              "title": "Face",
-              "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-              "type": "object",
-              "required": [
-                "userId",
-                "name",
-                "guest",
-                "avatar"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "userId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "To fetch an uploaded avatar; null for a guest or bot."
-                },
-                "name": {
-                  "type": "string"
-                },
-                "guest": {
-                  "type": "boolean"
-                },
-                "avatar": {
-                  "title": "Avatar",
-                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "none"
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "foreground",
-                        "background"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "preset"
-                          ]
-                        },
-                        "foreground": {
-                          "type": "string",
-                          "description": "The finish of the mark in front"
-                        },
-                        "background": {
-                          "type": "string",
-                          "description": "The finish of the disc behind it"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "version"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "upload"
-                          ]
-                        },
-                        "version": {
-                          "type": "integer",
-                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Null when the inviter's account is gone."
+        "inviterUserId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inviterName": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "createdAt": {
           "type": "string",
           "format": "date-time"
         },
-        "host": {
-          "anyOf": [
-            {
-              "title": "Face",
-              "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-              "type": "object",
-              "required": [
-                "userId",
-                "name",
-                "guest",
-                "avatar"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "userId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "To fetch an uploaded avatar; null for a guest or bot."
-                },
-                "name": {
-                  "type": "string"
-                },
-                "guest": {
-                  "type": "boolean"
-                },
-                "avatar": {
-                  "title": "Avatar",
-                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "none"
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "foreground",
-                        "background"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "preset"
-                          ]
-                        },
-                        "foreground": {
-                          "type": "string",
-                          "description": "The finish of the mark in front"
-                        },
-                        "background": {
-                          "type": "string",
-                          "description": "The finish of the disc behind it"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "version"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "upload"
-                          ]
-                        },
-                        "version": {
-                          "type": "integer",
-                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "type": "null"
-            }
+        "hostName": {
+          "type": [
+            "string",
+            "null"
           ],
           "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
         },
@@ -2954,9 +2504,10 @@
               "id",
               "lobbyId",
               "lobbyName",
-              "inviter",
+              "inviterUserId",
+              "inviterName",
               "createdAt",
-              "host",
+              "hostName",
               "peopleCount",
               "faces",
               "nextGame",
@@ -2973,209 +2524,26 @@
               "lobbyName": {
                 "type": "string"
               },
-              "inviter": {
-                "anyOf": [
-                  {
-                    "title": "Face",
-                    "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                    "type": "object",
-                    "required": [
-                      "userId",
-                      "name",
-                      "guest",
-                      "avatar"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "To fetch an uploaded avatar; null for a guest or bot."
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "guest": {
-                        "type": "boolean"
-                      },
-                      "avatar": {
-                        "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "Null when the inviter's account is gone."
+              "inviterUserId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inviterName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "createdAt": {
                 "type": "string",
                 "format": "date-time"
               },
-              "host": {
-                "anyOf": [
-                  {
-                    "title": "Face",
-                    "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                    "type": "object",
-                    "required": [
-                      "userId",
-                      "name",
-                      "guest",
-                      "avatar"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "To fetch an uploaded avatar; null for a guest or bot."
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "guest": {
-                        "type": "boolean"
-                      },
-                      "avatar": {
-                        "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
+              "hostName": {
+                "type": [
+                  "string",
+                  "null"
                 ],
                 "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
               },
@@ -4286,110 +3654,16 @@
       "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
       "type": "object",
       "required": [
-        "person",
+        "name",
         "accepted",
         "you"
       ],
       "additionalProperties": false,
       "properties": {
-        "person": {
-          "anyOf": [
-            {
-              "title": "Face",
-              "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-              "type": "object",
-              "required": [
-                "userId",
-                "name",
-                "guest",
-                "avatar"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "userId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "To fetch an uploaded avatar; null for a guest or bot."
-                },
-                "name": {
-                  "type": "string"
-                },
-                "guest": {
-                  "type": "boolean"
-                },
-                "avatar": {
-                  "title": "Avatar",
-                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "none"
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "foreground",
-                        "background"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "preset"
-                          ]
-                        },
-                        "foreground": {
-                          "type": "string",
-                          "description": "The finish of the mark in front"
-                        },
-                        "background": {
-                          "type": "string",
-                          "description": "The finish of the disc behind it"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "kind",
-                        "version"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "type": "string",
-                          "enum": [
-                            "upload"
-                          ]
-                        },
-                        "version": {
-                          "type": "integer",
-                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "type": "null"
-            }
+        "name": {
+          "type": [
+            "string",
+            "null"
           ],
           "description": "null for the other side."
         },
@@ -4473,110 +3747,16 @@
             "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
             "type": "object",
             "required": [
-              "person",
+              "name",
               "accepted",
               "you"
             ],
             "additionalProperties": false,
             "properties": {
-              "person": {
-                "anyOf": [
-                  {
-                    "title": "Face",
-                    "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                    "type": "object",
-                    "required": [
-                      "userId",
-                      "name",
-                      "guest",
-                      "avatar"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "To fetch an uploaded avatar; null for a guest or bot."
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "guest": {
-                        "type": "boolean"
-                      },
-                      "avatar": {
-                        "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
+              "name": {
+                "type": [
+                  "string",
+                  "null"
                 ],
                 "description": "null for the other side."
               },
@@ -4596,110 +3776,16 @@
             "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
             "type": "object",
             "required": [
-              "person",
+              "name",
               "accepted",
               "you"
             ],
             "additionalProperties": false,
             "properties": {
-              "person": {
-                "anyOf": [
-                  {
-                    "title": "Face",
-                    "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                    "type": "object",
-                    "required": [
-                      "userId",
-                      "name",
-                      "guest",
-                      "avatar"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "To fetch an uploaded avatar; null for a guest or bot."
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "guest": {
-                        "type": "boolean"
-                      },
-                      "avatar": {
-                        "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
+              "name": {
+                "type": [
+                  "string",
+                  "null"
                 ],
                 "description": "null for the other side."
               },
@@ -4873,110 +3959,16 @@
                     "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
                     "type": "object",
                     "required": [
-                      "person",
+                      "name",
                       "accepted",
                       "you"
                     ],
                     "additionalProperties": false,
                     "properties": {
-                      "person": {
-                        "anyOf": [
-                          {
-                            "title": "Face",
-                            "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                            "type": "object",
-                            "required": [
-                              "userId",
-                              "name",
-                              "guest",
-                              "avatar"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "userId": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ],
-                                "description": "To fetch an uploaded avatar; null for a guest or bot."
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "guest": {
-                                "type": "boolean"
-                              },
-                              "avatar": {
-                                "title": "Avatar",
-                                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                                "oneOf": [
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "none"
-                                        ]
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind",
-                                      "foreground",
-                                      "background"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "preset"
-                                        ]
-                                      },
-                                      "foreground": {
-                                        "type": "string",
-                                        "description": "The finish of the mark in front"
-                                      },
-                                      "background": {
-                                        "type": "string",
-                                        "description": "The finish of the disc behind it"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind",
-                                      "version"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "upload"
-                                        ]
-                                      },
-                                      "version": {
-                                        "type": "integer",
-                                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "null"
-                          }
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
                         ],
                         "description": "null for the other side."
                       },
@@ -4996,110 +3988,16 @@
                     "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
                     "type": "object",
                     "required": [
-                      "person",
+                      "name",
                       "accepted",
                       "you"
                     ],
                     "additionalProperties": false,
                     "properties": {
-                      "person": {
-                        "anyOf": [
-                          {
-                            "title": "Face",
-                            "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                            "type": "object",
-                            "required": [
-                              "userId",
-                              "name",
-                              "guest",
-                              "avatar"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "userId": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ],
-                                "description": "To fetch an uploaded avatar; null for a guest or bot."
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "guest": {
-                                "type": "boolean"
-                              },
-                              "avatar": {
-                                "title": "Avatar",
-                                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                                "oneOf": [
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "none"
-                                        ]
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind",
-                                      "foreground",
-                                      "background"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "preset"
-                                        ]
-                                      },
-                                      "foreground": {
-                                        "type": "string",
-                                        "description": "The finish of the mark in front"
-                                      },
-                                      "background": {
-                                        "type": "string",
-                                        "description": "The finish of the disc behind it"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "kind",
-                                      "version"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "kind": {
-                                        "type": "string",
-                                        "enum": [
-                                          "upload"
-                                        ]
-                                      },
-                                      "version": {
-                                        "type": "integer",
-                                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "null"
-                          }
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
                         ],
                         "description": "null for the other side."
                       },
@@ -5158,9 +4056,10 @@
                   "id",
                   "lobbyId",
                   "lobbyName",
-                  "inviter",
+                  "inviterUserId",
+                  "inviterName",
                   "createdAt",
-                  "host",
+                  "hostName",
                   "peopleCount",
                   "faces",
                   "nextGame",
@@ -5177,209 +4076,26 @@
                   "lobbyName": {
                     "type": "string"
                   },
-                  "inviter": {
-                    "anyOf": [
-                      {
-                        "title": "Face",
-                        "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                        "type": "object",
-                        "required": [
-                          "userId",
-                          "name",
-                          "guest",
-                          "avatar"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "userId": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "To fetch an uploaded avatar; null for a guest or bot."
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "guest": {
-                            "type": "boolean"
-                          },
-                          "avatar": {
-                            "title": "Avatar",
-                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                            "oneOf": [
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "none"
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind",
-                                  "foreground",
-                                  "background"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "preset"
-                                    ]
-                                  },
-                                  "foreground": {
-                                    "type": "string",
-                                    "description": "The finish of the mark in front"
-                                  },
-                                  "background": {
-                                    "type": "string",
-                                    "description": "The finish of the disc behind it"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind",
-                                  "version"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "upload"
-                                    ]
-                                  },
-                                  "version": {
-                                    "type": "integer",
-                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Null when the inviter's account is gone."
+                  "inviterUserId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "inviterName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "createdAt": {
                     "type": "string",
                     "format": "date-time"
                   },
-                  "host": {
-                    "anyOf": [
-                      {
-                        "title": "Face",
-                        "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                        "type": "object",
-                        "required": [
-                          "userId",
-                          "name",
-                          "guest",
-                          "avatar"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "userId": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "To fetch an uploaded avatar; null for a guest or bot."
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "guest": {
-                            "type": "boolean"
-                          },
-                          "avatar": {
-                            "title": "Avatar",
-                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                            "oneOf": [
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "none"
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind",
-                                  "foreground",
-                                  "background"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "preset"
-                                    ]
-                                  },
-                                  "foreground": {
-                                    "type": "string",
-                                    "description": "The finish of the mark in front"
-                                  },
-                                  "background": {
-                                    "type": "string",
-                                    "description": "The finish of the disc behind it"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "required": [
-                                  "kind",
-                                  "version"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "upload"
-                                    ]
-                                  },
-                                  "version": {
-                                    "type": "integer",
-                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
                     ],
                     "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
                   },
@@ -6541,110 +5257,16 @@
                         "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
                         "type": "object",
                         "required": [
-                          "person",
+                          "name",
                           "accepted",
                           "you"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "person": {
-                            "anyOf": [
-                              {
-                                "title": "Face",
-                                "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                                "type": "object",
-                                "required": [
-                                  "userId",
-                                  "name",
-                                  "guest",
-                                  "avatar"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "userId": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
-                                    "description": "To fetch an uploaded avatar; null for a guest or bot."
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "guest": {
-                                    "type": "boolean"
-                                  },
-                                  "avatar": {
-                                    "title": "Avatar",
-                                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                                    "oneOf": [
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "none"
-                                            ]
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind",
-                                          "foreground",
-                                          "background"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "preset"
-                                            ]
-                                          },
-                                          "foreground": {
-                                            "type": "string",
-                                            "description": "The finish of the mark in front"
-                                          },
-                                          "background": {
-                                            "type": "string",
-                                            "description": "The finish of the disc behind it"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind",
-                                          "version"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "upload"
-                                            ]
-                                          },
-                                          "version": {
-                                            "type": "integer",
-                                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "null"
-                              }
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
                             ],
                             "description": "null for the other side."
                           },
@@ -6664,110 +5286,16 @@
                         "description": "Someone in a found match. The other side's names stay hidden until everyone accepted.",
                         "type": "object",
                         "required": [
-                          "person",
+                          "name",
                           "accepted",
                           "you"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "person": {
-                            "anyOf": [
-                              {
-                                "title": "Face",
-                                "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
-                                "type": "object",
-                                "required": [
-                                  "userId",
-                                  "name",
-                                  "guest",
-                                  "avatar"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "userId": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
-                                    "description": "To fetch an uploaded avatar; null for a guest or bot."
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "guest": {
-                                    "type": "boolean"
-                                  },
-                                  "avatar": {
-                                    "title": "Avatar",
-                                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                                    "oneOf": [
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "none"
-                                            ]
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind",
-                                          "foreground",
-                                          "background"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "preset"
-                                            ]
-                                          },
-                                          "foreground": {
-                                            "type": "string",
-                                            "description": "The finish of the mark in front"
-                                          },
-                                          "background": {
-                                            "type": "string",
-                                            "description": "The finish of the disc behind it"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "required": [
-                                          "kind",
-                                          "version"
-                                        ],
-                                        "additionalProperties": false,
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "enum": [
-                                              "upload"
-                                            ]
-                                          },
-                                          "version": {
-                                            "type": "integer",
-                                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "null"
-                              }
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
                             ],
                             "description": "null for the other side."
                           },

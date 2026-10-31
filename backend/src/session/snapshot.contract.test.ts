@@ -32,7 +32,6 @@ function engine() {
     deleteDarts: vi.fn().mockResolvedValue(undefined),
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
-    getAvatars: vi.fn().mockResolvedValue(new Map()),
   }
   return new SessionEngine(store, vi.fn())
 }

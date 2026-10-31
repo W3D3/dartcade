@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   // The Around the Clock thrower on a phone: name, board, pill, the current target, progress, darts and hit rate.
   import AtcProgress from './AtcProgress.svelte'
   import RollingNumber from './RollingNumber.svelte'
@@ -8,11 +7,10 @@
   import type { AtcPlayerView } from '$lib/playerStats'
   import type { SeatLine } from '$lib/remote'
 
-  let { who, p, pill, seat }: { who: Who; p: AtcPlayerView; pill: PillKind | null; seat: SeatLine | null } = $props()
-  const name = $derived(who.name)
+  let { name, p, pill, seat }: { name: string; p: AtcPlayerView; pill: PillKind | null; seat: SeatLine | null } = $props()
 </script>
 
-<PhoneCardShell {who} label="{name}, throwing, target {p.target}" {pill} {seat} class="gap-[10px]">
+<PhoneCardShell {name} label="{name}, throwing, target {p.target}" {pill} {seat} class="gap-[10px]">
   <div class="flex items-end justify-between gap-3">
     <span class="flex flex-col gap-1">
       <span class="text-[10px] label-caps text-text-muted">Target</span>

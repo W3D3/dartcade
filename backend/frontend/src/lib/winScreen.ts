@@ -2,7 +2,6 @@
 // Placements are the server's (the final snapshot's `results`); the X01 match stats (the details
 // page's, from the server) and the legs come from the saved game, once it loads.
 import type { AtcGame, CricketGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
-import { whoOf, type Face } from './face.js'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
 import { rulesOf } from './gameViews/rules.js'
@@ -17,8 +16,8 @@ type X01Detail = Extract<GameDetail['detail'], { mode: 'x01' }>
 /** One side of the result: a player, or a team in a team game. */
 export type Competitor = {
   name: string
-  /** Whose picture to draw; null for a team. */
-  face: Face | null
+  /** A guest (no account): a dashed avatar. */
+  guest: boolean
   /** The team's players; empty for a single player. */
   members: string[]
   seats: number[]
@@ -31,7 +30,7 @@ export type Competitor = {
   cells: string[]
 }
 
-export type WinLeg = { n: number; name: string; face: Face | null; byWinner: boolean; text: string }
+export type WinLeg = { n: number; name: string; guest: boolean; byWinner: boolean; text: string }
 export type StatRow = { label: string; values: [string, string]; share: number }
 
 export type WinView = {
@@ -54,7 +53,7 @@ export type WinView = {
   /** The standings table's columns (after rank and player). */
   columns: string[]
   /** Party highlights. */
-  highlights: { name: string; face: Face | null; label: string; text: string }[]
+  highlights: { name: string; guest: boolean; label: string; text: string }[]
   /** Cricket only: the last leg's final marks, for the win screen's own MarksGrid (never
    *  animated there — the match is already over). */
   cricketMarks?: { game: CricketGame; sides: CricketSide[] }
@@ -98,7 +97,7 @@ export const placesOf = (snapshot: Snapshot): number[] => snapshot.players.map((
 function soloCompetitor(snapshot: Snapshot, seat: number, places: number[], c: Pick<Competitor, 'score' | 'sub' | 'cells'>): Competitor {
   return {
     name: snapshot.players[seat].name,
-    face: whoOf(snapshot)[seat].face,
+    guest: snapshot.seats[seat]?.userId === null,
     members: [],
     seats: [seat],
     placement: places[seat],
@@ -125,7 +124,6 @@ function duelRow(row: DetailRow, a: Record<string, number>, b: Record<string, nu
 
 export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetail | null): WinView {
   const g = snapshot.game
-  const who = whoOf(snapshot)
   const seatsOf: number[][] = g.teams ? g.teams.map(t => t.seats) : snapshot.players.map((_, i) => [i])
   const sideOf = (seat: number) => seatsOf.findIndex(s => s.includes(seat))
   const winnerSide = g.winner === null ? null : sideOf(g.winner)
@@ -145,7 +143,7 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
   const competitors = byPlacement(
     seatsOf.map((seats, i): Competitor => ({
       name: g.teams?.[i].name ?? snapshot.players[i].name,
-      face: g.teams ? null : who[i].face,
+      guest: !g.teams && snapshot.seats[i]?.userId === null,
       members: g.teams ? seats.map(s => snapshot.players[s].name) : [],
       seats,
       placement: places[i],
@@ -171,13 +169,13 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
     legList.length < 2
       ? []
       : legList.map(leg => {
-          if (leg.winner === null) return { n: leg.leg + 1, name: 'No winner', face: null, byWinner: false, text: 'Cut short' }
+          if (leg.winner === null) return { n: leg.leg + 1, name: 'No winner', guest: false, byWinner: false, text: 'Cut short' }
           const side = sideOf(leg.winner)
           const finish = leg.visits.findLast(v => v.seat === leg.winner)
           return {
             n: leg.leg + 1,
             name: snapshot.players[leg.winner].name,
-            face: who[leg.winner].face,
+            guest: snapshot.seats[leg.winner]?.userId === null,
             byWinner: side === winnerSide,
             text: [plural(sideDarts(leg, seatsOf[side]), 'dart'), ...(finish?.darts.map(dartName) ?? [])].join(' · '),
           }
@@ -228,7 +226,7 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
       ? [
           {
             name: snapshot.players[top.seat].name,
-            face: who[top.seat].face,
+            guest: snapshot.seats[top.seat]?.userId === null,
             label: 'Highest finish',
             text: `Checked out ${top.v}.`,
           },
@@ -285,7 +283,6 @@ const livesLostMiss = (g: HiloGame, seat: number) => g.seats[seat].visits.filter
 
 export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   const g = snapshot.game
-  const who = whoOf(snapshot)
   const n = snapshot.players.length
   const forfeited = snapshot.seats.map(s => s.forfeited)
   const places = placesOf(snapshot)
@@ -333,7 +330,7 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   const lowest = extreme('low', (a, b) => a < b)
   const highlight = (h: Bar, label: string, outcome: 'high' | 'low') => ({
     name: snapshot.players[h.seat].name,
-    face: who[h.seat].face,
+    guest: snapshot.seats[h.seat]?.userId === null,
     label,
     text: `${outcomeText({ total: h.total, outcome })}.`,
   })
@@ -396,7 +393,6 @@ export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinVie
  *  (firstTo > 1), else points, since a single-leg game has nothing else to show. */
 export function cricketWin(snapshot: Snapshot & { game: CricketGame }): WinView {
   const g = snapshot.game
-  const who = whoOf(snapshot)
   const seatsOf: number[][] = g.teams ? g.teams.map(t => t.seats) : snapshot.players.map((_, i) => [i])
   const forfeited = seatsOf.map(seats => seats.some(s => snapshot.seats[s]?.forfeited))
   const legs = seatsOf.map(s => g.legs[s[0]] ?? 0)
@@ -412,8 +408,8 @@ export function cricketWin(snapshot: Snapshot & { game: CricketGame }): WinView 
 
   const competitors = byPlacement(
     seatsOf.map((seats, i): Competitor => ({
-      face: g.teams ? null : who[seats[0]].face,
       name: g.teams?.[i].name ?? snapshot.players[seats[0]].name,
+      guest: !g.teams && snapshot.seats[seats[0]]?.userId === null,
       members: g.teams ? seats.map(s => snapshot.players[s].name) : [],
       seats,
       placement: places[i],

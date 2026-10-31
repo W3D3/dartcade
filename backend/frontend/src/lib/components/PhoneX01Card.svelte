@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   // The X01 thrower on a phone: name, board, Throwing pill, leg pips, big score, averages, chalkboard.
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
@@ -11,19 +10,18 @@
   import type { SeatLine } from '$lib/remote'
 
   let {
-    who,
+    name,
     p,
     pill,
     seat,
     chalkboard,
   }: {
-    who: Who
+    name: string
     p: X01PlayerView
     pill: PillKind | null
     seat: SeatLine | null
     chalkboard: boolean
   } = $props()
-  const name = $derived(who.name)
 
   const stats = $derived([
     ...x01Averages(p),
@@ -32,7 +30,7 @@
   ])
 </script>
 
-<PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} class="gap-2">
+<PhoneCardShell {name} label="{name}, throwing, {p.remaining} left" {pill} {seat} class="gap-2">
   {#snippet aside()}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}
   {/snippet}

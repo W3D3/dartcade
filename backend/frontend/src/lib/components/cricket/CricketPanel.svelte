@@ -7,7 +7,6 @@
   X01's score; in cut-throat a gain is bad news and rolls in red.
 -->
 <script lang="ts">
-  import type { Face } from '$lib/face'
   import type { CricketGame } from '$lib/api/game-ws'
   import Avatar from '$lib/components/Avatar.svelte'
   import LegPips from '$lib/components/LegPips.svelte'
@@ -23,12 +22,9 @@
     upNext,
     size,
     compact = false,
-    face = null,
   }: {
     game: CricketGame
     side: CricketSide
-    /** The picture of a single player's side; a team has none. */
-    face?: Face | null
     active: boolean
     upNext: boolean
     size: 'lg' | 'md' | 'head' | 'sm'
@@ -53,7 +49,7 @@
   class="min-w-0 box-border flex flex-col {S.card} {playerCard(active)}"
 >
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-    {#if duel}<Avatar name={side.name} {face} tone={active ? 'accent' : 'default'} size={40} />{/if}
+    {#if duel}<Avatar name={side.name} tone={active ? 'accent' : 'default'} size={40} />{/if}
     <span class="font-semibold truncate {S.name} {active ? 'text-text' : 'text-ink-2'}">{side.name}</span>
     {#if compact && state}<PlayerPill kind={active ? 'throwing' : 'up-next'} small />{/if}
     <span class="ml-auto"><LegPips total={game.firstTo} won={game.legs[side.seat]} {active} /></span>

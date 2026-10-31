@@ -48,7 +48,6 @@ const game = (o: Partial<P121Game> = {}): P121Game => ({
 const props = (g: P121Game) => ({
   game: g,
   players: [{ name: 'Christoph' }],
-  who: [{ name: 'Christoph', bot: null, face: null }],
   darts: [],
   layout: 'solo' as const,
   canThrow: true,
@@ -121,17 +120,7 @@ describe('P121Match in a duel', () => {
     const g = game({ visitLocked: true, seats: [seat({ left: 0 }), seat()] })
     const darts = [{ segment: { name: 'D12', number: 12, multiplier: 2 }, score: 24 }] as never
     const { body } = render(P121Match, {
-      props: {
-        ...props(g),
-        players: [{ name: 'Anna' }, { name: 'Ben' }],
-        who: [
-          { name: 'Anna', bot: null, face: null },
-          { name: 'Ben', bot: null, face: null },
-        ],
-        layout: 'duel' as const,
-        darts,
-        locked: true,
-      },
+      props: { ...props(g), players: [{ name: 'Anna' }, { name: 'Ben' }], layout: 'duel' as const, darts, locked: true },
     })
     expect(text(body)).toContain('Checked out')
     expect(text(body)).not.toContain('Take your darts out to start')

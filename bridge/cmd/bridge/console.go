@@ -101,7 +101,7 @@ func (c *console) pairPrompt(code string) {
 	c.lastWait = time.Time{} // let the first waiting line print promptly
 	c.line("")
 	c.line("%s", c.paint(ansiDim, "── Pair this board ────────────────────"))
-	c.line("In Dartcade, open %s and enter:", c.paint(ansiBold, "Boards → Pair new board"))
+	c.line("In Dartcade, open %s and enter:", c.paint(ansiBold, "Boards → Pair board"))
 	c.line("")
 	c.line("    %s", c.paint(ansiBold+ansiGreen, formatCode(code)))
 	c.line("")

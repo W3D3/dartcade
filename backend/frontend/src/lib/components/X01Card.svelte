@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   // An X01 player of three or more in the portrait layout: a compact card in a two-column grid above
   // the board (Match-Vertical-Party): name and leg pips, the score with the average and darts, the finish.
   import PanelShell from './PanelShell.svelte'
@@ -11,13 +10,15 @@
   import type { SeatLine } from '$lib/remote'
 
   let {
-    who,
+    name,
+    bot = null,
     p,
     active,
     pill,
     seat = null,
   }: {
-    who: Who
+    name: string
+    bot?: { level: number } | null
     p: X01PlayerView
     active: boolean
     pill: PillKind | null
@@ -30,7 +31,7 @@
   ])
 </script>
 
-<PanelShell {who} {active} portrait {pill} {seat} pillInRow>
+<PanelShell {name} {bot} {active} portrait {pill} {seat} pillInRow>
   {#snippet aside()}
     {#if p.firstTo > 1}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

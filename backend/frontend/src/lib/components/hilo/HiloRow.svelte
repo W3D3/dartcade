@@ -3,7 +3,6 @@
   for the thrower, the last visit for the others, and where a player who is out went out.
 -->
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import { ArrowDown, ArrowUp, X } from '@lucide/svelte'
   import type { HiloGame } from '$lib/api/game-ws'
   import RowShell from '$lib/components/RowShell.svelte'
@@ -14,19 +13,18 @@
   let {
     game,
     seat,
-    who,
+    name,
     active,
     upNext,
     justLost,
   }: {
     game: HiloGame
     seat: number
-    who: Who
+    name: string
     active: boolean
     upNext: boolean
     justLost: boolean
   } = $props()
-  const name = $derived(who.name)
 
   const s = $derived(game.seats[seat])
   const last = $derived(s.visits.at(-1))
@@ -39,7 +37,7 @@
 <!-- The thrower's row takes a bigger share of the column -->
 <div class="shrink-0 {active ? 'grow-[1.4]' : 'grow'} min-h-0 flex flex-col">
   <RowShell
-    {who}
+    {name}
     {active}
     {pill}
     pillLabel={s.out ? outLabel : undefined}

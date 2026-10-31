@@ -2,7 +2,7 @@ import type { Face, Lobby, LobbySummary, NextGame, PendingInvite } from '../sche
 import type { Session } from '../session/types.js'
 import { currentSeat } from '../session/access.js'
 import { effectiveReady, isSolo, memberOf, nextHost } from './rules.js'
-import type { InviteRow, LobbyPerson, LobbyState } from './types.js'
+import type { InviteRow, LobbyState } from './types.js'
 
 /** The host's name; null with no host, or one who isn't in the lobby (yet). */
 const hostNameOf = (lobby: LobbyState): string | null =>
@@ -48,7 +48,6 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
       id: i.id,
       userId: i.userId,
       name: i.name,
-      avatar: i.avatar,
       invitedByUserId: i.invitedByUserId,
       createdAt: i.createdAt.toISOString(),
     })),
@@ -63,21 +62,20 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
   }
 }
 
-const faceOf = (p: LobbyPerson): Face => ({ userId: p.userId, name: p.name, guest: p.userId === null && p.bot === null, avatar: p.avatar })
-
 /** What a lobby is about at a glance: its host, who's in (the first four faces), its next game, its boards. */
 export function lobbyGlance(lobby: LobbyState): {
-  host: Face | null
+  hostName: string | null
   peopleCount: number
   faces: Face[]
   nextGame: NextGame | null
   boardNames: string[]
 } {
-  const host = lobby.hostUserId === null ? undefined : memberOf(lobby, lobby.hostUserId)
   return {
-    host: host ? faceOf(host) : null,
+    hostName: hostNameOf(lobby),
     peopleCount: lobby.people.length,
-    faces: lobby.people.slice(0, 4).map(faceOf),
+    faces: lobby.people
+      .slice(0, 4)
+      .map(p => ({ userId: p.userId, name: p.name, guest: p.userId === null && p.bot === null, avatar: p.avatar })),
     nextGame: lobby.nextGame,
     boardNames: [...new Set(lobby.people.flatMap(p => (p.boardName === null ? [] : [p.boardName])))],
   }
@@ -85,11 +83,11 @@ export function lobbyGlance(lobby: LobbyState): {
 
 /** The user's lobby as the indicator shows it (/ws/me). */
 export function lobbySummary(lobby: LobbyState, userId: string, session: Session | undefined): LobbySummary {
-  const { host, peopleCount, faces, nextGame } = lobbyGlance(lobby)
+  const { hostName, peopleCount, faces, nextGame } = lobbyGlance(lobby)
   return {
     id: lobby.id,
     name: lobby.name,
-    hostName: host?.name ?? null,
+    hostName,
     peopleCount,
     nextGame,
     sessionId: session?.id ?? null,
@@ -114,7 +112,8 @@ export function inviteView(row: InviteRow, lobby: LobbyState): PendingInvite {
     id: row.id,
     lobbyId: row.lobbyId,
     lobbyName: row.lobbyName,
-    inviter: row.inviter,
+    inviterUserId: row.inviterUserId,
+    inviterName: row.inviterName,
     createdAt: row.createdAt.toISOString(),
   }
 }

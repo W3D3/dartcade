@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import PanelShell from './PanelShell.svelte'
   import AtcProgress from './AtcProgress.svelte'
   import RollingNumber from './RollingNumber.svelte'
@@ -9,7 +8,8 @@
   import type { Snippet } from 'svelte'
 
   let {
-    who,
+    name,
+    bot = null,
     p,
     active,
     solo = false,
@@ -18,7 +18,8 @@
     seat = null,
     waiting,
   }: {
-    who: Who
+    name: string
+    bot?: { level: number } | null
     p: AtcPlayerView
     active: boolean
     solo?: boolean
@@ -30,7 +31,7 @@
   } = $props()
 </script>
 
-<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} pillInRow>
+<PanelShell {name} {bot} {active} {solo} {portrait} {pill} {seat} {waiting} pillInRow>
   <div class="flex flex-col gap-[6px]">
     <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span

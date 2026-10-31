@@ -27,8 +27,6 @@ import {
   addActivity,
   deletePeople,
 } from './lobbies.js'
-import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
-const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
   let db: Kysely<Database>
@@ -285,12 +283,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
           id: 'inv1',
           lobbyId: 'q1',
           lobbyName: "Christoph's lobby",
-          inviter: { userId: 'lena', name: 'Lena', guest: false, avatar: defaultAvatar },
+          inviterUserId: 'lena',
+          inviterName: 'Lena',
           createdAt: expect.any(Date),
         },
       ])
       expect((await loadLobby(db, 'q1'))?.invites).toEqual([
-        { id: 'inv1', userId: 'max', name: 'Max', avatar: defaultAvatar, invitedByUserId: 'lena', createdAt: expect.any(Date) },
+        { id: 'inv1', userId: 'max', name: 'Max', invitedByUserId: 'lena', createdAt: expect.any(Date) },
       ])
       expect(await getOpenLobbyIdByCode(db, 'K7Q4MD')).toBe('q1')
       expect(await getOpenLobbyIdOfUser(db, 'lena')).toBe('q1')
