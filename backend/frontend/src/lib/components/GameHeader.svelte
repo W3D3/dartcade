@@ -126,7 +126,7 @@
       {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
     </div>
 
-    <div class="ml-auto flex items-center gap-[10px] xl:gap-4 shrink-0">
+    <div class="ml-auto flex items-center gap-3 xl:gap-4 shrink-0">
       {#if showViewToggle}
         <div
           class="h-11 box-border flex items-center p-[3px] bg-bg rounded-[10px] border border-line-strong"
@@ -170,7 +170,8 @@
       </Button>
 
       {#if canEnd}
-        <Button variant="destructive" size="md" onclick={onend} class="ml-2 xl:ml-4">
+        <span class="w-px h-6 bg-line-strong" aria-hidden="true"></span>
+        <Button variant="destructive" size="md" onclick={onend}>
           <X size={14} />
           {endMode === 'end' ? 'End' : 'Leave'}
         </Button>
