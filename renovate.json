@@ -9,6 +9,15 @@
   "semanticCommitScope": "deps",
   "ignorePaths": ["spike/**"],
   "postUpdateOptions": ["gomodTidy"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The Playwright image scripts/visual.sh runs the visual check in",
+      "managerFilePatterns": ["/^scripts/visual\\.sh$/"],
+      "matchStrings": ["IMAGE=(?<depName>mcr\\.microsoft\\.com/playwright):(?<currentValue>\\S+?)@(?<currentDigest>sha256:[a-f0-9]+)"],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "description": "Group non-major Docker image updates (Dockerfiles, compose files, CI service containers)",
@@ -72,6 +81,12 @@
       "matchPackageNames": ["go", "golang"],
       "matchUpdateTypes": ["major", "minor"],
       "groupName": "Go toolchain"
+    },
+    {
+      "description": "The visual check's Playwright image must match @playwright/test (its browser build), so they update together, majors included",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchUpdateTypes": ["major", "minor", "patch", "digest"],
+      "groupName": "Playwright (npm and visual check image)"
     }
   ]
 }
