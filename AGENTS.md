@@ -114,6 +114,7 @@ pieces to reuse, and a checklist of every file a new mode touches. The short ver
   Postgres, see `DEVELOPMENT.md`), `cd backend/frontend && npm test`,
   `cd bridge && go test ./...`.
 - Type checks: `cd backend && npm run typecheck`, `cd backend/frontend && npm run typecheck`.
+- Visual regression: `cd e2e && npm run visual` compares every game mode's match screen with `e2e/visual/__screenshots__` (CI job `test-visual`). A change that alters a screen on purpose commits `npm run visual:update`'s new images with it; see `DEVELOPMENT.md`.
 - Lint: `npm run lint` in `backend/` (oxlint, type-aware, config in `.oxlintrc.json`) and in `backend/frontend/` (ESLint: oxlint can't type-check `.svelte` files).
 - Formatting: oxfmt (Prettier-compatible) for TS, Svelte, JSON, YAML and Markdown, run from the repo root: `npm run format` (CI runs `npm run format:check`); config in `.oxfmtrc.json`; `gofmt -w .` in `bridge/`.
 
