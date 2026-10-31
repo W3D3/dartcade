@@ -1,6 +1,8 @@
 // Admin user management: list accounts, set their role (admin, moderator, none), give them XP, ban them (schema/api-v1.yaml, tag admin).
-import { api, type AdminUser } from '$lib/api'
+import { api, type AdminUser, type UserAuditEntry } from '$lib/api'
 import type { BanCategory } from '$shared/bans.js'
+import { banLine } from '$lib/bans'
+import { isBanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 import { xpForLevel } from '$shared/progression.js'
 
@@ -98,6 +100,62 @@ export type XpGrant = { xp: number; level: number; unlocked: string[] }
 export async function grantXp(id: string, amount: number): Promise<{ grant: XpGrant } | { error: string }> {
   const res = await api.POST('/api/admin/users/{id}/xp', { params: { path: { id } }, body: { amount } })
   return res.data ? { grant: res.data } : { error: res.error.error }
+}
+
+export type AuditEntry = UserAuditEntry
+
+/** What admins did to an account or its games, newest first. Null: the request failed. */
+export async function listUserAudit(id: string): Promise<AuditEntry[] | null> {
+  const res = await api.GET('/api/admin/users/{id}/audit', { params: { path: { id } } })
+  return res.data?.entries ?? null
+}
+
+const AUDIT_LABELS: Record<string, string> = {
+  'user.ban': 'Banned',
+  'user.unban': 'Unbanned',
+  'user.grantXp': 'Gave XP',
+  'user.impersonate': 'Viewed as them',
+  'game.invalidate': 'Invalidated a game',
+  'game.restore': 'Restored a game',
+  'game.delete': 'Deleted a game',
+}
+
+/** "Banned", "Invalidated a game": the action in words; an unknown one shows as recorded. */
+export function auditLabel(action: string): string {
+  return AUDIT_LABELS[action] ?? action
+}
+
+const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null)
+const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' ? Object.fromEntries(Object.entries(v)) : {})
+
+/** A ban as one line: "Cheating until 1 Nov 2026 · note". Null for a detail without a known category. */
+function banDetail(ban: Record<string, unknown>, note?: string | null): string | null {
+  const category = str(ban.category)
+  if (!category || !isBanCategory(category)) return null
+  const until = str(ban.until)
+  return [banLine({ category, until }), note].filter(Boolean).join(' · ')
+}
+
+/** The part of an entry that says what: the ban, the XP, the reason. Null for an unknown action or a detail without it. */
+export function auditDetail(action: string, detail: unknown): string | null {
+  const d = rec(detail)
+  switch (action) {
+    case 'user.ban':
+      return banDetail(d, str(d.note))
+    case 'user.unban':
+      return d.was ? `Was: ${banDetail(rec(d.was)) ?? 'banned'}` : null
+    case 'user.grantXp':
+      return typeof d.amount === 'number' ? `+${d.amount.toLocaleString('en-US')} XP` : null
+    case 'game.invalidate':
+      return str(d.reason) && `Reason: ${str(d.reason)}`
+    case 'game.restore':
+    case 'game.delete': {
+      const reason = str(d.wasInvalidatedFor)
+      return reason && `Had been invalidated: ${reason}`
+    }
+    default:
+      return null
+  }
 }
 
 // The list doesn't carry an account's XP, so "level 50" is what level 50 costs from zero

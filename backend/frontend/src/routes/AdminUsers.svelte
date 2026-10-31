@@ -3,8 +3,7 @@
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { DropdownMenu } from 'bits-ui'
-  import { Check, Ellipsis } from '@lucide/svelte'
+  import { Check } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type SortingState, type ColumnVisibilityState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -13,16 +12,16 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
+  import UserAuditModal from '$lib/components/admin/UserAuditModal.svelte'
   import BanUserModal from '$lib/components/admin/BanUserModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { usersTrail } from '$lib/admin/breadcrumbs'
-  import { buttonVariants } from '$lib/components/ui/button/button-variants.js'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { DataTable, ColumnToggle, type Features } from '$lib/components/ui/data-table/index.js'
   import { currentUser } from '$lib/auth'
   import { viewAs } from '$lib/admin/impersonate'
-  import { cn } from '$lib/utils.js'
   import { banLine } from '$lib/bans'
   import type { BanCategory } from '$shared/bans.js'
   import {
@@ -47,6 +46,7 @@
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
 
+  let auditUser = $state<AdminUser | null>(null)
   let q = $state('')
   let users = $state<AdminUser[]>([])
   let loading = $state(false)
@@ -244,74 +244,44 @@
 {/snippet}
 
 {#snippet actionsCell(user: AdminUser)}
-  <div class="flex flex-col items-start gap-1">
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger
-        aria-label="Actions for {user.name}"
-        disabled={busyId === user.id}
-        class={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}
-      >
-        <Ellipsis size={18} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={6}
-          class="z-[60] min-w-[220px] box-border p-[6px] rounded-xl bg-surface-hover border border-line-popover
-                 [box-shadow:0_18px_44px_rgba(0,0,0,0.55)] flex flex-col gap-[2px] outline-none"
+  <div class="flex w-[360px] max-w-full flex-col items-start gap-2">
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Actions for {user.name}">
+      {#each roleActions(user.role) as action (action.role ?? 'none')}
+        <Button
+          variant={action.role === null ? 'danger' : 'outline'}
+          size="sm"
+          disabled={busyId === user.id}
+          onclick={() => askRole(user, action.role)}
         >
-          {#each roleActions(user.role) as action (action.role ?? 'none')}
-            <DropdownMenu.Item
-              onSelect={() => askRole(user, action.role)}
-              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] cursor-pointer outline-none data-[highlighted]:bg-surface-paused {action.role ===
-              null
-                ? 'text-live-text'
-                : 'text-text'}"
-            >
-              {action.label}
-            </DropdownMenu.Item>
-          {/each}
-          <DropdownMenu.Item
-            onSelect={() => askVerified(user)}
-            class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
-          >
-            {user.emailVerified ? 'Mark email as unverified' : 'Mark email as verified'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => ((rowError = null), (xpUser = user))}
-            class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
-          >
-            Give XP
-          </DropdownMenu.Item>
-          {#if canViewAs(user)}
-            <DropdownMenu.Item
-              onSelect={() => void pickViewAs(user)}
-              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
-            >
-              View as {user.name}
-            </DropdownMenu.Item>
-          {/if}
-          {#if user.ban}
-            <DropdownMenu.Item
-              onSelect={() => {
-                rowError = null
-                confirmAction = { kind: 'unban', user }
-              }}
-              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
-            >
-              Unban
-            </DropdownMenu.Item>
-          {:else if user.role !== 'admin' && user.id !== $currentUser?.id}
-            <DropdownMenu.Item
-              onSelect={() => askBan(user)}
-              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-live-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
-            >
-              Ban…
-            </DropdownMenu.Item>
-          {/if}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+          {action.label}
+        </Button>
+      {/each}
+      <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => askVerified(user)}>
+        {user.emailVerified ? 'Mark unverified' : 'Mark verified'}
+      </Button>
+      <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => ((rowError = null), (xpUser = user))}>
+        Give XP
+      </Button>
+      <Button variant="outline" size="sm" onclick={() => (auditUser = user)}>Audit log</Button>
+      {#if canViewAs(user)}
+        <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => void pickViewAs(user)}>View as</Button>
+      {/if}
+      {#if user.ban}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busyId === user.id}
+          onclick={() => {
+            rowError = null
+            confirmAction = { kind: 'unban', user }
+          }}
+        >
+          Unban
+        </Button>
+      {:else if user.role !== 'admin' && user.id !== $currentUser?.id}
+        <Button variant="danger" size="sm" disabled={busyId === user.id} onclick={() => askBan(user)}>Ban…</Button>
+      {/if}
+    </div>
     {#if rowError?.id === user.id}<ErrorText>{rowError.text}</ErrorText>{/if}
   </div>
 {/snippet}
@@ -336,6 +306,10 @@
         {/snippet}
       </DataTable>
     </PageMain>
+
+    {#if auditUser}
+      <UserAuditModal user={auditUser} onclose={() => (auditUser = null)} />
+    {/if}
 
     {#if confirmAction?.kind === 'role'}
       {@const change = roleChange(confirmAction.user, confirmAction.role, confirmAction.user.id === $currentUser.id)}

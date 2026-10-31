@@ -289,6 +289,7 @@
     title="Give up this try?"
     body="It counts as missed."
     confirmLabel="Give up"
+    cancelLabel="Keep playing"
     danger
     onconfirm={() => {
       confirmGiveUp = false

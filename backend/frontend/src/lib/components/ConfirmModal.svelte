@@ -6,7 +6,7 @@
     title,
     body,
     confirmLabel = 'Confirm',
-    cancelLabel = 'Keep playing',
+    cancelLabel = 'Cancel',
     danger = false,
     onconfirm,
     oncancel,

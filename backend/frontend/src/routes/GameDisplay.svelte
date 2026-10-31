@@ -577,6 +577,7 @@
       ? 'Your seats forfeit and are placed last; the others are ranked by their score so far.'
       : 'The current game will be cancelled and all progress will be lost.'}
     confirmLabel={control === 'leave' ? 'Leave game' : 'End game'}
+    cancelLabel="Keep playing"
     danger
     onconfirm={() => {
       showEndConfirm = false

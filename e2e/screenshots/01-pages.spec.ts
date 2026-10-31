@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { VIEW, open, shot, hostLobby, leaveLobby, api, openAccountMenu, userId, X01 } from './helpers.js'
+import { VIEW, open, shot, hostLobby, leaveLobby, api, docPath, openAccountMenu, userId, X01 } from './helpers.js'
 
 // Pages that need no game: the seed's friends, its lobby (Luke's, with Phil, inviting Admin) and history
 
@@ -151,24 +151,36 @@ test('admin: hub and users', async ({ browser }) => {
   const philId = await userId(phil.page)
   await phil.ctx.close()
   await api(page).put(`/api/admin/users/${philId}/verified`, { verified: true })
+  // Michael unverified, so a rerun on a kept stack starts from the same page
+  const michael = await open(browser, 'michael', VIEW.desktop)
+  const michaelId = await userId(michael.page)
+  await michael.ctx.close()
+  await api(page).put(`/api/admin/users/${michaelId}/verified`, { verified: false })
 
+  // Wide enough for the row buttons to sit side by side, as on a real desktop
+  await page.setViewportSize({ width: 1600, height: 760 })
   await page.goto('/#/admin/users')
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
   await expect(page.locator('main').getByText('Admin', { exact: true }).first()).toBeVisible()
   await shot(page, 'admin/users-desktop.png')
 
-  // The "…" row menu: pick an action, confirm, the dialog closes and the page is interactive again
+  // A row button: click, confirm, the dialog closes and the page is interactive again
   // (no stray overlay left capturing clicks) and the row reflects the change
-  const actions = page.getByRole('button', { name: 'Actions for Michael' })
-  await actions.click()
-  await page.getByRole('menuitem', { name: 'Mark email as verified' }).click()
+  const row = page.getByRole('row').filter({ hasText: 'Michael' })
+  await row.getByRole('button', { name: 'Mark verified' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Mark verified' }).click()
   await expect(dialog).toBeHidden()
-  await actions.click()
-  await expect(page.getByRole('menuitem', { name: 'Mark email as unverified' })).toBeVisible()
-  await page.keyboard.press('Escape')
+  await expect(row.getByRole('button', { name: 'Mark unverified' })).toBeVisible()
+
+  // Something to show in Phil's audit log, then the log itself
+  await api(page).post(`/api/admin/users/${philId}/xp`, { amount: 1000 })
+  await page.getByRole('row').filter({ hasText: /phil/i }).getByRole('button', { name: 'Audit log' }).click()
+  const audit = page.getByRole('dialog')
+  await expect(audit.getByText('Gave XP').first()).toBeVisible()
+  await audit.screenshot({ path: docPath('admin/user-audit-desktop.png'), animations: 'disabled' })
+  await audit.getByRole('button', { name: 'Close' }).click()
 
   await ctx.close()
 })
