@@ -95,11 +95,6 @@
           {#if viewMode === 'board'}<Grid3x3 size={19} />{:else}<Target size={19} />{/if}
         </Button>
       {/if}
-      {#if canEnd}
-        <Button variant="destructive" size="icon" onclick={onend} aria-label={endMode === 'end' ? 'End game' : 'Leave game'}>
-          <X size={18} />
-        </Button>
-      {/if}
       {#each boards as b (b.id)}<BoardStatusPanel board={b} compact />{/each}
       <Button
         variant="outline"
@@ -112,6 +107,11 @@
       >
         <Settings size={19} />
       </Button>
+      {#if canEnd}
+        <Button variant="destructive" size="icon" class="ml-1" onclick={onend} aria-label={endMode === 'end' ? 'End game' : 'Leave game'}>
+          <X size={18} />
+        </Button>
+      {/if}
     </span>
   </header>
 {:else}
