@@ -159,6 +159,18 @@ would be much bigger than the problem.
   flag, and show big features with their screenshot from `docs/`, linked at the tag
   (`https://raw.githubusercontent.com/W3D3/dartcade/vX.Y.Z/docs/<feature>/<file>.png`).
 
+## Reviewing
+
+This section is for agents that review code here (AO's native reviewer, review-only workers,
+anyone reviewing a PR), not for implementers.
+
+If you have the `pstack:thermo-nuclear-code-quality-review` skill (some setups list it as
+`thermo-nuclear-code-quality-review`, without the prefix), invoke it with the Skill tool on the
+diff before you write your review, and use its findings. If you don't have it, review as usual.
+
+The skill is deliberately strict. Report only the findings that are high-confidence and tied to
+the diff, a few that matter rather than a flood of nitpicks.
+
 ## UI design
 
 The UI design lives in the **Dartcade Platform Design** canvas on claude.ai:
