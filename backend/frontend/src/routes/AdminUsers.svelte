@@ -244,7 +244,7 @@
 {/snippet}
 
 {#snippet actionsCell(user: AdminUser)}
-  <div class="flex max-w-[360px] flex-col items-start gap-2">
+  <div class="flex w-[170px] max-w-full flex-col items-start gap-2">
     <div class="flex flex-wrap gap-2" role="group" aria-label="Actions for {user.name}">
       {#each roleActions(user.role) as action (action.role ?? 'none')}
         <Button
