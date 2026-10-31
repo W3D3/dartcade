@@ -75,4 +75,20 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
     await expect(renameUser(db, 'dup', 'luke')).rejects.toMatchObject({ statusCode: 409, body: { error: 'That name is taken' } })
     await expect(renameUser(db, 'dup', 'l u k e')).rejects.toMatchObject({ statusCode: 400 })
   })
+
+  it('allows one counted rename per 90 days; the first and a flagged fix are free', async () => {
+    expect(await renameUser(db, 'luke', 'Luke_1')).toBe('Luke_1')
+    await expect(renameUser(db, 'luke', 'Luke_2')).rejects.toMatchObject({
+      statusCode: 429,
+      body: { error: 'You can change your name again in 90 days' },
+    })
+    await db
+      .updateTable('user')
+      .set({ name_changed_at: new Date(Date.now() - 91 * 86_400_000) })
+      .where('id', '=', 'luke')
+      .execute()
+    expect(await renameUser(db, 'luke', 'Luke_2')).toBe('Luke_2')
+    // Phil_T's rename above fixed a flagged name: it did not start a cooldown
+    expect(await renameUser(db, 'old', 'Phil_T2')).toBe('Phil_T2')
+  })
 })

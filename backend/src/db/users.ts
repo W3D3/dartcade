@@ -138,9 +138,21 @@ export async function isNameTaken(db: Kysely<Database>, name: string, exceptUser
   return (await q.executeTakeFirst()) !== undefined
 }
 
-/** A checked name; the flag goes with it. */
-export async function setName(db: Kysely<Database>, userId: string, name: string): Promise<void> {
-  await db.updateTable('user').set({ name, name_needs_change: false }).where('id', '=', userId).execute()
+/** The user's last counted rename and whether their name is flagged (migration 013). */
+export async function getNameState(
+  db: Kysely<Database>,
+  userId: string,
+): Promise<{ name_changed_at: Date | null; name_needs_change: boolean } | undefined> {
+  return db.selectFrom('user').select(['name_changed_at', 'name_needs_change']).where('id', '=', userId).executeTakeFirst()
+}
+
+/** A checked name; the flag goes with it. `counts`: the rename starts the cooldown. */
+export async function setName(db: Kysely<Database>, userId: string, name: string, counts: boolean): Promise<void> {
+  await db
+    .updateTable('user')
+    .set({ name, name_needs_change: false, ...(counts && { name_changed_at: new Date() }) })
+    .where('id', '=', userId)
+    .execute()
 }
 
 /** Invisible: friends see the user as offline. */

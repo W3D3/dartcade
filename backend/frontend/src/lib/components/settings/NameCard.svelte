@@ -8,6 +8,7 @@
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
+  import { NAME_COOLDOWN_DAYS } from '$shared/nameCooldown'
   import { NAME_HINT, nameSendable, normalizeName, type NameStatus } from '$lib/names'
 
   const own = $derived($currentUser?.name ?? null)
@@ -53,7 +54,7 @@
         <Button type="submit" variant="accent" disabled={busy || !changed || !nameSendable(status)}>Save</Button>
       {/snippet}
     </NameField>
-    <span class="text-[13px] leading-[1.5] text-text-dim">{NAME_HINT}</span>
+    <span class="text-[13px] leading-[1.5] text-text-dim">{NAME_HINT} You can change your name once every {NAME_COOLDOWN_DAYS} days.</span>
     {#if error}<ErrorText>{error}</ErrorText>{/if}
     {#if saved && !changed}<span role="status" class="text-[13px] text-accent">{saved}</span>{/if}
   </form>
