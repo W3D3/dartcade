@@ -3,6 +3,7 @@
   import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
   import BigScreenButton from '$lib/components/BigScreenButton.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { flag } from '$lib/flags'
 
   let {
@@ -78,17 +79,13 @@
 
 <div class="relative">
   <!-- Trigger -->
-  <button
-    type="button"
+  <Button
+    variant="outline"
+    size={compact ? 'icon' : 'md'}
     onclick={() => (open = !open)}
     aria-label={compact ? `Board ${board.name}: status and controls` : undefined}
-    class="flex items-center gap-[8px] {compact
-      ? 'w-11 h-11 justify-center rounded-[10px]'
-      : 'h-9 px-3 rounded-[8px]'} text-[13px] font-[inherit] cursor-pointer
-           transition-colors border
-           {open
-      ? 'bg-surface-active border-accent/50 text-text'
-      : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}"
+    pressed={open}
+    class={compact ? '' : 'px-3 text-ink-2'}
   >
     {#if isSpinning}
       <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
@@ -96,10 +93,10 @@
       <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
     {/if}
     {#if !compact}
-      <span class="font-medium">{board.name}</span>
+      <span>{board.name}</span>
       <SlidersHorizontal size={13} class="opacity-50" />
     {/if}
-  </button>
+  </Button>
 
   {#if open}
     <div class="fixed inset-0 z-40" onclick={() => (open = false)} aria-hidden="true"></div>
