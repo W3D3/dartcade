@@ -23,6 +23,7 @@ const makeStore = () =>
     deleteDarts: vi.fn().mockResolvedValue(undefined),
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
+    getAvatars: vi.fn().mockResolvedValue(new Map()),
   }) satisfies EngineStore
 const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
 // The last lobby or me message (a /ws/me socket also gets the friends list when it opens)
@@ -211,7 +212,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.preview(code.toLowerCase())).toEqual({
         id,
         name: "Christoph's lobby",
-        hostName: 'Christoph',
+        host: { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },
         peopleCount: 2,
         faces: [
           { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },
@@ -248,7 +249,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hub.addLobbySocket(id, ws, 'chris')
       await lobbies.renamed('chris', 'Chris')
       expect(lastMsg(ws).lobby).toMatchObject({ name: "Christoph's lobby", people: [{ name: 'Chris' }, { name: 'Lena' }] })
-      expect(await lobbies.preview(code)).toMatchObject({ hostName: 'Chris' })
+      expect(await lobbies.preview(code)).toMatchObject({ host: { name: 'Chris' } })
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Chris', 'Lena'])
     })
@@ -956,10 +957,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
           id: inviteId,
           lobbyId: id,
           lobbyName: "Christoph's lobby",
-          inviterUserId: 'lena',
-          inviterName: 'Lena',
+          inviter: { userId: 'lena', name: 'Lena', guest: false, avatar: defaultAvatar },
           createdAt: expect.any(String),
-          hostName: 'Christoph',
+          host: { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },
           peopleCount: 2,
           faces: [
             { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },

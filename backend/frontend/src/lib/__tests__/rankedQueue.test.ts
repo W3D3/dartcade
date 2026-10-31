@@ -15,7 +15,11 @@ const search = (s: Partial<MatchmakingSearch>): MatchmakingSearch => ({
   searching: 1,
   ...s,
 })
-const seat = (accepted: boolean, you = false) => ({ name: you ? 'Christoph' : null, accepted, you })
+const seat = (accepted: boolean, you = false) => ({
+  person: you ? { userId: 'u1', name: 'Christoph', guest: false, avatar: { kind: 'none' as const } } : null,
+  accepted,
+  you,
+})
 const match = (m: Partial<MatchmakingMatch>): MatchmakingMatch => ({
   id: 'm1',
   mode: '1v1',

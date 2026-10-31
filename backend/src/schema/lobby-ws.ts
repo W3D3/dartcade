@@ -41,11 +41,6 @@ export type Avatar =
     }
 export type TeamId = 'A' | 'B'
 /**
- * This interface was referenced by `LobbyWs`'s JSON-Schema
- * via the `definition` "LobbyServerMessage".
- */
-export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
-/**
  * A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo
  */
 export type Avatar1 =
@@ -70,6 +65,11 @@ export type Avatar1 =
        */
       version: number
     }
+/**
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "LobbyServerMessage".
+ */
+export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
 /**
  * What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.
  */
@@ -167,6 +167,7 @@ export interface LobbyInvitee {
   id: string
   userId: string
   name: string
+  avatar: Avatar1
   invitedByUserId: string | null
   createdAt: string
 }
@@ -283,13 +284,15 @@ export interface PendingInvite {
   id: string
   lobbyId: string
   lobbyName: string
-  inviterUserId: string | null
-  inviterName: string | null
+  /**
+   * Null when the inviter's account is gone.
+   */
+  inviter: Face | null
   createdAt: string
   /**
    * Null only if the host's account is gone; any member can invite, so it may differ from the inviter.
    */
-  hostName: string | null
+  host: Face | null
   peopleCount: number
   /**
    * The first four people in lobby order.
@@ -585,7 +588,7 @@ export interface MatchmakingSeat {
   /**
    * null for the other side.
    */
-  name: string | null
+  person: Face | null
   accepted: boolean
   you: boolean
 }

@@ -1,4 +1,5 @@
 import type { components } from '../schema/api.js'
+import type { Face } from '../schema/lobby-ws.js'
 import type { GameConfig } from '../session/types.js'
 
 /** lobby: as the lobby lists people. random: shuffled per game. bulloff: a bull off decides. */
@@ -43,7 +44,14 @@ export type LobbyPerson = {
 }
 
 /** Someone invited into the lobby who hasn't answered yet. */
-export type LobbyInvitee = { id: string; userId: string; name: string; invitedByUserId: string | null; createdAt: Date }
+export type LobbyInvitee = {
+  id: string
+  userId: string
+  name: string
+  avatar: components['schemas']['Avatar']
+  invitedByUserId: string | null
+  createdAt: Date
+}
 
 export const ACTIVITY_KINDS = [
   'opened',
@@ -110,7 +118,7 @@ export type InviteRow = {
   id: string
   lobbyId: string
   lobbyName: string
-  inviterUserId: string | null
-  inviterName: string | null
+  /** Null once the inviter's account is gone. */
+  inviter: Face | null
   createdAt: Date
 }
