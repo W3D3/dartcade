@@ -1,15 +1,17 @@
 <script lang="ts">
-  // The board details' Big screen section: is a monitor connected, how it starts, and its Start / Stop.
+  // The board's Big screen card: is a monitor connected, how it starts, and its Start / Stop.
+  import { Monitor } from '@lucide/svelte'
   import { RadioGroup } from 'bits-ui'
   import { api, type Board } from '$lib/api'
   import { bigScreenStatus } from '$lib/boards'
   import BigScreenButton from '$lib/components/BigScreenButton.svelte'
-  import SettingSwitch from '$lib/components/SettingSwitch.svelte'
+  import { Switch } from '$lib/components/ui/switch/index.js'
+  import SectionCard from './SectionCard.svelte'
 
   let { board, blocked = false, onchanged }: { board: Board; blocked?: boolean; onchanged: () => Promise<void> | void } = $props()
 
   const MODES = [
-    { value: 'manual', label: 'Manual', sub: 'Nothing opens until you press Start. Good for a computer or TV you only sometimes use.' },
+    { value: 'manual', label: 'Manual', sub: 'Opens only when you press Start. Good for a TV you only sometimes use.' },
     { value: 'auto', label: 'Always on', sub: "Opens when the bridge's computer starts and shows an idle screen between games." },
   ]
   let error = $state<string | null>(null)
@@ -27,32 +29,31 @@
   }
 </script>
 
-<div class="flex flex-col gap-3 py-3 border-b border-line-2">
-  <SettingSwitch
-    id="big-screen-monitor"
-    label="Big screen"
-    sub="A monitor is connected to the computer running the bridge"
-    checked={mode !== 'off'}
-    onchange={on => void setMode(on ? 'manual' : 'off')}
-  />
+<SectionCard title="Big screen" icon={Monitor}>
+  {#snippet aside()}
+    <Switch checked={mode !== 'off'} onCheckedChange={on => void setMode(on ? 'manual' : 'off')} aria-label="Big screen" />
+  {/snippet}
+  <p class="m-0 -mt-2 text-[14px] leading-[1.45] text-text-muted">
+    A monitor connected to the computer running the bridge shows scores, checkouts and the board.
+  </p>
   {#if mode !== 'off'}
-    <RadioGroup.Root value={mode} onValueChange={setMode} aria-label="How the big screen starts" class="grid sm:grid-cols-2 gap-2">
+    <RadioGroup.Root value={mode} onValueChange={setMode} aria-label="How the big screen starts" class="grid sm:grid-cols-2 gap-[10px]">
       {#each MODES as m (m.value)}
         <RadioGroup.Item
           value={m.value}
-          class="flex flex-col gap-1 text-left p-3 rounded-[10px] border border-line-3 bg-transparent cursor-pointer
-                 font-[inherit] transition-colors hover:bg-surface-active
-                 data-[state=checked]:border-big-screen data-[state=checked]:bg-surface-active"
+          class="flex flex-col gap-1 text-left p-[14px] rounded-[12px] border-[1.5px] border-line-2 bg-surface-panel cursor-pointer
+                 font-[inherit] transition-colors hover:border-line-popover
+                 data-[state=checked]:border-accent data-[state=checked]:bg-card-active"
         >
-          <span class="text-[14px] font-semibold text-text">{m.label}</span>
-          <span class="text-[13px] text-text-dim">{m.sub}</span>
+          <span class="text-[15px] font-semibold text-text">{m.label}</span>
+          <span class="text-[13.5px] leading-[1.45] text-text-muted">{m.sub}</span>
         </RadioGroup.Item>
       {/each}
     </RadioGroup.Root>
-    <div class="flex items-center gap-2 text-[13px] text-text-muted">
-      <span class="size-2 rounded-full {status.running ? 'bg-accent' : 'bg-text-dim'}"></span>{status.text}
+    <div class="flex items-center gap-2 text-[14px] text-text-muted">
+      <span class="size-2 rounded-full {status.running ? 'bg-accent' : 'border-[1.5px] border-line-strong box-border'}"></span>{status.text}
     </div>
     <BigScreenButton {board} {blocked} />
   {/if}
   {#if error}<span class="text-[13px] text-live-text" role="alert">{error}</span>{/if}
-</div>
+</SectionCard>

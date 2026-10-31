@@ -62,7 +62,7 @@ func TestConsole_PairPrompt(t *testing.T) {
 	if !strings.Contains(out, "7KQ4-M2XD") {
 		t.Errorf("code not shown grouped: %q", out)
 	}
-	if !strings.Contains(out, "Pair new board") {
+	if !strings.Contains(out, "Pair board") {
 		t.Errorf("missing web instruction: %q", out)
 	}
 }

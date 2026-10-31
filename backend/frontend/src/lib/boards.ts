@@ -1,4 +1,4 @@
-// Text for the Boards page: versions, hosts, dates, and the tablet's Selected bar.
+// Text for the Boards page: versions, hosts, dates, and the bridge update row.
 import type { Board } from './api'
 import type { BoardStatusMessage } from './api/lobby-ws'
 import { dayMonth } from './fmt.js'
@@ -24,13 +24,6 @@ export function fmtDate(iso?: string | null): string {
   if (!iso) return '—'
   const d = new Date(iso)
   return isNaN(d.getTime()) ? '—' : `${dayMonth(d)} ${d.getFullYear()}`
-}
-
-/** Under the selected board's name on tablets: "Bridge v0.4.2 · connected · paired 12 Aug 2026". */
-export function selectedLine(b: Board): string {
-  const version = fmtVersion(b.bridgeVersion)
-  const bridge = `Bridge ${version ? `${version} · ` : ''}${b.online ? 'connected' : 'offline'}`
-  return `${bridge} · paired ${fmtDate(b.createdAt)}`
 }
 
 /**
