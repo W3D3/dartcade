@@ -157,6 +157,8 @@ test('admin: hub and users', async ({ browser }) => {
   await michael.ctx.close()
   await api(page).put(`/api/admin/users/${michaelId}/verified`, { verified: false })
 
+  // Wide enough for the row buttons to sit side by side, as on a real desktop
+  await page.setViewportSize({ width: 1600, height: 760 })
   await page.goto('/#/admin/users')
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
   await expect(page.locator('main').getByText('Admin', { exact: true }).first()).toBeVisible()
