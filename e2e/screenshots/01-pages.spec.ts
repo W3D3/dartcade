@@ -157,18 +157,15 @@ test('admin: hub and users', async ({ browser }) => {
   await expect(page.locator('main').getByText('Admin', { exact: true }).first()).toBeVisible()
   await shot(page, 'admin/users-desktop.png')
 
-  // The "…" row menu: pick an action, confirm, the dialog closes and the page is interactive again
+  // A row button: click, confirm, the dialog closes and the page is interactive again
   // (no stray overlay left capturing clicks) and the row reflects the change
-  const actions = page.getByRole('button', { name: 'Actions for Michael' })
-  await actions.click()
-  await page.getByRole('menuitem', { name: 'Mark email as verified' }).click()
+  const row = page.getByRole('row').filter({ hasText: 'Michael' })
+  await row.getByRole('button', { name: 'Mark verified' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Mark verified' }).click()
   await expect(dialog).toBeHidden()
-  await actions.click()
-  await expect(page.getByRole('menuitem', { name: 'Mark email as unverified' })).toBeVisible()
-  await page.keyboard.press('Escape')
+  await expect(row.getByRole('button', { name: 'Mark unverified' })).toBeVisible()
 
   await ctx.close()
 })
