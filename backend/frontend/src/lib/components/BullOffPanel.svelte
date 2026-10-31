@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import { isPhone, isPortrait } from '$lib/viewport'
   // Bull off for any game wrapped with withBullOff: one dart each, closest to
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
@@ -14,15 +13,15 @@
 
   let {
     players,
-    who = [],
+    bots = [],
     bullOff,
     manual,
     viewOnly = false,
     send,
   }: {
     players: { name: string }[]
-    /** Per seat (the snapshot's seat order): its bot and picture. */
-    who?: Who[]
+    /** Per seat (the snapshot's seat order): its bot info, else null. */
+    bots?: ({ level: number } | null)[]
     bullOff: BullOffView
     /** No board attached: darts are entered by clicking the board. */
     manual: boolean
@@ -41,6 +40,7 @@
   const currentThrow = $derived(bullOff.throws[current] ?? null)
   const name = (i: number) => players[i]?.name ?? `Player ${i + 1}`
   const initial = (i: number) => nameInitial(name(i))
+  const bot = (i: number) => bots[i] ?? null
 
   // Rows: this round's throwing order, or the ranking once decided
   const rows = $derived(result && !result.rethrow ? result.order : bullOff.sequence)
@@ -280,7 +280,7 @@
            {lead ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
-      <Avatar name={name(p)} bot={who.at(p)?.bot ?? null} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} size={40} />
+      <Avatar name={name(p)} bot={bot(p)} tone={throwing ? 'accent' : 'quiet'} size={40} />
       <span class="text-[22px] font-semibold truncate {lead ? 'text-text' : 'text-text-muted'}">{name(p)}</span>
       <span
         class="ml-auto h-6 px-[10px] inline-flex items-center rounded-full text-[11px] font-bold tracking-[0.08em] uppercase whitespace-nowrap
@@ -347,13 +347,7 @@
               >{ordinal(pos + 1)}</span
             >
           {:else}
-            <Avatar
-              name={name(p)}
-              bot={who.at(p)?.bot ?? null}
-              face={who.at(p)?.face ?? null}
-              tone={throwing ? 'accent' : 'quiet'}
-              class="w-10 h-10 text-[16px]"
-            />
+            <Avatar name={name(p)} bot={bot(p)} tone={throwing ? 'accent' : 'quiet'} class="w-10 h-10 text-[16px]" />
           {/if}
 
           <div class="flex flex-col gap-1 min-w-0">

@@ -3,7 +3,6 @@
   or a compact row for everyone else.
 -->
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import type { HiloGame } from '$lib/api/game-ws'
   import Avatar from '$lib/components/Avatar.svelte'
   import PhoneCardShell from '$lib/components/PhoneCardShell.svelte'
@@ -15,12 +14,11 @@
   let {
     game,
     seat,
-    who,
+    name,
     active,
     upNext,
     justLost,
-  }: { game: HiloGame; seat: number; who: Who; active: boolean; upNext: boolean; justLost: boolean } = $props()
-  const name = $derived(who.name)
+  }: { game: HiloGame; seat: number; name: string; active: boolean; upNext: boolean; justLost: boolean } = $props()
 
   const s = $derived(game.seats[seat])
   const last = $derived(s.visits.at(-1))
@@ -33,7 +31,7 @@
 </script>
 
 {#if active}
-  <PhoneCardShell {who} label="{name}, throwing, {lives}" pill="throwing" seat={null} class="gap-[10px]">
+  <PhoneCardShell {name} label="{name}, throwing, {lives}" pill="throwing" seat={null} class="gap-[10px]">
     {#snippet aside()}<span class="ml-auto"><Hearts lives={s.lives} total={game.cfg.lives} size="w-[26px] h-[26px]" /></span>{/snippet}
     <div class="flex items-baseline justify-between gap-[10px]">
       <span class="flex flex-col gap-[1px]">
@@ -56,7 +54,7 @@
       justLost ? 'lost' : null,
     )} {s.out ? 'opacity-60' : ''}"
   >
-    <Avatar name={who.name} face={who.face} size={32} />
+    <Avatar {name} size={32} />
     <span class="flex flex-col gap-[2px] min-w-0">
       <span class="text-[15px] font-semibold text-ink-2 truncate {s.out ? 'line-through' : ''}">{name}</span>
       <span class="text-[12px] truncate {lost && !s.out ? 'text-[#e0827a]' : 'text-text-dim'}">{sub}</span>

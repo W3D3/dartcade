@@ -5,7 +5,6 @@
   Phones: the compact card, the slots, the board and the dot ladder.
 -->
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { P121Game } from '$lib/api/game-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -26,7 +25,6 @@
   let {
     game,
     players,
-    who,
     darts,
     layout,
     canThrow,
@@ -46,8 +44,6 @@
   }: {
     game: P121Game
     players: { name: string }[]
-    /** Per seat: its name, bot and picture. */
-    who: Who[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
     layout: MatchLayout
@@ -190,7 +186,7 @@
 {/snippet}
 
 {#snippet phoneLayout()}
-  <P121PlayerCard {game} seat={cp} who={who[cp]} active visitDarts={vd(cp)} variant="phone" {checkout} />
+  <P121PlayerCard {game} seat={cp} name={name(cp)} active visitDarts={vd(cp)} variant="phone" {checkout} />
   <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
   {@render board()}
   {@render madeCard()}
@@ -209,7 +205,16 @@
     <div class="shrink-0 grid gap-3 lg:gap-4 {game.seats.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
       {#each game.seats as _, i (i)}
         <div class="min-w-0 flex flex-col gap-3">
-          <P121PlayerCard {game} seat={i} who={who[i]} active={i === cp && playing} visitDarts={vd(i)} variant="side" portrait {checkout} />
+          <P121PlayerCard
+            {game}
+            seat={i}
+            name={name(i)}
+            active={i === cp && playing}
+            visitDarts={vd(i)}
+            variant="side"
+            portrait
+            {checkout}
+          />
           <P121Ladder {game} seat={i} variant="dots" />
         </div>
       {/each}
@@ -232,7 +237,7 @@
 {/snippet}
 
 {#snippet soloLayout()}
-  <P121PlayerCard {game} seat={0} who={who[0]} active visitDarts={vd(0)} {checkout} />
+  <P121PlayerCard {game} seat={0} name={name(0)} active visitDarts={vd(0)} {checkout} />
   <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-[14px]">{@render center(false)}</div>
   <P121SessionPanel {game} seat={0} visitDarts={vd(0)} />
 {/snippet}
@@ -240,7 +245,7 @@
 {#snippet duelLayout()}
   {#each [0, 1] as i (i)}
     <div class="w-[300px] xl:w-[380px] shrink-0 min-h-0 flex flex-col gap-3 {i === 1 ? 'order-3' : ''}">
-      <P121PlayerCard {game} seat={i} who={who[i]} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
+      <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
       <P121Ladder {game} seat={i} variant="dots" />
     </div>
   {/each}
@@ -258,7 +263,7 @@
     <!-- As tall as its content: the list scrolls rather than stretching the rows -->
     <div class="shrink-0">
       <RowShell
-        who={who[i]}
+        name={name(i)}
         active={i === cp && playing}
         pill={s.done ? 'out' : null}
         pillLabel="Done"

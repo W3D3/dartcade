@@ -148,31 +148,6 @@ export type P121Game = EngineGameFields & {
   bullOff: BullOffView | null
 }
 /**
- * The account's profile picture; {kind: 'none'} for a guest or bot.
- */
-export type Avatar =
-  | {
-      kind: 'none'
-    }
-  | {
-      kind: 'preset'
-      /**
-       * The finish of the mark in front
-       */
-      foreground: string
-      /**
-       * The finish of the disc behind it
-       */
-      background: string
-    }
-  | {
-      kind: 'upload'
-      /**
-       * Cache-busts GET /api/users/{id}/avatar?v=
-       */
-      version: number
-    }
-/**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "SessionStatus".
  */
@@ -654,7 +629,6 @@ export interface SeatInfo {
    * The account the seat plays for; null for a guest.
    */
   userId: string | null
-  avatar: Avatar
   /**
    * null: darts are entered by hand.
    */

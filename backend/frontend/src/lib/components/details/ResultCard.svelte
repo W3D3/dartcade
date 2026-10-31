@@ -24,7 +24,15 @@
           ? 'items-end sm:flex-row-reverse'
           : 'items-start'}"
       >
-        <Avatar name={s.name} size={36} guest={s.guest} bot={s.bot} face={s} tone={s.me ? 'accent' : 'default'} />
+        <Avatar
+          name={s.name}
+          size={36}
+          guest={s.guest}
+          bot={s.bot}
+          avatar={s.avatar}
+          userId={s.userId}
+          tone={s.me ? 'accent' : 'default'}
+        />
         <span class="max-w-full text-[18px] md:text-[20px] font-semibold truncate {s.placement === 1 ? 'text-text' : 'text-ink-2'}"
           >{s.name}</span
         >

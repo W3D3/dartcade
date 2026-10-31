@@ -7,8 +7,8 @@ const view: WinView = {
   mode: 'atc',
   layout: 'duel',
   competitors: [
-    { name: 'Ann', face: null, members: [], seats: [0], placement: 1, score: 21, sub: '', cells: [] },
-    { name: 'Bob', face: null, members: [], seats: [1], placement: 2, score: 9, sub: '', cells: [] },
+    { name: 'Ann', guest: false, members: [], seats: [0], placement: 1, score: 21, sub: '', cells: [] },
+    { name: 'Bob', guest: false, members: [], seats: [1], placement: 2, score: 9, sub: '', cells: [] },
   ],
   kicker: 'Game over',
   scoreLabel: 'Targets',

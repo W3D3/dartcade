@@ -21,12 +21,12 @@ export type Account = {
   avatar: Avatar
 }
 
-/** The Avatar union shape from the avatar_* columns (migrations 031, 038); null columns (a left join with no account) are kind none. */
+/** The Avatar union shape from the avatar_* columns (migrations 031, 038). */
 export function toAvatar(row: {
-  avatar_kind: 'none' | 'preset' | 'upload' | null
+  avatar_kind: 'none' | 'preset' | 'upload'
   avatar_preset: string | null
   avatar_background: string | null
-  avatar_version: number | null
+  avatar_version: number
 }): Avatar {
   if (row.avatar_kind === 'preset')
     return {
@@ -34,7 +34,7 @@ export function toAvatar(row: {
       foreground: row.avatar_preset ?? DEFAULT_AVATAR_FINISH,
       background: row.avatar_background ?? DEFAULT_AVATAR_FINISH,
     }
-  if (row.avatar_kind === 'upload') return { kind: 'upload', version: row.avatar_version ?? 0 }
+  if (row.avatar_kind === 'upload') return { kind: 'upload', version: row.avatar_version }
   return { kind: 'none' }
 }
 
@@ -163,20 +163,4 @@ export async function updatePreferences(db: Kysely<Database>, userId: string, ch
     .returning('preferences')
     .executeTakeFirst()
   return row?.preferences
-}
-
-/** The accounts among `ids` that exist, with their names and pictures. */
-export async function getAccountsByIds(db: Kysely<Database>, ids: string[]): Promise<{ id: string; name: string; avatar: Avatar }[]> {
-  if (ids.length === 0) return []
-  const rows = await db
-    .selectFrom('user')
-    .select(['id', 'name', 'avatar_kind', 'avatar_preset', 'avatar_background', 'avatar_version'])
-    .where('id', 'in', ids)
-    .execute()
-  return rows.map(r => ({ id: r.id, name: r.name, avatar: toAvatar(r) }))
-}
-
-/** The pictures of these accounts. */
-export async function getAvatars(db: Kysely<Database>, ids: string[]): Promise<Map<string, Avatar>> {
-  return new Map((await getAccountsByIds(db, ids)).map(a => [a.id, a.avatar]))
 }

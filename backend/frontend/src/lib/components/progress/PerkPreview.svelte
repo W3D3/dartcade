@@ -40,7 +40,7 @@
     style="background: {c.bg}; color: {c.fg}">Aa</span
   >
 {:else if perk.kind === 'picture'}
-  <Avatar name="" face={{ avatar: finishAvatar(perk.id.slice('picture.'.length)), userId: null }} size={32} />
+  <Avatar name="" avatar={finishAvatar(perk.id.slice('picture.'.length))} size={32} />
 {:else if perk.kind === 'frame'}
   <span class="size-[34px] box-border rounded-full p-[3px] flex" style="background: {frameOf(perk.id)?.ring}"
     ><span class="flex-1 rounded-full bg-surface-2"></span></span

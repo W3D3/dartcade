@@ -208,8 +208,6 @@ export type GameConfig = Record<string, unknown>
 
 export interface Session {
   id: string
-  /** The seated accounts' profile pictures, by user id; a guest or bot has none. */
-  avatars: Map<string, components['schemas']['Avatar']>
   /** The host: started the game; may start the bull off and abort. */
   ownerUserId: string
   /** The local game's board (null for lobby games: see seats). */

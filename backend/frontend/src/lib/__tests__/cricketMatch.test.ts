@@ -42,10 +42,6 @@ const game = (o: Partial<CricketGame> = {}): CricketGame => ({
 const props = (g: CricketGame, o: Record<string, unknown> = {}) => ({
   game: g,
   players: [{ name: 'Lena' }, { name: 'Tom' }],
-  who: [
-    { name: 'Lena', bot: null, face: null },
-    { name: 'Tom', bot: null, face: null },
-  ],
   darts: twoDarts,
   layout: 'duel' as const,
   canThrow: true,

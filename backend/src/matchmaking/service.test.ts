@@ -9,8 +9,6 @@ import { LobbyHub } from '../lobby/hub.js'
 import { LobbyService } from '../lobby/service.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ACCEPT_MS, MatchmakingService, PAUSE_MS } from './service.js'
-import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
-const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 const user = (id: string, name: string) => ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null })
 
@@ -86,11 +84,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await mm.tick()
     const found = last('chris').match
     expect(found).toMatchObject({ mode: '1v1', firstTo: 2, range: 75, stakes: null })
-    expect(found?.yours).toEqual([
-      { person: { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar }, accepted: false, you: true },
-    ])
+    expect(found?.yours).toEqual([{ name: 'Christoph', accepted: false, you: true }])
     // The opponent stays hidden
-    expect(found?.theirs).toEqual([{ person: null, accepted: false, you: false }])
+    expect(found?.theirs).toEqual([{ name: null, accepted: false, you: false }])
     expect(last('chris').search).toBeNull()
 
     await mm.accept('anna', matchId('anna'))
@@ -186,7 +182,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await duo('chris', 'lena')
     await duo('anna', 'ben')
     await mm.tick()
-    expect(last('lena').match?.yours.map(s => s.person?.name)).toEqual(['Christoph', 'Lena'])
+    expect(last('lena').match?.yours.map(s => s.name)).toEqual(['Christoph', 'Lena'])
     for (const u of ['chris', 'lena', 'anna']) await mm.accept(u, matchId(u))
     expect(engine.getSessionByUser('chris')).toBeUndefined()
     expect(last('chris').match?.theirs.map(s => s.accepted)).toEqual([true, false])

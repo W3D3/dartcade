@@ -10637,7 +10637,7 @@
         "required": [
           "id",
           "name",
-          "host",
+          "hostName",
           "peopleCount",
           "faces",
           "nextGame",
@@ -10651,14 +10651,9 @@
           "name": {
             "type": "string"
           },
-          "host": {
-            "type": "object",
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LobbyFace"
-              }
-            ]
+          "hostName": {
+            "type": "string",
+            "nullable": true
           },
           "peopleCount": {
             "type": "integer",
@@ -10960,9 +10955,10 @@
           "id",
           "lobbyId",
           "lobbyName",
-          "inviter",
+          "inviterUserId",
+          "inviterName",
           "createdAt",
-          "host",
+          "hostName",
           "peopleCount",
           "faces",
           "nextGame",
@@ -10980,27 +10976,21 @@
           "lobbyName": {
             "type": "string"
           },
-          "inviter": {
-            "type": "object",
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LobbyFace"
-              }
-            ]
+          "inviterUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "inviterName": {
+            "type": "string",
+            "nullable": true
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
-          "host": {
-            "type": "object",
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LobbyFace"
-              }
-            ]
+          "hostName": {
+            "type": "string",
+            "nullable": true
           },
           "peopleCount": {
             "type": "integer",

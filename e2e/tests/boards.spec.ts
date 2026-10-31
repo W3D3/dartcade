@@ -9,7 +9,7 @@ test('boards open in settings, with the first-board guide for a new account', as
 })
 
 // A board that has been listening for a while: its log scrolls, the panel and page keep their height (#310, #366)
-test('a long live events log scrolls inside the selected-board panel', async ({ authedPage: page }) => {
+test('a long live events log scrolls inside its card', async ({ authedPage: page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const board = {
     id: 'b1',
@@ -39,8 +39,8 @@ test('a long live events log scrolls inside the selected-board panel', async ({ 
   await page.route('**/api/boards/b1/camera/**', route => route.fulfill({ status: 404 }))
 
   await page.goto('/#/settings/boards')
-  const panel = page.locator('aside').filter({ hasText: 'Live events' })
-  const log = panel.locator('.overflow-y-auto')
+  const panel = page.getByRole('region', { name: 'Live events' })
+  const log = panel.getByRole('log')
   await expect(log.getByText('throw T3')).toBeVisible()
   const panelBefore = (await panel.boundingBox())!.height
   const pageBefore = await page.locator('main').evaluate(el => el.scrollHeight)

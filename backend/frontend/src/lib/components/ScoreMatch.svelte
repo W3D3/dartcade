@@ -4,7 +4,6 @@
   `viewOnly`, with nothing to press and no waiting or entry states.
 -->
 <script lang="ts">
-  import { whoOf } from '$lib/face'
   import type { Segment } from '$lib/api'
   import BoardCaption from './BoardCaption.svelte'
   import BoardLegend from './BoardLegend.svelte'
@@ -97,7 +96,7 @@
   const darts = $derived(game?.currentVisitDarts ?? [])
   // A kiosk has no viewer: no "Garage · manual entry" lines under the names
   const lines = $derived(viewOnly ? snapshot.seats.map(() => null) : seatLines(snapshot))
-  const who = $derived(whoOf(snapshot))
+  const bots = $derived(snapshot.seats.map(s => s.bot))
   const turn = $derived(turnStatus(remote))
   const caption = $derived(boardCaption(remote))
   const {
@@ -267,7 +266,8 @@
   {@const isWaiting = remote.kind === 'waiting' && remote.seat === i}
   {#if isX01}
     <X01Panel
-      who={who[i]}
+      name={players[i]?.name ?? ''}
+      bot={bots[i] ?? null}
       p={x01Players[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
@@ -279,7 +279,8 @@
     />
   {:else}
     <AtcPanel
-      who={who[i]}
+      name={players[i]?.name ?? ''}
+      bot={bots[i] ?? null}
       p={atcPlayers[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
@@ -310,7 +311,7 @@
     <TeamPanel
       {team}
       seats={lines}
-      {who}
+      {bots}
       chalkboard={settings.chalkboard && !compact}
       {compact}
       overlay={away && !compact ? teamWaiting : undefined}
@@ -335,20 +336,21 @@
         {/each}
       </div>
     {:else}
-      {#each who as _, i (i)}
+      {#each players as player, i (i)}
         {@const up = i === currentPlayer}
         {@const line = lines[i] ?? null}
         <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
           {#if up && !keypad}
             {#if isX01}
-              <PhoneX01Card who={who[i]} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
+              <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
             {:else}
-              <PhoneAtcCard who={who[i]} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
+              <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
             {/if}
           {:else if isX01}
             <PhonePlayerRow
               active={up}
-              who={who[i]}
+              name={player.name}
+              bot={bots[i] ?? null}
               you={line?.you ?? false}
               pill={up ? null : pillFor(i, true)}
               sub={rowSub(
@@ -371,7 +373,8 @@
           {:else}
             <PhonePlayerRow
               active={up}
-              who={who[i]}
+              name={player.name}
+              bot={bots[i] ?? null}
               you={line?.you ?? false}
               pill={up ? null : pillFor(i, true)}
               sub={rowSub(
@@ -405,13 +408,14 @@
         <div data-up={team.active ? upKey : undefined} class="flex min-w-0">{@render teamPanel(t, true)}</div>
       {/each}
     {:else}
-      {#each who as _, i (i)}
+      {#each players as player, i (i)}
         <div data-up={i === currentPlayer ? upKey : undefined} class="flex min-w-0">
           {#if !portraitCards}
             {@render panel(i)}
           {:else if isX01}
             <X01Card
-              who={who[i]}
+              name={player.name}
+              bot={bots[i] ?? null}
               p={x01Players[i]}
               active={i === currentPlayer && isActive}
               pill={pillFor(i, true)}
@@ -419,7 +423,8 @@
             />
           {:else}
             <AtcCard
-              who={who[i]}
+              name={player.name}
+              bot={bots[i] ?? null}
               p={atcPlayers[i]}
               active={i === currentPlayer && isActive}
               pill={pillFor(i, true)}
@@ -456,11 +461,25 @@
 
 {#snippet partyLayout()}
   <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
-    {#each who as _, i (i)}
+    {#each players as player, i (i)}
       {#if isX01}
-        <X01Row who={who[i]} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
+        <X01Row
+          name={player.name}
+          bot={bots[i] ?? null}
+          p={x01Players[i]}
+          active={i === currentPlayer && isActive}
+          pill={pillFor(i, true)}
+          seat={lines[i] ?? null}
+        />
       {:else}
-        <AtcRow who={who[i]} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
+        <AtcRow
+          name={player.name}
+          bot={bots[i] ?? null}
+          p={atcPlayers[i]}
+          active={i === currentPlayer && isActive}
+          pill={pillFor(i, true)}
+          seat={lines[i] ?? null}
+        />
       {/if}
     {/each}
   </div>

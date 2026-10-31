@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion, selectedLine } from '../boards.js'
+import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '../boards.js'
 import type { Board } from '../api'
 
 const board = (over: Partial<Board> = {}): Board => ({
@@ -28,11 +28,6 @@ describe('board text', () => {
     expect(bmHost(board({ bmUrl: null }))).toBe('192.168.1.42')
     expect(fmtDate('2026-08-12T10:00:00.000Z')).toBe('12 Aug 2026')
     expect(fmtDate(null)).toBe('—')
-  })
-
-  it('the Selected bar: bridge, connection and when it was paired', () => {
-    expect(selectedLine(board())).toBe('Bridge v0.4.2 · connected · paired 12 Aug 2026')
-    expect(selectedLine(board({ online: false, bridgeVersion: null }))).toBe('Bridge offline · paired 12 Aug 2026')
   })
 })
 

@@ -1,27 +1,36 @@
 <script lang="ts">
-  // Settings' Boards section (Boards, Tablet-Boards, Mobile-Boards boards): your boards, the
-  // selected one's cameras, controls and live events, and pairing. With none yet, the
+  // Settings' Boards section (Boards, Mobile-Boards, Tablet-Boards boards): the board chips, the
+  // selected board's panel and its cards (cameras, live events, lights, game, big screen, pairing). With none yet, the
   // Settings-Boards-Empty onboarding.
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import { Download, ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
+  import {
+    Activity,
+    Camera,
+    Download,
+    ExternalLink,
+    Lightbulb,
+    Link2,
+    LoaderCircle,
+    Pencil,
+    Play,
+    RotateCcw,
+    Square,
+    Sun,
+  } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { hasBoards } from '$lib/hasBoards'
   import { flag } from '$lib/flags'
-  import { Button } from '$lib/components/ui/button/index.js'
-  import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
   import AutoStartSwitch from './AutoStartSwitch.svelte'
   import BigScreenSetup from './BigScreenSetup.svelte'
-  import BoardCard from '$lib/components/boards/BoardCard.svelte'
-  import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
-  import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
+  import BoardChips from './BoardChips.svelte'
+  import SectionCard from './SectionCard.svelte'
   import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
   import { me } from '$lib/lobby/sockets'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
-  import { isTablet } from '$lib/viewport'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 
@@ -194,6 +203,7 @@
 
   // Camera tiles: dot turns accent once a frame has loaded
   let camOk = $state<Partial<Record<number, boolean>>>({})
+  const camsSending = $derived(Object.values(camOk).filter(Boolean).length)
 
   // Rename
   let editing = $state(false)
@@ -305,7 +315,6 @@
     }),
   )
 
-  const onlineCount = $derived(boards.filter(b => b.online).length)
   const isRunning = $derived(bmStatus?.running === true)
 
   const isSpinning = $derived(selected?.online && SPINNING.has(bmStatus?.status ?? ''))
@@ -322,12 +331,12 @@
     type="button"
     onclick={() => runAction(action)}
     disabled={busy !== null || blocked}
-    class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[12px] font-medium
+    class="flex items-center justify-center gap-[6px] h-11 rounded-[10px] text-[14px] font-semibold
            border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
            text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
   >
     {#if busy === action}
-      <LoaderCircle size={12} class="animate-spin" />
+      <LoaderCircle size={14} class="animate-spin" />
     {:else}
       {@render icon()}
     {/if}
@@ -336,266 +345,53 @@
 {/snippet}
 
 {#snippet startIcon()}
-  <Play size={12} fill="currentColor" />
+  <Play size={14} fill="currentColor" />
 {/snippet}
 {#snippet stopIcon()}
-  <Square size={12} fill="currentColor" />
+  <Square size={14} fill="currentColor" />
 {/snippet}
 {#snippet resetIcon()}
-  <RotateCcw size={12} />
+  <RotateCcw size={14} />
 {/snippet}
 {#snippet calibrateIcon()}
-  <Sun size={12} />
+  <Sun size={14} />
 {/snippet}
 
-<!-- The selected board's name, renamable in place (large in the desktop panel, smaller in the tablet bar) -->
-{#snippet nameField()}
-  {#if selected}
-    {#if editing}
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        bind:value={draftName}
-        autofocus
-        aria-label="Board name"
-        onblur={saveName}
-        onkeydown={e => {
-          if (e.key === 'Enter') void saveName()
-          else if (e.key === 'Escape') editing = false
-        }}
-        class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
-               font-display font-bold {$isTablet ? 'text-[22px]' : 'text-[32px]'} leading-tight uppercase text-text"
-      />
-    {:else}
-      <h3 class="m-0 font-display font-bold {$isTablet ? 'text-[22px]' : 'text-[32px]'} leading-tight uppercase truncate">
-        {selected.name}
-      </h3>
-    {/if}
+{#snippet statusDot()}
+  {#if isSpinning}
+    <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin" />
+  {:else}
+    <span class="size-2 rounded-full {dotBg}"></span>
   {/if}
 {/snippet}
 
-{#snippet renameButton()}
-  <button
-    type="button"
-    onclick={startEdit}
-    aria-label="Rename board"
-    class="shrink-0 {$isTablet ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center rounded-[10px] border border-line-3
-           bg-transparent text-text cursor-pointer transition-colors hover:bg-surface-active"
-  >
-    <Pencil size={14} />
-  </button>
+{#snippet cell(label: string, value: import('svelte').Snippet)}
+  <div class="bg-surface-1 px-4 py-[14px] flex flex-col gap-[6px] min-w-0">
+    <dt class="text-[12px] label-caps text-text-dim">{label}</dt>
+    <dd class="m-0 text-[16px] font-semibold break-words">{@render value()}</dd>
+  </div>
 {/snippet}
 
-{#snippet barName()}
-  <div class="flex items-center gap-2 min-w-0">{@render nameField()}{@render renameButton()}</div>
+{#snippet bmCell()}
+  {#if selected?.ip}
+    <a
+      href={selected.bmUrl ?? `http://${selected.ip}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-flex items-center gap-[6px] font-mono text-[15px] !text-text underline decoration-line-3 underline-offset-4
+             transition-colors hover:!text-accent hover:decoration-accent"
+    >
+      {bmHost(selected)}<ExternalLink size={12} />
+    </a>
+    {#if selected.bmVersion}<span class="ml-2 text-[13px] font-medium text-text-muted">{fmtVersion(selected.bmVersion)}</span>{/if}
+  {:else}–{/if}
 {/snippet}
-
-{#snippet boardDetails()}
-  {#if selected}
-    <!-- Camera tiles -->
-    <div class="grid grid-cols-3 gap-2">
-      {#each [0, 1, 2] as camIndex (camIndex)}
-        <div class="relative rounded-[10px] overflow-hidden border border-line-2 bg-surface-active aspect-[4/3]">
-          {#if selected.online}
-            {#if camOk[camIndex] === undefined}
-              <!-- Skeleton until the first frame loads (or fails) -->
-              <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
-            {/if}
-            <img
-              src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
-              alt="Camera {camIndex + 1}"
-              class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
-              onload={() => {
-                camOk[camIndex] = true
-              }}
-              onerror={() => {
-                camOk[camIndex] = false
-              }}
-            />
-          {/if}
-          <span
-            class="absolute left-1.5 bottom-1.5 flex items-center gap-[6px] px-1.5 py-[2px] rounded-[4px]
-                     font-mono text-[11px] text-text-muted {camOk[camIndex] ? 'bg-bg/75' : ''}"
-          >
-            CAM {camIndex + 1}
-            <span class="w-[6px] h-[6px] rounded-full {camOk[camIndex] ? 'bg-accent' : 'bg-text-dim'}"></span>
-          </span>
-        </div>
-      {/each}
-    </div>
-
-    <!-- Board controls -->
-    {#if selected.online}
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {@render control('start', 'Start', isRunning, startIcon)}
-        {@render control('stop', 'Stop', !isRunning, stopIcon)}
-        {@render control('reset', 'Reset', false, resetIcon)}
-        {@render control('calibrate', 'Calibrate', false, calibrateIcon)}
-      </div>
-    {/if}
-
-    <!-- Board info -->
-    <dl class="m-0 flex flex-col text-[14px]">
-      <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-        <dt class="text-text-muted">Board Manager</dt>
-        <dd class="m-0 font-mono">
-          {#if selected.ip}
-            <a
-              href={selected.bmUrl ?? `http://${selected.ip}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-[6px] cursor-pointer !text-text underline decoration-line-3
-                   underline-offset-4 transition-colors hover:!text-accent hover:decoration-accent"
-            >
-              {bmHost(selected)}
-              <ExternalLink size={12} />
-            </a>
-            {#if selected.bmVersion}<span class="ml-2 text-text-muted">{fmtVersion(selected.bmVersion)}</span>{/if}
-          {:else}—{/if}
-        </dd>
-      </div>
-      <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-        <dt class="text-text-muted">Bridge</dt>
-        <dd class="m-0">
-          {selected.bridgeVersion ? `${fmtVersion(selected.bridgeVersion)} · ` : ''}{selected.online ? 'connected' : 'offline'}
-        </dd>
-      </div>
-      {#if updateView.kind !== 'none'}
-        <div class="flex flex-col gap-2 py-3 border-b border-line-2">
-          {#if updateView.kind === 'busy'}
-            <span class="flex items-center gap-2 text-text-muted" role="status">
-              <LoaderCircle size={14} class="animate-spin" />
-              {updateView.text}
-            </span>
-          {:else if updateView.kind === 'done'}
-            <span class="text-accent" role="status">{updateView.text}</span>
-          {:else if updateView.kind === 'failed'}
-            <span class="text-[13px] text-live-text" role="alert">{updateView.text}</span>
-          {:else}
-            <div class="flex justify-between items-center gap-3">
-              <span class="text-text-muted">Bridge {updateView.version} is available</span>
-              {#if updateView.canUpdate}
-                <button
-                  type="button"
-                  onclick={updateBridge}
-                  disabled={busy !== null}
-                  class="shrink-0 flex items-center gap-[6px] h-9 px-3 rounded-[8px] text-[12px] font-medium border border-line-3
-                         bg-transparent text-text cursor-pointer font-[inherit] transition-colors hover:bg-surface-active
-                         disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  {#if busy === 'bridge-update'}<LoaderCircle size={12} class="animate-spin" />{:else}<Download size={12} />{/if}
-                  Update bridge
-                </button>
-              {/if}
-            </div>
-            {#if !selected.bridgeUpdate.updatable}
-              <span class="text-[13px] text-text-dim">Run the bridge's install command again on the board's computer to update it.</span>
-            {/if}
-            {#if updateView.error ?? updateRequestError}
-              <span class="text-[13px] text-live-text" role="alert">{updateView.error ?? updateRequestError}</span>
-            {/if}
-          {/if}
-        </div>
-      {/if}
-      <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-        <dt class="text-text-muted">Latency</dt>
-        <dd class="m-0">
-          <Badge variant="soon">Soon</Badge>
-        </dd>
-      </div>
-      <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-        <dt class="text-text-muted">Paired</dt>
-        <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
-      </div>
-      <AutoStartSwitch board={selected} onchanged={refetchBoards} />
-      {#if $bigScreenOn}
-        <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
-      {/if}
-      {#if $lightsOn}
-        {@const n = lightsCounts[selected.id]}
-        <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-          <dt class="text-text-muted">Lights</dt>
-          <dd class="m-0">
-            {#if n === undefined}
-              —
-            {:else}
-              <a
-                href="#/settings/lights?board={selected.id}"
-                class="cursor-pointer !text-text underline decoration-line-3 underline-offset-4 transition-colors
-                     hover:!text-accent hover:decoration-accent"
-              >
-                {n === 0 ? 'Add WLED lights' : `${n} WLED device${n === 1 ? '' : 's'} · Manage`}
-              </a>
-            {/if}
-          </dd>
-        </div>
-      {/if}
-    </dl>
-
-    <!-- Live events -->
-    <div class="flex flex-col gap-3 flex-grow min-h-0">
-      <div class="flex items-center justify-between">
-        <span class="text-[11px] font-medium uppercase tracking-[0.12em] text-text-dim">Live events</span>
-        {#if listening}
-          <span class="flex items-center gap-[6px] text-[12px] font-medium text-accent">
-            <span class="w-[6px] h-[6px] rounded-full bg-accent"></span>
-            Listening
-          </span>
-        {:else}
-          <span class="flex items-center gap-[6px] text-[12px] font-medium {dotText}">
-            {#if isSpinning}
-              <LoaderCircle size={9} strokeWidth={3} class="shrink-0 animate-spin" />
-            {:else}
-              <span class="w-[6px] h-[6px] rounded-full {dotBg}"></span>
-            {/if}
-            {bmLabel}
-          </span>
-        {/if}
-      </div>
-      <div
-        bind:this={eventsEl}
-        class="h-[240px] overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
-             border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]"
-      >
-        {#each events as ev, i (i)}
-          {@const seg = ev.data.dart?.segment}
-          <div class="whitespace-nowrap">
-            <span class="text-text-dim">{fmtTime(ev.at)}</span>
-            <span>{EVENT_VERB[ev.kind] ?? ev.kind}</span>
-            {#if seg}
-              <span class={seg.multiplier > 1 ? 'text-accent' : ''}>{seg.name}</span>
-              <span>{ev.data.dart?.score ?? ''}</span>
-            {/if}
-          </div>
-        {:else}
-          <span class="text-text-dim">{selected.online ? 'Waiting for throws…' : 'Board offline'}</span>
-        {/each}
-      </div>
-    </div>
-  {/if}
+{#snippet bridgeCell()}
+  {#if selected}{selected.bridgeVersion ? `${fmtVersion(selected.bridgeVersion)} · ` : ''}{selected.online ? 'connected' : 'offline'}{/if}
 {/snippet}
+{#snippet gamesCell()}—{/snippet}
 
-{#snippet boardActions()}
-  <button
-    type="button"
-    onclick={() => push(`/?board=${selectedId}`)}
-    class="flex-grow h-12 px-[18px] whitespace-nowrap rounded-[10px] border-0 bg-text text-accent-fg text-[15px] font-semibold
-           cursor-pointer font-[inherit] transition-opacity hover:opacity-90"
-  >
-    Play on this board
-  </button>
-  <button
-    type="button"
-    onclick={() => {
-      confirmUnpair = true
-    }}
-    class="h-12 px-5 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px]
-           font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active"
-  >
-    Unpair
-  </button>
-{/snippet}
-
-<div class="flex flex-grow flex-col gap-4 md:gap-7 min-w-0">
+<div class="flex flex-grow flex-col gap-5 min-w-0">
   {#if loaded && boards.length === 0}
     <BoardsEmpty
       onpair={(code: string) => {
@@ -604,69 +400,275 @@
       }}
     />
   {:else if loaded}
-    <!-- Header -->
-    <header class="flex items-center justify-between gap-4">
-      <p class="hidden md:block m-0 text-[15px] text-text-muted">
-        Autodarts boards linked through your Dartcade bridge ·
-        <span class="text-text">{onlineCount} online</span> · {boards.length - onlineCount} offline
-      </p>
-      <Button
-        variant="primary"
-        class="h-12 text-[18px]"
-        onclick={() => {
-          pairOpen = true
-        }}
+    <BoardChips
+      {boards}
+      {selectedId}
+      {justPairedId}
+      onselect={(id: string) => (selectedId = id)}
+      onpair={() => {
+        pairOpen = true
+      }}
+    />
+
+    {#if selected}
+      <!-- The selected board: its state and name, Play, and the facts about it -->
+      <section
+        aria-label="Selected board"
+        class="box-border p-[18px] md:p-6 rounded-[16px] bg-surface-panel border border-line flex flex-col gap-5"
       >
-        <Plus size={18} strokeWidth={2.4} />
-        Pair new board
-      </Button>
-    </header>
-
-    <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0 xl:items-start">
-      <!-- Board grid; tablets add the pairing card to it -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:flex-grow auto-rows-min content-start">
-        {#each boards as board (board.id)}
-          <BoardCard
-            {board}
-            active={board.id === selectedId}
-            justPaired={board.id === justPairedId}
-            lights={$lightsOn ? lightsCounts[board.id] : undefined}
-            onselect={() => (selectedId = board.id)}
-          />
-        {/each}
-        {#if $isTablet}<PairBoardCard
-            onpair={() => {
-              pairOpen = true
-            }}
-          />{/if}
-      </div>
-
-      {#if selected && $isTablet}
-        <!-- Tablets: a Selected bar under the grid; cameras and live events open under it -->
-        <div class="flex flex-col gap-2">
-          <SelectedBoardBar board={selected} name={barName} actions={boardActions} details={boardDetails} />
-          {#if unpairError}<ErrorText class="text-[13px]">{unpairError}</ErrorText>{/if}
-        </div>
-      {:else if selected}
-        <aside
-          class="w-full xl:w-[clamp(420px,50%,720px)] xl:flex-shrink-0 box-border p-4 md:p-6 border border-line-2 rounded-[14px]
-                       bg-surface-2 flex flex-col gap-5"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex flex-col gap-1 min-w-0">
-              <span class="text-[11px] font-medium uppercase tracking-[0.12em] text-text-dim">Selected board</span>
-              {@render nameField()}
-            </div>
-            {@render renameButton()}
+        <div class="flex flex-wrap items-end gap-x-5 gap-y-4">
+          <div class="flex flex-col gap-2 min-w-0 flex-1">
+            <span class="inline-flex items-center gap-2 text-[14px] font-semibold {dotText}">
+              {@render statusDot()}
+              {#if justPairedId === selected.id && !selected.online}
+                Just paired · connecting cameras…
+              {:else if !selected.online}
+                Offline
+              {:else if listening}
+                Online · listening for throws
+              {:else}
+                Online · {bmLabel}
+              {/if}
+            </span>
+            {#if editing}
+              <!-- svelte-ignore a11y_autofocus -->
+              <input
+                bind:value={draftName}
+                autofocus
+                aria-label="Board name"
+                onblur={saveName}
+                onkeydown={e => {
+                  if (e.key === 'Enter') void saveName()
+                  else if (e.key === 'Escape') editing = false
+                }}
+                class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
+                       font-display font-bold text-[36px] md:text-[52px] leading-[0.95] uppercase text-text"
+              />
+            {:else}
+              <h2 class="m-0 font-display font-bold text-[36px] md:text-[52px] leading-[0.95] tracking-[0.01em] uppercase truncate">
+                {selected.name}
+              </h2>
+            {/if}
           </div>
-          {@render boardDetails()}
-          {#if unpairError}
-            <ErrorText class="-mb-2 text-[13px]">{unpairError}</ErrorText>
+          <div class="flex gap-[10px] w-full sm:w-auto">
+            <button
+              type="button"
+              onclick={() => push(`/?board=${selectedId}`)}
+              class="flex-grow sm:flex-grow-0 h-[52px] px-5 whitespace-nowrap rounded-[12px] border-0 bg-text text-accent-fg text-[16px]
+                     font-semibold cursor-pointer font-[inherit] transition-opacity hover:opacity-90"
+            >
+              Play on this board
+            </button>
+            <button
+              type="button"
+              onclick={startEdit}
+              aria-label="Rename board"
+              class="size-[52px] shrink-0 flex items-center justify-center rounded-[12px] border border-line-3 bg-surface-panel
+                     text-text cursor-pointer transition-colors hover:bg-surface-active"
+            >
+              <Pencil size={16} />
+            </button>
+          </div>
+        </div>
+
+        {#if !selected.online}
+          <p class="m-0 px-[14px] py-3 rounded-[12px] bg-surface-inset text-[14px] leading-[1.45] text-ink-2">
+            Bridge not reachable. Check that it is running on the computer next to the Board Manager. Settings below are saved and apply as
+            soon as it is back.
+          </p>
+        {/if}
+
+        <dl class="m-0 grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-[12px] overflow-hidden">
+          {@render cell('Board Manager', bmCell)}
+          {@render cell('Bridge', bridgeCell)}
+          {@render cell('Games here', gamesCell)}
+        </dl>
+
+        {#if updateView.kind !== 'none'}
+          <div class="flex flex-col gap-2 text-[14px]">
+            {#if updateView.kind === 'busy'}
+              <span class="flex items-center gap-2 text-text-muted" role="status">
+                <LoaderCircle size={14} class="animate-spin" />
+                {updateView.text}
+              </span>
+            {:else if updateView.kind === 'done'}
+              <span class="text-accent" role="status">{updateView.text}</span>
+            {:else if updateView.kind === 'failed'}
+              <span class="text-[13px] text-live-text" role="alert">{updateView.text}</span>
+            {:else}
+              <div class="flex flex-wrap justify-between items-center gap-3">
+                <span class="text-text-muted">Bridge {updateView.version} is available</span>
+                {#if updateView.canUpdate}
+                  <button
+                    type="button"
+                    onclick={updateBridge}
+                    disabled={busy !== null}
+                    class="shrink-0 flex items-center gap-[6px] h-11 px-4 rounded-[10px] text-[14px] font-semibold border border-line-3
+                           bg-transparent text-text cursor-pointer font-[inherit] transition-colors hover:bg-surface-active
+                           disabled:opacity-35 disabled:cursor-not-allowed"
+                  >
+                    {#if busy === 'bridge-update'}<LoaderCircle size={14} class="animate-spin" />{:else}<Download size={14} />{/if}
+                    Update bridge
+                  </button>
+                {/if}
+              </div>
+              {#if !selected.bridgeUpdate.updatable}
+                <span class="text-[13px] text-text-dim">Run the bridge's install command again on the board's computer to update it.</span>
+              {/if}
+              {#if updateView.error ?? updateRequestError}
+                <span class="text-[13px] text-live-text" role="alert">{updateView.error ?? updateRequestError}</span>
+              {/if}
+            {/if}
+          </div>
+        {/if}
+
+        {#if selected.online}
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-[10px]">
+            {@render control('start', 'Start', isRunning, startIcon)}
+            {@render control('stop', 'Stop', !isRunning, stopIcon)}
+            {@render control('reset', 'Reset', false, resetIcon)}
+            {@render control('calibrate', 'Calibrate', false, calibrateIcon)}
+          </div>
+        {/if}
+      </section>
+
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-5 items-start">
+        <div class="flex flex-col gap-5 min-w-0">
+          <SectionCard title="Cameras" icon={Camera}>
+            {#snippet aside()}
+              {#if selected.online}<span class="text-[14px] text-text-muted">{camsSending} / 3 sending</span>{/if}
+            {/snippet}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {#each [0, 1, 2] as camIndex (camIndex)}
+                <figure
+                  class="m-0 relative aspect-[4/3] sm:aspect-auto sm:h-[150px] rounded-[12px] overflow-hidden border border-line bg-surface-inset"
+                >
+                  {#if selected.online}
+                    {#if camOk[camIndex] === undefined}
+                      <!-- Skeleton until the first frame loads (or fails) -->
+                      <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
+                    {/if}
+                    <img
+                      src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
+                      alt="Camera {camIndex + 1}"
+                      class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
+                      onload={() => {
+                        camOk[camIndex] = true
+                      }}
+                      onerror={() => {
+                        camOk[camIndex] = false
+                      }}
+                    />
+                  {/if}
+                  <figcaption
+                    class="absolute left-[10px] bottom-[10px] flex items-center gap-[7px] px-[9px] py-1 rounded-[6px]
+                           font-mono text-[11px] text-ink-2 {camOk[camIndex] ? 'bg-bg/75' : ''}"
+                  >
+                    CAM {camIndex + 1}
+                    <span class="size-[7px] rounded-full {camOk[camIndex] ? 'bg-accent' : 'bg-line-strong'}"></span>
+                  </figcaption>
+                </figure>
+              {/each}
+            </div>
+            {#if !selected.online}<p class="m-0 text-[14px] text-text-muted">No images while the board is offline.</p>{/if}
+          </SectionCard>
+
+          <SectionCard title="Live events" icon={Activity}>
+            {#snippet aside()}
+              {#if listening}
+                <span class="flex items-center gap-2 text-[14px] text-accent"
+                  ><span class="size-2 rounded-full bg-accent"></span>Listening</span
+                >
+              {:else}
+                <span class="flex items-center gap-2 text-[14px] {dotText}">
+                  {@render statusDot()}
+                  {bmLabel}
+                </span>
+              {/if}
+            {/snippet}
+            <div
+              bind:this={eventsEl}
+              role="log"
+              aria-live="polite"
+              class="h-[236px] overflow-y-auto scrollbar-themed box-border px-4 py-[14px] rounded-[12px]
+                     border border-line bg-bg-deep font-mono text-[13px] leading-[1.8]"
+            >
+              {#each events as ev, i (i)}
+                {@const seg = ev.data.dart?.segment}
+                <div class="flex gap-4 whitespace-nowrap">
+                  <span class="text-line-strong">{fmtTime(ev.at)}</span>
+                  <span class="flex-1">
+                    {EVENT_VERB[ev.kind] ?? ev.kind}
+                    {#if seg}<span class={seg.multiplier > 1 ? 'text-accent' : ''}>{seg.name}</span>{/if}
+                  </span>
+                  <span class="text-text-muted">{seg ? (ev.data.dart?.score ?? '') : ''}</span>
+                </div>
+              {:else}
+                <span class="text-text-dim">
+                  {selected.online ? 'Waiting for throws…' : 'Board offline. Throws show up here as soon as the bridge connects.'}
+                </span>
+              {/each}
+            </div>
+          </SectionCard>
+
+          {#if $lightsOn}
+            {@const n = lightsCounts[selected.id]}
+            <SectionCard title="Lights" icon={Lightbulb}>
+              {#snippet aside()}
+                {#if n}
+                  <a
+                    href="#/settings/lights?board={selected.id}"
+                    class="inline-flex items-center gap-1 text-[14px] font-semibold no-underline">Manage</a
+                  >
+                {/if}
+              {/snippet}
+              {#if n === undefined}
+                <p class="m-0 text-[14px] text-text-muted">—</p>
+              {:else if n === 0}
+                <p class="m-0 text-[14px] leading-[1.45] text-text-muted">
+                  Light up the board with WLED: colours per player, a flash on 180s, a glow on checkouts.
+                </p>
+                <a
+                  href="#/settings/lights?board={selected.id}"
+                  class="self-start h-11 px-4 inline-flex items-center rounded-[10px] border border-line-3 text-text text-[14px]
+                         font-semibold no-underline transition-colors hover:bg-surface-active">Add WLED lights</a
+                >
+              {:else}
+                <p class="m-0 text-[15px]">{n} WLED device{n === 1 ? '' : 's'}</p>
+              {/if}
+            </SectionCard>
           {/if}
-          <div class="flex gap-3">{@render boardActions()}</div>
-        </aside>
-      {/if}
-    </div>
+        </div>
+
+        <div class="flex flex-col gap-5 min-w-0">
+          <AutoStartSwitch board={selected} onchanged={refetchBoards} />
+          {#if $bigScreenOn}
+            <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
+          {/if}
+          <SectionCard title="Pairing" icon={Link2}>
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
+                <span class="text-[15px]">Paired {fmtDate(selected.createdAt)}</span>
+                <span class="text-[13.5px] leading-[1.45] text-text-muted">
+                  Unpairing stops this bridge from sending throws to your account. Pair again any time with a new code.
+                </span>
+              </div>
+              <button
+                type="button"
+                onclick={() => {
+                  confirmUnpair = true
+                }}
+                class="h-11 px-5 rounded-[10px] border border-danger-line bg-transparent text-danger-text text-[15px]
+                       font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active"
+              >
+                Unpair
+              </button>
+            </div>
+            {#if unpairError}<ErrorText class="text-[13px]">{unpairError}</ErrorText>{/if}
+          </SectionCard>
+        </div>
+      </div>
+    {/if}
   {/if}
 
   {#if confirmUnpair && selected}

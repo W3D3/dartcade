@@ -66,7 +66,6 @@ function memoryStore() {
       if (s) s.status = 'aborted'
       return Promise.resolve()
     },
-    getAvatars: () => Promise.resolve(new Map()),
   }
   return { store, sessions, events, darts, finished, aborted }
 }

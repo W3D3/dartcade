@@ -3411,7 +3411,7 @@ export interface components {
         LobbyPreview: {
             id: string;
             name: string;
-            host: components["schemas"]["LobbyFace"] | null;
+            hostName: string | null;
             peopleCount: number;
             faces: components["schemas"]["LobbyFace"][];
             nextGame: {
@@ -3507,10 +3507,11 @@ export interface components {
             id: string;
             lobbyId: string;
             lobbyName: string;
-            inviter: components["schemas"]["LobbyFace"] | null;
+            inviterUserId: string | null;
+            inviterName: string | null;
             /** Format: date-time */
             createdAt: string;
-            host: components["schemas"]["LobbyFace"] | null;
+            hostName: string | null;
             peopleCount: number;
             faces: components["schemas"]["LobbyFace"][];
             nextGame: {

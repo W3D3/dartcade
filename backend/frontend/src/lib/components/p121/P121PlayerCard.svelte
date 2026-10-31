@@ -4,7 +4,6 @@
   400 px desktop card, 'side' a duel card, 'phone' the compact card on top of the phone screen.
 -->
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import { Check, X } from '@lucide/svelte'
   import type { P121Game } from '$lib/api/game-ws'
   import PanelShell from '$lib/components/PanelShell.svelte'
@@ -16,7 +15,7 @@
   let {
     game,
     seat,
-    who,
+    name,
     active,
     visitDarts = 0,
     variant = 'solo',
@@ -25,7 +24,7 @@
   }: {
     game: P121Game
     seat: number
-    who: Who
+    name: string
     /** The thrower: the lime-bordered card. */
     active: boolean
     /** Darts in the open visit; 0 for anyone not throwing. */
@@ -113,7 +112,7 @@
   </section>
 {:else}
   <PanelShell
-    {who}
+    {name}
     {active}
     pill={null}
     solo={variant === 'solo'}

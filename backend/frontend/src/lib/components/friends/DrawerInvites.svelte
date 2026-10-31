@@ -29,10 +29,10 @@
   <ul class="m-0 p-0 list-none flex flex-col gap-2">
     <li class="p-3 rounded-[12px] border border-accent-line bg-surface-picked flex flex-col gap-[10px]">
       <div class="flex items-center gap-[10px]">
-        <InviteAvatar name={first.inviter?.name ?? first.lobbyName} face={first.inviter} size={36} offset="ring-offset-surface-picked" />
+        <InviteAvatar name={first.inviterName ?? first.lobbyName} size={36} offset="ring-offset-surface-picked" />
         <span class="flex flex-col gap-[1px] min-w-0 flex-grow">
           <span class="font-display font-bold text-[19px] leading-none uppercase truncate">{first.lobbyName}</span>
-          <span class="text-[12px] text-text-muted truncate">{[first.inviter?.name, inviteLine(first)].filter(Boolean).join(' · ')}</span>
+          <span class="text-[12px] text-text-muted truncate">{[first.inviterName, inviteLine(first)].filter(Boolean).join(' · ')}</span>
         </span>
         <span class="self-start text-[11px] text-text-dim whitespace-nowrap">{inviteTime(first.createdAt, now)}</span>
       </div>
@@ -42,11 +42,11 @@
     </li>
     {#each rest as inv (inv.id)}
       <li class="flex items-center gap-[10px] px-3 py-[10px] rounded-[12px] border border-line-2">
-        <Avatar name={inv.inviter?.name ?? inv.lobbyName} face={inv.inviter} size={36} />
+        <Avatar name={inv.inviterName ?? inv.lobbyName} size={36} />
         <span class="flex flex-col gap-[1px] min-w-0 flex-grow">
           <span class="text-[14px] font-semibold truncate">{inv.lobbyName}</span>
           <span class="text-[12px] text-text-muted truncate"
-            >{[inv.inviter?.name, inviteLine(inv), inviteTime(inv.createdAt, now)].filter(Boolean).join(' · ')}</span
+            >{[inv.inviterName, inviteLine(inv), inviteTime(inv.createdAt, now)].filter(Boolean).join(' · ')}</span
           >
         </span>
         <Button

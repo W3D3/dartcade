@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Who } from '$lib/face'
   import AtcProgress from './AtcProgress.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import RowShell from './RowShell.svelte'
@@ -8,13 +7,15 @@
   import type { SeatLine } from '$lib/remote'
 
   let {
-    who,
+    name,
+    bot = null,
     p,
     active,
     pill,
     seat = null,
   }: {
-    who: Who
+    name: string
+    bot?: { level: number } | null
     p: AtcPlayerView
     active: boolean
     pill: PillKind | null
@@ -25,7 +26,8 @@
 <!-- Tablets, by the row's own width: from 672 px three columns; 512 to 672 px narrower ones with
      the strip in two rows; below 512 px name, target and progress stacked -->
 <RowShell
-  {who}
+  {name}
+  {bot}
   {active}
   {pill}
   {seat}

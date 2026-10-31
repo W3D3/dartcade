@@ -44,7 +44,7 @@
 </script>
 
 {#if invite}
-  {@const inviter = invite.inviter?.name ?? 'Someone'}
+  {@const inviter = invite.inviterName ?? 'Someone'}
   <section
     aria-live="polite"
     aria-labelledby="invite-toast-title"
@@ -67,7 +67,7 @@
       </button>
     </div>
     <div class="flex items-center gap-3">
-      <InviteAvatar name={inviter} face={invite.inviter} size={46} offset="ring-offset-surface-active" />
+      <InviteAvatar name={inviter} size={46} offset="ring-offset-surface-active" />
       <span class="flex flex-col gap-[2px] min-w-0">
         <span id="invite-toast-desc" class="text-[15px] text-ink-2 wrap-anywhere">
           <strong class="text-text">{inviter}</strong>

@@ -5,7 +5,6 @@ import type { CricketGame, GameDetail, HiloGame, Snapshot, StatRow } from '../ap
 const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?: boolean } = {}) => ({
   controllerUserId: 'u1',
   userId: o.userId === undefined ? 'u1' : o.userId,
-  avatar: { kind: 'none' as const },
   boardId: 'b1',
   boardName: o.boardName === undefined ? 'Living room' : o.boardName,
   boardOnline: true,
@@ -183,7 +182,7 @@ describe('winView', () => {
   it('X01 duel: the winner first, the legs score, and the stats from the saved game', () => {
     const v = winView(x01({ guests: [1] }), detail())!
     expect(v.layout).toBe('duel')
-    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.face?.userId === null])).toEqual([
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.guest])).toEqual([
       ['Christoph', 1, 3, false],
       ['Guest 1', 2, 1, true],
     ])
@@ -217,10 +216,10 @@ describe('winView', () => {
     const v = winView(x01({ guests: [1] }), detail())!
     expect(v.checkout).toEqual({ name: 'Christoph', left: 75, darts: 'T17 · D12', tail: 'to take leg 4 in 5 darts.' })
     expect(v.legs).toEqual([
-      { n: 1, name: 'Christoph', face: expect.any(Object), byWinner: true, text: '4 darts · D15' },
-      { n: 2, name: 'Guest 1', face: expect.any(Object), byWinner: false, text: '2 darts · S20 · D20' },
-      { n: 3, name: 'Christoph', face: expect.any(Object), byWinner: true, text: '3 darts · T20 · S20 · D18' },
-      { n: 4, name: 'Christoph', face: expect.any(Object), byWinner: true, text: '5 darts · T17 · D12' },
+      { n: 1, name: 'Christoph', guest: false, byWinner: true, text: '4 darts · D15' },
+      { n: 2, name: 'Guest 1', guest: true, byWinner: false, text: '2 darts · S20 · D20' },
+      { n: 3, name: 'Christoph', guest: false, byWinner: true, text: '3 darts · T20 · S20 · D18' },
+      { n: 4, name: 'Christoph', guest: false, byWinner: true, text: '5 darts · T17 · D12' },
     ])
   })
 
@@ -440,7 +439,7 @@ describe('hiloWin', () => {
     expect(v.layout).toBe('duel')
     expect(v.kicker).toBe('Last one standing')
     expect(v.scoreLabel).toBe('Lives left')
-    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.face?.userId === null, c.sub, c.cells])).toEqual([
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.guest, c.sub, c.cells])).toEqual([
       ['Christoph', 1, 2, false, '2 lives left', ['2', '2', '–']],
       ['Guest 1', 2, 0, true, 'Out in round 4', ['0', '1', '4']],
     ])
@@ -450,8 +449,8 @@ describe('hiloWin', () => {
       { label: 'Lives lost to misses', values: ['0', '1'], share: 0 },
     ])
     expect(v.highlights).toEqual([
-      { name: 'Guest 1', face: expect.any(Object), label: 'Highest bar', text: 'Set HIGH 60.' },
-      { name: 'Christoph', face: expect.any(Object), label: 'Lowest bar', text: 'Set LOW 15.' },
+      { name: 'Guest 1', guest: true, label: 'Highest bar', text: 'Set HIGH 60.' },
+      { name: 'Christoph', guest: false, label: 'Lowest bar', text: 'Set LOW 15.' },
     ])
     expect(v.checkout).toBeNull()
     expect(v.legs).toEqual([])
@@ -480,8 +479,8 @@ describe('hiloWin', () => {
       ['Guest 1', 4, 'Out in round 2', ['0', '0', '2']],
     ])
     expect(v.highlights).toEqual([
-      { name: 'Christoph', face: expect.any(Object), label: 'Highest bar', text: 'Set HIGH 70.' },
-      { name: 'Lena', face: expect.any(Object), label: 'Lowest bar', text: 'Set LOW 10.' },
+      { name: 'Christoph', guest: false, label: 'Highest bar', text: 'Set HIGH 70.' },
+      { name: 'Lena', guest: false, label: 'Lowest bar', text: 'Set LOW 10.' },
     ])
   })
 
@@ -644,7 +643,7 @@ describe('cricketWin', () => {
     expect(v.kicker).toBe('Cricket')
     expect(v.scoreLabel).toBe('Legs')
     expect(v.columns).toEqual(['MPR', 'Points', 'Legs'])
-    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.face?.userId === null, c.sub, c.cells])).toEqual([
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.guest, c.sub, c.cells])).toEqual([
       ['Christoph', 1, 3, false, '3.0 MPR · 60 darts', ['3.0', '366', '3']],
       ['Guest 1', 2, 1, true, '1.8 MPR · 75 darts', ['1.8', '242', '1']],
     ])

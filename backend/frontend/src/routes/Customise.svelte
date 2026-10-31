@@ -204,11 +204,11 @@
 {#snippet framePreview(it: Item)}
   {#if it.id === 'frame.none'}
     <span class="m-1 flex rounded-full p-[5px] shadow-[inset_0_0_0_1px_var(--color-line-chip)]"
-      ><Avatar name={$profile?.name ?? ''} face={avatar ? { avatar, userId } : null} size={48} /></span
+      ><Avatar name={$profile?.name ?? ''} {avatar} {userId} size={48} /></span
     >
   {:else}
     <span class="relative m-[9px] flex rounded-full"
-      ><Avatar name={$profile?.name ?? ''} face={avatar ? { avatar, userId } : null} size={48} /><CardFrame frame={it.id} /></span
+      ><Avatar name={$profile?.name ?? ''} {avatar} {userId} size={48} /><CardFrame frame={it.id} /></span
     >
   {/if}
 {/snippet}
@@ -321,7 +321,7 @@
             <span class={caps}>How others see it</span>
             <div class="flex items-center gap-[10px] rounded-[10px] bg-surface-row px-[10px] py-1">
               <span class="relative m-[9px] flex shrink-0 rounded-full"
-                ><Avatar name={$profile.name} face={avatar ? { avatar, userId } : null} size={30} /><CardFrame frame={look.frame} /></span
+                ><Avatar name={$profile.name} {avatar} {userId} size={30} /><CardFrame frame={look.frame} /></span
               >
               <span class="flex flex-col flex-1 min-w-0">
                 <span class="truncate text-[14px] font-semibold {nameClass(look.name)}" style="color: {accent}">{$profile.name}</span>

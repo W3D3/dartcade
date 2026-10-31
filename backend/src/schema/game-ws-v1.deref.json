@@ -1700,7 +1700,6 @@
       "required": [
         "controllerUserId",
         "userId",
-        "avatar",
         "boardId",
         "boardName",
         "boardOnline",
@@ -1720,72 +1719,6 @@
             "null"
           ],
           "description": "The account the seat plays for; null for a guest."
-        },
-        "avatar": {
-          "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-          "title": "Avatar",
-          "oneOf": [
-            {
-              "type": "object",
-              "required": [
-                "kind"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "none"
-                  ]
-                }
-              }
-            },
-            {
-              "type": "object",
-              "required": [
-                "kind",
-                "foreground",
-                "background"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "preset"
-                  ]
-                },
-                "foreground": {
-                  "type": "string",
-                  "description": "The finish of the mark in front"
-                },
-                "background": {
-                  "type": "string",
-                  "description": "The finish of the disc behind it"
-                }
-              }
-            },
-            {
-              "type": "object",
-              "required": [
-                "kind",
-                "version"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "upload"
-                  ]
-                },
-                "version": {
-                  "type": "integer",
-                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                }
-              }
-            }
-          ]
         },
         "boardId": {
           "type": [
@@ -2105,7 +2038,6 @@
             "required": [
               "controllerUserId",
               "userId",
-              "avatar",
               "boardId",
               "boardName",
               "boardOnline",
@@ -2125,72 +2057,6 @@
                   "null"
                 ],
                 "description": "The account the seat plays for; null for a guest."
-              },
-              "avatar": {
-                "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                "title": "Avatar",
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "none"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind",
-                      "foreground",
-                      "background"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "preset"
-                        ]
-                      },
-                      "foreground": {
-                        "type": "string",
-                        "description": "The finish of the mark in front"
-                      },
-                      "background": {
-                        "type": "string",
-                        "description": "The finish of the disc behind it"
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "kind",
-                      "version"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "upload"
-                        ]
-                      },
-                      "version": {
-                        "type": "integer",
-                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                      }
-                    }
-                  }
-                ]
               },
               "boardId": {
                 "type": [
@@ -2421,7 +2287,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -2441,72 +2306,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -3292,7 +3091,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -3312,72 +3110,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -3848,7 +3580,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -3868,72 +3599,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -5211,7 +4876,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -5231,72 +4895,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -6533,7 +6131,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -6553,72 +6150,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -8974,7 +8505,6 @@
                 "required": [
                   "controllerUserId",
                   "userId",
-                  "avatar",
                   "boardId",
                   "boardName",
                   "boardOnline",
@@ -8994,72 +8524,6 @@
                       "null"
                     ],
                     "description": "The account the seat plays for; null for a guest."
-                  },
-                  "avatar": {
-                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                    "title": "Avatar",
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "none"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "foreground",
-                          "background"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "preset"
-                            ]
-                          },
-                          "foreground": {
-                            "type": "string",
-                            "description": "The finish of the mark in front"
-                          },
-                          "background": {
-                            "type": "string",
-                            "description": "The finish of the disc behind it"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "kind",
-                          "version"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "upload"
-                            ]
-                          },
-                          "version": {
-                            "type": "integer",
-                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                          }
-                        }
-                      }
-                    ]
                   },
                   "boardId": {
                     "type": [
@@ -10610,7 +10074,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -10630,72 +10093,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
@@ -11481,7 +10878,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -11501,72 +10897,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
@@ -12037,7 +11367,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -12057,72 +11386,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
@@ -12855,7 +12118,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -12875,72 +12137,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
@@ -14487,7 +13683,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -14507,72 +13702,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
@@ -15291,7 +14420,6 @@
                     "required": [
                       "controllerUserId",
                       "userId",
-                      "avatar",
                       "boardId",
                       "boardName",
                       "boardOnline",
@@ -15311,72 +14439,6 @@
                           "null"
                         ],
                         "description": "The account the seat plays for; null for a guest."
-                      },
-                      "avatar": {
-                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
-                        "title": "Avatar",
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "none"
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "foreground",
-                              "background"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "preset"
-                                ]
-                              },
-                              "foreground": {
-                                "type": "string",
-                                "description": "The finish of the mark in front"
-                              },
-                              "background": {
-                                "type": "string",
-                                "description": "The finish of the disc behind it"
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "kind",
-                              "version"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": [
-                                  "upload"
-                                ]
-                              },
-                              "version": {
-                                "type": "integer",
-                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                              }
-                            }
-                          }
-                        ]
                       },
                       "boardId": {
                         "type": [
