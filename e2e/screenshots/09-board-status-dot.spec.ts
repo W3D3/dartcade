@@ -12,6 +12,23 @@ const STATES = [
   ['stopped', 'Stopped'],
 ] as const
 
+// The match screen reads whether a seat's board is online from the game's snapshots
+async function onlineSnapshots(page: Page) {
+  await page.routeWebSocket(/\/ws\?/, ws => {
+    const server = ws.connectToServer()
+    ws.onMessage(m => server.send(m))
+    server.onMessage(m => {
+      try {
+        const msg = JSON.parse(String(m))
+        if (msg.type === 'snapshot') for (const seat of msg.seats) seat.boardOnline = true
+        ws.send(JSON.stringify(msg))
+      } catch {
+        ws.send(m)
+      }
+    })
+  })
+}
+
 async function mockBoard(page: Page, status: string) {
   await page.route('**/api/boards', async route => {
     const res = await route.fetch()
@@ -19,6 +36,11 @@ async function mockBoard(page: Page, status: string) {
     body.boards = body.boards.map((b, i) => (i === 0 ? { ...b, online: true, bridgeVersion: 'v0.11.0', bmVersion: '0.27.3' } : b))
     await route.fulfill({ response: res, json: body })
   })
+  await mockStatus(page, status)
+}
+
+async function mockStatus(page: Page, status: string) {
+  await page.unroute('**/api/boards/*/status')
   await page.route('**/api/boards/*/status', route => route.fulfill({ json: { status, running: status === 'Running', event: null } }))
 }
 
@@ -30,15 +52,17 @@ for (const [view, name] of [
     const { ctx, page } = await open(browser, 'admin', view)
     const lobby = await hostLobby(page, 'Dot lobby', X01())
     await mockBoard(page, 'Running')
+    await onlineSnapshots(page)
     await startLobbyGame(page, lobby)
     for (const [file, status] of STATES) {
-      await page.unroute('**/api/boards/*/status')
-      await page.route('**/api/boards/*/status', route => route.fulfill({ json: { status, running: status === 'Running', event: null } }))
+      await mockStatus(page, status)
       await page.reload()
       await expect(page.getByRole('button', { name: /Board Dev Board|Dev Board/ }).first()).toBeVisible()
       await page.waitForTimeout(3500)
       await shot(page, `${DIR}/match-${file}-${name}.png`)
     }
+    // End sits in the phone's menu, so end the game at desktop width for the next scene
+    await page.setViewportSize({ width: VIEW.desktop.width, height: VIEW.desktop.height })
     await endGame(page)
     await ctx.close()
   })
