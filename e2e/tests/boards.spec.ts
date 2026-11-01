@@ -23,6 +23,7 @@ test('a long live events log scrolls inside its card', async ({ authedPage: page
     bmUrl: 'http://192.168.0.109:3180',
     bridgeUpdate: { available: null, updatable: true },
     autoStart: true,
+    resetOnNext: true,
   }
   const event = (i: number) => ({
     at: new Date(Date.UTC(2026, 9, 26, 18, 0, i)).toISOString(),

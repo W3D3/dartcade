@@ -1404,6 +1404,57 @@
         }
       }
     },
+    "/api/boards/{id}/reset-on-next": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "patch": {
+        "operationId": "setBoardResetOnNext",
+        "summary": "Set whether Next player also resets the board (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardResetOnNextRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResetOnNextRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/boards/{id}/lights": {
       "parameters": [
         {
@@ -9928,7 +9979,8 @@
           "bmUrl",
           "bridgeUpdate",
           "bigScreen",
-          "autoStart"
+          "autoStart",
+          "resetOnNext"
         ],
         "additionalProperties": false,
         "properties": {
@@ -9979,6 +10031,10 @@
           "autoStart": {
             "type": "boolean",
             "description": "A lobby game starts the board's stopped Board Manager session"
+          },
+          "resetOnNext": {
+            "type": "boolean",
+            "description": "Next player also resets the board, as its Reset button does"
           }
         }
       },
@@ -9990,6 +10046,18 @@
         "additionalProperties": false,
         "properties": {
           "autoStart": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BoardResetOnNextRequest": {
+        "type": "object",
+        "required": [
+          "resetOnNext"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resetOnNext": {
             "type": "boolean"
           }
         }

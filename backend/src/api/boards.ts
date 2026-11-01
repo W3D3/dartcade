@@ -14,6 +14,7 @@ import {
   deleteBoard,
   renameBoard,
   setAutoStart,
+  setResetOnNext,
   setBigScreenMode,
   hasActiveSessionOnBoard,
 } from '../db/queries.js'
@@ -128,6 +129,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           // Full Board Manager origin (incl. port) for linking
           bmUrl: bm?.origin ?? null,
           autoStart: b.auto_start,
+          resetOnNext: b.reset_on_next,
           bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
           bridgeUpdate: {
             available: bridgeUpdateFor(conn?.bridgeVersion, offered),
@@ -206,6 +208,18 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await setAutoStart(db, id, autoStart)
       return reply.send({ autoStart })
+    },
+  )
+
+  app.patch<Route<'setBoardResetOnNext'>>(
+    '/api/boards/:id/reset-on-next',
+    { preValidation: requireAuth, schema: fromSpec('setBoardResetOnNext') },
+    async (req, reply) => {
+      const { id } = req.params
+      const { resetOnNext } = req.body
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      await setResetOnNext(db, id, resetOnNext)
+      return reply.send({ resetOnNext })
     },
   )
 
