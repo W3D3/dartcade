@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { VIEW, open, shot, openHash, userId, api } from './helpers.js'
+import { VIEW, open, shot, openHash, userId, api, closeToasts } from './helpers.js'
 
 // Profile: the flag and the average badge next to the name, and Settings → Profile's country picker.
 // Admin shows Austria; Luke shows no country.
@@ -65,4 +65,16 @@ test('profile: the flag and average badge, and the country picker in Settings', 
   await phone.page.getByRole('menuitem', { name: /^Your profile/ }).click()
   await expect(phone.page).toHaveURL(/#\/profile$/)
   await phone.ctx.close()
+
+  // With the profile request failing, the menu still has its way in to your profile
+  const offline = await open(browser, 'admin', VIEW.phone)
+  await offline.page.route('**/api/users/*/profile', route =>
+    route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' }),
+  )
+  await openHash(offline.page, '/settings/profile')
+  await closeToasts(offline.page)
+  await offline.page.getByRole('button', { name: /^Account: Admin/ }).click()
+  await offline.page.getByRole('menuitem', { name: 'Your profile: Admin' }).click()
+  await expect(offline.page).toHaveURL(/#\/profile$/)
+  await offline.ctx.close()
 })

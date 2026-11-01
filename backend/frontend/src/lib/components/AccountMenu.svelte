@@ -68,6 +68,16 @@
   </span>
 {/snippet}
 
+{#snippet plainHeader()}
+  <div class="flex items-center gap-3 min-w-0 px-1">
+    {@render avatar(40)}
+    <span class="flex flex-col gap-[2px] min-w-0">
+      <span class="text-[15px] font-semibold truncate">{name || '…'}</span>
+      <span class="font-mono text-[12px] text-text-dim truncate">{`@${name}`}{email ? ` · ${email}` : ''}</span>
+    </span>
+  </div>
+{/snippet}
+
 {#snippet friendsRow()}
   <UsersRound size={18} strokeWidth={1.8} />
   Friends
@@ -162,14 +172,21 @@
               </a>
             {/snippet}
           </DropdownMenu.Item>
+        {:else if level !== null}
+          <!-- The way in to your profile until your card has loaded (or if it never does) -->
+          <DropdownMenu.Item textValue="Your profile">
+            {#snippet child({ props })}
+              <a
+                {...props}
+                href="#/profile"
+                aria-label="Your profile: {name}"
+                class="block rounded-[10px] p-1 text-text no-underline outline-none data-[highlighted]:bg-surface-hover hover:text-text"
+                >{@render plainHeader()}</a
+              >
+            {/snippet}
+          </DropdownMenu.Item>
         {:else}
-          <div class="flex items-center gap-3 min-w-0 px-1">
-            {@render avatar(40)}
-            <span class="flex flex-col gap-[2px] min-w-0">
-              <span class="text-[15px] font-semibold truncate">{name || '…'}</span>
-              <span class="font-mono text-[12px] text-text-dim truncate">{`@${name}`}{email ? ` · ${email}` : ''}</span>
-            </span>
-          </div>
+          {@render plainHeader()}
         {/if}
         <DropdownMenu.RadioGroup
           aria-label="Your status"
