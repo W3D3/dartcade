@@ -23,10 +23,10 @@
 </script>
 
 <div class="flex min-w-0 flex-col gap-2">
-  <span class="flex items-baseline gap-2 text-[15px] font-semibold"
+  <span id="settings-country" class="flex items-baseline gap-2 text-[15px] font-semibold"
     >Country <span class="text-[13px] font-normal text-text-dim">· optional</span></span
   >
-  <CountryPicker value={$currentUser?.country ?? null} onchange={(code: string | null) => void save(code)} />
+  <CountryPicker labelledby="settings-country" value={$currentUser?.country ?? null} onchange={(code: string | null) => void save(code)} />
   <span class="text-[13px] leading-[1.5] text-text-dim"
     >A flag next to your name on your profile and on hover. Everyone who can see your profile sees it, not only friends. Saved as soon as
     you pick one.</span
