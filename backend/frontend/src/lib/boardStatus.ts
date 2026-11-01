@@ -50,3 +50,6 @@ export const DOT_TEXT: Record<DotColor, string> = {
 
 /** What the status dot's label says: Board Manager's status, a dash while an online board has none yet, "Offline" otherwise. */
 export const bmStatusLabel = (status: string | null, online: boolean): string => status ?? (online ? '—' : 'Offline')
+
+/** The label for tight bars (the big screen's header): "Takeout in progress" is just "Takeout", the ring says the rest. */
+export const bmShortLabel = (status: string | null, online: boolean): string => bmStatusLabel(status, online).replace(' in progress', '')
