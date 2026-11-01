@@ -50,7 +50,7 @@
   <div class="h-[88px] {bannerClass(look.banner)}" style={bannerStyle(look.banner, colors)}></div>
   <div class="-mt-[34px] flex flex-col px-[22px] pb-[22px]">
     <span class="relative flex size-[68px] rounded-full" style="box-shadow: 0 0 0 4px {CARD_SURFACE}">
-      <Avatar name={profile.name} {avatar} userId={profile.id} size={68} />
+      <Avatar name={profile.name} face={{ avatar: avatar, userId: profile.id }} size={68} />
       <CardFrame frame={look.frame} />
       {#if status}<StatusRing kind={status} />{/if}
     </span>

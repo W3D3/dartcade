@@ -13,10 +13,10 @@
 
 <li class="flex flex-col gap-3 p-4 card rounded-[16px]">
   <div class="flex items-center gap-3">
-    <Avatar name={invite.inviterName ?? invite.lobbyName} size={40} />
+    <Avatar name={invite.inviter?.name ?? invite.lobbyName} face={invite.inviter} size={40} />
     <div class="flex flex-col gap-[2px] flex-grow min-w-0">
       <span class="text-[18px] font-semibold truncate">{invite.lobbyName}</span>
-      <span class="text-[13px] text-text-muted truncate">{invite.hostName ? `Hosted by ${invite.hostName}` : 'Invited'}</span>
+      <span class="text-[13px] text-text-muted truncate">{invite.host ? `Hosted by ${invite.host.name}` : 'Invited'}</span>
     </div>
     <span class="self-start text-[12px] text-text-dim shrink-0">{inviteTime(invite.createdAt, now)}</span>
   </div>

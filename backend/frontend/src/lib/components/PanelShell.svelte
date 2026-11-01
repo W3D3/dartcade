@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   // Frame of a player panel (1–2 players): avatar, name, optional aside (leg pips), pill.
   import type { Snippet } from 'svelte'
   import Avatar from './Avatar.svelte'
@@ -10,8 +11,7 @@
   import { cn } from '$lib/utils.js'
 
   let {
-    name,
-    bot = null,
+    who,
     active,
     solo = false,
     portrait = false,
@@ -26,9 +26,7 @@
     pillLabel,
     class: className,
   }: {
-    name: string
-    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
-    bot?: { level: number } | null
+    who: Who
     active: boolean
     solo?: boolean
     /** The portrait layout: side by side above the board, with the big sizes from `lg` (an upright monitor). */
@@ -52,6 +50,7 @@
     /** A layout's own width (121's solo card is narrower below xl). */
     class?: string
   } = $props()
+  const name = $derived(who.name)
 
   // Two players on tablets (md up to xl) get the smaller sizes; one player keeps the desktop ones
   const nameSize = $derived(solo ? 'text-[22px]' : portrait ? 'text-[19px] lg:text-[26px]' : 'text-[19px] xl:text-[22px]')
@@ -78,7 +77,13 @@
   )}
 >
   <div class="flex items-center {solo ? 'gap-3' : 'gap-[10px] xl:gap-3'} min-w-0">
-    <Avatar {name} {bot} tone={active ? 'accent' : 'default'} class="{avatarSize} {tone === 'out' ? 'opacity-50' : ''}" />
+    <Avatar
+      name={who.name}
+      bot={who.bot}
+      face={who.face}
+      tone={active ? 'accent' : 'default'}
+      class="{avatarSize} {tone === 'out' ? 'opacity-50' : ''}"
+    />
     <PlayerName {name} {seat} nameClass="{nameSize} {nameTone(active, tone)}" youClass="text-[14px]" gap="gap-[3px]" seatSize="lg" />
     <span class="ml-auto flex items-center gap-3 shrink-0">
       {@render aside?.()}

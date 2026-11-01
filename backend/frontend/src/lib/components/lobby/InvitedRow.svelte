@@ -15,7 +15,7 @@
   class="grid grid-cols-[14px_36px_minmax(0,1fr)_auto] items-center gap-[10px] min-h-[56px] box-border py-[6px] pl-[10px] pr-1 md:pr-2 rounded-[10px] bg-surface-row"
 >
   <span></span>
-  <Avatar name={invitee.name} />
+  <Avatar name={invitee.name} face={invitee} />
   <span class="flex items-center gap-2 min-w-0">
     <span class="text-[15px] font-semibold truncate">{invitee.name}</span>
     <Badge variant="invited">Pending</Badge>

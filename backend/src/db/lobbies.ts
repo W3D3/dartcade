@@ -204,7 +204,17 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
   const invites = await db
     .selectFrom('lobby_invites as i')
     .innerJoin('user as u', 'u.id', 'i.invitee_user_id')
-    .select(['i.id', 'i.invitee_user_id', 'u.name', 'i.inviter_user_id', 'i.created_at'])
+    .select([
+      'i.id',
+      'i.invitee_user_id',
+      'u.name',
+      'u.avatar_kind',
+      'u.avatar_preset',
+      'u.avatar_background',
+      'u.avatar_version',
+      'i.inviter_user_id',
+      'i.created_at',
+    ])
     .where('i.lobby_id', '=', id)
     .where('i.status', '=', 'pending')
     .orderBy('i.created_at')
@@ -244,20 +254,13 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       team: p.team,
       bot: p.bot_level === null ? null : { level: p.bot_level },
       // Guests and bots have no account row to join, so no avatar to show either.
-      avatar:
-        p.avatar_kind === null
-          ? ({ kind: 'none' } as const)
-          : toAvatar({
-              avatar_kind: p.avatar_kind,
-              avatar_preset: p.avatar_preset,
-              avatar_background: p.avatar_background,
-              avatar_version: p.avatar_version ?? 0,
-            }),
+      avatar: toAvatar(p),
     })),
     invites: invites.map(i => ({
       id: i.id,
       userId: i.invitee_user_id,
       name: i.name,
+      avatar: toAvatar(i),
       invitedByUserId: i.inviter_user_id,
       createdAt: i.created_at,
     })),
@@ -480,7 +483,18 @@ export async function pendingInvitesFor(db: Kysely<Database>, userId: string): P
     .selectFrom('lobby_invites as i')
     .innerJoin('lobbies as l', 'l.id', 'i.lobby_id')
     .leftJoin('user as u', 'u.id', 'i.inviter_user_id')
-    .select(['i.id', 'i.lobby_id', 'l.name as lobby_name', 'i.inviter_user_id', 'u.name as inviter_name', 'i.created_at'])
+    .select([
+      'i.id',
+      'i.lobby_id',
+      'l.name as lobby_name',
+      'i.inviter_user_id',
+      'u.name as inviter_name',
+      'u.avatar_kind',
+      'u.avatar_preset',
+      'u.avatar_background',
+      'u.avatar_version',
+      'i.created_at',
+    ])
     .where('i.invitee_user_id', '=', userId)
     .where('i.status', '=', 'pending')
     .where('l.closed_at', 'is', null)
@@ -490,8 +504,11 @@ export async function pendingInvitesFor(db: Kysely<Database>, userId: string): P
     id: r.id,
     lobbyId: r.lobby_id,
     lobbyName: r.lobby_name,
-    inviterUserId: r.inviter_user_id,
-    inviterName: r.inviter_name,
+    // The inviter's account may be gone (the left join finds no row)
+    inviter:
+      r.inviter_user_id === null || r.inviter_name === null
+        ? null
+        : { userId: r.inviter_user_id, name: r.inviter_name, guest: false, avatar: toAvatar(r) },
     createdAt: r.created_at,
   }))
 }

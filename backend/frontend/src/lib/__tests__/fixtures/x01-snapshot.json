@@ -79,6 +79,7 @@
     {
       "controllerUserId": "u1",
       "userId": null,
+      "avatar": { "kind": "none" },
       "boardId": "board-1",
       "boardName": "Board",
       "boardOnline": true,
@@ -90,6 +91,7 @@
     {
       "controllerUserId": "u1",
       "userId": null,
+      "avatar": { "kind": "none" },
       "boardId": "board-1",
       "boardName": "Board",
       "boardOnline": true,

@@ -29,7 +29,7 @@
     onretry: () => void
   } = $props()
 
-  const host = $derived(preview?.hostName ?? 'The host')
+  const host = $derived(preview?.host?.name ?? 'The host')
 
   function go(page: '/login' | '/register') {
     rememberReturn(sessionStore(), joinPath(code, viaQr).slice(1))
@@ -53,7 +53,7 @@
     >
       {#if preview}
         <div class="flex items-center gap-[14px]">
-          <InviteAvatar name={host} size={56} offset="ring-offset-surface-panel" />
+          <InviteAvatar name={host} face={preview.host} size={56} offset="ring-offset-surface-panel" />
           <span class="flex flex-col gap-[3px]">
             <span class="text-[12px] font-bold label-caps text-accent">Lobby invite</span>
             <span class="text-[15px] text-ink-2"><strong class="text-text">{host}</strong> invited you to play darts</span>
