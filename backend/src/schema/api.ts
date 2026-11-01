@@ -491,6 +491,25 @@ export interface paths {
         patch: operations["setBoardAutoStart"];
         trace?: never;
     };
+    "/api/boards/{id}/reset-on-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set whether Next player also resets the board (owner only) */
+        patch: operations["setBoardResetOnNext"];
+        trace?: never;
+    };
     "/api/boards/{id}/lights": {
         parameters: {
             query?: never;
@@ -2894,9 +2913,14 @@ export interface components {
             bigScreen: components["schemas"]["BoardBigScreen"];
             /** @description A lobby game starts the board's stopped Board Manager session */
             autoStart: boolean;
+            /** @description Next player also resets the board, as its Reset button does */
+            resetOnNext: boolean;
         };
         BoardAutoStartRequest: {
             autoStart: boolean;
+        };
+        BoardResetOnNextRequest: {
+            resetOnNext: boolean;
         };
         BoardBigScreen: {
             mode: components["schemas"]["BigScreenMode"];
@@ -4883,6 +4907,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoardAutoStartRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBoardResetOnNext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardResetOnNextRequest"];
+            };
+        };
+        responses: {
+            /** @description The new setting */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardResetOnNextRequest"];
                 };
             };
             400: components["responses"]["BadRequest"];

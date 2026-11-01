@@ -53,6 +53,8 @@ export type EngineOptions = {
   keepFinishedMs?: number
   /** A game is gone from the engine (aborted, or a won game's keepFinishedMs passed). */
   forgotten?: (sessionId: string) => void
+  /** A seat's controller pressed Next player on this board: its darts are out, so it may be reset. */
+  nextPlayer?: (boardId: string) => void
 }
 
 /** A game started: who to push /ws/me to (see LobbyService.onGameStarted). */
@@ -356,12 +358,15 @@ export class SessionEngine {
       // A game that's over takes no input anyway (apply drops it).
       const allowed = session.status === 'active' ? authorizeAction(session, userId, action) : action
       if (!allowed) return { result: { ok: false, code: 'forbidden' } satisfies ActionResult, changed: false }
+      const seatBoard = session.seats[currentSeat(session)].boardId
       const applied = await this.apply(
         session,
         { source: 'user', action: allowed },
         { kind: allowed.type, data: allowed },
         { bridgeEventId: null, boardId: null },
       )
+      // The takeout is committed; the board's reset reaches the differ as a manual reset, which passes no turn
+      if (applied && allowed.type === 'takeout' && seatBoard !== null) this.opts.nextPlayer?.(seatBoard)
       return { result: { ok: true } satisfies ActionResult, changed: applied }
     })
     // A refused or dropped action changes nothing: no snapshot for everyone
