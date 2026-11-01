@@ -63,7 +63,13 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
   }
 }
 
-const faceOf = (p: LobbyPerson): Face => ({ userId: p.userId, name: p.name, guest: p.userId === null && p.bot === null, avatar: p.avatar })
+const faceOf = (p: LobbyPerson): Face => ({
+  userId: p.userId,
+  name: p.name,
+  guest: p.userId === null && p.bot === null,
+  bot: p.bot,
+  avatar: p.avatar,
+})
 
 /** What a lobby is about at a glance: its host, who's in (the first four faces), its next game, its boards. */
 export function lobbyGlance(lobby: LobbyState): {

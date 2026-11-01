@@ -347,12 +347,7 @@
               >{ordinal(pos + 1)}</span
             >
           {:else}
-            <Avatar
-              name={name(p)}
-              face={who.at(p)?.face ?? null}
-              tone={throwing ? 'accent' : 'quiet'}
-              class="w-10 h-10 text-[16px]"
-            />
+            <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} class="w-10 h-10 text-[16px]" />
           {/if}
 
           <div class="flex flex-col gap-1 min-w-0">

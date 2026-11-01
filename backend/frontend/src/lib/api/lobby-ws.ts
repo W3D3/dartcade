@@ -317,6 +317,12 @@ export interface Face {
   userId: string | null
   name: string
   guest: boolean
+  /**
+   * A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest.
+   */
+  bot?: {
+    level: number
+  } | null
   avatar: Avatar1
 }
 /**
