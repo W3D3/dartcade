@@ -90,7 +90,8 @@
         >
         {#if self}
           <span class="text-[13px] text-text-dim"
-            >This is how others see your profile. Friends also see your status and streak. Other players only see recent games they played with you.</span
+            >This is how others see your profile. Friends also see your status and streak. Other players only see recent games they played
+            with you.</span
           >
         {/if}
       </div>
