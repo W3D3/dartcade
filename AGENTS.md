@@ -169,7 +169,16 @@ It is the source of truth for screens, layout and styling. Each screen is an
 artboard under `project/<Screen>.dc.html` (e.g. `project/Match.dc.html`,
 `project/BullOff.dc.html`, `project/BullOff-Result.dc.html`); the design tokens
 are in `project/ds/dartcade/tokens.json`. Read them with the Artifact tool
-(`list_files`, then `read_file`) rather than a web fetch.
+(`action: "list"` with `scope: "files"`, then `action: "read"` with `path`) rather
+than a web fetch.
+
+The tool is called `Artifact`. Use it read-only (`action: "list"` with
+`scope: "files"` and the `url`, `action: "read"` with `url` and `path`): never publish,
+edit or comment on the canvas unless the task says so. In SDK-based
+sessions such as AO workers it only exists when `CLAUDE_CODE_ARTIFACT=1` is set (AO
+sets it for this project). If you don't have the tool, say so and report it instead
+of guessing the design. The Docs MCP connector (`mcp__claude_ai_Claude_Docs__*`)
+can't read the canvas and answers `deny: access`; don't use it for this.
 
 The `.dc.html` files are reference markup, not runnable code: they depend on
 the canvas runtime (`support.js`, `<x-dc>`, `{{holes}}`). Rebuild screens as
