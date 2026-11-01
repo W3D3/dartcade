@@ -124,7 +124,7 @@
                   {p.name}
                 </h1>
                 <span class="text-[15px] opacity-70">@{p.name}</span>
-                <Flag code={p.country} class="!h-[18px] !w-[27px]" />
+                <Flag code={p.country} size="lg" />
                 <AvgBadge average={p.average} />
               </div>
               <div class="font-display font-bold text-[20px] uppercase tracking-[0.14em] text-ink-2">{titleName(p.look)}</div>
