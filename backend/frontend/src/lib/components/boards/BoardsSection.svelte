@@ -30,7 +30,8 @@
   import SectionCard from './SectionCard.svelte'
   import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
   import { me } from '$lib/lobby/sockets'
-  import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
+  import { DOT_TEXT, bmDotColor } from '$lib/boardStatus'
+  import BoardStatusDot from '../BoardStatusDot.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 
@@ -317,10 +318,7 @@
 
   const isRunning = $derived(bmStatus?.running === true)
 
-  const isSpinning = $derived(selected?.online && SPINNING.has(bmStatus?.status ?? ''))
-
   const dotColor = $derived(bmDotColor(bmStatus?.status ?? null, selected?.online ?? false))
-  const dotBg = $derived(DOT_BG[dotColor])
   const dotText = $derived(DOT_TEXT[dotColor])
   const bmLabel = $derived(bmStatus?.status ?? (selected?.online ? '—' : 'Offline'))
   const listening = $derived(selected?.online && isRunning)
@@ -358,11 +356,7 @@
 {/snippet}
 
 {#snippet statusDot()}
-  {#if isSpinning}
-    <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin" />
-  {:else}
-    <span class="size-2 rounded-full {dotBg}"></span>
-  {/if}
+  <BoardStatusDot status={bmStatus?.status ?? null} online={selected?.online ?? false} />
 {/snippet}
 
 {#snippet cell(label: string, value: import('svelte').Snippet)}
