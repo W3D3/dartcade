@@ -44,6 +44,12 @@
       "groupName": "Go dependencies (non-major)"
     },
     {
+      "description": "country-flag-icons must be the same version in backend (the allowed country codes) and frontend (the flags), so they update together",
+      "matchPackageNames": ["country-flag-icons"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "country flags (backend and frontend)"
+    },
+    {
       "description": "Rapier and polyclip-ts must be the same version in backend and frontend (AGENTS.md), so they update together, majors included",
       "matchPackageNames": ["@dimforge/rapier3d-deterministic-compat", "polyclip-ts"],
       "matchUpdateTypes": ["major", "minor", "patch"],
