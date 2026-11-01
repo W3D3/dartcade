@@ -1,7 +1,8 @@
 <script lang="ts">
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
-  import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
+  import BoardStatusDot from './BoardStatusDot.svelte'
+  import { DOT_TEXT, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
   import BigScreenButton from '$lib/components/BigScreenButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { flag } from '$lib/flags'
@@ -66,10 +67,7 @@
 
   const bigScreenOn = flag('bigscreen.enabled')
 
-  const isSpinning = $derived(board.online && SPINNING.has(bmStatus?.status ?? ''))
-
   const dotColor = $derived(bmDotColor(bmStatus?.status ?? null, board.online))
-  const dotBg = $derived(DOT_BG[dotColor])
   const dotText = $derived(DOT_TEXT[dotColor])
   const isRunning = $derived(bmStatus?.running === true)
   const bmLabel = $derived(bmStatusLabel(bmStatus?.status ?? null, board.online))
@@ -87,11 +85,7 @@
     pressed={open}
     class={compact ? '' : 'px-3 text-ink-2'}
   >
-    {#if isSpinning}
-      <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
-    {:else}
-      <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
-    {/if}
+    <BoardStatusDot status={bmStatus?.status ?? null} online={board.online} />
     {#if !compact}
       <span>{board.name}</span>
       <SlidersHorizontal size={13} class="opacity-50" />
@@ -108,11 +102,7 @@
       <!-- Header -->
       <div class="px-4 py-3 border-b border-line-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-[10px] min-w-0">
-          {#if isSpinning}
-            <LoaderCircle size={11} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
-          {:else}
-            <span class="w-[8px] h-[8px] rounded-full shrink-0 {dotBg}"></span>
-          {/if}
+          <BoardStatusDot status={bmStatus?.status ?? null} online={board.online} />
           <span class="font-semibold text-[14px] text-text truncate">{board.name}</span>
         </div>
         <span class="text-[11px] font-medium tracking-[0.05em] uppercase shrink-0 {dotText}">

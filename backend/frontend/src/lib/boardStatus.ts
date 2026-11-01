@@ -2,8 +2,11 @@
 
 export type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
 
-/** States that are on their way somewhere: the dot spins. */
-export const SPINNING = new Set(['Starting', 'Stopping', 'Calibrating'])
+/** States that are on their way somewhere: the dot is replaced by a spinner. */
+export const SPINNING = new Set(['Starting', 'Stopping'])
+
+/** States that are busy but still tell their colour: a ring turns around the dot. */
+export const RINGED = new Set(['Takeout in progress', 'Calibrating'])
 
 /** Green: detecting darts; yellow: takeout or stopping; purple: setting up; red: stopped; gray: offline or unknown. */
 export function bmDotColor(status: string | null, online: boolean): DotColor {

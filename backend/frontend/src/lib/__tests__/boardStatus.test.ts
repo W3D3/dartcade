@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bmDotColor, bmStatusLabel } from '../boardStatus.js'
+import { RINGED, SPINNING, bmDotColor, bmStatusLabel } from '../boardStatus.js'
 
 describe('bmDotColor', () => {
   it('is gray while the board is offline, whatever its last status', () => {
@@ -24,5 +24,13 @@ describe('bmStatusLabel', () => {
     expect(bmStatusLabel('Takeout', true)).toBe('Takeout')
     expect(bmStatusLabel(null, true)).toBe('—')
     expect(bmStatusLabel(null, false)).toBe('Offline')
+  })
+})
+
+describe('busy states', () => {
+  it('rings the dot while taking out or calibrating, and spins only while starting or stopping', () => {
+    expect([...RINGED].sort()).toEqual(['Calibrating', 'Takeout in progress'])
+    expect([...SPINNING].sort()).toEqual(['Starting', 'Stopping'])
+    expect([...RINGED].filter(s => SPINNING.has(s))).toEqual([])
   })
 })
