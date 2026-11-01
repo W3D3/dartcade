@@ -2288,6 +2288,28 @@
                 "guest": {
                   "type": "boolean"
                 },
+                "bot": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "level"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                },
                 "avatar": {
                   "title": "Avatar",
                   "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -2392,6 +2414,28 @@
                 },
                 "guest": {
                   "type": "boolean"
+                },
+                "bot": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "level"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                 },
                 "avatar": {
                   "title": "Avatar",
@@ -2498,6 +2542,28 @@
               },
               "guest": {
                 "type": "boolean"
+              },
+              "bot": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
               },
               "avatar": {
                 "title": "Avatar",
@@ -2626,6 +2692,28 @@
         },
         "guest": {
           "type": "boolean"
+        },
+        "bot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
         },
         "avatar": {
           "title": "Avatar",
@@ -2824,6 +2912,28 @@
               "guest": {
                 "type": "boolean"
               },
+              "bot": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+              },
               "avatar": {
                 "title": "Avatar",
                 "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -3000,6 +3110,28 @@
                       "guest": {
                         "type": "boolean"
                       },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                      },
                       "avatar": {
                         "title": "Avatar",
                         "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -3104,6 +3236,28 @@
                       },
                       "guest": {
                         "type": "boolean"
+                      },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                       },
                       "avatar": {
                         "title": "Avatar",
@@ -3210,6 +3364,28 @@
                     },
                     "guest": {
                       "type": "boolean"
+                    },
+                    "bot": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "level"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "level": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 10
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                     },
                     "avatar": {
                       "title": "Avatar",
@@ -3445,6 +3621,28 @@
                       },
                       "guest": {
                         "type": "boolean"
+                      },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                       },
                       "avatar": {
                         "title": "Avatar",
@@ -4319,6 +4517,28 @@
                 "guest": {
                   "type": "boolean"
                 },
+                "bot": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "level"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                },
                 "avatar": {
                   "title": "Avatar",
                   "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -4506,6 +4726,28 @@
                       "guest": {
                         "type": "boolean"
                       },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                      },
                       "avatar": {
                         "title": "Avatar",
                         "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -4628,6 +4870,28 @@
                       },
                       "guest": {
                         "type": "boolean"
+                      },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                       },
                       "avatar": {
                         "title": "Avatar",
@@ -4906,6 +5170,28 @@
                               "guest": {
                                 "type": "boolean"
                               },
+                              "bot": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "level"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "level": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 10
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                              },
                               "avatar": {
                                 "title": "Avatar",
                                 "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -5028,6 +5314,28 @@
                               },
                               "guest": {
                                 "type": "boolean"
+                              },
+                              "bot": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "level"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "level": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 10
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                               },
                               "avatar": {
                                 "title": "Avatar",
@@ -5204,6 +5512,28 @@
                           "guest": {
                             "type": "boolean"
                           },
+                          "bot": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "level": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                          },
                           "avatar": {
                             "title": "Avatar",
                             "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -5308,6 +5638,28 @@
                           },
                           "guest": {
                             "type": "boolean"
+                          },
+                          "bot": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "level": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                           },
                           "avatar": {
                             "title": "Avatar",
@@ -5414,6 +5766,28 @@
                         },
                         "guest": {
                           "type": "boolean"
+                        },
+                        "bot": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "level"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "level": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                         },
                         "avatar": {
                           "title": "Avatar",
@@ -5649,6 +6023,28 @@
                           },
                           "guest": {
                             "type": "boolean"
+                          },
+                          "bot": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "level": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                           },
                           "avatar": {
                             "title": "Avatar",
@@ -6574,6 +6970,28 @@
                                   "guest": {
                                     "type": "boolean"
                                   },
+                                  "bot": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "required": [
+                                          "level"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "level": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 10
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+                                  },
                                   "avatar": {
                                     "title": "Avatar",
                                     "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
@@ -6696,6 +7114,28 @@
                                   },
                                   "guest": {
                                     "type": "boolean"
+                                  },
+                                  "bot": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "required": [
+                                          "level"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "level": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 10
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
                                   },
                                   "avatar": {
                                     "title": "Avatar",

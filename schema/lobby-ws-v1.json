@@ -260,6 +260,18 @@
         "userId": { "type": ["string", "null"], "description": "To fetch an uploaded avatar; null for a guest or bot." },
         "name": { "type": "string" },
         "guest": { "type": "boolean" },
+        "bot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["level"],
+              "additionalProperties": false,
+              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 10 } }
+            },
+            { "type": "null" }
+          ],
+          "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+        },
         "avatar": { "$ref": "common-v1.json#/$defs/Avatar" }
       }
     },

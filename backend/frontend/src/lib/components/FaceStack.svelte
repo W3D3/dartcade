@@ -7,7 +7,13 @@
     faces,
     size = 20,
   }: {
-    faces: { userId: string | null; name: string; guest: boolean; avatar?: components['schemas']['Avatar'] }[]
+    faces: {
+      userId: string | null
+      name: string
+      guest: boolean
+      bot?: { level: number } | null
+      avatar?: components['schemas']['Avatar']
+    }[]
     size?: number
   } = $props()
 </script>
@@ -17,7 +23,7 @@
     <Avatar
       name={face.name}
       guest={face.guest}
-      face={{ avatar: face.avatar ?? { kind: 'none' }, userId: face.userId }}
+      face={{ avatar: face.avatar ?? { kind: 'none' }, userId: face.userId, bot: face.bot }}
       {size}
       class="-ml-[6px] {face.guest ? 'bg-surface-active' : 'ring-2 ring-surface-active'}"
     />

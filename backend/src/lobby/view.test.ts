@@ -192,9 +192,9 @@ describe('lobbySummary', () => {
       solo: false,
       hasBot: false,
       faces: [
-        { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
-        { userId: 'max', name: 'Max', guest: false, avatar: { kind: 'none' } },
-        { userId: null, name: 'Guest 1', guest: true, avatar: { kind: 'none' } },
+        { userId: 'chris', name: 'Christoph', guest: false, bot: null, avatar: { kind: 'none' } },
+        { userId: 'max', name: 'Max', guest: false, bot: null, avatar: { kind: 'none' } },
+        { userId: null, name: 'Guest 1', guest: true, bot: null, avatar: { kind: 'none' } },
       ],
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
@@ -228,17 +228,25 @@ describe('lobbySummary', () => {
       people: [...lobby.people, person({ id: 'a', name: 'Anna', boardName: 'Garage' }), person({ id: 'b', name: 'Ben' })],
     }
     expect(lobbyGlance(more)).toEqual({
-      host: { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+      host: { userId: 'chris', name: 'Christoph', guest: false, bot: null, avatar: { kind: 'none' } },
       peopleCount: 5,
       faces: [
-        { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
-        { userId: 'max', name: 'Max', guest: false, avatar: { kind: 'none' } },
-        { userId: null, name: 'Guest 1', guest: true, avatar: { kind: 'none' } },
-        { userId: null, name: 'Anna', guest: true, avatar: { kind: 'none' } },
+        { userId: 'chris', name: 'Christoph', guest: false, bot: null, avatar: { kind: 'none' } },
+        { userId: 'max', name: 'Max', guest: false, bot: null, avatar: { kind: 'none' } },
+        { userId: null, name: 'Guest 1', guest: true, bot: null, avatar: { kind: 'none' } },
+        { userId: null, name: 'Anna', guest: true, bot: null, avatar: { kind: 'none' } },
       ],
       nextGame: more.nextGame,
       boardNames: ['Living room', 'Garage'],
     })
+  })
+
+  it("a bot's face carries its level, so the avatar stack draws the robot", () => {
+    const withBot: LobbyState = {
+      ...lobby,
+      people: [...lobby.people, person({ id: 'r', name: 'Level 7', userId: null, bot: { level: 7 } })],
+    }
+    expect(lobbyGlance(withBot).faces.at(-1)).toMatchObject({ name: 'Level 7', guest: false, bot: { level: 7 } })
   })
 
   it('names the host; null only once their account is gone', () => {
@@ -255,6 +263,7 @@ describe('lobbySummary', () => {
       userId: null,
       name: 'Bot Lvl 5',
       guest: false,
+      bot: { level: 5 },
       avatar: { kind: 'none' },
     })
   })
