@@ -7,6 +7,7 @@
   shows the red banner in place of This visit until the next dart.
 -->
 <script lang="ts">
+  import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { HiloGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
@@ -23,7 +24,7 @@
 
   let {
     game,
-    players,
+    who,
     darts,
     layout,
     canThrow,
@@ -39,7 +40,8 @@
     viewOnly = false,
   }: {
     game: HiloGame
-    players: { name: string }[]
+    /** Per seat: its name, bot and picture. */
+    who: Who[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
     layout: MatchLayout
@@ -63,14 +65,13 @@
   const hint = $derived(playing && !locked ? highHint(game, darts.length) : null)
   const slots = $derived(hiloSlots({ darts, hint: hint && { need: hint.need, high: game.high }, locked: game.visitLocked }))
   let openDart = $state<number | null>(null)
-  const name = (i: number) => players[i]?.name ?? ''
   // The life-lost moment: the backend keeps lastResult until the next dart
   const r = $derived(game.lastResult)
   const banner = $derived(r ? bannerText(r) : null)
   const seatProps = (i: number) => ({
     game,
     seat: i,
-    name: name(i),
+    who: who[i],
     active: i === cp && playing,
     upNext: i === game.nextPlayer && i !== cp,
     justLost: banner !== null && r?.seat === i,

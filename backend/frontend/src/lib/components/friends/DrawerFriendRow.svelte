@@ -23,7 +23,7 @@
 
 <li class="flex items-center gap-[10px] min-h-14 pl-[6px] pr-[10px] rounded-[10px] hover:bg-surface-active">
   <span class="relative shrink-0 flex m-1">
-    <Avatar name={friend.name} avatar={friend.avatar} userId={friend.id} size={36} />
+    <Avatar name={friend.name} face={{ avatar: friend.avatar, userId: friend.id }} size={36} />
     <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-px min-w-0 flex-grow">

@@ -21,7 +21,7 @@
   class="flex items-center md:items-stretch md:flex-col gap-[10px] p-[10px] pl-3 md:p-3 rounded-[12px] bg-surface-active border border-accent-line"
 >
   <div class="flex items-center gap-[10px] md:gap-3 min-w-0 flex-grow">
-    <Avatar name={request.from.name} avatar={request.from.avatar} userId={request.from.id} size={$isPhone ? 38 : 40} />
+    <Avatar name={request.from.name} face={{ avatar: request.from.avatar, userId: request.from.id }} size={$isPhone ? 38 : 40} />
     <span class="flex flex-col gap-px md:gap-[2px] min-w-0">
       <span class="text-[14px] md:text-[15px] font-semibold truncate"
         >{request.from.name}

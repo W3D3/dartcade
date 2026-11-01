@@ -676,6 +676,7 @@
       "required": [
         "controllerUserId",
         "userId",
+        "avatar",
         "boardId",
         "boardName",
         "boardOnline",
@@ -692,6 +693,10 @@
         "userId": {
           "type": ["string", "null"],
           "description": "The account the seat plays for; null for a guest."
+        },
+        "avatar": {
+          "$ref": "common-v1.json#/$defs/Avatar",
+          "description": "The account's profile picture; {kind: 'none'} for a guest or bot."
         },
         "boardId": {
           "type": ["string", "null"],

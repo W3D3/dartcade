@@ -12,6 +12,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
   const s = module.init(config, players, rng)
   return {
     id: 's1',
+    avatars: new Map(),
     ownerUserId: 'u1',
     boardId: 'b1',
     lobbyId: null,

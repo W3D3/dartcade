@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   // A player in a team panel: initial, name, their board (remote games) and average, and
   // Throwing / Up next / "after".
   import Avatar from './Avatar.svelte'
@@ -10,13 +11,13 @@
 
   let {
     member,
-    bot = null,
+    who,
     seat = null,
     compact = false,
   }: {
     member: TeamMember
-    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
-    bot?: { level: number } | null
+    /** Whose picture and bot glyph to draw; the member's name is `member.name`. */
+    who: Who
     /** Remote games: the seat's board, and "· you". */
     seat?: SeatLine | null
     compact?: boolean
@@ -33,7 +34,7 @@
       ? 'bg-surface-row border-line-2'
       : 'border-line'}"
 >
-  <Avatar name={member.name} {bot} tone={throwing ? 'accent' : 'default'} size={30} />
+  <Avatar name={member.name} bot={who.bot} face={who.face} tone={throwing ? 'accent' : 'default'} size={30} />
   <PlayerName
     name={member.name}
     you={seat?.you ?? false}

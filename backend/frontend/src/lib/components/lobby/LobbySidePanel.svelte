@@ -76,7 +76,7 @@
               {#each rows as r (r.friend.id)}
                 <li class="flex items-center gap-3 min-h-[52px] border-b border-surface-paused last:border-b-0">
                   <span class="relative shrink-0 flex m-1">
-                    <Avatar name={r.friend.name} size={32} />
+                    <Avatar name={r.friend.name} face={{ avatar: r.friend.avatar, userId: r.friend.id }} size={32} />
                     <StatusRing kind={r.friend.status.kind} />
                   </span>
                   <span class="flex flex-col gap-px min-w-0 flex-grow">

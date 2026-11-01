@@ -1,3 +1,4 @@
+import type { Avatar } from '../db/users.js'
 import { z } from 'zod'
 import { ClientMessageSchema } from '../schema/zod.js'
 import { parseBoardEvent } from './boardEvent.js'
@@ -45,6 +46,8 @@ export function newSession(a: {
   lobbyName?: string | null
   /** The module version a stored game was created with; a new game has the current one. */
   version?: number
+  /** The seated accounts' profile pictures (a replay for history needs none). */
+  avatars?: Map<string, Avatar>
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
@@ -54,6 +57,7 @@ export function newSession(a: {
     ownerUserId: a.ownerUserId,
     boardId: a.boardId,
     seats: a.seats,
+    avatars: a.avatars ?? new Map<string, Avatar>(),
     players,
     module: a.module,
     committedState: initial,

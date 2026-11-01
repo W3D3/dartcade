@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import { x01Averages, x01Roll } from '$lib/playerStats'
@@ -8,15 +9,13 @@
   import type { SeatLine } from '$lib/remote'
 
   let {
-    name,
-    bot = null,
+    who,
     p,
     active,
     pill,
     seat = null,
   }: {
-    name: string
-    bot?: { level: number } | null
+    who: Who
     p: X01PlayerView
     active: boolean
     pill: PillKind | null
@@ -36,8 +35,7 @@
      around 1024) narrower ones with only the averages and a smaller score; below 512 px (beside the board in a narrow window) name,
      score and stats stacked, the stats only for the thrower (leg pips for everyone) -->
 <RowShell
-  {name}
-  {bot}
+  {who}
   {active}
   {pill}
   {seat}

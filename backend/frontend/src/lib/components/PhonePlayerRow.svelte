@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   // A waiting player on a phone: avatar, name, a short line (up next, can finish), leg pips, the number that matters.
   import Avatar from './Avatar.svelte'
   import LegPips from './LegPips.svelte'
@@ -10,8 +11,7 @@
   import { playerCard } from '$lib/playerCard'
 
   let {
-    name,
-    bot = null,
+    who,
     pill,
     sub,
     value,
@@ -21,9 +21,7 @@
     you = false,
     roll = {},
   }: {
-    name: string
-    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
-    bot?: { level: number } | null
+    who: Who
     pill: PillKind | null
     sub: string
     value: string
@@ -36,13 +34,14 @@
     /** How the value rolls when it changes. */
     roll?: RollOptions
   } = $props()
+  const name = $derived(who.name)
 </script>
 
 <section
   aria-label="{name}, {sub}, {valueLabel} {value}"
   class="shrink-0 h-[58px] box-border px-[14px] flex items-center gap-[10px] rounded-[12px] {playerCard(active)}"
 >
-  <Avatar {name} {bot} tone={active ? 'accent' : 'default'} size={32} />
+  <Avatar name={who.name} bot={who.bot} face={who.face} tone={active ? 'accent' : 'default'} size={32} />
   <PlayerName {name} {you} nameClass="text-[15px] {active ? 'text-text' : 'text-ink-2'}" youClass="text-[12px]" gap="gap-[2px]" leading="">
     {#snippet below()}<span class="text-[12px] text-text-dim truncate">{sub}</span>{/snippet}
   </PlayerName>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Who } from '$lib/face'
   // Frame of a stacked player row (3 or more players): the card, and its first column with the
   // avatar, name (and board in remote games) and pill. The game's columns go in `children`.
   import type { Snippet } from 'svelte'
@@ -10,8 +11,7 @@
   import { nameTone, playerCard, type CardTone } from '$lib/playerCard'
 
   let {
-    name,
-    bot = null,
+    who,
     active,
     pill,
     seat = null,
@@ -21,9 +21,7 @@
     label,
     pillLabel,
   }: {
-    name: string
-    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
-    bot?: { level: number } | null
+    who: Who
     active: boolean
     pill: PillKind | null
     seat?: SeatLine | null
@@ -37,6 +35,7 @@
     /** The pill's text, when it differs from its kind's ("Out · 2nd"). */
     pillLabel?: string
   } = $props()
+  const name = $derived(who.name)
 </script>
 
 <div class="@container h-full min-h-0">
@@ -48,8 +47,9 @@
     <div class="flex flex-col gap-[10px] min-w-0">
       <span class="flex items-center gap-[10px] xl:gap-3 min-w-0">
         <Avatar
-          {name}
-          {bot}
+          name={who.name}
+          bot={who.bot}
+          face={who.face}
           tone={active ? 'accent' : 'default'}
           class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px] {tone === 'out' ? 'opacity-50' : ''}"
         />

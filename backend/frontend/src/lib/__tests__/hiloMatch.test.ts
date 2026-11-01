@@ -50,7 +50,10 @@ const game = (o: Partial<HiloGame> = {}): HiloGame => ({
 
 const props = (g: HiloGame, o: Record<string, unknown> = {}) => ({
   game: g,
-  players: [{ name: 'Anna' }, { name: 'Ben' }],
+  who: [
+    { name: 'Anna', bot: null, face: null },
+    { name: 'Ben', bot: null, face: null },
+  ],
   darts: twoDarts,
   layout: 'duel' as const,
   canThrow: true,
@@ -158,7 +161,14 @@ describe('HiloMatch in a party', () => {
       seats: [seat(), seat(), seat({ lives: 0, out: true, place: 2, outRound: 3, visits: [{ round: 3, total: 26, outcome: 'between' }] })],
     })
     const { body } = render(HiloMatch, {
-      props: props(g, { layout: 'party', players: [{ name: 'Anna' }, { name: 'Ben' }, { name: 'Cara' }] }),
+      props: props(g, {
+        layout: 'party',
+        who: [
+          { name: 'Anna', bot: null, face: null },
+          { name: 'Ben', bot: null, face: null },
+          { name: 'Cara', bot: null, face: null },
+        ],
+      }),
     })
     expect(text(body)).toContain('Out · 2nd')
     expect(text(body)).toContain('Went out in round 3')
