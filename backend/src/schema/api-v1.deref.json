@@ -5180,7 +5180,8 @@
                           "bmUrl",
                           "bridgeUpdate",
                           "bigScreen",
-                          "autoStart"
+                          "autoStart",
+                          "resetOnNext"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -5304,6 +5305,10 @@
                           "autoStart": {
                             "type": "boolean",
                             "description": "A lobby game starts the board's stopped Board Manager session"
+                          },
+                          "resetOnNext": {
+                            "type": "boolean",
+                            "description": "Next player also resets the board, as its Reset button does"
                           }
                         }
                       }
@@ -9417,6 +9422,261 @@
                   "additionalProperties": false,
                   "properties": {
                     "autoStart": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/reset-on-next": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "patch": {
+        "operationId": "setBoardResetOnNext",
+        "summary": "Set whether Next player also resets the board (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "resetOnNext"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "resetOnNext": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "resetOnNext"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "resetOnNext": {
                       "type": "boolean"
                     }
                   }
@@ -56662,7 +56922,8 @@
           "bmUrl",
           "bridgeUpdate",
           "bigScreen",
-          "autoStart"
+          "autoStart",
+          "resetOnNext"
         ],
         "additionalProperties": false,
         "properties": {
@@ -56786,6 +57047,10 @@
           "autoStart": {
             "type": "boolean",
             "description": "A lobby game starts the board's stopped Board Manager session"
+          },
+          "resetOnNext": {
+            "type": "boolean",
+            "description": "Next player also resets the board, as its Reset button does"
           }
         }
       },
@@ -56797,6 +57062,18 @@
         "additionalProperties": false,
         "properties": {
           "autoStart": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BoardResetOnNextRequest": {
+        "type": "object",
+        "required": [
+          "resetOnNext"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resetOnNext": {
             "type": "boolean"
           }
         }
@@ -56996,7 +57273,8 @@
                 "bmUrl",
                 "bridgeUpdate",
                 "bigScreen",
-                "autoStart"
+                "autoStart",
+                "resetOnNext"
               ],
               "additionalProperties": false,
               "properties": {
@@ -57120,6 +57398,10 @@
                 "autoStart": {
                   "type": "boolean",
                   "description": "A lobby game starts the board's stopped Board Manager session"
+                },
+                "resetOnNext": {
+                  "type": "boolean",
+                  "description": "Next player also resets the board, as its Reset button does"
                 }
               }
             }

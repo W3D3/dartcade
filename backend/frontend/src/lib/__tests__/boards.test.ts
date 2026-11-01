@@ -15,6 +15,7 @@ const board = (over: Partial<Board> = {}): Board => ({
   bridgeUpdate: { available: null, updatable: true },
   bigScreen: { mode: 'off', running: false, helper: false },
   autoStart: true,
+  resetOnNext: true,
   ...over,
 })
 
