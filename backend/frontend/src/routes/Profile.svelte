@@ -8,6 +8,8 @@
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
+  import AvgBadge from '$lib/components/AvgBadge.svelte'
+  import Flag from '$lib/components/Flag.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
@@ -29,7 +31,7 @@
   import CardFrame from '$lib/components/progress/CardFrame.svelte'
   import { progress } from '$lib/progress/store'
   import { getGameView } from '$lib/gameViews'
-  import { ordinal } from '$lib/fmt'
+  import { placementMark } from '$lib/progress/view'
   import { PERKS, PERK_KINDS, listed } from '$shared/progression.js'
   import { rank } from '$shared/ranked.js'
   import BanNotice from '$lib/components/BanNotice.svelte'
@@ -87,7 +89,9 @@
           ><ArrowLeft size={16} />Back</button
         >
         {#if self}
-          <span class="text-[13px] text-text-dim">This is how others see your profile. Friends also see your status and streak.</span>
+          <span class="text-[13px] text-text-dim"
+            >This is how others see your profile. Friends also see your status and streak; everyone else sees ranked and public games only.</span
+          >
         {/if}
       </div>
 
@@ -96,24 +100,31 @@
         class="shrink-0 overflow-hidden rounded-[16px] border border-line-popover {colorsClass(p.look.colors)}"
         style="background: {CARD_SURFACE}"
       >
-        <div class="h-[110px] md:h-[140px] {bannerClass(p.look.banner)}" style={bannerStyle(p.look.banner, colors)}></div>
+        <div class="h-[110px] md:h-[200px] {bannerClass(p.look.banner)}" style={bannerStyle(p.look.banner, colors)}></div>
         <div class="flex flex-col gap-4 px-5 pb-5 md:px-7 md:pb-6">
           <!-- Only the avatar overlaps the banner -->
-          <span class="relative -mt-12 flex size-24 shrink-0 rounded-full" style="box-shadow: 0 0 0 5px {CARD_SURFACE}">
-            <Avatar name={p.name} face={{ avatar: p.avatar, userId: p.id }} size={96} />
+          <span
+            class="relative -mt-12 md:-mt-[68px] flex size-24 md:size-[136px] shrink-0 rounded-full"
+            style="box-shadow: 0 0 0 5px {CARD_SURFACE}"
+          >
+            <Avatar name={p.name} face={{ avatar: p.avatar, userId: p.id }} class="size-24 md:size-[136px] text-[40px] md:text-[56px]" />
             <CardFrame frame={p.look.frame} />
             {#if dot}<StatusRing kind={dot} />{/if}
           </span>
           <div class="flex flex-col gap-4 md:flex-row md:items-end">
             <div class="flex flex-col gap-2 min-w-0 flex-1">
-              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1
-                  class="m-0 text-[30px] md:text-[36px] font-semibold leading-tight {nameClass(p.look.name)}"
+                  class="m-0 min-w-0 truncate font-display font-bold uppercase tracking-[0.02em] text-[32px] md:text-[38px] leading-[0.95] {nameClass(
+                    p.look.name,
+                  )}"
                   style="color: {accentOf(colors)}"
                 >
                   {p.name}
                 </h1>
-                <span class="text-[14px] text-text-muted">@{p.name}</span>
+                <span class="text-[15px] opacity-70">@{p.name}</span>
+                <Flag code={p.country} class="!h-[18px] !w-[27px]" />
+                <AvgBadge average={p.average} />
               </div>
               <div class="font-display font-bold text-[20px] uppercase tracking-[0.14em] text-ink-2">{titleName(p.look)}</div>
               <div class="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
@@ -174,7 +185,7 @@
             <div class="flex flex-col gap-1">
               <span class="text-[12px] label-caps text-text-dim">3-dart avg</span>
               <span class="font-display font-bold text-[34px] leading-none">{fmtAvg(p.average ?? null)}</span>
-              <span class="text-[12px] text-text-muted">X01, last 20 games</span>
+              <span class="text-[12px] text-text-muted">X01, last 30 days</span>
             </div>
             <div class="flex flex-col gap-1">
               <span class="text-[12px] label-caps text-text-dim">Matches</span>
@@ -198,17 +209,17 @@
             {:else}
               <ul class="m-0 p-0 list-none flex flex-col">
                 {#each p.recent as g (g.id)}
-                  {@const won = g.placement === 1 && g.players > 1}
+                  {@const mark = placementMark(g.placement, g.players)}
                   <li class="border-b border-line last:border-b-0">
                     <a
                       href="#/history/{g.id}"
                       class="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 py-3 text-text no-underline"
                     >
                       <span
-                        class="size-8 rounded-full flex items-center justify-center text-[13px] font-bold {won
+                        class="size-8 rounded-full flex items-center justify-center text-[13px] font-bold {mark.won
                           ? 'bg-accent text-accent-fg'
                           : 'bg-surface-chip text-text-muted'}"
-                        title={won ? 'Won' : ordinal(g.placement)}>{won ? 'W' : g.players > 1 ? ordinal(g.placement) : '–'}</span
+                        title={mark.title}>{mark.text}</span
                       >
                       <span class="flex flex-col min-w-0">
                         <span class="truncate text-[15px] font-medium">{g.others.length ? `vs ${g.others.join(', ')}` : 'Solo'}</span>

@@ -1,5 +1,6 @@
 // What the progression screens show: levels, bars and the XP breakdown, from the shared rules.
 import { PERKS, levelOf, type Perk } from '$shared/progression.js'
+import { ordinal } from '$lib/fmt'
 import type { XpGainedMessage, XpLine } from '$lib/api/lobby-ws'
 
 const nf = new Intl.NumberFormat('en-US')
@@ -98,4 +99,16 @@ export function toastsFor(m: XpGainedMessage): ProgressToast[] {
 export function streakLine(lines: XpLine[]): { days: number; bonus: number } | null {
   const daily = lines.find(l => l.kind === 'daily')
   return daily?.count ? { days: daily.count, bonus: daily.amount } : null
+}
+
+/**
+ * The mark on a recent-match row: W for a win and L for a loss in a two-player game (no ranking
+ * to speak of), the ordinal place with more players, a dash alone.
+ */
+export function placementMark(placement: number, players: number): { text: string; title: string; won: boolean } {
+  if (players < 2) return { text: '–', title: 'Solo', won: false }
+  if (placement === 1) return { text: 'W', title: 'Won', won: true }
+  if (players === 2) return { text: 'L', title: 'Lost', won: false }
+  const place = ordinal(placement)
+  return { text: place, title: place, won: false }
 }

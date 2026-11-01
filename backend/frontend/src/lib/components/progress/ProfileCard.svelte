@@ -8,6 +8,8 @@
   import { Flame } from '@lucide/svelte'
   import StatusRing from '../friends/StatusRing.svelte'
   import Avatar from '../Avatar.svelte'
+  import AvgBadge from '../AvgBadge.svelte'
+  import Flag from '../Flag.svelte'
   import type { DotKind } from '$lib/friends/view'
   import type { PlayerProfile } from '$lib/progress/profiles'
   import { CARD_SURFACE, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass, titleName } from '$lib/progress/look'
@@ -54,8 +56,12 @@
       <CardFrame frame={look.frame} />
       {#if status}<StatusRing kind={status} />{/if}
     </span>
-    <div class="mt-4 min-w-0 truncate text-[24px] font-semibold leading-[1.1] {nameClass(look.name)}" style="color: {accentOf(colors)}">
-      {profile.name}
+    <div class="mt-4 flex min-w-0 items-center gap-2">
+      <span class="min-w-0 truncate text-[24px] font-semibold leading-[1.1] {nameClass(look.name)}" style="color: {accentOf(colors)}"
+        >{profile.name}</span
+      >
+      <Flag code={profile.country} />
+      <AvgBadge average={profile.average} size="sm" />
     </div>
     <div class="mt-[10px] mb-[14px] font-display font-bold text-[19px] uppercase tracking-[0.14em] text-ink-2">{titleName(look)}</div>
     <div class="flex flex-wrap gap-2 text-[13px] font-medium text-ink-2">
