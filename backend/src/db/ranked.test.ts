@@ -11,6 +11,7 @@ import {
   recalculateRatings,
   recordRankedResult,
   x01Average,
+  x01AverageSince,
 } from './ranked.js'
 import { rankIndexFor, rankThreshold } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
@@ -56,6 +57,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
         bot_level: null,
       })
       .execute()
+    return id
   }
 
   const at = (day: number) => new Date(Date.UTC(2026, 9, day, 20))
@@ -88,6 +90,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
           'liv',
           'cal',
           'dee',
+          'mia',
         ].map(id => ({
           id,
           name: id[0].toUpperCase() + id.slice(1),
@@ -116,6 +119,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     await played('ida', 40, 90)
     await played('ida', 99, 300, 'atc')
     expect(await x01Average(db, 'ida')).toBe(45)
+  })
+
+  it('the X01 average can cover only the last days, leaving older and invalidated games out', async () => {
+    const old = await played('mia', 90, 30)
+    const invalid = await played('mia', 10, 30)
+    const recent = await played('mia', 60, 30)
+    const ago = (days: number) => sql<Date>`now() - make_interval(days => ${days})`
+    await db
+      .updateTable('game_sessions')
+      .set({ finished_at: ago(40) })
+      .where('id', '=', old)
+      .execute()
+    await db
+      .updateTable('game_sessions')
+      .set({ finished_at: ago(2), invalidated_at: new Date() })
+      .where('id', '=', invalid)
+      .execute()
+    await db
+      .updateTable('game_sessions')
+      .set({ finished_at: ago(2) })
+      .where('id', '=', recent)
+      .execute()
+    expect(await x01AverageSince(db, 'mia', 30)).toBe(60)
+    expect(await x01Average(db, 'mia')).toBe(75)
   })
 
   it('a first ranked game starts the player from their X01 average', async () => {

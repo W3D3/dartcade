@@ -4246,7 +4246,21 @@ components:
     Me:
       type: object
       required:
-        [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, impersonating, createdAt, avatar, pictures]
+        [
+          id,
+          name,
+          email,
+          nameNeedsChange,
+          suggestedName,
+          invisible,
+          isAdmin,
+          isModerator,
+          impersonating,
+          createdAt,
+          avatar,
+          pictures,
+          country,
+        ]
       additionalProperties: false
       properties:
         pictures:
@@ -4272,6 +4286,12 @@ components:
           }
         createdAt: { type: string, format: date-time, description: 'When the account was made (Member since)' }
         avatar: { $ref: '#/components/schemas/Avatar' }
+        country: { $ref: '#/components/schemas/Country' }
+    Country:
+      type: string
+      nullable: true
+      pattern: '^[A-Z]{2}$'
+      description: 'ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it.'
     UpdateMeRequest:
       type: object
       minProperties: 1
@@ -4280,6 +4300,7 @@ components:
         name: { type: string, minLength: 1, maxLength: 64 }
         invisible: { type: boolean }
         avatar: { $ref: '#/components/schemas/AvatarChoice' }
+        country: { $ref: '#/components/schemas/Country' }
     Preferences:
       type: object
       additionalProperties: false
@@ -4393,6 +4414,7 @@ components:
           ranked,
           streak,
           average,
+          country,
           favourite,
           matches,
           headToHead,
@@ -4425,7 +4447,13 @@ components:
               matches: { type: integer, minimum: 0 }
               wins: { type: integer, minimum: 0 }
         streak: { type: integer, minimum: 0, nullable: true, description: 'Day streak; friends and yourself only' }
-        average: { type: number, nullable: true, description: X01 3-dart average over the last 20 games }
+        average:
+          {
+            type: number,
+            nullable: true,
+            description: X01 3-dart average over the last 30 days (dart-weighted); null without X01 darts in that time,
+          }
+        country: { $ref: '#/components/schemas/Country' }
         favourite: { type: string, nullable: true, description: The mode played most }
         matches: { type: integer, minimum: 0 }
         headToHead:

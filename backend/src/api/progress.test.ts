@@ -21,7 +21,7 @@ vi.mock('../db/progression.js', () => ({
 }))
 vi.mock('../db/users.js', () => ({ getPreferences: vi.fn(), updatePreferences: vi.fn() }))
 vi.mock('../db/friends.js', () => ({ areFriends: vi.fn() }))
-vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), x01Average: vi.fn() }))
+vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), x01AverageSince: vi.fn() }))
 vi.mock('../db/profile.js', () => ({ profileUser: vi.fn(), modeCounts: vi.fn(), headToHead: vi.fn(), recentGames: vi.fn() }))
 
 import { flagEnabled } from '../flags/index.js'
@@ -30,7 +30,7 @@ import { gameLines, getProgress, getStreak, streakDays, unlockedPerks, userTimeZ
 import { DEFAULT_EQUIPPED, PERKS, levelPerks } from '../shared/progression.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
 import { areFriends } from '../db/friends.js'
-import { getRatings, x01Average } from '../db/ranked.js'
+import { getRatings, x01AverageSince } from '../db/ranked.js'
 import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
 
 const app = () => {
@@ -61,7 +61,7 @@ beforeEach(() => {
       '1v1': { ...rating, mode: '1v1', rankIndex: 15, rating: 1310, matches: 12, wins: 8 },
       '2v2': { ...rating, mode: '2v2' },
     })
-  vi.mocked(x01Average).mockReset().mockResolvedValue(61.2)
+  vi.mocked(x01AverageSince).mockReset().mockResolvedValue(61.2)
   vi.mocked(profileUser)
     .mockReset()
     .mockResolvedValue({
@@ -70,6 +70,7 @@ beforeEach(() => {
       createdAt: new Date('2026-08-01T00:00:00Z'),
       avatar: { kind: 'preset', foreground: 'chrome', background: 'neon' },
       equipped: { colors: 'colors.ice' },
+      country: 'AT',
       ban: null,
     })
   vi.mocked(modeCounts)
@@ -208,12 +209,15 @@ describe('/api/progress', () => {
       favourite: 'x01',
       matches: 23,
       average: 61.2,
+      country: 'AT',
       headToHead: { wins: 1, losses: 2 },
       ranked: [
         { mode: '1v1', rankIndex: 15, rating: 1310, matches: 12, wins: 8 },
         { mode: '2v2', rankIndex: null, rating: null, matches: 0, wins: 0 },
       ],
     })
+    // The average covers the last 30 days of X01, not a number of games
+    expect(x01AverageSince).toHaveBeenCalledWith(expect.anything(), 'anna', 30)
   })
 
   it("shows a banned player's ban: its category and end", async () => {
@@ -237,6 +241,7 @@ describe('/api/progress', () => {
       createdAt: new Date(),
       avatar: { kind: 'none' },
       equipped: null,
+      country: null,
       ban: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
@@ -257,6 +262,7 @@ describe('/api/progress', () => {
       createdAt: new Date(),
       avatar: { kind: 'none' },
       equipped: null,
+      country: null,
       ban: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })

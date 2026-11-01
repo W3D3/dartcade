@@ -5,7 +5,8 @@ import { requireAuth } from '../auth/middleware.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { gameLines, getProgress, getStreak, lockUser, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
 import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
-import { getRatings, x01Average } from '../db/ranked.js'
+import { getRatings, x01AverageSince } from '../db/ranked.js'
+import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { areFriends } from '../db/friends.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
 import { EQUIP_KINDS, PERKS, equippedOf, listed, perk, streakNow, type Equipped } from '../shared/progression.js'
@@ -95,7 +96,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         getStreak(db, id),
         modeCounts(db, id),
         getRatings(db, id),
-        x01Average(db, id),
+        x01AverageSince(db, id, PROFILE_AVERAGE_DAYS),
         self ? null : headToHead(db, req.userId, id),
         recentGames(db, id, req.userId),
         self ? unlockedPerks(db, id) : [],
@@ -116,6 +117,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         }),
         streak: self || friend ? streakNow(streak, localDate(new Date(), zone)) : null,
         average,
+        country: user.country,
         favourite: modes[0]?.mode ?? null,
         matches: modes.reduce((a, m) => a + m.games, 0),
         headToHead: h2h,

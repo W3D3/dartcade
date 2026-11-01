@@ -37,6 +37,8 @@ export interface UserTable {
   avatar_image: Buffer | null
   avatar_content_type: string | null
   avatar_version: ColumnType<number, number | undefined, number>
+  /** ISO 3166-1 alpha-2 code shown next to the name; null for none (migration 044). */
+  country: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 export interface BoardsTable {

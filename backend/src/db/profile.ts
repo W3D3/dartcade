@@ -9,7 +9,16 @@ export async function profileUser(
   db: Kysely<Database>,
   userId: string,
 ): Promise<
-  { id: string; name: string; createdAt: Date; avatar: Avatar; equipped: Record<string, unknown> | null; ban: PublicBan | null } | undefined
+  | {
+      id: string
+      name: string
+      createdAt: Date
+      avatar: Avatar
+      equipped: Record<string, unknown> | null
+      country: string | null
+      ban: PublicBan | null
+    }
+  | undefined
 > {
   const row = await db
     .selectFrom('user')
@@ -24,11 +33,22 @@ export async function profileUser(
       'banned',
       'banReason',
       'banExpires',
+      'country',
       sql<Record<string, unknown> | null>`preferences->'equipped'`.as('equipped'),
     ])
     .where('id', '=', userId)
     .executeTakeFirst()
-  return row && { id: row.id, name: row.name, createdAt: row.createdAt, avatar: toAvatar(row), equipped: row.equipped, ban: activeBan(row) }
+  return (
+    row && {
+      id: row.id,
+      name: row.name,
+      createdAt: row.createdAt,
+      avatar: toAvatar(row),
+      equipped: row.equipped,
+      country: row.country,
+      ban: activeBan(row),
+    }
+  )
 }
 
 const counted = (db: Kysely<Database>) =>
