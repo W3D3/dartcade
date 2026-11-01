@@ -5,6 +5,7 @@ import Avatar from '../components/Avatar.svelte'
 import { avatarColor } from '../avatarColor.js'
 import { botAvatarColor } from '../botAvatarColor.js'
 
+const bot = (level: number) => ({ avatar: { kind: 'none' as const }, userId: null, bot: { level } })
 const html = (props: ComponentProps<typeof Avatar>) => render(Avatar, { props }).body
 
 describe('Avatar', () => {
@@ -16,23 +17,29 @@ describe('Avatar', () => {
   })
 
   it("shows a bot's robot glyph instead of an initial, in its level's colour", () => {
-    const out = html({ name: 'Bot Lvl 5', face: null, bot: { level: 5 } })
+    const out = html({ name: 'Bot Lvl 5', face: bot(5) })
     expect(out).toContain('lucide-bot')
     expect(out).toContain(botAvatarColor(5))
     expect(out).not.toContain('>B<')
   })
 
+  it("draws a bot from the face alone, so any surface handed a seat's face shows it", () => {
+    const out = html({ name: 'Bot Lvl 5', face: bot(5), guest: true })
+    expect(out).toContain('lucide-bot')
+    expect(out).toContain(botAvatarColor(5))
+  })
+
   it('still shows the robot glyph under accent and quiet tones, which override the level colour same as a name colour', () => {
-    const accent = html({ name: 'Bot Lvl 8', face: null, bot: { level: 8 }, tone: 'accent' })
+    const accent = html({ name: 'Bot Lvl 8', face: bot(8), tone: 'accent' })
     expect(accent).toContain('lucide-bot')
     expect(accent).toContain('bg-accent')
-    const quiet = html({ name: 'Bot Lvl 8', face: null, bot: { level: 8 }, tone: 'quiet' })
+    const quiet = html({ name: 'Bot Lvl 8', face: bot(8), tone: 'quiet' })
     expect(quiet).toContain('lucide-bot')
     expect(quiet).toContain('bg-line-3')
   })
 
   it('keeps its level colour even when guest=true — a bot has no account either, so a caller that derives guest from userId===null naturally passes it for a bot seat too', () => {
-    const out = html({ name: 'Bot Lvl 3', face: null, bot: { level: 3 }, guest: true })
+    const out = html({ name: 'Bot Lvl 3', face: bot(3), guest: true })
     expect(out).toContain('lucide-bot')
     expect(out).toContain(botAvatarColor(3))
     expect(out).not.toContain('border-dashed')
@@ -90,12 +97,11 @@ describe('Avatar', () => {
   it('a bot glyph still wins over a preset or uploaded avatar — the more specific identity', () => {
     const preset = html({
       name: 'Bot Lvl 4',
-      bot: { level: 4 },
-      face: { userId: null, avatar: { kind: 'preset', foreground: 'classic', background: 'classic' } },
+      face: { userId: null, bot: { level: 4 }, avatar: { kind: 'preset', foreground: 'classic', background: 'classic' } },
     })
     expect(preset).toContain('lucide-bot')
     expect(preset).not.toContain('#finish-')
-    const upload = html({ name: 'Bot Lvl 4', bot: { level: 4 }, face: { userId: 'x', avatar: { kind: 'upload', version: 1 } } })
+    const upload = html({ name: 'Bot Lvl 4', face: { userId: 'x', bot: { level: 4 }, avatar: { kind: 'upload', version: 1 } } })
     expect(upload).toContain('lucide-bot')
     expect(upload).not.toContain('<img')
   })
