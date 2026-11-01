@@ -140,7 +140,7 @@ export async function addGuest(page: Page, lobby: LobbyRef, name: string): Promi
   await api(page).post(`/api/lobbies/${lobby.id}/people`, { name, boardId: null })
 }
 export async function addBot(page: Page, lobby: LobbyRef, level: number): Promise<void> {
-  await api(page).post(`/api/lobbies/${lobby.id}/people`, { name: `Level ${level}`, bot: { level } })
+  await api(page).post(`/api/lobbies/${lobby.id}/people`, { name: `Bot Level ${level}`, bot: { level } })
 }
 
 export const X01 = (config: object = {}) => ({
