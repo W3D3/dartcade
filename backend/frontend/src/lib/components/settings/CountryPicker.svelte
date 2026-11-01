@@ -14,12 +14,13 @@
   let {
     value,
     onchange,
-    label = 'Country',
+    labelledby,
   }: {
     /** The picked country's code; null for none. */
     value: string | null
     onchange: (code: string | null) => void
-    label?: string
+    /** The id of the visible heading that names the field; the picked country is the input's value. */
+    labelledby: string
   } = $props()
 
   let open = $state(false)
@@ -56,7 +57,7 @@
       {#if value}<Flag code={value} size="md" />{:else}{@render placeholder()}{/if}
     </span>
     <Combobox.Input
-      aria-label={label}
+      aria-labelledby={labelledby}
       placeholder={open ? 'Search countries' : 'No country shown'}
       autocomplete="off"
       oninput={e => (typed = e.currentTarget.value)}
