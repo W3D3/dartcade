@@ -48,7 +48,6 @@
       <span class="flex items-center gap-[10px] xl:gap-3 min-w-0">
         <Avatar
           name={who.name}
-          bot={who.bot}
           face={who.face}
           tone={active ? 'accent' : 'default'}
           class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px] {tone === 'out' ? 'opacity-50' : ''}"

@@ -26,7 +26,6 @@
 
   let {
     name,
-    bot = null,
     tone = 'default',
     guest = false,
     size,
@@ -34,8 +33,6 @@
     face,
   }: {
     name: string
-    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial/colour. */
-    bot?: { level: number } | null
     tone?: Tone
     /** Shorthand for tone="guest". */
     guest?: boolean
@@ -49,6 +46,8 @@
   // A real picture (a preset, or an uploaded photo) always shows as chosen — tone
   // only restyles the fallback chip (initials, or a bot's glyph), never hides a picture that's
   // actually set (Settings' own preview needs to show the real thing, not a forced accent green).
+  // A bot seat (the face's `bot` level) shows a robot glyph coloured by level instead of the name's initial/colour.
+  const bot = $derived(face?.bot ?? null)
   const avatar = $derived(face?.avatar)
   const userId = $derived(face?.userId)
   const hasPicture = $derived(avatar?.kind === 'preset' || avatar?.kind === 'upload')

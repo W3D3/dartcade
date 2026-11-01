@@ -79,7 +79,6 @@
   <div class="flex items-center {solo ? 'gap-3' : 'gap-[10px] xl:gap-3'} min-w-0">
     <Avatar
       name={who.name}
-      bot={who.bot}
       face={who.face}
       tone={active ? 'accent' : 'default'}
       class="{avatarSize} {tone === 'out' ? 'opacity-50' : ''}"

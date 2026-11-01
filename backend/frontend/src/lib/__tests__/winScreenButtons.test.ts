@@ -38,3 +38,14 @@ describe('WinScreen buttons', () => {
     expect(render(WinScreen, { props: base }).body).not.toContain('<footer')
   })
 })
+
+describe('WinScreen bots', () => {
+  const botFace = { avatar: { kind: 'none' as const }, userId: null, bot: { level: 4 } }
+  for (const layout of ['duel', 'party'] as const) {
+    it(`draws a bot's robot glyph, not an initial, in a ${layout}`, () => {
+      const bot: WinView = { ...view, layout, competitors: [{ ...view.competitors[0], name: 'Zed', face: botFace }, view.competitors[1]] }
+      const { body } = render(WinScreen, { props: { ...base, view: bot } })
+      expect(body).toContain('lucide-bot')
+    })
+  }
+})

@@ -34,7 +34,7 @@
         onclick={() => void pick(level)}
       >
         {#snippet leading()}
-          <Avatar face={null} name="Level {level}" bot={{ level }} size={28} />
+          <Avatar name="Level {level}" face={{ avatar: { kind: 'none' }, userId: null, bot: { level } }} size={28} />
         {/snippet}
       </MenuItem>
     {/each}

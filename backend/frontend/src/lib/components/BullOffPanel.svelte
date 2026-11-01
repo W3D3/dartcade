@@ -280,7 +280,7 @@
            {lead ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
-      <Avatar name={name(p)} bot={who.at(p)?.bot ?? null} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} size={40} />
+      <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} size={40} />
       <span class="text-[22px] font-semibold truncate {lead ? 'text-text' : 'text-text-muted'}">{name(p)}</span>
       <span
         class="ml-auto h-6 px-[10px] inline-flex items-center rounded-full text-[11px] font-bold tracking-[0.08em] uppercase whitespace-nowrap
@@ -347,13 +347,7 @@
               >{ordinal(pos + 1)}</span
             >
           {:else}
-            <Avatar
-              name={name(p)}
-              bot={who.at(p)?.bot ?? null}
-              face={who.at(p)?.face ?? null}
-              tone={throwing ? 'accent' : 'quiet'}
-              class="w-10 h-10 text-[16px]"
-            />
+            <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} class="w-10 h-10 text-[16px]" />
           {/if}
 
           <div class="flex flex-col gap-1 min-w-0">

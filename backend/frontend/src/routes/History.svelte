@@ -142,7 +142,7 @@
         : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
     >
       <span class="font-mono text-[11px] {p.me ? 'font-medium text-accent' : 'text-text-dim'}">{p.n}</span>
-      <Avatar name={p.name} face={p} guest={p.guest} bot={p.bot} class="size-[18px] text-[8px] lg:size-[22px] lg:text-[9px]" />
+      <Avatar name={p.name} face={p} guest={p.guest} class="size-[18px] text-[8px] lg:size-[22px] lg:text-[9px]" />
       <span class="min-w-0 truncate">{p.name}</span>
     </span>
   </ProfilePopover>
