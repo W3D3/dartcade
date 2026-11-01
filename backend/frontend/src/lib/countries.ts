@@ -19,3 +19,12 @@ export const countryName = (code: string): string => names.of(code) ?? code
 export const COUNTRY_OPTIONS = COUNTRY_CODES.map(code => ({ value: code, label: countryName(code) })).sort((a, b) =>
   a.label.localeCompare(b.label, 'en'),
 )
+
+const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
+/** The countries whose name contains the query (accents and case ignored) or whose code is it; all of them for a blank one. */
+export function searchCountries(query: string): typeof COUNTRY_OPTIONS {
+  const q = plain(query.trim())
+  if (!q) return COUNTRY_OPTIONS
+  return COUNTRY_OPTIONS.filter(o => plain(o.label).includes(q) || o.value.toLowerCase() === q)
+}

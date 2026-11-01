@@ -48,23 +48,25 @@
 </script>
 
 <section aria-label="Username" class="box-border p-4 md:p-[22px] card flex flex-col gap-[18px]">
-  <form
-    class="flex flex-col gap-2"
-    onsubmit={e => {
-      e.preventDefault()
-      void save()
-    }}
-  >
-    <NameField id="settings-name" label="Username" bind:value bind:status {own}>
-      {#snippet action()}
-        <Button type="submit" variant="accent" disabled={busy || !changed || !nameSendable(status)}>Save</Button>
-      {/snippet}
-    </NameField>
-    <span class="text-[13px] leading-[1.5] text-text-dim">{NAME_HINT}</span>
-    {#if error}<ErrorText>{error}</ErrorText>{/if}
-    {#if saved && !changed}<span role="status" class="text-[13px] text-accent">{saved}</span>{/if}
-  </form>
-  <CountryField />
+  <div class="grid items-start gap-5 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] md:gap-6">
+    <form
+      class="flex flex-col gap-2"
+      onsubmit={e => {
+        e.preventDefault()
+        void save()
+      }}
+    >
+      <NameField id="settings-name" label="Username" bind:value bind:status {own}>
+        {#snippet action()}
+          <Button type="submit" variant="accent" disabled={busy || !changed || !nameSendable(status)}>Save</Button>
+        {/snippet}
+      </NameField>
+      <span class="text-[13px] leading-[1.5] text-text-dim">{NAME_HINT}</span>
+      {#if error}<ErrorText>{error}</ErrorText>{/if}
+      {#if saved && !changed}<span role="status" class="text-[13px] text-accent">{saved}</span>{/if}
+    </form>
+    <CountryField />
+  </div>
   {#if preview}
     <div class="flex flex-col gap-2 px-4 py-[14px] rounded-[12px] bg-surface-1 border border-line">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
