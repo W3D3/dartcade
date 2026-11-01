@@ -5,6 +5,10 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import NameField from '$lib/components/NameField.svelte'
+  import AvgBadge from '$lib/components/AvgBadge.svelte'
+  import Flag from '$lib/components/Flag.svelte'
+  import CountryField from './CountryField.svelte'
+  import { profileOf } from '$lib/progress/profiles'
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
@@ -17,6 +21,9 @@
   let error = $state('')
   let busy = $state(false)
   const ranked = flag('matchmaking.enabled')
+  const progression = flag('progression.enabled')
+  // Your average for the badge, from your profile (which needs progression)
+  const profile = $derived($currentUser && $progression ? profileOf($currentUser.id) : null)
   const changed = $derived(own !== null && normalizeName(value) !== own)
   // The preview follows the field while what's typed could be saved
   const preview = $derived(changed && nameSendable(status) ? normalizeName(value) : (own ?? ''))
@@ -57,6 +64,7 @@
     {#if error}<ErrorText>{error}</ErrorText>{/if}
     {#if saved && !changed}<span role="status" class="text-[13px] text-accent">{saved}</span>{/if}
   </form>
+  <CountryField />
   {#if preview}
     <div class="flex flex-col gap-2 px-4 py-[14px] rounded-[12px] bg-surface-1 border border-line">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
@@ -68,7 +76,11 @@
           size={36}
         />
         <span class="flex flex-col gap-px min-w-0">
-          <span class="text-[15px] font-semibold truncate">{preview}</span>
+          <span class="flex items-center gap-2 min-w-0">
+            <span class="text-[15px] font-semibold truncate">{preview}</span>
+            <Flag code={$currentUser?.country} />
+            {#if profile}<AvgBadge average={$profile?.average} size="sm" />{/if}
+          </span>
           <span class="font-mono text-[12px] text-accent truncate">@{preview}</span>
         </span>
         <span class="hidden sm:block ml-auto text-[12px] text-text-dim text-right"
