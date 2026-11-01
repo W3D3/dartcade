@@ -41,7 +41,7 @@
   aria-label="{name}, {sub}, {valueLabel} {value}"
   class="shrink-0 h-[58px] box-border px-[14px] flex items-center gap-[10px] rounded-[12px] {playerCard(active)}"
 >
-  <Avatar name={who.name} bot={who.bot} face={who.face} tone={active ? 'accent' : 'default'} size={32} />
+  <Avatar name={who.name} face={who.face} tone={active ? 'accent' : 'default'} size={32} />
   <PlayerName {name} {you} nameClass="text-[15px] {active ? 'text-text' : 'text-ink-2'}" youClass="text-[12px]" gap="gap-[2px]" leading="">
     {#snippet below()}<span class="text-[12px] text-text-dim truncate">{sub}</span>{/snippet}
   </PlayerName>

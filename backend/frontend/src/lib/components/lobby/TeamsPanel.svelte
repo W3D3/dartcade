@@ -78,7 +78,7 @@
           : 'pl-2'}"
       >
         {#if draggable}<DragHandle name={p.name} describedby={hintId} />{/if}
-        <Avatar name={p.name} bot={p.bot} guest={p.userId === null} face={p} size={30} />
+        <Avatar name={p.name} guest={p.userId === null} face={p} size={30} />
         <span class="flex flex-col gap-px min-w-0 flex-grow">
           <span class="text-[14px] font-semibold truncate">{p.name}</span>
           <span class="text-[12px] text-text-muted truncate"

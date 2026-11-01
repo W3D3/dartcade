@@ -34,7 +34,7 @@
       ? 'bg-surface-row border-line-2'
       : 'border-line'}"
 >
-  <Avatar name={member.name} bot={who.bot} face={who.face} tone={throwing ? 'accent' : 'default'} size={30} />
+  <Avatar name={member.name} face={who.face} tone={throwing ? 'accent' : 'default'} size={30} />
   <PlayerName
     name={member.name}
     you={seat?.you ?? false}

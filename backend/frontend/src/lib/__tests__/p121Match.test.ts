@@ -48,7 +48,7 @@ const game = (o: Partial<P121Game> = {}): P121Game => ({
 const props = (g: P121Game) => ({
   game: g,
   players: [{ name: 'Christoph' }],
-  who: [{ name: 'Christoph', bot: null, face: null }],
+  who: [{ name: 'Christoph', face: null }],
   darts: [],
   layout: 'solo' as const,
   canThrow: true,
@@ -125,8 +125,8 @@ describe('P121Match in a duel', () => {
         ...props(g),
         players: [{ name: 'Anna' }, { name: 'Ben' }],
         who: [
-          { name: 'Anna', bot: null, face: null },
-          { name: 'Ben', bot: null, face: null },
+          { name: 'Anna', face: null },
+          { name: 'Ben', face: null },
         ],
         layout: 'duel' as const,
         darts,
