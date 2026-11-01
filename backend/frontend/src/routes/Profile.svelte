@@ -3,7 +3,7 @@
   // card in their own colours and banner, ranked, averages, recent matches, level, head-to-head,
   // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
   // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
-  // opens `#/profile/customise`. Friends see the streak and status; strangers see public games only (the API decides).
+  // opens `#/profile/customise`. Friends see the streak and status; recent games are public ones plus those the viewer played in (the API decides).
   import { ArrowLeft, Flame } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
@@ -90,7 +90,7 @@
         >
         {#if self}
           <span class="text-[13px] text-text-dim"
-            >This is how others see your profile. Friends also see your status and streak; everyone else sees ranked and public games only.</span
+            >This is how others see your profile. Friends also see your status and streak. Other players only see recent games they played with you.</span
           >
         {/if}
       </div>
