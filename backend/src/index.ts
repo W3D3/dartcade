@@ -23,6 +23,7 @@ import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
 import { boardStatus } from './boards/bmState.js'
 import { autoStartBoards } from './boards/autoStart.js'
+import { resetBoardOnNext } from './boards/resetOnNext.js'
 import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
@@ -154,6 +155,9 @@ const engine: SessionEngine = new SessionEngine(
     forgotten: id => {
       forgetSession(id)
       lights.onForgotten(id)
+    },
+    nextPlayer: boardId => {
+      resetBoardOnNext(db, boardId, () => engine.getSessionByBoard(boardId)?.openDarts.length === 0, warn)
     },
   },
 )

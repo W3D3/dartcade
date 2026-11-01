@@ -593,6 +593,30 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/reset-on-next:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    patch:
+      operationId: setBoardResetOnNext
+      summary: Set whether Next player also resets the board (owner only)
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BoardResetOnNextRequest' }
+      responses:
+        '200':
+          description: The new setting
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardResetOnNextRequest' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -3722,7 +3746,8 @@ components:
 
     Board:
       type: object
-      required: [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl, bridgeUpdate, bigScreen, autoStart]
+      required:
+        [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl, bridgeUpdate, bigScreen, autoStart, resetOnNext]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -3737,12 +3762,19 @@ components:
         bridgeUpdate: { $ref: '#/components/schemas/BridgeUpdate' }
         bigScreen: { $ref: '#/components/schemas/BoardBigScreen' }
         autoStart: { type: boolean, description: A lobby game starts the board's stopped Board Manager session }
+        resetOnNext: { type: boolean, description: 'Next player also resets the board, as its Reset button does' }
     BoardAutoStartRequest:
       type: object
       required: [autoStart]
       additionalProperties: false
       properties:
         autoStart: { type: boolean }
+    BoardResetOnNextRequest:
+      type: object
+      required: [resetOnNext]
+      additionalProperties: false
+      properties:
+        resetOnNext: { type: boolean }
     BoardBigScreen:
       type: object
       required: [mode, running, helper]

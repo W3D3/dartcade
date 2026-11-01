@@ -387,6 +387,10 @@ export async function setAutoStart(db: Kysely<Database>, id: string, autoStart: 
   await db.updateTable('boards').set({ auto_start: autoStart }).where('id', '=', id).execute()
 }
 
+export async function setResetOnNext(db: Kysely<Database>, id: string, resetOnNext: boolean): Promise<void> {
+  await db.updateTable('boards').set({ reset_on_next: resetOnNext }).where('id', '=', id).execute()
+}
+
 /** Sets the mode; off also drops the token in the same UPDATE, so a live token never outlives it. */
 export async function setBigScreenMode(db: Kysely<Database>, id: string, mode: components['schemas']['BigScreenMode']): Promise<void> {
   await db

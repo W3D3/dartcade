@@ -1928,3 +1928,58 @@ describe('a config prepared at start (Minigolf: the published course)', () => {
     expect(engine.getAllSessions()).toHaveLength(1)
   })
 })
+
+describe('nextPlayer hook', () => {
+  const S20 = { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 } as const
+  const setup = async (boardId: string | null) => {
+    const nextPlayer = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, undefined, { nextPlayer })
+    const { sessionId } = await engine.create('user-1', boardId, 'atc', {}, [{ name: 'Alice' }])
+    return { engine, sessionId, nextPlayer }
+  }
+
+  it("fires with the seat's board after a user takeout is applied", async () => {
+    const { engine, sessionId, nextPlayer } = await setup('board-1')
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    expect(nextPlayer).not.toHaveBeenCalled()
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+    expect(nextPlayer).toHaveBeenCalledTimes(1)
+    expect(nextPlayer).toHaveBeenCalledWith('board-1')
+  })
+
+  it('does not fire for other actions', async () => {
+    const { engine, sessionId, nextPlayer } = await setup('board-1')
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
+    expect(nextPlayer).not.toHaveBeenCalled()
+  })
+
+  it('does not fire when the takeout is dropped', async () => {
+    const nextPlayer = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, undefined, { nextPlayer })
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: { ...x01Module.defaultConfig, startScore: 301 },
+      seats: [seat('Host', 'host', 'board-a'), seat('Lena', 'lena', 'board-b')],
+    })
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' }) // the game is over: it takes no more input
+    await engine.onUserAction(sessionId, 'host', { type: 'takeout' })
+    expect(nextPlayer).not.toHaveBeenCalled()
+  })
+
+  it('does not fire when the takeout is refused', async () => {
+    const { engine, sessionId, nextPlayer } = await setup('board-1')
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    const res = await engine.onUserAction(sessionId, 'user-2', { type: 'takeout' })
+    expect(res).toEqual({ ok: false, code: 'forbidden' })
+    expect(nextPlayer).not.toHaveBeenCalled()
+  })
+
+  it('does not fire for a seat without a board', async () => {
+    const { engine, sessionId, nextPlayer } = await setup(null)
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+    expect(nextPlayer).not.toHaveBeenCalled()
+  })
+})

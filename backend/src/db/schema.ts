@@ -54,6 +54,8 @@ export interface BoardsTable {
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
   /** Start the board's stopped Board Manager session with a lobby game (migration 042). */
   auto_start: ColumnType<boolean, boolean | undefined, boolean>
+  /** Reset the board when a player presses Next player (migration 046). */
+  reset_on_next: ColumnType<boolean, boolean | undefined, boolean>
   /** When the big screen follows this board (migration 041). */
   big_screen_mode: ColumnType<BigScreenMode, BigScreenMode | undefined, BigScreenMode>
   /** SHA-256 of the token the bridge machine's big-screen window signs in with; null when none is out. */

@@ -23,7 +23,7 @@
   import { flag } from '$lib/flags'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
-  import AutoStartSwitch from './AutoStartSwitch.svelte'
+  import GameCard from './GameCard.svelte'
   import BigScreenSetup from './BigScreenSetup.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import BoardChips from './BoardChips.svelte'
@@ -635,7 +635,7 @@
         </div>
 
         <div class="flex flex-col gap-5 min-w-0">
-          <AutoStartSwitch board={selected} onchanged={refetchBoards} />
+          <GameCard board={selected} onchanged={refetchBoards} />
           {#if $bigScreenOn}
             <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
           {/if}
