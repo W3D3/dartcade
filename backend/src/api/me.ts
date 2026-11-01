@@ -9,6 +9,7 @@ import {
   getPreferences,
   setAvatar,
   setAvatarUpload,
+  setCountry,
   setInvisible,
   updatePreferences,
   UnknownAvatarFinishError,
@@ -16,6 +17,7 @@ import {
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
 import { AVATAR_FINISHES, isAvatarFinish } from '../shared/avatarFinishes.js'
+import { isCountryCode } from '../shared/countries.js'
 import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -73,6 +75,10 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       await opts.onRenamed?.(req.userId, name)
     }
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
+    if (req.body.country !== undefined) {
+      if (req.body.country !== null && !isCountryCode(req.body.country)) throw new ApiError(400, { error: 'unknown country' })
+      await setCountry(db, req.userId, req.body.country)
+    }
     if (req.body.avatar !== undefined) {
       // A picture is a reward: a finish not unlocked yet can't be worn on either layer (unknown ones are setAvatar's 400)
       const { avatar } = req.body

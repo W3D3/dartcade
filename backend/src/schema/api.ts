@@ -3316,11 +3316,15 @@ export interface components {
              */
             createdAt: string;
             avatar: components["schemas"]["Avatar"];
+            country: components["schemas"]["Country"];
         };
+        /** @description ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it. */
+        Country: string | null;
         UpdateMeRequest: {
             name?: string;
             invisible?: boolean;
             avatar?: components["schemas"]["AvatarChoice"];
+            country?: components["schemas"]["Country"];
         };
         /** @description Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device. */
         Preferences: {
@@ -3435,8 +3439,9 @@ export interface components {
             }[];
             /** @description Day streak; friends and yourself only */
             streak: number | null;
-            /** @description X01 3-dart average over the last 20 games */
+            /** @description X01 3-dart average over the last 30 days (dart-weighted); null without X01 darts in that time */
             average: number | null;
+            country: components["schemas"]["Country"];
             /** @description The mode played most */
             favourite: string | null;
             matches: number;

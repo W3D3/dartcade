@@ -58,25 +58,37 @@ export async function ratingChangeSince(db: Kysely<Database>, userId: string, si
   return out
 }
 
+/** The player's finished, valid X01 games with darts thrown, newest first: their average and darts. */
+const x01Games = (db: Kysely<Database>, userId: string) =>
+  db
+    .selectFrom('game_players as p')
+    .innerJoin('game_sessions as g', 'g.id', 'p.session_id')
+    .select([sql<number>`(p.stats->>'average')::float8`.as('average'), sql<number>`(p.stats->>'dartsThrown')::int`.as('darts')])
+    .where('p.user_id', '=', userId)
+    .where('p.bot_level', 'is', null)
+    .where('g.game_id', '=', 'x01')
+    .where('g.status', '=', 'finished')
+    .where('g.invalidated_at', 'is', null)
+    .where(sql<boolean>`(p.stats->>'dartsThrown')::int > 0`)
+    .orderBy('g.finished_at', 'desc')
+
+const dartWeighted = sql<string | null>`sum(average * darts) / nullif(sum(darts), 0)`
+
 /** The 3-dart average over the last `n` X01 games the player threw in, ranked or not; null without any. */
 export async function x01Average(db: Kysely<Database>, userId: string, n = 20): Promise<number | null> {
+  const row = await db.selectFrom(x01Games(db, userId).limit(n).as('last')).select(dartWeighted.as('avg')).executeTakeFirst()
+  return row?.avg == null ? null : Number(row.avg)
+}
+
+/** The 3-dart average over the X01 games finished in the last `days` days; null without any. */
+export async function x01AverageSince(db: Kysely<Database>, userId: string, days: number): Promise<number | null> {
   const row = await db
-    .selectFrom(eb =>
-      eb
-        .selectFrom('game_players as p')
-        .innerJoin('game_sessions as g', 'g.id', 'p.session_id')
-        .select([sql<number>`(p.stats->>'average')::float8`.as('average'), sql<number>`(p.stats->>'dartsThrown')::int`.as('darts')])
-        .where('p.user_id', '=', userId)
-        .where('p.bot_level', 'is', null)
-        .where('g.game_id', '=', 'x01')
-        .where('g.status', '=', 'finished')
-        .where('g.invalidated_at', 'is', null)
-        .where(sql<boolean>`(p.stats->>'dartsThrown')::int > 0`)
-        .orderBy('g.finished_at', 'desc')
-        .limit(n)
-        .as('last'),
+    .selectFrom(
+      x01Games(db, userId)
+        .where('g.finished_at', '>=', sql<Date>`now() - make_interval(days => ${days})`)
+        .as('recent'),
     )
-    .select(sql<string | null>`sum(average * darts) / nullif(sum(darts), 0)`.as('avg'))
+    .select(dartWeighted.as('avg'))
     .executeTakeFirst()
   return row?.avg == null ? null : Number(row.avg)
 }

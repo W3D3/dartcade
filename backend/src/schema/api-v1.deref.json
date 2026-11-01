@@ -18916,7 +18916,8 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "country"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -19032,6 +19033,12 @@
                           }
                         }
                       ]
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true,
+                      "pattern": "^[A-Z]{2}$",
+                      "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
                     }
                   }
                 }
@@ -19205,6 +19212,12 @@
                         "description": "The finish of the disc behind it; required when kind is 'preset'"
                       }
                     }
+                  },
+                  "country": {
+                    "type": "string",
+                    "nullable": true,
+                    "pattern": "^[A-Z]{2}$",
+                    "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
                   }
                 }
               }
@@ -19230,7 +19243,8 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "country"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -19346,6 +19360,12 @@
                           }
                         }
                       ]
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true,
+                      "pattern": "^[A-Z]{2}$",
+                      "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
                     }
                   }
                 }
@@ -19589,7 +19609,8 @@
                     "impersonating",
                     "createdAt",
                     "avatar",
-                    "pictures"
+                    "pictures",
+                    "country"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -19705,6 +19726,12 @@
                           }
                         }
                       ]
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true,
+                      "pattern": "^[A-Z]{2}$",
+                      "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
                     }
                   }
                 }
@@ -29117,6 +29144,7 @@
                     "ranked",
                     "streak",
                     "average",
+                    "country",
                     "favourite",
                     "matches",
                     "headToHead",
@@ -29306,7 +29334,13 @@
                     "average": {
                       "type": "number",
                       "nullable": true,
-                      "description": "X01 3-dart average over the last 20 games"
+                      "description": "X01 3-dart average over the last 30 days (dart-weighted); null without X01 darts in that time"
+                    },
+                    "country": {
+                      "type": "string",
+                      "nullable": true,
+                      "pattern": "^[A-Z]{2}$",
+                      "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
                     },
                     "favourite": {
                       "type": "string",
@@ -53356,7 +53390,8 @@
           "impersonating",
           "createdAt",
           "avatar",
-          "pictures"
+          "pictures",
+          "country"
         ],
         "additionalProperties": false,
         "properties": {
@@ -53472,8 +53507,20 @@
                 }
               }
             ]
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^[A-Z]{2}$",
+            "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
           }
         }
+      },
+      "Country": {
+        "type": "string",
+        "nullable": true,
+        "pattern": "^[A-Z]{2}$",
+        "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
       },
       "UpdateMeRequest": {
         "type": "object",
@@ -53513,6 +53560,12 @@
                 "description": "The finish of the disc behind it; required when kind is 'preset'"
               }
             }
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^[A-Z]{2}$",
+            "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
           }
         }
       },
@@ -53972,6 +54025,7 @@
           "ranked",
           "streak",
           "average",
+          "country",
           "favourite",
           "matches",
           "headToHead",
@@ -54161,7 +54215,13 @@
           "average": {
             "type": "number",
             "nullable": true,
-            "description": "X01 3-dart average over the last 20 games"
+            "description": "X01 3-dart average over the last 30 days (dart-weighted); null without X01 darts in that time"
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^[A-Z]{2}$",
+            "description": "ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it."
           },
           "favourite": {
             "type": "string",

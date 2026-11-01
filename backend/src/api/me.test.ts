@@ -16,6 +16,7 @@ vi.mock('../db/users.js', () => ({
   getAccount: vi.fn(),
   getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }),
   setInvisible: vi.fn(),
+  setCountry: vi.fn(),
   setAvatar: vi.fn(),
   setAvatarUpload: vi.fn(),
   getPreferences: vi.fn(),
@@ -30,6 +31,7 @@ import {
   getPreferences,
   setAvatar,
   setAvatarUpload,
+  setCountry,
   setInvisible,
   updatePreferences,
   UnknownAvatarFinishError,
@@ -55,6 +57,7 @@ beforeEach(() => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
     })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
@@ -86,6 +89,7 @@ describe('/api/me', () => {
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
       pictures: ['classic', 'chalk'],
     })
   })
@@ -110,6 +114,7 @@ describe('/api/me', () => {
       role: 'admin',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true, isModerator: true })
@@ -126,6 +131,7 @@ describe('/api/me', () => {
       role: 'moderator',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: false, isModerator: true })
@@ -144,6 +150,7 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
@@ -176,6 +183,7 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      country: null,
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)
@@ -183,6 +191,18 @@ describe('/api/me', () => {
     expect(renameUser).not.toHaveBeenCalled()
     expect(onChanged).toHaveBeenCalledWith('old')
     expect(JSON.parse(res.body).invisible).toBe(true)
+  })
+
+  it('sets and clears the country, and refuses a code that is not a country', async () => {
+    vi.mocked(setCountry).mockReset().mockResolvedValue(undefined)
+    const patch = (country: string | null) => app().inject({ method: 'PATCH', url: '/api/me', payload: { country } })
+    expect((await patch('AT')).statusCode).toBe(200)
+    expect(setCountry).toHaveBeenLastCalledWith({}, 'old', 'AT')
+    expect((await patch(null)).statusCode).toBe(200)
+    expect(setCountry).toHaveBeenLastCalledWith({}, 'old', null)
+    vi.mocked(setCountry).mockClear()
+    for (const bad of ['XX', 'at', 'AUT']) expect((await patch(bad)).statusCode, bad).toBe(400)
+    expect(setCountry).not.toHaveBeenCalled()
   })
 
   it('sets the avatar to a preset and tells friends and the lobby', async () => {

@@ -19,6 +19,8 @@ export type Account = {
   /** When the account was made, ISO 8601. */
   createdAt: string
   avatar: Avatar
+  /** ISO 3166-1 alpha-2 code, or null for none. */
+  country: string | null
 }
 
 /** The Avatar union shape from the avatar_* columns (migrations 031, 038); null columns (a left join with no account) are kind none. */
@@ -53,6 +55,7 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       'avatar_preset',
       'avatar_background',
       'avatar_version',
+      'country',
     ])
     .where('id', '=', userId)
     .executeTakeFirst()
@@ -66,6 +69,7 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       role: row.role,
       createdAt: row.createdAt.toISOString(),
       avatar: toAvatar(row),
+      country: row.country,
     }
   )
 }
@@ -146,6 +150,11 @@ export async function setName(db: Kysely<Database>, userId: string, name: string
 /** Invisible: friends see the user as offline. */
 export async function setInvisible(db: Kysely<Database>, userId: string, invisible: boolean): Promise<void> {
   await db.updateTable('user').set({ invisible }).where('id', '=', userId).execute()
+}
+
+/** The country shown next to the name (a checked ISO code), or null to show none. */
+export async function setCountry(db: Kysely<Database>, userId: string, country: string | null): Promise<void> {
+  await db.updateTable('user').set({ country }).where('id', '=', userId).execute()
 }
 
 /** The account-wide preferences the user has set; undefined for an unknown user. */
