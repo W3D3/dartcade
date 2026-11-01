@@ -68,10 +68,10 @@ Follows one board. "The board's game" is the active game that has a seat on that
   same-origin iframe (`#/big-screen-frame`, `routes/BigScreenFrame.svelte`) 1.25 times smaller than the stage and
   scaled up with a transform, so media queries, `vh` sizes and breakpoints behave as in a 1536 px window. The page
   keeps the socket, the audio and the previous snapshot and posts what the frame draws (`lib/bigscreen/frame.ts`).
-  A big-screen header (`BigHeader`, with LIVE) sits above every live game but minigolf, which is the play-mode
+  A big-screen header (`BigHeader`) sits above every live game but minigolf, which is the play-mode
   screen as it is.
-- **Board status:** the header shows the board's Board Manager status (the dot and label of the board menu) beside
-  the LIVE or MATCH OVER badge. The kiosk has no session, so the board socket pushes it: the service asks the bridge
+- **Board status:** the header shows the board's Board Manager status (the dot and label of the board menu) and,
+  once the game is over, a MATCH OVER badge (nothing while it runs). The kiosk has no session, so the board socket pushes it: the service asks the bridge
   every 3 s while someone follows an online board and pushes only a change (`board.status` in `board-ws-v1.json`).
 - **Fallback:** a game the frame has no component for shows a centred title card, so the page never goes blank.
 - **Result screen:** the match screen's win screen without buttons (`WinScreen`; 121 shows its session summary), scaled
