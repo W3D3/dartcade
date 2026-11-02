@@ -3,6 +3,8 @@
   // picked with a segmented control (Mobile-Progress board).
   import { onMount } from 'svelte'
   import ChallengeCard from './ChallengeCard.svelte'
+  import { querystring } from 'svelte-spa-router'
+  import { readParam, setParam } from '$lib/urlState'
   import SegmentedControl from '../SegmentedControl.svelte'
   import ErrorText from '../ErrorText.svelte'
   import { isPhone } from '$lib/viewport'
@@ -15,7 +17,8 @@
     onclaimed?: (gain: { total: number; xpAfter: number; from: DOMRect }) => void
   } = $props()
   const challenges = createChallenges()
-  let period = $state<'daily' | 'weekly'>('daily')
+  // The phone's Daily / Weekly toggle is in the URL (#/progress?period=weekly); Daily is no param
+  const period = $derived(readParam($querystring, 'period', ['weekly'] as const, 'daily'))
   let error = $state('')
   // The reset countdown moves on its own
   let now = $state(new Date())
@@ -51,7 +54,8 @@
         { value: 'daily', label: `Daily ${doneOf($challenges.daily)}` },
         { value: 'weekly', label: `Weekly ${doneOf($challenges.weekly)}` },
       ]}
-      bind:value={period}
+      value={period}
+      onchange={v => setParam('/progress', $querystring, 'period', v === 'weekly' ? 'weekly' : null)}
     />
     <ChallengeCard set={$challenges[period]} {period} {now} bare {fresh} {onreroll} {onclaim} />
   {:else}

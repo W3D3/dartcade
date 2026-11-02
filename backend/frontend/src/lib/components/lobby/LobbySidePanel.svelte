@@ -1,6 +1,8 @@
 <script lang="ts">
   // Under the next game (Lobby, Lobby-New, Tablet-Lobby boards): two tabs, "Friends · N online"
   // with every friend and Invite, and the lobby history. The host also sets who can join here.
+  import { querystring } from 'svelte-spa-router'
+  import { readParam, setParam } from '$lib/urlState'
   import { Check } from '@lucide/svelte'
   import type { Lobby, LobbyAccess } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -26,8 +28,8 @@
     onaccess: (access: LobbyAccess) => void
   } = $props()
 
-  type Tab = 'friends' | 'history'
-  let tab = $state<Tab>('friends')
+  // The tab is in the URL (#/lobby?panel=history); Friends is no param
+  const tab = $derived(readParam($querystring, 'panel', ['history'] as const, 'friends'))
   const friends = $derived($me?.friends?.friends ?? [])
   const loaded = $derived($me?.friends != null)
   const rows = $derived(lobbyFriendRows(friends))
@@ -48,7 +50,7 @@
     { key: 'friends' as const, label: `Friends · ${online} online` },
     { key: 'history' as const, label: 'Lobby history' },
   ])
-  const pickTab = (v: string) => (tab = tabs.find(t => t.key === v)?.key ?? tab)
+  const pickTab = (v: string) => setParam('/lobby', $querystring, 'panel', v === 'history' ? 'history' : null)
   const TONE = { ink: 'text-text-muted', playing: 'text-live-text', muted: 'text-text-dim' }
 </script>
 
