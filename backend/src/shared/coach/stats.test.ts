@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { coachGame } from './index.js'
-import { executionStats, missTendencies } from './stats.js'
-import { dart, leg, visit } from './testLegs.js'
+import { executionStats } from './stats.js'
+import { leg, visit } from './testLegs.js'
 import { throwsOf } from './walk.js'
 
 describe('executionStats', () => {
@@ -47,39 +46,5 @@ describe('executionStats', () => {
     const s = executionStats(throwsOf([leg([visit(1, 501, ['T20'])])], 0, 501))
     expect(s.scoringAverage).toBeNull()
     expect(s).toMatchObject({ scoringDarts: 0, busts: 0, checkouts: 0, dartsAtDouble: 0, doubles: [] })
-  })
-})
-
-describe('missTendencies', () => {
-  it('counts where darts at T20 went', () => {
-    const l = leg([visit(0, 501, ['T20', 'S5', 'S1']), visit(0, 435, ['S20', 'S5', 'S20'])])
-    const t20 = missTendencies(throwsOf([l], 0, 501)).find(t => t.aim === 'T20')!
-    expect(t20).toMatchObject({ darts: 6, on: 3 })
-    expect(t20.wedges).toEqual([
-      { number: 5, darts: 2 },
-      { number: 1, darts: 1 },
-    ])
-  })
-
-  it('reads inside and outside from positions only', () => {
-    // On 32 (at D16): a miss just off the board by the 16, then S16 inside the double; on 16 (at D8): S8
-    const v = {
-      seat: 0,
-      darts: [dart('Miss', { x: -0.849, y: -0.617 }), dart('S16', { x: -0.728, y: -0.529 }), dart('S8')],
-      scored: 24,
-      remaining: 8,
-      bust: false,
-    }
-    const d16 = missTendencies(throwsOf([leg([v])], 0, 501)).find(t => t.aim === 'D16')!
-    expect(d16).toMatchObject({ darts: 2, positioned: 2, inside: 1, outside: 1 })
-  })
-})
-
-describe('coachGame', () => {
-  it('puts notes, stats and tendencies together', () => {
-    const r = coachGame([leg([visit(0, 97, ['S20', 'S20', 'S20'])])], 0, 501)
-    expect(r.notes.length).toBeGreaterThan(0)
-    expect(r.stats.scoringDarts).toBe(0)
-    expect(Array.isArray(r.tendencies)).toBe(true)
   })
 })

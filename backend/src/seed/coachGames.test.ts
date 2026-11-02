@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { coachGame, reviewLeg } from '../shared/coach/index.js'
+import { reviewLeg } from '../shared/coach/index.js'
+import { strategyNotes } from '../shared/coach/notes.js'
 import { leg, visit } from '../shared/coach/testLegs.js'
-import type { CoachVisit } from '../shared/coach/walk.js'
+import { throwsOf, type CoachVisit } from '../shared/coach/walk.js'
 import { COACH_GAMES, type DartScript } from './coachGames.js'
 
 /** The leg as the game stores it: each seat's scripted visits in throw order, up to the checkout. */
@@ -32,7 +33,7 @@ describe('sample games with known coach mistakes', () => {
     expect(visits.at(-1)).toMatchObject({ remaining: 0, bust: false })
 
     const noted = script.flatMap((_, seat) =>
-      coachGame([leg(visits)], seat, start).notes.map(n => ({
+      strategyNotes(throwsOf([leg(visits)], seat, start)).map(n => ({
         seat,
         leg: n.leg,
         visit: visits.slice(0, n.visit).filter(v => v.seat === seat).length,
