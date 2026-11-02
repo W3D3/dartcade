@@ -26,7 +26,7 @@
 
 <Layout title="Home">
   <main
-    class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-5 box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
+    class="flex flex-grow min-h-0 flex-col gap-[14px] [&>*]:shrink-0 md:gap-5 box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex items-end justify-between gap-4">
       <div class="flex min-w-0 flex-col gap-1">
