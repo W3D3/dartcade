@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { coachable, coachSeats, defaultCoachSeat } from './view'
+import { coachable, coachSeats, defaultCoachSeat, legsPlayed, opponents } from './view'
 
 const x01 = (config: Record<string, unknown>) => ({ mode: 'x01', config })
 const seat = (n: number, bot = false) => ({
@@ -48,5 +48,22 @@ describe('seats', () => {
   it("defaults to the first human for a spectator, or when you're not a human seat", () => {
     expect(defaultCoachSeat({ players: [seat(0, true), seat(1)], mySeat: null })).toBe(1)
     expect(defaultCoachSeat({ players: [seat(0, true)], mySeat: null })).toBeNull()
+  })
+})
+
+describe('opponents', () => {
+  it('names the other seats', () => {
+    expect(opponents({ players: [seat(0), seat(1)], mySeat: 0 })).toBe('P1')
+  })
+
+  it('is Solo without another seat, or when none of the seats is yours', () => {
+    expect(opponents({ players: [seat(0)], mySeat: 0 })).toBe('Solo')
+    expect(opponents({ players: [seat(0), seat(1)], mySeat: null })).toBe('P0, P1')
+  })
+})
+
+describe('legsPlayed', () => {
+  it("adds up every seat's legs won, a seat without the stat counting none", () => {
+    expect(legsPlayed({ players: [{ ...seat(0), stats: { legsWon: 3 } }, { ...seat(1), stats: { legsWon: 1 } }, seat(2)] })).toBe(4)
   })
 })

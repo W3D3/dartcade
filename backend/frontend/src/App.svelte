@@ -15,6 +15,7 @@
   import Legal from './routes/Legal.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
+  import Coach from './routes/Coach.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
   import RouteLoadFailed from './routes/RouteLoadFailed.svelte'
   import Lobby from './routes/Lobby.svelte'
@@ -95,6 +96,7 @@
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),
     '/history': History,
+    '/coach': Coach,
     '/lobby': Lobby,
     '/join': Join,
     '/join/:code': Join,
