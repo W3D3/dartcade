@@ -193,6 +193,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/coach/legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's coachable X01 legs, newest first
+         * @description Builds reviews for any of the user's recent games that are missing one, then returns a filtered, paged list. `counts` covers the user's last 50 stored legs and ignores the filter. 404 while coach.enabled is off for the user.
+         */
+        get: operations["listCoachLegs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/coach/legs/{gameId}/{leg}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                leg: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The coach's review of one of the signed-in user's own legs
+         * @description 404 while coach.enabled is off for the user, or when the leg isn't a stored review of the requesting user's own (another player's leg, or none).
+         */
+        get: operations["getCoachLeg"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards": {
         parameters: {
             query?: never;
@@ -2812,6 +2855,121 @@ export interface components {
                 finishedAt: string;
             } | null;
         };
+        CoachLegRow: {
+            gameId: string;
+            leg: number;
+            /** Format: date-time */
+            finishedAt: string;
+            opponents: string[];
+            context: string;
+            won: boolean;
+            darts: number;
+            average: number | null;
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            clean: boolean;
+        };
+        CoachLegCounts: {
+            legs: number;
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            cleanLegs: number;
+        };
+        CoachLegPage: {
+            counts: components["schemas"]["CoachLegCounts"];
+            legs: components["schemas"]["CoachLegRow"][];
+            nextCursor: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        ReviewDart: {
+            name: string;
+            coords: {
+                x: number;
+                y: number;
+            } | null;
+            /** @description The score after the dart; the visit's start after a bust */
+            left: number;
+            /** @description This dart busted (the darts the game keeps after it are false) */
+            bust: boolean;
+        };
+        CoachNote: {
+            leg: number;
+            visit: number;
+            dart: number;
+            left: number;
+            darts: number;
+            /** @description The dart's segment name, Miss off the board */
+            thrown: string;
+            /** @description The better aim's label: S17, 20/1, Bull */
+            better: string;
+            /** @description The better aim's id in AIMS: SO17 or SI17, W20-1, Bull */
+            betterAimId: string;
+            /** @description Checkout chance lost, 0-1 */
+            cost: number;
+            reason: string | null;
+            book: string[] | null;
+            tip: boolean;
+        };
+        ReviewVisit: {
+            /** @description 1-based among the seat's visits in the leg */
+            n: number;
+            left: number;
+            darts: components["schemas"]["ReviewDart"][];
+            scored: number;
+            then: number;
+            bust: boolean;
+            /** @enum {string} */
+            tag: "scoring" | "setup" | "doubling";
+            /** @enum {string} */
+            grade: "great" | "good" | "ok" | "weak" | "mistake";
+            text: string;
+            /** @description The text is a tip's (a note that leaves the grade alone) */
+            tip: boolean;
+            notes: components["schemas"]["CoachNote"][];
+        };
+        SkillGrade: {
+            /** @enum {string|null} */
+            grade: "A" | "B" | "C" | "D" | null;
+            line: string;
+        };
+        LegCounts: {
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            clean: boolean;
+        };
+        LegReview: {
+            leg: number;
+            seat: number;
+            won: boolean;
+            darts: number;
+            average: number | null;
+            visits: components["schemas"]["ReviewVisit"][];
+            skills: {
+                scoring: components["schemas"]["SkillGrade"];
+                setup: components["schemas"]["SkillGrade"];
+                doubling: components["schemas"]["SkillGrade"];
+            };
+            take: string;
+            counts: components["schemas"]["LegCounts"];
+        };
+        CoachLegTitle: {
+            opponents: string[];
+            context: string;
+            /** Format: date-time */
+            finishedAt: string;
+            won: boolean;
+            /** @description null when the round limit cut the leg short (no winner) */
+            winnerName: string | null;
+            winnerDarts: number | null;
+        };
+        CoachLegDetail: {
+            review: components["schemas"]["LegReview"];
+            title: components["schemas"]["CoachLegTitle"];
+        };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
             detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"];
@@ -4437,6 +4595,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listCoachLegs: {
+        parameters: {
+            query?: {
+                filter?: "all" | "lost" | "ranked" | "missedDoubles" | "badSetups" | "lowVisits";
+                /** @description nextCursor of the previous page */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of legs, with counts over the user's last 50 stored legs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachLegPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCoachLeg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                leg: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review and its title */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachLegDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];
