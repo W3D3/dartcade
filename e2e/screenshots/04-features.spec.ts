@@ -133,22 +133,46 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
   }
 })
 
-test('coach: strategy notes on a finished X01 game', async ({ browser }) => {
-  // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts), with a known coach note
+test('coach: the review list, a leg with a mistake, and the admin sandbox', async ({ browser }) => {
+  // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts) has two Mistake visits;
+  // the leg review opens on the first one by default (defaultVisit in lib/coach/view.ts)
   for (const [view, suffix] of [
     [VIEW.wide, 'desktop'],
     [VIEW.phone, 'phone'],
   ] as const) {
     const { ctx, page } = await open(browser, 'admin', view)
     await page.goto('/#/coach')
-    await page.locator('a[href^="#/history/"]').filter({ hasText: 'Phil' }).first().click()
-    await page.waitForURL(url => url.hash.startsWith('#/history/'))
-    await expect(page.getByRole('region', { name: 'Coach' })).toBeVisible()
+    const row = page.locator('li').filter({ visible: true, hasText: 'vs Phil' }).first()
+    await expect(row).toBeVisible()
+    await shot(page, `coach/review-${suffix}.png`, { settle: 1200 })
+
+    await row
+      .getByRole('link', { name: /^Review/ })
+      .filter({ visible: true })
+      .click()
+    await page.waitForURL(url => url.hash.startsWith('#/coach/leg/'))
+    await expect(page.getByRole('region', { name: 'Every visit' })).toBeVisible()
+    await expect(page.getByText('Mistake').first()).toBeVisible()
+    // On a phone the selected visit's card starts collapsed: open it to show its board and "Better:" line
+    if (suffix === 'phone') await page.locator('li.bg-card-active button').first().click()
     await expect(page.getByText('Better:').first()).toBeVisible()
-    await page.getByRole('region', { name: 'Coach' }).evaluate(el => el.scrollIntoView({ block: 'start' }))
-    await shot(page, `coach/coach-${suffix}.png`, { settle: 1500 })
+    await shot(page, `coach/leg-${suffix}.png`, { settle: 1200 })
     await ctx.close()
   }
+
+  // Admin sandbox: 97 left, S20 S20 S20 (97 -> 77 -> 57 -> 37) is a Mistake with a strategy note
+  const admin = await open(browser, 'admin', VIEW.wide)
+  await admin.page.goto('/#/admin/coach')
+  await admin.page.getByLabel('Score left').fill('97')
+  const typed = admin.page.getByRole('textbox', { name: 'Type a dart' })
+  for (let i = 0; i < 3; i++) {
+    await typed.fill('S20')
+    await admin.page.getByRole('button', { name: 'Add' }).click()
+  }
+  await expect(admin.page.getByText('Mistake').first()).toBeVisible()
+  await expect(admin.page.getByText('Better:').first()).toBeVisible()
+  await shot(admin.page, 'coach/sandbox-desktop.png', { settle: 1200 })
+  await admin.ctx.close()
 })
 
 test('history: compact stats on a phone, the page scrolled', async ({ browser }) => {
