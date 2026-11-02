@@ -1,5 +1,5 @@
 // Where a dart landed, for judging what it was thrown at.
-import { SEGS, segmentAt } from '../board.js'
+import { R, SEGS, segmentAt } from '../board.js'
 import { AIMS, type Aim } from './aims.js'
 import type { CoachDart } from './walk.js'
 
@@ -19,10 +19,20 @@ const withNeighbours = (n: number): number[] => {
   return i < 0 ? [n] : [SEGS[(i + 19) % 20], n, SEGS[(i + 1) % 20]]
 }
 
+/** A single that may have been thrown at the bull or 25: it landed inside the inner single ring, or
+ *  it has no position to tell. */
+export const nearBull = (d: CoachDart): boolean =>
+  d.segment.multiplier === 1 &&
+  d.segment.number >= 1 &&
+  d.segment.number <= 20 &&
+  (d.coords === null || Math.hypot(d.coords.x, d.coords.y) < R.si)
+
 /** The aims (AIMS indexes) a dart in number `n` could have been thrown at: any aim on `n` or on
- *  either neighbour, since drifting a wedge sideways is the most common miss there is. */
-export const candidates = (n: number): number[] => {
+ *  either neighbour, since drifting a wedge sideways is the most common miss there is; with
+ *  `bull`, the bull and 25 too, whose misses spread into every inner single. */
+export const candidates = (n: number, bull = false): number[] => {
   const near = withNeighbours(n)
+  if (bull) near.push(25)
   return AIMS.flatMap((a, i) => (a.numbers.some(m => near.includes(m)) ? [i] : []))
 }
 

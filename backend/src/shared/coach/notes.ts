@@ -1,13 +1,12 @@
 // Strategy notes: a dart on a finish whose number was clearly worse than the best aim, judged with
-// the benefit of the doubt (the best aim on the number it landed in or a neighbour).
+// the benefit of the doubt (the best aim on the number it landed in or a neighbour, or the bull or
+// 25 for a single near the middle).
 import { checkoutHint } from '../checkout.js'
 import { AIMS } from './aims.js'
-import { candidates, landedNumber } from './aim.js'
-import { evaluator, fin, type Evaluation, type Evaluator, type OutcomeValue } from './model.js'
-import type { Throw } from './walk.js'
-
-/** A note needs the better aim to give this much more checkout chance (5 points). */
-export const NOTE_THRESHOLD = 0.05
+import { candidates, landedNumber, nearBull } from './aim.js'
+import { evaluator, fin, type Evaluator } from './model.js'
+import { NOTE_THRESHOLD } from './grade.js'
+import { dartPoints, type Throw } from './walk.js'
 
 export type CoachNote = {
   leg: number
@@ -31,13 +30,14 @@ export type CoachNote = {
   tip: boolean
 }
 
-/** How much checkout chance throwing at number `n` loses against the best aim, given its best aim.
- *  `evaluate` is the visit's evaluator (model.ts), shared by its darts. */
-export function numberCost(evaluate: Evaluator, left: number, darts: number, n: number) {
+/** How much checkout chance throwing at number `n` loses against the best aim, given its best aim
+ *  (or the bull's or 25's with `bull`, aim.ts nearBull). `evaluate` is the visit's evaluator
+ *  (model.ts), shared by its darts. */
+export function numberCost(evaluate: Evaluator, left: number, darts: number, n: number, bull = false) {
   const evaluation = evaluate(left, darts)
   const v = evaluation.values
   const best = v.indexOf(Math.max(...v))
-  const candidate = candidates(n).reduce((a, b) => (v[b] > v[a] ? b : a))
+  const candidate = candidates(n, bull).reduce((a, b) => (v[b] > v[a] ? b : a))
   return { cost: v[best] - v[candidate], best, candidate, evaluation }
 }
 
@@ -63,7 +63,7 @@ const what = (name: string) => (name === 'Miss' ? 'A miss off the board' : name)
 function reason(t: Throw, thrown: string): string | null {
   const name = what(thrown)
   if (t.bust) return `${name} busts`
-  const after = t.left - t.d.segment.number * t.d.segment.multiplier
+  const after = t.left - dartPoints(t.d)
   const next = t.darts - 1
   if (next === 0) {
     if (after > 170 || fin[after][3] === 0) return `${name} leaves ${after}, which one visit can't finish`
@@ -86,7 +86,7 @@ export function strategyNotes(throws: readonly Throw[]): CoachNote[] {
       visit = `${t.leg}-${t.visit}`
       evaluate = evaluator(t.start, t.w)
     }
-    const { cost, best } = numberCost(evaluate, t.left, t.darts, n)
+    const { cost, best } = numberCost(evaluate, t.left, t.darts, n, nearBull(t.d))
     if (cost < NOTE_THRESHOLD) continue
     const thrown = t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name
     notes.push({

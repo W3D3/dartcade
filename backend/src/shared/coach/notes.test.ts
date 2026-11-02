@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIMS } from './aims.js'
-import { isTip, NOTE_THRESHOLD, numberCost, strategyNotes } from './notes.js'
+import { NOTE_THRESHOLD } from './grade.js'
+import { nearBull } from './aim.js'
+import { isTip, numberCost, strategyNotes } from './notes.js'
 import { evaluator } from './model.js'
 import { dart, leg, visit } from './testLegs.js'
 import { throwsOf, type Throw } from './walk.js'
@@ -10,6 +12,9 @@ const solo = (start: number, names: string[]) => strategyNotes(throwsOf([leg([vi
 const noteOn = (start: number, names: string[], dart: number) => solo(start, names).find(n => n.dart === dart)
 
 const aimIndex = (id: string) => AIMS.findIndex(a => a.id === id)
+const spot = (id: string) => ({ x: AIMS[aimIndex(id)].x, y: AIMS[aimIndex(id)].y })
+const outer = (n: number) => spot(`SO${n}`)
+const inner = (n: number) => spot(`SI${n}`)
 const stubThrow = (over: Partial<Throw>): Throw => ({
   leg: 0,
   visit: 0,
@@ -55,7 +60,11 @@ describe('strategy notes: the wrong number', () => {
     // fin[37][1] === 0 (37 is odd: no one-dart finish) pins this exact wording
     expect(n).toMatchObject({ left: 57, darts: 1, thrown: 'S20', reason: 'S20 leaves 37, with no one-dart finish' })
     expect(n!.better).toMatch(/17/)
-    expect(n!.cost).toBeGreaterThan(0.1)
+    // Without a position the dart may have gone at the 25 (leaving 32), which costs less
+    expect(n!.cost).toBeGreaterThan(0.07)
+    // In the outer single it can't have
+    const placed = numberCost(evaluator(97, 1), 57, 1, 20, nearBull(dart('S20', outer(20))))
+    expect(placed.cost).toBeGreaterThan(0.1)
     // With one dart left, nobody can "set up" anything: not a Tip (see 'strategy notes: tips' below)
     expect(n!.tip).toBe(false)
   })
@@ -117,6 +126,36 @@ describe('strategy notes: no note', () => {
     for (const n of ['S20', 'S18']) expect(noteOn(2, [n], 0)).toBeUndefined()
     expect(noteOn(3, ['S20'], 0)).toBeUndefined()
     for (const n of ['S8', 'S7']) expect(noteOn(32, [n], 0)).toBeUndefined()
+  })
+
+  it('excuses a single near the middle on a bull or 25 aim (162: T20 S20 S19 on 82; 101: S20 S20 S1 on 61)', () => {
+    expect(noteOn(162, ['T20', 'S20', 'S19'], 2)).toBeUndefined()
+    expect(noteOn(101, ['S20', 'S20', 'S1'], 2)).toBeUndefined()
+    const at = (left: number, n: number, coords: { x: number; y: number }) =>
+      numberCost(evaluator(left, 1), left, 1, n, nearBull(dart(`S${n}`, coords))).cost
+    expect(at(82, 19, inner(19))).toBe(0)
+    expect(at(61, 1, inner(1))).toBe(0)
+    // Out in the outer single, the 19 wasn't thrown at the bull
+    expect(at(82, 19, outer(19))).toBeGreaterThan(NOTE_THRESHOLD)
+  })
+
+  it('notes no inner single when the best aim is the bull or 25 (probe over 2–170, 1–3 darts)', () => {
+    let aimed = 0
+    const noted: string[] = []
+    for (let left = 2; left <= 170; left++)
+      for (let darts = 1; darts <= 3; darts++) {
+        const evaluate = evaluator(left, 1)
+        const v = evaluate(left, darts).values
+        const best = AIMS[v.indexOf(Math.max(...v))].id
+        if (best !== 'Bull' && best !== '25') continue
+        for (let n = 1; n <= 20; n++) {
+          aimed++
+          const { cost } = numberCost(evaluate, left, darts, n, nearBull(dart(`S${n}`, inner(n))))
+          if (cost >= NOTE_THRESHOLD) noted.push(`${left}/${darts} S${n}`)
+        }
+      }
+    expect(aimed).toBeGreaterThan(0)
+    expect(noted).toEqual([])
   })
 
   it('never notes the dart that checks out, or darts with more than 170 left', () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { AIMS } from './aims.js'
-import { candidates, landedNumber, scoringAim } from './aim.js'
+import { R } from '../board.js'
+import { candidates, landedNumber, nearBull, scoringAim } from './aim.js'
 import { dart } from './testLegs.js'
 
 describe('landedNumber', () => {
@@ -28,6 +29,22 @@ describe('candidates', () => {
         .map(i => AIMS[i].id)
         .sort(),
     ).toEqual(['25', 'Bull'])
+  })
+})
+
+describe('nearBull', () => {
+  it('is a single inside the inner single ring, or one without a position', () => {
+    expect(nearBull(dart('S19', { x: 0.1, y: -0.2 }))).toBe(true)
+    expect(nearBull(dart('S19'))).toBe(true)
+    expect(nearBull(dart('S20', { x: 0, y: R.si + 0.01 }))).toBe(false)
+    expect(nearBull(dart('T20'))).toBe(false)
+    expect(nearBull(dart('25'))).toBe(false)
+  })
+
+  it('adds the bull and 25 to the candidates', () => {
+    const ids = candidates(20, true).map(i => AIMS[i].id)
+    expect(ids).toEqual(expect.arrayContaining(['Bull', '25', 'T20', 'SO1']))
+    expect(ids).toHaveLength(candidates(20).length + 2)
   })
 })
 

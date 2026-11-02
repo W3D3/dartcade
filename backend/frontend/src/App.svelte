@@ -15,7 +15,6 @@
   import Legal from './routes/Legal.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
-  import Coach from './routes/Coach.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
   import RouteLoadFailed from './routes/RouteLoadFailed.svelte'
   import Lobby from './routes/Lobby.svelte'
@@ -75,6 +74,13 @@
       loading: RouteLoading,
     }),
   })
+  // The coach pages load on demand: they're behind a flag and bring the coach's own code
+  const loadCoach = Object.assign(() => import('./routes/Coach.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
+  const loadCoachChecks = Object.assign(() => import('./routes/CoachChecks.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
     { loading: RouteLoading },
@@ -96,7 +102,8 @@
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),
     '/history': History,
-    '/coach': Coach,
+    '/coach': wrap({ asyncComponent: loadCoach }),
+    '/coach/checks': wrap({ asyncComponent: loadCoachChecks }),
     '/lobby': Lobby,
     '/join': Join,
     '/join/:code': Join,

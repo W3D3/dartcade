@@ -3,7 +3,7 @@
 export type { CoachNote } from './notes.js'
 export type { CoachStats, DoubleStat } from './stats.js'
 export type { CoachLeg } from './walk.js'
-export { NOTE_THRESHOLD } from './notes.js'
+export { NOTE_THRESHOLD } from './grade.js'
 export { coachable } from './coachable.js'
 export { reviewLeg } from './review.js'
 export type { LegCounts, LegReview, ReviewContext, ReviewDart, ReviewVisit, SkillGrade } from './review.js'

@@ -1,31 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '$shared/board'
 import { bedPath, boardSegments, type BedRing } from '$lib/details/boardGeometry'
-import {
-  aimBed,
-  bedCentre,
-  likelyMisses,
-  coachable,
-  coachSeats,
-  dartTone,
-  defaultCoachSeat,
-  legsPlayed,
-  opponents,
-  visitTiles,
-} from './view'
+import { aimBed, bedCentre, likelyMisses, coachable, coachFilter, coachFound, dartTone, legWhen, visitTiles, vsLine } from './view'
 
 const x01 = (config: Record<string, unknown>) => ({ mode: 'x01', config })
-const seat = (n: number, bot = false) => ({
-  seat: n,
-  name: `P${n}`,
-  userId: bot ? null : `u${n}`,
-  avatar: { kind: 'none' as const },
-  throwPosition: n,
-  bot: bot ? { level: 1 } : null,
-  placement: n + 1,
-  stats: {},
-  forfeited: false,
-})
 
 describe('coachable', () => {
   it('takes X01, straight in, double out, bull 25/50, singles', () => {
@@ -51,33 +29,66 @@ describe('coachable', () => {
   })
 })
 
-describe('seats', () => {
-  it('lists humans only, and defaults to your seat', () => {
-    const game = { players: [seat(0, true), seat(1), seat(2)], mySeat: 2 }
-    expect(coachSeats(game)).toEqual([1, 2])
-    expect(defaultCoachSeat(game)).toBe(2)
-  })
-
-  it("defaults to the first human for a spectator, or when you're not a human seat", () => {
-    expect(defaultCoachSeat({ players: [seat(0, true), seat(1)], mySeat: null })).toBe(1)
-    expect(defaultCoachSeat({ players: [seat(0, true)], mySeat: null })).toBeNull()
+describe('vsLine', () => {
+  it('names the opponents, or Solo without one', () => {
+    expect(vsLine(['Lena'])).toBe('vs Lena')
+    expect(vsLine(['Max', 'Sophie'])).toBe('vs Max, Sophie')
+    expect(vsLine([])).toBe('Solo')
   })
 })
 
-describe('opponents', () => {
-  it('names the other seats', () => {
-    expect(opponents({ players: [seat(0), seat(1)], mySeat: 0 })).toBe('P1')
+describe('coachFilter', () => {
+  it('reads the filter from the querystring', () => {
+    expect(coachFilter('filter=lost')).toBe('lost')
+    expect(coachFilter('x=1&filter=missedDoubles')).toBe('missedDoubles')
   })
 
-  it('is Solo without another seat, or when none of the seats is yours', () => {
-    expect(opponents({ players: [seat(0)], mySeat: 0 })).toBe('Solo')
-    expect(opponents({ players: [seat(0), seat(1)], mySeat: null })).toBe('P0, P1')
+  it('falls back to all legs when missing or unknown', () => {
+    expect(coachFilter(undefined)).toBe('all')
+    expect(coachFilter('')).toBe('all')
+    expect(coachFilter('filter=nope')).toBe('all')
   })
 })
 
-describe('legsPlayed', () => {
-  it("adds up every seat's legs won, a seat without the stat counting none", () => {
-    expect(legsPlayed({ players: [{ ...seat(0), stats: { legsWon: 3 } }, { ...seat(1), stats: { legsWon: 1 } }, seat(2)] })).toBe(4)
+describe('legWhen', () => {
+  // Wednesday 5 Nov 2025, evening
+  const now = new Date(2025, 10, 5, 22, 0)
+  const at = (day: number, h = 21, m = 14) => new Date(2025, 10, day, h, m).toISOString()
+
+  it('gives the time today, then Yesterday', () => {
+    expect(legWhen(at(5), now)).toBe('Today 21:14')
+    expect(legWhen(at(4), now)).toBe('Yesterday')
+  })
+
+  it('gives the weekday from 2 to 6 days ago, the date beyond', () => {
+    expect(legWhen(at(3), now)).toBe('Mon')
+    expect(legWhen(new Date(2025, 9, 30, 21, 0).toISOString(), now)).toBe('Thu')
+    expect(legWhen(new Date(2025, 9, 29, 21, 0).toISOString(), now)).toBe('29 Oct')
+  })
+})
+
+describe('coachFound', () => {
+  const row = { missedDoubles: 0, badSetups: 0, lowVisits: 0, clean: false }
+
+  it('pills missed doubles red, then bad setups and low visits yellow, with singulars', () => {
+    expect(coachFound({ ...row, missedDoubles: 2, badSetups: 1, lowVisits: 4 })).toEqual([
+      { text: '2 missed doubles', tone: 'red' },
+      { text: '1 bad setup', tone: 'yellow' },
+      { text: '4 low visits', tone: 'yellow' },
+    ])
+    expect(coachFound({ ...row, missedDoubles: 1, lowVisits: 1 })).toEqual([
+      { text: '1 missed double', tone: 'red' },
+      { text: '1 low visit', tone: 'yellow' },
+    ])
+  })
+
+  it('shows a clean leg as its green pill alone, even with a lone missed double', () => {
+    expect(coachFound({ ...row, clean: true })).toEqual([{ text: 'Clean leg', tone: 'green' }])
+    expect(coachFound({ ...row, missedDoubles: 1, clean: true })).toEqual([{ text: 'Clean leg', tone: 'green' }])
+  })
+
+  it('is empty with nothing found', () => {
+    expect(coachFound(row)).toEqual([])
   })
 })
 

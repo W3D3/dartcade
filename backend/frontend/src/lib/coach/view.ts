@@ -1,7 +1,9 @@
-// Which finished games the coach reviews and whose darts it shows; how its tiles, pills and board
-// draw a visit.
-import type { GameSummary } from '$lib/api'
+// Which finished games the coach reviews; how the Coach page shows a leg; how its tiles, pills and
+// board draw a visit.
+import type { CoachLegRow, GameSummary } from '$lib/api'
 import type { BedRing } from '$lib/details/boardGeometry'
+import { startOfDay } from '$lib/fmt'
+import { formatWhen } from '$lib/history'
 import { HALF, R, SEGS } from '$shared/board'
 import type { ReviewVisit, VisitGrade } from '$shared/coach'
 import { AIMS, type Aim } from '$shared/coach/aims'
@@ -10,28 +12,49 @@ import { coachable as coachableGame } from '$shared/coach/coachable'
 /** The coach reviews the game (shared/coach/coachable.ts) */
 export const coachable = (game: Pick<GameSummary, 'mode' | 'config'>): boolean => coachableGame(game.mode, game.config)
 
-/** The seats the coach can review: the humans, in seat order. */
-export const coachSeats = (game: Pick<GameSummary, 'players'>): number[] =>
-  game.players
-    .filter(p => !p.bot)
-    .map(p => p.seat)
-    .sort((a, b) => a - b)
+/** A leg's title: "vs Lena", "vs Max, Sophie", or "Solo" without an opponent. */
+export const vsLine = (opponents: readonly string[]): string => (opponents.length ? `vs ${opponents.join(', ')}` : 'Solo')
 
-/** Your seat if you played, else the first human seat; null without one. */
-export function defaultCoachSeat(game: Pick<GameSummary, 'players' | 'mySeat'>): number | null {
-  const seats = coachSeats(game)
-  return game.mySeat !== null && seats.includes(game.mySeat) ? game.mySeat : (seats[0] ?? null)
+/** The Coach page's leg filters, as the API names them */
+export const COACH_FILTERS = [
+  { id: 'all', label: 'All legs' },
+  { id: 'lost', label: 'Lost' },
+  { id: 'ranked', label: 'Ranked' },
+  { id: 'missedDoubles', label: 'Missed doubles' },
+  { id: 'badSetups', label: 'Bad setups' },
+  { id: 'lowVisits', label: 'Low visits' },
+] as const
+export type CoachFilter = (typeof COACH_FILTERS)[number]['id']
+
+/** The Coach page's filter from its querystring (`filter=lost`); All legs when missing or unknown. */
+export function coachFilter(querystring: string | undefined): CoachFilter {
+  const f = new URLSearchParams(querystring ?? '').get('filter')
+  return COACH_FILTERS.find(x => x.id === f)?.id ?? 'all'
 }
 
-/** The other players' names, comma-separated; "Solo" without one (practice, or you're not a seat). */
-export function opponents(game: Pick<GameSummary, 'players' | 'mySeat'>): string {
-  const names = game.players.filter(p => p.seat !== game.mySeat).map(p => p.name)
-  return names.length ? names.join(', ') : 'Solo'
+/** A "Coach found" pill on a leg row (Coach-Review) */
+export type FoundPill = { text: string; tone: 'red' | 'yellow' | 'green' }
+const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/** Missed doubles red, bad setups and low visits yellow; a clean leg only its green pill */
+export function coachFound(row: Pick<CoachLegRow, 'missedDoubles' | 'badSetups' | 'lowVisits' | 'clean'>): FoundPill[] {
+  if (row.clean) return [{ text: 'Clean leg', tone: 'green' }]
+  const pills: FoundPill[] = []
+  if (row.missedDoubles > 0) pills.push({ text: counted(row.missedDoubles, 'missed double'), tone: 'red' })
+  if (row.badSetups > 0) pills.push({ text: counted(row.badSetups, 'bad setup'), tone: 'yellow' })
+  if (row.lowVisits > 0) pills.push({ text: counted(row.lowVisits, 'low visit'), tone: 'yellow' })
+  return pills
 }
 
-/** The legs the game had: every seat's legs won. */
-export const legsPlayed = (game: Pick<GameSummary, 'players'>): number =>
-  game.players.reduce((n, p) => n + (Object.hasOwn(p.stats, 'legsWon') ? p.stats.legsWon : 0), 0)
+/** When a leg finished (Coach-Review): "Today 21:14", "Yesterday", the weekday ("Mon") within the
+ *  week, the date beyond it. */
+export function legWhen(iso: string, now: Date): string {
+  const { day, time } = formatWhen(iso, now)
+  if (day === 'Today') return `Today ${time}`
+  const d = new Date(iso)
+  const ago = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000)
+  return ago >= 2 && ago <= 6 ? d.toLocaleDateString('en-GB', { weekday: 'short' }) : day
+}
 
 /** How a dart tile looks (Coach-Leg): a treble, double or bull green, a single plain, a single or
  *  25 thrown at a one-dart finish red (a missed double), off the board dashed. */

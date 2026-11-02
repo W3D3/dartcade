@@ -1,6 +1,6 @@
 // The coach's review of one seat's leg, as the leg review page renders it: every visit graded,
 // three A–D skills and the coach's take.
-import { classifyVisit, type VisitGrade, type VisitTag } from './grade.js'
+import { classifyVisit, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
 import { fin } from './model.js'
 import { strategyNotes, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
@@ -39,12 +39,6 @@ export type LegReview = {
   counts: LegCounts
 }
 export type ReviewContext = { startScore: number; average: number | null; opponentName: (seat: number) => string }
-
-/** A long finish takes more than this many darts from 170 or less to the checkout */
-export const LONG_FINISH = 9
-/** Late-leg drop: scoring visits 4 and later average this much less than visits 1–3 */
-export const LATE_DROP = 20
-const LATE_DROP_VISITS = 6
 
 const NONE: SkillGrade = { grade: null, line: '–' }
 const RANK = { A: 0, B: 1, C: 2, D: 3 }
