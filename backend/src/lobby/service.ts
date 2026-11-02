@@ -665,7 +665,7 @@ export class LobbyService {
       const typed = guest.name.trim()
       if (typed === '') throw LobbyError.badRequest('the name is empty')
       const bot = guest.bot ?? null
-      // Bots of one level would share a name: number them (Bot Lvl 5, Bot Lvl 5 (2), …)
+      // Bots of one level would share a name: number them (Bot Level 5, Bot Level 5 (2), …)
       const name =
         bot === null
           ? typed
