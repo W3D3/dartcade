@@ -34,12 +34,14 @@
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { api, type GameDetail } from '$lib/api'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
+  import { historyHref } from '$lib/urlState'
+  import { sessionStore } from '$lib/returnTo'
   import { getGameView } from '$lib/gameViews'
   import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
   // `admin`: opened from the admin game list, so any finished game, with every seat's account
   let { params, admin = false }: { params: { id: string }; admin?: boolean } = $props()
-  const back = $derived(admin ? { href: '#/admin/games', label: 'Games' } : { href: '#/history', label: 'History' })
+  const back = $derived(admin ? { href: '#/admin/games', label: 'Games' } : { href: historyHref(sessionStore()), label: 'History' })
   let detail = $state<GameDetail | null>(null)
   // Admin view only: how a moderator invalidated the game, if one did
   let invalidated = $state<Invalidation>(null)
@@ -128,7 +130,7 @@
         {@const title = getGameView(d.game.mode).title}
         <DetailsHeader
           detail={d}
-          trail={admin ? gamesTrail(title) : [{ label: 'History', href: '#/history' }, { label: title }]}
+          trail={admin ? gamesTrail(title) : [{ label: 'History', href: back.href }, { label: title }]}
           oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined}
           ondelete={admin && $currentUser?.isAdmin ? () => (confirmingDelete = true) : undefined}
         />

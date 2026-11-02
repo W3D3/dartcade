@@ -1,6 +1,7 @@
 <script lang="ts">
   import { deviceStore } from '$lib/storage'
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
+  import { querystring } from 'svelte-spa-router'
   import { MediaQuery } from 'svelte/reactivity'
   import { ChevronRight, LoaderCircle, RotateCcw } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type ColumnSizingState } from '@tanstack/svelte-table'
@@ -22,6 +23,9 @@
     type PlayerBadge,
   } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
+  import { GAME_NAMES, isGameId } from '$shared/gameNames'
+  import { readParam, rememberHistoryUrl, setParam } from '$lib/urlState'
+  import { sessionStore } from '$lib/returnTo'
 
   // Guards against a stale response winning a race: a quick filter switch leaves the
   // previous filter's request in flight, and "load more" can be overtaken by a filter
@@ -29,7 +33,9 @@
   const requests = createRequestGuard()
 
   let modes = $state<GameInfo[]>([])
-  let mode = $state<string | null>(null)
+  // The filter lives in the URL (#/history?mode=x01), so Back from a match keeps it; All is no param.
+  const GAME_IDS = Object.keys(GAME_NAMES).filter(isGameId)
+  const mode = $derived(readParam($querystring, 'mode', GAME_IDS, null))
   let games = $state<GameSummary[]>([])
   let nextCursor = $state<string | null>(null)
   let stats = $state<GameStats | null>(null)
@@ -76,8 +82,8 @@
     return `${getGameView(g.mode).title}, ${when.day} ${when.time}${result.text ? `, ${result.text}` : ''}: details`
   }
 
-  async function loadGames(cursor: string | null, token: number) {
-    const query = { ...(mode !== null && { mode }), ...(cursor !== null && { cursor }) }
+  async function loadGames(m: string | null, cursor: string | null, token: number) {
+    const query = { ...(m !== null && { mode: m }), ...(cursor !== null && { cursor }) }
     const { data, error: err } = await api.GET('/api/games', { params: { query } })
     if (!requests.isCurrent(token)) return // superseded by a newer filter or load-more; drop it
     if (!data) throw new Error(err.error)
@@ -85,22 +91,45 @@
     nextCursor = data.nextCursor
   }
 
-  async function pick(id: string | null) {
-    if (id === mode) return
-    mode = id
+  async function reload(m: string | null) {
     const token = requests.start()
     loading = true
     loadingMore = false // any in-flight "load more" for the old filter no longer applies
     error = ''
     loadMoreError = ''
     try {
-      await loadGames(null, token)
+      await loadGames(m, null, token)
     } catch (e) {
       if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load your games'
     } finally {
       if (requests.isCurrent(token)) loading = false
     }
   }
+
+  // Back from a match lands on the same place: the list's scroll offset is kept per filter for this tab
+  let scroller = $state<HTMLElement>()
+  let restored = false
+  $effect(() => rememberHistoryUrl(sessionStore(), $querystring))
+  const scrollKey = () => `dartcade:history-scroll:${mode ?? 'all'}`
+  const saveScroll = () => {
+    try {
+      if (scroller && !loading) sessionStore()?.setItem(scrollKey(), String(scroller.scrollTop))
+    } catch {
+      /* not remembered */
+    }
+  }
+  $effect(() => {
+    if (loading || !scroller || restored) return
+    restored = true // only the first load after mount: a filter click starts at the top
+    const y = Number(sessionStore()?.getItem(scrollKey()))
+    if (y > 0) scroller.scrollTop = y
+  })
+
+  // Runs on mount and whenever the URL's filter changes (a click, Back, Forward)
+  $effect(() => {
+    const m = mode
+    untrack(() => void reload(m))
+  })
 
   async function more() {
     if (nextCursor === null || loadingMore) return
@@ -109,7 +138,7 @@
     loadMoreError = ''
     // Keep the already-loaded list on screen; only an initial load replaces it with an error.
     try {
-      await loadGames(nextCursor, token)
+      await loadGames(mode, nextCursor, token)
     } catch (e) {
       if (requests.isCurrent(token)) loadMoreError = e instanceof Error ? e.message : 'Could not load more games'
     } finally {
@@ -118,15 +147,12 @@
   }
 
   onMount(async () => {
-    const token = requests.start()
     try {
-      const [m, s] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/games/stats'), loadGames(null, token)])
+      const [m, s] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/games/stats')])
       modes = m.data?.modes ?? []
       stats = s.data ?? null
-    } catch (e) {
-      if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load your games'
-    } finally {
-      if (requests.isCurrent(token)) loading = false
+    } catch {
+      // The filter row and tiles stay empty; the list reports its own error
     }
   })
 </script>
@@ -245,7 +271,11 @@
 {/snippet}
 
 <Layout title="History">
-  <main class="flex min-h-0 flex-grow flex-col gap-4 md:gap-6 overflow-auto px-4 py-4 md:px-8 xl:px-11 md:py-10">
+  <main
+    bind:this={scroller}
+    onscroll={saveScroll}
+    class="flex min-h-0 flex-grow flex-col gap-4 md:gap-6 overflow-auto px-4 py-4 md:px-8 xl:px-11 md:py-10"
+  >
     <header class="flex flex-wrap items-end justify-between gap-6">
       <div class="hidden md:flex flex-col gap-1.5">
         <h1 class="m-0 font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
@@ -260,7 +290,7 @@
           <button
             type="button"
             aria-pressed={f.id === mode}
-            onclick={() => void pick(f.id)}
+            onclick={() => setParam('/history', $querystring, 'mode', f.id)}
             class="h-10 whitespace-nowrap rounded-[7px] border-0 px-4 text-[15px] {f.id === mode
               ? 'bg-line font-semibold text-text'
               : 'bg-transparent text-ink-2'}"
