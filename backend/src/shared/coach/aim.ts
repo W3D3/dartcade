@@ -1,5 +1,5 @@
 // Where a dart landed, for judging what it was thrown at.
-import { segmentAt } from '../board.js'
+import { SEGS, segmentAt } from '../board.js'
 import { AIMS, type Aim } from './aims.js'
 import type { CoachDart } from './walk.js'
 
@@ -13,8 +13,18 @@ export function landedNumber(d: CoachDart): number | null {
   return s.number === 50 ? 25 : s.number
 }
 
-/** The aims (AIMS indexes) a dart in number `n` could have been thrown at. */
-export const candidates = (n: number): number[] => AIMS.flatMap((a, i) => (a.numbers.includes(n) ? [i] : []))
+/** `n` and its two neighbours on the board; just 25 for the bull and 25. */
+const withNeighbours = (n: number): number[] => {
+  const i = SEGS.indexOf(n)
+  return i < 0 ? [n] : [SEGS[(i + 19) % 20], n, SEGS[(i + 1) % 20]]
+}
+
+/** The aims (AIMS indexes) a dart in number `n` could have been thrown at: any aim on `n` or on
+ *  either neighbour, since drifting a wedge sideways is the most common miss there is. */
+export const candidates = (n: number): number[] => {
+  const near = withNeighbours(n)
+  return AIMS.flatMap((a, i) => (a.numbers.some(m => near.includes(m)) ? [i] : []))
+}
 
 export type ScoringAim = 20 | 19 | 18 | 17
 const NEIGHBOURS: Record<ScoringAim, readonly number[]> = { 20: [5, 1], 19: [7, 3], 18: [1, 4], 17: [3, 2] }

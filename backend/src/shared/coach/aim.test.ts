@@ -17,11 +17,12 @@ describe('landedNumber', () => {
 })
 
 describe('candidates', () => {
-  it('are every aim on the number, the two wires next to it included', () => {
+  it('are every aim on the number or either neighbour, wires included', () => {
     const ids = candidates(20)
       .map(i => AIMS[i].id)
       .sort()
-    expect(ids).toEqual(['D20', 'SI20', 'SO20', 'T20', 'W20-1', 'W5-20'].sort())
+    const on = (n: number) => [`T${n}`, `D${n}`, `SO${n}`, `SI${n}`]
+    expect(ids).toEqual([...on(5), ...on(20), ...on(1), 'W12-5', 'W5-20', 'W20-1', 'W1-18'].sort())
     expect(
       candidates(25)
         .map(i => AIMS[i].id)

@@ -1,12 +1,53 @@
 import { describe, it, expect } from 'vitest'
 import { CHECKOUTS } from '../checkoutTable.js'
-import { NOTE_THRESHOLD, numberCost, strategyNotes } from './notes.js'
+import { AIMS } from './aims.js'
+import { isTip, NOTE_THRESHOLD, numberCost, strategyNotes } from './notes.js'
 import { evaluator } from './model.js'
-import { leg, visit } from './testLegs.js'
-import { throwsOf } from './walk.js'
+import { dart, leg, visit } from './testLegs.js'
+import { throwsOf, type Throw } from './walk.js'
 
 const solo = (start: number, names: string[]) => strategyNotes(throwsOf([leg([visit(0, start, names)])], 0, 501))
 const noteOn = (start: number, names: string[], dart: number) => solo(start, names).find(n => n.dart === dart)
+
+const aimIndex = (id: string) => AIMS.findIndex(a => a.id === id)
+const stubThrow = (over: Partial<Throw>): Throw => ({
+  leg: 0,
+  visit: 0,
+  dart: 0,
+  start: 0,
+  left: 0,
+  darts: 3,
+  d: dart('S1'),
+  visitDarts: [],
+  checkout: false,
+  bust: false,
+  w: 1,
+  opponentOnOut: false,
+  ...over,
+})
+
+describe('isTip', () => {
+  it('is true when the better aim is the direct out and nobody is on an out (50 → Bull)', () => {
+    expect(isTip(stubThrow({ left: 50 }), aimIndex('Bull'))).toBe(true)
+  })
+
+  it('is true when the better aim is the direct out (32 → D16)', () => {
+    expect(isTip(stubThrow({ left: 32 }), aimIndex('D16'))).toBe(true)
+  })
+
+  it('is false when an opponent is on an out', () => {
+    expect(isTip(stubThrow({ left: 50, opponentOnOut: true }), aimIndex('Bull'))).toBe(false)
+  })
+
+  it("is false when the better aim isn't the direct out (49 → S9, 23 → S7)", () => {
+    expect(isTip(stubThrow({ left: 49 }), aimIndex('SO9'))).toBe(false)
+    expect(isTip(stubThrow({ left: 23 }), aimIndex('SO7'))).toBe(false)
+  })
+
+  it('is false when the dart busted', () => {
+    expect(isTip(stubThrow({ left: 50, bust: true }), aimIndex('Bull'))).toBe(false)
+  })
+})
 
 describe('strategy notes: the wrong number', () => {
   it('notes the last dart in 20 on 57 (S17 leaves 40)', () => {
@@ -15,37 +56,48 @@ describe('strategy notes: the wrong number', () => {
     expect(n).toMatchObject({ left: 57, darts: 1, thrown: 'S20', reason: 'S20 leaves 37, with no one-dart finish' })
     expect(n!.better).toMatch(/17/)
     expect(n!.cost).toBeGreaterThan(0.1)
+    // With one dart left, nobody can "set up" anything: not a Tip (see 'strategy notes: tips' below)
+    expect(n!.tip).toBe(false)
   })
 
   it('notes the last dart in 20 on 47', () => {
     // fin[27][1] === 0 (27 is odd: no one-dart finish)
-    expect(noteOn(87, ['S20', 'S20', 'S20'], 2)).toMatchObject({
-      left: 47,
-      thrown: 'S20',
-      reason: 'S20 leaves 27, with no one-dart finish',
-    })
+    const n = noteOn(87, ['S20', 'S20', 'S20'], 2)
+    expect(n).toMatchObject({ left: 47, thrown: 'S20', better: 'S7', reason: 'S20 leaves 27, with no one-dart finish' })
+    expect(n!.cost).toBeGreaterThan(0.08)
   })
 
-  it('notes a dart at 20 on 7 and on 3, where 20 busts', () => {
-    // 7 - 20 < 2 (a bust): the single 20 busts
-    const seven = noteOn(7, ['S20'], 0)
-    expect(seven).toMatchObject({ left: 7, darts: 3, reason: 'S20 busts' })
-    expect(noteOn(3, ['S20'], 0)).toMatchObject({ left: 3, darts: 3, reason: 'S20 busts' })
+  it('notes a dart that busts far from the number it wanted (S14 on 7, S5 on 3)', () => {
+    // A bust is its own mistake, not a setup choice: not a Tip.
+    const seven = noteOn(7, ['S14'], 0)
+    expect(seven).toMatchObject({ left: 7, darts: 3, better: 'S3', reason: 'S14 busts', tip: false })
+    expect(seven!.cost).toBeGreaterThan(0.15)
+    const three = noteOn(3, ['S5'], 0)
+    expect(three).toMatchObject({ left: 3, darts: 3, better: 'S1', reason: 'S5 busts', tip: false })
+    expect(three!.cost).toBeGreaterThan(0.1)
   })
 
   it('notes a dart in 20 on 23 with two darts left', () => {
-    // fin[3][1] === 0 (3 is odd: the one dart left after this one can't finish it)
-    expect(noteOn(43, ['S20', 'S20', 'S1'], 1)).toMatchObject({
-      left: 23,
-      darts: 2,
-      reason: "S20 leaves 3, which one dart can't finish",
-    })
+    // fin[3][1] === 0 (3 is odd: the one dart left after this one can't finish it). 23 has no
+    // one-dart out of its own (it's odd), so the better aim (S7) isn't "the direct out": not a Tip.
+    // Only just over the threshold: an aim on the 5 next to 20 sets up 18 or 13.
+    const n = noteOn(43, ['S20', 'S20', 'S1'], 1)
+    expect(n).toMatchObject({ left: 23, darts: 2, better: 'S7', reason: "S20 leaves 3, which one dart can't finish", tip: false })
+    expect(n!.cost).toBeGreaterThan(NOTE_THRESHOLD)
+  })
+
+  it('notes a dart in 1 on 47 with two darts left, clear of the threshold', () => {
+    // fin[46][1] === 0 (no one-dart finish for the one dart left)
+    const n = noteOn(67, ['S20', 'S1', 'S1'], 1)
+    expect(n).toMatchObject({ left: 47, darts: 2, better: 'S15', reason: "S1 leaves 46, which one dart can't finish", tip: false })
+    expect(n!.cost).toBeGreaterThan(0.08)
   })
 })
 
 describe('strategy notes: no reason', () => {
-  it('gives none when the worst outcome just leaves a score (32 in 20: S20 leaves 12)', () => {
-    expect(noteOn(32, ['S20'], 0)).toMatchObject({ left: 32, darts: 3, thrown: 'S20', reason: null })
+  it('gives none when the dart just leaves a score (32 in 20: S20 leaves 12)', () => {
+    // The better aim is D16, 32's own direct out: a Tip when nobody is on an out (below).
+    expect(noteOn(32, ['S20'], 0)).toMatchObject({ left: 32, darts: 3, thrown: 'S20', reason: null, tip: true })
   })
 })
 
@@ -59,6 +111,12 @@ describe('strategy notes: no note', () => {
     ['60 in T20 (S20 is on the same number)', 60, ['T20']],
   ])('%s', (_label, start, names) => {
     expect(noteOn(start, names, 0)).toBeUndefined()
+  })
+
+  it('excuses a miss into a number next to the best aim (2: D1 → 20, 18; 3: S1 → 20; 32: D16 → 8, 7)', () => {
+    for (const n of ['S20', 'S18']) expect(noteOn(2, [n], 0)).toBeUndefined()
+    expect(noteOn(3, ['S20'], 0)).toBeUndefined()
+    for (const n of ['S8', 'S7']) expect(noteOn(32, [n], 0)).toBeUndefined()
   })
 
   it('never notes the dart that checks out, or darts with more than 170 left', () => {
@@ -80,14 +138,34 @@ describe('strategy notes: the opponent', () => {
   })
 })
 
+describe('strategy notes: tips', () => {
+  // 50 left with 3 darts: S18 (setting up 32) turns out to already be the model's own best aim
+  // there (cost 0, no note at all), so there's no note to tag. 24 left does give a real note: the
+  // better aim is D12, 24's own direct out, over S14 (setting up 10) by a clear margin.
+  it('is a note with tip: true when nobody is on an out (24 left: S14 instead of the direct D12)', () => {
+    const n = noteOn(24, ['S14', 'S1', 'S1'], 0)
+    expect(n).toMatchObject({ left: 24, darts: 3, thrown: 'S14', better: 'D12', betterAimId: 'D12' })
+    expect(n!.cost).toBeGreaterThan(0.05)
+    expect(n!.tip).toBe(true)
+  })
+
+  it('is tip: false for the same dart when the opponent is on 32, an out', () => {
+    const withOpponent = strategyNotes(throwsOf([leg([visit(1, 32, []), visit(0, 24, ['S14', 'S1', 'S1'])])], 0, 501)).find(
+      note => note.dart === 0,
+    )
+    expect(withOpponent).toBeDefined()
+    expect(withOpponent!.cost).toBeGreaterThan(NOTE_THRESHOLD) // the note still fires; opponentOnOut alone drops the tip
+    expect(withOpponent!.tip).toBe(false)
+  })
+})
+
 describe('strategy notes: the book', () => {
-  it("never notes the first dart of a route in our checkout table (but 45's alternative S19)", () => {
+  it('never notes the first dart of a route in our checkout table', () => {
     const number = (label: string) => (label === 'Bull' || label === '25' ? 25 : Number(label.slice(1)))
     const costly: string[] = []
     for (const [score, entry] of Object.entries(CHECKOUTS)) {
       const firsts = [...entry.routes.map(r => [r[0], 3] as const), ...(entry.twoDarts ? [[entry.twoDarts[0], 2] as const] : [])]
       for (const [label, darts] of firsts) {
-        if (score === '45' && label === 'S19') continue
         const { cost } = numberCost(evaluator(Number(score), 1), Number(score), darts, number(label))
         if (cost >= NOTE_THRESHOLD) costly.push(`${score}/${darts} ${label}: ${(cost * 100).toFixed(1)}`)
       }

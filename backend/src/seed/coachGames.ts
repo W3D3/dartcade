@@ -52,24 +52,23 @@ export const COACH_GAMES: CoachSample[] = [
     ],
     expect: [],
   },
-  // Admin goes in 20 with 23 left and two darts (leaves 3), then busts in 20 on 3. The T1 on 3 is a
-  // near miss on the right number
+  // Admin goes in 1 with 47 left and two darts (leaves 46; S15 would leave 32), then busts in 19
+  // on 20 with D10 to throw at
   {
     players: ['admin', 'phil'],
     config,
     script: [
-      [['T20', 'S20', 'S20'], ['S7', 'T19', 'T20'], ['T18', 'S20', 'T1'], ['S20', 'T17', 'S3'], ['S20'], ['S1', 'D1']],
+      [['T20', 'S20', 'S20'], ['S7', 'T19', 'T20'], ['T10', 'S1', 'S6'], ['S20', 'S19'], ['D20']],
       [
         ['S20', 'S1', 'S5'],
         ['S20', 'S5', 'S1'],
         ['S20', 'S1', 'S5'],
         ['S20', 'S5', 'S1'],
-        ['S20', 'S1', 'S5'],
       ],
     ],
     expect: [
       { seat: 0, leg: 0, visit: 2, dart: 1 },
-      { seat: 0, leg: 0, visit: 4, dart: 0 },
+      { seat: 0, leg: 0, visit: 3, dart: 1 },
     ],
   },
 ]

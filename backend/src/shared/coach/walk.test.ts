@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { fin } from './model.js'
-import { throwsOf } from './walk.js'
-import { leg, visit } from './testLegs.js'
+import { throwsOf, walkVisit } from './walk.js'
+import { dart, leg, visit } from './testLegs.js'
 
 describe('throwsOf', () => {
   it('gives the score before each dart and the darts left', () => {
@@ -53,5 +53,33 @@ describe('throwsOf', () => {
 
   it("is empty for a seat that didn't throw", () => {
     expect(throwsOf([leg([visit(1, 501, ['T20'])])], 0, 501)).toEqual([])
+  })
+
+  describe('opponentOnOut', () => {
+    const withOpponent = (oppLeft: number) => throwsOf([leg([visit(1, oppLeft, []), visit(0, 97, ['S20'])])], 0, 501)[0].opponentOnOut
+
+    it('is true when the opponent is left on a number a visit can check out', () => {
+      expect(withOpponent(32)).toBe(true)
+    })
+
+    it("is false when the opponent's left can't be checked out in three darts (301, 169)", () => {
+      expect(withOpponent(301)).toBe(false)
+      expect(withOpponent(169)).toBe(false)
+    })
+  })
+})
+
+describe('walkVisit', () => {
+  it('walks to the busting dart and leaves out the darts after it', () => {
+    expect(
+      walkVisit(
+        32,
+        ['S16', 'T20', 'D8'].map(n => dart(n)),
+      ),
+    ).toEqual([
+      { left: 32, checkout: false, bust: false },
+      { left: 16, checkout: false, bust: true },
+    ])
+    expect(walkVisit(40, [dart('D20')])).toEqual([{ left: 40, checkout: true, bust: false }])
   })
 })

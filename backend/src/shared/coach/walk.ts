@@ -25,11 +25,30 @@ export type Throw = {
   bust: boolean
   /** The chance of a next visit: every opponent fails to check out first */
   w: number
+  /** Any opponent's score left (the same source as w) can be checked out in three darts */
+  opponentOnOut: boolean
 }
 
 // The bull comes as number 50 with multiplier 1, a miss as multiplier 0
 export const dartPoints = (d: CoachDart): number => d.segment.number * d.segment.multiplier
 export const isDoubleDart = (d: CoachDart): boolean => d.segment.multiplier === 2 || d.segment.number === 50
+
+/** A visit's darts from `start`, up to and including the one that busts: the score before each,
+ *  and whether it checked out or busted. The game keeps darts thrown after a bust; they score
+ *  nothing, so the walk stops there. */
+export function walkVisit(start: number, darts: readonly CoachDart[]): { left: number; checkout: boolean; bust: boolean }[] {
+  const out: { left: number; checkout: boolean; bust: boolean }[] = []
+  let left = start
+  for (const d of darts) {
+    const after = left - dartPoints(d)
+    const checkout = after === 0 && isDoubleDart(d)
+    const bust = !checkout && after < 2
+    out.push({ left, checkout, bust })
+    if (bust) break
+    left = after
+  }
+  return out
+}
 
 /** Every dart `seat` threw, leg by leg. `startScore` is the game's start, for opponents yet to throw. */
 export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: number): Throw[] {
@@ -46,16 +65,22 @@ export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: nu
       const start = visitStart(v)
       // An opponent who hasn't thrown in this leg yet is still on the start score
       const w = opponents.reduce((p, o) => p * (1 - nextVisit(scores.get(o) ?? startScore)), 1)
-      let left = start
-      // The game keeps darts thrown after a bust; they score nothing, so the walk stops at the bust
-      for (const [i, d] of v.darts.entries()) {
-        const after = left - dartPoints(d)
-        const checkout = after === 0 && isDoubleDart(d)
-        const bust = !checkout && after < 2
-        out.push({ leg: l.leg, visit: vi, dart: i, start, left, darts: 3 - i, d, visitDarts: v.darts, checkout, bust, w })
-        if (bust) break
-        left = after
-      }
+      const opponentOnOut = opponents.some(o => nextVisit(scores.get(o) ?? startScore) > 0)
+      for (const [i, { left, checkout, bust }] of walkVisit(start, v.darts).entries())
+        out.push({
+          leg: l.leg,
+          visit: vi,
+          dart: i,
+          start,
+          left,
+          darts: 3 - i,
+          d: v.darts[i],
+          visitDarts: v.darts,
+          checkout,
+          bust,
+          w,
+          opponentOnOut,
+        })
     })
   }
   return out
