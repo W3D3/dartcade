@@ -49,3 +49,11 @@ describe('historyHref', () => {
   })
   it('works without storage', () => expect(historyHref(null)).toBe('#/history'))
 })
+
+describe('period and panel params', () => {
+  it('reads the period and the panel tab with their defaults', () => {
+    expect(readParam('period=weekly', 'period', ['weekly'] as const, 'daily')).toBe('weekly')
+    expect(readParam('', 'period', ['weekly'] as const, 'daily')).toBe('daily')
+    expect(readParam('panel=history', 'panel', ['history'] as const, 'friends')).toBe('history')
+  })
+})

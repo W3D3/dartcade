@@ -24,7 +24,8 @@ export function paramUrl(path: string, qs: string | null | undefined, key: strin
  * pushing one, so Back leaves the page instead of stepping through every filter change.
  */
 export function setParam(path: string, qs: string | null | undefined, key: string, value: string | null): void {
-  void replace(paramUrl(path, qs, key, value))
+  const url = paramUrl(path, qs, key, value)
+  if (url !== paramUrl(path, qs, '', null)) void replace(url) // an unchanged URL needs no history write
 }
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>
