@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'home' | 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
+  icon: 'home' | 'play' | 'ranked' | 'live' | 'coach' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -23,11 +23,12 @@ function liveItem(liveSessionId: string | null, label: string): NavTab {
 }
 
 /**
- * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Live,
- * Tournaments (soon) or Progress while progression is on (Mobile-Progress), History; pending
- * invites as a badge on Play.
+ * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Coach
+ * while the coach is on, Tournaments (soon) or Progress while progression is on (Mobile-Progress),
+ * History; pending invites as a badge on Play. No Live tab: a running game is one tap away from
+ * Play's Continue and the lobby strip.
  */
-export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress: number | null = null, home = false): NavTab[] {
+export function navTabs(invites = 0, ranked = false, progress: number | null = null, home = false, coach = false): NavTab[] {
   return [
     ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     {
@@ -37,7 +38,7 @@ export function navTabs(liveSessionId: string | null, invites = 0, ranked = fals
       ...(invites > 0 ? { badge: invites, badgeLabel: `${invites} pending ${invites === 1 ? 'invite' : 'invites'}` } : {}),
     },
     ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
-    liveItem(liveSessionId, 'Live'),
+    ...(coach ? [{ href: '/coach', label: 'Coach', icon: 'coach' as const }] : []),
     progress !== null
       ? { href: '/progress', label: 'Progress', icon: 'progress', ...dailyBadge(progress) }
       : { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
@@ -47,15 +48,15 @@ export function navTabs(liveSessionId: string | null, invites = 0, ranked = fals
 
 /** The tablet rail: the phone's tabs, then Settings and Admin (admins and moderators), which phones reach from the account menu. */
 export function railTabs(
-  liveSessionId: string | null,
   invites = 0,
   ranked = false,
   progress: number | null = null,
   admin = false,
   home = false,
+  coach = false,
 ): NavTab[] {
   return [
-    ...navTabs(liveSessionId, invites, ranked, progress, home),
+    ...navTabs(invites, ranked, progress, home, coach),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
