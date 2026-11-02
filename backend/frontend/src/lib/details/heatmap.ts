@@ -113,3 +113,5 @@ export function boardLabel(name: string, darts: HeatDart[]): string {
 }
 
 export const toBoardPx = (c: { x: number; y: number }) => ({ x: MM_PER_UNIT * c.x, y: -MM_PER_UNIT * c.y })
+/** toBoardPx's inverse: a viewBox point back to board units (y up) */
+export const fromBoardPx = (p: { x: number; y: number }) => ({ x: p.x / MM_PER_UNIT, y: -p.y / MM_PER_UNIT })

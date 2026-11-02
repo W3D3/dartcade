@@ -15,8 +15,13 @@
   import HighlightPicker from './HighlightPicker.svelte'
   import { x01Sides } from '$lib/details/x01'
   import { highlightDefault } from '$lib/details/page'
+  import { flag } from '$lib/flags'
+  import { coachable } from '$lib/coach/view'
 
   let { detail, party = false }: { detail: GameDetail; party?: boolean } = $props()
+  const coachEnabled = flag('coach.enabled')
+  // The coach reviews your own legs only, and no invalidated game
+  const canCoach = $derived($coachEnabled && coachable(detail.game) && detail.game.mySeat !== null && !detail.game.invalidated)
 
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
@@ -83,6 +88,11 @@
                 >
               {/each}
             </div>
+          {/if}
+          {#if canCoach && legSel !== null}
+            <a class="text-[14px] font-semibold underline-offset-2 hover:underline" href="#/coach/leg/{detail.game.id}/{legSel}"
+              >Coach review</a
+            >
           {/if}
         </div>
       </div>

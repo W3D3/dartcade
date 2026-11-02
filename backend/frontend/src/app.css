@@ -21,6 +21,8 @@
   --color-accent-fg: #0f100e;
   --color-live: #ff5a4f;
   --color-live-text: #ff8a80;
+  /* The coach's Good grade */
+  --color-good: #7fd18f;
 
   /* Design system (Dartcade Platform Design tokens.json) */
   --color-bg-deep: #0a0b09;
