@@ -40,9 +40,11 @@ export type Evaluation = {
   outcomes(aim: number): OutcomeValue[]
 }
 
+export type Evaluator = (left: number, darts: number) => Evaluation
+
 /** Values within one visit that started on `start`, with w the chance of a next visit. Spots of
  *  the same visit share the evaluator, so they share its memo. */
-export function evaluator(start: number, w: number): (left: number, darts: number) => Evaluation {
+export function evaluator(start: number, w: number): Evaluator {
   const memo = new Map<number, number>()
 
   const outcome = (o: Outcome, left: number, darts: number): OutcomeValue => {
