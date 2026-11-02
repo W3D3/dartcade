@@ -1,0 +1,47 @@
+import { describe, it, expect } from 'vitest'
+import { coachGame } from '../shared/coach/index.js'
+import { leg, visit } from '../shared/coach/testLegs.js'
+import type { CoachVisit } from '../shared/coach/walk.js'
+import { COACH_GAMES, type DartScript } from './coachGames.js'
+
+/** The leg as the game stores it: each seat's scripted visits in throw order, up to the checkout. */
+function legOf(script: DartScript, start: number): CoachVisit[] {
+  const left = script.map(() => start)
+  const visits: CoachVisit[] = []
+  for (let i = 0; ; i++) {
+    for (const [seat, seatVisits] of script.entries()) {
+      const names = seatVisits.at(i)
+      if (!names) return visits
+      const v = visit(seat, left[seat], names)
+      // Every scripted dart is thrown: a visit only ends early by its last dart
+      expect(v.darts, `seat ${seat} visit ${i}`).toHaveLength(names.length)
+      visits.push(v)
+      left[seat] = v.remaining
+      if (v.remaining === 0) return visits
+    }
+  }
+}
+
+describe('sample games with known coach mistakes', () => {
+  it.each(COACH_GAMES.map((g, i) => [i, g] as const))('game %i', (_i, { config, script, expect: expected }) => {
+    const start = (config as { startScore: number }).startScore
+    const visits = legOf(script, start)
+
+    // It ends with the last scripted visit, a checkout
+    expect(visits).toHaveLength(script.flat().length)
+    expect(visits.at(-1)).toMatchObject({ remaining: 0, bust: false })
+
+    const noted = script.flatMap((_, seat) =>
+      coachGame([leg(visits)], seat, start).notes.map(n => ({
+        seat,
+        leg: n.leg,
+        visit: visits.slice(0, n.visit).filter(v => v.seat === seat).length,
+        dart: n.dart,
+        cost: n.cost,
+      })),
+    )
+    expect(noted.map(({ cost: _, ...n }) => n)).toEqual(expected)
+    // Clear of the 5-point threshold, so a regenerated landing table doesn't drop them
+    for (const n of noted) expect(n.cost, JSON.stringify(n)).toBeGreaterThanOrEqual(0.07)
+  })
+})

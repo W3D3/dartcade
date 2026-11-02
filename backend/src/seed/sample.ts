@@ -14,15 +14,19 @@ import { sigmaForLevel } from '../bots/levels.js'
 import { FriendsService } from '../friends/service.js'
 import { LobbyService } from '../lobby/service.js'
 import { LobbyHub } from '../lobby/hub.js'
+import { segmentAt } from '../shared/board.js'
+import { COACH_GAMES, type DartScript, type Who } from './coachGames.js'
 
-/** Sample data for PR previews: the accounts seedDev() creates (auth/seed.ts), playing and befriending each other. */
-type Who = 'admin' | 'luke' | 'phil' | 'michael' | 'gerwyn'
+// Sample data for PR previews: the accounts seedDev() creates (auth/seed.ts), playing and befriending each other
 
 /** How well each account throws: like a bot of that level (1-10, bots/levels.ts). */
 const LEVEL: Record<Who, number> = { admin: 4, luke: 9, phil: 8, michael: 7, gerwyn: 6 }
 
-/** A finished game: its mode, the options it changes from the mode's defaults, players in throw order. */
-type SampleGame = { game: GameId; config?: object; players: Who[] }
+/**
+ * A finished game: its mode, the options it changes from the mode's defaults, players in throw order.
+ * A scripted game throws its seats' darts exactly where the script says.
+ */
+type SampleGame = { game: GameId; config?: object; players: Who[]; script?: DartScript }
 
 // New ones go at the end: a preview that's already seeded only plays the games after the ones it has
 const GAMES: SampleGame[] = [
@@ -46,9 +50,13 @@ const GAMES: SampleGame[] = [
   { game: 'minigolf', players: ['michael', 'admin'] },
   { game: 'cricket', players: ['luke', 'gerwyn'] },
   { game: 'cricket', config: { mode: 'cutthroat' }, players: ['admin', 'phil', 'michael'] },
+  ...COACH_GAMES.map(({ players, config, script }): SampleGame => ({ game: 'x01', config, players, script })),
 ]
 
 const TAKEOUT: UserAction = { type: 'takeout' }
+
+/** A scripted dart's spot: the middle of its bed, a miss just off the board. */
+const scriptedPoint = (label: string): Point => (label === 'Miss' ? { x: 0, y: 1.05 } : pointFor(label))
 
 /** A putt towards the cup, hard enough to roll about that far (it leaves doglegs to maxStrokes). */
 function puttAt(v: MinigolfView): Point {
@@ -126,6 +134,15 @@ async function devUsers(db: Kysely<Database>): Promise<Record<Who, User>> {
   return { admin: user('admin'), luke: user('luke'), phil: user('phil'), michael: user('michael'), gerwyn: user('gerwyn') }
 }
 
+/** A scripted seat's next dart, or its takeout once the visit's darts are thrown. */
+function scripted(script: string[][], visits: number[], up: number, thrown: number): Point | UserAction {
+  const darts = script.at(visits[up])
+  if (!darts) throw new Error(`seat ${up} has no visit ${visits[up]} scripted`)
+  if (thrown < darts.length) return scriptedPoint(darts[thrown])
+  visits[up]++
+  return TAKEOUT
+}
+
 // Each seat throws where aim() says, with that seat's level of accuracy, through the same
 // user actions a player's manual entry sends
 async function play(engine: SessionEngine, users: Record<Who, User>, game: SampleGame): Promise<void> {
@@ -143,12 +160,18 @@ async function play(engine: SessionEngine, users: Record<Who, User>, game: Sampl
   })
   const session = engine.getSession(sessionId)
   if (!session) throw new Error(`session ${sessionId} missing`)
+  // Each scripted seat's visits so far
+  const visits = seats.map(() => 0)
   while (session.status === 'active') {
     const up = session.module.getCurrentPlayer(session.currentState)
     const thrown = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
-    const next = aim(session, up, thrown)
+    const next = game.script ? scripted(game.script[up], visits, up, thrown) : aim(session, up, thrown)
     const action: UserAction =
-      'type' in next ? next : { type: 'add_dart', ...throwAt(next, sigmaForLevel(LEVEL[game.players[up]]), session.rng) }
+      'type' in next
+        ? next
+        : game.script
+          ? { type: 'add_dart', segment: segmentAt(next.x, next.y), coords: next }
+          : { type: 'add_dart', ...throwAt(next, sigmaForLevel(LEVEL[game.players[up]]), session.rng) }
     // A dart or takeout comes from the seat that's up, a game action (next hole) from the host
     const by = action.type === 'add_dart' || action.type === 'takeout' ? seats[up].controllerUserId : session.ownerUserId
     const result = await engine.onUserAction(sessionId, by, action)

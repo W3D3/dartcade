@@ -7,6 +7,7 @@ import { gameList } from '../games/index.js'
 import { storedDetail } from '../history/detail.js'
 import type { Database } from '../db/schema.js'
 import { seedSample } from './sample.js'
+import { COACH_GAMES } from './coachGames.js'
 
 const NAMES = ['Admin', 'Luke', 'Phil', 'Michael', 'Gerwyn']
 
@@ -66,6 +67,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
         throw new Error(`${game_id} ${id}: ${msg} ${JSON.stringify(details)}`)
       }
       expect(game && (await storedDetail(db, game, warn)), game_id).toBeTruthy()
+    }
+    // The scripted games, the last ones played, throw exactly their script
+    const scripted = await db.selectFrom('game_sessions').select('id').orderBy('created_at').execute()
+    for (const [i, { id }] of scripted.slice(-COACH_GAMES.length).entries()) {
+      const { script } = COACH_GAMES[i]
+      const game = await getFinishedGame(db, id)
+      const built = game && (await storedDetail(db, game, () => undefined))
+      const detail = built?.detail
+      if (detail?.mode !== 'x01') throw new Error(`game ${id} is no X01 game`)
+      const rounds = Math.max(...script.map(s => s.length))
+      const thrown = Array.from({ length: rounds }, (_, r) => script.flatMap(s => (s[r] ? [s[r]] : []))).flat()
+      expect(detail.legs[0].visits.map(v => v.darts.map(d => d.segment.name))).toEqual(thrown)
     }
 
     await seedSample(db)
