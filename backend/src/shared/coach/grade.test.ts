@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyVisit, tagOf, type VisitFacts } from './grade.js'
+import { classifyVisit, explainedNote, tagOf, type VisitFacts } from './grade.js'
 import { strategyNotes } from './notes.js'
 import { leg, visit } from './testLegs.js'
 import { throwsOf } from './walk.js'
@@ -93,7 +93,33 @@ describe('scoring visits', () => {
   })
 })
 
+describe('explainedNote', () => {
+  const [n] = facts(97, ['S20', 'S20', 'S20']).notes
+  it('takes the costliest note that is no tip, a tip only without one', () => {
+    const tip = { ...n, tip: true, cost: 0.9 }
+    const small = { ...n, tip: false, cost: 0.1 }
+    const big = { ...n, tip: false, cost: 0.2 }
+    expect(explainedNote([tip, small, big])).toBe(big)
+    expect(explainedNote([tip])).toBe(tip)
+    expect(explainedNote([])).toBeNull()
+  })
+
+  it('is the note the visit text quotes', () => {
+    const f = facts(97, ['S20', 'S20', 'S20'])
+    const costlier = { ...f.notes[0], cost: f.notes[0].cost + 0.1, better: 'S7' }
+    expect(classifyVisit({ ...f, notes: [...f.notes, costlier] }).text).toMatch(/^On 57, S20: better S7/)
+  })
+})
+
 describe('setup visits', () => {
+  it("marks a tip's text as a tip, and only that", () => {
+    const f = facts(97, ['S20', 'S20', 'S20'])
+    const r = classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })
+    expect(r).toMatchObject({ tag: 'setup', tip: true })
+    expect(r.text).toMatch(/^Tip: /)
+    expect(classifyVisit(f).tip).toBeUndefined()
+  })
+
   it('Mistake: a strategy note, told from the note', () => {
     expect(grade(97, ['S20', 'S20', 'S20'])).toEqual({
       tag: 'setup',
@@ -149,6 +175,15 @@ describe('doubling visits', () => {
     const r = grade(24, ['S14', 'Miss', 'Miss'], { opponentLeft: 32 })
     expect(r).toMatchObject({ tag: 'doubling', grade: 'mistake' })
     expect(r.text).toMatch(/^On 24, S14: better D12/)
+    expect(r.tip).toBeUndefined()
+  })
+
+  it('a tip speaks for the visit, its grade left to the doubling rules', () => {
+    // The same S14 on 24 with nobody on an out, then two misses at D5: Weak as any 3 missed darts
+    const r = grade(24, ['S14', 'Miss', 'Miss'])
+    expect(r).toMatchObject({ tag: 'doubling', grade: 'weak', tip: true })
+    expect(r.text).toMatch(/^Tip: On 24, S14: better D12/)
+    expect(grade(24, ['S14', 'Miss', 'Miss'], { lost: true }).text).toMatch(/^Missed the match dart\. Tip: On 24, S14/)
   })
 
   it('a tip does not make a Mistake', () => {
@@ -185,7 +220,8 @@ describe('doubling visits', () => {
 
   it('not chased down from below 6, or by a dart outside the single half', () => {
     expect(grade(4, ['S2', 'Miss', 'Miss']).text).toBe('3 darts at D2 and D1 missed.')
-    expect(grade(16, ['S4', 'S4', 'S4']).text).toBe('3 darts at D8, D6, and D4 missed.')
+    // S4 on 16 is also a tip (D8 straight away), which then speaks for the visit
+    expect(grade(16, ['S4', 'S4', 'S4'])).toMatchObject({ grade: 'weak', tip: true, text: 'Tip: On 16, S4: better D8.' })
   })
 
   it('OK: one dart at a double missed', () => {

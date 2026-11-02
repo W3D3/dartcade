@@ -1,5 +1,7 @@
 // Scripted X01 games for the sample data, with mistakes the coach is known to note (and good darts
-// it must let pass), so a preview shows the coach at work. coachGames.test.ts checks every note.
+// it must let pass), so a preview shows the coach at work. coachGames.test.ts checks every note
+// and every visit's grade.
+import type { VisitGrade } from '../shared/coach/grade.js'
 
 /** The dev accounts seedDev() creates (auth/seed.ts). */
 export type Who = 'admin' | 'luke' | 'phil' | 'michael' | 'gerwyn'
@@ -10,19 +12,29 @@ export type DartScript = string[][][]
 /** A dart the coach notes; `visit` counts that seat's visits. */
 export type ExpectedNote = { seat: number; leg: 0; visit: number; dart: number }
 
-type CoachSample = { players: Who[]; config: { startScore: number; firstTo: number }; script: DartScript; expect: ExpectedNote[] }
+/** Per seat, each scripted visit's grade in the leg review */
+export type ExpectedGrades = VisitGrade[][]
+
+type CoachSample = {
+  players: Who[]
+  config: { startScore: number; firstTo: number }
+  script: DartScript
+  expect: ExpectedNote[]
+  grades: ExpectedGrades
+}
 
 const config = { startScore: 301, firstTo: 1 }
 
 export const COACH_GAMES: CoachSample[] = [
-  // Admin leaves 37 from 57 with the last dart (no one-dart finish), opponent far away; then a clean D16
+  // Admin, setting up from 121, leaves 37 from 57 with the last dart (no one-dart finish), opponent
+  // far away: a Mistake; then a clean D16
   {
     players: ['admin', 'gerwyn'],
     config,
     script: [
       [
-        ['T20', 'T20', 'S4'],
-        ['T20', 'T20', 'S20'],
+        ['T20', 'T20', 'T20'],
+        ['T16', 'S16', 'S20'],
         ['S5', 'D16'],
       ],
       [
@@ -31,6 +43,10 @@ export const COACH_GAMES: CoachSample[] = [
       ],
     ],
     expect: [{ seat: 0, leg: 0, visit: 1, dart: 2 }],
+    grades: [
+      ['great', 'mistake', 'great'],
+      ['weak', 'weak'],
+    ],
   },
   // The same 57 by admin, with Luke on 20 and Michael on 10: no note, they'd likely finish first.
   // Luke's T20 on 119 and Michael's 25 on 65 are fine too
@@ -51,6 +67,11 @@ export const COACH_GAMES: CoachSample[] = [
       ],
     ],
     expect: [],
+    grades: [
+      ['ok', 'ok', 'ok', 'great'],
+      ['great', 'ok', 'weak'],
+      ['weak', 'ok', 'great'],
+    ],
   },
   // Admin goes in 1 with 47 left and two darts (leaves 46; S15 would leave 32), then busts in 19
   // on 20 with D10 to throw at
@@ -69,6 +90,10 @@ export const COACH_GAMES: CoachSample[] = [
     expect: [
       { seat: 0, leg: 0, visit: 2, dart: 1 },
       { seat: 0, leg: 0, visit: 3, dart: 1 },
+    ],
+    grades: [
+      ['good', 'great', 'mistake', 'mistake', 'great'],
+      ['weak', 'weak', 'weak', 'weak'],
     ],
   },
 ]

@@ -5,7 +5,7 @@ import { visitStart } from './visitStart.js'
 
 export type CoachDart = { segment: { name: string; number: number; multiplier: number }; coords: { x: number; y: number } | null }
 export type CoachVisit = { seat: number; darts: readonly CoachDart[]; scored: number; remaining: number; bust: boolean }
-export type CoachLeg = { leg: number; visits: readonly CoachVisit[] }
+export type CoachLeg = { leg: number; visits: readonly CoachVisit[]; winner?: number | null }
 
 export type Throw = {
   leg: number

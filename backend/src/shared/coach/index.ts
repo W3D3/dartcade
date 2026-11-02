@@ -8,6 +8,9 @@ export type { CoachNote } from './notes.js'
 export type { CoachStats, DoubleStat, Tendency } from './stats.js'
 export type { CoachLeg } from './walk.js'
 export { NOTE_THRESHOLD } from './notes.js'
+export { reviewLeg } from './review.js'
+export type { LegCounts, LegReview, ReviewContext, ReviewDart, ReviewVisit, SkillGrade } from './review.js'
+export type { VisitGrade, VisitTag } from './grade.js'
 export { LANDING_LEVEL } from './landing.gen.js'
 
 export type CoachReport = { notes: CoachNote[]; stats: CoachStats; tendencies: Tendency[] }

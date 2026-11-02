@@ -32,7 +32,15 @@ export type VisitFacts = {
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
 }
-export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string }
+/** `tip`: the text is a tip's (a note that leaves the grade alone); unset otherwise */
+export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string; tip?: true }
+
+/** The note a visit's text (and the leg review's rail) explains: the costliest that isn't a tip,
+ *  else the costliest tip; null without notes. */
+export function explainedNote(notes: readonly CoachNote[]): CoachNote | null {
+  const costliest = (ns: readonly CoachNote[]) => ns.reduce<CoachNote | null>((a, n) => (a === null || n.cost > a.cost ? n : a), null)
+  return costliest(notes.filter(n => !n.tip)) ?? costliest(notes)
+}
 
 const oneDartFinish = (n: number) => n === 50 || (n % 2 === 0 && n >= 2 && n <= 40)
 const doubleName = (left: number) => (left === 50 ? 'the bull' : `D${left / 2}`)
@@ -51,7 +59,8 @@ const bustText = (f: VisitFacts) => `Busted on ${f.throws.at(-1)?.left ?? f.star
 function scoring(f: VisitFacts): VisitGrading {
   const g = (grade: VisitGrade, text: string): VisitGrading => ({ tag: 'scoring', grade, text })
   // From 171–180 a later dart can be thrown on a finish, and draw a note
-  const mistake = f.notes.find(n => !n.tip)
+  const note = explainedNote(f.notes)
+  const mistake = note?.tip ? null : note
   if (mistake) return g('mistake', noteText(mistake))
   const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
   if (f.scored < VERY_LOW) return g('mistake', low)
@@ -65,11 +74,12 @@ function scoring(f: VisitFacts): VisitGrading {
 
 function setup(f: VisitFacts): VisitGrading {
   const g = (grade: VisitGrade, text: string): VisitGrading => ({ tag: 'setup', grade, text })
-  const mistake = f.notes.find(n => !n.tip)
+  const note = explainedNote(f.notes)
+  const mistake = note?.tip ? null : note
   if (mistake) return g('mistake', noteText(mistake))
   if (f.bust) return g('mistake', bustText(f))
   const grade = oneDartFinish(f.then) ? 'good' : 'ok'
-  if (f.notes.length > 0) return g(grade, noteText(f.notes[0]))
+  if (note) return { ...g(grade, noteText(note)), tip: true }
   const route = checkoutHint(f.then, 'double', 3)
   return g(grade, route ? `${f.then} left is a ${route.length}-dart finish (${route.join(' · ')}).` : `${f.then} left: no 3-dart finish.`)
 }
@@ -88,15 +98,16 @@ function doubling(f: VisitFacts): VisitGrading {
   const atDouble = f.throws.filter(t => oneDartFinish(t.left))
   const out = f.throws.find(t => t.checkout)
   const matchDart = f.lastVisitOfLostLeg && !out && atDouble.length > 0
-  const g = (grade: VisitGrade, text: string): VisitGrading => ({
-    tag: 'doubling',
-    grade,
-    text: matchDart ? `Missed the match dart. ${text}` : text,
-  })
+  const note = explainedNote(f.notes)
+  // A tip (no other note) speaks for the visit, the grade left alone; a checkout keeps its own line
+  const tip = note?.tip && !out ? note : null
+  const g = (grade: VisitGrade, text: string): VisitGrading => {
+    const said = tip ? noteText(tip) : text
+    return { tag: 'doubling', grade, text: matchDart ? `Missed the match dart. ${said}` : said, ...(tip && { tip: true as const }) }
+  }
   const k = atDouble.length
   const missed = `${k} dart${k === 1 ? '' : 's'} at ${list.format([...new Set(atDouble.map(t => doubleName(t.left)))])} missed.`
-  const mistake = f.notes.find(n => !n.tip)
-  if (mistake) return g('mistake', noteText(mistake))
+  if (note && !note.tip) return g('mistake', noteText(note))
   if (f.bust) return g('mistake', bustText(f))
   if (matchDart && !oneDartFinish(f.then)) return g('mistake', missed)
   if (chasedDown(f, out !== undefined)) return g('weak', `Chased down to ${f.then}.`)
