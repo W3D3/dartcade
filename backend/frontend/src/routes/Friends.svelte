@@ -11,6 +11,8 @@
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
   import AddFriendCard from '$lib/components/friends/AddFriendCard.svelte'
   import FriendsSection from '$lib/components/friends/FriendsSection.svelte'
+  import { querystring } from 'svelte-spa-router'
+  import { readParam, setParam } from '$lib/urlState'
   import FriendsTabs from '$lib/components/friends/FriendsTabs.svelte'
   import InvisibleBanner from '$lib/components/friends/InvisibleBanner.svelte'
   import RequestsPanel from '$lib/components/friends/RequestsPanel.svelte'
@@ -30,8 +32,9 @@
   const counts = $derived(tabCounts(list))
   const myLobbyId = $derived($me?.lobby?.id ?? null)
   const noRequests = $derived(list.incoming.length === 0 && list.outgoing.length === 0)
-  let tab = $state<FriendsTab>('all')
-  const pickTab = (v: string) => (tab = FRIENDS_TABS.find(t => t === v) ?? tab)
+  // The tab is in the URL (#/friends?tab=online), so a reload or a shared link keeps it; All is no param.
+  const tab = $derived<FriendsTab>(readParam($querystring, 'tab', FRIENDS_TABS, 'all'))
+  const pickTab = (v: string) => setParam('/friends', $querystring, 'tab', v === 'all' ? null : v)
   const actions = createFriendActions(() => myLobbyId)
   // Ticks so "10 min ago" ages while the page is open
   let now = $state(new Date())
