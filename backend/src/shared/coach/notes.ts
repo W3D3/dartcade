@@ -2,7 +2,7 @@
 // the benefit of the doubt (the best aim on the number it landed in or a neighbour, or the bull or
 // 25 for a single near the middle).
 import { checkoutHint } from '../checkout.js'
-import { AIMS } from './aims.js'
+import { AIMS, directOutId } from './aims.js'
 import { candidates, landedNumber, nearBull } from './aim.js'
 import { evaluator, fin, type Evaluator } from './model.js'
 import { NOTE_THRESHOLD } from './grade.js'
@@ -39,13 +39,6 @@ export function numberCost(evaluate: Evaluator, left: number, darts: number, n: 
   const best = v.indexOf(Math.max(...v))
   const candidate = candidates(n, bull).reduce((a, b) => (v[b] > v[a] ? b : a))
   return { cost: v[best] - v[candidate], best, candidate, evaluation }
-}
-
-/** The direct one-dart out for `left`: `D${left/2}` for an even score up to 40, `Bull` for 50.
- *  Null when `left` has no one-dart out (odd, or outside that range). */
-function directOutId(left: number): string | null {
-  if (left === 50) return 'Bull'
-  return left % 2 === 0 && left >= 2 && left <= 40 ? `D${left / 2}` : null
 }
 
 /** A note is a Tip, not a mistake, when the better aim was simply the direct out for `left` (not

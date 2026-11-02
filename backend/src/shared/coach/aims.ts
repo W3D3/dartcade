@@ -35,3 +35,13 @@ export const AIMS: readonly Aim[] = [
   { id: 'Bull', label: 'Bull', numbers: [25], x: 0, y: 0 },
   { id: '25', label: '25', numbers: [25], ...at((R.bull50 + R.bull25) / 2, Math.PI / 2) },
 ]
+
+/** The direct one-dart out for `left`: `D${left/2}` for an even score up to 40, `Bull` for 50.
+ *  Null when `left` has no one-dart out (odd, or outside that range). */
+export function directOutId(left: number): string | null {
+  if (left === 50) return 'Bull'
+  return left % 2 === 0 && left >= 2 && left <= 40 ? `D${left / 2}` : null
+}
+
+/** The score can be checked out with one dart: an even score up to 40, or 50 */
+export const oneDartFinish = (left: number): boolean => directOutId(left) !== null
