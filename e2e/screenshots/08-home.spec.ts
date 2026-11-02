@@ -43,3 +43,22 @@ test('home', async ({ browser }) => {
     await ctx.close()
   }
 })
+
+// Home scrolls inside <main>, so at real device heights the featured card must keep its full height
+// instead of shrinking to its title (#450). The tall shots above can't show that.
+test('home featured card is whole at device heights', async ({ browser }) => {
+  for (const [view, file] of [
+    [VIEW.phone, 'home/featured-phone.png'],
+    [VIEW.tabletPortrait, 'home/featured-tablet.png'],
+  ] as const) {
+    const { ctx, page } = await open(browser, 'luke', view)
+    await page.goto('/#/')
+    const card = page.getByRole('region', { name: 'Featured' })
+    await expect(card).toBeVisible()
+    await card.scrollIntoViewIfNeeded()
+    await shot(page, file)
+    const clipped = await card.evaluate(el => el.scrollHeight - el.clientHeight)
+    expect(clipped, 'featured card content is clipped').toBeLessThanOrEqual(0)
+    await ctx.close()
+  }
+})
