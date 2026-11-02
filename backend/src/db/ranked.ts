@@ -80,12 +80,14 @@ export async function x01Average(db: Kysely<Database>, userId: string, n = 20): 
   return row?.avg == null ? null : Number(row.avg)
 }
 
-/** The 3-dart average over the X01 games finished in the last `days` days; null without any. */
-export async function x01AverageSince(db: Kysely<Database>, userId: string, days: number): Promise<number | null> {
+/** The 3-dart average over the X01 games finished in the `days` days up to `until` (default now); null without any. */
+export async function x01AverageSince(db: Kysely<Database>, userId: string, days: number, until?: Date): Promise<number | null> {
+  const end = until ? sql<Date>`${until}::timestamptz` : sql<Date>`now()`
   const row = await db
     .selectFrom(
       x01Games(db, userId)
-        .where('g.finished_at', '>=', sql<Date>`now() - make_interval(days => ${days})`)
+        .where('g.finished_at', '>=', sql<Date>`${end} - make_interval(days => ${days})`)
+        .where('g.finished_at', '<=', end)
         .as('recent'),
     )
     .select(dartWeighted.as('avg'))

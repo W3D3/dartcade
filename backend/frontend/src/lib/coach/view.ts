@@ -1,17 +1,9 @@
 // Which finished games the coach reviews, and whose darts it shows.
 import type { GameSummary } from '$lib/api'
+import { coachable as coachableGame } from '$shared/coach/coachable'
 
-/** X01, straight in, double out, bull 25/50, singles. A missing key is X01's default. */
-export function coachable(game: Pick<GameSummary, 'mode' | 'config'>): boolean {
-  if (game.mode !== 'x01') return false
-  const c = game.config
-  return (
-    (c.inMode ?? 'straight') === 'straight' &&
-    (c.outMode ?? 'double') === 'double' &&
-    (c.bullValue ?? '25_50') === '25_50' &&
-    (c.format ?? 'singles') !== 'teams'
-  )
-}
+/** The coach reviews the game (shared/coach/coachable.ts) */
+export const coachable = (game: Pick<GameSummary, 'mode' | 'config'>): boolean => coachableGame(game.mode, game.config)
 
 /** The seats the coach can review: the humans, in seat order. */
 export const coachSeats = (game: Pick<GameSummary, 'players'>): number[] =>

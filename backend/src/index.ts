@@ -32,6 +32,7 @@ import { closePool, warmPool } from './games/minigolfPool.js'
 import { ProgressionService } from './progression/service.js'
 import { getFinishedGame } from './db/history.js'
 import { gameDetailBody } from './api/games.js'
+import { backfillCoachLegs, buildCoachLegs } from './coach/store.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -142,7 +143,18 @@ const engine: SessionEngine = new SessionEngine(
     })
     // Nor is the details page, built now so no one's first load waits for the replay; the big screen shows it too
     const saved =
-      ended.status === 'finished' ? getFinishedGame(db, ended.sessionId).then(game => (game ? gameDetailBody(db, game, warn) : null)) : null
+      ended.status === 'finished'
+        ? getFinishedGame(db, ended.sessionId).then(async game => {
+            const body = game ? await gameDetailBody(db, game, warn) : null
+            // The coach's reviews read the stored detail, so they're built once it's there; not
+            // awaited either (~0.3 s of CPU for a long game)
+            if (game && body)
+              buildCoachLegs(db, game, warn).catch((err: unknown) => {
+                warn('building the coach reviews failed', { sessionId: ended.sessionId, error: String(err) })
+              })
+            return body
+          })
+        : null
     saved?.catch((err: unknown) => {
       warn('storing a finished game detail failed', { sessionId: ended.sessionId, error: String(err) })
     })
@@ -239,6 +251,11 @@ await setOverrides(await loadOverrides(db))
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }
+// Reviews for the games finished before the coach stored them (or by an older COACH_VERSION); not
+// awaited, it yields between games
+backfillCoachLegs(db, warn).catch((err: unknown) => {
+  warn('coach backfill failed', { error: String(err) })
+})
 // Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
