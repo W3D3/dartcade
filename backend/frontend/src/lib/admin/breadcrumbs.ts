@@ -12,6 +12,8 @@ export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
 
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
+export const coachTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Coach sandbox' }]
+
 export const cosmeticsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Cosmetics' }]
 
 /** `flagKey` set: a flag's details are open, so "Feature flags" becomes a link back to the list. */
