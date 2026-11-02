@@ -1,7 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '$shared/board'
 import { bedPath, boardSegments, type BedRing } from '$lib/details/boardGeometry'
-import { aimBed, bedCentre, likelyMisses, coachable, coachFilter, coachFound, dartTone, legWhen, visitTiles, vsLine } from './view'
+import type { CoachNote, ReviewVisit } from '$shared/coach'
+import {
+  aimBed,
+  bedCentre,
+  betterLine,
+  likelyMisses,
+  coachable,
+  coachFilter,
+  coachFound,
+  dartTone,
+  defaultVisit,
+  legHeading,
+  legSubtitle,
+  legSubtitleShort,
+  legWhen,
+  missLeaves,
+  missTags,
+  visitTiles,
+  vsLine,
+  whatHappened,
+} from './view'
 
 const x01 = (config: Record<string, unknown>) => ({ mode: 'x01', config })
 
@@ -177,5 +197,87 @@ describe('likelyMisses', () => {
     for (const id of ['T20', 'SI19', 'W20-1']) for (const m of likelyMisses(id)) expect(segmentAt(m.x, m.y).name).toBe(m.label)
     const out = likelyMisses('D16')[1]
     expect(segmentAt(out.x, out.y).bed).toBe('Outside')
+  })
+})
+
+describe('leg review text', () => {
+  const now = new Date(2025, 10, 5, 22, 0)
+  const title = {
+    opponents: ['Lena'],
+    context: '501 · Friday darts · leg 3',
+    finishedAt: new Date(2025, 10, 5, 21, 14).toISOString(),
+    won: false,
+    winnerName: 'Lena',
+    winnerDarts: 21,
+  }
+  const note = (n: Partial<CoachNote>): CoachNote => ({
+    leg: 2,
+    visit: 8,
+    dart: 2,
+    left: 16,
+    darts: 1,
+    thrown: 'S1',
+    better: 'D8',
+    betterAimId: 'D8',
+    cost: 0.3,
+    reason: null,
+    book: ['D8'],
+    tip: false,
+    ...n,
+  })
+  const dart = (name: string, left: number, bust = false) => ({ name, coords: null, left, bust })
+
+  it('heads the leg and words its subtitles as drawn', () => {
+    expect(legHeading(2, ['Lena'])).toBe('Leg 3 vs Lena')
+    expect(legHeading(0, [])).toBe('Leg 1 · Solo')
+    expect(legSubtitle(title, 18, now)).toBe('501 · double out · Friday darts · today 21:14 · lost, Lena checked out in 21 darts')
+    expect(legSubtitle({ ...title, context: 'Ranked 1v1 · leg 1', won: true }, 18, now)).toBe(
+      'Ranked 1v1 · double out · today 21:14 · won in 18 darts',
+    )
+    expect(legSubtitle({ ...title, winnerName: null, winnerDarts: null }, 18, now)).toMatch(/ · no checkout$/)
+    expect(legSubtitleShort(title, 18, 71, now)).toBe('501 · today 21:14 · lost · 18 darts · avg 71.0')
+    expect(legSubtitleShort({ ...title, context: 'Ranked 1v1 · leg 1' }, 18, null, now)).toBe('Ranked 1v1 · today 21:14 · lost · 18 darts')
+    expect(legSubtitleShort({ ...title, winnerName: null, winnerDarts: null }, 18, null, now)).toBe(
+      '501 · today 21:14 · no checkout · 18 darts',
+    )
+  })
+
+  it('opens on the first Mistake, else the first noted visit, else the first', () => {
+    const v = (grade: ReviewVisit['grade'], notes: CoachNote[] = []) => ({ grade, notes })
+    expect(defaultVisit([v('great'), v('weak', [note({})]), v('mistake')])).toBe(2)
+    expect(defaultVisit([v('great'), v('weak', [note({})])])).toBe(1)
+    expect(defaultVisit([v('great'), v('ok')])).toBe(0)
+  })
+
+  it('lists what each dart left, a bust and a checkout', () => {
+    expect(whatHappened({ darts: [dart('S19', 76), dart('T20', 16), dart('S1', 15)] })).toBe('S19 (76 left), T20 (16 left), S1 (15 left).')
+    expect(whatHappened({ darts: [dart('S4', 8), dart('S10', 12, true)] })).toBe('S4 (8 left), S10 bust.')
+    expect(whatHappened({ darts: [dart('S4', 4), dart('D2', 0)] })).toBe('S4 (4 left), D2 out.')
+  })
+
+  it('marks the busting dart, not the last, and the darts kept after it as not counted', () => {
+    // 32 left: S16, T20 busts, D8 thrown after it (reviewLeg leaves it at the start)
+    expect(whatHappened({ darts: [dart('S16', 16), dart('T20', 32, true), dart('D8', 32)] })).toBe(
+      'S16 (16 left), T20 bust, D8 (not counted).',
+    )
+  })
+
+  it('says what a miss leaves when that is a one-dart finish', () => {
+    expect(missLeaves(16, 'S8')).toBe('8 = D4')
+    expect(missLeaves(75, '25')).toBe('50 = Bull')
+    expect(missLeaves(45, 'S20')).toBeNull()
+    expect(missLeaves(51, 'Bull')).toBeNull()
+    expect(missLeaves(16, 'Outside')).toBeNull()
+  })
+
+  it('words the better aim with what its misses leave, and tags them on the board', () => {
+    expect(betterLine(note({}))).toBe('with 16 left and 1 dart, throw at D8 (blue). A miss into S8 still leaves 8 = D4.')
+    expect(missTags(note({})).map(t => t.label)).toEqual(['S8 · 8 = D4', 'Outside'])
+    expect(betterLine(note({ left: 37, darts: 2, better: 'S12', betterAimId: 'SO12' }))).toBe(
+      'with 37 left and 2 darts, throw at S12 (blue). A miss into S9 still leaves 28 = D14. A miss into S5 still leaves 32 = D16.',
+    )
+    expect(betterLine(note({ left: 47, darts: 2, better: 'S20', betterAimId: 'SO20' }))).toBe(
+      'with 47 left and 2 darts, throw at S20 (blue).',
+    )
   })
 })

@@ -81,6 +81,9 @@
   const loadCoachChecks = Object.assign(() => import('./routes/CoachChecks.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
+  const loadCoachLeg = Object.assign(() => import('./routes/CoachLeg.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
     { loading: RouteLoading },
@@ -104,6 +107,7 @@
     '/history': History,
     '/coach': wrap({ asyncComponent: loadCoach }),
     '/coach/checks': wrap({ asyncComponent: loadCoachChecks }),
+    '/coach/leg/:gameId/:leg': wrap({ asyncComponent: loadCoachLeg }),
     '/lobby': Lobby,
     '/join': Join,
     '/join/:code': Join,

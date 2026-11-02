@@ -1,11 +1,12 @@
 // Which finished games the coach reviews; how the Coach page shows a leg; how its tiles, pills and
 // board draw a visit.
-import type { CoachLegRow, GameSummary } from '$lib/api'
+import type { CoachLegRow, CoachLegTitle, GameSummary } from '$lib/api'
 import type { BedRing } from '$lib/details/boardGeometry'
 import { startOfDay } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
 import { HALF, R, SEGS } from '$shared/board'
-import type { ReviewVisit, VisitGrade } from '$shared/coach'
+import { checkoutHint } from '$shared/checkout.js'
+import type { CoachNote, ReviewVisit, VisitGrade } from '$shared/coach'
 import { AIMS, type Aim } from '$shared/coach/aims'
 import { coachable as coachableGame } from '$shared/coach/coachable'
 
@@ -141,4 +142,88 @@ export function likelyMisses(aimId: string): BoardTag[] {
     return [tag(`S${n}`, `SO${n}`), { label: 'Outside', x: (aim.x / r) * OUTSIDE_R, y: (aim.y / r) * OUTSIDE_R }]
   }
   return neighbours(kind === 'SI' ? 'SI' : 'SO')
+}
+
+// The leg review (Coach-Leg)
+
+/** "Leg 3 vs Lena", "Leg 1 · Solo"; `leg` is 0-based */
+export const legHeading = (leg: number, opponents: readonly string[]): string =>
+  `Leg ${leg + 1}${opponents.length ? ` ${vsLine(opponents)}` : ' · Solo'}`
+
+/** The leg's context without its "· leg N" (the heading has it): "501 · Friday darts", "Ranked 1v1" */
+const contextHead = (context: string) => context.replace(/ · leg \d+$/, '')
+/** "today 21:14", "yesterday", "Mon", "2 Nov" */
+const legWhenLower = (iso: string, now: Date) => legWhen(iso, now).replace(/^(Today|Yesterday)/, s => s.toLowerCase())
+
+/** Desktop: "501 · double out · Friday darts · today 21:14 · lost, Lena checked out in 21 darts" */
+export function legSubtitle(title: CoachLegTitle, darts: number, now: Date): string {
+  const [first, ...rest] = contextHead(title.context).split(' · ')
+  const result = title.won
+    ? `won in ${darts} darts`
+    : title.winnerName === null
+      ? 'no checkout'
+      : `lost, ${title.winnerName} checked out${title.winnerDarts === null ? '' : ` in ${title.winnerDarts} darts`}`
+  // Every coached leg is double out: coachable() takes no other out mode
+  return [first, 'double out', ...rest, legWhenLower(title.finishedAt, now), result].join(' · ')
+}
+
+/** Phone: "501 · today 21:14 · lost · 21 darts · avg 71.0" (the context's first part only); "no
+ *  checkout" when nobody checked out */
+export function legSubtitleShort(title: CoachLegTitle, darts: number, average: number | null, now: Date): string {
+  const parts = [
+    contextHead(title.context).split(' · ')[0],
+    legWhenLower(title.finishedAt, now),
+    title.won ? 'won' : title.winnerName === null ? 'no checkout' : 'lost',
+    `${darts} darts`,
+  ]
+  return [...parts, ...(average === null ? [] : [`avg ${average.toFixed(1)}`])].join(' · ')
+}
+
+/** The visit the page opens on (an index): the first Mistake, else the first with a note, else the first. */
+export function defaultVisit(visits: readonly Pick<ReviewVisit, 'grade' | 'notes'>[]): number {
+  const i = visits.findIndex(v => v.grade === 'mistake')
+  return Math.max(i >= 0 ? i : visits.findIndex(v => v.notes.length > 0), 0)
+}
+
+/** "S19 (76 left), T20 (16 left), S1 (15 left)."; the busting dart "T8 bust", a dart the game kept
+ *  after it "S5 (not counted)", a checkout "D4 out" */
+export function whatHappened(v: Pick<ReviewVisit, 'darts'>): string {
+  const bustAt = v.darts.findIndex(d => d.bust)
+  const parts = v.darts.map((d, i) =>
+    d.bust
+      ? `${d.name} bust`
+      : bustAt >= 0 && i > bustAt
+        ? `${d.name} (not counted)`
+        : d.left === 0
+          ? `${d.name} out`
+          : `${d.name} (${d.left} left)`,
+  )
+  return `${parts.join(', ')}.`
+}
+
+/** What a dart in `label` (a likelyMisses tag: S8, Bull, 25, Outside) leaves from `left`, with its
+ *  one-dart finish: "8 = D4"; null when that's no one-dart finish or the miss scores nothing. */
+export function missLeaves(left: number, label: string): string | null {
+  const points = label === 'Bull' ? 50 : label === '25' ? 25 : /^S\d+$/.test(label) ? Number(label.slice(1)) : 0
+  const after = left - points
+  const out = points > 0 && after >= 2 ? checkoutHint(after, 'double', 1) : null
+  return out ? `${after} = ${out[0]}` : null
+}
+
+/** The better aim's likely misses as board tags, those leaving a finish with it: "S8 · 8 = D4" */
+export const missTags = (note: Pick<CoachNote, 'left' | 'betterAimId'>): BoardTag[] =>
+  likelyMisses(note.betterAimId).map(m => {
+    const leaves = missLeaves(note.left, m.label)
+    return leaves ? { ...m, label: `${m.label} · ${leaves}` } : m
+  })
+
+/** What follows "Better:" or "Tip:": "with 16 left and 1 dart, throw at D8 (blue). A miss into S8
+ *  still leaves 8 = D4." */
+export function betterLine(note: Pick<CoachNote, 'left' | 'darts' | 'better' | 'betterAimId'>): string {
+  const misses = likelyMisses(note.betterAimId).flatMap(m => {
+    const leaves = missLeaves(note.left, m.label)
+    return leaves ? [` A miss into ${m.label} still leaves ${leaves}.`] : []
+  })
+  const darts = `${note.darts} dart${note.darts === 1 ? '' : 's'}`
+  return `with ${note.left} left and ${darts}, throw at ${note.better} (blue).${misses.join('')}`
 }

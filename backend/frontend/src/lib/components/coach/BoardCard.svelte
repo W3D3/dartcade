@@ -5,7 +5,7 @@
   // with a pulsing ring.
   import type { ReviewDart } from '$shared/coach'
   import { aimBed, bedCentre, type BoardTag } from '$lib/coach/view'
-  import { clampToView, toBoardPx } from '$lib/details/heatmap'
+  import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
 
@@ -33,7 +33,14 @@
       return at ? [{ i, name: d.name, hollow: !d.coords, ...clampToView(toBoardPx(at)) }] : []
     }),
   )
-  const missTags = $derived(misses.map(m => ({ name: m.label, ...toBoardPx(m) })))
+  // Centred on the miss, kept inside the board's box (a tag can carry what the miss leaves: "S8 · 8 = D4")
+  const missTags = $derived(
+    misses.map(m => {
+      const p = toBoardPx(m)
+      const w = tagW(m.label)
+      return { name: m.label, x: Math.min(Math.max(p.x - w / 2, -BOARD_VIEW_HALF), BOARD_VIEW_HALF - w), y: p.y }
+    }),
+  )
   const bed = $derived(better ? aimBed(better.aimId) : null)
   const label = $derived(
     `${darts.map(d => d.name).join(', ') || 'No darts'}${better ? `; ${better.label} highlighted as the better target` : ''}`,
@@ -48,7 +55,7 @@
   {#if bed}<path d={bedPath(bed)} fill-rule="evenodd" class="fill-ice stroke-text" stroke-width="2" />{/if}
 
   {#each missTags as m, i (i)}
-    <g transform="translate({m.x - tagW(m.name) / 2} {m.y})">
+    <g transform="translate({m.x} {m.y})">
       <rect y="-13" width={tagW(m.name)} height="26" rx="7" class="fill-bg stroke-ice" stroke-width="2" />
       <text
         x={tagW(m.name) / 2}
