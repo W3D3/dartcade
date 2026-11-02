@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "gen:types": "json2ts ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
     "lint": "oxlint",
-    "calibrate:bots": "tsx src/bots/calibrate.ts"
+    "calibrate:bots": "tsx src/bots/calibrate.ts",
+    "gen:coach": "tsx src/coach/genLanding.ts"
   },
   "dependencies": {
     "@better-auth/core": "1.7.6",
