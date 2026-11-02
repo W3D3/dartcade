@@ -81,6 +81,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
     defaultRule: 'admins',
   },
+  'coach.enabled': {
+    kind: 'boolean',
+    description:
+      "Shows the Coach: a review of a finished X01 game's darts on its details page, and the Coach page listing the games it can review.",
+    defaultRule: 'admins',
+  },
   'bigscreen.enabled': {
     kind: 'boolean',
     description: "Big screen: a view-only game display that follows a board, optionally on the bridge machine's screen",
@@ -200,6 +206,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('lights.enabled', isAdmin),
+    },
+    'coach.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('coach.enabled', isAdmin),
     },
     'bigscreen.enabled': {
       variants: { on: true, off: false },

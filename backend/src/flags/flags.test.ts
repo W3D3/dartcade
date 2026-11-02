@@ -96,6 +96,7 @@ describe('flags', () => {
       { key: 'progression.manualDarts', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'sounds.anyPack', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'lights.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'coach.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'bigscreen.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.autodartsImport', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.packDetails', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
