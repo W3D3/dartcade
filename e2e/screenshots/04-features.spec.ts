@@ -133,6 +133,24 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
   }
 })
 
+test('coach: strategy notes on a finished X01 game', async ({ browser }) => {
+  // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts), with a known coach note
+  for (const [view, suffix] of [
+    [VIEW.wide, 'desktop'],
+    [VIEW.phone, 'phone'],
+  ] as const) {
+    const { ctx, page } = await open(browser, 'admin', view)
+    await page.goto('/#/coach')
+    await page.locator('a[href^="#/history/"]').filter({ hasText: 'Phil' }).first().click()
+    await page.waitForURL(url => url.hash.startsWith('#/history/'))
+    await expect(page.getByRole('region', { name: 'Coach' })).toBeVisible()
+    await expect(page.getByText('Better:').first()).toBeVisible()
+    await page.getByRole('region', { name: 'Coach' }).evaluate(el => el.scrollIntoView({ block: 'start' }))
+    await shot(page, `coach/coach-${suffix}.png`, { settle: 1500 })
+    await ctx.close()
+  }
+})
+
 test('history: compact stats on a phone, the page scrolled', async ({ browser }) => {
   for (const [view, suffix] of [
     [VIEW.wide, 'desktop'],
