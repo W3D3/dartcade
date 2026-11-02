@@ -16,7 +16,7 @@ export function lobbyActions(id: string) {
       api.DELETE('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } } }),
     addGuest: (name: string): Promise<ActionResult> => api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name } }),
     addBot: (level: number): Promise<ActionResult> =>
-      api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name: `Bot Lvl ${level}`, bot: { level } } }),
+      api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name: `Bot Level ${level}`, bot: { level } } }),
     invite: (userId: string): Promise<ActionResult> =>
       api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }),
     /** Host: move someone to this team. */
