@@ -1,8 +1,9 @@
 <script lang="ts">
   // Featured (Home board): new things worth a look, one banner at a time. Arrows and dots appear
   // only with more than one. The page passes only the slides the player has (see lib/home/featured.ts).
-  import { ArrowRight, ChevronLeft, ChevronRight, Lightbulb } from '@lucide/svelte'
+  import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import LightsBoard from './LightsBoard.svelte'
   import HomeSection from './HomeSection.svelte'
   import type { FeaturedSlide } from '$lib/home/featured'
 
@@ -34,7 +35,7 @@
         {#if current.img}
           <img src={current.img} alt="" class="h-full w-full object-contain object-bottom" />
         {:else if current.icon === 'lights'}
-          <Lightbulb size={56} strokeWidth={1.4} class="text-accent" />
+          <LightsBoard />
         {/if}
       </div>
     </div>

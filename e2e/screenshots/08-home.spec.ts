@@ -62,3 +62,19 @@ test('home featured card is whole at device heights', async ({ browser }) => {
     await ctx.close()
   }
 })
+
+// The Featured card on its Board lights slide: the board ringed by an LED strip (the glow is shot still)
+test('home featured lights', async ({ browser }) => {
+  for (const [view, file] of [
+    [VIEW.desktop, 'home/featured-lights-desktop.png'],
+    [VIEW.phone, 'home/featured-lights-phone.png'],
+  ] as const) {
+    const { ctx, page } = await open(browser, 'luke', view)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/#/')
+    await page.getByRole('button', { name: 'Show Board lights' }).click()
+    await page.getByRole('region', { name: 'Featured' }).scrollIntoViewIfNeeded()
+    await shot(page, file)
+    await ctx.close()
+  }
+})
