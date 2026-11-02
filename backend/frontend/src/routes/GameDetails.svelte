@@ -27,6 +27,7 @@
   import Standings from '$lib/components/details/Standings.svelte'
   import TeamShares from '$lib/components/details/TeamShares.svelte'
   import X01Section from '$lib/components/details/X01Section.svelte'
+  import CoachSection from '$lib/components/coach/CoachSection.svelte'
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import CricketSection from '$lib/components/details/CricketSection.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
@@ -192,6 +193,7 @@
             </section>
             <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
               {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
+              {#if d.game.mode === 'x01'}<CoachSection detail={d} />{/if}
               {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
               {#if d.game.mode === 'cricket'}<CricketSection detail={d} />{/if}
               {#if d.game.mode === 'atc'}
