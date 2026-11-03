@@ -15,7 +15,7 @@
     onpoint,
   }: {
     darts: ReviewDart[]
-    /** The note the visit explains (explainedNote): its dart selected, its better aim and that aim's likely misses drawn */
+    /** The note the visit explains (its `explained`): its dart selected, its better aim and that aim's likely misses drawn */
     note?: CoachNote | null
     /** A click's board point, in board units */
     onpoint?: (p: { x: number; y: number }) => void

@@ -19,7 +19,6 @@
   import { GRADE_PILL } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
   import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
-  import { explainedNote } from '$shared/coach/grade'
 
   let { params }: { params: { gameId: string; leg: string } } = $props()
 
@@ -89,7 +88,7 @@
 
 {#snippet visitDetail(v: ReviewVisit)}
   <div class="flex flex-col gap-3.5">
-    <BoardCard darts={v.darts} note={explainedNote(v.notes)} />
+    <BoardCard darts={v.darts} note={v.explained} />
     <VisitDetail visit={v} />
     {#if $debug}<VisitNumbers visit={v} />{/if}
     <div class="flex gap-2">

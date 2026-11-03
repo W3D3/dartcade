@@ -2,13 +2,12 @@
   // A visit explained to the player (Coach-Leg's selected visit, the sandbox): each dart's class and
   // how far it missed its target's bed, then the Better (or Tip) line of the note it explains.
   import type { ReviewVisit } from '$shared/coach'
-  import { explainedNote } from '$shared/coach/grade'
   import { betterLine } from '$lib/coach/board'
   import { dartRows } from '$lib/coach/dart'
   import Pill from './Pill.svelte'
 
-  let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'notes'> } = $props()
-  const note = $derived(explainedNote(visit.notes))
+  let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'explained'> } = $props()
+  const note = $derived(visit.explained)
 </script>
 
 <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">

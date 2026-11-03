@@ -20,7 +20,6 @@
   import { visitTiles } from '$lib/coach/dart'
   import { dartAt, dartFromLabel } from '$lib/coach/sandbox'
   import { coachOpenVisit } from '$shared/coach/openVisit'
-  import { explainedNote } from '$shared/coach/grade'
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
   import { averageForLevel } from '$shared/botLevels'
@@ -68,7 +67,7 @@
       : null,
   )
   const visit = $derived(result?.visit ?? null)
-  const note = $derived(visit ? explainedNote(visit.notes) : null)
+  const note = $derived(visit?.explained ?? null)
   const accepting = $derived(result !== null && !result.done)
 
   function add(d: CoachDart): void {
