@@ -3800,7 +3800,7 @@ components:
           type: object
           nullable: true
           description: "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2"
-          required: [darts, spreadMm, offsetMm, edgeMm, rating]
+          required: [darts, spreadMm, offsetMm, edgeMm, rating, expectedSpreadMm, comment]
           additionalProperties: false
           properties:
             darts: { type: integer, minimum: 2 }
@@ -3808,6 +3808,16 @@ components:
             offsetMm: { type: number, nullable: true, description: "The centroid's distance from the shared target's point" }
             edgeMm: { type: number, description: "Mean distance from their targets' beds" }
             rating: { type: number, description: 'The score plus the grouping and closeness bonuses' }
+            expectedSpreadMm: { type: number, description: "The spread a player of the seat's average groups this many darts in" }
+            comment:
+              type: object
+              nullable: true
+              description: 'The spread against the expected one; null without a spread or when unremarkable'
+              required: [level, text]
+              additionalProperties: false
+              properties:
+                level: { type: string, enum: [great, good, scattered] }
+                text: { type: string }
     SkillGrade:
       type: object
       required: [grade, line]

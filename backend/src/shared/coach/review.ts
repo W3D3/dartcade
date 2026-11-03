@@ -95,7 +95,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     const vNotes = notes.filter(n => n.visit === i)
     // The walked darts' only: those after a bust aren't
     const walked = reviewDarts.slice(0, vThrows.length)
-    const g = grouping(walked, v.scored)
+    const g = grouping(walked, v.scored, average)
     const grading = classifyVisit({
       start,
       throws: vThrows,

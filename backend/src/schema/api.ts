@@ -2969,6 +2969,14 @@ export interface components {
                 edgeMm: number;
                 /** @description The score plus the grouping and closeness bonuses */
                 rating: number;
+                /** @description The spread a player of the seat's average groups this many darts in */
+                expectedSpreadMm: number;
+                /** @description The spread against the expected one; null without a spread or when unremarkable */
+                comment: {
+                    /** @enum {string} */
+                    level: "great" | "good" | "scattered";
+                    text: string;
+                } | null;
             } | null;
         };
         SkillGrade: {

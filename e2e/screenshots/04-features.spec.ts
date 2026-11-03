@@ -170,25 +170,24 @@ test('coach: the review list, a leg with a mistake, and the admin sandbox', asyn
     await ctx.close()
   }
 
-  // Admin sandbox: 97 left, S20 S20 S20 (97 -> 77 -> 57 -> 37) is a Mistake with a strategy note.
-  // The darts are clicked onto the board, so their miss millimetres and rating show (the first goes
-  // at T20, the others at S20: no shared target, so no spread)
+  // Admin sandbox: 501 left, three darts clicked tight round T20 (T20 T20 S20, all aimed at T20) at
+  // the default 60 average: a Great Scoring visit whose ~4 mm group shows the Great grouping pill
+  // (judged against the ~14 mm a 60 average groups in) and the grouping line with its rating
   const admin = await open(browser, 'admin', VIEW.wide)
   await admin.page.goto('/#/admin/coach')
-  await admin.page.getByLabel('Score left').fill('97')
+  await admin.page.getByLabel('Score left').fill('501')
   const board = admin.page.getByRole('application')
   const box = (await board.boundingBox())!
   // Board units (y up, r = 1 at the outer double wire) to the page: the viewBox is ±235 mm, 170 mm a unit
   for (const [x, y] of [
-    [-0.03, 0.8],
-    [0.02, 0.77],
-    [0.0, 0.74],
+    [-0.02, 0.62],
+    [0.02, 0.6],
+    [0.0, 0.57],
   ]) {
     await admin.page.mouse.click(box.x + ((x * 170 + 235) / 470) * box.width, box.y + ((-y * 170 + 235) / 470) * box.height)
   }
-  await expect(admin.page.getByText(/edge \d+ mm/)).toBeVisible()
-  await expect(admin.page.getByText('Mistake').first()).toBeVisible()
-  await expect(admin.page.getByText('Better:').first()).toBeVisible()
+  await expect(admin.page.getByText(/Grouping \d+ mm \(yours: ~\d+ mm\)/)).toBeVisible()
+  await expect(admin.page.getByText('Great grouping').first()).toBeVisible()
   await shot(admin.page, 'coach/sandbox-desktop.png', { settle: 1200 })
   await expect(admin.page.getByRole('heading', { name: 'Dart classes' })).toBeVisible()
   await admin.ctx.close()

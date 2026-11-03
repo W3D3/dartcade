@@ -8988,7 +8988,9 @@
               "spreadMm",
               "offsetMm",
               "edgeMm",
-              "rating"
+              "rating",
+              "expectedSpreadMm",
+              "comment"
             ],
             "additionalProperties": false,
             "properties": {
@@ -9013,6 +9015,33 @@
               "rating": {
                 "type": "number",
                 "description": "The score plus the grouping and closeness bonuses"
+              },
+              "expectedSpreadMm": {
+                "type": "number",
+                "description": "The spread a player of the seat's average groups this many darts in"
+              },
+              "comment": {
+                "type": "object",
+                "nullable": true,
+                "description": "The spread against the expected one; null without a spread or when unremarkable",
+                "required": [
+                  "level",
+                  "text"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "great",
+                      "good",
+                      "scattered"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }

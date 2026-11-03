@@ -39,7 +39,7 @@ export type VisitFacts = {
   /** Each walked dart's class (dartClass.ts), in throw order */
   classes: readonly Pick<DartClass, 'kind' | 'plannedLeave'>[]
   /** How its placed darts sat together (grouping.ts); null with fewer than 2 */
-  grouping: Pick<Grouping, 'spreadMm' | 'edgeMm' | 'rating'> | null
+  grouping: Pick<Grouping, 'spreadMm' | 'edgeMm' | 'rating' | 'comment'> | null
   /** This visit's notes, tips included */
   notes: CoachNote[]
   /** The player's 3-dart average (30-day, or the game's) */

@@ -387,11 +387,11 @@ describe('groupingLine', () => {
     { name: 'S20', coords: null, left: 481, bust: false, class: t20 },
     { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20 },
   ]
-  const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3 }
+  const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 
   it("words a visit's grouping, its target from a placed dart", () => {
-    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe('Grouping 6 mm · 2 mm off T20 · edge 1 mm · rating 75')
-    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm · 2 mm off T20 · edge 1 mm')
+    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe('Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75')
+    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm')
   })
   it('leaves the spread out without a shared target, and is null without a grouping', () => {
     expect(groupingLine({ darts, tag: 'scoring', grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
@@ -405,11 +405,20 @@ describe('groupingLine', () => {
 })
 
 describe('groupingPill', () => {
-  it('pills Great and Good in the grade tones, Scattered weak, null without a comment', () => {
-    expect(groupingPill({ spreadMm: 6 })).toEqual({ label: 'Great grouping', cls: 'bg-accent text-accent-fg' })
-    expect(groupingPill({ spreadMm: 12 })).toEqual({ label: 'Good grouping', cls: 'bg-good/15 text-good' })
-    expect(groupingPill({ spreadMm: 35 })).toEqual({ label: 'Scattered', cls: 'bg-gold/15 text-gold' })
-    expect(groupingPill({ spreadMm: 20 })).toBeNull()
+  it("pills the server's comment: Great and Good in the grade tones, Scattered weak, null without one", () => {
+    expect(groupingPill({ comment: { level: 'great', text: 'Great grouping' } })).toEqual({
+      label: 'Great grouping',
+      cls: 'bg-accent text-accent-fg',
+    })
+    expect(groupingPill({ comment: { level: 'good', text: 'Good grouping' } })).toEqual({
+      label: 'Good grouping',
+      cls: 'bg-good/15 text-good',
+    })
+    expect(groupingPill({ comment: { level: 'scattered', text: 'Scattered' } })).toEqual({
+      label: 'Scattered',
+      cls: 'bg-gold/15 text-gold',
+    })
+    expect(groupingPill({ comment: null })).toBeNull()
     expect(groupingPill(null)).toBeNull()
   })
 })

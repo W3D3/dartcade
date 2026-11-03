@@ -83,13 +83,13 @@ describe('scoring visits', () => {
   it('grades the rating, not the raw score, and says when the grouping lifted the grade', () => {
     const rated = (names: string[], rating: number, average = 60) => ({
       ...facts(501, names, { average }),
-      grouping: { spreadMm: 6, edgeMm: 2, rating },
+      grouping: { spreadMm: 6, edgeMm: 2, rating, comment: { level: 'great' as const, text: 'Great grouping' } },
     })
     // 60 is OK on a 60 average; rated 80 it is Good
     expect(classifyVisit(rated(['S20', 'S20', 'S20'], 80))).toEqual({
       tag: 'scoring',
       grade: 'good',
-      text: 'Scored 60, tight group (6 mm), close to the target (2 mm).',
+      text: 'Scored 60, great grouping (6 mm), close to the target (2 mm).',
     })
     // 45 is Weak on a 70 average; rated 60 it is OK
     expect(classifyVisit(rated(['S20', 'S20', 'S5'], 60, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
@@ -98,7 +98,7 @@ describe('scoring visits', () => {
   })
 
   it('a tight group never rescues a very low score', () => {
-    expect(classifyVisit({ ...facts(501, ['S5', 'S5', 'S5']), grouping: { spreadMm: 2, edgeMm: 1, rating: 37 } })).toEqual({
+    expect(classifyVisit({ ...facts(501, ['S5', 'S5', 'S5']), grouping: { spreadMm: 2, edgeMm: 1, rating: 37, comment: null } })).toEqual({
       tag: 'scoring',
       grade: 'mistake',
       text: 'Scored 15; your usual visit is 60.',

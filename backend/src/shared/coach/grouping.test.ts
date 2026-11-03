@@ -4,14 +4,15 @@ import { NOT_COUNTED, type DartClass } from './dartClass.js'
 import {
   CLOSENESS_MAX,
   CLOSENESS_ZERO_MM,
-  GOOD_GROUP_MM,
-  GREAT_GROUP_MM,
+  expectedSpreadMm,
+  GOOD_GROUP_RATIO,
+  GREAT_GROUP_RATIO,
   grouping,
   groupingComment,
   GROUPING_MAX,
   GROUPING_ZERO_MM,
   groupingWhy,
-  SCATTERED_MM,
+  SCATTERED_RATIO,
 } from './grouping.js'
 import { reviewLeg } from './review.js'
 import { leg, visit } from './testLegs.js'
@@ -26,15 +27,15 @@ const placed = (x: number, y: number, edgeMm: number, target: DartClass['target'
 
 describe('grouping', () => {
   it('needs two darts with a position and a target', () => {
-    expect(grouping([placed(0, 0.6, 0)], 60)).toBeNull()
-    expect(grouping([placed(0, 0.6, 0), { coords: null, class: { ...NOT_COUNTED, target: T20, edgeMm: 0 } }], 60)).toBeNull()
-    expect(grouping([placed(0, 0.6, 0), placed(0, 0.6, 0, null)], 60)).toBeNull()
+    expect(grouping([placed(0, 0.6, 0)], 60, 81)).toBeNull()
+    expect(grouping([placed(0, 0.6, 0), { coords: null, class: { ...NOT_COUNTED, target: T20, edgeMm: 0 } }], 60, 81)).toBeNull()
+    expect(grouping([placed(0, 0.6, 0), placed(0, 0.6, 0, null)], 60, 81)).toBeNull()
   })
 
   it('is the spread around the centroid, its offset from the shared target and the mean edge distance', () => {
     // T20's point is (0, 0.6055); two darts 6 mm either side of a centroid 3 mm above it
     const y = 0.6055 + mm(3)
-    const g = grouping([placed(-mm(6), y, 0), placed(mm(6), y, 2)], 60)
+    const g = grouping([placed(-mm(6), y, 0), placed(mm(6), y, 2)], 60, 81)
     expect(g?.darts).toBe(2)
     expect(g?.spreadMm).toBeCloseTo(6, 9)
     expect(g?.offsetMm).toBeCloseTo(3, 9)
@@ -43,33 +44,61 @@ describe('grouping', () => {
   })
 
   it('has no spread or offset when the darts went at different targets; the closeness still counts', () => {
-    const g = grouping([placed(0, 0.6, 0), placed(0.3, 0.5, 0, { aimId: 'T1', label: 'T1' })], 41)
+    const g = grouping([placed(0, 0.6, 0), placed(0.3, 0.5, 0, { aimId: 'T1', label: 'T1' })], 41, 81)
     expect(g).toMatchObject({ spreadMm: null, offsetMm: null, edgeMm: 0, rating: 41 + CLOSENESS_MAX })
   })
 
   it('adds nothing past the zero points', () => {
-    const g = grouping([placed(0, 0.2, 50), placed(0, 0.8, 50)], 40)
+    const g = grouping([placed(0, 0.2, 50), placed(0, 0.8, 50)], 40, 81)
     expect(g?.spreadMm).toBeGreaterThan(GROUPING_ZERO_MM)
     expect(g?.rating).toBe(40)
   })
 
   it('says which parts earned a bonus', () => {
-    expect(groupingWhy({ spreadMm: 6.2, edgeMm: 2.4 })).toBe('tight group (6 mm), close to the target (2 mm)')
-    expect(groupingWhy({ spreadMm: null, edgeMm: 0.2 })).toBe('on target')
-    expect(groupingWhy({ spreadMm: 4, edgeMm: 45 })).toBe('tight group (4 mm)')
+    expect(groupingWhy({ spreadMm: 6.2, edgeMm: 2.4, comment: { level: 'great' as const, text: 'Great grouping' } })).toBe(
+      'great grouping (6 mm), close to the target (2 mm)',
+    )
+    expect(groupingWhy({ spreadMm: null, edgeMm: 0.2, comment: null })).toBe('on target')
+    expect(groupingWhy({ spreadMm: 9, edgeMm: 45, comment: { level: 'good', text: 'Good grouping' } })).toBe('good grouping (9 mm)')
+    // The text follows the comment: a group the pill calls Scattered (or nothing) isn't praised
+    expect(groupingWhy({ spreadMm: 14, edgeMm: 45, comment: { level: 'scattered', text: 'Scattered' } })).toBe('')
     // A bonus too small to name: 18 mm from the treble isn't close
-    expect(groupingWhy({ spreadMm: 20, edgeMm: 18 })).toBe('')
+    expect(groupingWhy({ spreadMm: 20, edgeMm: 18, comment: null })).toBe('')
   })
 
-  it('comments great at and under the threshold, good up to its own, scattered at and past its own, else nothing', () => {
-    expect(groupingComment(null)).toBeNull()
-    expect(groupingComment({ spreadMm: null })).toBeNull()
-    expect(groupingComment({ spreadMm: GREAT_GROUP_MM })).toEqual({ level: 'great', text: 'Great grouping' })
-    expect(groupingComment({ spreadMm: GREAT_GROUP_MM + 0.1 })).toEqual({ level: 'good', text: 'Good grouping' })
-    expect(groupingComment({ spreadMm: GOOD_GROUP_MM })).toEqual({ level: 'good', text: 'Good grouping' })
-    expect(groupingComment({ spreadMm: GOOD_GROUP_MM + 0.1 })).toBeNull()
-    expect(groupingComment({ spreadMm: SCATTERED_MM - 0.1 })).toBeNull()
-    expect(groupingComment({ spreadMm: SCATTERED_MM })).toEqual({ level: 'scattered', text: 'Scattered' })
+  it('expects the spread a bot of the same average throws: 81 → ~10.5 mm over 3 darts (jitter included), wider lower down', () => {
+    expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.51, 1)
+    // 2 darts sit closer to their own centroid than 3
+    expect(expectedSpreadMm(81, 2)).toBeLessThan(expectedSpreadMm(81, 3))
+    const avgs = [10, 30, 40, 60, 81, 100, 105, 130]
+    for (let i = 1; i < avgs.length; i++) expect(expectedSpreadMm(avgs[i], 3)).toBeLessThanOrEqual(expectedSpreadMm(avgs[i - 1], 3))
+    expect(expectedSpreadMm(60, 3)).toBeGreaterThan(expectedSpreadMm(81, 3))
+    // Clamped outside the calibrated levels (30–105)
+    expect(expectedSpreadMm(10, 3)).toBe(expectedSpreadMm(30, 3))
+    expect(expectedSpreadMm(130, 3)).toBe(expectedSpreadMm(105, 3))
+  })
+
+  it('comments on the spread against the expected one: great, good, nothing, scattered', () => {
+    expect(groupingComment(null, 10)).toBeNull()
+    expect(groupingComment(10 * GREAT_GROUP_RATIO, 10)).toEqual({ level: 'great', text: 'Great grouping' })
+    expect(groupingComment(10 * GREAT_GROUP_RATIO + 0.01, 10)).toEqual({ level: 'good', text: 'Good grouping' })
+    expect(groupingComment(10 * GOOD_GROUP_RATIO, 10)).toEqual({ level: 'good', text: 'Good grouping' })
+    expect(groupingComment(10 * GOOD_GROUP_RATIO + 0.01, 10)).toBeNull()
+    expect(groupingComment(10 * SCATTERED_RATIO - 0.01, 10)).toBeNull()
+    expect(groupingComment(10 * SCATTERED_RATIO, 10)).toEqual({ level: 'scattered', text: 'Scattered' })
+  })
+
+  it('judges the same group by the player: 13 mm is good for a 60 average, unremarkable for an 81', () => {
+    // Three darts on a 13 mm circle round T20's point (0, 0.6055): each 12 mm from the centroid
+    const ring = [0, 120, 240].map(deg =>
+      placed(mm(13) * Math.cos((deg * Math.PI) / 180), 0.6055 + mm(13) * Math.sin((deg * Math.PI) / 180), 0),
+    )
+    const at60 = grouping(ring, 60, 60)
+    const at81 = grouping(ring, 60, 81)
+    expect(at60?.spreadMm).toBeCloseTo(13, 9)
+    expect(at60?.comment).toEqual({ level: 'good', text: 'Good grouping' })
+    expect(at81?.comment).toBeNull()
+    expect(at81?.expectedSpreadMm).toBe(expectedSpreadMm(81, 3))
   })
 })
 
@@ -101,7 +130,7 @@ describe('a visit rated on its score, grouping and closeness', () => {
     const hugging = review(cluster(R.tr + mm(7)))
     const outer = review(cluster(R.so - mm(7)))
     expect(hugging.grouping!.rating).toBeGreaterThan(outer.grouping!.rating + 5)
-    expect(hugging).toMatchObject({ grade: 'good', text: 'Scored 60, tight group (6 mm), close to the target (7 mm).' })
+    expect(hugging).toMatchObject({ grade: 'good', text: 'Scored 60, great grouping (6 mm), close to the target (7 mm).' })
     expect(outer).toMatchObject({ grade: 'ok', text: 'Scored 60.' })
   })
 

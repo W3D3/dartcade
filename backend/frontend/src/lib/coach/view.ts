@@ -10,7 +10,7 @@ import type { CoachNote, LegReview, ReviewVisit, VisitGrade } from '$shared/coac
 import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
-import { groupingComment, type Grouping, type GroupingLevel } from '$shared/coach/grouping'
+import type { Grouping, GroupingLevel } from '$shared/coach/grouping'
 
 /** The coach reviews the game (shared/coach/coachable.ts) */
 export const coachable = (game: Pick<GameSummary, 'mode' | 'config'>): boolean => coachableGame(game.mode, game.config)
@@ -171,9 +171,9 @@ const GROUPING_CLS: Record<GroupingLevel, string> = {
 }
 
 /** A visit's grouping comment as a pill's label and classes; null without one worth saying
- *  (groupingComment, shared/coach/grouping.ts). */
-export function groupingPill(g: Pick<Grouping, 'spreadMm'> | null): { label: string; cls: string } | null {
-  const c = groupingComment(g)
+ *  (groupingComment, shared/coach/grouping.ts, judged on the server against the player's average). */
+export function groupingPill(g: Pick<Grouping, 'comment'> | null): { label: string; cls: string } | null {
+  const c = g?.comment
   return c ? { label: c.text, cls: GROUPING_CLS[c.level] } : null
 }
 
@@ -288,15 +288,16 @@ export function whatHappened(v: Pick<ReviewVisit, 'darts'>): string {
   return `${parts.join(', ')}.`
 }
 
-/** "Grouping 6 mm · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed darts sat
- *  together, the spread and offset only when they shared a target, the rating only on a Scoring
+/** "Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed
+ *  darts sat together against the spread expected at the player's average, the spread and offset
+ *  only when they shared a target, the rating only on a Scoring
  *  visit (the only grade it feeds); null without a grouping. */
 export function groupingLine(v: Pick<ReviewVisit, 'darts' | 'grouping' | 'tag'>): string | null {
   const g = v.grouping
   if (!g) return null
   const target = v.darts.find(d => d.coords && d.class.target)?.class.target?.label
   return [
-    g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm`,
+    g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm (yours: ~${Math.round(g.expectedSpreadMm)} mm)`,
     g.offsetMm === null ? null : `${Math.round(g.offsetMm)} mm off ${target}`,
     `edge ${Math.round(g.edgeMm)} mm`,
     v.tag === 'scoring' ? `rating ${Math.round(g.rating)}` : null,

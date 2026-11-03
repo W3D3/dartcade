@@ -172,19 +172,29 @@ GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
   visits are graded on it.
 - **The leg** gets the Scoring visits' mean `spreadMm` and `edgeMm` in `LegReview.grouping`
   (each null without any).
-- **UI:** the leg review's selected visit shows "Grouping 6 mm · 2 mm off T20 · edge 1 mm ·
-  rating 75" under What happened; the take's Scoring power line adds " · grouping 12 mm · edge
+- **UI:** the leg review's selected visit shows "Grouping 6 mm (yours: ~14 mm) · 2 mm off T20 ·
+  edge 1 mm · rating 75" under What happened; the take's Scoring power line adds " · grouping 12 mm · edge
   4 mm" (desktop); the sandbox shows the visit's grouping line.
-- **Grouping comment:** `groupingComment(g)` (`grouping.ts`, pure) turns `spreadMm` into a one-word
-  verdict on the group itself, separate from the rating: `GREAT_GROUP_MM` 8 → "Great grouping",
-  `GOOD_GROUP_MM` 14 → "Good grouping", `SCATTERED_MM` 30 (and above) → "Scattered"; in between, or
-  without a spread, no comment. Shown as a small pill next to the grade pill and tag chip (Great
-  and Good in the grade pill's positive tones, Scattered in its weak tone) in the visit table, the
-  phone cards, the selected visit's card and the sandbox.
+- **Grouping comment:** a verdict on the group itself, separate from the rating, judged against the
+  player's level. `expectedSpreadMm(average, n)` (`grouping.ts`, pure) is the mean distance from
+  the centroid that `n` darts from a player of that 3-dart average would show (the average the
+  grades use: 30-day as of the game's finish, else the game's own). `groupingComment(spreadMm,
+  expected)` compares the ratio r = spread / expected: `GREAT_GROUP_RATIO` 0.8 → "Great
+  grouping", `GOOD_GROUP_RATIO` 1.0 → "Good grouping", `SCATTERED_RATIO` 2.0 (and above) →
+  "Scattered"; in between, or without a spread, no comment. Both land in the visit's grouping
+  (`expectedSpreadMm`, `comment`), so the client only shows them. Expected over 3 darts: about
+  28 mm at a 40 average, 16 mm at 60, 10.5 mm at 81, 7.3 mm at 100; the same 13 mm group is Good
+  for the 60 player and unremarkable for the 81. The grade text names the grouping only when the
+  comment is Great or Good ("great grouping (6 mm)"), so it never praises a group the pill calls
+  Scattered. Shown as a small pill next to the grade pill and
+  tag chip (Great and Good in the grade pill's positive tones, Scattered in its weak tone) in the
+  visit table, the phone cards, the selected visit's card and the sandbox (from its "Your
+  average" field); the grouping line adds the expectation: "Grouping 12 mm (yours: ~14 mm) · …".
+  The rating's grouping bonus stays absolute.
 
 Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of the single rates
 74.5 (OK) and scattered 25 mm rates 63.4 (OK); clustered just above the treble rates 78.6 (Good,
-"Scored 60, tight group (6 mm), close to the target (7 mm).") and the same by the double 72.0
+"Scored 60, great grouping (6 mm), close to the target (7 mm).") and the same by the double 72.0
 (OK). Typed darts have no grouping: the rating is the score.
 
 ## Data and UI
@@ -254,11 +264,16 @@ Decisions taken while building this without the user, each with why:
   except the Bull on 50**, where an inner single next to the bull is a Bull attempt miss. Before,
   a bull in Scoring (501 → Bull) and 13 finish states read Wild. On a finish the evaluator decides
   between Bull and 25 (on 60 a Bull reads as the 25's miss, `db`).
-- **Grouping comment thresholds (8/14/30 mm) are set against the reference player's σ ≈ 9.1 mm
-  per axis (about 9 mm mean distance from the centroid over 3 darts), not a fixed fraction of
-  `GROUPING_ZERO_MM`.** Great (≤ 8 mm) is tighter than that reference average, so it beats an
-  81-average player's typical group; Good (≤ 14 mm) still covers it; Scattered (≥ 30 mm) matches
-  `GROUPING_ZERO_MM`, past which the rating bonus is already gone.
+- **A player's expected spread comes from the bot calibration.** `LEVEL_SIGMA` (per-axis aiming
+  σ, board units) and `LEVEL_AVERAGE` (`shared/botLevels.ts`, one source for the bots and the
+  coach) map an average to σ, log-linear in σ between levels and clamped outside 30–105. For a
+  normal spread of σ per axis, `n` darts sit on average σ·√((n−1)/n)·√(π/2) from their own
+  centroid (≈ 1.02σ for 3 darts, 0.89σ for 2), × 170 mm per unit, × e^(J²/2) ≈ 1.13 for the bots'
+  log-normal per-dart jitter (`SIGMA_JITTER` J = 0.5, also in `shared/botLevels.ts`): a level's
+  darts are on average that much wider than its σ.
+- **The comment ratios (0.8 / 1.0 / 2.0) are set so Good means at or better than your level's
+  usual group, Great clearly better, and Scattered twice as wide.** Below a 30 average the
+  expectation is clamped at level 1's ~35 mm, so a beginner's 29 mm spray still reads Good.
 - **A dart attributed to the Bull on 50 that landed outside the inner single ring is Wild**: the
   wedge rule can't apply to the bull, and 100 mm "Bull misses" would poison the stats.
 - **In Scoring, a dart in the target number's double (D20 aiming T20) is a Scoring miss**

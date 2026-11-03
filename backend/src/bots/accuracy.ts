@@ -3,6 +3,7 @@
 import { checkoutHint } from '../shared/checkout.js'
 import { R, SEGS, segAngle, segmentAt, type Segment } from '../shared/board.js'
 import type { Rng } from '../session/rng.js'
+import { SIGMA_JITTER } from '../shared/botLevels.js'
 
 type OutMode = 'straight' | 'double' | 'master'
 type Point = { x: number; y: number }
@@ -56,12 +57,11 @@ function gaussianPair(rng: Rng): [number, number] {
 }
 
 // How much a dart's accuracy wobbles throw to throw, on top of the level's own calibrated
-// sigma: a log-normal multiplier, tuned (alongside LEVEL_SIGMA, in levels.ts) so the long-run
+// sigma: a log-normal multiplier, tuned (alongside LEVEL_SIGMA, in shared/botLevels.ts) so the long-run
 // average stays on the calibrated curve. Log-normal rather than a symmetric jitter because
 // sigma can't go negative, and the asymmetry is the point — most darts land close to the
 // bot's usual grouping, but it occasionally has a genuinely bad one (never a correspondingly
 // *tighter*-than-usual one by the same amount), the way even a strong player sometimes does.
-const SIGMA_JITTER = 0.5
 
 /** A multiplier on a throw's sigma for this one dart: 1 on a typical throw, occasionally much
  *  higher on a bad one. Consumes one Gaussian pair (only one value used; the symmetry makes a
