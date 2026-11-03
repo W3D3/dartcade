@@ -108,18 +108,22 @@ How a bust aim and Bust-back are worked out:
 
 ## Step 3: miss properties
 
-Every dart with a target that isn't a hit gets:
+A dart's class is one object: `kind`, `hit`, `target` (`{ aimId, label }` or null), `miss`,
+`estimated` and `plannedLeave` / `actualLeave`. Only three kinds carry a `detail`, typed per kind:
+Scoring single `inner` / `outer`, Double attempt `inside` / `outside` / `wide`, Bull attempt `sb` /
+`db` (null when there is nothing to add: a hit, a typed dart). The miss is a `Miss` object, null
+without a position or without a target with a point to miss; its fields are set together:
 
-| Property                            | How                                                                                                                                                                                                                                                                                      |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `distanceMm`                        | `d(dart, target) × 170` (r = 1 is the outer double wire, 170 mm)                                                                                                                                                                                                                         |
-| `radialMm`                          | the dart's radius minus the target's radius, × 170: **+ outside** (away from the bull), **− inside** (towards it)                                                                                                                                                                        |
-| `tangentialMm`                      | the target's radius × the signed angle from the target to the dart, × 170: **+ clockwise**, **− anticlockwise**                                                                                                                                                                          |
-| `edgeMm`                            | the distance from the dart to the nearest point of the target's **bed**, × 170; 0 inside it. The bed is the aim's radial band (treble, double, inner or outer single) across its number's wedge; the Bull and 25 a whole disc and ring. A wire has no bed: its `edgeMm` is `distanceMm`. |
-| `edgeRadialMm` / `edgeTangentialMm` | the vector from that nearest point to the dart, split the same way and with the same signs as `radialMm` / `tangentialMm`; 0 when the dart isn't off that way (a wire's: the centre values)                                                                                              |
-| `wedgesOff`                         | the signed wedge distance from the target's number in `SEGS` order: 0, ±1, ±2 …                                                                                                                                                                                                          |
-| `estimated`                         | true without camera coords (bed-centre position)                                                                                                                                                                                                                                         |
-| `plannedLeave` / `actualLeave`      | Split, Route, Double and Bull attempts: what the target would have left against what the dart left. For example, planned 32 (D16) and actually left 35.                                                                                                                                  |
+| Property                               | How                                                                                                                                                                                                                                                                              |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `miss.mm`                              | `d(dart, target) × 170` (r = 1 is the outer double wire, 170 mm)                                                                                                                                                                                                                 |
+| `miss.radialMm`                        | the dart's radius minus the target's radius, × 170: **+ outside** (away from the bull), **− inside** (towards it)                                                                                                                                                                |
+| `miss.tangentialMm`                    | the target's radius × the signed angle from the target to the dart, × 170: **+ clockwise**, **− anticlockwise**                                                                                                                                                                  |
+| `miss.edgeMm`                          | the distance from the dart to the nearest point of the target's **bed**, × 170; 0 inside it. The bed is the aim's radial band (treble, double, inner or outer single) across its number's wedge; the Bull and 25 a whole disc and ring. A wire has no bed: its `edgeMm` is `mm`. |
+| `miss.edgeRadialMm` / `…Tangential`    | the vector from that nearest point to the dart, split the same way and with the same signs as `radialMm` / `tangentialMm`; 0 when the dart isn't off that way (a wire's: the centre values)                                                                                      |
+| `miss.wedgesOff`                       | the signed wedge distance from the target's number in `SEGS` order: 0, ±1, ±2 …; null around the bull                                                                                                                                                                            |
+| `estimated` (on the class)             | true without camera coords (bed-centre position)                                                                                                                                                                                                                                 |
+| `plannedLeave` / `actualLeave` (class) | Split, Route, Double and Bull attempts: what the target would have left against what the dart left. For example, planned 32 (D16) and actually left 35.                                                                                                                          |
 
 Every dart with a position and a target gets these, hits too (their `edgeMm` is 0). Wires (the
 target `20/1`) use the wire's point as the centre. The centre values feed the stats and the model;
@@ -251,6 +255,9 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
 - **Data:**
   - `ReviewDart` gains `class: DartClass` (and `delta`, `closeness`: see Visit value), shared by the type, the API schema
     (`schema/api-v1.yaml` + `gen:api`) and the stored review.
+  - `ReviewDart.bedAimId` is the AIMS id of the bed the dart landed in (a single's outer bed; null
+    off the board), so the client reads a tile's tone, an off-board miss and a hollow pin's spot
+    from it instead of parsing the dart's name.
   - `COACH_VERSION` is bumped, so the backfill rebuilds the stored reviews.
 - **Leg review:**
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
@@ -261,18 +268,19 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
     and shows the darts as a table: Dart, Classification (the tile's label), Distance (`edgeMm`,
     whole mm, "–" for a hit or a dart without a position). A missed dart within `NEAR_MISS_MM`
     (5 mm) of its target's bed is tagged "Near miss": on a double, nearly a checkout.
-  - **`coach.debug.enabled`** (nobody by default) shows the model's numbers for checking it: in
-    the card the checkout-chance line, the grouping pill and line, and each dart's centre
-    distance, Δ and closeness; in the live panel each dart's Δ and closeness (the aims' checkout
-    % stay for everyone). The admin sandbox always shows everything.
+  - **`coach.debug.enabled`** (nobody by default) shows the model's numbers for checking it,
+    one block (`VisitNumbers`) under the card and under the live panel's darts: what each dart
+    left, every class property, Δ and closeness, the checkout-chance line and the grouping line
+    (the aims' checkout % stay for everyone). The admin sandbox always shows it.
   - **Each tile's colour is the dart's own grade** (`dartGrade`: its delta plus closeness credit):
     green for a hit of its target or +5 and up, plain above −5, gold (the grade pill's Weak tone)
-    down to −15, red (its Mistake tone) at −15 or below and for a bust. A dart without a delta
+    down to −15, red (its Mistake tone) at −15 or below and for a bust. The bands are grading
+    policy: `dartBand` in `shared/coach/grade.ts`, next to `dartGrade`. A dart without a delta
     (Scoring, after a bust) keeps the plain look: treble, double and bull green, single plain,
     miss red-lettered. An off-board miss is dashed in every tone. The tile's screen-reader text
     names the grade ("good", "even", "slight loss", "costly"). One helper (`visitTiles` in
-    `lib/coach/view.ts`, constants `DART_GOOD_FROM`, `DART_PLAIN_ABOVE`, `DART_COSTLY_AT`) feeds
-    the leg review, the sandbox and the live panel.
+    `lib/coach/dart.ts`, on `dartBand` and its constants `DART_GOOD_FROM`, `DART_PLAIN_ABOVE`,
+    `DART_COSTLY_AT`) feeds the leg review, the sandbox and the live panel.
 - **Admin sandbox:** shows each placed dart's class with all its properties. This is where the
   numbers get tuned.
 - **Code:** pure `backend/src/shared/coach/dartClass.ts` (`classifyDart(throw, ctx) →
@@ -342,7 +350,7 @@ which the 81-average model called a loss).
   - a far dart → Wild;
   - a dart after a bust → Not counted.
 - **Property tests:** the signs of `radialMm` and `tangentialMm` against known board positions;
-  `distanceMm` against the geometry.
+  `miss.mm` against the geometry.
 - **Grading:** the value's telescoping, a checkout's 1 and a bust's start (`value.test.ts`); the two
   user cases, a close and a far miss of the same double, busting back to 32 against leaving 2
   (`grade.test.ts`).
