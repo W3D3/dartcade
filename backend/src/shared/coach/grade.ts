@@ -4,7 +4,7 @@
 import { checkoutHint } from '../checkout.js'
 import { landedNumber, scoringAim } from './aim.js'
 import { oneDartFinish } from './aims.js'
-import type { DartKind } from './dartClass.js'
+import type { DartClass, DartKind } from './dartClass.js'
 import type { CoachNote } from './notes.js'
 import type { Throw } from './walk.js'
 
@@ -36,7 +36,7 @@ export type VisitFacts = {
   then: number
   bust: boolean
   /** Each walked dart's class (dartClass.ts), in throw order */
-  kinds: readonly DartKind[]
+  classes: readonly Pick<DartClass, 'kind' | 'plannedLeave'>[]
   /** This visit's notes, tips included */
   notes: CoachNote[]
   /** The player's 3-dart average (30-day, or the game's) */
@@ -66,7 +66,7 @@ export function tagOf(f: VisitFacts): VisitTag {
 const noteText = (n: CoachNote) =>
   `${n.tip ? 'Tip: ' : ''}On ${n.left}, ${n.thrown}: better ${n.better}${n.reason === null ? '' : ` — ${n.reason}`}.`
 /** Busted on purpose to stay on the start: the busting dart was a Bust-back */
-const bustBack = (f: VisitFacts) => f.bust && f.kinds.at(-1) === 'bustBack'
+const bustBack = (f: VisitFacts) => f.bust && f.classes.at(-1)?.kind === 'bustBack'
 const bustText = (f: VisitFacts) => `Busted on ${f.throws.at(-1)?.left ?? f.start}.`
 const bustBackText = (f: VisitFacts) =>
   `Busted on purpose to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
@@ -112,9 +112,23 @@ const chasedDown = (f: VisitFacts, out: boolean) =>
 /** A dart on a one-dart finish with one of these classes went for something else than the double */
 const NOT_AT_DOUBLE: ReadonlySet<DartKind> = new Set(['split', 'route', 'bustBack'])
 
+/** How many single-half misses in a row a double survives: 16 → 8 → 4 → 2 is 3, 12 → 6 is 1, the bull 0 */
+export function doubleDepth(left: number): number {
+  let n = 0
+  while (left !== 50 && left % 4 === 0) {
+    left /= 2
+    n++
+  }
+  return n
+}
+
+/** A split only spares the double when it moves to one that survives more misses (38 → S6 for D16, not 16 → S4 for D6) */
+const wentForTheDouble = (t: Throw, c: VisitFacts['classes'][number]) =>
+  c.kind === 'split' ? c.plannedLeave === null || doubleDepth(c.plannedLeave) <= doubleDepth(t.left) : !NOT_AT_DOUBLE.has(c.kind)
+
 function doubling(f: VisitFacts): VisitGrading {
   const back = bustBack(f)
-  const atDouble = f.throws.filter((t, i) => oneDartFinish(t.left) && !NOT_AT_DOUBLE.has(f.kinds[i]))
+  const atDouble = f.throws.filter((t, i) => oneDartFinish(t.left) && wentForTheDouble(t, f.classes[i]))
   const out = f.throws.find(t => t.checkout)
   const matchDart = f.lastVisitOfLostLeg && !out && atDouble.length > 0
   const note = explainedNote(f.notes)

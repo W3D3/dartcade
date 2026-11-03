@@ -88,7 +88,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Missed double',
         labels: ['weak'],
         source: 'scores',
-        when: 'Two or more darts at a double miss and the visit does not check out. One miss is OK.',
+        when: 'Two or more darts at a double miss and the visit does not check out. One miss is OK. A split to a worse double counts as a dart at yours (16 → S4 leaves D6, worse than D8).',
         example: '32 left · S16 · S8 → 8 left',
         says: 'Which doubles you missed. Every miss counts toward the Missed doubles card.',
       },

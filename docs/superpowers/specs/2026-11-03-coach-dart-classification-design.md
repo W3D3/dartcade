@@ -219,6 +219,10 @@ Decisions taken while building this without the user, each with why:
   better than not busting.
 - **Darts classed Split, Route or Bust-back are not darts at the double, in every visit.** "Split →
   D16 ✓" next to "3 darts at D19, D16 and D8 missed" contradicted itself.
+- **A Split only spares the double when it moves to a better one** (user ruling): one that
+  survives more single-half misses in a row (`doubleDepth`: 16 → 8 → 4 → 2 is 3, 12 → 6 is 1, the
+  bull 0). 38 → S6 for D16 is fine; 16 → S4 for D6 is a dart at D8, so S4, S4, S4 on 16 is Weak.
+  An equally good double doesn't count as better. The dart keeps its Split class.
 - **Stored reviews from an older `COACH_VERSION` aren't served**; they take the rebuild path, since
   the API's required `class` would refuse them.
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyVisit, explainedNote, tagOf, type VisitFacts } from './grade.js'
+import { classifyVisit, doubleDepth, explainedNote, tagOf, type VisitFacts } from './grade.js'
 import { classifyDart } from './dartClass.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
 import { leg, visit } from './testLegs.js'
@@ -18,7 +18,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     scored: v.scored,
     then: v.remaining,
     bust: v.bust,
-    kinds: throws.map(t => classifyDart(t, { evaluation: evaluate(t) }).kind),
+    classes: throws.map(t => classifyDart(t, { evaluation: evaluate(t) })),
     notes: strategyNotes(throws, evaluate),
     average,
     lastVisitOfLostLeg: lost,
@@ -26,7 +26,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
 }
 
 /** The facts with the busting dart's class forced to a Bust-back */
-const bustBack = (f: VisitFacts): VisitFacts => ({ ...f, kinds: [...f.kinds.slice(0, -1), 'bustBack'] })
+const bustBack = (f: VisitFacts): VisitFacts => ({ ...f, classes: [...f.classes.slice(0, -1), { kind: 'bustBack', plannedLeave: null }] })
 
 const grade = (start: number, names: string[], opts?: Opts) => classifyVisit(facts(start, names, opts))
 
@@ -187,16 +187,18 @@ describe('doubling visits', () => {
   it('OK: a Bust-back, its own line over a tip on an earlier dart', () => {
     // On 20: S10 at D10, then S7 (a route, and a tip: better D5) leaves 3, and S5 busts back to 20
     const f = facts(20, ['S10', 'S7', 'S5'])
-    expect(f.kinds).toEqual(['double', 'route', 'bustBack'])
+    expect(f.classes.map(c => c.kind)).toEqual(['double', 'route', 'bustBack'])
     expect(f.notes.map(n => n.tip)).toEqual([true])
     expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'ok', text: 'Busted on purpose to stay on 20 (D10).' })
     // The same darts, the last a plain bust
-    expect(classifyVisit({ ...f, kinds: ['double', 'route', 'bust'] })).toMatchObject({ grade: 'mistake', tip: true })
+    expect(
+      classifyVisit({ ...f, classes: (['double', 'route', 'bust'] as const).map(kind => ({ kind, plannedLeave: null })) }),
+    ).toMatchObject({ grade: 'mistake', tip: true })
   })
 
   it('a Bust-back still answers to the missed-doubles rules: S10 and S5 at D10 and D5, then T20', () => {
     const f = facts(20, ['S10', 'S5', 'T20'])
-    expect(f.kinds).toEqual(['double', 'double', 'bustBack'])
+    expect(f.classes.map(c => c.kind)).toEqual(['double', 'double', 'bustBack'])
     expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: '2 darts at D10 and D5 missed.' })
   })
 
@@ -277,27 +279,44 @@ describe('doubling visits', () => {
 
   it('not chased down from below 6, or by a dart outside the single half', () => {
     expect(grade(4, ['S2', 'Miss', 'Miss']).text).toBe('3 darts at D2 and D1 missed.')
-    // S4 on 16 is also a tip (D8 straight away), which then speaks for the visit; the first two S4s
-    // are splits (to D6, then D4), so only the last dart was at a double: OK
-    expect(grade(16, ['S4', 'S4', 'S4'])).toMatchObject({ grade: 'ok', tip: true, text: 'Tip: On 16, S4: better D8.' })
+    // S4 on 16 is also a tip (D8 straight away), which then speaks for the visit. The split to D6 is
+    // to a worse double, so it counts as a dart at D8; the one from 12 to D4 is to a better one: Weak
+    expect(grade(16, ['S4', 'S4', 'S4'])).toMatchObject({ grade: 'weak', tip: true, text: 'Tip: On 16, S4: better D8.' })
+  })
+
+  it('a double survives as many single-half misses as it halves to another double', () => {
+    expect([2, 4, 8, 12, 16, 32, 38, 40, 50].map(doubleDepth)).toEqual([0, 1, 2, 1, 3, 4, 0, 2, 0])
+  })
+
+  it('a split to a worse double is a dart at the double: 16 → S4 left D6, worse than D8', () => {
+    const f = facts(16, ['S4', 'Miss', 'Miss'])
+    expect(f.classes.map(c => c.kind)[0]).toBe('split')
+    expect(classifyVisit(f)).toMatchObject({ grade: 'weak' })
+    expect(classifyVisit(f).text).toContain('D8')
+  })
+
+  it('a split to a better double is not: 12 → S4 leaves D4, which survives more misses than D6', () => {
+    const f = facts(12, ['S4', 'D4'])
+    expect(f.classes.map(c => c.kind)).toEqual(['split', 'double'])
+    expect(classifyVisit(f)).toMatchObject({ grade: 'great' })
   })
 
   it('a split is no dart at the double: 38 → S6, S16, S8 missed D16 and D8 only', () => {
     const f = facts(38, ['S6', 'S16', 'S8'])
-    expect(f.kinds).toEqual(['split', 'double', 'double'])
+    expect(f.classes.map(c => c.kind)).toEqual(['split', 'double', 'double'])
     expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: '2 darts at D16 and D8 missed.' })
   })
 
   it('a typed miss on a double is a dart at it', () => {
     const f = facts(32, ['Miss', 'S16'])
-    expect(f.kinds).toEqual(['double', 'double'])
+    expect(f.classes.map(c => c.kind)).toEqual(['double', 'double'])
     expect(classifyVisit(f).text).toBe('2 darts at D16 missed.')
   })
 
   it('Mistake: a Bust-back on a missed match dart that left no double', () => {
     // On 15: S9 sets up D3, S3 misses it, T20 busts back to 15
     const f = facts(15, ['S9', 'S3', 'T20'], { lost: true })
-    expect(f.kinds).toEqual(['route', 'double', 'bustBack'])
+    expect(f.classes.map(c => c.kind)).toEqual(['route', 'double', 'bustBack'])
     expect(classifyVisit({ ...f, notes: [] })).toEqual({
       tag: 'doubling',
       grade: 'mistake',

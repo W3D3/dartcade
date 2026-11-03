@@ -95,7 +95,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       then: v.remaining,
       bust: v.bust,
       // The walked darts' only: those after a bust aren't
-      kinds: reviewDarts.slice(0, vThrows.length).map(d => d.class.kind),
+      classes: reviewDarts.slice(0, vThrows.length).map(d => d.class),
       notes: vNotes,
       average,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
