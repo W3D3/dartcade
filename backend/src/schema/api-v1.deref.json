@@ -3985,7 +3985,9 @@
                                     "coords",
                                     "left",
                                     "bust",
-                                    "class"
+                                    "class",
+                                    "delta",
+                                    "closeness"
                                   ],
                                   "additionalProperties": false,
                                   "properties": {
@@ -4128,6 +4130,16 @@
                                           "minimum": 0
                                         }
                                       }
+                                    },
+                                    "delta": {
+                                      "type": "number",
+                                      "nullable": true,
+                                      "description": "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+                                    },
+                                    "closeness": {
+                                      "type": "number",
+                                      "nullable": true,
+                                      "description": "The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart"
                                     }
                                   }
                                 }
@@ -48242,7 +48254,9 @@
           "coords",
           "left",
           "bust",
-          "class"
+          "class",
+          "delta",
+          "closeness"
         ],
         "additionalProperties": false,
         "properties": {
@@ -48385,6 +48399,16 @@
                 "minimum": 0
               }
             }
+          },
+          "delta": {
+            "type": "number",
+            "nullable": true,
+            "description": "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+          },
+          "closeness": {
+            "type": "number",
+            "nullable": true,
+            "description": "The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart"
           }
         }
       },
@@ -48605,7 +48629,9 @@
                 "coords",
                 "left",
                 "bust",
-                "class"
+                "class",
+                "delta",
+                "closeness"
               ],
               "additionalProperties": false,
               "properties": {
@@ -48748,6 +48774,16 @@
                       "minimum": 0
                     }
                   }
+                },
+                "delta": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+                },
+                "closeness": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart"
                 }
               }
             }
@@ -49054,7 +49090,9 @@
                       "coords",
                       "left",
                       "bust",
-                      "class"
+                      "class",
+                      "delta",
+                      "closeness"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -49197,6 +49235,16 @@
                             "minimum": 0
                           }
                         }
+                      },
+                      "delta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+                      },
+                      "closeness": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart"
                       }
                     }
                   }
@@ -49635,7 +49683,9 @@
                           "coords",
                           "left",
                           "bust",
-                          "class"
+                          "class",
+                          "delta",
+                          "closeness"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -49778,6 +49828,16 @@
                                 "minimum": 0
                               }
                             }
+                          },
+                          "delta": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+                          },
+                          "closeness": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart"
                           }
                         }
                       }

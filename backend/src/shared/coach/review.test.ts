@@ -51,9 +51,9 @@ describe('reviewLeg', () => {
           n: 1,
           left: 501,
           darts: [
-            { name: 'T20', coords: { x: 0, y: 0.6 }, left: 441, bust: false, class: kind('scoringHit') },
-            { name: 'T20', coords: null, left: 381, bust: false, class: kind('scoringHit') },
-            { name: 'S20', coords: null, left: 361, bust: false, class: kind('scoringSingle') },
+            { name: 'T20', coords: { x: 0, y: 0.6 }, left: 441, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
+            { name: 'T20', coords: null, left: 381, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
+            { name: 'S20', coords: null, left: 361, bust: false, class: kind('scoringSingle'), delta: null, closeness: null },
           ],
           scored: 140,
           then: 361,
@@ -69,9 +69,9 @@ describe('reviewLeg', () => {
           n: 2,
           left: 361,
           darts: [
-            { name: 'S20', coords: null, left: 341, bust: false, class: kind('scoringSingle') },
-            { name: 'S1', coords: null, left: 340, bust: false, class: kind('scoringMiss') },
-            { name: 'S5', coords: null, left: 335, bust: false, class: kind('scoringMiss') },
+            { name: 'S20', coords: null, left: 341, bust: false, class: kind('scoringSingle'), delta: null, closeness: null },
+            { name: 'S1', coords: null, left: 340, bust: false, class: kind('scoringMiss'), delta: null, closeness: null },
+            { name: 'S5', coords: null, left: 335, bust: false, class: kind('scoringMiss'), delta: null, closeness: null },
           ],
           scored: 26,
           then: 335,
@@ -87,9 +87,9 @@ describe('reviewLeg', () => {
           n: 3,
           left: 335,
           darts: [
-            { name: 'T20', coords: null, left: 275, bust: false, class: kind('scoringHit') },
-            { name: 'S20', coords: null, left: 255, bust: false, class: kind('scoringSingle') },
-            { name: 'S20', coords: null, left: 235, bust: false, class: kind('scoringSingle') },
+            { name: 'T20', coords: null, left: 275, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
+            { name: 'S20', coords: null, left: 255, bust: false, class: kind('scoringSingle'), delta: null, closeness: null },
+            { name: 'S20', coords: null, left: 235, bust: false, class: kind('scoringSingle'), delta: null, closeness: null },
           ],
           scored: 100,
           then: 235,
@@ -105,9 +105,9 @@ describe('reviewLeg', () => {
           n: 4,
           left: 235,
           darts: [
-            { name: 'T20', coords: null, left: 175, bust: false, class: kind('scoringHit') },
-            { name: 'T19', coords: null, left: 118, bust: false, class: kind('scoringHit') },
-            { name: 'S20', coords: null, left: 98, bust: false, class: kind('route') },
+            { name: 'T20', coords: null, left: 175, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
+            { name: 'T19', coords: null, left: 118, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
+            { name: 'S20', coords: null, left: 98, bust: false, class: kind('route'), delta: null, closeness: null },
           ],
           scored: 137,
           then: 98,
@@ -124,9 +124,9 @@ describe('reviewLeg', () => {
           n: 5,
           left: 98,
           darts: [
-            { name: 'T17', coords: null, left: 47, bust: false, class: kind('route') },
-            { name: 'S1', coords: null, left: 46, bust: false, class: kind('route') },
-            { name: 'S6', coords: null, left: 40, bust: false, class: kind('route') },
+            { name: 'T17', coords: null, left: 47, bust: false, class: kind('route'), delta: expect.any(Number), closeness: null },
+            { name: 'S1', coords: null, left: 46, bust: false, class: kind('route'), delta: expect.any(Number), closeness: null },
+            { name: 'S6', coords: null, left: 40, bust: false, class: kind('route'), delta: expect.any(Number), closeness: null },
           ],
           scored: 58,
           then: 40,
@@ -142,14 +142,14 @@ describe('reviewLeg', () => {
           n: 6,
           left: 40,
           darts: [
-            { name: 'S20', coords: null, left: 20, bust: false, class: kind('double') },
-            { name: 'D10', coords: null, left: 0, bust: false, class: kind('double') },
+            { name: 'S20', coords: null, left: 20, bust: false, class: kind('double'), delta: expect.any(Number), closeness: null },
+            { name: 'D10', coords: null, left: 0, bust: false, class: kind('double'), delta: expect.any(Number), closeness: null },
           ],
           scored: 40,
           then: 0,
           bust: false,
           tag: 'doubling',
-          grade: 'great',
+          grade: 'good',
           text: 'Checked out on D10.',
           tip: false,
           notes: [],
@@ -243,13 +243,15 @@ describe('reviewLeg', () => {
       ['D8', 32, false, 'notCounted'],
     ])
     expect(r?.visits[0].darts[2].class).toEqual(NOT_COUNTED)
+    // The busting dart has its value change, the one after it none
+    expect(r?.visits[0].darts.map(d => d.delta === null)).toEqual([false, false, true])
   })
 
-  it('spares a deliberate bust: on 20, S10 and S7 leave 3, and the third dart busts back to D10', () => {
+  it('tells a deliberate bust as one: on 20, S10 and S7 leave 3, and the third dart busts back to D10', () => {
     for (const third of ['S5', 'T20']) {
       const r = reviewLeg([leg([visit(0, 20, ['S10', 'S7', third])])], 0, 0, ctx(501))
       expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'route', 'bustBack'])
-      expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'ok', text: 'Busted on purpose to stay on 20 (D10).', tip: false })
+      expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'weak', text: 'Busted on purpose to stay on 20 (D10).', tip: false })
     }
   })
 
@@ -271,7 +273,7 @@ describe('reviewLeg', () => {
   it("marks a visit whose text is a tip's", () => {
     // Solo on 24: S14 instead of the direct D12 is a tip, then two misses at D5
     const r = reviewLeg([leg([visit(0, 24, ['S14', 'Miss', 'Miss'])])], 0, 0, ctx(24))
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'weak', tip: true })
+    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'mistake', tip: true })
     expect(r?.visits[0].text).toMatch(/^Tip: /)
   })
 

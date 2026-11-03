@@ -93,8 +93,8 @@ export const COACH_GAMES: CoachSample[] = [
     grades: [
       // 100 from T20, S20, S20 in the middle of their beds: a tight group lifts it to Good
       ['good', 'ok', 'ok', 'perfect'],
-      // 140 leaves 161, still a 3-dart finish
-      ['perfect', 'ok', 'weak'],
+      // 140 leaves 161, still a 3-dart finish; from 65, 25 then S20 and S10 chase D10 down to 10
+      ['perfect', 'ok', 'mistake'],
       ['weak', 'ok', 'great'],
     ],
     kinds: [

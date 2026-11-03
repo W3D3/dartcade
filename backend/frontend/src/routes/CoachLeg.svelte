@@ -22,6 +22,7 @@
     legSubtitle,
     legSubtitleShort,
     missTags,
+    valueLine,
     whatHappened,
   } from '$lib/coach/view'
   import { createRequestGuard } from '$lib/requestGuard'
@@ -106,6 +107,7 @@
     />
     <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
       <span><b>What happened:</b> {whatHappened(v)}</span>
+      {#if valueLine(v)}<span class="text-text-muted"><b>Checkout chance:</b> {valueLine(v)}</span>{/if}
       <GroupingPill grouping={v.grouping} />
       {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
       {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}

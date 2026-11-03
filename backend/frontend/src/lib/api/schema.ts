@@ -2895,6 +2895,10 @@ export interface components {
             /** @description This dart busted (the darts the game keeps after it are false) */
             bust: boolean;
             class: components["schemas"]["DartClass"];
+            /** @description The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust */
+            delta: number | null;
+            /** @description The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart */
+            closeness: number | null;
         };
         /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust */
         DartClass: {

@@ -289,6 +289,21 @@ export function whatHappened(v: Pick<ReviewVisit, 'darts'>): string {
   return `${parts.join(', ')}.`
 }
 
+/** Rounded checkout-chance points with their sign: "+12", "−25", "0" */
+export function signedPoints(v: number): string {
+  const n = Math.round(v)
+  return n === 0 ? '0' : `${n > 0 ? '+' : '−'}${Math.abs(n)}`
+}
+
+/** "S20 −4 · T17 +11 · S18 +2 · near misses +3": each dart's change in checkout chance, then the
+ *  near-miss credit when there is any; null on a Scoring visit */
+export function valueLine(v: Pick<ReviewVisit, 'darts'>): string | null {
+  const darts = v.darts.flatMap(d => (d.delta === null ? [] : [{ ...d, delta: d.delta }]))
+  if (!darts.length) return null
+  const close = Math.round(darts.reduce((s, d) => s + (d.closeness ?? 0), 0))
+  return [...darts.map(d => `${d.name} ${signedPoints(d.delta)}`), ...(close > 0 ? [`near misses +${close}`] : [])].join(' · ')
+}
+
 /** "Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed
  *  darts sat together against the spread expected at the player's average, the spread and offset
  *  only when they shared a target, the rating only on a Scoring

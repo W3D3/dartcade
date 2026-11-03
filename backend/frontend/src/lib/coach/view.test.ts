@@ -26,6 +26,8 @@ import {
   visitTiles,
   vsLine,
   whatHappened,
+  signedPoints,
+  valueLine,
 } from './view'
 
 const x01 = (config: Record<string, unknown>) => ({ mode: 'x01', config })
@@ -118,7 +120,7 @@ describe('coachFound', () => {
 })
 
 describe('visitTiles', () => {
-  const d = (name: string, left: number) => ({ name, coords: null, left, bust: false, class: NOT_COUNTED })
+  const d = (name: string, left: number) => ({ name, coords: null, left, bust: false, class: NOT_COUNTED, delta: null, closeness: null })
   it('greens trebles, reds a single thrown at a double, dashes a miss', () => {
     // Coach-Leg visits 4 and 6: 180 → T20 S5 S20, then 15 → S7 S4 Miss
     expect(visitTiles({ left: 180, darts: [d('T20', 120), d('S5', 115), d('S20', 95)] }).map(t => t.tone)).toEqual([
@@ -230,7 +232,15 @@ describe('leg review text', () => {
     tip: false,
     ...n,
   })
-  const dart = (name: string, left: number, bust = false) => ({ name, coords: null, left, bust, class: NOT_COUNTED })
+  const dart = (name: string, left: number, bust = false) => ({
+    name,
+    coords: null,
+    left,
+    bust,
+    class: NOT_COUNTED,
+    delta: null,
+    closeness: null,
+  })
 
   it('heads the leg and words its subtitles as drawn', () => {
     expect(legHeading(2, ['Lena'])).toBe('Leg 3 vs Lena')
@@ -258,6 +268,16 @@ describe('leg review text', () => {
     expect(whatHappened({ darts: [dart('S19', 76), dart('T20', 16), dart('S1', 15)] })).toBe('S19 (76 left), T20 (16 left), S1 (15 left).')
     expect(whatHappened({ darts: [dart('S4', 8), dart('S10', 12, true)] })).toBe('S4 (8 left), S10 bust.')
     expect(whatHappened({ darts: [dart('S4', 4), dart('D2', 0)] })).toBe('S4 (4 left), D2 out.')
+  })
+
+  it("lists each dart's change in checkout chance and the near-miss credit", () => {
+    const valued = (name: string, delta: number, closeness: number | null = null) => ({ ...dart(name, 0), delta, closeness })
+    expect(valueLine({ darts: [valued('S20', -4.4), valued('T17', 10.8), valued('S18', 1.5)] })).toBe('S20 −4 · T17 +11 · S18 +2')
+    expect(valueLine({ darts: [valued('M16', -3.9, 4.5), valued('M16', -6, 4.5), dart('D8', 32)] })).toBe(
+      'M16 −4 · M16 −6 · near misses +9',
+    )
+    expect(valueLine({ darts: [dart('T20', 441)] })).toBeNull()
+    expect(signedPoints(0.4)).toBe('0')
   })
 
   it('marks the busting dart, not the last, and the darts kept after it as not counted', () => {
@@ -384,8 +404,8 @@ describe('dartLabel', () => {
 describe('groupingLine', () => {
   const t20 = { ...NOT_COUNTED, kind: 'scoringSingle' as const, target: { aimId: 'T20', label: 'T20' } }
   const darts = [
-    { name: 'S20', coords: null, left: 481, bust: false, class: t20 },
-    { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20 },
+    { name: 'S20', coords: null, left: 481, bust: false, class: t20, delta: null, closeness: null },
+    { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20, delta: null, closeness: null },
   ]
   const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 

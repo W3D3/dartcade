@@ -1,15 +1,29 @@
 import { describe, it, expect } from 'vitest'
-import { classifyVisit, doubleDepth, explainedNote, tagOf, type VisitFacts } from './grade.js'
+import { segAngle, segmentAt } from '../board.js'
+import {
+  classifyVisit,
+  closeness,
+  dartGrade,
+  explainedNote,
+  GOOD_FROM,
+  MISS_CLOSE_MAX,
+  MISS_CLOSE_ZERO_MM,
+  OK_FROM,
+  tagOf,
+  WEAK_FROM,
+  type VisitFacts,
+} from './grade.js'
 import { classifyDart } from './dartClass.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
 import { leg, visit } from './testLegs.js'
-import { throwsOf } from './walk.js'
+import { dartDeltas } from './value.js'
+import { throwsOf, type CoachDart, type CoachVisit } from './walk.js'
 
-type Opts = { average?: number; lost?: boolean; opponentLeft?: number }
+type Opts = { average?: number; lost?: boolean; opponentLeft?: number; visit?: CoachVisit }
 
 /** Seat 0's visit from `start`, after an opponent (seat 1) left on `opponentLeft` (default 501). */
-function facts(start: number, names: string[], { average = 60, lost = false, opponentLeft = 501 }: Opts = {}): VisitFacts {
-  const v = visit(0, start, names)
+function facts(start: number, names: string[], { average = 60, lost = false, opponentLeft = 501, visit: given }: Opts = {}): VisitFacts {
+  const v = given ?? visit(0, start, names)
   const throws = throwsOf([leg([visit(1, opponentLeft, []), v])], 0, 501)
   const evaluate = throwEvaluations()
   return {
@@ -19,6 +33,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     then: v.remaining,
     bust: v.bust,
     classes: throws.map(t => classifyDart(t, { evaluation: evaluate(t) })),
+    deltas: start > 170 ? [] : dartDeltas(throws, evaluate),
     notes: strategyNotes(throws, evaluate),
     average,
     first: start === 501,
@@ -28,7 +43,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
 }
 
 /** The facts with the busting dart's class forced to a Bust-back */
-const bustBack = (f: VisitFacts): VisitFacts => ({ ...f, classes: [...f.classes.slice(0, -1), { kind: 'bustBack', plannedLeave: null }] })
+const bustBack = (f: VisitFacts): VisitFacts => ({ ...f, classes: [...f.classes.slice(0, -1), { ...f.classes.at(-1)!, kind: 'bustBack' }] })
 
 const grade = (start: number, names: string[], opts?: Opts) => classifyVisit(facts(start, names, opts))
 
@@ -144,13 +159,15 @@ describe('explainedNote', () => {
   })
 })
 
-describe('setup visits', () => {
+describe('setup and doubling visits: graded by value', () => {
+  /** The visit's grade points: its darts' value changes plus their closeness credits */
+  const points = (f: VisitFacts) => f.deltas.reduce((s, d, i) => s + dartGrade(d, closeness(f.classes[i])), 0)
+
   it("marks a tip's text as a tip, and only that", () => {
-    // From a 3-dart finish: 97 itself is a 2-dart one, whose missed double is a Mistake of its own
     const f = facts(113, ['S20', 'S20', 'S20'])
     expect(f.notes.length).toBeGreaterThan(0)
     const r = classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })
-    expect(r).toMatchObject({ tag: 'setup', tip: true })
+    expect(r).toMatchObject({ tag: 'setup', tip: true, grade: classifyVisit({ ...f, notes: [] }).grade })
     expect(r.text).toMatch(/^Tip: /)
     expect(classifyVisit(f).tip).toBeUndefined()
   })
@@ -163,111 +180,39 @@ describe('setup visits', () => {
     })
   })
 
-  it('Mistake: a bust', () => {
+  it('a bust is graded by its value: it goes back to the start', () => {
     expect(grade(7, ['S20'])).toMatchObject({ tag: 'setup', grade: 'mistake' })
     expect(classifyVisit({ ...facts(7, ['S20']), notes: [] }).text).toBe('Busted on 7.')
+    expect(classifyVisit({ ...facts(2, ['S1']), notes: [] })).toEqual({ tag: 'doubling', grade: 'mistake', text: 'Busted on 2.' })
   })
 
-  it('OK: a Bust-back, staying on a score with no one-dart finish', () => {
-    expect(classifyVisit({ ...bustBack(facts(7, ['S20'])), notes: [] })).toEqual({
-      tag: 'setup',
-      grade: 'ok',
-      text: 'Busted on purpose to stay on 7.',
-    })
+  it('busting back to 32 beats leaving 2', () => {
+    // From 32: S16, then a T8 at D8 busts back to 32; S16, S8, S6 leaves D1 (notes left out)
+    const bust = { ...facts(32, ['S16', 'T8']), notes: [] }
+    const two = { ...facts(32, ['S16', 'S8', 'S6']), notes: [] }
+    expect(two.then).toBe(2)
+    expect(points(bust)).toBeGreaterThan(points(two))
+    expect(classifyVisit(bust)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on 16.' })
+    expect(classifyVisit(two)).toMatchObject({ grade: 'mistake' })
   })
 
-  it('a bust with its own strategy note is told from the note', () => {
-    // 14 is nowhere near the S3 that 7 wants
-    const f = facts(7, ['S14'])
-    expect(f.bust).toBe(true)
-    expect(f.notes.some(n => !n.tip)).toBe(true)
-    const r = classifyVisit(f)
-    expect(r).toMatchObject({ tag: 'setup', grade: 'mistake' })
-    expect(r.text).toBe('On 7, S14: better S3 — S14 busts.')
-  })
-
-  it('Mistake: a finish with a dart to spare that never reached a double', () => {
-    // 59 is S19 · D20: three darts that miss the S19 and leave 37 had a whole dart in hand
-    // (typed, the S19 on 56 also draws a note, which would speak first; the real visit had none)
-    expect(classifyVisit({ ...facts(59, ['Miss', 'S3', 'S19']), notes: [] })).toEqual({
-      tag: 'setup',
-      grade: 'mistake',
-      text: '59 is a 2-dart finish; 3 darts left 37, no double.',
-    })
-    // A 3-dart finish that ends off a double has no dart to spare: graded on what it left
-    expect(grade(150, ['S20', 'S20', 'S20']).grade).toBe('ok')
-  })
-
-  it('Good: left a one-dart finish, with its route', () => {
-    expect(grade(100, ['S20', 'S20', 'S20'])).toEqual({ tag: 'setup', grade: 'good', text: '40 left is a 1-dart finish (D20).' })
-  })
-
-  it('OK: anything else, with the route or none', () => {
-    expect(grade(150, ['S20', 'S20', 'S20'])).toEqual({ tag: 'setup', grade: 'ok', text: '90 left is a 2-dart finish (T20 · D15).' })
-    // (the S1 itself draws a note; without it the visit reads as left)
-    expect(classifyVisit({ ...facts(170, ['S1', 'Miss', 'Miss']), notes: [] })).toEqual({
-      tag: 'setup',
-      grade: 'ok',
-      text: '169 left: no 3-dart finish.',
-    })
-  })
-})
-
-describe('doubling visits', () => {
-  it('Great: checked out', () => {
-    expect(grade(32, ['S16', 'D8'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D8.' })
-    expect(grade(50, ['Miss', 'Bull'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on the bull.' })
-  })
-
-  it('Mistake: a bust beats everything, even a missed match dart that left a double', () => {
-    const f = facts(40, ['S20', 'S20'], { lost: true })
-    expect(f.bust).toBe(true)
-    expect(classifyVisit({ ...f, notes: [] })).toEqual({ tag: 'doubling', grade: 'mistake', text: 'Missed the match dart. Busted on 20.' })
-  })
-
-  it('OK: a Bust-back, its own line over a tip on an earlier dart', () => {
-    // On 20: S10 at D10, then S7 (a route, and a tip: better D5) leaves 3, and S5 busts back to 20
+  it('a Bust-back is told as one, graded by its value', () => {
+    expect(classifyVisit({ ...bustBack(facts(7, ['S20'])), notes: [] })).toMatchObject({ text: 'Busted on purpose to stay on 7.' })
+    // On 20: S10 at D10, then S7 (a tip: better D5) leaves 3, and S5 busts back to 20
     const f = facts(20, ['S10', 'S7', 'S5'])
     expect(f.classes.map(c => c.kind)).toEqual(['double', 'route', 'bustBack'])
     expect(f.notes.map(n => n.tip)).toEqual([true])
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'ok', text: 'Busted on purpose to stay on 20 (D10).' })
-    // The same darts, the last a plain bust
-    expect(
-      classifyVisit({ ...f, classes: (['double', 'route', 'bust'] as const).map(kind => ({ kind, plannedLeave: null })) }),
-    ).toMatchObject({ grade: 'mistake', tip: true })
-  })
-
-  it('a Bust-back still answers to the missed-doubles rules: S10 and S5 at D10 and D5, then T20', () => {
-    const f = facts(20, ['S10', 'S5', 'T20'])
-    expect(f.classes.map(c => c.kind)).toEqual(['double', 'double', 'bustBack'])
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: '2 darts at D10 and D5 missed.' })
-  })
-
-  it('a Bust-back on a missed match dart grades as the match dart does', () => {
-    expect(grade(20, ['S10', 'S5', 'T20'], { lost: true })).toEqual({
+    expect(points(f)).toBeLessThan(OK_FROM)
+    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on purpose to stay on 20 (D10).' })
+    // The same darts, the last a plain bust: the same value
+    expect(classifyVisit({ ...f, classes: [...f.classes.slice(0, 2), { ...f.classes[2], kind: 'bust' }] })).toEqual({
       tag: 'doubling',
       grade: 'weak',
-      text: 'Missed the match dart. 2 darts at D10 and D5 missed.',
+      text: 'Busted on 3.',
     })
-    // One dart at the double (S7 set up the bust), but the match dart: Weak, told from S7's tip
-    expect(grade(20, ['S10', 'S7', 'S5'], { lost: true })).toEqual({
-      tag: 'doubling',
-      grade: 'weak',
-      text: "Missed the match dart. Tip: On 10, S7: better D5 — S7 leaves 3, which one dart can't finish.",
-      tip: true,
-    })
-  })
-
-  it('a Bust-back on 50 stays on the bull', () => {
     expect(classifyVisit({ ...bustBack(facts(50, ['S25', 'S20', 'S10'])), notes: [] })).toMatchObject({
-      grade: 'ok',
       text: 'Busted on purpose to stay on 50 (the bull).',
     })
-  })
-
-  it('Mistake: a Bust-back visit with a strategy note that is not a tip', () => {
-    const f = facts(40, ['S20', 'S19'])
-    expect(classifyVisit(bustBack(f))).toMatchObject({ grade: 'mistake', text: 'On 20, S19: better D10 — S19 busts.' })
   })
 
   it('Mistake: a strategy note that is not a tip', () => {
@@ -278,95 +223,90 @@ describe('doubling visits', () => {
     expect(r.tip).toBeUndefined()
   })
 
-  it('a tip speaks for the visit, its grade left to the doubling rules', () => {
-    // The same S14 on 24 with nobody on an out, then two misses at D5: Weak as any 3 missed darts
-    const r = grade(24, ['S14', 'Miss', 'Miss'])
-    expect(r).toMatchObject({ tag: 'doubling', grade: 'weak', tip: true })
+  it('a tip speaks for the visit, its grade left to the value', () => {
+    const f = facts(24, ['S14', 'Miss', 'Miss'])
+    const r = classifyVisit(f)
+    expect(r).toMatchObject({ tag: 'doubling', grade: classifyVisit({ ...f, notes: [] }).grade, tip: true })
     expect(r.text).toMatch(/^Tip: On 24, S14: better D12/)
     expect(grade(24, ['S14', 'Miss', 'Miss'], { lost: true }).text).toMatch(/^Missed the match dart\. Tip: On 24, S14/)
+    // A checkout keeps its own line
+    expect(grade(24, ['S14', 'D5'])).toMatchObject({ tag: 'doubling', text: 'Checked out on D5.' })
   })
 
-  it('a tip does not make a Mistake', () => {
-    // The same S14 on 24 with nobody on an out
-    const f = facts(24, ['S14', 'D5'])
-    expect(f.notes.some(n => n.tip)).toBe(true)
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D5.' })
-  })
-
-  it('Mistake: a missed match dart that left no double', () => {
-    expect(grade(40, ['S20', 'S10', 'S5'], { lost: true })).toEqual({
-      tag: 'doubling',
+  it('59 → Miss, S3, S19: the darts gave away the finish, told from the costliest', () => {
+    // (typed, the S19 on 56 also draws a note, which would speak first; the real visit had none)
+    const f = { ...facts(59, ['Miss', 'S3', 'S19']), notes: [] }
+    expect(points(f)).toBeLessThan(WEAK_FROM)
+    expect(classifyVisit(f)).toEqual({
+      tag: 'setup',
       grade: 'mistake',
-      text: 'Missed the match dart. 3 darts at D20, D10, and D5 missed.',
+      text: 'S19 on 56 cost 15% checkout chance: 37 left is a 2-dart finish (S5 · D16).',
     })
   })
 
-  it('Weak: a missed match dart that still left a double', () => {
-    expect(grade(52, ['S12', 'Miss'], { lost: true })).toEqual({
+  it('121 → S20, T17, S18: a good setup to D16', () => {
+    const f = facts(121, ['S20', 'T17', 'S18'])
+    expect(points(f)).toBeGreaterThanOrEqual(GOOD_FROM)
+    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'good', text: '32 left is a 1-dart finish (D16).' })
+  })
+
+  it('a checkout is told by its double', () => {
+    expect(grade(32, ['S16', 'D8'])).toEqual({ tag: 'doubling', grade: 'good', text: 'Checked out on D8.' })
+    expect(grade(76, ['S20', 'S16', 'D20'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D20.' })
+    expect(grade(50, ['Miss', 'Bull'])).toMatchObject({ text: 'Checked out on the bull.' })
+  })
+
+  it('a flat or better visit says what it left, a worse one leads with its costliest dart', () => {
+    expect(grade(170, ['T20', 'T20', 'S25'])).toEqual({ tag: 'doubling', grade: 'great', text: '25 left is a 2-dart finish (S9 · D8).' })
+    expect(grade(150, ['S20', 'S20', 'S20'])).toEqual({
+      tag: 'setup',
+      grade: 'weak',
+      text: 'S20 on 110 cost 7% checkout chance: 90 left is a 2-dart finish (T20 · D15).',
+    })
+    expect(classifyVisit({ ...facts(170, ['S1', 'Miss', 'Miss']), notes: [] }).text).toMatch(/: 169 left: no 3-dart finish\.$/)
+  })
+
+  it('three darts missed at the double: Weak', () => {
+    expect(grade(32, ['Miss', 'Miss', 'Miss'])).toEqual({
       tag: 'doubling',
       grade: 'weak',
-      text: 'Missed the match dart. 1 dart at D20 missed.',
+      text: 'Miss on 32 cost 9% checkout chance: 32 left is a 1-dart finish (D16).',
     })
   })
 
-  it('Weak: two or more darts at a double, none hit', () => {
-    expect(grade(32, ['Miss', 'Miss', 'Miss'])).toEqual({ tag: 'doubling', grade: 'weak', text: '3 darts at D16 missed.' })
+  it('a dart that missed its target grades higher the closer it was', () => {
+    // On the 16 wedge's centre line, just outside the double: 2 mm and 25 mm off its bed
+    const at = (mm: number): CoachDart => {
+      const r = (170 + mm) / 170
+      const p = { x: r * Math.cos(segAngle(13)), y: r * Math.sin(segAngle(13)) }
+      const { name, number, multiplier } = segmentAt(p.x, p.y)
+      return { segment: { name, number, multiplier }, coords: p }
+    }
+    const placed = (mm: number) =>
+      facts(32, [], { visit: { seat: 0, darts: [at(mm), at(mm), at(mm)], scored: 0, remaining: 32, bust: false } })
+    const near = placed(2)
+    const far = placed(25)
+    expect(near.classes.map(c => c.kind)).toEqual(['double', 'double', 'double'])
+    expect(near.deltas).toEqual(far.deltas)
+    expect(closeness(near.classes[0])).toBeCloseTo(MISS_CLOSE_MAX * (1 - 2 / MISS_CLOSE_ZERO_MM))
+    expect(closeness(far.classes[0])).toBe(0)
+    // A hit and a typed dart earn none
+    expect(closeness(facts(32, ['D16']).classes[0])).toBeNull()
+    expect(closeness(facts(32, ['Miss']).classes[0])).toBeNull()
+    expect(points(near)).toBeGreaterThan(points(far))
+    expect(classifyVisit(near).grade).toBe('ok')
+    expect(classifyVisit(far).grade).toBe('weak')
   })
 
-  it('Weak: chased down to 4 or 2 by single-half misses', () => {
-    expect(grade(32, ['S16', 'S8', 'S4'])).toEqual({ tag: 'doubling', grade: 'weak', text: 'Chased down to 4.' })
-    expect(grade(8, ['S4', 'Miss', 'S2'])).toEqual({ tag: 'doubling', grade: 'weak', text: 'Chased down to 2.' })
-  })
-
-  it('not chased down from below 6, or by a dart outside the single half', () => {
-    expect(grade(4, ['S2', 'Miss', 'Miss']).text).toBe('3 darts at D2 and D1 missed.')
-    // S4 on 16 is also a tip (D8 straight away), which then speaks for the visit. The split to D6 is
-    // to a worse double, so it counts as a dart at D8; the one from 12 to D4 is to a better one: Weak
-    expect(grade(16, ['S4', 'S4', 'S4'])).toMatchObject({ grade: 'weak', tip: true, text: 'Tip: On 16, S4: better D8.' })
-  })
-
-  it('a double survives as many single-half misses as it halves to another double', () => {
-    expect([2, 4, 8, 12, 16, 32, 38, 40, 50].map(doubleDepth)).toEqual([0, 1, 2, 1, 3, 4, 0, 2, 0])
-  })
-
-  it('a split to a worse double is a dart at the double: 16 → S4 left D6, worse than D8', () => {
-    const f = facts(16, ['S4', 'Miss', 'Miss'])
-    expect(f.classes.map(c => c.kind)[0]).toBe('split')
-    expect(classifyVisit(f)).toMatchObject({ grade: 'weak' })
-    expect(classifyVisit(f).text).toContain('D8')
-  })
-
-  it('a split to a better double is not: 12 → S4 leaves D4, which survives more misses than D6', () => {
-    const f = facts(12, ['S4', 'D4'])
-    expect(f.classes.map(c => c.kind)).toEqual(['split', 'double'])
-    expect(classifyVisit(f)).toMatchObject({ grade: 'great' })
-  })
-
-  it('a split is no dart at the double: 38 → S6, S16, S8 missed D16 and D8 only', () => {
-    const f = facts(38, ['S6', 'S16', 'S8'])
-    expect(f.classes.map(c => c.kind)).toEqual(['split', 'double', 'double'])
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: '2 darts at D16 and D8 missed.' })
-  })
-
-  it('a typed miss on a double is a dart at it', () => {
-    const f = facts(32, ['Miss', 'S16'])
-    expect(f.classes.map(c => c.kind)).toEqual(['double', 'double'])
-    expect(classifyVisit(f).text).toBe('2 darts at D16 missed.')
-  })
-
-  it('Mistake: a Bust-back on a missed match dart that left no double', () => {
-    // On 15: S9 sets up D3, S3 misses it, T20 busts back to 15
-    const f = facts(15, ['S9', 'S3', 'T20'], { lost: true })
-    expect(f.classes.map(c => c.kind)).toEqual(['route', 'double', 'bustBack'])
-    expect(classifyVisit({ ...f, notes: [] })).toEqual({
+  it('the match dart: a dart at the double on the last visit of a lost leg', () => {
+    expect(grade(52, ['S12', 'Miss'], { lost: true }).text).toMatch(/^Missed the match dart\. /)
+    expect(classifyVisit({ ...facts(40, ['S20', 'S20'], { lost: true }), notes: [] })).toEqual({
       tag: 'doubling',
-      grade: 'mistake',
-      text: 'Missed the match dart. 1 dart at D3 missed.',
+      grade: 'weak',
+      text: 'Missed the match dart. Busted on 20.',
     })
-  })
-
-  it('OK: one dart at a double missed', () => {
-    expect(grade(52, ['S12', 'Miss'])).toEqual({ tag: 'doubling', grade: 'ok', text: '1 dart at D20 missed.' })
+    // Never on a setup: no dart went at a double
+    expect(grade(150, ['S20', 'S20', 'S20'], { lost: true }).text).not.toMatch(/match dart/)
   })
 })
 
@@ -397,7 +337,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
 
   it('checkouts in the fewest darts', () => {
     expect(grade(40, ['D20'])).toEqual({ tag: 'doubling', grade: 'perfect', text: 'Checked out in the fewest darts (D20).' })
-    expect(grade(40, ['S20', 'D10']).grade).toBe('great')
+    expect(grade(40, ['S20', 'D10']).grade).not.toBe('perfect')
     expect(grade(100, ['T20', 'D20']).text).toBe('Checked out in the fewest darts (D20).')
     expect(grade(170, ['T20', 'T20', 'Bull']).text).toBe('Checked out in the fewest darts (the bull).')
   })

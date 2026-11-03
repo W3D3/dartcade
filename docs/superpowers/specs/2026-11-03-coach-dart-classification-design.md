@@ -135,22 +135,44 @@ past them, the nearest point of the radial edge on the dart's side (point-to-seg
 corner when the dart is also outside the band. An arc's nearest point past the wedge is its end,
 on that edge, so this is exact.
 
-## Grading change
+## Visit value
 
-- **A bust is a Mistake**, except when its busting dart is a **Bust-back**. Bust-back replaces
-  only that rule: the match-dart, chased-down and missed-doubles rules still apply, so busting
-  never grades better than not busting.
-- **A Bust-back visit** is graded **OK** with the text "Busted on purpose to stay on 20 (D10)."
-  when none of those rules fire.
-- **Darts at the double:** a dart on a one-dart finish counts as one unless its class is Split,
-  Route or Bust-back (38 → S6, S16, S8 is "2 darts at D16 and D8 missed.", not 3). A typed miss
-  on a double counts (it is a Double attempt).
-- **A setup visit that started on a finish with a dart to spare** (`minDarts(start)` below the
-  visit's darts: with three, the 2-dart finishes, most of 41–110) and ended without a one-dart finish left is a **Mistake**
-  (user ruling, from 59 → Miss, S3, S19 graded OK): "59 is a 2-dart finish; 3 darts left 37, no
-  double." It comes after a strategy note and a bust, before the leave's OK/Good. A 3-dart finish
-  that ends off a double has no dart to spare and is still graded on what it left.
-- The other grade rules don't change, except Scoring visits' average thresholds (see Visit rating).
+Setup and Doubling visits are graded on what their darts did to the checkout chance, dart by dart
+(user ruling, from 59 → Miss, S3, S19 graded OK and 121 → S20, T17, S18 graded "OK · 0 darts at
+missed."). Scoring visits keep their rules (see Visit rating).
+
+- **Position value** (`shared/coach/value.ts`, pure, on the visit's shared evaluator from
+  `throwEvaluations`): V(left, darts) is the best aim's value from there, with the visit's start
+  and w (model.ts: the chance to check out this visit, plus w · the next visit's). V(left, 0) =
+  w · nextVisit(left); after a checkout 1; after a bust w · nextVisit(start), the score the bust
+  goes back to, so the start's double counts (32 is worth more than 2).
+- **A dart's delta** = V(after it) − V(before it), in percentage points (`ReviewDart.delta`). The
+  deltas telescope: a visit's sum is V(end) − V(start, 3). For the reference player (the model's
+  σ, about an 81 average) a best-aimed dart's expected delta is 0, so above 0 is better than that
+  player would expect from there.
+- **Closeness credit** (user ruling: a dart that missed its target grades better the closer it
+  was): a dart with a target and camera coords that didn't hit it earns `MISS_CLOSE_MAX ·
+  max(0, 1 − edgeMm / MISS_CLOSE_ZERO_MM)` (5 points, 20 mm) in `ReviewDart.closeness`; a hit, a
+  typed dart and a dart without a target get none (null). A hit's outcome is already in its delta.
+- **A dart's grade** is delta + closeness; **the visit's** is the sum over its walked darts.
+- **Order:** (1) a strategy note (not a tip) → Mistake, its text; (2) Perfect (fewest darts);
+  (3) otherwise by the visit's points (constants in `grade.ts`): Great ≥ +15 (`GREAT_FROM`), Good ≥
+  +5, OK ≥ −10, Weak ≥ −20 (`WEAK_FROM`), else Mistake. A bust and a Bust-back are graded the same
+  way (user ruling: "a bust can be better than leaving D1": 32 → S16, T8 busting back to 32 is
+  Weak at −19, 32 → S16, S8, S6 leaving 2 is a Mistake at −40); the Bust-back class stays on the dart.
+- **Texts:** a bust "Busted on 16." / "Busted on purpose to stay on 20 (D10)."; a checkout
+  "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
+  the value); otherwise, when the points are below 0 and the costliest dart lost at least 1 point,
+  "S19 on 56 cost 15% checkout chance: 37 left is a 2-dart finish (S5 · D16)."; else
+  what was left: "32 left is a 1-dart finish (D16)." or "169 left: no 3-dart finish.". The last
+  visit of a lost leg with a dart at a double (class Double, or Bull on 50) starts with "Missed the
+  match dart. ".
+- **Removed:** the missed-doubles count, chased down, the short-finish rule, the leave-based
+  OK/Good for setups, bust → Mistake and Bust-back → OK, and the darts-at-the-double counting
+  (`doubleDepth`). The leg's doubling stats (`stats.ts` darts at a double) are separate and stay.
+- **UI:** the sandbox's Dart classes table has Δ (signed, rounded) and Close columns; the leg
+  review's selected visit shows "Checkout chance: S20 −4 · T17 +11 · S18 +2 · near misses +3"
+  under What happened. The dart tiles' labels don't change.
 
 ## Visit rating
 
@@ -214,7 +236,7 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
 
 - 501 → T20 T19 T19 (327 left), 171 (330 left) and 180 are Perfect; T20 T20 S20 (361, 7 darts)
   is not. 211 → T20 T20 T17 (40) and T20 T19 T20 (34) are; T20 T20 T20 (31, a 2-dart finish)
-  is not. 40 → D20 and 100 → T20 D20 and 170 → T20 T20 Bull are; 40 → S20 D10 stays Great.
+  is not. 40 → D20 and 100 → T20 D20 and 170 → T20 T20 Bull are; 40 → S20 D10 is graded by its value (Good).
 - It is checked before every other grade rule except the strategy note and the bust: a bust is
   never Perfect, and a note (not a tip) keeps its Mistake.
 - Texts: "Checked out in the fewest darts (D20)."; otherwise "Scored 174: 327 left is still a
@@ -227,7 +249,7 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
 ## Data and UI
 
 - **Data:**
-  - `ReviewDart` gains `class: DartClass`, shared by the type, the API schema
+  - `ReviewDart` gains `class: DartClass` (and `delta`, `closeness`: see Visit value), shared by the type, the API schema
     (`schema/api-v1.yaml` + `gen:api`) and the stored review.
   - `COACH_VERSION` is bumped, so the backfill rebuilds the stored reviews.
 - **Leg review:**
@@ -253,7 +275,9 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - a dart after a bust → Not counted.
 - **Property tests:** the signs of `radialMm` and `tangentialMm` against known board positions;
   `distanceMm` against the geometry.
-- **Grading:** a Bust-back visit is OK, not a Mistake.
+- **Grading:** the value's telescoping, a checkout's 1 and a bust's start (`value.test.ts`); the two
+  user cases, a close and a far miss of the same double, busting back to 32 against leaving 2
+  (`grade.test.ts`).
 - **Seed:** the scripted coach games get their darts' classes pinned.
 
 ## Out of scope, for later
@@ -323,14 +347,6 @@ Decisions taken while building this without the user, each with why:
   little.
 - **A miss without a position shows "· est." instead of millimetres**: the bed centre would make
   the millimetres up.
-- **Bust-back only replaces bust → Mistake** (see Grading change): busting must never grade
-  better than not busting.
-- **Darts classed Split, Route or Bust-back are not darts at the double, in every visit.** "Split →
-  D16 ✓" next to "3 darts at D19, D16 and D8 missed" contradicted itself.
-- **A Split only spares the double when it moves to a better one** (user ruling): one that
-  survives more single-half misses in a row (`doubleDepth`: 16 → 8 → 4 → 2 is 3, 12 → 6 is 1, the
-  bull 0). 38 → S6 for D16 is fine; 16 → S4 for D6 is a dart at D8, so S4, S4, S4 on 16 is Weak.
-  An equally good double doesn't count as better. The dart keeps its Split class.
 - **Labels measure a miss from the edge of the target's bed**, not its centre (user ruling): a dart
   just past the treble wire is a 1 mm miss to a player. The centre values stay for the stats.
 - **The rating's constants** (GROUPING_MAX 15 / GROUPING_ZERO_MM 30, CLOSENESS_MAX 8 /
@@ -352,6 +368,20 @@ Decisions taken while building this without the user, each with why:
   its own line over a tip); the tip still shows in the visit's note.
 - **"Nine-darter still on." only on the seat's first visit from 501**: a later visit on 501 (after
   a zero visit, or in a 701 game) can't be on a nine-darter.
+
+- **Visit value: the thresholds (+15 / +5 / −10 / −20) and the closeness credit (5 points, 20 mm)
+  are first guesses**, to be tuned in the sandbox. Three typed misses at D16 from 32 are −19
+  (Weak); S16, S8, S4 chasing it down to 4 is −23.5 (Mistake); a camera visit of three misses 2 mm
+  outside D16 earns +13.5 back and is OK.
+- **The reference player is the model's** (landing.gen.ts, about an 81 average), not the seat's own
+  level: the grade says how the darts compare with that player from the same spot. A checkout from
+  an easy finish is Good (32 → S16, D8: +7.6), from a hard one Great (81 → T19, S12, D6: +21).
+- **A tip keeps the value's grade** and shows its text; a bust's or checkout's text wins over a tip.
+- **The costliest dart is picked by its delta alone** (the cost quoted is checkout chance), and only
+  named when the visit's points are below 0 and that dart lost at least 1 point.
+- **The match-dart prefix needs a dart classed Double (or Bull on 50) on a one-dart finish**; it no
+  longer changes the grade.
+- **A visit still in progress** (the sandbox) ends on the next dart's value, not the next visit's.
 
 ### Open questions for the user
 

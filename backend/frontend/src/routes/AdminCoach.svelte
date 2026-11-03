@@ -15,7 +15,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { currentUser } from '$lib/auth'
   import { coachTrail } from '$lib/admin/breadcrumbs'
-  import { betterLine, groupingLine, missTags, visitTiles, whatHappened } from '$lib/coach/view'
+  import { betterLine, groupingLine, missTags, signedPoints, visitTiles, whatHappened } from '$lib/coach/view'
   import { dartAt, dartFromLabel, sandbox } from '$lib/coach/sandbox'
   import { explainedNote } from '$shared/coach/grade'
   import type { CoachDart } from '$shared/coach/walk'
@@ -70,7 +70,7 @@
     add(d)
   }
 
-  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Edge', 'Out', 'CW', 'Wedges', 'Est.', 'Leave']
+  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Edge', 'Out', 'CW', 'Wedges', 'Est.', 'Leave', 'Δ', 'Close']
   const mm = (v: number | null) => (v === null ? '–' : (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
@@ -166,7 +166,8 @@
               <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
               <p class="m-0 text-[12px] text-text-muted">
                 Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
-                is clockwise, both from the point. Leave is planned → actual.
+                is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against an
+                81-average player from there), Close the credit for a near miss; the visit's grade adds them up.
               </p>
               <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-[13px] tabular-nums">
@@ -189,6 +190,8 @@
                         <td class="px-1.5 py-1 text-right">{c.wedgesOff ?? '–'}</td>
                         <td class="px-1.5 py-1">{c.estimated ? 'yes' : 'no'}</td>
                         <td class="px-1.5 py-1 text-right">{c.plannedLeave ?? '–'} → {c.actualLeave ?? '–'}</td>
+                        <td class="px-1.5 py-1 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>
+                        <td class="px-1.5 py-1 text-right">{d.closeness === null ? '–' : `+${d.closeness.toFixed(1)}`}</td>
                       </tr>
                     {/each}
                   </tbody>

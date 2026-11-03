@@ -1,18 +1,29 @@
 // The coach's review of one seat's leg, as the leg review page renders it: every visit graded,
 // three A–D skills and the coach's take.
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
-import { classifyVisit, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
+import { classifyVisit, closeness, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
 import { fin } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
+import { dartDeltas } from './value.js'
 import { visitStart } from './visitStart.js'
 import { dartPoints, throwsOf, type CoachLeg } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
- *  `class` notCounted. */
-export type ReviewDart = { name: string; coords: { x: number; y: number } | null; left: number; bust: boolean; class: DartClass }
+ *  `class` notCounted. `delta`: the dart's change in checkout chance, in percentage points (value.ts),
+ *  `closeness`: the credit for missing its target by little (grade.ts); both null on a Scoring visit
+ *  and for the darts after a bust, `closeness` also for a hit or a typed dart. */
+export type ReviewDart = {
+  name: string
+  coords: { x: number; y: number } | null
+  left: number
+  bust: boolean
+  class: DartClass
+  delta: number | null
+  closeness: number | null
+}
 export type ReviewVisit = {
   /** 1-based among the seat's visits in the leg */
   n: number
@@ -84,13 +95,23 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   const visits = mine.map(({ v, i }, k): ReviewVisit => {
     const start = visitStart(v)
     const vThrows = throws.filter(t => t.visit === i)
+    const deltas = start > 170 ? [] : dartDeltas(vThrows, evaluate)
     const reviewDarts = v.darts.map((d, j): ReviewDart => {
       // Undefined for a dart after the bust
       const t = vThrows.at(j)
       before.push(t?.left ?? start)
       const bust = t?.bust ?? false
       const cls = t ? classifyDart(t, { evaluation: evaluate(t) }) : NOT_COUNTED
-      return { name: d.segment.name, coords: d.coords, left: t && !bust ? t.left - dartPoints(d) : start, bust, class: cls }
+      const delta = deltas.at(j) ?? null
+      return {
+        name: d.segment.name,
+        coords: d.coords,
+        left: t && !bust ? t.left - dartPoints(d) : start,
+        bust,
+        class: cls,
+        delta,
+        closeness: delta === null ? null : closeness(cls),
+      }
     })
     const vNotes = notes.filter(n => n.visit === i)
     // The walked darts' only: those after a bust aren't
@@ -103,6 +124,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       then: v.remaining,
       bust: v.bust,
       classes: walked.map(d => d.class),
+      deltas,
       grouping: g,
       notes: vNotes,
       average,
