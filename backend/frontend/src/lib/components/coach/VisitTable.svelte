@@ -33,7 +33,7 @@
         <span class="font-display text-[20px] font-bold text-text-dim"><span class="sr-only">Visit </span>{v.n}</span>
         <span class={NUM}><span class="sr-only">Left </span>{v.left}</span>
         <span class="flex items-start gap-1.5">
-          {#each visitTiles(v) as t, i (i)}<DartTile name={t.name} tone={t.tone} label={t.label} />{/each}
+          {#each visitTiles(v) as t, i (i)}<DartTile tile={t} />{/each}
         </span>
         <span class={NUM}><span class="sr-only">Scored </span>{v.scored}</span>
         <span class="{NUM} text-text-muted"><span class="sr-only">Then </span>{v.then}</span>

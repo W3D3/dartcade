@@ -61,7 +61,7 @@
       <ul class="m-0 p-0 list-none flex flex-col gap-2">
         {#each live.rows as r, i (i)}
           <li class="flex items-center gap-2">
-            <DartTile name={r.name} tone={r.tone} label={r.label} />
+            <DartTile tile={r} />
             <span class="ml-auto flex flex-col items-end text-[13px] tabular-nums">
               {#if r.delta !== null}
                 <span aria-label="Change in checkout chance: {r.delta}%">{r.delta}%</span>

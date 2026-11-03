@@ -8,10 +8,10 @@ import { AIMS } from '$shared/coach/aims'
 import { LANDING } from '$shared/coach/landing.gen'
 import { coachDart } from '$shared/coach/walk'
 import { sandbox } from './sandbox'
-import { signedPoints, visitTiles, type DartTone } from './view'
+import { signedPoints, visitTiles, type DartTileView } from './view'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
-export type LiveRow = { name: string; tone: DartTone; label: string; delta: string | null; close: string | null }
+export type LiveRow = DartTileView & { delta: string | null; close: string | null }
 export type LiveGrade = { grade: VisitGrade; tag: VisitTag; text: string; tip: boolean; darts: string }
 export type LiveCoach = {
   /** The score before the next dart */

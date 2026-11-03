@@ -256,6 +256,14 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
     "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
   - **In the selected visit's board card**, a faint line from each dart to its target.
+  - **Each tile's colour is the dart's own grade** (`dartGrade`: its delta plus closeness credit):
+    green for a hit of its target or +5 and up, plain above −5, gold (the grade pill's Weak tone)
+    down to −15, red (its Mistake tone) at −15 or below and for a bust. A dart without a delta
+    (Scoring, after a bust) keeps the plain look: treble, double and bull green, single plain,
+    miss red-lettered. An off-board miss is dashed in every tone. The tile's screen-reader text
+    names the grade ("good", "even", "slight loss", "costly"). One helper (`visitTiles` in
+    `lib/coach/view.ts`, constants `DART_GOOD_FROM`, `DART_PLAIN_ABOVE`, `DART_COSTLY_AT`) feeds
+    the leg review, the sandbox and the live panel.
 - **Admin sandbox:** shows each placed dart's class with all its properties. This is where the
   numbers get tuned.
 - **Code:** pure `backend/src/shared/coach/dartClass.ts` (`classifyDart(throw, ctx) →
@@ -405,6 +413,12 @@ Decisions taken while building this without the user, each with why:
 - **The match-dart prefix needs a dart classed Double (or Bull on 50) on a one-dart finish**; it no
   longer changes the grade.
 - **A visit still in progress** (the sandbox) ends on the next dart's value, not the next visit's.
+- **Dart colours replace "a single on a one-dart finish is red"** (user ruling): a miss just
+  outside D10 on 20 isn't a disaster. With the third dart on 20: a miss 10 mm outside D10 is −5.6
+  (gold), S15 leaving 5 is −24.6 (red), a D15 bust red. The closeness credit can lift a miss
+  within about 7 mm of the wire to plain, and earlier darts lose less: with the first dart on 20
+  a miss outside D10 is about −1 (plain) and S15 −14.5 (gold). The thresholds (±5, −15) are first
+  guesses, like the visit's.
 
 ### Open questions for the user
 

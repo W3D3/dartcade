@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '$shared/board'
 import { bedPath, boardSegments, type BedRing } from '$lib/details/boardGeometry'
 import type { CoachNote, ReviewVisit } from '$shared/coach'
+import type { CoachDart } from '$shared/coach/walk'
+import { dartAt, dartFromLabel, sandbox } from './sandbox'
 import { NOT_COUNTED, type DartClass } from '$shared/coach/dartClass'
 import {
   aimBed,
@@ -121,19 +123,36 @@ describe('coachFound', () => {
 
 describe('visitTiles', () => {
   const d = (name: string, left: number) => ({ name, coords: null, left, bust: false, class: NOT_COUNTED, delta: null, closeness: null })
-  it('greens trebles, reds a single thrown at a double, dashes a miss', () => {
-    // Coach-Leg visits 4 and 6: 180 → T20 S5 S20, then 15 → S7 S4 Miss
-    expect(visitTiles({ left: 180, darts: [d('T20', 120), d('S5', 115), d('S20', 95)] }).map(t => t.tone)).toEqual([
-      'hit',
-      'single',
-      'single',
+  it('without a grade (Scoring): greens trebles and doubles, leaves singles plain, dashes a miss', () => {
+    expect(visitTiles({ darts: [d('T20', 120), d('S5', 115), d('Miss', 115)] }).map(t => [t.tone, t.offBoard, t.word])).toEqual([
+      ['good', false, null],
+      ['plain', false, null],
+      ['miss', true, null],
     ])
-    expect(visitTiles({ left: 15, darts: [d('S7', 8), d('S4', 4), d('Miss', 4)] }).map(t => t.tone)).toEqual(['single', 'missed', 'miss'])
   })
-  it('reds a 25 on 50 but not a single on an odd score', () => {
-    expect(dartTone('25', 50)).toBe('missed')
-    expect(dartTone('S3', 33)).toBe('single')
-    expect(dartTone('D16', 32)).toBe('hit')
+
+  // On 20 left with the third dart (60: S20, S20; the user's examples), the dart's tone and its word
+  const tile = (d: CoachDart) => visitTiles(sandbox({ start: 60, opponent: null, average: 60 }, [S20, S20, d]).visit!)[2]
+  const S20 = dartFromLabel('S20')!
+  it('a miss 10 mm outside D10 is a slight loss, not costly', () => {
+    expect(tile(dartAt({ x: 1.008, y: -0.3276 }))).toMatchObject({ name: 'M10', tone: 'weak', offBoard: true, word: 'slight loss' })
+  })
+  it('S15 leaving 5 and a D15 bust are costly; D10 is good', () => {
+    expect(tile(dartFromLabel('S15')!)).toMatchObject({ tone: 'costly', word: 'costly' })
+    expect(tile(dartFromLabel('D15')!)).toMatchObject({ tone: 'costly', word: 'costly' })
+    expect(tile(dartFromLabel('D10')!)).toMatchObject({ tone: 'good', word: 'good' })
+  })
+  it('grades by the thresholds', () => {
+    const g = (delta: number, closeness: number | null = null) => dartTone({ ...d('S1', 0), delta, closeness })
+    expect([g(5), g(4.9), g(-4.9), g(-5), g(-10, 4.9), g(-15), g(-20, 18)]).toEqual([
+      'good',
+      'plain',
+      'plain',
+      'weak',
+      'weak',
+      'costly',
+      'plain',
+    ])
   })
 })
 

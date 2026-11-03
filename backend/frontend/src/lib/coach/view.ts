@@ -6,7 +6,8 @@ import { startOfDay } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
 import { HALF, SEGS } from '$shared/board'
 import { checkoutHint } from '$shared/checkout.js'
-import type { CoachNote, LegReview, ReviewVisit, VisitGrade } from '$shared/coach'
+import type { CoachNote, LegReview, ReviewDart, ReviewVisit, VisitGrade } from '$shared/coach'
+import { dartGrade } from '$shared/coach/grade'
 import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
@@ -59,21 +60,39 @@ export function legWhen(iso: string, now: Date): string {
   return ago >= 2 && ago <= 6 ? d.toLocaleDateString('en-GB', { weekday: 'short' }) : day
 }
 
-/** How a dart tile looks (Coach-Leg): a treble, double or bull green, a single plain, a single or
- *  25 thrown at a one-dart finish red (a missed double), off the board dashed. */
-export type DartTone = 'hit' | 'single' | 'missed' | 'miss'
+/** A dart's own grade (grade.ts dartGrade: its delta plus closeness credit, in checkout-chance
+ *  points) on the visit scale: good from this (or a hit of its target)… */
+export const DART_GOOD_FROM = 5
+/** …plain above this, a slight loss down to and including it… */
+export const DART_PLAIN_ABOVE = -5
+/** …costly at or below this (and a bust) */
+export const DART_COSTLY_AT = -15
 
-/** `before`: the score left before the dart */
-export function dartTone(name: string, before: number): DartTone {
-  if (name === 'Miss') return 'miss'
-  if (/^[TD]\d/.test(name) || name === 'Bull') return 'hit'
-  const onDouble = before === 50 || (before <= 40 && before % 2 === 0)
-  return onDouble ? 'missed' : 'single'
+/** How a dart tile looks (Coach-Leg). A graded dart (finish and setup visits) by its own grade:
+ *  green good, plain, gold a slight loss, red costly. Without a grade (Scoring, after a bust) a
+ *  treble, double or bull green, a single plain, a miss red-lettered. Off the board is dashed in
+ *  every tone. */
+export type DartTone = 'good' | 'plain' | 'weak' | 'costly' | 'miss'
+/** `word`: the grade for screen readers, so colour isn't the only signal; null without a grade */
+export type DartTileView = { name: string; tone: DartTone; offBoard: boolean; word: string | null; label: string }
+
+const TONE_WORD: Record<DartTone, string> = { good: 'good', plain: 'even', weak: 'slight loss', costly: 'costly', miss: 'miss' }
+
+export function dartTone(d: Pick<ReviewDart, 'name' | 'bust' | 'class' | 'delta' | 'closeness'>): DartTone {
+  if (d.delta === null) return d.name === 'Miss' ? 'miss' : /^[TD]\d/.test(d.name) || d.name === 'Bull' ? 'good' : 'plain'
+  const g = dartGrade(d.delta, d.closeness)
+  if (d.bust || g <= DART_COSTLY_AT) return 'costly'
+  if (d.class.hit || g >= DART_GOOD_FROM) return 'good'
+  return g > DART_PLAIN_ABOVE ? 'plain' : 'weak'
 }
 
-/** A visit's darts with their tones and class labels; each dart's score before it is the previous dart's `left`. */
-export const visitTiles = (v: Pick<ReviewVisit, 'left' | 'darts'>): { name: string; tone: DartTone; label: string }[] =>
-  v.darts.map((d, i) => ({ name: d.name, tone: dartTone(d.name, i === 0 ? v.left : v.darts[i - 1].left), label: dartLabel(d.class) }))
+/** A visit's darts with their tones and class labels. */
+export const visitTiles = (v: Pick<ReviewVisit, 'darts'>): DartTileView[] =>
+  v.darts.map(d => {
+    const tone = dartTone(d)
+    const offBoard = d.name === 'Miss' || /^M\d/.test(d.name)
+    return { name: d.name, tone, offBoard, word: d.delta === null ? null : TONE_WORD[tone], label: dartLabel(d.class) }
+  })
 
 /** Offset parts this small get no direction word */
 const DIRECTION_MIN_MM = 0.5

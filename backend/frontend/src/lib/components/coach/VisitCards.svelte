@@ -51,7 +51,7 @@
         <span class="flex w-full items-center gap-2.5">
           <span class="w-[18px] font-display text-[18px] font-bold text-text-dim"><span class="sr-only">Visit </span>{v.n}</span>
           <span class="flex items-start gap-[5px]">
-            {#each visitTiles(v) as t, i (i)}<DartTile name={t.name} tone={t.tone} label={t.label} />{/each}
+            {#each visitTiles(v) as t, i (i)}<DartTile tile={t} />{/each}
           </span>
           <span class="ml-auto flex flex-col text-right">
             <span class="font-display text-[20px] font-bold leading-none">{v.scored}</span>

@@ -155,7 +155,7 @@
               {#each visitTiles(visit) as tile, i (i)}
                 {@const n = visit.notes.find(x => x.dart === i)}
                 <li class="flex items-start gap-3">
-                  <DartTile name={tile.name} tone={tile.tone} label={tile.label} />
+                  <DartTile {tile} />
                   <span class="text-[13.5px] leading-[1.45] pt-1 {n?.tip ? 'text-ice' : ''}">
                     {#if n}<b>{n.tip ? 'Tip:' : 'Note:'}</b> {noteLine(n)}{:else}<span class="text-text-muted">Fine.</span>{/if}
                   </span>
