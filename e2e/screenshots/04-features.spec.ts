@@ -170,15 +170,23 @@ test('coach: the review list, a leg with a mistake, and the admin sandbox', asyn
     await ctx.close()
   }
 
-  // Admin sandbox: 97 left, S20 S20 S20 (97 -> 77 -> 57 -> 37) is a Mistake with a strategy note
+  // Admin sandbox: 97 left, S20 S20 S20 (97 -> 77 -> 57 -> 37) is a Mistake with a strategy note.
+  // The darts are clicked onto the board, so their miss millimetres and rating show (the first goes
+  // at T20, the others at S20: no shared target, so no spread)
   const admin = await open(browser, 'admin', VIEW.wide)
   await admin.page.goto('/#/admin/coach')
   await admin.page.getByLabel('Score left').fill('97')
-  const typed = admin.page.getByRole('textbox', { name: 'Type a dart' })
-  for (let i = 0; i < 3; i++) {
-    await typed.fill('S20')
-    await admin.page.getByRole('button', { name: 'Add' }).click()
+  const board = admin.page.getByRole('application')
+  const box = (await board.boundingBox())!
+  // Board units (y up, r = 1 at the outer double wire) to the page: the viewBox is ±235 mm, 170 mm a unit
+  for (const [x, y] of [
+    [-0.03, 0.8],
+    [0.02, 0.77],
+    [0.0, 0.74],
+  ]) {
+    await admin.page.mouse.click(box.x + ((x * 170 + 235) / 470) * box.width, box.y + ((-y * 170 + 235) / 470) * box.height)
   }
+  await expect(admin.page.getByText(/edge \d+ mm/)).toBeVisible()
   await expect(admin.page.getByText('Mistake').first()).toBeVisible()
   await expect(admin.page.getByText('Better:').first()).toBeVisible()
   await shot(admin.page, 'coach/sandbox-desktop.png', { settle: 1200 })
