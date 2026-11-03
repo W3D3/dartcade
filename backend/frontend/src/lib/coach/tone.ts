@@ -1,23 +1,57 @@
-// The coach's pill tones (Coach-Leg, Coach-Review, Coach-Mistakes): one palette for every pill, and
-// what each grade and grouping comment wears.
-import type { VisitGrade } from '$shared/coach'
+// The coach's tones (Coach-Leg, Coach-Review, Coach-Mistakes): one palette for every pill, dart
+// tile, skill letter and count, and what each grade and grouping comment wears.
+import type { SkillGrade, VisitGrade } from '$shared/coach'
+import type { DartTone } from './dart'
 import type { Grouping, GroupingLevel } from '$shared/coach/grouping'
 
-/** Filled lime with a halo (Perfect), filled lime (Great), the rest tinted */
-export const PILL_TONE = {
-  halo: 'bg-accent text-accent-fg ring-[3px] ring-accent/35',
-  solid: 'bg-accent text-accent-fg',
-  lime: 'bg-accent-tint text-accent',
-  good: 'bg-good/15 text-good',
-  dim: 'bg-text-dim/15 text-text-dim',
-  plain: 'bg-surface-paused text-ink-2',
-  weak: 'bg-gold/15 text-gold',
-  bad: 'bg-live/15 text-live',
-  info: 'bg-ice/15 text-ice',
+/** Each tone's text colour: what text-only uses (counts, letters, legends) wear */
+export const TONE_TEXT = {
+  halo: 'text-accent-fg',
+  solid: 'text-accent-fg',
+  lime: 'text-accent',
+  good: 'text-good',
+  dim: 'text-text-dim',
+  plain: 'text-ink-2',
+  weak: 'text-gold',
+  bad: 'text-live',
+  info: 'text-ice',
 } as const
-export type PillTone = keyof typeof PILL_TONE
+export type PillTone = keyof typeof TONE_TEXT
+
+const TONE_BG: Record<PillTone, string> = {
+  halo: 'bg-accent ring-[3px] ring-accent/35',
+  solid: 'bg-accent',
+  lime: 'bg-accent-tint',
+  good: 'bg-good/15',
+  dim: 'bg-text-dim/15',
+  plain: 'bg-surface-paused',
+  weak: 'bg-gold/15',
+  bad: 'bg-live/15',
+  info: 'bg-ice/15',
+}
+
+/** A tone's fill and text: filled lime with a halo (Perfect), filled lime (Great), the rest tinted */
+export const pillTone = (t: PillTone): string => `${TONE_BG[t]} ${TONE_TEXT[t]}`
 
 export type PillView = { label: string; tone: PillTone }
+
+/** A dart tile in its band's pill colours (Good green beside the Good pill); a miss only the Bad text */
+export const TILE_TONE: Record<DartTone, string> = {
+  good: pillTone('good'),
+  plain: pillTone('plain'),
+  weak: pillTone('weak'),
+  costly: pillTone('bad'),
+  miss: `bg-transparent ${TONE_TEXT.bad}`,
+}
+
+/** A skill's A–D letter: A and B lime, C weak, D bad; a skill the leg didn't test dim */
+export const SKILL_TONE: Record<NonNullable<SkillGrade['grade']> | 'none', PillTone> = {
+  A: 'lime',
+  B: 'lime',
+  C: 'weak',
+  D: 'bad',
+  none: 'dim',
+}
 
 /** A visit's grade pill. Tip is a note that leaves the grade alone, in the blue Info style. */
 export const GRADE_PILL: Record<VisitGrade | 'tip', PillView> = {

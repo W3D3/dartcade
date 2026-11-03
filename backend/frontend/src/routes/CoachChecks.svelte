@@ -4,18 +4,18 @@
   import { flag } from '$lib/flags'
   import { CHECK_GROUPS, LABELS, SOURCES, type CheckSource } from '$lib/coach/checks'
   import GradePill from '$lib/components/coach/GradePill.svelte'
+  import { TONE_TEXT, type PillTone } from '$lib/coach/tone'
 
   const enabled = flag('coach.enabled')
   const sources: CheckSource[] = ['scores', 'model']
   const total = CHECK_GROUPS.reduce((n, g) => n + g.checks.length, 0)
-  const SOURCE_DOT: Record<CheckSource, string> = { scores: 'bg-ink-2', model: 'bg-ice' }
-  const SOURCE_TEXT: Record<CheckSource, string> = { scores: 'text-ink-2', model: 'text-ice' }
+  const SOURCE_TONE: Record<CheckSource, PillTone> = { scores: 'plain', model: 'info' }
   const COLUMNS = 'lg:grid-cols-[200px_96px_90px_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1fr)]'
 </script>
 
 {#snippet source(s: CheckSource)}
-  <span title={SOURCES[s].text} class="inline-flex items-center gap-1.5 text-[12.5px] whitespace-nowrap {SOURCE_TEXT[s]}">
-    <span class="size-[7px] rounded-full {SOURCE_DOT[s]}"></span>{SOURCES[s].label}
+  <span title={SOURCES[s].text} class="inline-flex items-center gap-1.5 text-[12.5px] whitespace-nowrap {TONE_TEXT[SOURCE_TONE[s]]}">
+    <span class="size-[7px] rounded-full bg-current"></span>{SOURCES[s].label}
   </span>
 {/snippet}
 

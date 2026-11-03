@@ -1,14 +1,15 @@
 <script lang="ts">
   // The Coach page's four counts over your last 50 legs (Coach-Review): 2×2 on phones, 4 across above.
   import type { CoachLegCounts } from '$lib/api'
+  import { TONE_TEXT } from '$lib/coach/tone'
 
   let { counts }: { counts: CoachLegCounts } = $props()
 
   const cards = $derived([
-    { label: 'Low visits', value: counts.lowVisits, cls: 'text-gold', sub: 'below your level, not on a finish' },
-    { label: 'Bad setups', value: counts.badSetups, cls: 'text-gold', sub: 'setup visits graded Bad' },
-    { label: 'Missed doubles', value: counts.missedDoubles, cls: 'text-live', sub: 'darts at a double that missed' },
-    { label: 'Clean legs', value: counts.cleanLegs, cls: 'text-accent', sub: 'nothing flagged' },
+    { label: 'Low visits', value: counts.lowVisits, cls: TONE_TEXT.weak, sub: 'below your level, not on a finish' },
+    { label: 'Bad setups', value: counts.badSetups, cls: TONE_TEXT.weak, sub: 'setup visits graded Bad' },
+    { label: 'Missed doubles', value: counts.missedDoubles, cls: TONE_TEXT.bad, sub: 'darts at a double that missed' },
+    { label: 'Clean legs', value: counts.cleanLegs, cls: TONE_TEXT.lime, sub: 'nothing flagged' },
   ])
 </script>
 
