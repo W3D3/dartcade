@@ -213,6 +213,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/coach/average": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's 30-day X01 average, the one the coach grades with
+         * @description The average a stored review grades with (x01AverageSince over the last 30 days), so the live coach picks the same level and grades against the same number. 404 while coach.live.enabled is off for the user.
+         */
+        get: operations["getCoachAverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/coach/legs/{gameId}/{leg}": {
         parameters: {
             query?: never;
@@ -3054,6 +3074,9 @@ export interface components {
             winnerName: string | null;
             winnerDarts: number | null;
         };
+        CoachAverage: {
+            average: number | null;
+        };
         CoachLegDetail: {
             review: components["schemas"]["LegReview"];
             title: components["schemas"]["CoachLegTitle"];
@@ -4713,6 +4736,29 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCoachAverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The average; null without an X01 game in the last 30 days */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAverage"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];

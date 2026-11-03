@@ -6,6 +6,8 @@ import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { ensureCoachGame, ensureCoachLegs } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 import { decodeCoachCursor, encodeCoachCursor } from '../coach/cursor.js'
+import { x01AverageSince } from '../db/ranked.js'
+import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -17,9 +19,20 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  const requireCoach = async (userId: string) => {
-    if (!(await flagEnabled('coach.enabled', await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
+  const requireFlag = async (key: 'coach.enabled' | 'coach.live.enabled', userId: string) => {
+    if (!(await flagEnabled(key, await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
   }
+  const requireCoach = (userId: string) => requireFlag('coach.enabled', userId)
+
+  // The live coach's average: the one a stored review of a game finished now would grade with (store.ts)
+  app.get<Route<'getCoachAverage'>>(
+    '/api/coach/average',
+    { preValidation: requireAuth, schema: fromSpec('getCoachAverage') },
+    async (req, reply) => {
+      await requireFlag('coach.live.enabled', req.userId)
+      return reply.send({ average: await x01AverageSince(db, req.userId, PROFILE_AVERAGE_DAYS) })
+    },
+  )
 
   app.get<Route<'listCoachLegs'>>(
     '/api/coach/legs',

@@ -23,10 +23,12 @@ vi.mock('../auth/middleware.js', () => ({
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
 vi.mock('../coach/store.js', () => ({ ensureCoachLegs: vi.fn(), ensureCoachGame: vi.fn() }))
 vi.mock('../coach/legs.js', () => ({ coachLegsSummary: vi.fn(), coachLegsPage: vi.fn(), getCoachLeg: vi.fn() }))
+vi.mock('../db/ranked.js', () => ({ x01AverageSince: vi.fn() }))
 
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { ensureCoachGame, ensureCoachLegs } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
+import { x01AverageSince } from '../db/ranked.js'
 
 const review: LegReview = {
   coachLevel: 7,
@@ -216,5 +218,20 @@ describe('GET /api/coach/legs/:gameId/:leg', () => {
     const body = JSON.parse(res.body)
     expect(body.title.winnerName).toBeNull()
     expect(body.title.winnerDarts).toBeNull()
+  })
+})
+
+describe('GET /api/coach/average', () => {
+  it("returns the user's 30-day X01 average, behind coach.live.enabled", async () => {
+    vi.mocked(x01AverageSince).mockResolvedValue(48.2)
+    const res = await app().inject({ method: 'GET', url: '/api/coach/average' })
+    expect(JSON.parse(res.body)).toEqual({ average: 48.2 })
+    expect(x01AverageSince).toHaveBeenCalledWith(expect.anything(), 'ann', 30)
+    expect(flagEnabled).toHaveBeenCalledWith('coach.live.enabled', null)
+  })
+
+  it('404s while coach.live.enabled is off', async () => {
+    vi.mocked(flagEnabled).mockResolvedValue(false)
+    expect((await app().inject({ method: 'GET', url: '/api/coach/average' })).statusCode).toBe(404)
   })
 })

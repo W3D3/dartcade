@@ -10,27 +10,33 @@
   import { LEVEL_AVERAGE } from '$shared/botLevels'
   import { coachLevel, loadModel, type CoachModel } from '$shared/coach/model'
   import { flag } from '$lib/flags'
-  import { profileOf } from '$lib/progress/profiles'
+  import { api } from '$lib/api/client'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
   import VisitNumbers from './VisitNumbers.svelte'
 
-  let { game, userId, compact = false }: { game: X01Game; userId: string | null; compact?: boolean } = $props()
+  // `mine`: the viewer throws this game, so the coach grades with their 30-day average
+  let { game, mine, compact = false }: { game: X01Game; mine: boolean; compact?: boolean } = $props()
 
   // The visit's numbers are for checking the model
   const debug = flag('coach.debug.enabled')
-  let profileAverage = $state<number | null>(null)
+  // The 30-day average a stored review grades with; undefined while it loads, null without one
+  let thirtyDay = $state<number | null | undefined>(undefined)
   $effect(() => {
-    if (!userId) return
-    return profileOf(userId).subscribe(p => (profileAverage = p?.average ?? null))
+    if (!mine) thirtyDay = null
+    else
+      void api.GET('/api/coach/average').then(
+        r => (thirtyDay = r.data?.average ?? null),
+        () => (thirtyDay = null),
+      )
   })
-  const average = $derived(liveAverage(profileAverage, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
-  // shortcut: level 7 until the profile arrives (and for good while progression is off), so a
-  // player with an average may fetch level 7's table first; fine while it's one small chunk
-  const level = $derived(coachLevel(profileAverage))
+  const average = $derived(liveAverage(thirtyDay, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
+  // The review's level (coachLevel of the same average); none until the average is known
+  const level = $derived(thirtyDay === undefined ? null : coachLevel(thirtyDay))
   let model = $state<CoachModel | null>(null)
   $effect(() => {
     const want = level
+    if (want === null) return
     void loadModel(want)
       .then(m => {
         if (want === level) model = m

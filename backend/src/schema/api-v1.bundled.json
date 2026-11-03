@@ -586,6 +586,37 @@
         }
       }
     },
+    "/api/coach/average": {
+      "get": {
+        "operationId": "getCoachAverage",
+        "summary": "The signed-in user's 30-day X01 average, the one the coach grades with",
+        "description": "The average a stored review grades with (x01AverageSince over the last 30 days), so the live coach picks the same level and grades against the same number. 404 while coach.live.enabled is off for the user.",
+        "tags": [
+          "coach"
+        ],
+        "responses": {
+          "200": {
+            "description": "The average; null without an X01 game in the last 30 days",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachAverage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/coach/legs/{gameId}/{leg}": {
       "parameters": [
         {
@@ -9362,6 +9393,19 @@
             "type": "integer",
             "nullable": true,
             "minimum": 0
+          }
+        }
+      },
+      "CoachAverage": {
+        "type": "object",
+        "required": [
+          "average"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "average": {
+            "type": "number",
+            "nullable": true
           }
         }
       },

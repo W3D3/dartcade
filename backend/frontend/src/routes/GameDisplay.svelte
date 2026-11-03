@@ -410,7 +410,7 @@
 </script>
 
 {#snippet liveCoach(compact: boolean)}
-  {#if LiveCoach && x01}<LiveCoach game={x01} userId={snapshot?.seats[0]?.userId ?? null} {compact} />{/if}
+  {#if LiveCoach && x01}<LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} {compact} />{/if}
 {/snippet}
 
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>

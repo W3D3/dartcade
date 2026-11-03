@@ -63,10 +63,11 @@ export function keepGrade(prev: LiveGrade | null, live: LiveCoach): LiveGrade | 
 
 export type LiveAverage = { value: number | null; line: string }
 
-/** The average the coach grades against: your 30-day X01 average (the profile's), else this
- *  game's so far, else none (a scoring visit is then measured against itself). */
-export function liveAverage(profile: number | null | undefined, points: number, darts: number): LiveAverage {
-  if (profile != null) return { value: profile, line: `Graded against your 30-day average, ${profile.toFixed(1)}.` }
+/** The average the coach grades against, as a stored review does: your 30-day X01 average
+ *  (GET /api/coach/average), else this game's so far, else none (a scoring visit is then
+ *  measured against itself). */
+export function liveAverage(thirtyDay: number | null | undefined, points: number, darts: number): LiveAverage {
+  if (thirtyDay != null) return { value: thirtyDay, line: `Graded against your 30-day average, ${thirtyDay.toFixed(1)}.` }
   if (darts > 0) {
     const game = (points / darts) * 3
     return { value: game, line: `Graded against this game's average, ${game.toFixed(1)}.` }
