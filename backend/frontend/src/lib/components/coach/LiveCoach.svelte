@@ -5,7 +5,9 @@
 -->
 <script lang="ts">
   import type { X01Game } from '$lib/api/game-ws'
-  import { keepGrade, liveAverage, liveCoach, type LiveCoach, type LiveGrade } from '$lib/coach/live'
+  import { liveAverage, liveCoach, shownVisit, type LiveCoach } from '$lib/coach/live'
+  import { visitTiles } from '$lib/coach/dart'
+  import type { ReviewVisit } from '$shared/coach'
   import { coachedAs } from '$lib/coach/leg'
   import { averageForLevel } from '$shared/botLevels'
   import { coachLevel } from '$shared/coach/model'
@@ -39,9 +41,13 @@
   const live = $derived(model ? liveCoach(model, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null)
   const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
   const levelAverage = $derived(model ? averageForLevel(model.level) : null)
+  const rows = $derived(live?.visit ? visitTiles(live.visit) : [])
   // The last finished visit's grade stays until the next visit's first dart
-  let kept: LiveGrade | null = null
-  const grade = $derived.by(() => (live ? (kept = keepGrade(kept, live)) : kept))
+  let last = $state.raw<ReviewVisit | null>(null)
+  $effect(() => {
+    if (live?.done) last = live.visit
+  })
+  const grade = $derived(live ? shownVisit(last, live) : null)
   const top = $derived(live?.aims[0] ?? null)
 </script>
 
@@ -49,7 +55,7 @@
   <section class="flex flex-col gap-2" aria-labelledby="live-coach-aims">
     <div class="flex items-baseline justify-between gap-2">
       <h3 id="live-coach-aims" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">Aim now</h3>
-      {#if live.aims.length}<span class="text-[12px] text-text-dim">dart {live.rows.length + 1} of 3 · {live.left} left</span>{/if}
+      {#if live.aims.length}<span class="text-[12px] text-text-dim">dart {rows.length + 1} of 3 · {live.left} left</span>{/if}
     </div>
     {#if live.aims.length}
       <ol class="m-0 p-0 list-none flex flex-col gap-1.5">
@@ -76,9 +82,9 @@
 
   <section class="flex flex-col gap-2" aria-labelledby="live-coach-visit">
     <h3 id="live-coach-visit" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">This visit</h3>
-    {#if live.rows.length}
+    {#if rows.length}
       <ul class="m-0 p-0 list-none flex flex-col gap-2">
-        {#each live.rows as r, i (i)}<li class="flex items-center gap-2"><DartTile tile={r} /></li>{/each}
+        {#each rows as r, i (i)}<li class="flex items-center gap-2"><DartTile tile={r} /></li>{/each}
       </ul>
       {#if $debug && live.visit}<VisitNumbers visit={live.visit} />{/if}
     {:else}
@@ -90,12 +96,12 @@
     <section class="flex flex-col gap-2" aria-labelledby="live-coach-grade">
       <div class="flex items-center justify-between gap-2">
         <h3 id="live-coach-grade" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          {live.graded ? 'This visit' : 'Last visit'} · <span class="capitalize">{grade.tag}</span>
+          {live.done ? 'This visit' : 'Last visit'} · <span class="capitalize">{grade.tag}</span>
         </h3>
         <GradePill grade={grade.grade} />
       </div>
       <p class="m-0 text-[14px] leading-[1.45] {grade.tip ? 'text-ice' : ''}">
-        <span class="font-display font-bold text-[16px]">{grade.darts}</span> · {grade.text}
+        <span class="font-display font-bold text-[16px]">{grade.darts.map(d => d.name).join(' ')}</span> · {grade.text}
       </p>
     </section>
   {/if}

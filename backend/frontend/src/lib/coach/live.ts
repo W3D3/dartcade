@@ -2,15 +2,13 @@
 // open visit's darts as the coach classes them, and the last finished visit's grade, by the model of
 // the player's coaching level (LiveCoach.svelte loads only that level's table).
 import type { Dart } from '$lib/api/game-ws'
-import type { ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
+import type { ReviewVisit } from '$shared/coach'
 import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModel } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart } from '$shared/coach/walk'
-import { visitTiles, type DartTileView } from './dart'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
-export type LiveGrade = { grade: VisitGrade; tag: VisitTag; text: string; tip: boolean; darts: string }
 export type LiveCoach = {
   /** The score before the next dart */
   left: number
@@ -18,24 +16,20 @@ export type LiveCoach = {
   scoring: boolean
   /** The next dart's best aims; empty once the visit is done */
   aims: LiveAim[]
-  /** The open visit's darts */
-  rows: DartTileView[]
-  /** The open visit as the coach reviews it (its numbers behind coach.debug.enabled); null before a dart */
+  /** The open visit as the coach reviews it; null before a dart */
   visit: ReviewVisit | null
-  /** The visit's grade once it is done (three darts, a bust or a checkout); else null */
-  graded: LiveGrade | null
+  /** The visit is over (three darts, a bust or a checkout): its grade is final */
+  done: boolean
 }
 
 const TOP = 3
 
 /** "leaves 40", "leaves 37 or 40", "checks out" (a double or the bull to 0), "busts". */
 function leaves(left: number, a: Aim): string {
-  const out = (p: number) => {
-    const after = afterDart(left, p, isDoubleAim(a))
-    return after === 'out' ? 'checks out' : after === 'bust' ? 'busts' : `leaves ${after}`
-  }
-  const each = [...new Set(aimPoints(a).map(out))]
-  return each.length === 1 ? each[0] : `${each[0]} or ${each[1].replace(/^leaves /, '')}`
+  const word = (x: number | 'out' | 'bust') => (x === 'out' ? 'checks out' : x === 'bust' ? 'busts' : String(x))
+  const each = [...new Set(aimPoints(a).map(p => afterDart(left, p, isDoubleAim(a))))]
+  const head = typeof each[0] === 'number' ? `leaves ${each[0]}` : word(each[0])
+  return each.length === 1 ? head : `${head} or ${word(each[1])}`
 }
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
@@ -49,16 +43,13 @@ export function liveCoach(model: CoachModel, start: number, darts: readonly Dart
     : scoring
       ? scoringAims(model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
       : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
-  const v = r.visit
-  const rows = v ? visitTiles(v) : []
-  const graded = r.done && v ? { grade: v.grade, tag: v.tag, text: v.text, tip: v.tip, darts: v.darts.map(d => d.name).join(' ') } : null
-  return { left: r.left, scoring, aims, rows, visit: v, graded }
+  return { left: r.left, scoring, aims, visit: r.visit, done: r.done }
 }
 
-/** The grade to show: the open visit's once it's done, the last one's while the next has no dart
- *  yet, none once it has. */
-export function keepGrade(prev: LiveGrade | null, live: LiveCoach): LiveGrade | null {
-  return live.graded ?? (live.rows.length === 0 ? prev : null)
+/** The graded visit to show: the open one once it's done, the last finished one (`last`) while
+ *  the next has no dart yet, none once it has. */
+export function shownVisit(last: ReviewVisit | null, live: LiveCoach): ReviewVisit | null {
+  return live.done ? live.visit : live.visit ? null : last
 }
 
 export type LiveAverage = { value: number | null; line: string }

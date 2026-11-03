@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Dart } from '$lib/api/game-ws'
-import { keepGrade, liveAverage, liveCoach } from './live'
+import { liveAverage, liveCoach, shownVisit } from './live'
 import { REF } from '$shared/coach/testLegs'
 import { dartFromLabel } from './sandbox'
 
@@ -36,22 +36,22 @@ describe('liveCoach', () => {
   it("lists the open visit's darts with their class and change", () => {
     const c = liveCoach(REF, 81, darts('T19', 'S12'), 60)
     expect(c.left).toBe(12)
-    expect(c.rows.map(r => r.name)).toEqual(['T19', 'S12'])
-    expect(c.rows[0].label).toBeTruthy()
+    expect(c.visit?.darts.map(d => d.name)).toEqual(['T19', 'S12'])
     expect(c.visit?.darts[0].delta).toEqual(expect.any(Number))
-    expect(c.graded).toBeNull()
+    expect(c.done).toBe(false)
   })
 
   it('grades the visit once it is done, and offers no more aims', () => {
     const c = liveCoach(REF, 40, darts('D20'), 60)
     expect(c.aims).toEqual([])
-    expect(c.graded).toMatchObject({ tag: 'doubling', darts: 'D20' })
+    expect(c.done).toBe(true)
+    expect(c.visit?.tag).toBe('doubling')
   })
 
   it('has no change on a scoring visit', () => {
     const c = liveCoach(REF, 501, darts('T20', 'T20', 'T20'), 60)
     expect(c.visit?.darts.every(d => d.delta === null)).toBe(true)
-    expect(c.graded?.tag).toBe('scoring')
+    expect(c.done && c.visit?.tag).toBe('scoring')
   })
 })
 
@@ -64,12 +64,12 @@ describe('liveAverage', () => {
   })
 })
 
-describe('keepGrade', () => {
+describe('shownVisit', () => {
   const done = liveCoach(REF, 40, darts('S20', 'S10', 'D5'), 60)
-  it('keeps the last grade until the next visit has a dart', () => {
-    expect(done.graded).not.toBeNull()
-    const kept = keepGrade(null, done)
-    expect(keepGrade(kept, liveCoach(REF, 81, [], 60))).toBe(kept)
-    expect(keepGrade(kept, liveCoach(REF, 81, darts('T19'), 60))).toBeNull()
+  it('shows the last finished visit until the next visit has a dart', () => {
+    const last = shownVisit(null, done)
+    expect(last).toBe(done.visit)
+    expect(shownVisit(last, liveCoach(REF, 81, [], 60))).toBe(last)
+    expect(shownVisit(last, liveCoach(REF, 81, darts('T19'), 60))).toBeNull()
   })
 })
