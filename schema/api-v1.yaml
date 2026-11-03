@@ -3844,9 +3844,14 @@ components:
         clean: { type: boolean }
     LegReview:
       type: object
-      required: [leg, seat, won, darts, average, visits, skills, take, counts, grouping]
+      required: [coachLevel, leg, seat, won, darts, average, visits, skills, take, counts, grouping]
       additionalProperties: false
       properties:
+        coachLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
         leg: { type: integer, minimum: 0 }
         seat: { type: integer, minimum: 0 }
         won: { type: boolean }

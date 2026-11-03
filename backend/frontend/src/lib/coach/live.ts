@@ -1,11 +1,11 @@
 // The live coach on the solo X01 match screen (coach.live.enabled): the next dart's best aims, the
-// open visit's darts as the coach classes them, and the last finished visit's grade. Loaded lazily
-// with the model (landing.gen.ts), only when the panel shows.
+// open visit's darts as the coach classes them, and the last finished visit's grade, by the model of
+// the player's coaching level (LiveCoach.svelte loads only that level's table).
 import type { Dart } from '$lib/api/game-ws'
 import type { VisitGrade, VisitTag } from '$shared/coach'
 import type { Aim } from '$shared/coach/aims'
 import { AIMS } from '$shared/coach/aims'
-import { LANDING } from '$shared/coach/landing.gen'
+import type { CoachModel } from '$shared/coach/model'
 import { coachDart } from '$shared/coach/walk'
 import { sandbox } from './sandbox'
 import { signedPoints, visitTiles, type DartTileView } from './view'
@@ -49,25 +49,27 @@ function leaves(left: number, a: Aim): string {
   return each.length === 1 ? each[0] : `${each[0]} or ${each[1].replace(/^leaves /, '')}`
 }
 
-// The reference player's points a dart at each aim, best first, one per label (the same for any score)
-const SCORING: readonly LiveAim[] = (() => {
+// The model's points a dart at each aim, best first, one per label (the same for any score)
+function scoringAims({ landing }: CoachModel): LiveAim[] {
   const seen = new Set<string>()
-  return LANDING.map((o, i) => ({ a: AIMS[i], points: o.reduce((s, [, p, , chance]) => s + p * chance, 0) }))
+  return landing
+    .map((o, i) => ({ a: AIMS[i], points: o.reduce((s, [, p, , chance]) => s + p * chance, 0) }))
     .sort((x, y) => y.points - x.points)
     .filter(({ a }) => !seen.has(a.label) && !!seen.add(a.label))
     .slice(0, TOP)
     .map(({ a, points }) => ({ label: a.label, aimId: a.id, detail: `${points.toFixed(1)} a dart` }))
-})()
+}
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
- *  (null: the visit's own, as the coach does without one). Solo: no opponent, w = 1. */
-export function liveCoach(start: number, darts: readonly Dart[], average: number | null): LiveCoach {
-  const r = sandbox({ start, opponent: null, average }, darts.map(coachDart))
+ *  (null: the visit's own, as the coach does without one), `model` their coaching level's. Solo:
+ *  no opponent, w = 1. */
+export function liveCoach(model: CoachModel, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
+  const r = sandbox({ start, opponent: null, average }, darts.map(coachDart), model)
   const scoring = r.left > 170
   const aims = r.done
     ? []
     : scoring
-      ? [...SCORING]
+      ? scoringAims(model)
       : r.next
           .slice(0, TOP)
           .map(n => ({ label: n.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))

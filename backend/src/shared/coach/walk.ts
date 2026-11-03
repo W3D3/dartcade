@@ -1,7 +1,7 @@
 // A seat's darts in a finished X01 game, with what was left before each, for the coach. Reads the
 // stored detail (games/x01.ts detail()): each visit's remaining is after it, unchanged on a bust.
 import { withoutFalsePosition, type Bed } from '../board.js'
-import { nextVisit } from './model.js'
+import type { CoachModel } from './model.js'
 import { visitStart } from './visitStart.js'
 
 export type CoachDart = { segment: { name: string; number: number; multiplier: number }; coords: { x: number; y: number } | null }
@@ -63,8 +63,9 @@ export function walkVisit(start: number, darts: readonly CoachDart[]): { left: n
   return out
 }
 
-/** Every dart `seat` threw, leg by leg. `startScore` is the game's start, for opponents yet to throw. */
-export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: number): Throw[] {
+/** Every dart `seat` threw, leg by leg. `startScore` is the game's start, for opponents yet to throw.
+ *  The opponents' checkout chances (w) are `model`'s too: they're taken to play at the coached level. */
+export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: number, { nextVisit }: CoachModel): Throw[] {
   const out: Throw[] = []
   for (const l of legs) {
     // Each other seat's score so far in this leg

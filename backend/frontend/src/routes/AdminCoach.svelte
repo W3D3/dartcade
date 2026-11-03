@@ -20,6 +20,8 @@
   import { explainedNote } from '$shared/coach/grade'
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
+  import { LEVEL_AVERAGE } from '$shared/botLevels'
+  import { coachLevel, loadModel, type CoachModel } from '$shared/coach/model'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
@@ -49,7 +51,23 @@
           ? 'Your average is a whole number from 1 to 180.'
           : '',
   )
-  const result = $derived(start !== null && average !== null && !inputError ? sandbox({ start, opponent, average }, darts) : null)
+  // The model of the level one above the average, as the coach picks it; fetched per level
+  const level = $derived(coachLevel(average))
+  const levelAverage = $derived(LEVEL_AVERAGE[level - 1])
+  let model = $state<CoachModel | null>(null)
+  $effect(() => {
+    const want = level
+    void loadModel(want)
+      .then(m => {
+        if (want === level) model = m
+      })
+      .catch(() => undefined)
+  })
+  const result = $derived(
+    start !== null && average !== null && !inputError && model?.level === level
+      ? sandbox({ start, opponent, average }, darts, model)
+      : null,
+  )
   const visit = $derived(result?.visit ?? null)
   const note = $derived(visit ? explainedNote(visit.notes) : null)
   const accepting = $derived(result !== null && !result.done)
@@ -100,6 +118,9 @@
               <Input id="sandbox-average" inputmode="numeric" bind:value={averageText} />
             </div>
           </div>
+          {#if average !== null}
+            <p class="m-0 text-[13px] text-text-muted">Coaching level: {level} (≈ {levelAverage} average)</p>
+          {/if}
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
 
           <BoardCard
@@ -166,8 +187,8 @@
               <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
               <p class="m-0 text-[12px] text-text-muted">
                 Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
-                is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against an
-                81-average player from there), Close the credit for a near miss; the visit's grade adds them up.
+                is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against a
+                {levelAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
               </p>
               <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-[13px] tabular-nums">

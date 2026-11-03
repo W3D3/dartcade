@@ -3,7 +3,7 @@
 import { segmentAt } from '$shared/board'
 import { reviewLeg, type ReviewVisit } from '$shared/coach'
 import { AIMS, type Aim } from '$shared/coach/aims'
-import { evaluator, nextVisit } from '$shared/coach/model'
+import type { CoachModel } from '$shared/coach/model'
 import { dartPoints, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from '$shared/coach/walk'
 
 export type SandboxInput = {
@@ -11,7 +11,7 @@ export type SandboxInput = {
   start: number
   /** The opponent's score left; null: solo */
   opponent: number | null
-  /** Your 3-dart average, for the scoring grades; null: the visit's own */
+  /** Your 3-dart average, for the scoring grades (the model is its coaching level's); null: the visit's own */
   average: number | null
 }
 
@@ -62,9 +62,16 @@ export function sandboxLeg(input: SandboxInput, darts: readonly CoachDart[]): Co
 }
 
 /** The next dart's `top` best aims from `left` with `darts` darts left in a visit that started on
- *  `start`, by their chance to check out this visit or (weighted by w) the next; none that can't. */
-export function bestAims(start: number, left: number, darts: number, w: number, top: number): { aim: Aim; chance: number }[] {
-  const { values } = evaluator(start, w)(left, darts)
+ *  `start`, by their chance (`model`'s) to check out this visit or (weighted by w) the next; none that can't. */
+export function bestAims(
+  model: CoachModel,
+  start: number,
+  left: number,
+  darts: number,
+  w: number,
+  top: number,
+): { aim: Aim; chance: number }[] {
+  const { values } = model.evaluator(start, w)(left, darts)
   // Outer and inner single share a label: keep the better of the two
   const best = new Map<string, { aim: Aim; chance: number }>()
   for (const [i, v] of values.entries()) {
@@ -80,15 +87,16 @@ export function bestAims(start: number, left: number, darts: number, w: number, 
 /** How many of the best aims to show for the next dart */
 const TOP = 5
 
-export function sandbox(input: SandboxInput, darts: readonly CoachDart[]): SandboxResult {
+/** `model`: the player's coaching level's (coachLevel of `input.average`) */
+export function sandbox(input: SandboxInput, darts: readonly CoachDart[], model: CoachModel): SandboxResult {
   const leg = sandboxLeg(input, darts)
   const visit =
-    reviewLeg([leg], 0, 0, { startScore: input.start, average: input.average, opponentName: () => 'Opponent' })?.visits[0] ?? null
+    reviewLeg([leg], 0, 0, { startScore: input.start, average: input.average, model, opponentName: () => 'Opponent' })?.visits[0] ?? null
   const left = visit ? (visit.darts.at(-1)?.left ?? input.start) : input.start
   const done = visit !== null && (visit.bust || visit.then === 0 || darts.length >= 3)
   if (done) return { visit, left, done, next: [] }
 
-  const w = input.opponent === null ? 1 : 1 - nextVisit(input.opponent)
-  const next = bestAims(input.start, left, 3 - darts.length, w, TOP).map(a => ({ ...a, label: a.aim.label }))
+  const w = input.opponent === null ? 1 : 1 - model.nextVisit(input.opponent)
+  const next = bestAims(model, input.start, left, 3 - darts.length, w, TOP).map(a => ({ ...a, label: a.aim.label }))
   return { visit, left, done, next }
 }

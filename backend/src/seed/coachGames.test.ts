@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { reviewLeg } from '../shared/coach/index.js'
 import { strategyNotes } from '../shared/coach/notes.js'
-import { leg, visit } from '../shared/coach/testLegs.js'
+import { leg, visit, REF } from '../shared/coach/testLegs.js'
 import { throwsOf, type CoachVisit } from '../shared/coach/walk.js'
 import { COACH_GAMES, scriptedPoint, type DartScript } from './coachGames.js'
 
@@ -34,7 +34,7 @@ describe('sample games with known coach mistakes', () => {
     expect(visits.at(-1)).toMatchObject({ remaining: 0, bust: false })
 
     const noted = script.flatMap((_, seat) =>
-      strategyNotes(throwsOf([leg(visits)], seat, start)).map(n => ({
+      strategyNotes(throwsOf([leg(visits)], seat, start, REF), REF).map(n => ({
         seat,
         leg: n.leg,
         visit: visits.slice(0, n.visit).filter(v => v.seat === seat).length,
@@ -51,7 +51,8 @@ describe('sample games with known coach mistakes', () => {
     const winner = visits.at(-1)?.seat
     const reviews = script.map(
       (_, seat) =>
-        reviewLeg([{ ...leg(visits), winner }], 0, seat, { startScore: start, average: null, opponentName: s => players[s] })?.visits,
+        reviewLeg([{ ...leg(visits), winner }], 0, seat, { startScore: start, average: null, model: REF, opponentName: s => players[s] })
+          ?.visits,
     )
     expect(reviews.map(vs => vs?.map(v => v.grade))).toEqual(grades)
     expect(reviews.map(vs => vs?.map(v => v.darts.map(d => d.class.kind)))).toEqual(kinds)

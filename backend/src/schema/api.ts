@@ -2995,6 +2995,8 @@ export interface components {
             clean: boolean;
         };
         LegReview: {
+            /** @description The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played */
+            coachLevel: number;
             leg: number;
             seat: number;
             won: boolean;

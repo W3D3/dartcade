@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { R, segmentAt, SEGS, segAngle } from '../board.js'
 import { AIM_RINGS, AIMS, aimKind } from './aims.js'
 import { classifyDart, finishCandidates, fromBed, NOT_COUNTED } from './dartClass.js'
-import { evaluator, nextVisit } from './model.js'
-import { dart, leg, visit } from './testLegs.js'
+import { dart, leg, visit, REF } from './testLegs.js'
+
+const { evaluator, nextVisit } = REF
 import { throwsOf, type CoachDart, type Throw } from './walk.js'
 
 /** A dart with camera coords, its segment read off the board like the game does. */
@@ -41,7 +42,7 @@ function classify(d: CoachDart, left: number, darts = 3, start = left, w = 1) {
 
 /** The walked throws of one visit, each classified with the visit's shared evaluator. */
 function visitClasses(start: number, names: string[]) {
-  const throws = throwsOf([leg([visit(0, start, names)])], 0, 501)
+  const throws = throwsOf([leg([visit(0, start, names)])], 0, 501, REF)
   const evaluate = evaluator(start, 1)
   return throws.map(t => classifyDart(t, { evaluation: evaluate(t.left, t.darts) }))
 }

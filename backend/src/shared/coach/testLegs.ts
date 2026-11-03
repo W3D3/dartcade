@@ -1,5 +1,10 @@
 // Builds X01 legs for the coach's tests the way the game stores them (games/x01.ts detail()).
+import { LANDING } from './landing/level-7.gen.js'
+import { coachModel } from './model.js'
 import type { CoachDart, CoachLeg, CoachVisit } from './walk.js'
+
+/** Level 7's model (81 average), loaded without waiting: what the tests' numbers were pinned on */
+export const REF = coachModel(7, LANDING)
 
 export function seg(name: string): CoachDart['segment'] {
   if (name === 'Bull') return { name, number: 50, multiplier: 1 }

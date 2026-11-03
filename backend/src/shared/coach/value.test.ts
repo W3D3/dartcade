@@ -1,15 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { evaluator, nextVisit } from './model.js'
 import { throwEvaluations } from './notes.js'
-import { leg, visit } from './testLegs.js'
+import { leg, visit, REF } from './testLegs.js'
+
+const { evaluator, nextVisit } = REF
 import { dartDeltas, visitValues } from './value.js'
 import { throwsOf } from './walk.js'
 
 /** Seat 0's visit from `start`, the opponent (seat 1) on `opponentLeft` */
 function values(start: number, names: string[], opponentLeft = 501) {
-  const throws = throwsOf([leg([visit(1, opponentLeft, []), visit(0, start, names)])], 0, 501)
-  const evaluate = throwEvaluations()
-  return { throws, v: visitValues(throws, evaluate), deltas: dartDeltas(throws, evaluate) }
+  const throws = throwsOf([leg([visit(1, opponentLeft, []), visit(0, start, names)])], 0, 501, REF)
+  const evaluate = throwEvaluations(REF)
+  return { throws, v: visitValues(throws, evaluate, REF), deltas: dartDeltas(throws, evaluate, REF) }
 }
 const best = (start: number, w: number, left: number, darts: number) => Math.max(...evaluator(start, w)(left, darts).values)
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)

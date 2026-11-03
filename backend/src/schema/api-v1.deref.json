@@ -3915,6 +3915,7 @@
                     "review": {
                       "type": "object",
                       "required": [
+                        "coachLevel",
                         "leg",
                         "seat",
                         "won",
@@ -3928,6 +3929,12 @@
                       ],
                       "additionalProperties": false,
                       "properties": {
+                        "coachLevel": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10,
+                          "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+                        },
                         "leg": {
                           "type": "integer",
                           "minimum": 0
@@ -49020,6 +49027,7 @@
       "LegReview": {
         "type": "object",
         "required": [
+          "coachLevel",
           "leg",
           "seat",
           "won",
@@ -49033,6 +49041,12 @@
         ],
         "additionalProperties": false,
         "properties": {
+          "coachLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+          },
           "leg": {
             "type": "integer",
             "minimum": 0
@@ -49613,6 +49627,7 @@
           "review": {
             "type": "object",
             "required": [
+              "coachLevel",
               "leg",
               "seat",
               "won",
@@ -49626,6 +49641,12 @@
             ],
             "additionalProperties": false,
             "properties": {
+              "coachLevel": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+              },
               "leg": {
                 "type": "integer",
                 "minimum": 0

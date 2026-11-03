@@ -5,6 +5,7 @@ import type { BedRing } from '$lib/details/boardGeometry'
 import { startOfDay } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
 import { HALF, SEGS } from '$shared/board'
+import { LEVEL_AVERAGE } from '$shared/botLevels'
 import { checkoutHint } from '$shared/checkout.js'
 import type { CoachNote, LegReview, ReviewDart, ReviewVisit, VisitGrade } from '$shared/coach'
 import { dartGrade } from '$shared/coach/grade'
@@ -298,6 +299,9 @@ export function legSubtitleShort(title: CoachLegTitle, darts: number, average: n
   ]
   return [...parts, ...(average === null ? [] : [`avg ${average.toFixed(1)}`])].join(' · ')
 }
+
+/** "Coached as a 46 average": the level whose model judged the leg (model.ts coachLevel) */
+export const coachedAs = (level: number): string => `Coached as a ${LEVEL_AVERAGE[level - 1]} average`
 
 /** The visit the page opens on (an index): the first Mistake, else the first with a note, else the first. */
 export function defaultVisit(visits: readonly Pick<ReviewVisit, 'grade' | 'notes'>[]): number {

@@ -4,11 +4,12 @@ import { AIMS } from './aims.js'
 import { NOTE_THRESHOLD } from './grade.js'
 import { nearBull } from './aim.js'
 import { isTip, numberCost, strategyNotes } from './notes.js'
-import { evaluator } from './model.js'
-import { dart, leg, visit } from './testLegs.js'
+import { dart, leg, visit, REF } from './testLegs.js'
+
+const { evaluator } = REF
 import { throwsOf, type Throw } from './walk.js'
 
-const solo = (start: number, names: string[]) => strategyNotes(throwsOf([leg([visit(0, start, names)])], 0, 501))
+const solo = (start: number, names: string[]) => strategyNotes(throwsOf([leg([visit(0, start, names)])], 0, 501, REF), REF)
 const noteOn = (start: number, names: string[], dart: number) => solo(start, names).find(n => n.dart === dart)
 
 const aimIndex = (id: string) => AIMS.findIndex(a => a.id === id)
@@ -171,7 +172,7 @@ describe('strategy notes: no note', () => {
 describe('strategy notes: the opponent', () => {
   it('lets a setup slide when the opponent is about to finish', () => {
     const withOpponent = (oppLeft: number) =>
-      strategyNotes(throwsOf([leg([visit(1, oppLeft, []), visit(0, 97, ['S20', 'S20', 'S20'])])], 0, 501)).find(n => n.dart === 2)
+      strategyNotes(throwsOf([leg([visit(1, oppLeft, []), visit(0, 97, ['S20', 'S20', 'S20'])])], 0, 501, REF), REF).find(n => n.dart === 2)
     expect(withOpponent(301)).toBeDefined()
     expect(withOpponent(32)).toBeUndefined()
   })
@@ -189,7 +190,7 @@ describe('strategy notes: tips', () => {
   })
 
   it('is tip: false for the same dart when the opponent is on 32, an out', () => {
-    const withOpponent = strategyNotes(throwsOf([leg([visit(1, 32, []), visit(0, 24, ['S14', 'S1', 'S1'])])], 0, 501)).find(
+    const withOpponent = strategyNotes(throwsOf([leg([visit(1, 32, []), visit(0, 24, ['S14', 'S1', 'S1'])])], 0, 501, REF), REF).find(
       note => note.dart === 0,
     )
     expect(withOpponent).toBeDefined()

@@ -7,11 +7,11 @@ import { x01AverageSince } from '../db/ranked.js'
 import { storedDetail } from '../history/detail.js'
 import type { WarnFn } from '../session/replay.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
-import { coachable, reviewLeg } from '../shared/coach/index.js'
+import { coachable, coachLevel, loadModel, reviewLeg } from '../shared/coach/index.js'
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 18
+export const COACH_VERSION = 19
 
 const UPDATED = [
   'user_id',
@@ -81,10 +81,12 @@ async function build(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Pro
     if (s.user_id === null || s.bot_level !== null) continue
     // The player's average when the game finished, so a rebuild grades it the same
     const average = await x01AverageSince(db, s.user_id, PROFILE_AVERAGE_DAYS, game.finished_at)
+    // Coached one level above that average; the review stores the level, so it doesn't shift later
+    const model = await loadModel(coachLevel(average))
     for (const { leg } of legs) {
       // A leg's review is CPU work: let live sockets in between legs (and so between seats)
       await new Promise(resolve => setImmediate(resolve))
-      const review = reviewLeg(coachLegs, leg, s.seat, { startScore, average, opponentName: nameOf })
+      const review = reviewLeg(coachLegs, leg, s.seat, { startScore, average, model, opponentName: nameOf })
       if (!review) continue
       const winner = winners.get(leg) ?? { name: null, darts: null }
       rows.push({

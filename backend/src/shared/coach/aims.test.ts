@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { segmentAt } from '../board.js'
 import { AIMS } from './aims.js'
-import { LANDING, LANDING_LEVEL } from './landing.gen.js'
+import { LANDING } from './landing/level-7.gen.js'
+import { loadModel } from './model.js'
 
 describe('the aim points', () => {
   it('has a treble, double, two singles and a wire per number, plus the bull and 25', () => {
@@ -29,16 +30,16 @@ describe('the aim points', () => {
 })
 
 describe('the landing table', () => {
-  it('is for the reference player, one row per aim', () => {
-    expect(LANDING_LEVEL).toBe(7)
-    expect(LANDING).toHaveLength(AIMS.length)
-  })
-
-  it("sums each aim's chances to 1, give or take the dropped tail", () => {
-    for (const outs of LANDING) {
-      const sum = outs.reduce((s, o) => s + o[3], 0)
-      expect(sum).toBeGreaterThan(0.98)
-      expect(sum).toBeLessThanOrEqual(1.00001)
+  it("has one row per aim at every level, each aim's chances summing to 1 give or take the dropped tail", async () => {
+    for (let level = 1; level <= 10; level++) {
+      const { landing } = await loadModel(level)
+      expect(landing).toHaveLength(AIMS.length)
+      for (const outs of landing) {
+        const sum = outs.reduce((s, o) => s + o[3], 0)
+        expect(sum).toBeGreaterThan(0.97)
+        // Each chance is rounded to 1e-5, so many small ones can add up past 1
+        expect(sum).toBeLessThanOrEqual(1.001)
+      }
     }
   })
 

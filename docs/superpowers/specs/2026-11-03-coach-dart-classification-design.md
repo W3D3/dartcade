@@ -147,9 +147,9 @@ missed."). Scoring visits keep their rules (see Visit rating).
   w · nextVisit(left); after a checkout 1; after a bust w · nextVisit(start), the score the bust
   goes back to, so the start's double counts (32 is worth more than 2).
 - **A dart's delta** = V(after it) − V(before it), in percentage points (`ReviewDart.delta`). The
-  deltas telescope: a visit's sum is V(end) − V(start, 3). For the reference player (the model's
-  σ, about an 81 average) a best-aimed dart's expected delta is 0, so above 0 is better than that
-  player would expect from there.
+  deltas telescope: a visit's sum is V(end) − V(start, 3). For a player of the coaching level
+  (see Coaching level: the model's σ) a best-aimed dart's expected delta is 0, so above 0 is better
+  than that player would expect from there.
 - **Closeness credit** (user ruling: a dart that missed its target grades better the closer it
   was): a dart with a target and camera coords that didn't hit it earns `MISS_CLOSE_MAX ·
   max(0, 1 − edgeMm / MISS_CLOSE_ZERO_MM)` (5 points, 20 mm) in `ReviewDart.closeness`; a hit, a
@@ -288,14 +288,47 @@ wide screens (1280 px and up), a folded line above the dart slots below that and
 - **Aim now**: the next dart's three best aims (`bestAims` in `lib/coach/sandbox.ts`, w = 1: no
   opponent), each with its chance to check out this visit or the next and what it leaves
   ("T19 · 64% · leaves 67"). Over 170 left nothing checks out soon enough to rank by chance, so it
-  shows the three aims with the most points a dart for the reference player (`LANDING`): T20, T19, T18.
+  shows the three aims with the most points a dart for the coaching level's player (its landing table).
+  At level 7: T20, T19, T18.
 - **This visit**: each dart as the leg review classes it (`dartLabel`), with its change in checkout
   chance and its near-miss credit (`value.ts`); none on a scoring visit.
 - **Last visit**: once the visit is done (three darts, a bust or a checkout) its grade and line from
   `reviewLeg`, kept until the next visit's first dart.
 - The average it grades against: your 30-day X01 average from your profile, else this game's, else
   none (the visit's own).
-- `lib/coach/live.ts` and the panel load with the model in a lazy chunk, only once the panel shows.
+- `lib/coach/live.ts` and the panel load in a lazy chunk, only once the panel shows; the panel then
+  fetches the landing table of your coaching level only (from your 30-day average; level 7 until
+  the profile arrives or without one) and says "Coached as a 46 average.".
+
+## Coaching level
+
+The checkout model (notes, dart classes' finish priors, values and deltas, the costs quoted, the
+setup leave reasons, the opponents' w) exists for every bot level 1–10, and the coach judges a
+player with the model of the level just above their own average (user ruling: "the one higher than
+the user's average to coach them into getting better": a 40 average was happy with 60 on 100,
+which the 81-average model called a loss).
+
+- **Tables:** `npm run gen:coach` (`src/coach/genLanding.ts`) writes
+  `shared/coach/landing/level-N.gen.ts` per level: 40,000 seeded throws per aim with that level's
+  `LEVEL_SIGMA` and the bots' `SIGMA_JITTER` (the same Monte Carlo as before; level 7's numbers are
+  the old `landing.gen.ts`'s, byte for byte). 19–84 kB of source each (level 1 is widest), 11–52 kB
+  minified, 2.6–10 kB gzipped.
+- **The model** (`model.ts`): `coachModel(level, landing)` builds a level's finish table, nextVisit
+  and evaluator; `loadModel(level)` imports a level's table lazily (one chunk each in the SPA) and
+  builds its model once. Everything that coaches takes the model explicitly (`throwsOf`,
+  `throwEvaluations`, `strategyNotes`, `dartDeltas`, `reviewLeg`'s `ctx.model`, the sandbox and the
+  live panel).
+- **`coachLevel(average)`:** the level whose `LEVEL_AVERAGE` is the smallest one strictly above the
+  average (40 → level 3, 46; 80 → level 7, 81; 81 → level 8, 90); level 10 at or above 105; level 7
+  (`DEFAULT_COACH_LEVEL`) without an average.
+- **Reviews:** the level comes from the same 30-day average (as of the game's finish) the scoring
+  grades use, and is stored in the review JSON (`LegReview.coachLevel`, no migration), so a review
+  doesn't shift when the average changes; the leg review says "Coached as a 46 average".
+- **Unchanged by the level:** the grade thresholds, Perfect (`minDarts`), the scoring grades
+  against the average, the grouping comment's own average-based expectation, and the dart classes'
+  attribution σ (`SIGMA_ATTR`).
+- **Sandbox:** "Your average" picks the level the same way and shows "Coaching level: 3 (≈ 46
+  average)".
 
 ## Testing
 
@@ -416,9 +449,19 @@ Decisions taken while building this without the user, each with why:
   are first guesses**, to be tuned in the sandbox. Three typed misses at D16 from 32 are −19
   (Weak); S16, S8, S4 chasing it down to 4 is −23.5 (Mistake); a camera visit of three misses 2 mm
   outside D16 earns +13.5 back and is OK.
-- **The reference player is the model's** (landing.gen.ts, about an 81 average), not the seat's own
-  level: the grade says how the darts compare with that player from the same spot. A checkout from
-  an easy finish is Good (32 → S16, D8: +7.6), from a hard one Great (81 → T19, S12, D6: +21).
+- **The reference player is the coaching level's**: the level one above the seat's 30-day average
+  (Coaching level), so the grade says how the darts compare with a slightly better player from the
+  same spot. At level 7 (an 80 average) a checkout from an easy finish is Good (32 → S16, D8:
+  +7.6), from a hard one Great (81 → T19, S12, D6: +21); for a 40 average (level 3) 32 → S16, S8,
+  D4 is Great (+41.9) and 100 → S20, S20, S20 Good (+9.3, OK at level 7: −2.7).
+- **Coaching level: one above, not the player's own level** (the user's choice). A player exactly
+  on a level's average is coached by the next one up; a player with no 30-day average by level 7,
+  as before (their scoring grades still use the game's average). The opponents' threat (w) uses the
+  same level's model: their real level isn't known.
+- **The level is stored per leg**, inside the review JSON: a rebuild (COACH_VERSION) recomputes it
+  from the average as of the game's finish, so it stays the same.
+- **The live panel fetches level 7 first** when the player's profile hasn't loaded yet (or never
+  will, with progression off), then the right level's table.
 - **A tip keeps the value's grade** and shows its text; a bust's or checkout's text wins over a tip.
 - **The costliest dart is picked by its delta alone** (the cost quoted is checkout chance), and only
   named when the visit's points are below 0 and that dart lost at least 1 point.

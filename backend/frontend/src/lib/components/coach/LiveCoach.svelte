@@ -1,11 +1,14 @@
 <!--
   The live coach beside a solo X01 game (coach.live.enabled): the next dart's best aims, this visit's
-  darts as the coach classes them, the last visit's grade. GameDisplay loads it lazily (it brings the
-  model); `compact` (phones, tablets) folds it into one line that opens.
+  darts as the coach classes them, the last visit's grade. GameDisplay loads it lazily; it fetches
+  only the model of the player's coaching level (one level above their 30-day average); `compact` (phones, tablets) folds it into one line that opens.
 -->
 <script lang="ts">
   import type { X01Game } from '$lib/api/game-ws'
-  import { keepGrade, liveAverage, liveCoach, type LiveGrade } from '$lib/coach/live'
+  import { keepGrade, liveAverage, liveCoach, type LiveCoach, type LiveGrade } from '$lib/coach/live'
+  import { coachedAs } from '$lib/coach/view'
+  import { LEVEL_AVERAGE } from '$shared/botLevels'
+  import { coachLevel, loadModel, type CoachModel } from '$shared/coach/model'
   import { flag } from '$lib/flags'
   import { profileOf } from '$lib/progress/profiles'
   import DartTile from './DartTile.svelte'
@@ -21,19 +24,31 @@
     return profileOf(userId).subscribe(p => (profileAverage = p?.average ?? null))
   })
   const average = $derived(liveAverage(profileAverage, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
-  const live = $derived(liveCoach(game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value))
+  // shortcut: level 7 until the profile arrives (and for good while progression is off), so a
+  // player with an average may fetch level 7's table first; fine while it's one small chunk
+  const level = $derived(coachLevel(profileAverage))
+  let model = $state<CoachModel | null>(null)
+  $effect(() => {
+    const want = level
+    void loadModel(want)
+      .then(m => {
+        if (want === level) model = m
+      })
+      .catch(() => undefined)
+  })
+  const live = $derived(model ? liveCoach(model, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null)
+  const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
   // The last finished visit's grade stays until the next visit's first dart
   let kept: LiveGrade | null = null
-  const grade = $derived.by(() => (kept = keepGrade(kept, live)))
-  const top = $derived(live.aims[0] ?? null)
-  const dartNo = $derived(live.rows.length + 1)
+  const grade = $derived.by(() => (live ? (kept = keepGrade(kept, live)) : kept))
+  const top = $derived(live?.aims[0] ?? null)
 </script>
 
-{#snippet body()}
+{#snippet body(live: LiveCoach)}
   <section class="flex flex-col gap-2" aria-labelledby="live-coach-aims">
     <div class="flex items-baseline justify-between gap-2">
       <h3 id="live-coach-aims" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">Aim now</h3>
-      {#if live.aims.length}<span class="text-[12px] text-text-dim">dart {dartNo} of 3 · {live.left} left</span>{/if}
+      {#if live.aims.length}<span class="text-[12px] text-text-dim">dart {live.rows.length + 1} of 3 · {live.left} left</span>{/if}
     </div>
     {#if live.aims.length}
       <ol class="m-0 p-0 list-none flex flex-col gap-1.5">
@@ -50,7 +65,7 @@
       </ol>
       <p class="m-0 text-[12px] text-text-dim">
         {live.scoring
-          ? 'Points a dart for the coach’s reference player.'
+          ? `Points a dart for a ${LEVEL_AVERAGE[(model?.level ?? 7) - 1]}-average player.`
           : 'Chance to check out this visit or the next, and what the aim leaves.'}
       </p>
     {:else}
@@ -96,10 +111,12 @@
       </p>
     </section>
   {/if}
-  <p class="m-0 mt-auto text-[12px] text-text-dim">{average.line}</p>
+  <p class="m-0 mt-auto text-[12px] text-text-dim">{average.line} {coached}</p>
 {/snippet}
 
-{#if compact}
+{#if !live}
+  <!-- The model is loading: nothing to show yet -->
+{:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">
       <h2 id="live-coach-title" class="m-0 text-[14px] font-semibold">Coach</h2>
@@ -113,7 +130,7 @@
       </span>
     </summary>
     <!-- The match screen doesn't scroll on phones: the open coach does, so the keypad stays in view -->
-    <div class="px-3 pb-3 max-h-[38dvh] overflow-y-auto flex flex-col gap-4">{@render body()}</div>
+    <div class="px-3 pb-3 max-h-[38dvh] overflow-y-auto flex flex-col gap-4">{@render body(live)}</div>
   </details>
 {:else}
   <aside
@@ -121,6 +138,6 @@
     aria-labelledby="live-coach-title"
   >
     <h2 id="live-coach-title" class="m-0 font-display font-bold text-[26px] leading-none uppercase">Coach</h2>
-    {@render body()}
+    {@render body(live)}
   </aside>
 {/if}

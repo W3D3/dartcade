@@ -3,7 +3,7 @@
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, closeness, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
-import { fin } from './model.js'
+import type { CoachModel } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { dartDeltas } from './value.js'
@@ -44,6 +44,8 @@ export type ReviewVisit = {
 export type SkillGrade = { grade: 'A' | 'B' | 'C' | 'D' | null; line: string }
 export type LegCounts = { lowVisits: number; badSetups: number; missedDoubles: number; clean: boolean }
 export type LegReview = {
+  /** The bot level whose model judged the leg (model.ts coachLevel) */
+  coachLevel: number
   leg: number
   seat: number
   won: boolean
@@ -56,7 +58,8 @@ export type LegReview = {
   /** The scoring visits' mean grouping spread and edge distance (grouping.ts); null without any */
   grouping: { spreadMm: number | null; edgeMm: number | null }
 }
-export type ReviewContext = { startScore: number; average: number | null; opponentName: (seat: number) => string }
+/** `model`: the player's coaching level's (model.ts coachLevel, from the same average) */
+export type ReviewContext = { startScore: number; average: number | null; model: CoachModel; opponentName: (seat: number) => string }
 
 const NONE: SkillGrade = { grade: null, line: '–' }
 const RANK = { A: 0, B: 1, C: 2, D: 3 }
@@ -83,9 +86,10 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   if (!l || darts === 0) return null
 
   const average = ctx.average ?? gameAverage(legs, seat)
-  const throws = throwsOf([l], seat, ctx.startScore)
-  const evaluate = throwEvaluations()
-  const notes = strategyNotes(throws, evaluate)
+  const { model } = ctx
+  const throws = throwsOf([l], seat, ctx.startScore, model)
+  const evaluate = throwEvaluations(model)
+  const notes = strategyNotes(throws, model, evaluate)
   const checkout = l.visits.find(v => v.remaining === 0 && !v.bust)
   const won = checkout?.seat === seat
   const lost = l.winner != null && l.winner !== seat
@@ -95,7 +99,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   const visits = mine.map(({ v, i }, k): ReviewVisit => {
     const start = visitStart(v)
     const vThrows = throws.filter(t => t.visit === i)
-    const deltas = start > 170 ? [] : dartDeltas(vThrows, evaluate)
+    const deltas = start > 170 ? [] : dartDeltas(vThrows, evaluate, model)
     const reviewDarts = v.darts.map((d, j): ReviewDart => {
       // Undefined for a dart after the bust
       const t = vThrows.at(j)
@@ -191,7 +195,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   const take: string[] = []
   const myLast = mine[mine.length - 1].v.remaining
   if (won) take.push(`Won in ${darts} darts.`)
-  else if (checkout && myLast <= 170 && fin[myLast][2] > 0) take.push(`You were on a finish after ${darts} darts and still lost.`)
+  else if (checkout && myLast <= 170 && model.fin[myLast][2] > 0) take.push(`You were on a finish after ${darts} darts and still lost.`)
   else if (checkout) take.push(`Lost: ${ctx.opponentName(checkout.seat)} checked out first.`)
   else take.push('Nobody checked out.')
 
@@ -221,6 +225,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     take.push('Your scoring dropped after visit 3.')
 
   return {
+    coachLevel: model.level,
     leg,
     seat,
     won,

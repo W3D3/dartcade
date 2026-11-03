@@ -10,6 +10,7 @@ import { coachLegsSummary, coachLegsPage, getCoachLeg } from './legs.js'
 import { decodeCoachCursor, encodeCoachCursor } from './cursor.js'
 
 const review = (o: Partial<LegReview> = {}): LegReview => ({
+  coachLevel: 7,
   leg: 0,
   seat: 0,
   won: true,

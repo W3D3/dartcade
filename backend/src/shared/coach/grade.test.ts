@@ -15,7 +15,7 @@ import {
 } from './grade.js'
 import { classifyDart } from './dartClass.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
-import { leg, visit } from './testLegs.js'
+import { leg, visit, REF } from './testLegs.js'
 import { dartDeltas } from './value.js'
 import { throwsOf, type CoachDart, type CoachVisit } from './walk.js'
 
@@ -24,8 +24,8 @@ type Opts = { average?: number; lost?: boolean; opponentLeft?: number; visit?: C
 /** Seat 0's visit from `start`, after an opponent (seat 1) left on `opponentLeft` (default 501). */
 function facts(start: number, names: string[], { average = 60, lost = false, opponentLeft = 501, visit: given }: Opts = {}): VisitFacts {
   const v = given ?? visit(0, start, names)
-  const throws = throwsOf([leg([visit(1, opponentLeft, []), v])], 0, 501)
-  const evaluate = throwEvaluations()
+  const throws = throwsOf([leg([visit(1, opponentLeft, []), v])], 0, 501, REF)
+  const evaluate = throwEvaluations(REF)
   return {
     start,
     throws,
@@ -33,8 +33,8 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     then: v.remaining,
     bust: v.bust,
     classes: throws.map(t => classifyDart(t, { evaluation: evaluate(t) })),
-    deltas: start > 170 ? [] : dartDeltas(throws, evaluate),
-    notes: strategyNotes(throws, evaluate),
+    deltas: start > 170 ? [] : dartDeltas(throws, evaluate, REF),
+    notes: strategyNotes(throws, REF, evaluate),
     average,
     first: start === 501,
     lastVisitOfLostLeg: lost,

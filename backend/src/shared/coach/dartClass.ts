@@ -8,7 +8,7 @@ import type { Evaluation } from './model.js'
 import { dartPoints, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
-/** An amateur's spread, for guessing targets only (the strategy model keeps the reference player's):
+/** An amateur's spread, for guessing targets only (the strategy model keeps the coaching level's):
  *  20 mm in board units. Narrower, and a wedge-wide miss loses to any aim on the number it landed in. */
 const SIGMA_ATTR = 20 / 170
 /** Finish prior exp((v − best) / TAU): how sharply the evaluator's better aims are preferred */

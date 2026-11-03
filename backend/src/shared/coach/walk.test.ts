@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { fin } from './model.js'
 import { throwsOf, walkVisit } from './walk.js'
-import { dart, leg, visit } from './testLegs.js'
+import { dart, leg, visit, REF } from './testLegs.js'
+
+const { fin } = REF
 
 describe('throwsOf', () => {
   it('gives the score before each dart and the darts left', () => {
-    const t = throwsOf([leg([visit(0, 501, ['T20', 'T20', 'S20'])])], 0, 501)
+    const t = throwsOf([leg([visit(0, 501, ['T20', 'T20', 'S20'])])], 0, 501, REF)
     expect(t.map(x => [x.left, x.darts])).toEqual([
       [501, 3],
       [441, 2],
@@ -16,7 +17,7 @@ describe('throwsOf', () => {
 
   it('rebuilds a busting visit from its start, not from what was left after it', () => {
     // 40 left: S20 (20), S19 busts. The game stores remaining 40, scored 0.
-    const t = throwsOf([leg([visit(0, 40, ['S20', 'S19'])])], 0, 501)
+    const t = throwsOf([leg([visit(0, 40, ['S20', 'S19'])])], 0, 501, REF)
     expect(t.map(x => [x.left, x.bust])).toEqual([
       [40, false],
       [20, true],
@@ -28,35 +29,35 @@ describe('throwsOf', () => {
     const v = visit(0, 32, ['T20', 'S16', 'D8'])
     expect(v).toMatchObject({ remaining: 32, scored: 0, bust: true })
     expect(v.darts).toHaveLength(3)
-    expect(throwsOf([leg([v])], 0, 501).map(x => [x.d.segment.name, x.left, x.bust])).toEqual([['T20', 32, true]])
+    expect(throwsOf([leg([v])], 0, 501, REF).map(x => [x.d.segment.name, x.left, x.bust])).toEqual([['T20', 32, true]])
   })
 
   it('marks the dart that checks out', () => {
-    const t = throwsOf([leg([visit(0, 40, ['D20'])])], 0, 501)
+    const t = throwsOf([leg([visit(0, 40, ['D20'])])], 0, 501, REF)
     expect(t[0].checkout).toBe(true)
   })
 
   it("only walks the chosen seat, with w from the opponent's score", () => {
     const l = leg([visit(1, 501, ['T20']), visit(1, 32, []), visit(0, 97, ['S20', 'S20', 'S20'])])
     // The opponent's last visit left them on 32 (the empty visit stands for "they are on 32")
-    const t = throwsOf([l], 0, 501)
+    const t = throwsOf([l], 0, 501, REF)
     expect(t).toHaveLength(3)
     expect(t[0].w).toBeCloseTo(1 - fin[32][3], 10)
   })
 
   it('gives w = 1 solo and before the opponent has thrown', () => {
-    expect(throwsOf([leg([visit(0, 501, ['S20'])])], 0, 501)[0].w).toBe(1)
+    expect(throwsOf([leg([visit(0, 501, ['S20'])])], 0, 501, REF)[0].w).toBe(1)
     // The opponent hasn't thrown in this leg yet: still on 501, no finish
-    const t = throwsOf([leg([visit(0, 501, ['S20']), visit(1, 501, ['S20'])])], 0, 501)
+    const t = throwsOf([leg([visit(0, 501, ['S20']), visit(1, 501, ['S20'])])], 0, 501, REF)
     expect(t[0].w).toBe(1)
   })
 
   it("is empty for a seat that didn't throw", () => {
-    expect(throwsOf([leg([visit(1, 501, ['T20'])])], 0, 501)).toEqual([])
+    expect(throwsOf([leg([visit(1, 501, ['T20'])])], 0, 501, REF)).toEqual([])
   })
 
   describe('opponentOnOut', () => {
-    const withOpponent = (oppLeft: number) => throwsOf([leg([visit(1, oppLeft, []), visit(0, 97, ['S20'])])], 0, 501)[0].opponentOnOut
+    const withOpponent = (oppLeft: number) => throwsOf([leg([visit(1, oppLeft, []), visit(0, 97, ['S20'])])], 0, 501, REF)[0].opponentOnOut
 
     it('is true when the opponent is left on a number a visit can check out', () => {
       expect(withOpponent(32)).toBe(true)

@@ -4,7 +4,7 @@
 import { checkoutHint } from '../checkout.js'
 import { AIMS, directOutId } from './aims.js'
 import { candidates, landedNumber, nearBull } from './aim.js'
-import { evaluator, fin, type Evaluation, type Evaluator } from './model.js'
+import type { CoachModel, Evaluation, Evaluator } from './model.js'
 import { NOTE_THRESHOLD } from './grade.js'
 import { dartPoints, type Throw } from './walk.js'
 
@@ -51,7 +51,7 @@ const what = (name: string) => (name === 'Miss' ? 'A miss off the board' : name)
 
 /** What the dart itself did: busted, or left a score that's hard to finish. Null when the score it
  *  left has nothing wrong with it on its own. */
-function reason(t: Throw, thrown: string): string | null {
+function reason(t: Throw, thrown: string, fin: CoachModel['fin']): string | null {
   const name = what(thrown)
   if (t.bust) return `${name} busts`
   const after = t.left - dartPoints(t.d)
@@ -66,7 +66,7 @@ function reason(t: Throw, thrown: string): string | null {
 /** Each dart's evaluation (model.ts), null with more than 170 left: a Scoring dart has no finish
  *  to judge. A visit's darts share one evaluator (its start and w), so they share its memo; each
  *  dart's is computed once, for the notes and the dart classes alike. */
-export function throwEvaluations(): (t: Throw) => Evaluation | null {
+export function throwEvaluations(model: CoachModel): (t: Throw) => Evaluation | null {
   const byVisit = new Map<string, Evaluator>()
   const byThrow = new Map<string, Evaluation>()
   return t => {
@@ -75,16 +75,16 @@ export function throwEvaluations(): (t: Throw) => Evaluation | null {
     let e = byThrow.get(`${visit}-${t.dart}`)
     if (!e) {
       let evaluate = byVisit.get(visit)
-      if (!evaluate) byVisit.set(visit, (evaluate = evaluator(t.start, t.w)))
+      if (!evaluate) byVisit.set(visit, (evaluate = model.evaluator(t.start, t.w)))
       byThrow.set(`${visit}-${t.dart}`, (e = evaluate(t.left, t.darts)))
     }
     return e
   }
 }
 
-/** The notes for a seat's darts on a finish (walk.ts throwsOf), in throw order. Pass the
- *  evaluations to share them with the dart classes. */
-export function strategyNotes(throws: readonly Throw[], evaluate = throwEvaluations()): CoachNote[] {
+/** The notes for a seat's darts on a finish (walk.ts throwsOf), in throw order, by `model` (the
+ *  player's coaching level). Pass the evaluations to share them with the dart classes. */
+export function strategyNotes(throws: readonly Throw[], model: CoachModel, evaluate = throwEvaluations(model)): CoachNote[] {
   const notes: CoachNote[] = []
   for (const t of throws) {
     const evaluation = evaluate(t)
@@ -104,7 +104,7 @@ export function strategyNotes(throws: readonly Throw[], evaluate = throwEvaluati
       better: AIMS[best].label,
       betterAimId: AIMS[best].id,
       cost,
-      reason: reason(t, thrown),
+      reason: reason(t, thrown, model.fin),
       book: checkoutHint(t.left, 'double', t.darts),
       tip: isTip(t, best),
     })

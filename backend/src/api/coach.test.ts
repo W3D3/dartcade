@@ -29,6 +29,7 @@ import { ensureCoachGame, ensureCoachLegs } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 
 const review: LegReview = {
+  coachLevel: 7,
   leg: 0,
   seat: 0,
   won: true,

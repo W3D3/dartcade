@@ -1,12 +1,12 @@
 // A visit's darts by what each did to the position's value: the best aim's value (model.ts) before
-// the dart against after it, for the reference player. The visit's deltas sum to its end's value
+// the dart against after it, for a player of the coaching level. The visit's deltas sum to its end's value
 // against its start's: 1 after a checkout, w · nextVisit of the score left (the start after a bust).
-import { nextVisit, type Evaluation } from './model.js'
+import type { CoachModel, Evaluation } from './model.js'
 import { dartPoints, type Throw } from './walk.js'
 
 /** The value before each of one visit's walked darts, then after its last. `evaluate` is the
  *  leg's throwEvaluations (notes.ts): the darts share their visit's evaluator. */
-export function visitValues(throws: readonly Throw[], evaluate: (t: Throw) => Evaluation | null): number[] {
+export function visitValues(throws: readonly Throw[], evaluate: (t: Throw) => Evaluation | null, { nextVisit }: CoachModel): number[] {
   const last = throws.at(-1)
   if (!last) return []
   const value = (t: Throw) => {
@@ -26,9 +26,9 @@ export function visitValues(throws: readonly Throw[], evaluate: (t: Throw) => Ev
   return [...throws.map(value), end]
 }
 
-/** Each walked dart's change in value, in percentage points (+ better than the reference player
- *  expects from there). */
-export function dartDeltas(throws: readonly Throw[], evaluate: (t: Throw) => Evaluation | null): number[] {
-  const v = visitValues(throws, evaluate)
+/** Each walked dart's change in value, in percentage points (+ better than a player of the
+ *  model's level expects from there). */
+export function dartDeltas(throws: readonly Throw[], evaluate: (t: Throw) => Evaluation | null, model: CoachModel): number[] {
+  const v = visitValues(throws, evaluate, model)
   return throws.map((_, i) => (v[i + 1] - v[i]) * 100)
 }

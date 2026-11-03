@@ -20,6 +20,7 @@
     GRADE_PILL,
     groupingLine,
     legHeading,
+    coachedAs,
     legSubtitle,
     legSubtitleShort,
     missTags,
@@ -194,6 +195,7 @@
           </h1>
           <span class="text-[13px] text-text-muted xl:hidden">{legSubtitleShort(title, review.darts, review.average, now)}</span>
           <span class="hidden text-[15px] text-text-muted xl:inline">{legSubtitle(title, review.darts, now)}</span>
+          <span class="text-[13px] text-text-dim xl:text-[14px]">{coachedAs(review.coachLevel)}</span>
         </div>
         <Button variant="outline" href="#/history/{params.gameId}" class="h-11 text-[15px] font-semibold">Match details</Button>
       </header>

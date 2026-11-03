@@ -1,13 +1,19 @@
 import { describe, it, expect } from 'vitest'
+import { coachLevel, loadModel } from './model.js'
 import { reviewLeg, scoringLetter, type LegReview } from './review.js'
-import { dart, leg, visit } from './testLegs.js'
+import { dart, leg, visit, REF } from './testLegs.js'
 import { coachDart, type CoachLeg, type CoachVisit } from './walk.js'
 import { NOT_COUNTED, type DartClass, type DartKind } from './dartClass.js'
 
 const names = ['Admin', 'Gerwyn']
 /** A dart class pinned by its kind (dartClass.test.ts pins the rest) */
 const kind = (k: DartKind): DartClass => expect.objectContaining({ kind: k })
-const ctx = (startScore: number, average: number | null = null) => ({ startScore, average, opponentName: (s: number) => names[s] })
+const ctx = (startScore: number, average: number | null = null) => ({
+  startScore,
+  average,
+  model: REF,
+  opponentName: (s: number) => names[s],
+})
 
 /** Seat 0 wins a 501 leg in 17 darts against a seat 1 that scores 3 a visit. */
 function wonLeg(): CoachLeg {
@@ -40,6 +46,7 @@ function wonLeg(): CoachLeg {
 describe('reviewLeg', () => {
   it('grades every visit, the three skills, the take and the counts', () => {
     const expected: LegReview = {
+      coachLevel: 7,
       leg: 0,
       seat: 0,
       won: true,
@@ -328,5 +335,35 @@ describe('reviewLeg', () => {
     const r = reviewLeg([leg([{ ...v, darts: [...v.darts, bounce] }])], 0, 0, ctx(60))
     expect(r?.visits[0].darts[2]).toMatchObject({ coords: null, class: { kind: 'double', detail: 'outside', estimated: true } })
     expect(r?.visits[0].notes).toEqual([])
+  })
+})
+
+describe('the coaching level', () => {
+  /** One solo visit reviewed for a player with `average`, by the model one level above it */
+  async function graded(average: number, start: number, names: string[]) {
+    const model = await loadModel(coachLevel(average))
+    const r = reviewLeg([leg([visit(0, start, names)])], 0, 0, { startScore: 501, average, model, opponentName: () => '' })!
+    const v = r.visits[0]
+    return { level: r.coachLevel, grade: v.grade, delta: v.darts.reduce((s, d) => s + (d.delta ?? 0), 0) }
+  }
+
+  it('stores the level it coached with', async () => {
+    expect((await graded(40, 100, ['S20', 'S20', 'S20'])).level).toBe(3)
+    expect((await graded(80, 100, ['S20', 'S20', 'S20'])).level).toBe(7)
+  })
+
+  it("is happy with a 40 average's 60 on 100, which the 81-average model calls a small loss", async () => {
+    const low = await graded(40, 100, ['S20', 'S20', 'S20'])
+    expect(low.delta).toBeCloseTo(9.3, 1)
+    expect(low.grade).toBe('good')
+    // Level 7 grades it as before the levels
+    const ref = await graded(80, 100, ['S20', 'S20', 'S20'])
+    expect(ref.delta).toBeCloseTo(-2.7, 1)
+    expect(ref.grade).toBe('ok')
+  })
+
+  it('still calls a wasted 59 a mistake, and a good 121 setup good, at both ends', async () => {
+    for (const average of [40, 80, 81]) expect((await graded(average, 59, ['Miss', 'S3', 'S19'])).grade).toBe('mistake')
+    for (const average of [40, 80]) expect(['good', 'great']).toContain((await graded(average, 121, ['S20', 'T17', 'S18'])).grade)
   })
 })

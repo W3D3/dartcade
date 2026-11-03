@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { AIMS } from './aims.js'
-import { evaluator, fin, nextVisit } from './model.js'
+import { coachLevel, loadModel } from './model.js'
+import { REF } from './testLegs.js'
+
+const { evaluator, fin, nextVisit } = REF
 
 const BOGEYS = [159, 162, 163, 165, 166, 168, 169]
 
@@ -60,5 +63,26 @@ describe('the evaluator', () => {
     // The outcomes' values, weighted by their chances, add up to the aim's value
     const sum = outs.reduce((s, o) => s + o.outcome[3] * o.value, 0)
     expect(sum).toBeCloseTo(ev.values[t20], 10)
+  })
+})
+
+describe('the coaching level', () => {
+  it('is the level one above the average, level 10 above it all, level 7 without one', () => {
+    expect([30, 39.9, 40, 46, 80, 81, 104, 105, 140].map(coachLevel)).toEqual([2, 3, 3, 4, 7, 8, 10, 10, 10])
+    expect([0, 12].map(coachLevel)).toEqual([1, 1])
+    expect([null, undefined, NaN].map(coachLevel)).toEqual([7, 7, 7])
+  })
+
+  it('loads each level once, and level 7 is the tests’ reference', async () => {
+    const m = await loadModel(7)
+    expect(await loadModel(7)).toBe(m)
+    expect(m.level).toBe(7)
+    expect(m.fin).toEqual(REF.fin)
+    await expect(loadModel(11)).rejects.toThrow()
+  })
+
+  it('gives a better player a better chance from every finish', async () => {
+    const [low, high] = await Promise.all([loadModel(3), loadModel(9)])
+    for (const r of [40, 60, 100, 121, 170]) expect(high.nextVisit(r)).toBeGreaterThan(low.nextVisit(r))
   })
 })
