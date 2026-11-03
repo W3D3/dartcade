@@ -16,7 +16,8 @@
   import { currentUser } from '$lib/auth'
   import { coachTrail } from '$lib/admin/breadcrumbs'
   import { betterLine, groupingLine, missTags, signedPoints, visitTiles, whatHappened } from '$lib/coach/view'
-  import { dartAt, dartFromLabel, sandbox } from '$lib/coach/sandbox'
+  import { dartAt, dartFromLabel } from '$lib/coach/sandbox'
+  import { coachOpenVisit } from '$shared/coach/openVisit'
   import { explainedNote } from '$shared/coach/grade'
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
@@ -35,6 +36,8 @@
   let typedError = $state('')
   let darts = $state<CoachDart[]>([])
 
+  /** How many of the best aims to show for the next dart */
+  const TOP = 5
   const whole = (s: string, lo: number, hi: number): number | null => {
     const n = Number(s.trim())
     return s.trim() !== '' && Number.isInteger(n) && n >= lo && n <= hi ? n : null
@@ -65,7 +68,7 @@
   })
   const result = $derived(
     start !== null && average !== null && !inputError && model?.level === level
-      ? sandbox({ start, opponent, average }, darts, model)
+      ? coachOpenVisit({ start, opponent, average }, darts, model, TOP)
       : null,
   )
   const visit = $derived(result?.visit ?? null)
@@ -235,9 +238,9 @@
               <h3 class="m-0 text-[15px] font-semibold">Next dart: best aims (chance to check out this visit or next)</h3>
               {#if result.next.length}
                 <ol class="m-0 p-0 list-none flex flex-col">
-                  {#each result.next as a (a.label)}
+                  {#each result.next as a (a.aim.label)}
                     <li class="flex justify-between py-1.5 border-b border-line last:border-b-0 text-[14px]">
-                      <span class="font-display font-bold text-[18px]">{a.label}</span>
+                      <span class="font-display font-bold text-[18px]">{a.aim.label}</span>
                       <span class="text-text-muted tabular-nums">{pct(a.chance)}</span>
                     </li>
                   {/each}

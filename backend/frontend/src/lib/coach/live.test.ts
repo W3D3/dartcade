@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Dart } from '$lib/api/game-ws'
-import { AIMS } from '$shared/coach/aims'
-import { aimPoints, keepGrade, liveAverage, liveCoach } from './live'
+import { keepGrade, liveAverage, liveCoach } from './live'
 import { REF } from '$shared/coach/testLegs'
 import { dartFromLabel } from './sandbox'
 
@@ -10,18 +9,6 @@ const darts = (...names: string[]): Dart[] =>
     const { segment } = dartFromLabel(n)!
     return { segment: { ...segment, bed: 'Single', multiplier: segment.multiplier as Dart['segment']['multiplier'] }, score: 0 }
   })
-const aim = (id: string) => AIMS.find(a => a.id === id)!
-
-describe('aimPoints', () => {
-  it('scores each aim where it is aimed, both numbers of a wire', () => {
-    expect(aimPoints(aim('T20'))).toEqual([60])
-    expect(aimPoints(aim('D16'))).toEqual([32])
-    expect(aimPoints(aim('SO5'))).toEqual([5])
-    expect(aimPoints(aim('W20-1'))).toEqual([20, 1])
-    expect(aimPoints(aim('Bull'))).toEqual([50])
-    expect(aimPoints(aim('25'))).toEqual([25])
-  })
-})
 
 describe('liveCoach', () => {
   it('on a finish: the three best aims with their chance and what they leave', () => {

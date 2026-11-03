@@ -50,6 +50,25 @@ export const AIMS: readonly Aim[] = [
   { id: '25', label: '25', numbers: [25], ...at((R.bull50 + R.bull25) / 2, Math.PI / 2) },
 ]
 
+const INDEX = new Map(AIMS.map((a, i) => [a.id, i]))
+/** An aim's index in AIMS by its id; -1 for none */
+export const aimIndex = (id: string): number => INDEX.get(id) ?? -1
+export const aimById = (id: string): Aim | undefined => AIMS[aimIndex(id)]
+
+/** The aim at the centre of a segment's bed (by its name: T20, S20 (its outer single), Bull); null
+ *  off the board. */
+export const bedAim = (name: string): Aim | null => aimById(/^S\d/.test(name) ? `SO${name.slice(1)}` : name) ?? null
+
+/** What a dart in the aim's bed scores: both numbers' for a wire */
+export function aimPoints(a: Aim): number[] {
+  const kind = aimKind(a.id)
+  if (kind === 'Bull') return [50]
+  const m = kind === 'T' ? 3 : kind === 'D' ? 2 : 1
+  return a.numbers.map(n => n * m)
+}
+/** A dart in the aim's bed is a double: the doubles and the bull */
+export const isDoubleAim = (a: Aim): boolean => a.id === 'Bull' || aimKind(a.id) === 'D'
+
 /** The direct one-dart out for `left`: `D${left/2}` for an even score up to 40, `Bull` for 50.
  *  Null when `left` has no one-dart out (odd, or outside that range). */
 export function directOutId(left: number): string | null {

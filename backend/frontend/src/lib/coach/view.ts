@@ -9,7 +9,7 @@ import { LEVEL_AVERAGE } from '$shared/botLevels'
 import { checkoutHint } from '$shared/checkout.js'
 import type { CoachNote, LegReview, ReviewDart, ReviewVisit, VisitGrade } from '$shared/coach'
 import { dartGrade } from '$shared/coach/grade'
-import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
+import { AIM_RINGS, AIMS, aimById, aimIndex, aimKind, directOutId } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
 import type { Grouping, GroupingLevel } from '$shared/coach/grouping'
@@ -211,15 +211,6 @@ export function groupingPill(g: Pick<Grouping, 'comment'> | null): { label: stri
   return c ? { label: c.text, cls: GROUPING_CLS[c.level] } : null
 }
 
-/** The centre of a segment's bed in board units (y up), a single's outer bed; null off the board. */
-export function bedCentre(name: string): { x: number; y: number } | null {
-  const id = /^S\d/.test(name) ? `SO${name.slice(1)}` : name
-  const aim = aimById(id)
-  return aim ? { x: aim.x, y: aim.y } : null
-}
-
-const AIM_AT: Record<string, Aim> = Object.fromEntries(AIMS.map(a => [a.id, a]))
-const aimById = (id: string): Aim | undefined => AIM_AT[id]
 /** An aim's point (AIMS id) in board units; null for an unknown id */
 export const aimPoint = (aimId: string): { x: number; y: number } | null => {
   const a = aimById(aimId)
@@ -249,7 +240,10 @@ const OUTSIDE_R = 1.2
 export function likelyMisses(aimId: string): BoardTag[] {
   const aim = aimById(aimId)
   if (!aim) return []
-  const tag = (label: string, id: string): BoardTag => ({ label, x: AIM_AT[id].x, y: AIM_AT[id].y })
+  const tag = (label: string, id: string): BoardTag => {
+    const { x, y } = AIMS[aimIndex(id)]
+    return { label, x, y }
+  }
   const kind = aimKind(aimId)
   if (kind === 'Bull') return [tag('25', '25')]
   if (kind === '25') return [tag('Bull', 'Bull')]

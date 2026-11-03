@@ -1,7 +1,7 @@
 // How a visit's darts sat together: their spread around their middle, how far that middle is from
 // their shared target and how close they came to their targets' beds; and the visit's rating, its
 // score plus a bonus for each. Only darts the camera placed count: a typed dart has no position.
-import { AIMS } from './aims.js'
+import { aimById } from './aims.js'
 import { LEVEL_AVERAGE, LEVEL_SIGMA, SIGMA_JITTER } from '../botLevels.js'
 import { MM_PER_UNIT, type DartClass } from './dartClass.js'
 
@@ -44,7 +44,7 @@ export function grouping(darts: readonly Placed[], scored: number, average: numb
   if (placed.length < 2) return null
   const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length
   const c = { x: mean(placed.map(p => p.x)), y: mean(placed.map(p => p.y)) }
-  const aim = placed.every(p => p.aimId === placed[0].aimId) ? AIMS.find(a => a.id === placed[0].aimId) : undefined
+  const aim = placed.every(p => p.aimId === placed[0].aimId) ? aimById(placed[0].aimId) : undefined
   const spreadMm = aim ? mean(placed.map(p => Math.hypot(p.x - c.x, p.y - c.y))) * MM_PER_UNIT : null
   const offsetMm = aim ? Math.hypot(c.x - aim.x, c.y - aim.y) * MM_PER_UNIT : null
   const edgeMm = mean(placed.map(p => p.edgeMm))

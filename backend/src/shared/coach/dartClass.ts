@@ -2,7 +2,7 @@
 // It describes what probably happened; the strategy notes (notes.ts) keep the benefit of the doubt.
 import { HALF, R, SEGS } from '../board.js'
 import { CHECKOUTS } from '../checkoutTable.js'
-import { AIM_RINGS, AIMS, aimKind, directOutId, oneDartFinish, type Aim } from './aims.js'
+import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import { landedNumber } from './aim.js'
 import type { Evaluation } from './model.js'
 import { afterDart, dartPoints, type Throw } from './walk.js'
@@ -86,18 +86,8 @@ const NONE: DartClass = {
 /** A dart thrown after a bust in its visit: the walk (walk.ts) leaves it out, it scores nothing. */
 export const NOT_COUNTED: DartClass = { ...NONE, kind: 'notCounted' }
 
-const AIM_INDEX = new Map(AIMS.map((a, i) => [a.id, i]))
-const aimAt = (id: string): number => AIM_INDEX.get(id) ?? -1
-
-/** The aim at the centre of a typed dart's bed (the outer single for a single); null for a miss. */
-function bedCentre(seg: Throw['d']['segment']): Aim | null {
-  const { number: n, multiplier: m } = seg
-  const id = n === 50 ? 'Bull' : n === 25 ? '25' : m === 3 ? `T${n}` : m === 2 ? `D${n}` : m === 1 ? `SO${n}` : null
-  return id === null ? null : (AIMS[aimAt(id)] ?? null)
-}
-
 /** The checkout table's labels (T20, D16, S9, Bull, 25) as AIMS indexes, a single as its outer bed. */
-const tableAim = (label: string) => aimAt(label.startsWith('S') ? `SO${label.slice(1)}` : label)
+const tableAim = (label: string) => aimIndex(label.startsWith('S') ? `SO${label.slice(1)}` : label)
 
 /** Whether aim `id` can be a Finish target on `left` for a dart that didn't land in the bull: the
  *  bull aims are none, except the Bull on 50; on a one-dart finish the only double is the finishing
@@ -120,11 +110,11 @@ function bustAims(e: Evaluation): BustAims {
 
 /** The aims on number `n`: its treble, double, singles and both wires; the bull and 25 for 25. */
 function aimsOn(n: number): number[] {
-  if (n === 25) return [aimAt('Bull'), aimAt('25')]
+  if (n === 25) return [aimIndex('Bull'), aimIndex('25')]
   const i = SEGS.indexOf(n)
   const prev = SEGS[(i + 19) % 20]
   const next = SEGS[(i + 1) % 20]
-  return [`T${n}`, `D${n}`, `SO${n}`, `SI${n}`, `W${n}-${next}`, `W${prev}-${n}`].map(aimAt)
+  return [`T${n}`, `D${n}`, `SO${n}`, `SI${n}`, `W${n}-${next}`, `W${prev}-${n}`].map(id => aimIndex(id))
 }
 
 /** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
@@ -152,7 +142,7 @@ export function finishCandidates(
     .slice(0, TOP_K)
   const entry = left in CHECKOUTS ? CHECKOUTS[left] : null
   const firsts = [...(entry?.routes ?? []), ...(darts === 2 && entry?.twoDarts ? [entry.twoDarts] : [])].map(r => tableAim(r[0]))
-  const floored = new Set([...firsts, aimAt('T16')].filter(a => a >= 0 && allowed(a)))
+  const floored = new Set([...firsts, aimIndex('T16')].filter(a => a >= 0 && allowed(a)))
   const own = new Set((landed === null ? [] : aimsOn(landed)).filter(allowed))
   const backs = new Set(!oneDartFinish(left) && busts.best ? [...busts.aims].filter(allowed) : [])
   const floor = (a: number) => (floored.has(a) ? MIN_PRIOR : own.has(a) ? LANDED_PRIOR : 0)
@@ -161,7 +151,7 @@ export function finishCandidates(
   )
   // A single is one aim whichever bed it lands in: S12 on 52 thrown into the inner single isn't a T12
   for (const [a, p] of [...priors]) {
-    const sibling = aimAt(AIMS[a].id.replace(/^S([OI])/, (_, bed: string) => (bed === 'O' ? 'SI' : 'SO')))
+    const sibling = aimIndex(AIMS[a].id.replace(/^S([OI])/, (_, bed: string) => (bed === 'O' ? 'SI' : 'SO')))
     if (sibling !== a && sibling >= 0 && allowed(sibling)) priors.set(sibling, Math.max(priors.get(sibling) ?? 0, p))
   }
   return [...priors].map(([a, p]) => ({ a, prior: p }))
@@ -178,16 +168,6 @@ function wedges(n: number | null, numbers: readonly number[]): number | null {
 const leave = (left: number, points: number, double: boolean, start: number) => {
   const after = afterDart(left, points, double)
   return after === 'out' ? 0 : after === 'bust' ? start : after
-}
-
-/** What hitting the aim's bed scores: a wire counts as its likeliest outcome. */
-function aimPoints(a: Aim, likeliest: number): [points: number, double: boolean] {
-  const n = a.numbers[0]
-  if (a.id === 'Bull') return [50, true]
-  if (a.id === '25') return [25, false]
-  if (a.id.startsWith('T')) return [3 * n, false]
-  if (a.id.startsWith('D')) return [2 * n, true]
-  return a.id.startsWith('W') ? [likeliest, false] : [n, false]
 }
 
 /** Wrapped to (−π, π] */
@@ -223,7 +203,7 @@ const isBullAim = (a: Aim) => a.id === 'Bull' || a.id === '25'
  *  darts); null on Scoring (more than 170 left), which doesn't use it. */
 export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): DartClass {
   const seg = t.d.segment
-  const bed = t.d.coords === null ? bedCentre(seg) : null
+  const bed = t.d.coords === null ? bedAim(seg.name) : null
   const pos = t.d.coords ?? bed
   const estimated = t.d.coords === null
   const scoring = t.left > 170
@@ -239,10 +219,10 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
         finishCandidates(t.left, t.darts, evaluation, estimated || landed === 25 ? landed : null, busts)
       : landed === 25
         ? aimsOn(25).map(a => ({ a, prior: 1 }))
-        : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimAt(id), prior }))
+        : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimIndex(id), prior }))
   // A typed miss on a one-dart finish was at the double, off the board: where, nobody knows
   const out = directOutId(t.left)
-  let target: { a: number; d: number | null } | null = !pos && evaluation && out ? { a: aimAt(out), d: null } : null
+  let target: { a: number; d: number | null } | null = !pos && evaluation && out ? { a: aimIndex(out), d: null } : null
   if (pos) {
     let best = { score: -1, prior: -1 }
     for (const { a, prior } of cands) {
@@ -315,8 +295,9 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
 
   const top = likeliest(evaluation, target.a)
   if (top.after === 'bust' && mayBustBack) return { ...base, kind: 'bustBack', plannedLeave: t.start, actualLeave }
-  const [points, double] = aimPoints(aim, top.outcome[1])
-  const plannedLeave = leave(t.left, points, double, t.start)
+  // A wire counts as its likeliest outcome
+  const points = aimPoints(aim)
+  const plannedLeave = leave(t.left, points.length > 1 ? top.outcome[1] : points[0], isDoubleAim(aim), t.start)
   const leaves = { ...base, plannedLeave, actualLeave }
 
   if (isBullAim(aim)) return { ...leaves, ...bull() }

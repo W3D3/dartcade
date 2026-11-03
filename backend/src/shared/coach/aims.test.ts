@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { segmentAt } from '../board.js'
-import { AIMS } from './aims.js'
+import { AIMS, aimById, aimPoints, bedAim } from './aims.js'
 import { LANDING } from './landing/level-7.gen.js'
 import { loadModel } from './model.js'
 
@@ -60,5 +60,25 @@ describe('the landing table', () => {
     expect(nameable('D16')).toEqual(['D16', 32, true])
     expect(nameable('T19')).toEqual(['T19', 57, false])
     expect(nameable('Miss')).toEqual(['Miss', 0, false])
+  })
+})
+
+describe('aimPoints', () => {
+  it('scores each aim where it is aimed, both numbers of a wire', () => {
+    const at = (id: string) => aimPoints(aimById(id)!)
+    expect(['T20', 'D16', 'SO5', 'W20-1', 'Bull', '25'].map(at)).toEqual([[60], [32], [5], [20, 1], [50], [25]])
+  })
+})
+
+describe('bedAim', () => {
+  it('sits in the named bed', () => {
+    for (const name of ['T20', 'D3', 'S11', 'Bull', '25']) {
+      const c = bedAim(name)!
+      expect(segmentAt(c.x, c.y).name, name).toBe(name)
+    }
+  })
+  it('has none off the board', () => {
+    expect(bedAim('Miss')).toBeNull()
+    expect(bedAim('M20')).toBeNull()
   })
 })

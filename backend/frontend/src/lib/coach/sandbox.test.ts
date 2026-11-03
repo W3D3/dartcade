@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { dartAt, dartFromLabel, sandbox, sandboxLeg } from './sandbox'
+import { dartAt, dartFromLabel } from './sandbox'
+import { coachOpenVisit, openVisitLeg } from '$shared/coach/openVisit'
 import { REF } from '$shared/coach/testLegs'
 import type { CoachDart } from '$shared/coach/walk'
 
@@ -25,9 +26,9 @@ describe('dartAt', () => {
   })
 })
 
-describe('sandboxLeg', () => {
+describe('openVisitLeg', () => {
   it("puts the opponent's visit on their score before yours", () => {
-    const leg = sandboxLeg({ start: 24, opponent: 32, average: 60 }, darts('S14'))
+    const leg = openVisitLeg({ start: 24, opponent: 32, average: 60 }, darts('S14'))
     expect(leg.visits).toEqual([
       { seat: 1, darts: [], scored: 0, remaining: 32, bust: false },
       { seat: 0, darts: darts('S14'), scored: 14, remaining: 10, bust: false },
@@ -35,20 +36,20 @@ describe('sandboxLeg', () => {
   })
 
   it('marks a bust and keeps the start', () => {
-    expect(sandboxLeg(solo(10), darts('T20')).visits[0]).toMatchObject({ scored: 0, remaining: 10, bust: true })
+    expect(openVisitLeg(solo(10), darts('T20')).visits[0]).toMatchObject({ scored: 0, remaining: 10, bust: true })
   })
 })
 
-describe('sandbox', () => {
+describe('coachOpenVisit', () => {
   it('shows no visit and the best aims before the first dart', () => {
-    const r = sandbox(solo(40), [], REF)
+    const r = coachOpenVisit(solo(40), [], REF, 5)
     expect(r).toMatchObject({ visit: null, left: 40, done: false })
-    expect(r.next[0].label).toBe('D20')
+    expect(r.next[0].aim.label).toBe('D20')
     expect(r.next).toHaveLength(5)
   })
 
   it('grades S20 on 57 with one dart a Mistake (97: S20, S20, S20)', () => {
-    const r = sandbox(solo(97), darts('S20', 'S20', 'S20'), REF)
+    const r = coachOpenVisit(solo(97), darts('S20', 'S20', 'S20'), REF, 5)
     expect(r.done).toBe(true)
     expect(r.next).toEqual([])
     expect(r.visit).toMatchObject({ grade: 'mistake', tip: false })
@@ -57,21 +58,21 @@ describe('sandbox', () => {
   })
 
   it('gives a tip for S14 on 24 solo', () => {
-    const r = sandbox(solo(24), darts('S14'), REF)
+    const r = coachOpenVisit(solo(24), darts('S14'), REF, 5)
     expect(r.visit).toMatchObject({ tip: true, text: 'Tip: On 24, S14: better D12.' })
     expect(r.visit!.notes[0]).toMatchObject({ thrown: 'S14', better: 'D12', tip: true })
     expect(r.done).toBe(false)
     expect(r.left).toBe(10)
-    expect(r.next[0].label).toBe('D5')
+    expect(r.next[0].aim.label).toBe('D5')
   })
 
   it('drops the tip when the opponent is on 32', () => {
-    const r = sandbox({ start: 24, opponent: 32, average: 60 }, darts('S14'), REF)
+    const r = coachOpenVisit({ start: 24, opponent: 32, average: 60 }, darts('S14'), REF, 5)
     expect(r.visit!.notes[0]).toMatchObject({ thrown: 'S14', better: 'D12', tip: false })
     expect(r.visit).toMatchObject({ grade: 'mistake', tip: false })
   })
 
   it('stops after a checkout', () => {
-    expect(sandbox(solo(40), darts('D20'), REF)).toMatchObject({ done: true, left: 0, next: [] })
+    expect(coachOpenVisit(solo(40), darts('D20'), REF, 5)).toMatchObject({ done: true, left: 0, next: [] })
   })
 })

@@ -3,11 +3,10 @@
 // the player's coaching level (LiveCoach.svelte loads only that level's table).
 import type { Dart } from '$lib/api/game-ws'
 import type { VisitGrade, VisitTag } from '$shared/coach'
-import type { Aim } from '$shared/coach/aims'
-import { AIMS } from '$shared/coach/aims'
+import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModel } from '$shared/coach/model'
+import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart } from '$shared/coach/walk'
-import { sandbox } from './sandbox'
 import { signedPoints, visitTiles, type DartTileView } from './view'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
@@ -28,50 +27,27 @@ export type LiveCoach = {
 
 const TOP = 3
 
-/** The points a dart at the aim scores where it's aimed: two for a wire (either number). */
-export function aimPoints(a: Aim): number[] {
-  if (a.id === 'Bull') return [50]
-  if (a.id === '25') return [25]
-  const m = /^(T|D|SO|SI|W)(\d+)(?:-(\d+))?$/.exec(a.id)
-  if (!m) return []
-  const n = Number(m[2])
-  return m[1] === 'T' ? [3 * n] : m[1] === 'D' ? [2 * n] : m[1] === 'W' ? [n, Number(m[3])] : [n]
-}
-
 /** "leaves 40", "leaves 37 or 40", "checks out" (a double or the bull to 0), "busts". */
 function leaves(left: number, a: Aim): string {
   const out = (p: number) => {
-    const after = afterDart(left, p, a.id === 'Bull' || a.id.startsWith('D'))
+    const after = afterDart(left, p, isDoubleAim(a))
     return after === 'out' ? 'checks out' : after === 'bust' ? 'busts' : `leaves ${after}`
   }
   const each = [...new Set(aimPoints(a).map(out))]
   return each.length === 1 ? each[0] : `${each[0]} or ${each[1].replace(/^leaves /, '')}`
 }
 
-// The model's points a dart at each aim, best first, one per label (the same for any score)
-function scoringAims({ landing }: CoachModel): LiveAim[] {
-  const seen = new Set<string>()
-  return landing
-    .map((o, i) => ({ a: AIMS[i], points: o.reduce((s, [, p, , chance]) => s + p * chance, 0) }))
-    .sort((x, y) => y.points - x.points)
-    .filter(({ a }) => !seen.has(a.label) && !!seen.add(a.label))
-    .slice(0, TOP)
-    .map(({ a, points }) => ({ label: a.label, aimId: a.id, detail: `${points.toFixed(1)} a dart` }))
-}
-
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
  *  (null: the visit's own, as the coach does without one), `model` their coaching level's. Solo:
  *  no opponent, w = 1. */
 export function liveCoach(model: CoachModel, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
-  const r = sandbox({ start, opponent: null, average }, darts.map(coachDart), model)
+  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), model, TOP)
   const scoring = r.left > 170
   const aims = r.done
     ? []
     : scoring
-      ? scoringAims(model)
-      : r.next
-          .slice(0, TOP)
-          .map(n => ({ label: n.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
+      ? scoringAims(model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
+      : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
   const v = r.visit
   const tiles = v ? visitTiles(v) : []
   const rows = (v?.darts ?? []).map((d, i) => ({
