@@ -2953,7 +2953,7 @@ export interface components {
             /** @enum {string} */
             tag: "scoring" | "setup" | "doubling";
             /** @enum {string} */
-            grade: "great" | "good" | "ok" | "weak" | "mistake";
+            grade: "perfect" | "great" | "good" | "ok" | "weak" | "mistake";
             text: string;
             /** @description The text is a tip's (a note that leaves the grade alone) */
             tip: boolean;

@@ -1,10 +1,12 @@
-// Every visit's tag (Scoring, Setup, Doubling), grade (Great to Mistake) and one line saying why.
-// The worst matching rule wins: Mistake > Weak > Great > Good > OK. A strategy note (not a tip) is
-// a Mistake on any visit; a bust is one too, unless its busting dart was a Bust-back.
+// Every visit's tag (Scoring, Setup, Doubling), grade (Perfect to Mistake) and one line saying why.
+// A strategy note (not a tip) is a Mistake on any visit; a visit that keeps the fewest-darts finish
+// is Perfect, then the worst matching rule wins: Mistake > Weak > Great > Good > OK. A bust is a
+// Mistake, unless its busting dart was a Bust-back.
 import { checkoutHint } from '../checkout.js'
 import { landedNumber, scoringAim } from './aim.js'
 import { oneDartFinish } from './aims.js'
 import type { DartClass, DartKind } from './dartClass.js'
+import { minDarts } from './minDarts.js'
 import { groupingWhy, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
 import type { Throw } from './walk.js'
@@ -27,7 +29,7 @@ export const LATE_DROP = 20
 export const LATE_DROP_VISITS = 6
 
 export type VisitTag = 'scoring' | 'setup' | 'doubling'
-export type VisitGrade = 'great' | 'good' | 'ok' | 'weak' | 'mistake'
+export type VisitGrade = 'perfect' | 'great' | 'good' | 'ok' | 'weak' | 'mistake'
 export type VisitFacts = {
   /** The score before the visit */
   start: number
@@ -44,6 +46,8 @@ export type VisitFacts = {
   notes: CoachNote[]
   /** The player's 3-dart average (30-day, or the game's) */
   average: number
+  /** The seat's first visit in the leg */
+  first: boolean
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
 }
@@ -161,7 +165,20 @@ function doubling(f: VisitFacts): VisitGrading {
   return g('ok', missed)
 }
 
+/** The visit keeps the fewest darts to check out its start: its darts plus the fewest from what it left */
+const perfect = (f: VisitFacts) => !f.bust && minDarts(f.start) === f.throws.length + minDarts(f.then)
+
+function perfectText(f: VisitFacts): string {
+  const out = f.throws.find(t => t.checkout)
+  if (out) return `Checked out in the fewest darts (${doubleName(out.left)}).`
+  const k = minDarts(f.then)
+  if (f.first && f.start === 501 && k === 6) return 'Nine-darter still on.'
+  return `Scored ${f.scored}: ${f.then} left is still a ${k}-dart finish, the fewest possible.`
+}
+
 export function classifyVisit(f: VisitFacts): VisitGrading {
   const tag = tagOf(f)
+  // A note says another aim was better: not Perfect. A tip leaves it, and Perfect keeps its own line.
+  if (!f.notes.some(n => !n.tip) && perfect(f)) return { tag, grade: 'perfect', text: perfectText(f) }
   return tag === 'scoring' ? scoring(f) : tag === 'setup' ? setup(f) : doubling(f)
 }

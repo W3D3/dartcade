@@ -197,6 +197,27 @@ Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of 
 "Scored 60, great grouping (6 mm), close to the target (7 mm).") and the same by the double 72.0
 (OK). Typed darts have no grouping: the rating is the score.
 
+## Perfect visit
+
+A new top grade, above Great, on any tag (`perfect` in `VisitGrade`). A visit is **Perfect**
+when it keeps the fewest-darts finish: `!bust && minDarts(start) === darts + minDarts(left)`,
+where `darts` is the visit's walked darts (fewer than 3 on a checkout) and `minDarts(0) = 0`.
+`minDarts` (`shared/coach/minDarts.ts`) is a small table, double out (D1–D20 or the bull):
+the fewest darts scoring exactly m with any dart, then the best finishing double; 501 is 9,
+361 is 7, 330 and 327 are 6, 171 and 159 are 4, 170 is 3, 99 is 3, 100 is 2.
+
+- 501 → T20 T19 T19 (327 left), 171 (330 left) and 180 are Perfect; T20 T20 S20 (361, 7 darts)
+  is not. 211 → T20 T20 T17 (40) and T20 T19 T20 (34) are; T20 T20 T20 (31, a 2-dart finish)
+  is not. 40 → D20 and 100 → T20 D20 and 170 → T20 T20 Bull are; 40 → S20 D10 stays Great.
+- It is checked before every other grade rule except the strategy note and the bust: a bust is
+  never Perfect, and a note (not a tip) keeps its Mistake.
+- Texts: "Checked out in the fewest darts (D20)."; otherwise "Scored 174: 327 left is still a
+  6-dart finish, the fewest possible."; on the seat's first visit from 501 leaving a 6-dart
+  finish, "Nine-darter still on."
+- The grade pill is Great's filled lime with a lime halo; the leg review's grade counts and the
+  checks page list it above Great. Nothing counts grades as "great or better" today: the skills
+  and the take look at Weak and Mistake only, so Perfect needs no other wiring.
+
 ## Data and UI
 
 - **Data:**
@@ -309,6 +330,13 @@ Decisions taken while building this without the user, each with why:
   places them there too; Luke's T20, S20, S20 (100 on an 88 average) now grades Good, not OK.
 - **Stored reviews from an older `COACH_VERSION` aren't served**; they take the rebuild path, since
   the API's required `class` would refuse them.
+
+- **Perfect: the note wins.** A visit with a strategy note (not a tip) stays a Mistake even if it
+  kept the fewest darts: the coach doesn't call a visit perfect while saying another aim was
+  better. A tip-only visit can still be Perfect, and keeps the Perfect line (as a checkout keeps
+  its own line over a tip); the tip still shows in the visit's note.
+- **"Nine-darter still on." only on the seat's first visit from 501**: a later visit on 501 (after
+  a zero visit, or in a 701 game) can't be on a nine-darter.
 
 ### Open questions for the user
 

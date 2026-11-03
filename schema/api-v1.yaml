@@ -3792,7 +3792,7 @@ components:
         then: { type: integer, minimum: 0 }
         bust: { type: boolean }
         tag: { type: string, enum: [scoring, setup, doubling] }
-        grade: { type: string, enum: [great, good, ok, weak, mistake] }
+        grade: { type: string, enum: [perfect, great, good, ok, weak, mistake] }
         text: { type: string }
         tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }
         notes: { type: array, items: { $ref: '#/components/schemas/CoachNote' } }

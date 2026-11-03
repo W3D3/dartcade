@@ -75,7 +75,7 @@
     { id: 'setup', label: 'Setup' },
     { id: 'doubling', label: 'Doubling' },
   ]
-  const GRADES: VisitGrade[] = ['great', 'good', 'ok', 'weak', 'mistake']
+  const GRADES: VisitGrade[] = ['perfect', 'great', 'good', 'ok', 'weak', 'mistake']
 
   const visits = $derived(review?.visits ?? [])
   const shown = $derived(filter === 'all' ? visits : visits.filter(v => v.tag === filter))

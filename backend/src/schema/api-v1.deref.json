@@ -4154,6 +4154,7 @@
                               "grade": {
                                 "type": "string",
                                 "enum": [
+                                  "perfect",
                                   "great",
                                   "good",
                                   "ok",
@@ -48773,6 +48774,7 @@
           "grade": {
             "type": "string",
             "enum": [
+              "perfect",
               "great",
               "good",
               "ok",
@@ -49221,6 +49223,7 @@
                 "grade": {
                   "type": "string",
                   "enum": [
+                    "perfect",
                     "great",
                     "good",
                     "ok",
@@ -49801,6 +49804,7 @@
                     "grade": {
                       "type": "string",
                       "enum": [
+                        "perfect",
                         "great",
                         "good",
                         "ok",

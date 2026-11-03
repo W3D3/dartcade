@@ -106,6 +106,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       grouping: g,
       notes: vNotes,
       average,
+      first: k === 0,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
     })
     return {

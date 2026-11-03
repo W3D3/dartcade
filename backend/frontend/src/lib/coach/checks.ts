@@ -21,7 +21,8 @@ export const LABELS: { label: CheckLabel; text: string }[] = [
   { label: 'weak', text: 'below your level' },
   { label: 'ok', text: 'fine, nothing stood out' },
   { label: 'good', text: 'did the job' },
-  { label: 'great', text: 'the best outcome' },
+  { label: 'great', text: 'a strong outcome' },
+  { label: 'perfect', text: 'the fewest darts possible' },
   { label: 'tip', text: 'worth knowing, not graded' },
 ]
 
@@ -32,6 +33,14 @@ export const CHECK_GROUPS: CheckGroup[] = [
     title: 'Scoring',
     scope: 'Visits with more than 170 left.',
     checks: [
+      {
+        name: 'Fewest darts',
+        labels: ['perfect'],
+        source: 'scores',
+        when: 'The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.',
+        example: '501 · T20 T19 T19 → 327, a 6-dart finish',
+        says: 'What is left and in how many darts (Nine-darter still on, from 501); on a checkout, the double.',
+      },
       {
         name: 'Very low visit',
         labels: ['mistake'],

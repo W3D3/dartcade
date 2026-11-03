@@ -54,7 +54,8 @@ export const COACH_GAMES: CoachSample[] = [
     ],
     expect: [{ seat: 0, leg: 0, visit: 1, dart: 2 }],
     grades: [
-      ['great', 'mistake', 'great'],
+      // 180 leaves 121, a 3-dart finish; S5 D16 checks 57 out in two: both the fewest darts
+      ['perfect', 'mistake', 'perfect'],
       ['weak', 'weak'],
     ],
     kinds: [
@@ -91,8 +92,9 @@ export const COACH_GAMES: CoachSample[] = [
     expect: [],
     grades: [
       // 100 from T20, S20, S20 in the middle of their beds: a tight group lifts it to Good
-      ['good', 'ok', 'ok', 'great'],
-      ['great', 'ok', 'weak'],
+      ['good', 'ok', 'ok', 'perfect'],
+      // 140 leaves 161, still a 3-dart finish
+      ['perfect', 'ok', 'weak'],
       ['weak', 'ok', 'great'],
     ],
     kinds: [
@@ -133,7 +135,7 @@ export const COACH_GAMES: CoachSample[] = [
       { seat: 0, leg: 0, visit: 3, dart: 1 },
     ],
     grades: [
-      ['good', 'great', 'mistake', 'mistake', 'great'],
+      ['good', 'great', 'mistake', 'mistake', 'perfect'],
       ['weak', 'weak', 'weak', 'weak'],
     ],
     kinds: [

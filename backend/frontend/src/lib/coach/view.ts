@@ -151,9 +151,10 @@ export function dartLabel(c: DartClass): string {
   }
 }
 
-/** A grade pill's label and classes (Coach-Leg: Great filled lime, the rest tinted). Tip is a note
- *  that leaves the grade alone, in the blue Info style. */
+/** A grade pill's label and classes (Coach-Leg: Great filled lime, the rest tinted; Perfect filled
+ *  lime with a lime halo). Tip is a note that leaves the grade alone, in the blue Info style. */
 export const GRADE_PILL: Record<VisitGrade | 'tip', { label: string; cls: string }> = {
+  perfect: { label: 'Perfect', cls: 'bg-accent text-accent-fg ring-[3px] ring-accent/35' },
   great: { label: 'Great', cls: 'bg-accent text-accent-fg' },
   good: { label: 'Good', cls: 'bg-good/15 text-good' },
   ok: { label: 'OK', cls: 'bg-text-dim/15 text-text-dim' },

@@ -21,6 +21,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     classes: throws.map(t => classifyDart(t, { evaluation: evaluate(t) })),
     notes: strategyNotes(throws, evaluate),
     average,
+    first: start === 501,
     lastVisitOfLostLeg: lost,
     grouping: null,
   }
@@ -68,7 +69,7 @@ describe('scoring visits', () => {
 
   it('Great: 40 or more above the average, naming the trebles', () => {
     expect(grade(501, ['T20', 'T20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Two trebles.' })
-    expect(grade(501, ['T20', 'T20', 'T20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Three trebles.' })
+    expect(grade(501, ['T20', 'T20', 'T5'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Three trebles.' })
     expect(grade(501, ['T20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Scored 100.' })
   })
 
@@ -200,8 +201,8 @@ describe('setup visits', () => {
 
 describe('doubling visits', () => {
   it('Great: checked out', () => {
-    expect(grade(32, ['D16'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D16.' })
-    expect(grade(50, ['Bull'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on the bull.' })
+    expect(grade(32, ['S16', 'D8'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D8.' })
+    expect(grade(50, ['Miss', 'Bull'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on the bull.' })
   })
 
   it('Mistake: a bust beats everything, even a missed match dart that left a double', () => {
@@ -352,5 +353,52 @@ describe('doubling visits', () => {
 
   it('OK: one dart at a double missed', () => {
     expect(grade(52, ['S12', 'Miss'])).toEqual({ tag: 'doubling', grade: 'ok', text: '1 dart at D20 missed.' })
+  })
+})
+
+describe('Perfect: the visit keeps the fewest-darts finish', () => {
+  const perfect = (start: number, names: string[]) => grade(start, names).grade === 'perfect'
+
+  it('scoring visits that leave a finish in the fewest darts', () => {
+    expect(grade(501, ['T20', 'T19', 'T19'])).toEqual({ tag: 'scoring', grade: 'perfect', text: 'Nine-darter still on.' })
+    expect(grade(501, ['T20', 'T20', 'T17']).text).toBe('Nine-darter still on.')
+    expect(perfect(501, ['T20', 'T20', 'T20'])).toBe(true)
+    // 361 needs 7
+    expect(perfect(501, ['T20', 'T20', 'S20'])).toBe(false)
+    expect(grade(211, ['T20', 'T20', 'T17'])).toEqual({
+      tag: 'scoring',
+      grade: 'perfect',
+      text: 'Scored 171: 40 left is still a 1-dart finish, the fewest possible.',
+    })
+    expect(perfect(211, ['T20', 'T19', 'T20'])).toBe(true)
+    // 31 is a 2-dart finish: 5 darts from 211, not 4
+    expect(perfect(211, ['T20', 'T20', 'T20'])).toBe(false)
+  })
+
+  it('the nine-darter line only on the seat first visit', () => {
+    expect(classifyVisit({ ...facts(501, ['T20', 'T20', 'T20']), first: false }).text).toBe(
+      'Scored 180: 321 left is still a 6-dart finish, the fewest possible.',
+    )
+  })
+
+  it('checkouts in the fewest darts', () => {
+    expect(grade(40, ['D20'])).toEqual({ tag: 'doubling', grade: 'perfect', text: 'Checked out in the fewest darts (D20).' })
+    expect(grade(40, ['S20', 'D10']).grade).toBe('great')
+    expect(grade(100, ['T20', 'D20']).text).toBe('Checked out in the fewest darts (D20).')
+    expect(grade(170, ['T20', 'T20', 'Bull']).text).toBe('Checked out in the fewest darts (the bull).')
+  })
+
+  it('a setup visit can be Perfect', () => {
+    expect(grade(169, ['T20', 'T19', 'S12'])).toMatchObject({ tag: 'setup', grade: 'perfect' })
+  })
+
+  it('never on a bust; a strategy note wins, a tip does not', () => {
+    expect(perfect(40, ['T20'])).toBe(false)
+    // 98 → T20 D19: the fewest; a forced note keeps it a Mistake, a tip leaves it Perfect
+    const f = facts(98, ['T20', 'D19'])
+    expect(classifyVisit(f).grade).toBe('perfect')
+    const note = { ...explainedNote(facts(24, ['S14', 'D5']).notes)!, tip: false }
+    expect(classifyVisit({ ...f, notes: [note] }).grade).toBe('mistake')
+    expect(classifyVisit({ ...f, notes: [{ ...note, tip: true as const }] }).grade).toBe('perfect')
   })
 })

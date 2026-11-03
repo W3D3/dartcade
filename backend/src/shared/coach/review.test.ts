@@ -113,8 +113,9 @@ describe('reviewLeg', () => {
           then: 98,
           bust: false,
           tag: 'scoring',
-          grade: 'great',
-          text: 'Two trebles.',
+          // 235 is a 5-dart finish, 98 a 2-dart one
+          grade: 'perfect',
+          text: 'Scored 137: 98 left is still a 2-dart finish, the fewest possible.',
           tip: false,
           notes: [],
           grouping: null,

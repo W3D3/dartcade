@@ -8959,6 +8959,7 @@
           "grade": {
             "type": "string",
             "enum": [
+              "perfect",
               "great",
               "good",
               "ok",
