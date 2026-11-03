@@ -256,6 +256,15 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
     "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
   - **In the selected visit's board card**, a faint line from each dart to its target.
+  - **The selected visit's card** (400 px wide from 1440 px, sticky while the visit list scrolls;
+    inline under its card on phones) keeps the board, the grade, the tag and the "Better:" line,
+    and shows the darts as a table: Dart, Classification (the tile's label), Distance (`edgeMm`,
+    whole mm, "–" for a hit or a dart without a position). A missed dart within `NEAR_MISS_MM`
+    (5 mm) of its target's bed is tagged "Near miss": on a double, nearly a checkout.
+  - **`coach.debug.enabled`** (nobody by default) shows the model's numbers for checking it: in
+    the card the checkout-chance line, the grouping pill and line, and each dart's centre
+    distance, Δ and closeness; in the live panel each dart's Δ and closeness (the aims' checkout
+    % stay for everyone). The admin sandbox always shows everything.
   - **Each tile's colour is the dart's own grade** (`dartGrade`: its delta plus closeness credit):
     green for a hit of its target or +5 and up, plain above −5, gold (the grade pill's Weak tone)
     down to −15, red (its Mistake tone) at −15 or below and for a bust. A dart without a delta

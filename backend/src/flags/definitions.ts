@@ -93,6 +93,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
       'Shows the live coach beside a solo X01 game (double out): the best aims for the next dart, how each dart of the visit is classed, and the grade of the last visit.',
     defaultRule: 'nobody',
   },
+  'coach.debug.enabled': {
+    kind: 'boolean',
+    description: "Shows the coach's probabilities and model numbers on the leg review and live panel, for checking the model.",
+    defaultRule: 'nobody',
+  },
   'bigscreen.enabled': {
     kind: 'boolean',
     description: "Big screen: a view-only game display that follows a board, optionally on the bridge machine's screen",
@@ -224,6 +229,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('coach.live.enabled', () => false),
+    },
+    'coach.debug.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('coach.debug.enabled', () => false),
     },
     'bigscreen.enabled': {
       variants: { on: true, off: false },

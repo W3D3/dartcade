@@ -6,12 +6,15 @@
 <script lang="ts">
   import type { X01Game } from '$lib/api/game-ws'
   import { keepGrade, liveAverage, liveCoach, type LiveGrade } from '$lib/coach/live'
+  import { flag } from '$lib/flags'
   import { profileOf } from '$lib/progress/profiles'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
 
   let { game, userId, compact = false }: { game: X01Game; userId: string | null; compact?: boolean } = $props()
 
+  // The per-dart checkout-chance numbers are for checking the model
+  const debug = flag('coach.debug.enabled')
   let profileAverage = $state<number | null>(null)
   $effect(() => {
     if (!userId) return
@@ -62,14 +65,16 @@
         {#each live.rows as r, i (i)}
           <li class="flex items-center gap-2">
             <DartTile tile={r} />
-            <span class="ml-auto flex flex-col items-end text-[13px] tabular-nums">
-              {#if r.delta !== null}
-                <span aria-label="Change in checkout chance: {r.delta}%">{r.delta}%</span>
-                {#if r.close}<span class="text-[11px] text-text-dim" aria-label="Near-miss credit {r.close}">close {r.close}</span>{/if}
-              {:else}
-                <span class="text-text-dim">scoring</span>
-              {/if}
-            </span>
+            {#if $debug}
+              <span class="ml-auto flex flex-col items-end text-[13px] tabular-nums">
+                {#if r.delta !== null}
+                  <span aria-label="Change in checkout chance: {r.delta}%">{r.delta}%</span>
+                  {#if r.close}<span class="text-[11px] text-text-dim" aria-label="Near-miss credit {r.close}">close {r.close}</span>{/if}
+                {:else}
+                  <span class="text-text-dim">scoring</span>
+                {/if}
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>

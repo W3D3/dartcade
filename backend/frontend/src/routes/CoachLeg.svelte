@@ -15,6 +15,7 @@
   import { flag } from '$lib/flags'
   import {
     betterLine,
+    dartRows,
     defaultVisit,
     GRADE_PILL,
     groupingLine,
@@ -22,8 +23,8 @@
     legSubtitle,
     legSubtitleShort,
     missTags,
+    signedPoints,
     valueLine,
-    whatHappened,
   } from '$lib/coach/view'
   import { createRequestGuard } from '$lib/requestGuard'
   import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
@@ -32,6 +33,7 @@
   let { params }: { params: { gameId: string; leg: string } } = $props()
 
   const enabled = flag('coach.enabled')
+  const debug = flag('coach.debug.enabled')
   const requests = createRequestGuard()
   const now = new Date()
 
@@ -106,10 +108,46 @@
       misses={note ? missTags(note) : []}
     />
     <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
-      <span><b>What happened:</b> {whatHappened(v)}</span>
-      {#if valueLine(v)}<span class="text-text-muted"><b>Checkout chance:</b> {valueLine(v)}</span>{/if}
-      <GroupingPill grouping={v.grouping} />
-      {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
+      <table class="w-full border-collapse text-[13px] tabular-nums">
+        <caption class="sr-only">Visit {v.n}'s darts</caption>
+        <thead>
+          <tr class="text-left text-[11px] uppercase tracking-[0.08em] text-text-muted">
+            <th scope="col" class="py-1 pr-2 font-semibold">Dart</th>
+            <th scope="col" class="py-1 pr-2 font-semibold">Classification</th>
+            <th scope="col" class="py-1 text-right font-semibold">Distance</th>
+            {#if $debug}
+              <th scope="col" class="py-1 pl-2 text-right font-semibold">Centre</th>
+              <th scope="col" class="py-1 pl-2 text-right font-semibold">Δ</th>
+              <th scope="col" class="py-1 pl-2 text-right font-semibold">Close</th>
+            {/if}
+          </tr>
+        </thead>
+        <tbody>
+          {#each dartRows(v) as r, i (i)}
+            {@const d = v.darts[i]}
+            <tr class="border-t border-line align-top">
+              <th scope="row" class="py-1.5 pr-2 text-left font-display text-[15px] font-bold">{r.name}</th>
+              <td class="py-1.5 pr-2">
+                {r.label}{#if r.near}
+                  <span class="ml-1 inline-flex h-5 items-center rounded-full bg-good/15 px-2 text-[11px] font-bold text-good"
+                    >Near miss</span
+                  >{/if}
+              </td>
+              <td class="py-1.5 text-right whitespace-nowrap">{r.distance}</td>
+              {#if $debug}
+                <td class="py-1.5 pl-2 text-right">{d.class.distanceMm === null ? '–' : d.class.distanceMm.toFixed(1)}</td>
+                <td class="py-1.5 pl-2 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>
+                <td class="py-1.5 pl-2 text-right">{d.closeness === null ? '–' : `+${d.closeness.toFixed(1)}`}</td>
+              {/if}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+      {#if $debug}
+        {#if valueLine(v)}<span class="text-text-muted"><b>Checkout chance:</b> {valueLine(v)}</span>{/if}
+        <GroupingPill grouping={v.grouping} />
+        {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
+      {/if}
       {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
     </div>
     <div class="flex gap-2">
@@ -161,7 +199,7 @@
       </header>
 
       <div
-        class="flex flex-col gap-4 min-[1440px]:grid min-[1440px]:grid-cols-[minmax(0,1fr)_340px] min-[1440px]:items-start min-[1440px]:gap-5"
+        class="flex flex-col gap-4 min-[1440px]:grid min-[1440px]:grid-cols-[minmax(0,1fr)_400px] min-[1440px]:items-start min-[1440px]:gap-5"
       >
         <div class="flex min-w-0 flex-col gap-4">
           <TakeCard take={review.take} skills={review.skills} grouping={review.grouping} />
@@ -211,7 +249,10 @@
         </div>
 
         {#if current}
-          <aside class="card hidden flex-col gap-3.5 px-[22px] py-5 xl:flex" aria-label="Selected visit">
+          <aside
+            class="card hidden flex-col gap-3.5 px-[22px] py-5 xl:flex min-[1440px]:sticky min-[1440px]:top-6 min-[1440px]:max-h-[calc(100dvh-3rem)] min-[1440px]:overflow-y-auto"
+            aria-label="Selected visit"
+          >
             <div class="flex items-baseline justify-between">
               <h3 class="m-0 text-[16px] font-semibold">Visit {current.n} · {current.left} left</h3>
               <GradePill grade={current.grade} />

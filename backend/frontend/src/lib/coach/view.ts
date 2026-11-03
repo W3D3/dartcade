@@ -94,6 +94,19 @@ export const visitTiles = (v: Pick<ReviewVisit, 'darts'>): DartTileView[] =>
     return { name: d.name, tone, offBoard, word: d.delta === null ? null : TONE_WORD[tone], label: dartLabel(d.class) }
   })
 
+/** A missed dart this close to its target's bed (mm, edgeMm) is a near miss: on a double, nearly a checkout */
+export const NEAR_MISS_MM = 5
+
+export type DartRow = { name: string; label: string; distance: string; near: boolean }
+
+/** The selected visit's dart table (Coach-Leg): each dart's class label and its distance to the
+ *  target's bed, "–" for a hit or a dart without a position. */
+export const dartRows = (v: Pick<ReviewVisit, 'darts'>): DartRow[] =>
+  v.darts.map(({ name, class: c }) => {
+    const edge = c.hit ? null : c.edgeMm
+    return { name, label: dartLabel(c), distance: edge === null ? '–' : wholeMm(edge), near: edge !== null && edge <= NEAR_MISS_MM }
+  })
+
 /** Offset parts this small get no direction word */
 const DIRECTION_MIN_MM = 0.5
 /** Millimetres as a player reads them: whole, at least 1 */

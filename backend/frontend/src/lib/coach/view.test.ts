@@ -26,6 +26,7 @@ import {
   missLeaves,
   missTags,
   visitTiles,
+  dartRows,
   vsLine,
   whatHappened,
   signedPoints,
@@ -152,6 +153,22 @@ describe('visitTiles', () => {
       'weak',
       'costly',
       'plain',
+    ])
+  })
+})
+
+describe('dartRows', () => {
+  it("gives a miss's distance to the bed, marks one within 5 mm a near miss, a hit and a typed dart none", () => {
+    // On 20: two misses outside D10, then D10
+    const v = sandbox({ start: 20, opponent: null, average: 60 }, [
+      dartAt({ x: 0.965, y: -0.3137 }),
+      dartAt({ x: 1.008, y: -0.3276 }),
+      dartFromLabel('D10')!,
+    ]).visit!
+    expect(dartRows(v).map(r => [r.name, r.distance, r.near])).toEqual([
+      ['M10', '3 mm', true],
+      ['M10', '10 mm', false],
+      ['D10', '–', false],
     ])
   })
 })
