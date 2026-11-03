@@ -3699,10 +3699,12 @@ components:
         updatedAt: { type: string, format: date-time, nullable: true }
     ReviewDart:
       type: object
-      required: [name, coords, left, bust, class, delta, closeness]
+      required: [name, bedAimId, coords, left, bust, class, delta, closeness]
       additionalProperties: false
       properties:
         name: { type: string }
+        bedAimId:
+          { type: string, nullable: true, description: "The AIMS id of the bed it landed in (a single's outer bed); null off the board" }
         coords:
           type: object
           nullable: true

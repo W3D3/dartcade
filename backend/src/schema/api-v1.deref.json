@@ -3989,6 +3989,7 @@
                                   "type": "object",
                                   "required": [
                                     "name",
+                                    "bedAimId",
                                     "coords",
                                     "left",
                                     "bust",
@@ -4000,6 +4001,11 @@
                                   "properties": {
                                     "name": {
                                       "type": "string"
+                                    },
+                                    "bedAimId": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "The AIMS id of the bed it landed in (a single's outer bed); null off the board"
                                     },
                                     "coords": {
                                       "type": "object",
@@ -48355,6 +48361,7 @@
         "type": "object",
         "required": [
           "name",
+          "bedAimId",
           "coords",
           "left",
           "bust",
@@ -48366,6 +48373,11 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "bedAimId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The AIMS id of the bed it landed in (a single's outer bed); null off the board"
           },
           "coords": {
             "type": "object",
@@ -48924,6 +48936,7 @@
               "type": "object",
               "required": [
                 "name",
+                "bedAimId",
                 "coords",
                 "left",
                 "bust",
@@ -48935,6 +48948,11 @@
               "properties": {
                 "name": {
                   "type": "string"
+                },
+                "bedAimId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The AIMS id of the bed it landed in (a single's outer bed); null off the board"
                 },
                 "coords": {
                   "type": "object",
@@ -49489,6 +49507,7 @@
                     "type": "object",
                     "required": [
                       "name",
+                      "bedAimId",
                       "coords",
                       "left",
                       "bust",
@@ -49500,6 +49519,11 @@
                     "properties": {
                       "name": {
                         "type": "string"
+                      },
+                      "bedAimId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The AIMS id of the bed it landed in (a single's outer bed); null off the board"
                       },
                       "coords": {
                         "type": "object",
@@ -50186,6 +50210,7 @@
                         "type": "object",
                         "required": [
                           "name",
+                          "bedAimId",
                           "coords",
                           "left",
                           "bust",
@@ -50197,6 +50222,11 @@
                         "properties": {
                           "name": {
                             "type": "string"
+                          },
+                          "bedAimId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The AIMS id of the bed it landed in (a single's outer bed); null off the board"
                           },
                           "coords": {
                             "type": "object",

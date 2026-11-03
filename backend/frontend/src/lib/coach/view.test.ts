@@ -6,6 +6,7 @@ import type { CoachDart } from '$shared/coach/walk'
 import { dartAt, dartFromLabel } from './sandbox'
 import { coachOpenVisit } from '$shared/coach/openVisit'
 import { REF } from '$shared/coach/testLegs'
+import { bedAim } from '$shared/coach/aims'
 import { NOT_COUNTED, type DartClass } from '$shared/coach/dartClass'
 import {
   aimBed,
@@ -124,7 +125,16 @@ describe('coachFound', () => {
 })
 
 describe('visitTiles', () => {
-  const d = (name: string, left: number) => ({ name, coords: null, left, bust: false, class: NOT_COUNTED, delta: null, closeness: null })
+  const d = (name: string, left: number) => ({
+    name,
+    bedAimId: bedAim(name)?.id ?? null,
+    coords: null,
+    left,
+    bust: false,
+    class: NOT_COUNTED,
+    delta: null,
+    closeness: null,
+  })
   it('without a grade (Scoring): greens trebles and doubles, leaves singles plain, dashes a miss', () => {
     expect(visitTiles({ darts: [d('T20', 120), d('S5', 115), d('Miss', 115)] }).map(t => [t.tone, t.offBoard, t.word])).toEqual([
       ['good', false, null],
@@ -260,6 +270,7 @@ describe('leg review text', () => {
   })
   const dart = (name: string, left: number, bust = false) => ({
     name,
+    bedAimId: bedAim(name)?.id ?? null,
     coords: null,
     left,
     bust,
@@ -314,11 +325,11 @@ describe('leg review text', () => {
   })
 
   it('says what a miss leaves when that is a one-dart finish', () => {
-    expect(missLeaves(16, 'S8')).toBe('8 = D4')
-    expect(missLeaves(75, '25')).toBe('50 = Bull')
-    expect(missLeaves(45, 'S20')).toBeNull()
-    expect(missLeaves(51, 'Bull')).toBeNull()
-    expect(missLeaves(16, 'Outside')).toBeNull()
+    expect(missLeaves(16, 8)).toBe('8 = D4')
+    expect(missLeaves(75, 25)).toBe('50 = Bull')
+    expect(missLeaves(45, 20)).toBeNull()
+    expect(missLeaves(51, 50)).toBeNull()
+    expect(missLeaves(16, 0)).toBeNull()
   })
 
   it('words the better aim with what its misses leave, and tags them on the board', () => {
@@ -418,8 +429,8 @@ describe('dartLabel', () => {
 describe('groupingLine', () => {
   const t20 = { ...NOT_COUNTED, kind: 'scoringSingle' as const, detail: null, target: { aimId: 'T20', label: 'T20' } }
   const darts = [
-    { name: 'S20', coords: null, left: 481, bust: false, class: t20, delta: null, closeness: null },
-    { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20, delta: null, closeness: null },
+    { name: 'S20', bedAimId: 'SO20', coords: null, left: 481, bust: false, class: t20, delta: null, closeness: null },
+    { name: 'S20', bedAimId: 'SO20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20, delta: null, closeness: null },
   ]
   const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 

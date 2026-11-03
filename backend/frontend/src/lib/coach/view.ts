@@ -9,7 +9,7 @@ import { LEVEL_AVERAGE } from '$shared/botLevels'
 import { checkoutHint } from '$shared/checkout.js'
 import type { CoachNote, LegReview, ReviewDart, ReviewVisit, VisitGrade } from '$shared/coach'
 import { dartGrade } from '$shared/coach/grade'
-import { AIM_RINGS, AIMS, aimById, aimIndex, aimKind, directOutId } from '$shared/coach/aims'
+import { AIM_RINGS, AIMS, aimById, aimIndex, aimKind, aimPoints, directOutId } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
 import type { Grouping, GroupingLevel } from '$shared/coach/grouping'
@@ -79,8 +79,11 @@ export type DartTileView = { name: string; tone: DartTone; offBoard: boolean; wo
 
 const TONE_WORD: Record<DartTone, string> = { good: 'good', plain: 'even', weak: 'slight loss', costly: 'costly', miss: 'miss' }
 
-export function dartTone(d: Pick<ReviewDart, 'name' | 'bust' | 'class' | 'delta' | 'closeness'>): DartTone {
-  if (d.delta === null) return d.name === 'Miss' ? 'miss' : /^[TD]\d/.test(d.name) || d.name === 'Bull' ? 'good' : 'plain'
+/** Tone without a grade: a treble, double or bull good */
+const GOOD_BEDS = new Set(['T', 'D', 'Bull'])
+
+export function dartTone(d: Pick<ReviewDart, 'bedAimId' | 'bust' | 'class' | 'delta' | 'closeness'>): DartTone {
+  if (d.delta === null) return d.bedAimId === null ? 'miss' : GOOD_BEDS.has(aimKind(d.bedAimId)) ? 'good' : 'plain'
   const g = dartGrade(d.delta, d.closeness)
   if (d.bust || g <= DART_COSTLY_AT) return 'costly'
   if (d.class.hit || g >= DART_GOOD_FROM) return 'good'
@@ -91,8 +94,7 @@ export function dartTone(d: Pick<ReviewDart, 'name' | 'bust' | 'class' | 'delta'
 export const visitTiles = (v: Pick<ReviewVisit, 'darts'>): DartTileView[] =>
   v.darts.map(d => {
     const tone = dartTone(d)
-    const offBoard = d.name === 'Miss' || /^M\d/.test(d.name)
-    return { name: d.name, tone, offBoard, word: d.delta === null ? null : TONE_WORD[tone], label: dartLabel(d.class) }
+    return { name: d.name, tone, offBoard: d.bedAimId === null, word: d.delta === null ? null : TONE_WORD[tone], label: dartLabel(d.class) }
   })
 
 /** A missed dart this close to its target's bed (mm, edgeMm) is a near miss: on a double, nearly a checkout */
@@ -116,9 +118,9 @@ const wholeMm = (mm: number) => `${Math.max(1, Math.round(mm))} mm`
 /** The number next to target `aimId` on the clockwise (+) or anticlockwise (−) side: a wire's own
  *  two numbers (W20-1: 1 clockwise, 20 anticlockwise), else the board neighbour (T20: 1, 5). */
 function towards(aimId: string, clockwise: boolean): number | null {
-  const wire = /^W(\d+)-(\d+)$/.exec(aimId)
-  if (wire) return Number(wire[clockwise ? 2 : 1])
-  const i = SEGS.indexOf(Number(/\d+/.exec(aimId)?.[0]))
+  const numbers = aimById(aimId)?.numbers ?? []
+  if (numbers.length === 2) return numbers[clockwise ? 1 : 0]
+  const i = SEGS.indexOf(numbers[0])
   return i < 0 ? null : SEGS[(i + (clockwise ? 1 : 19)) % 20]
 }
 
@@ -232,18 +234,20 @@ export function aimBed(aimId: string): BedRing | null {
 
 /** A labelled spot on the board, in board units */
 export type BoardTag = { label: string; x: number; y: number }
+/** A likely miss: its tag and what a dart there scores (0 off the board) */
+export type MissTag = BoardTag & { points: number }
 /** Where an Outside tag sits: past the numbers ring */
 const OUTSIDE_R = 1.2
 
 /** Where a dart at an aim (AIMS id) most likely lands instead: a treble's own single and its
  *  neighbours', a double's inside single and outside, a single's neighbours, the other bull, a
  *  wire's two numbers. */
-export function likelyMisses(aimId: string): BoardTag[] {
+export function likelyMisses(aimId: string): MissTag[] {
   const aim = aimById(aimId)
   if (!aim) return []
-  const tag = (label: string, id: string): BoardTag => {
-    const { x, y } = AIMS[aimIndex(id)]
-    return { label, x, y }
+  const tag = (label: string, id: string): MissTag => {
+    const a = AIMS[aimIndex(id)]
+    return { label, x: a.x, y: a.y, points: aimPoints(a)[0] }
   }
   const kind = aimKind(aimId)
   if (kind === 'Bull') return [tag('25', '25')]
@@ -255,7 +259,7 @@ export function likelyMisses(aimId: string): BoardTag[] {
   if (kind === 'T') return [tag(`S${n}`, `SO${n}`), ...neighbours('SO')]
   if (kind === 'D') {
     const r = Math.hypot(aim.x, aim.y)
-    return [tag(`S${n}`, `SO${n}`), { label: 'Outside', x: (aim.x / r) * OUTSIDE_R, y: (aim.y / r) * OUTSIDE_R }]
+    return [tag(`S${n}`, `SO${n}`), { label: 'Outside', x: (aim.x / r) * OUTSIDE_R, y: (aim.y / r) * OUTSIDE_R, points: 0 }]
   }
   return neighbours(kind === 'SI' ? 'SI' : 'SO')
 }
@@ -361,10 +365,9 @@ export function legGroupingLine(g: LegReview['grouping']): string {
   ].join('')
 }
 
-/** What a dart in `label` (a likelyMisses tag: S8, Bull, 25, Outside) leaves from `left`, with its
- *  one-dart finish: "8 = D4"; null when that's no one-dart finish or the miss scores nothing. */
-export function missLeaves(left: number, label: string): string | null {
-  const points = label === 'Bull' ? 50 : label === '25' ? 25 : /^S\d+$/.test(label) ? Number(label.slice(1)) : 0
+/** What a dart scoring `points` (a likelyMisses tag's) leaves from `left`, with its one-dart
+ *  finish: "8 = D4"; null when that's no one-dart finish or the miss scores nothing. */
+export function missLeaves(left: number, points: number): string | null {
   const after = left - points
   const out = points > 0 && after >= 2 ? checkoutHint(after, 'double', 1) : null
   return out ? `${after} = ${out[0]}` : null
@@ -372,8 +375,8 @@ export function missLeaves(left: number, label: string): string | null {
 
 /** The better aim's likely misses as board tags, those leaving a finish with it: "S8 · 8 = D4" */
 export const missTags = (note: Pick<CoachNote, 'left' | 'betterAimId'>): BoardTag[] =>
-  likelyMisses(note.betterAimId).map(m => {
-    const leaves = missLeaves(note.left, m.label)
+  likelyMisses(note.betterAimId).map(({ points, ...m }) => {
+    const leaves = missLeaves(note.left, points)
     return leaves ? { ...m, label: `${m.label} · ${leaves}` } : m
   })
 
@@ -381,7 +384,7 @@ export const missTags = (note: Pick<CoachNote, 'left' | 'betterAimId'>): BoardTa
  *  still leaves 8 = D4." */
 export function betterLine(note: Pick<CoachNote, 'left' | 'darts' | 'better' | 'betterAimId'>): string {
   const misses = likelyMisses(note.betterAimId).flatMap(m => {
-    const leaves = missLeaves(note.left, m.label)
+    const leaves = missLeaves(note.left, m.points)
     return leaves ? [` A miss into ${m.label} still leaves ${leaves}.`] : []
   })
   const darts = `${note.darts} dart${note.darts === 1 ? '' : 's'}`

@@ -5,7 +5,6 @@
   // with a pulsing ring. A faint line joins each dart to the target its class picked.
   import type { ReviewDart } from '$shared/coach'
   import { aimBed, aimPoint, type BoardTag } from '$lib/coach/view'
-  import { bedAim } from '$shared/coach/aims'
   import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
@@ -30,7 +29,7 @@
 
   const pins = $derived(
     darts.flatMap((d, i) => {
-      const at = d.coords ?? bedAim(d.name)
+      const at = d.coords ?? (d.bedAimId === null ? null : aimPoint(d.bedAimId))
       return at ? [{ i, name: d.name, hollow: !d.coords, ...clampToView(toBoardPx(at)) }] : []
     }),
   )

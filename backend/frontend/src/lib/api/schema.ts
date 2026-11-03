@@ -2886,6 +2886,8 @@ export interface components {
         };
         ReviewDart: {
             name: string;
+            /** @description The AIMS id of the bed it landed in (a single's outer bed); null off the board */
+            bedAimId: string | null;
             coords: {
                 x: number;
                 y: number;

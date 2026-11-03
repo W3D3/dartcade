@@ -1,5 +1,6 @@
 // The coach's review of one seat's leg, as the leg review page renders it: every visit graded,
 // three A–D skills and the coach's take.
+import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, closeness, type VisitGrade, type VisitTag } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
@@ -17,6 +18,8 @@ import { dartPoints, throwsOf, type CoachLeg } from './walk.js'
  *  and for the darts after a bust, `closeness` also for a hit or a typed dart. */
 export type ReviewDart = {
   name: string
+  /** The AIMS id of the bed it landed in (a single's outer bed); null off the board */
+  bedAimId: string | null
   coords: { x: number; y: number } | null
   left: number
   bust: boolean
@@ -116,6 +119,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       const delta = deltas.at(j) ?? null
       return {
         name: d.segment.name,
+        bedAimId: bedAim(d.segment.name)?.id ?? null,
         coords: d.coords,
         left: t && !bust ? t.left - dartPoints(d) : start,
         bust,
