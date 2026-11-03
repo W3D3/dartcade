@@ -78,9 +78,9 @@ describe('walkVisit', () => {
         ['S16', 'T20', 'D8'].map(n => dart(n)),
       ),
     ).toEqual([
-      { left: 32, checkout: false, bust: false },
-      { left: 16, checkout: false, bust: true },
+      { left: 32, after: 16, checkout: false, bust: false },
+      { left: 16, after: 32, checkout: false, bust: true },
     ])
-    expect(walkVisit(40, [dart('D20')])).toEqual([{ left: 40, checkout: true, bust: false }])
+    expect(walkVisit(40, [dart('D20')])).toEqual([{ left: 40, after: 0, checkout: true, bust: false }])
   })
 })

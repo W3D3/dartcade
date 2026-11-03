@@ -22,6 +22,7 @@ const stubThrow = (over: Partial<Throw>): Throw => ({
   dart: 0,
   start: 0,
   left: 0,
+  after: 0,
   darts: 3,
   d: dart('S1'),
   checkout: false,

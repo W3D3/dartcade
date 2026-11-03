@@ -9,7 +9,7 @@ import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { dartDeltas } from './value.js'
 import { visitStart } from './visitStart.js'
-import { dartPoints, throwsOf, type CoachLeg } from './walk.js'
+import { throwsOf, type CoachLeg } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
@@ -121,7 +121,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
         name: d.segment.name,
         bedAimId: bedAim(d.segment.name)?.id ?? null,
         coords: d.coords,
-        left: t && !bust ? t.left - dartPoints(d) : start,
+        left: t?.after ?? start,
         bust,
         class: cls,
         delta,

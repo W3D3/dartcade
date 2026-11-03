@@ -5,7 +5,7 @@ import { CHECKOUTS } from '../checkoutTable.js'
 import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import { landedNumber } from './aim.js'
 import type { Evaluation } from './model.js'
-import { afterDart, dartPoints, type Throw } from './walk.js'
+import { afterDart, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
 /** An amateur's spread, for guessing targets only (the strategy model keeps the coaching level's):
@@ -263,7 +263,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   }
 
   // Step 2: the category
-  const actualLeave = t.checkout ? 0 : t.bust ? t.start : t.left - dartPoints(t.d)
+  const actualLeave = t.after
   // On a one-dart finish you go for the double: no dart there busts on purpose
   const mayBustBack = !oneDartFinish(t.left)
   if (t.bust && busts) {

@@ -3,7 +3,7 @@
 import { AIMS, type Aim } from './aims.js'
 import type { CoachModel } from './model.js'
 import { reviewLeg, type ReviewVisit } from './review.js'
-import { dartPoints, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
+import { walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
 
 export type OpenVisitInput = {
   /** The score left when the visit starts, 2–501 */
@@ -29,9 +29,9 @@ export type OpenVisit = {
 
 /** The visit as the game stores it, a bust scoring nothing. */
 function visitOf(start: number, darts: readonly CoachDart[]): CoachVisit {
-  if (walkVisit(start, darts).some(s => s.bust)) return { seat: 0, darts, scored: 0, remaining: start, bust: true }
-  const scored = darts.reduce((sum, d) => sum + dartPoints(d), 0)
-  return { seat: 0, darts, scored, remaining: start - scored, bust: false }
+  const last = walkVisit(start, darts).at(-1)
+  const remaining = last?.after ?? start
+  return { seat: 0, darts, scored: start - remaining, remaining, bust: last?.bust ?? false }
 }
 
 /** The leg the coach reviews: the opponent's (empty) visit on their score first, then yours. */

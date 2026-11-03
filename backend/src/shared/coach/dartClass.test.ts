@@ -23,16 +23,18 @@ const aim = (id: string) => AIMS.find(a => a.id === id) ?? AIMS[0]
 function classify(d: CoachDart, left: number, darts = 3, start = left, w = 1) {
   const after = left - d.segment.number * d.segment.multiplier
   const checkout = after === 0 && (d.segment.multiplier === 2 || d.segment.number === 50)
+  const bust = !checkout && after < 2
   const t: Throw = {
     leg: 0,
     visit: 0,
     dart: 3 - darts,
     start,
     left,
+    after: bust ? start : after,
     darts,
     d,
     checkout,
-    bust: !checkout && after < 2,
+    bust,
     w,
     opponentOnOut: w < 1,
   }

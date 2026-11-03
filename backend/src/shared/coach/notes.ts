@@ -5,7 +5,7 @@ import { checkoutHint } from '../checkout.js'
 import { AIMS, directOutId } from './aims.js'
 import { candidates, landedNumber, nearBull } from './aim.js'
 import type { CoachModel, Evaluation, Evaluator } from './model.js'
-import { dartPoints, type Throw } from './walk.js'
+import type { Throw } from './walk.js'
 
 /** The better aim gives at least this much more checkout chance (5 points) */
 export const NOTE_THRESHOLD = 0.05
@@ -56,7 +56,7 @@ const what = (name: string) => (name === 'Miss' ? 'A miss off the board' : name)
 function reason(t: Throw, thrown: string, fin: CoachModel['fin']): string | null {
   const name = what(thrown)
   if (t.bust) return `${name} busts`
-  const after = t.left - dartPoints(t.d)
+  const { after } = t
   const next = t.darts - 1
   if (next === 0) {
     if (after > 170 || fin[after][3] === 0) return `${name} leaves ${after}, which one visit can't finish`
