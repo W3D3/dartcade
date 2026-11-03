@@ -262,6 +262,24 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   DartClass`), using the evaluator, `checkoutHint`/`CHECKOUTS`, `AIMS` and the board geometry.
   `reviewLeg` attaches the class to each dart.
 
+## Live coach (solo X01)
+
+Behind `coach.live.enabled` (off for everyone by default; the screenshot stack turns it on), a solo
+X01 game (one player, straight in, double out) shows the coach while you throw: a side column on
+wide screens (1280 px and up), a folded line above the dart slots below that and on phones.
+
+- **Aim now**: the next dart's three best aims (`bestAims` in `lib/coach/sandbox.ts`, w = 1: no
+  opponent), each with its chance to check out this visit or the next and what it leaves
+  ("T19 · 64% · leaves 67"). Over 170 left nothing checks out soon enough to rank by chance, so it
+  shows the three aims with the most points a dart for the reference player (`LANDING`): T20, T19, T18.
+- **This visit**: each dart as the leg review classes it (`dartLabel`), with its change in checkout
+  chance and its near-miss credit (`value.ts`); none on a scoring visit.
+- **Last visit**: once the visit is done (three darts, a bust or a checkout) its grade and line from
+  `reviewLeg`, kept until the next visit's first dart.
+- The average it grades against: your 30-day X01 average from your profile, else this game's, else
+  none (the visit's own).
+- `lib/coach/live.ts` and the panel load with the model in a lazy chunk, only once the panel shows.
+
 ## Testing
 
 - **Unit tests** for each category with built darts, with and without coords:

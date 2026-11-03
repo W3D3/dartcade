@@ -6,6 +6,7 @@
 <script lang="ts">
   import { whoOf } from '$lib/face'
   import type { Segment } from '$lib/api'
+  import type { Snippet } from 'svelte'
   import BoardCaption from './BoardCaption.svelte'
   import BoardLegend from './BoardLegend.svelte'
   import BoardViewToggle from './BoardViewToggle.svelte'
@@ -59,6 +60,7 @@
     onBoardClick = noop,
     onDartMove = noop,
     onabort = noop,
+    coach,
   }: {
     snapshot: Snapshot
     /** The derivations for this snapshot (lib/matchView.ts). */
@@ -87,6 +89,8 @@
     onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onabort?: () => void
+    /** The live coach (solo X01 only): a side column on wide screens, else `compact` above the slots. */
+    coach?: Snippet<[compact: boolean]>
   } = $props()
 
   const players = $derived(snapshot.players)
@@ -194,6 +198,7 @@
     {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
     <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
   </div>
+  {@render coach?.(true)}
   {#if keypad}
     {@render keypadView('min-h-0')}
   {:else}
@@ -223,6 +228,7 @@
     <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} showPopover={!keypad} popoverAbove />
     {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
   </div>
+  {@render coach?.(true)}
   {#if keypad}
     {@render keypadView('min-h-[220px]')}
   {:else}
@@ -244,6 +250,7 @@
   {/if}
 
   {#if variant === 'solo'}
+    {#if !$isWide}{@render coach?.(true)}{/if}
     <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-[10px] items-start">
       <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
       {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
@@ -436,6 +443,7 @@
 {#snippet soloLayout()}
   {@render panel(0)}
   <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+  {#if $isWide}{@render coach?.(false)}{/if}
 {/snippet}
 
 {#snippet teamsLayout()}

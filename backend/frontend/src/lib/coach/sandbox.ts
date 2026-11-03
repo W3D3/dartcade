@@ -2,7 +2,7 @@
 // up to three darts, reviewed the way the coach reviews a real leg.
 import { segmentAt } from '$shared/board'
 import { reviewLeg, type ReviewVisit } from '$shared/coach'
-import { AIMS } from '$shared/coach/aims'
+import { AIMS, type Aim } from '$shared/coach/aims'
 import { evaluator, nextVisit } from '$shared/coach/model'
 import { dartPoints, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from '$shared/coach/walk'
 
@@ -11,11 +11,11 @@ export type SandboxInput = {
   start: number
   /** The opponent's score left; null: solo */
   opponent: number | null
-  /** Your 3-dart average, for the scoring grades */
-  average: number
+  /** Your 3-dart average, for the scoring grades; null: the visit's own */
+  average: number | null
 }
 
-export type AimChance = { label: string; chance: number }
+export type AimChance = { aim: Aim; label: string; chance: number }
 
 export type SandboxResult = {
   /** Null before the first dart */
@@ -61,6 +61,22 @@ export function sandboxLeg(input: SandboxInput, darts: readonly CoachDart[]): Co
   return { leg: 0, visits }
 }
 
+/** The next dart's `top` best aims from `left` with `darts` darts left in a visit that started on
+ *  `start`, by their chance to check out this visit or (weighted by w) the next; none that can't. */
+export function bestAims(start: number, left: number, darts: number, w: number, top: number): { aim: Aim; chance: number }[] {
+  const { values } = evaluator(start, w)(left, darts)
+  // Outer and inner single share a label: keep the better of the two
+  const best = new Map<string, { aim: Aim; chance: number }>()
+  for (const [i, v] of values.entries()) {
+    const seen = best.get(AIMS[i].label)
+    if (!seen || v > seen.chance) best.set(AIMS[i].label, { aim: AIMS[i], chance: v })
+  }
+  return [...best.values()]
+    .filter(a => a.chance > 0)
+    .sort((a, b) => b.chance - a.chance)
+    .slice(0, top)
+}
+
 /** How many of the best aims to show for the next dart */
 const TOP = 5
 
@@ -73,14 +89,6 @@ export function sandbox(input: SandboxInput, darts: readonly CoachDart[]): Sandb
   if (done) return { visit, left, done, next: [] }
 
   const w = input.opponent === null ? 1 : 1 - nextVisit(input.opponent)
-  const { values } = evaluator(input.start, w)(left, 3 - darts.length)
-  // Outer and inner single share a label: keep the better of the two
-  const best = new Map<string, number>()
-  for (const [i, v] of values.entries()) best.set(AIMS[i].label, Math.max(v, best.get(AIMS[i].label) ?? 0))
-  const next = [...best]
-    .filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, TOP)
-    .map(([label, chance]) => ({ label, chance }))
+  const next = bestAims(input.start, left, 3 - darts.length, w, TOP).map(a => ({ ...a, label: a.aim.label }))
   return { visit, left, done, next }
 }

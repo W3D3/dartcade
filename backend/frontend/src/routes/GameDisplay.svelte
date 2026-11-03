@@ -49,6 +49,8 @@
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import WinScreen from '../lib/components/WinScreen.svelte'
   import { flag } from '$lib/flags'
+  import { coachable } from '$shared/coach/coachable'
+  import type LiveCoachPanel from '$lib/components/coach/LiveCoach.svelte'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
 
@@ -296,6 +298,14 @@
   const checkout = $derived(mv.checkout)
   const teams = $derived(mv.teams)
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch, $isPortrait))
+  // The live coach (solo X01, double out): loaded with its model only once it shows
+  const coachLive = flag('coach.live.enabled')
+  const liveCoachOn = $derived($coachLive && x01 !== null && x01.phase === 'game' && players.length === 1 && coachable('x01', x01.config))
+  let LiveCoach = $state<typeof LiveCoachPanel | null>(null)
+  $effect(() => {
+    if (liveCoachOn && !LiveCoach)
+      void import('$lib/components/coach/LiveCoach.svelte').then(m => (LiveCoach = m.default)).catch(() => undefined)
+  })
   // ── Actions ───────────────────────────────────────────────────────────────
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
@@ -398,6 +408,10 @@
   }
   const winSecondary = $derived(winButtons.secondary)
 </script>
+
+{#snippet liveCoach(compact: boolean)}
+  {#if LiveCoach && x01}<LiveCoach game={x01} userId={snapshot?.seats[0]?.userId ?? null} {compact} />{/if}
+{/snippet}
 
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>
   {#if !snapshot}
@@ -567,6 +581,7 @@
           onBoardClick={addBoardDart}
           onDartMove={moveDart}
           onabort={() => (showEndConfirm = true)}
+          coach={liveCoachOn && LiveCoach ? liveCoach : undefined}
         />
       {/if}
     {/if}
