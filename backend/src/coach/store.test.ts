@@ -106,10 +106,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
       .updateTable('coach_games')
       .set({ version: COACH_VERSION - 1 })
       .execute()
-    await db
-      .updateTable('coach_legs')
-      .set({ version: COACH_VERSION - 1, ...set })
-      .execute()
+    if (Object.keys(set).length) await db.updateTable('coach_legs').set(set).execute()
   }
 
   it('stores a row per leg for each seat with an account', async () => {
@@ -127,7 +124,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
       ranked: false,
       opponents: ['Bob', 'Guest'],
       context: '301 · leg 1',
-      version: COACH_VERSION,
       clean: ann.review.counts.clean,
       low_visits: ann.review.counts.lowVisits,
       winner_name: 'Ann',
@@ -214,11 +210,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
 
     await staleAll({ darts: 99 })
     expect(await ensureCoachLegs(db, 'bob', fail)).toBe(1)
-    expect((await rows()).map(r => [r.version, r.darts])).toEqual([
-      [COACH_VERSION, 6],
-      [COACH_VERSION, 3],
-    ])
+    expect((await rows()).map(r => r.darts)).toEqual([6, 3])
     expect(await ensureCoachLegs(db, 'bob', fail)).toBe(0)
+  })
+
+  it('leaves a game a newer version built alone', async () => {
+    const game = await play()
+    await buildCoachLegs(db, game, fail)
+    await db
+      .updateTable('coach_games')
+      .set({ version: COACH_VERSION + 1 })
+      .execute()
+    await db.updateTable('coach_legs').set({ darts: 99 }).execute()
+    await buildCoachLegs(db, game, fail)
+    expect(await ensureCoachLegs(db, 'ann', fail)).toBe(0)
+    expect((await rows()).map(r => r.darts)).toEqual([99, 99])
+    expect(await db.selectFrom('coach_games').select('version').execute()).toEqual([{ version: COACH_VERSION + 1 }])
   })
 
   it('marks a game that gave no rows as built, so it is not replayed again', async () => {
@@ -262,7 +269,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     const res = await app.inject({ method: 'GET', url: `/api/coach/legs/${game.id}/0` })
     expect(res.statusCode).toBe(200)
     expect(res.json().review.visits[0].darts[0].class).toMatchObject({ kind: 'scoringHit' })
-    expect((await rows()).map(r => r.version)).toEqual([COACH_VERSION, COACH_VERSION])
+    expect(await rows()).toHaveLength(2)
+    expect(await db.selectFrom('coach_games').select('version').execute()).toEqual([{ version: COACH_VERSION }])
   })
 
   it('builds at most max games per call, newest first', async () => {

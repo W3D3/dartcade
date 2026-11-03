@@ -66,6 +66,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach legs reads', () => {
       { placement: 1, stats: {}, throwPosition: 0, forfeited: false },
       { placement: 2, stats: {}, throwPosition: 1, forfeited: false },
     ])
+    await db.insertInto('coach_games').values({ game_id: id, version: COACH_VERSION }).execute()
     return id
   }
 
@@ -112,7 +113,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach legs reads', () => {
         review: JSON.stringify(review({ leg, seat, won, darts: f.darts ?? 9, counts: { lowVisits, badSetups, missedDoubles, clean } })),
         winner_name: f.winnerName ?? null,
         winner_darts: f.winnerDarts ?? null,
-        version: COACH_VERSION,
       })
       .execute()
   }

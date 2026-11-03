@@ -296,8 +296,6 @@ export interface CoachLegsTable {
   winner_name: string | null
   /** The winner's darts in this leg; null along with winner_name. */
   winner_darts: number | null
-  /** COACH_VERSION of the code that built it. */
-  version: number
 }
 
 /** A game the coach has built, rows or none (migration 048, coach/store.ts). */

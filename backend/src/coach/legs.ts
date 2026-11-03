@@ -33,10 +33,10 @@ function base(db: Kysely<Database>, userId: string) {
     db
       .selectFrom('coach_legs as cl')
       .innerJoin('game_sessions as gs', 'gs.id', 'cl.game_id')
+      // A stale row (its game built by another COACH_VERSION) is missing until the game is rebuilt, in every read
+      .innerJoin('coach_games as cg', join => join.onRef('cg.game_id', '=', 'cl.game_id').on('cg.version', '=', COACH_VERSION))
       .where('cl.user_id', '=', userId)
       .where('gs.invalidated_at', 'is', null)
-      // A stale row (an older COACH_VERSION) is missing until its game is rebuilt, in every read
-      .where('cl.version', '=', COACH_VERSION)
   )
 }
 

@@ -1,5 +1,6 @@
 // The coach's stored reviews (coach_legs): one row per leg and seat with an account in a coachable
-// X01 game, built when the game finishes; missing or stale ones are rebuilt later.
+// X01 game, built when the game finishes; missing or stale ones are rebuilt later. A game's marker
+// (coach_games) says which COACH_VERSION built its rows, and whether it was built at all.
 import { sql, type Insertable, type Kysely } from 'kysely'
 import type { CoachLegsTable, Database } from '../db/schema.js'
 import { getFinishedGame, type HistoryGame } from '../db/history.js'
@@ -11,10 +12,11 @@ import { coachable, coachLevel, loadModel, reviewLeg } from '../shared/coach/ind
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 21
+export const COACH_VERSION = 22
 
 /** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
- *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. */
+ *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. A
+ *  game a newer COACH_VERSION built (another server on the same database) is left alone. */
 export async function buildCoachLegs(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<void> {
   if (game.invalidated) return
   const rows = await reviewRows(db, game, warn)
@@ -22,6 +24,13 @@ export async function buildCoachLegs(db: Kysely<Database>, game: HistoryGame, wa
   // serializes overlapping builds of one game (game end, a request, the backfill): the last one wins.
   await db.transaction().execute(async tx => {
     await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.coach.' || ${game.id}))`.execute(tx)
+    const newer = await tx
+      .selectFrom('coach_games')
+      .select('version')
+      .where('game_id', '=', game.id)
+      .where('version', '>', COACH_VERSION)
+      .executeTakeFirst()
+    if (newer) return
     await tx.deleteFrom('coach_legs').where('game_id', '=', game.id).execute()
     if (rows.length) await tx.insertInto('coach_legs').values(rows).execute()
     await tx
@@ -96,7 +105,6 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
         review: JSON.stringify(review),
         winner_name: winner.name,
         winner_darts: winner.darts,
-        version: COACH_VERSION,
       })
     }
   }
@@ -108,8 +116,9 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
 const failed = new Set<string>()
 
 /**
- * Finished, valid, coachable games not built at this version, newest first: the user's (any
- * account's with null), at most `limit`
+ * Finished, valid X01 games not built at this version (or a newer one), newest first: the user's
+ * (any account's with null), at most `limit`. Whether the coach reviews one is coachable()'s call
+ * in buildCoachLegs, which marks the others with no rows.
  */
 async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: number): Promise<string[]> {
   let q = db
@@ -119,11 +128,6 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
     .where('gs.finished_at', 'is not', null)
     .where('gs.invalidated_at', 'is', null)
     .where('gs.game_id', '=', 'x01')
-    // coachable(), in SQL
-    .where(
-      sql<boolean>`coalesce(gs.config->>'inMode', 'straight') = 'straight' and coalesce(gs.config->>'outMode', 'double') = 'double'
-        and coalesce(gs.config->>'bullValue', '25_50') = '25_50' and coalesce(gs.config->>'format', 'singles') <> 'teams'`,
-    )
     .where(eb =>
       eb.exists(
         eb
@@ -136,7 +140,7 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
     .where(eb =>
       eb.not(
         eb.exists(
-          eb.selectFrom('coach_games as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', '=', COACH_VERSION),
+          eb.selectFrom('coach_games as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', '>=', COACH_VERSION),
         ),
       ),
     )
@@ -159,14 +163,14 @@ async function buildById(db: Kysely<Database>, id: string, warn: WarnFn, userId?
   }
 }
 
-/** Builds one of the user's games not built at this version yet (a leg asked for before the game
+/** Builds one of the user's games not built at this version (or a newer one) yet (a leg asked for before the game
  *  end or the backfill got to it). buildCoachLegs skips an invalid game. */
 export async function ensureCoachGame(db: Kysely<Database>, userId: string, id: string, warn: WarnFn): Promise<void> {
   const built = await db
     .selectFrom('coach_games')
     .select('game_id')
     .where('game_id', '=', id)
-    .where('version', '=', COACH_VERSION)
+    .where('version', '>=', COACH_VERSION)
     .executeTakeFirst()
   if (!built) await buildById(db, id, warn, userId)
 }
