@@ -88,6 +88,7 @@ describe('reviewLeg', () => {
           text: 'Two trebles.',
           tip: false,
           notes: [],
+          explained: null,
           grouping: null,
         },
         {
@@ -115,6 +116,7 @@ describe('reviewLeg', () => {
           text: 'Scored 26; your usual visit is 88.',
           tip: false,
           notes: [],
+          explained: null,
           grouping: null,
         },
         {
@@ -151,6 +153,7 @@ describe('reviewLeg', () => {
           text: 'Scored 100.',
           tip: false,
           notes: [],
+          explained: null,
           grouping: null,
         },
         {
@@ -170,6 +173,7 @@ describe('reviewLeg', () => {
           text: 'Scored 137: 98 left is still a 2-dart finish, the fewest possible.',
           tip: false,
           notes: [],
+          explained: null,
           grouping: null,
         },
         {
@@ -215,6 +219,7 @@ describe('reviewLeg', () => {
           text: "On 47, S1: better S15 — S1 leaves 46, which one dart can't finish.",
           tip: false,
           notes: [expect.objectContaining({ leg: 0, visit: 8, dart: 1, left: 47, thrown: 'S1', better: 'S15', tip: false })],
+          explained: expect.objectContaining({ visit: 8, dart: 1, better: 'S15' }),
           grouping: null,
         },
         {
@@ -250,6 +255,7 @@ describe('reviewLeg', () => {
           text: 'Checked out on D10.',
           tip: false,
           notes: [],
+          explained: null,
           grouping: null,
         },
       ],

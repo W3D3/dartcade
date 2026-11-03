@@ -3970,6 +3970,7 @@
                               "text",
                               "tip",
                               "notes",
+                              "explained",
                               "grouping"
                             ],
                             "additionalProperties": false,
@@ -4363,6 +4364,88 @@
                                     }
                                   }
                                 }
+                              },
+                              "explained": {
+                                "description": "The note the visit explains (shared/coach/grade.ts explainedNote); null without notes",
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "leg",
+                                      "visit",
+                                      "dart",
+                                      "left",
+                                      "darts",
+                                      "thrown",
+                                      "better",
+                                      "betterAimId",
+                                      "cost",
+                                      "reason",
+                                      "book",
+                                      "tip"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "leg": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "visit": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "dart": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "left": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "darts": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "thrown": {
+                                        "type": "string",
+                                        "description": "The dart's segment name, Miss off the board"
+                                      },
+                                      "better": {
+                                        "type": "string",
+                                        "description": "The better aim's label: S17, 20/1, Bull"
+                                      },
+                                      "betterAimId": {
+                                        "type": "string",
+                                        "description": "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull"
+                                      },
+                                      "cost": {
+                                        "type": "number",
+                                        "description": "Checkout chance lost, 0-1"
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "book": {
+                                        "type": "array",
+                                        "nullable": true,
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "tip": {
+                                        "type": "boolean"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ]
                               },
                               "grouping": {
                                 "type": "object",
@@ -48917,6 +49000,7 @@
           "text",
           "tip",
           "notes",
+          "explained",
           "grouping"
         ],
         "additionalProperties": false,
@@ -49311,6 +49395,88 @@
               }
             }
           },
+          "explained": {
+            "description": "The note the visit explains (shared/coach/grade.ts explainedNote); null without notes",
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "leg",
+                  "visit",
+                  "dart",
+                  "left",
+                  "darts",
+                  "thrown",
+                  "better",
+                  "betterAimId",
+                  "cost",
+                  "reason",
+                  "book",
+                  "tip"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "leg": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "visit": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "dart": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "left": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "darts": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "thrown": {
+                    "type": "string",
+                    "description": "The dart's segment name, Miss off the board"
+                  },
+                  "better": {
+                    "type": "string",
+                    "description": "The better aim's label: S17, 20/1, Bull"
+                  },
+                  "betterAimId": {
+                    "type": "string",
+                    "description": "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull"
+                  },
+                  "cost": {
+                    "type": "number",
+                    "description": "Checkout chance lost, 0-1"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "book": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tip": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
           "grouping": {
             "type": "object",
             "nullable": true,
@@ -49488,6 +49654,7 @@
                 "text",
                 "tip",
                 "notes",
+                "explained",
                 "grouping"
               ],
               "additionalProperties": false,
@@ -49882,6 +50049,88 @@
                     }
                   }
                 },
+                "explained": {
+                  "description": "The note the visit explains (shared/coach/grade.ts explainedNote); null without notes",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "leg",
+                        "visit",
+                        "dart",
+                        "left",
+                        "darts",
+                        "thrown",
+                        "better",
+                        "betterAimId",
+                        "cost",
+                        "reason",
+                        "book",
+                        "tip"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "leg": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "visit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "dart": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "left": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "darts": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "thrown": {
+                          "type": "string",
+                          "description": "The dart's segment name, Miss off the board"
+                        },
+                        "better": {
+                          "type": "string",
+                          "description": "The better aim's label: S17, 20/1, Bull"
+                        },
+                        "betterAimId": {
+                          "type": "string",
+                          "description": "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull"
+                        },
+                        "cost": {
+                          "type": "number",
+                          "description": "Checkout chance lost, 0-1"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "book": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "tip": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        null
+                      ]
+                    }
+                  ]
+                },
                 "grouping": {
                   "type": "object",
                   "nullable": true,
@@ -50191,6 +50440,7 @@
                     "text",
                     "tip",
                     "notes",
+                    "explained",
                     "grouping"
                   ],
                   "additionalProperties": false,
@@ -50584,6 +50834,88 @@
                           }
                         }
                       }
+                    },
+                    "explained": {
+                      "description": "The note the visit explains (shared/coach/grade.ts explainedNote); null without notes",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "leg",
+                            "visit",
+                            "dart",
+                            "left",
+                            "darts",
+                            "thrown",
+                            "better",
+                            "betterAimId",
+                            "cost",
+                            "reason",
+                            "book",
+                            "tip"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "leg": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "visit": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "dart": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "left": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "darts": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "thrown": {
+                              "type": "string",
+                              "description": "The dart's segment name, Miss off the board"
+                            },
+                            "better": {
+                              "type": "string",
+                              "description": "The better aim's label: S17, 20/1, Bull"
+                            },
+                            "betterAimId": {
+                              "type": "string",
+                              "description": "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull"
+                            },
+                            "cost": {
+                              "type": "number",
+                              "description": "Checkout chance lost, 0-1"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "book": {
+                              "type": "array",
+                              "nullable": true,
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "tip": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ]
                     },
                     "grouping": {
                       "type": "object",

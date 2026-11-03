@@ -2988,6 +2988,8 @@ export interface components {
             /** @description The text is a tip's (a note that leaves the grade alone) */
             tip: boolean;
             notes: components["schemas"]["CoachNote"][];
+            /** @description The note the visit explains (shared/coach/grade.ts explainedNote); null without notes */
+            explained: components["schemas"]["CoachNote"] | (null);
             /** @description How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2 */
             grouping: {
                 darts: number;

@@ -2,7 +2,7 @@
 // three A–D skills and the coach's take.
 import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
-import { classifyVisit, closeness, type VisitGrade, type VisitTag } from './grade.js'
+import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
 import type { CoachModel } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
@@ -41,6 +41,8 @@ export type ReviewVisit = {
   /** The text is a tip's: shown in the blue Info style */
   tip: boolean
   notes: CoachNote[]
+  /** The note the visit explains (grade.ts explainedNote): its dart and better aim are the ones to show; null without notes */
+  explained: CoachNote | null
   /** How its placed darts sat together, and its rating; null with fewer than 2 (grouping.ts) */
   grouping: Grouping | null
 }
@@ -155,6 +157,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       bust: v.bust,
       ...grading,
       notes: vNotes,
+      explained: explainedNote(vNotes),
       grouping: g,
     }
   })

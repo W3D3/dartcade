@@ -9033,6 +9033,7 @@
           "text",
           "tip",
           "notes",
+          "explained",
           "grouping"
         ],
         "additionalProperties": false,
@@ -9094,6 +9095,21 @@
             "items": {
               "$ref": "#/components/schemas/CoachNote"
             }
+          },
+          "explained": {
+            "description": "The note the visit explains (shared/coach/grade.ts explainedNote); null without notes",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoachNote"
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ]
           },
           "grouping": {
             "type": "object",

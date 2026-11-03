@@ -3798,7 +3798,7 @@ components:
         tip: { type: boolean }
     ReviewVisit:
       type: object
-      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, grouping]
+      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, explained, grouping]
       additionalProperties: false
       properties:
         n: { type: integer, minimum: 1, description: 1-based among the seat's visits in the leg }
@@ -3812,6 +3812,9 @@ components:
         text: { type: string }
         tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }
         notes: { type: array, items: { $ref: '#/components/schemas/CoachNote' } }
+        explained:
+          description: 'The note the visit explains (shared/coach/grade.ts explainedNote); null without notes'
+          anyOf: [{ $ref: '#/components/schemas/CoachNote' }, { type: string, nullable: true, enum: [null] }]
         grouping:
           type: object
           nullable: true
