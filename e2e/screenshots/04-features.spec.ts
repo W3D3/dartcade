@@ -152,10 +152,20 @@ test('coach: the review list, a leg with a mistake, and the admin sandbox', asyn
       .click()
     await page.waitForURL(url => url.hash.startsWith('#/coach/leg/'))
     await expect(page.getByRole('region', { name: 'Every visit' })).toBeVisible()
-    await expect(page.getByText('Mistake').first()).toBeVisible()
+    // A desktop-only grade summary (hidden at this width) sits earlier in the DOM than the visit
+    // list, so getByText('Mistake').first() must stay scoped to what's actually on screen
+    await expect(page.getByText('Mistake').filter({ visible: true }).first()).toBeVisible()
     // On a phone the selected visit's card starts collapsed: open it to show its board and "Better:" line
     if (suffix === 'phone') await page.locator('li.bg-card-active button').first().click()
     await expect(page.getByText('Better:').first()).toBeVisible()
+    // Each dart's class label sits under its tile (dartLabel in lib/coach/view.ts); the desktop-only
+    // VisitTable (hidden at this width) sits earlier in the DOM than the visible visit list
+    await expect(
+      page
+        .getByText(/✓|Miss |wide|inside|outside/)
+        .filter({ visible: true })
+        .first(),
+    ).toBeVisible()
     await shot(page, `coach/leg-${suffix}.png`, { settle: 1200 })
     await ctx.close()
   }
@@ -172,6 +182,7 @@ test('coach: the review list, a leg with a mistake, and the admin sandbox', asyn
   await expect(admin.page.getByText('Mistake').first()).toBeVisible()
   await expect(admin.page.getByText('Better:').first()).toBeVisible()
   await shot(admin.page, 'coach/sandbox-desktop.png', { settle: 1200 })
+  await expect(admin.page.getByRole('heading', { name: 'Dart classes' })).toBeVisible()
   await admin.ctx.close()
 })
 
