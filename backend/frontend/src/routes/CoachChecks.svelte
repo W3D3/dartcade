@@ -13,7 +13,7 @@
   const COLUMNS = 'lg:grid-cols-[200px_96px_90px_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1fr)]'
 </script>
 
-<!-- Mistake solid red, as the canvas legend draws it; the rest as in the leg review -->
+<!-- Bad (mistake) solid red, as the canvas legend draws it; the rest as in the leg review -->
 {#snippet pill(label: CheckLabel)}
   <span
     class="inline-flex h-6 items-center rounded-full px-[9px] text-[12px] font-bold whitespace-nowrap {label === 'mistake'

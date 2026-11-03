@@ -393,6 +393,9 @@ Decisions taken while building this without the user, each with why:
 - **Stored reviews from an older `COACH_VERSION` aren't served**; they take the rebuild path, since
   the API's required `class` would refuse them.
 
+- **The Mistake grade reads "Bad" to players** (user ruling): the pill, the filter chips, the
+  checks legend and the coach's take ("One bad visit and one weak visit."). The value stays
+  `mistake` in the code, the API and this spec.
 - **Perfect: the note wins.** A visit with a strategy note (not a tip) stays a Mistake even if it
   kept the fewest darts: the coach doesn't call a visit perfect while saying another aim was
   better. A tip-only visit can still be Perfect, and keeps the Perfect line (as a checkout keeps

@@ -178,7 +178,7 @@ export const GRADE_PILL: Record<VisitGrade | 'tip', { label: string; cls: string
   good: { label: 'Good', cls: 'bg-good/15 text-good' },
   ok: { label: 'OK', cls: 'bg-text-dim/15 text-text-dim' },
   weak: { label: 'Weak', cls: 'bg-gold/15 text-gold' },
-  mistake: { label: 'Mistake', cls: 'bg-live/15 text-live' },
+  mistake: { label: 'Bad', cls: 'bg-live/15 text-live' },
   tip: { label: 'Tip', cls: 'bg-ice/15 text-ice' },
 }
 

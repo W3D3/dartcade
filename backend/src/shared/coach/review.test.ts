@@ -178,7 +178,7 @@ describe('reviewLeg', () => {
   it('says the opponent checked out first', () => {
     const r = reviewLeg([wonLeg()], 0, 1, ctx(501))
     // Five visits of 3: Mistakes, though the scoring (against its own average) and nothing else is graded
-    expect(r).toMatchObject({ won: false, darts: 15, take: 'Lost: Admin checked out first. 5 mistakes.' })
+    expect(r).toMatchObject({ won: false, darts: 15, take: 'Lost: Admin checked out first. 5 bad visits.' })
   })
 
   it('names the weak visits of a leg whose skills are fine', () => {
@@ -198,7 +198,7 @@ describe('reviewLeg', () => {
     expect(r?.take).toBe('Won in 12 darts. One weak visit.')
   })
 
-  it('names mistakes and weak visits separately, mistakes first', () => {
+  it('names bad visits and weak visits separately, bad ones first', () => {
     let left = 501
     // 180, 26 (Weak), 15 (Mistake), 180, then T20 D20 from 100
     const visits = [
@@ -215,7 +215,7 @@ describe('reviewLeg', () => {
     const r = reviewLeg([{ ...leg(visits), winner: 0 }], 0, 0, ctx(501, 90))
     expect(left).toBe(0)
     expect(r?.skills.scoring.grade).toBe('B')
-    expect(r?.take).toBe('Won in 14 darts. One mistake and one weak visit.')
+    expect(r?.take).toBe('Won in 14 darts. One bad visit and one weak visit.')
   })
 
   it('lost on a finish, with "–" for a skill with nothing to judge', () => {

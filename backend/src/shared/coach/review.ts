@@ -201,7 +201,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   })
   const weakest = graded.reduce<(typeof graded)[number] | null>((w, s) => (w === null || s.rank > w.rank ? s : w), null)
   const faults = [
-    [visits.filter(v => v.grade === 'mistake').length, 'mistake'],
+    [visits.filter(v => v.grade === 'mistake').length, 'bad visit'],
     [visits.filter(v => v.grade === 'weak').length, 'weak visit'],
   ] as const
   const faultWords = faults
