@@ -146,7 +146,9 @@ describe('explainedNote', () => {
 
 describe('setup visits', () => {
   it("marks a tip's text as a tip, and only that", () => {
-    const f = facts(97, ['S20', 'S20', 'S20'])
+    // From a 3-dart finish: 97 itself is a 2-dart one, whose missed double is a Mistake of its own
+    const f = facts(113, ['S20', 'S20', 'S20'])
+    expect(f.notes.length).toBeGreaterThan(0)
     const r = classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })
     expect(r).toMatchObject({ tag: 'setup', tip: true })
     expect(r.text).toMatch(/^Tip: /)
@@ -182,6 +184,18 @@ describe('setup visits', () => {
     const r = classifyVisit(f)
     expect(r).toMatchObject({ tag: 'setup', grade: 'mistake' })
     expect(r.text).toBe('On 7, S14: better S3 — S14 busts.')
+  })
+
+  it('Mistake: a finish with a dart to spare that never reached a double', () => {
+    // 59 is S19 · D20: three darts that miss the S19 and leave 37 had a whole dart in hand
+    // (typed, the S19 on 56 also draws a note, which would speak first; the real visit had none)
+    expect(classifyVisit({ ...facts(59, ['Miss', 'S3', 'S19']), notes: [] })).toEqual({
+      tag: 'setup',
+      grade: 'mistake',
+      text: '59 is a 2-dart finish; 3 darts left 37, no double.',
+    })
+    // A 3-dart finish that ends off a double has no dart to spare: graded on what it left
+    expect(grade(150, ['S20', 'S20', 'S20']).grade).toBe('ok')
   })
 
   it('Good: left a one-dart finish, with its route', () => {

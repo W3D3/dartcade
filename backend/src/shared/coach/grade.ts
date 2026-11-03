@@ -107,6 +107,10 @@ function setup(f: VisitFacts): VisitGrading {
   const mistake = note?.tip ? null : note
   if (mistake) return g('mistake', noteText(mistake))
   if (f.bust) return bustBack(f) ? g('ok', bustBackText(f)) : g('mistake', bustText(f))
+  // A finish with a dart to spare (59: S19 · D20) that never reached a double
+  const need = minDarts(f.start)
+  if (need < f.throws.length && !oneDartFinish(f.then))
+    return g('mistake', `${f.start} is a ${need}-dart finish; ${f.throws.length} darts left ${f.then}, no double.`)
   const grade = oneDartFinish(f.then) ? 'good' : 'ok'
   if (note) return { ...g(grade, noteText(note)), tip: true }
   const route = checkoutHint(f.then, 'double', 3)

@@ -145,6 +145,11 @@ on that edge, so this is exact.
 - **Darts at the double:** a dart on a one-dart finish counts as one unless its class is Split,
   Route or Bust-back (38 → S6, S16, S8 is "2 darts at D16 and D8 missed.", not 3). A typed miss
   on a double counts (it is a Double attempt).
+- **A setup visit that started on a finish with a dart to spare** (`minDarts(start)` below the
+  visit's darts: with three, the 2-dart finishes, most of 41–110) and ended without a one-dart finish left is a **Mistake**
+  (user ruling, from 59 → Miss, S3, S19 graded OK): "59 is a 2-dart finish; 3 darts left 37, no
+  double." It comes after a strategy note and a bust, before the leave's OK/Good. A 3-dart finish
+  that ends off a double has no dart to spare and is still graded on what it left.
 - The other grade rules don't change, except Scoring visits' average thresholds (see Visit rating).
 
 ## Visit rating

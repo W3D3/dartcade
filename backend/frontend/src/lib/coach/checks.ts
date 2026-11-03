@@ -80,6 +80,14 @@ export const CHECK_GROUPS: CheckGroup[] = [
         says: 'The better aim, and why: which leave its misses still give you.',
       },
       {
+        name: 'Missed a short finish',
+        labels: ['mistake'],
+        source: 'scores',
+        when: 'The visit starts on a finish that needs fewer darts than you have (a two-dart finish with three darts: most scores from 41 to 110, like 59: S19 · D20), and ends without a checkout or a one-dart finish left.',
+        example: '59 left · Miss S3 S19 → 37',
+        says: 'You had a dart to spare and never reached a double.',
+      },
+      {
         name: 'Left a one-dart finish',
         labels: ['good'],
         source: 'scores',
