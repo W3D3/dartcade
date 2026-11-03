@@ -89,7 +89,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Strategy note',
         labels: ['mistake'],
         source: 'model',
-        when: `A dart on a finish went at a number that gives at least ${notePoints} points less chance to check out than the best aim. The dart gets the benefit of the doubt: it was aimed at the best spot on the number it hit or on either number next to it, since a dart drifting into the next wedge is the commonest miss; a single near the middle (or one without a position) may also have been thrown at the bull or 25. Marks any visit, but only setup visits count toward the Bad setups card.`,
+        when: `A dart on a finish went at a number that gives at least ${notePoints} points less chance to check out than the best aim. The dart gets the benefit of the doubt: it was aimed at the best spot on the number it hit or on either number next to it, since a dart drifting into the next wedge is the commonest miss; a single near the middle (or one without a position) may also have been thrown at the bull or 25. Marks any visit Bad; the Bad setups card counts the setup visits graded Bad, for a note or by their checkout chance.`,
         example: '57 left · S20 → 37 · better S17 → 40',
         says: 'The better aim, and why: which leave its misses still give you.',
       },

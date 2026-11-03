@@ -166,10 +166,10 @@ describe('reviewLeg', () => {
       skills: {
         // 383 in 11 darts with more than 170 left, against the game's 88.4
         scoring: { grade: 'A', line: 'Leg average 104.5 · one low visit' },
-        setup: { grade: 'D', line: '1 of 1 setup visit left a bad number' },
+        setup: { grade: 'D', line: '1 of 1 setup visit graded Bad' },
         doubling: { grade: 'A', line: '1 of 2 darts at a double' },
       },
-      take: 'Won in 17 darts. 1 setup visit left a bad number.',
+      take: 'Won in 17 darts. 1 bad setup visit.',
       counts: { lowVisits: 1, badSetups: 1, missedDoubles: 1, clean: false },
       grouping: { spreadMm: null, edgeMm: null },
     }
@@ -275,6 +275,14 @@ describe('reviewLeg', () => {
     expect(r?.visits[0].notes.some(n => !n.tip)).toBe(true)
     expect(r?.skills.setup).toEqual({ grade: null, line: '–' })
     expect(r?.counts.badSetups).toBe(0)
+  })
+
+  it('counts a setup visit graded Bad by its value as a bad setup, with no note', () => {
+    // 100: S20 then S1 and a miss give away the 2-dart finish
+    const r = reviewLeg([leg([visit(0, 100, ['S20', 'S1', 'Miss'])])], 0, 0, ctx(100))
+    expect(r?.visits[0]).toMatchObject({ tag: 'setup', grade: 'mistake', notes: [] })
+    expect(r?.counts.badSetups).toBe(1)
+    expect(r?.skills.setup).toEqual({ grade: 'D', line: '1 of 1 setup visit graded Bad' })
   })
 
   it("marks a visit whose text is a tip's", () => {

@@ -305,7 +305,7 @@ own words.
 - the result (won in N darts, on a finish and still lost, lost to a checkout, or nobody checked
   out);
 - the biggest factor: when a skill is graded C or D, what dragged it down ("The scoring held you
-  back.", "N setup visits left a bad number.", "N missed doubles."); otherwise, `A clean leg.`
+  back.", "N bad setup visits.", "N missed doubles."); otherwise, `A clean leg.`
   when no visit graded Weak or Mistake (the **clean-leg rule**), else the fault count — one clause
   per grade that fired, Mistakes before Weak visits, joined with "and": "One mistake and one weak
   visit.";
@@ -333,8 +333,8 @@ As `Coach-Review.dc.html`.
   legs"). The Recommendations tab is hidden until it exists.
 - **Count cards**, over your last 50 coached legs:
   - Low visits: visits graded Weak or Mistake for scoring;
-  - Bad setups: setup visits with a strategy note that isn't a tip, the same visits as the Setup
-    skill's line;
+  - Bad setups: setup visits graded Mistake (shown as Bad), for a strategy note or by their
+    checkout chance, the same visits as the Setup skill's line;
   - Missed doubles: darts at a double that missed;
   - Clean legs: legs with no Weak or Mistake visit.
 

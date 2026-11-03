@@ -11,7 +11,7 @@ import { coachable, coachLevel, loadModel, reviewLeg } from '../shared/coach/ind
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 19
+export const COACH_VERSION = 20
 
 const UPDATED = [
   'user_id',

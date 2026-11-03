@@ -149,14 +149,13 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   })
 
   const low = (v: ReviewVisit) => v.grade === 'weak' || v.grade === 'mistake'
-  const bad = (v: ReviewVisit) => v.notes.some(n => !n.tip)
   const scoringVisits = visits.filter(v => v.tag === 'scoring')
   const setups = visits.filter(v => v.tag === 'setup')
   const stats = executionStats(throws)
   const counts: LegCounts = {
     lowVisits: scoringVisits.filter(low).length,
-    // The same visits as the Setup skill's line
-    badSetups: setups.filter(bad).length,
+    // The setup visits graded Bad, as the Setup skill's line counts them
+    badSetups: setups.filter(v => v.grade === 'mistake').length,
     missedDoubles: stats.dartsAtDouble - stats.checkouts,
     clean: !visits.some(low),
   }
@@ -180,7 +179,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     setup: setups.length
       ? {
           grade: letter(1 - counts.badSetups / setups.length, 1, 0.75, 0.5),
-          line: `${counts.badSetups} of ${plural(setups.length, 'setup visit')} left a bad number`,
+          line: `${counts.badSetups} of ${plural(setups.length, 'setup visit')} graded Bad`,
         }
       : NONE,
     doubling: stats.dartsAtDouble
@@ -213,7 +212,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     .join(' and ')
   if (weakest === null || weakest.rank <= RANK.B) take.push(counts.clean ? 'A clean leg.' : `${faultWords}.`)
   else if (weakest.k === 'scoring') take.push('The scoring held you back.')
-  else if (weakest.k === 'setup') take.push(`${plural(counts.badSetups, 'setup visit')} left a bad number.`)
+  else if (weakest.k === 'setup') take.push(`${plural(counts.badSetups, 'bad setup visit')}.`)
   else take.push(`${plural(counts.missedDoubles, 'missed double')}.`)
 
   const onFinish = before.findIndex(b => b <= 170)
