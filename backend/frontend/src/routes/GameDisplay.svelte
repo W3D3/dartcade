@@ -50,7 +50,6 @@
   import WinScreen from '../lib/components/WinScreen.svelte'
   import { flag } from '$lib/flags'
   import { coachable } from '$shared/coach/coachable'
-  import type LiveCoachPanel from '$lib/components/coach/LiveCoach.svelte'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
 
@@ -301,11 +300,7 @@
   // The live coach (solo X01, double out): loaded with its model only once it shows
   const coachLive = flag('coach.live.enabled')
   const liveCoachOn = $derived($coachLive && x01 !== null && x01.phase === 'game' && players.length === 1 && coachable('x01', x01.config))
-  let LiveCoach = $state<typeof LiveCoachPanel | null>(null)
-  $effect(() => {
-    if (liveCoachOn && !LiveCoach)
-      void import('$lib/components/coach/LiveCoach.svelte').then(m => (LiveCoach = m.default)).catch(() => undefined)
-  })
+  const liveCoachPanel = $derived(liveCoachOn ? import('$lib/components/coach/LiveCoach.svelte') : null)
   // ── Actions ───────────────────────────────────────────────────────────────
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
@@ -410,7 +405,13 @@
 </script>
 
 {#snippet liveCoach(compact: boolean)}
-  {#if LiveCoach && x01}<LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} {compact} />{/if}
+  {#if liveCoachPanel && x01}
+    {#await liveCoachPanel then { default: LiveCoach }}
+      <LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} {compact} />
+    {:catch}
+      <p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
+    {/await}
+  {/if}
 {/snippet}
 
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>
@@ -581,7 +582,7 @@
           onBoardClick={addBoardDart}
           onDartMove={moveDart}
           onabort={() => (showEndConfirm = true)}
-          coach={liveCoachOn && LiveCoach ? liveCoach : undefined}
+          coach={liveCoachOn ? liveCoach : undefined}
         />
       {/if}
     {/if}

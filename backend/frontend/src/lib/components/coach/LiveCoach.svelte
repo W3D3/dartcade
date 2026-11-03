@@ -7,8 +7,9 @@
   import type { X01Game } from '$lib/api/game-ws'
   import { keepGrade, liveAverage, liveCoach, type LiveCoach, type LiveGrade } from '$lib/coach/live'
   import { coachedAs } from '$lib/coach/leg'
-  import { LEVEL_AVERAGE } from '$shared/botLevels'
-  import { coachLevel, loadModel, type CoachModel } from '$shared/coach/model'
+  import { averageForLevel } from '$shared/botLevels'
+  import { coachLevel } from '$shared/coach/model'
+  import { coachModel } from '$lib/coach/model.svelte'
   import { flag } from '$lib/flags'
   import { api } from '$lib/api/client'
   import DartTile from './DartTile.svelte'
@@ -33,18 +34,11 @@
   const average = $derived(liveAverage(thirtyDay, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
   // The review's level (coachLevel of the same average); none until the average is known
   const level = $derived(thirtyDay === undefined ? null : coachLevel(thirtyDay))
-  let model = $state<CoachModel | null>(null)
-  $effect(() => {
-    const want = level
-    if (want === null) return
-    void loadModel(want)
-      .then(m => {
-        if (want === level) model = m
-      })
-      .catch(() => undefined)
-  })
+  const loaded = coachModel(() => level)
+  const model = $derived(loaded.model)
   const live = $derived(model ? liveCoach(model, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null)
   const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
+  const levelAverage = $derived(model ? averageForLevel(model.level) : null)
   // The last finished visit's grade stays until the next visit's first dart
   let kept: LiveGrade | null = null
   const grade = $derived.by(() => (live ? (kept = keepGrade(kept, live)) : kept))
@@ -72,7 +66,7 @@
       </ol>
       <p class="m-0 text-[12px] text-text-dim">
         {live.scoring
-          ? `Points a dart for a ${LEVEL_AVERAGE[(model?.level ?? 7) - 1]}-average player.`
+          ? `Points a dart for a ${levelAverage}-average player.`
           : 'Chance to check out this visit or the next, and what the aim leaves.'}
       </p>
     {:else}
@@ -109,7 +103,8 @@
 {/snippet}
 
 {#if !live}
-  <!-- The model is loading: nothing to show yet -->
+  <!-- The model is loading: nothing to show yet, unless it failed -->
+  {#if loaded.failed}<p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>{/if}
 {:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">

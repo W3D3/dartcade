@@ -1,7 +1,7 @@
 // The leg review's heading (Coach-Leg): the title, its subtitles, the coaching level, the visit it
 // opens on and the scoring skill's grouping.
 import type { CoachLegTitle } from '$lib/api'
-import { LEVEL_AVERAGE } from '$shared/botLevels'
+import { averageForLevel } from '$shared/botLevels'
 import type { LegReview, ReviewVisit } from '$shared/coach'
 import { legWhen, vsLine } from './list'
 
@@ -39,7 +39,7 @@ export function legSubtitleShort(title: CoachLegTitle, darts: number, average: n
 }
 
 /** "Coached as a 46 average": the level whose model judged the leg (model.ts coachLevel) */
-export const coachedAs = (level: number): string => `Coached as a ${LEVEL_AVERAGE[level - 1]} average`
+export const coachedAs = (level: number): string => `Coached as a ${averageForLevel(level)} average`
 
 /** The visit the page opens on (an index): the first Mistake, else the first with a note, else the first. */
 export function defaultVisit(visits: readonly Pick<ReviewVisit, 'grade' | 'notes'>[]): number {
