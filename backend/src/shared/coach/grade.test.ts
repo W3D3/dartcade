@@ -59,7 +59,12 @@ describe('tagOf', () => {
 
 describe('scoring visits', () => {
   it('Mistake: under 26', () => {
-    expect(grade(501, ['S20', 'S1', 'S1'])).toEqual({ tag: 'scoring', grade: 'mistake', text: 'Scored 22; your usual visit is 60.' })
+    expect(grade(501, ['S20', 'S1', 'S1'])).toEqual({
+      tag: 'scoring',
+      grade: 'mistake',
+      text: 'Scored 22; your usual visit is 60.',
+      tip: false,
+    })
   })
 
   it('Weak: 25 or more below the average, with the average rounded', () => {
@@ -67,6 +72,7 @@ describe('scoring visits', () => {
       tag: 'scoring',
       grade: 'weak',
       text: 'Scored 60; your usual visit is 85.',
+      tip: false,
     })
   })
 
@@ -75,6 +81,7 @@ describe('scoring visits', () => {
       tag: 'scoring',
       grade: 'weak',
       text: '2 darts drifted into 1 or 5.',
+      tip: false,
     })
   })
 
@@ -83,17 +90,17 @@ describe('scoring visits', () => {
   })
 
   it('Great: 40 or more above the average, naming the trebles', () => {
-    expect(grade(501, ['T20', 'T20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Two trebles.' })
-    expect(grade(501, ['T20', 'T20', 'T5'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Three trebles.' })
-    expect(grade(501, ['T20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Scored 100.' })
+    expect(grade(501, ['T20', 'T20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Two trebles.', tip: false })
+    expect(grade(501, ['T20', 'T20', 'T5'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Three trebles.', tip: false })
+    expect(grade(501, ['T20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'great', text: 'Scored 100.', tip: false })
   })
 
   it('Good: 15 or more above the average', () => {
-    expect(grade(501, ['T20', 'S20', 'S5'])).toEqual({ tag: 'scoring', grade: 'good', text: 'Scored 85.' })
+    expect(grade(501, ['T20', 'S20', 'S5'])).toEqual({ tag: 'scoring', grade: 'good', text: 'Scored 85.', tip: false })
   })
 
   it('OK: anything else', () => {
-    expect(grade(501, ['S20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.' })
+    expect(grade(501, ['S20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.', tip: false })
   })
 
   it('grades the rating, not the raw score, and says when the grouping lifted the grade', () => {
@@ -106,11 +113,12 @@ describe('scoring visits', () => {
       tag: 'scoring',
       grade: 'good',
       text: 'Scored 60, great grouping (6 mm), close to the target (2 mm).',
+      tip: false,
     })
     // 45 is Weak on a 70 average; rated 60 it is OK
     expect(classifyVisit(rated(['S20', 'S20', 'S5'], 60, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
     // A rating that leaves the grade alone keeps the plain text
-    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 70))).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.' })
+    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 70))).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.', tip: false })
   })
 
   it('a tight group never rescues a very low score', () => {
@@ -118,6 +126,7 @@ describe('scoring visits', () => {
       tag: 'scoring',
       grade: 'mistake',
       text: 'Scored 15; your usual visit is 60.',
+      tip: false,
     })
   })
 
@@ -127,16 +136,18 @@ describe('scoring visits', () => {
       tag: 'scoring',
       grade: 'mistake',
       text: 'On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
+      tip: false,
     })
   })
 
-  it('a tip does not make a Mistake', () => {
+  it('a tip does not make a Mistake, and speaks for the visit', () => {
     const f = facts(177, ['T20', 'T20', 'S20'])
     expect(f.notes).toHaveLength(1)
     expect(classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })).toEqual({
       tag: 'scoring',
       grade: 'great',
-      text: 'Two trebles.',
+      text: 'Tip: On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
+      tip: true,
     })
   })
 })
@@ -169,7 +180,7 @@ describe('setup and doubling visits: graded by value', () => {
     const r = classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })
     expect(r).toMatchObject({ tag: 'setup', tip: true, grade: classifyVisit({ ...f, notes: [] }).grade })
     expect(r.text).toMatch(/^Tip: /)
-    expect(classifyVisit(f).tip).toBeUndefined()
+    expect(classifyVisit(f).tip).toBe(false)
   })
 
   it('Mistake: a strategy note, told from the note', () => {
@@ -177,13 +188,19 @@ describe('setup and doubling visits: graded by value', () => {
       tag: 'setup',
       grade: 'mistake',
       text: 'On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
+      tip: false,
     })
   })
 
   it('a bust is graded by its value: it goes back to the start', () => {
     expect(grade(7, ['S20'])).toMatchObject({ tag: 'setup', grade: 'mistake' })
     expect(classifyVisit({ ...facts(7, ['S20']), notes: [] }).text).toBe('Busted on 7.')
-    expect(classifyVisit({ ...facts(2, ['S1']), notes: [] })).toEqual({ tag: 'doubling', grade: 'mistake', text: 'Busted on 2.' })
+    expect(classifyVisit({ ...facts(2, ['S1']), notes: [] })).toEqual({
+      tag: 'doubling',
+      grade: 'mistake',
+      text: 'Busted on 2.',
+      tip: false,
+    })
   })
 
   it('busting back to 32 beats leaving 2', () => {
@@ -192,7 +209,7 @@ describe('setup and doubling visits: graded by value', () => {
     const two = { ...facts(32, ['S16', 'S8', 'S6']), notes: [] }
     expect(two.then).toBe(2)
     expect(points(bust)).toBeGreaterThan(points(two))
-    expect(classifyVisit(bust)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on 16.' })
+    expect(classifyVisit(bust)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on 16.', tip: false })
     expect(classifyVisit(two)).toMatchObject({ grade: 'mistake' })
   })
 
@@ -203,12 +220,13 @@ describe('setup and doubling visits: graded by value', () => {
     expect(f.classes.map(c => c.kind)).toEqual(['double', 'route', 'bustBack'])
     expect(f.notes.map(n => n.tip)).toEqual([true])
     expect(points(f)).toBeLessThan(OK_FROM)
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on purpose to stay on 20 (D10).' })
+    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'weak', text: 'Busted on purpose to stay on 20 (D10).', tip: false })
     // The same darts, the last a plain bust: the same value
     expect(classifyVisit({ ...f, classes: [...f.classes.slice(0, 2), { ...f.classes[2], kind: 'bust' }] })).toEqual({
       tag: 'doubling',
       grade: 'weak',
       text: 'Busted on 3.',
+      tip: false,
     })
     expect(classifyVisit({ ...bustBack(facts(50, ['S25', 'S20', 'S10'])), notes: [] })).toMatchObject({
       text: 'Busted on purpose to stay on 50 (the bull).',
@@ -220,7 +238,7 @@ describe('setup and doubling visits: graded by value', () => {
     const r = grade(24, ['S14', 'Miss', 'Miss'], { opponentLeft: 32 })
     expect(r).toMatchObject({ tag: 'doubling', grade: 'mistake' })
     expect(r.text).toMatch(/^On 24, S14: better D12/)
-    expect(r.tip).toBeUndefined()
+    expect(r.tip).toBe(false)
   })
 
   it('a tip speaks for the visit, its grade left to the value', () => {
@@ -241,27 +259,34 @@ describe('setup and doubling visits: graded by value', () => {
       tag: 'setup',
       grade: 'mistake',
       text: 'S19 on 56 cost 15% checkout chance: 37 left is a 2-dart finish (S5 · D16).',
+      tip: false,
     })
   })
 
   it('121 → S20, T17, S18: a good setup to D16', () => {
     const f = facts(121, ['S20', 'T17', 'S18'])
     expect(points(f)).toBeGreaterThanOrEqual(GOOD_FROM)
-    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'good', text: '32 left is a 1-dart finish (D16).' })
+    expect(classifyVisit(f)).toEqual({ tag: 'doubling', grade: 'good', text: '32 left is a 1-dart finish (D16).', tip: false })
   })
 
   it('a checkout is told by its double', () => {
-    expect(grade(32, ['S16', 'D8'])).toEqual({ tag: 'doubling', grade: 'good', text: 'Checked out on D8.' })
-    expect(grade(76, ['S20', 'S16', 'D20'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D20.' })
+    expect(grade(32, ['S16', 'D8'])).toEqual({ tag: 'doubling', grade: 'good', text: 'Checked out on D8.', tip: false })
+    expect(grade(76, ['S20', 'S16', 'D20'])).toEqual({ tag: 'doubling', grade: 'great', text: 'Checked out on D20.', tip: false })
     expect(grade(50, ['Miss', 'Bull'])).toMatchObject({ text: 'Checked out on the bull.' })
   })
 
   it('a flat or better visit says what it left, a worse one leads with its costliest dart', () => {
-    expect(grade(170, ['T20', 'T20', 'S25'])).toEqual({ tag: 'doubling', grade: 'great', text: '25 left is a 2-dart finish (S9 · D8).' })
+    expect(grade(170, ['T20', 'T20', 'S25'])).toEqual({
+      tag: 'doubling',
+      grade: 'great',
+      text: '25 left is a 2-dart finish (S9 · D8).',
+      tip: false,
+    })
     expect(grade(150, ['S20', 'S20', 'S20'])).toEqual({
       tag: 'setup',
       grade: 'weak',
       text: 'S20 on 110 cost 7% checkout chance: 90 left is a 2-dart finish (T20 · D15).',
+      tip: false,
     })
     expect(classifyVisit({ ...facts(170, ['S1', 'Miss', 'Miss']), notes: [] }).text).toMatch(/: 169 left: no 3-dart finish\.$/)
   })
@@ -271,6 +296,7 @@ describe('setup and doubling visits: graded by value', () => {
       tag: 'doubling',
       grade: 'weak',
       text: 'Miss on 32 cost 9% checkout chance: 32 left is a 1-dart finish (D16).',
+      tip: false,
     })
   })
 
@@ -304,6 +330,7 @@ describe('setup and doubling visits: graded by value', () => {
       tag: 'doubling',
       grade: 'weak',
       text: 'Missed the match dart. Busted on 20.',
+      tip: false,
     })
     // Never on a setup: no dart went at a double
     expect(grade(150, ['S20', 'S20', 'S20'], { lost: true }).text).not.toMatch(/match dart/)
@@ -314,7 +341,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
   const perfect = (start: number, names: string[]) => grade(start, names).grade === 'perfect'
 
   it('scoring visits that leave a finish in the fewest darts', () => {
-    expect(grade(501, ['T20', 'T19', 'T19'])).toEqual({ tag: 'scoring', grade: 'perfect', text: 'Nine-darter still on.' })
+    expect(grade(501, ['T20', 'T19', 'T19'])).toEqual({ tag: 'scoring', grade: 'perfect', text: 'Nine-darter still on.', tip: false })
     expect(grade(501, ['T20', 'T20', 'T17']).text).toBe('Nine-darter still on.')
     expect(perfect(501, ['T20', 'T20', 'T20'])).toBe(true)
     // 361 needs 7
@@ -323,6 +350,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
       tag: 'scoring',
       grade: 'perfect',
       text: 'Scored 171: 40 left is still a 1-dart finish, the fewest possible.',
+      tip: false,
     })
     expect(perfect(211, ['T20', 'T19', 'T20'])).toBe(true)
     // 31 is a 2-dart finish: 5 darts from 211, not 4
@@ -336,7 +364,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
   })
 
   it('checkouts in the fewest darts', () => {
-    expect(grade(40, ['D20'])).toEqual({ tag: 'doubling', grade: 'perfect', text: 'Checked out in the fewest darts (D20).' })
+    expect(grade(40, ['D20'])).toEqual({ tag: 'doubling', grade: 'perfect', text: 'Checked out in the fewest darts (D20).', tip: false })
     expect(grade(40, ['S20', 'D10']).grade).not.toBe('perfect')
     expect(grade(100, ['T20', 'D20']).text).toBe('Checked out in the fewest darts (D20).')
     expect(grade(170, ['T20', 'T20', 'Bull']).text).toBe('Checked out in the fewest darts (the bull).')

@@ -66,8 +66,8 @@ export type VisitFacts = {
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
 }
-/** `tip`: the text is a tip's (a note that leaves the grade alone); unset otherwise */
-export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string; tip?: true }
+/** `tip`: the text is a tip's (a note that leaves the grade alone) */
+export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string; tip: boolean }
 
 /** The note a visit's text (and the leg review's rail) explains: the costliest that isn't a tip,
  *  else the costliest tip; null without notes. */
@@ -111,12 +111,10 @@ const bustBackText = (f: VisitFacts) =>
 const byAverage = (x: number, average: number): VisitGrade =>
   x <= average - LOW_BELOW ? 'weak' : x >= average + GREAT_ABOVE ? 'great' : x >= average + GOOD_ABOVE ? 'good' : 'ok'
 
-function scoring(f: VisitFacts): VisitGrading {
-  const g = (grade: VisitGrade, text: string): VisitGrading => ({ tag: 'scoring', grade, text })
-  // From 171–180 a later dart can be thrown on a finish, and draw a note
-  const note = explainedNote(f.notes)
-  const mistake = note?.tip ? null : note
-  if (mistake) return g('mistake', noteText(mistake))
+type Graded = { grade: VisitGrade; text: string }
+
+function scoring(f: VisitFacts): Graded {
+  const g = (grade: VisitGrade, text: string): Graded => ({ grade, text })
   const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
   if (f.scored < VERY_LOW) return g('mistake', low)
   const grade = byAverage(f.grouping?.rating ?? f.scored, f.average)
@@ -135,23 +133,14 @@ const atDouble = (f: VisitFacts) => f.throws.some((t, i) => oneDartFinish(t.left
 
 /** Setup and Doubling: graded by how much the darts changed the checkout chance (value.ts), plus
  *  the closeness credit of each missed dart. */
-function finishing(f: VisitFacts, tag: 'setup' | 'doubling'): VisitGrading {
+function finishing(f: VisitFacts): Graded {
   const out = f.throws.find(t => t.checkout)
-  const matchDart = f.lastVisitOfLostLeg && !out && atDouble(f)
-  const g = (grade: VisitGrade, text: string, tip?: true): VisitGrading => ({
-    tag,
-    grade,
-    text: matchDart ? `Missed the match dart. ${text}` : text,
-    ...(tip && { tip }),
-  })
-  const note = explainedNote(f.notes)
-  if (note && !note.tip) return g('mistake', noteText(note))
+  const g = (grade: VisitGrade, text: string): Graded => ({ grade, text })
   const total = f.throws.reduce((s, _, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i])), 0)
   const grade = byValue(total)
   // A bust ends on the start's next visit (value.ts): graded like any other end, told as a bust
   if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f))
   if (out) return g(grade, `Checked out on ${doubleName(out.left)}.`)
-  if (note) return g(grade, noteText(note), true)
   const route = checkoutHint(f.then, 'double', 3)
   const leave = route ? `${f.then} left is a ${route.length}-dart finish (${route.join(' · ')}).` : `${f.then} left: no 3-dart finish.`
   const worst = f.throws.reduce((a, _, i) => (f.deltas[i] < f.deltas[a] ? i : a), 0)
@@ -175,7 +164,20 @@ function perfectText(f: VisitFacts): string {
 
 export function classifyVisit(f: VisitFacts): VisitGrading {
   const tag = tagOf(f)
-  // A note says another aim was better: not Perfect. A tip leaves it, and Perfect keeps its own line.
-  if (!f.notes.some(n => !n.tip) && perfect(f)) return { tag, grade: 'perfect', text: perfectText(f) }
-  return tag === 'scoring' ? scoring(f) : finishing(f, tag)
+  const note = explainedNote(f.notes)
+  const out = f.throws.some(t => t.checkout)
+  const matchDart = f.lastVisitOfLostLeg && !out && atDouble(f)
+  const g = ({ grade, text }: Graded, tip = false): VisitGrading => ({
+    tag,
+    grade,
+    text: matchDart ? `Missed the match dart. ${text}` : text,
+    tip,
+  })
+  // A note says another aim was better: a Mistake on any visit
+  if (note && !note.tip) return g({ grade: 'mistake', text: noteText(note) })
+  // A tip leaves the grade alone, and Perfect keeps its own line
+  if (perfect(f)) return g({ grade: 'perfect', text: perfectText(f) })
+  const graded = tag === 'scoring' ? scoring(f) : finishing(f)
+  // A tip's line, unless the visit ended on a bust or a checkout, which say so
+  return note && !f.bust && !out ? g({ grade: graded.grade, text: noteText(note) }, true) : g(graded)
 }

@@ -143,7 +143,6 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       then: v.remaining,
       bust: v.bust,
       ...grading,
-      tip: grading.tip ?? false,
       notes: vNotes,
       grouping: g,
     }
