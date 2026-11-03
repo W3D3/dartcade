@@ -1,9 +1,11 @@
 <script lang="ts">
-  // The coach's take on a leg (Coach-Leg): the take and a row per skill with its A–D letter. On
+  // The coach's take on a leg (Coach-Leg): the take and a row per skill with its A–D letter (the
+  // scoring row's line with the leg's grouping when the camera placed its darts). On
   // phones (Coach-Phone-Leg) the letters sit 3 across above the take.
   import type { LegReview, SkillGrade } from '$shared/coach'
+  import { legGroupingLine } from '$lib/coach/view'
 
-  let { take, skills }: Pick<LegReview, 'take' | 'skills'> = $props()
+  let { take, skills, grouping }: Pick<LegReview, 'take' | 'skills' | 'grouping'> = $props()
 
   // A and B lime, C yellow, D red; a skill the leg didn't test dim
   const TONE: Record<NonNullable<SkillGrade['grade']>, { text: string; bg: string }> = {
@@ -14,7 +16,7 @@
   }
   const tone = (g: SkillGrade['grade']) => (g === null ? { text: 'text-text-dim', bg: 'bg-surface-paused' } : TONE[g])
   const rows = $derived([
-    { name: 'Scoring power', short: 'Scoring', ...skills.scoring },
+    { name: 'Scoring power', short: 'Scoring', ...skills.scoring, line: skills.scoring.line + legGroupingLine(grouping) },
     { name: 'Setup shots', short: 'Setup', ...skills.setup },
     { name: 'Doubling', short: 'Doubling', ...skills.doubling },
   ])

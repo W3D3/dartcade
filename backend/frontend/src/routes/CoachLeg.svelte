@@ -12,7 +12,17 @@
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag } from '$lib/flags'
-  import { betterLine, defaultVisit, GRADE_PILL, legHeading, legSubtitle, legSubtitleShort, missTags, whatHappened } from '$lib/coach/view'
+  import {
+    betterLine,
+    defaultVisit,
+    GRADE_PILL,
+    groupingLine,
+    legHeading,
+    legSubtitle,
+    legSubtitleShort,
+    missTags,
+    whatHappened,
+  } from '$lib/coach/view'
   import { createRequestGuard } from '$lib/requestGuard'
   import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
   import { explainedNote } from '$shared/coach/grade'
@@ -95,6 +105,7 @@
     />
     <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
       <span><b>What happened:</b> {whatHappened(v)}</span>
+      {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
       {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
     </div>
     <div class="flex gap-2">
@@ -149,7 +160,7 @@
         class="flex flex-col gap-4 min-[1440px]:grid min-[1440px]:grid-cols-[minmax(0,1fr)_340px] min-[1440px]:items-start min-[1440px]:gap-5"
       >
         <div class="flex min-w-0 flex-col gap-4">
-          <TakeCard take={review.take} skills={review.skills} />
+          <TakeCard take={review.take} skills={review.skills} grouping={review.grouping} />
 
           <section aria-label="Every visit" class="flex flex-col gap-2.5 xl:card xl:px-[22px] xl:py-5">
             <div class="hidden flex-wrap items-center gap-3.5 xl:flex">

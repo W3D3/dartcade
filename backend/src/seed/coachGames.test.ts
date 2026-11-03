@@ -3,9 +3,10 @@ import { reviewLeg } from '../shared/coach/index.js'
 import { strategyNotes } from '../shared/coach/notes.js'
 import { leg, visit } from '../shared/coach/testLegs.js'
 import { throwsOf, type CoachVisit } from '../shared/coach/walk.js'
-import { COACH_GAMES, type DartScript } from './coachGames.js'
+import { COACH_GAMES, scriptedPoint, type DartScript } from './coachGames.js'
 
-/** The leg as the game stores it: each seat's scripted visits in throw order, up to the checkout. */
+/** The leg as the game stores it: each seat's scripted visits in throw order, up to the checkout,
+ *  each dart where the seed throws it. */
 function legOf(script: DartScript, start: number): CoachVisit[] {
   const left = script.map(() => start)
   const visits: CoachVisit[] = []
@@ -16,7 +17,7 @@ function legOf(script: DartScript, start: number): CoachVisit[] {
       const v = visit(seat, left[seat], names)
       // Every scripted dart is thrown: a visit only ends early by its last dart
       expect(v.darts, `seat ${seat} visit ${i}`).toHaveLength(names.length)
-      visits.push(v)
+      visits.push({ ...v, darts: v.darts.map(d => ({ ...d, coords: scriptedPoint(d.segment.name) })) })
       left[seat] = v.remaining
       if (v.remaining === 0) return visits
     }

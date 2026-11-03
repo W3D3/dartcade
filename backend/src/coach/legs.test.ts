@@ -19,6 +19,7 @@ const review = (o: Partial<LegReview> = {}): LegReview => ({
   skills: { scoring: { grade: null, line: '–' }, setup: { grade: null, line: '–' }, doubling: { grade: null, line: '–' } },
   take: 'Won in 9 darts.',
   counts: { lowVisits: 0, badSetups: 0, missedDoubles: 0, clean: true },
+  grouping: { spreadMm: null, edgeMm: null },
   ...o,
 })
 

@@ -144,7 +144,42 @@ on that edge, so this is exact.
 - **Darts at the double:** a dart on a one-dart finish counts as one unless its class is Split,
   Route or Bust-back (38 → S6, S16, S8 is "2 darts at D16 and D8 missed.", not 3). A typed miss
   on a double counts (it is a Double attempt).
-- The other grade rules don't change.
+- The other grade rules don't change, except Scoring visits' average thresholds (see Visit rating).
+
+## Visit rating
+
+A Scoring visit is graded on how accurate it was, not only its score: three S20s in a tight
+group beat three scattered ones, and S20s hugging the treble beat S20s in the outer single by the
+double. `shared/coach/grouping.ts` (pure) works it out from the visit's walked darts that have
+camera coords and a target (at least 2 of them, else no grouping):
+
+| Field      | How                                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `darts`    | how many darts it used                                                                                                                            |
+| `spreadMm` | their mean distance from their centroid; only when they all share the target `aimId` (else null)                                                  |
+| `offsetMm` | the centroid's distance from that shared target's aim point (null without one)                                                                    |
+| `edgeMm`   | their mean `edgeMm`: how close they came to their targets' beds                                                                                   |
+| `rating`   | `scored + GROUPING_MAX · max(0, 1 − spreadMm / GROUPING_ZERO_MM) + CLOSENESS_MAX · max(0, 1 − edgeMm / CLOSENESS_ZERO_MM)`; a missing part adds 0 |
+
+The constants (one block at the top of `grouping.ts`, to be tuned with the admin sandbox):
+GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
+
+- **Grading:** a Scoring visit compares its rating, not its raw score, with the average
+  thresholds (Weak, Good, Great). VERY_LOW stays on the raw score. The text still quotes the real
+  score; when the rating lifted the grade above the raw score's, it says why: "Scored 60, tight
+  group (6 mm), close to the target (7 mm)."
+- **Every visit** gets its grouping in `ReviewVisit.grouping` (null without one); only Scoring
+  visits are graded on it.
+- **The leg** gets the Scoring visits' mean `spreadMm` and `edgeMm` in `LegReview.grouping`
+  (each null without any).
+- **UI:** the leg review's selected visit shows "Grouping 6 mm · 2 mm off T20 · edge 1 mm ·
+  rating 75" under What happened; the take's Scoring power line adds " · grouping 12 mm · edge
+  4 mm" (desktop); the sandbox shows the visit's grouping line.
+
+Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of the single rates
+74.5 (OK) and scattered 25 mm rates 63.4 (OK); clustered just above the treble rates 78.6 (Good,
+"Scored 60, tight group (6 mm), close to the target (7 mm).") and the same by the double 72.0
+(OK). Typed darts have no grouping: the rating is the score.
 
 ## Data and UI
 
@@ -234,6 +269,18 @@ Decisions taken while building this without the user, each with why:
   survives more single-half misses in a row (`doubleDepth`: 16 → 8 → 4 → 2 is 3, 12 → 6 is 1, the
   bull 0). 38 → S6 for D16 is fine; 16 → S4 for D6 is a dart at D8, so S4, S4, S4 on 16 is Weak.
   An equally good double doesn't count as better. The dart keeps its Split class.
+- **Labels measure a miss from the edge of the target's bed**, not its centre (user ruling): a dart
+  just past the treble wire is a 1 mm miss to a player. The centre values stay for the stats.
+- **The rating's constants** (GROUPING_MAX 15 / GROUPING_ZERO_MM 30, CLOSENESS_MAX 8 /
+  CLOSENESS_ZERO_MM 40) are first guesses: at most 23 points, so a tight group lifts a visit about
+  one grade step, never two.
+- **VERY_LOW stays on the raw score**: a 26 isn't rescued by a tight group.
+- **Grouping needs a shared target**: T20 then T19 after a blocked bed is a switch, not a group,
+  so the spread and offset are null; the closeness still counts.
+- **Grouping needs at least 2 darts with camera coords and a target**: typed darts sit at their
+  bed's centre, which would fake a perfect group. Wild darts (no target) are left out.
+- **The seed's scripted darts sit at their bed's centre with coords**, so the coach's seed test
+  places them there too; Luke's T20, S20, S20 (100 on an 88 average) now grades Good, not OK.
 - **Stored reviews from an older `COACH_VERSION` aren't served**; they take the rebuild path, since
   the API's required `class` would refuse them.
 

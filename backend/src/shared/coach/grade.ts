@@ -5,12 +5,13 @@ import { checkoutHint } from '../checkout.js'
 import { landedNumber, scoringAim } from './aim.js'
 import { oneDartFinish } from './aims.js'
 import type { DartClass, DartKind } from './dartClass.js'
+import { groupingWhy, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
 import type { Throw } from './walk.js'
 
-/** Scoring: under this is a Mistake */
+/** Scoring: under this is a Mistake. On the raw score: a tight group doesn't rescue a 26 */
 export const VERY_LOW = 26
-/** Scoring: this far below the average (or more) is Weak */
+/** Scoring, by the visit's rating (grouping.ts): this far below the average (or more) is Weak */
 export const LOW_BELOW = 25
 /** Scoring: this far above the average (or more) is Good */
 export const GOOD_ABOVE = 15
@@ -37,6 +38,8 @@ export type VisitFacts = {
   bust: boolean
   /** Each walked dart's class (dartClass.ts), in throw order */
   classes: readonly Pick<DartClass, 'kind' | 'plannedLeave'>[]
+  /** How its placed darts sat together (grouping.ts); null with fewer than 2 */
+  grouping: Pick<Grouping, 'spreadMm' | 'edgeMm' | 'rating'> | null
   /** This visit's notes, tips included */
   notes: CoachNote[]
   /** The player's 3-dart average (30-day, or the game's) */
@@ -71,6 +74,10 @@ const bustText = (f: VisitFacts) => `Busted on ${f.throws.at(-1)?.left ?? f.star
 const bustBackText = (f: VisitFacts) =>
   `Busted on purpose to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
 
+/** Weak, OK, Good or Great by a visit's score or rating against the player's average */
+const byAverage = (x: number, average: number): VisitGrade =>
+  x <= average - LOW_BELOW ? 'weak' : x >= average + GREAT_ABOVE ? 'great' : x >= average + GOOD_ABOVE ? 'good' : 'ok'
+
 function scoring(f: VisitFacts): VisitGrading {
   const g = (grade: VisitGrade, text: string): VisitGrading => ({ tag: 'scoring', grade, text })
   // From 171–180 a later dart can be thrown on a finish, and draw a note
@@ -79,12 +86,15 @@ function scoring(f: VisitFacts): VisitGrading {
   if (mistake) return g('mistake', noteText(mistake))
   const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
   if (f.scored < VERY_LOW) return g('mistake', low)
-  if (f.scored <= f.average - LOW_BELOW) return g('weak', low)
+  const grade = byAverage(f.grouping?.rating ?? f.scored, f.average)
+  if (grade === 'weak') return g('weak', low)
   const spilled = f.throws.filter(t => scoringAim(t.d, t.visitDarts) === 20 && [1, 5].includes(landedNumber(t.d) ?? 0)).length
   if (spilled >= 2) return g('weak', `${spilled} darts drifted into 1 or 5.`)
+  // The grouping lifted the grade above the score's: say why
+  if (f.grouping && grade !== byAverage(f.scored, f.average))
+    return g(grade, `Scored ${f.scored}, ${groupingWhy(f.grouping) || 'well placed'}.`)
   const trebles = f.throws.filter(t => t.d.segment.multiplier === 3).length
-  if (f.scored >= f.average + GREAT_ABOVE) return g('great', TREBLES[trebles] || `Scored ${f.scored}.`)
-  return g(f.scored >= f.average + GOOD_ABOVE ? 'good' : 'ok', `Scored ${f.scored}.`)
+  return g(grade, (grade === 'great' && TREBLES[trebles]) || `Scored ${f.scored}.`)
 }
 
 function setup(f: VisitFacts): VisitGrading {

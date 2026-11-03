@@ -14,6 +14,8 @@ import {
   dartLabel,
   dartTone,
   defaultVisit,
+  groupingLine,
+  legGroupingLine,
   legHeading,
   legSubtitle,
   legSubtitleShort,
@@ -375,5 +377,28 @@ describe('dartLabel', () => {
     ['a dart after the bust', {}, 'Not counted'],
   ])('%s', (_, c, label) => {
     expect(dartLabel(cls(c))).toBe(label)
+  })
+})
+
+describe('groupingLine', () => {
+  const t20 = { ...NOT_COUNTED, kind: 'scoringSingle' as const, target: { aimId: 'T20', label: 'T20' } }
+  const darts = [
+    { name: 'S20', coords: null, left: 481, bust: false, class: t20 },
+    { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20 },
+  ]
+  const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3 }
+
+  it("words a visit's grouping, its target from a placed dart", () => {
+    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe('Grouping 6 mm · 2 mm off T20 · edge 1 mm · rating 75')
+    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm · 2 mm off T20 · edge 1 mm')
+  })
+  it('leaves the spread out without a shared target, and is null without a grouping', () => {
+    expect(groupingLine({ darts, tag: 'scoring', grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
+    expect(groupingLine({ darts, tag: 'scoring', grouping: null })).toBeNull()
+  })
+  it("adds the leg's grouping to the scoring line, nothing without one", () => {
+    expect(legGroupingLine({ spreadMm: 12.2, edgeMm: 3.6 })).toBe(' · grouping 12 mm · edge 4 mm')
+    expect(legGroupingLine({ spreadMm: null, edgeMm: 3.6 })).toBe(' · edge 4 mm')
+    expect(legGroupingLine({ spreadMm: null, edgeMm: null })).toBe('')
   })
 })

@@ -6,7 +6,7 @@ import { startOfDay } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
 import { HALF, SEGS } from '$shared/board'
 import { checkoutHint } from '$shared/checkout.js'
-import type { CoachNote, ReviewVisit, VisitGrade } from '$shared/coach'
+import type { CoachNote, LegReview, ReviewVisit, VisitGrade } from '$shared/coach'
 import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
@@ -270,6 +270,31 @@ export function whatHappened(v: Pick<ReviewVisit, 'darts'>): string {
           : `${d.name} (${d.left} left)`,
   )
   return `${parts.join(', ')}.`
+}
+
+/** "Grouping 6 mm · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed darts sat
+ *  together, the spread and offset only when they shared a target, the rating only on a Scoring
+ *  visit (the only grade it feeds); null without a grouping. */
+export function groupingLine(v: Pick<ReviewVisit, 'darts' | 'grouping' | 'tag'>): string | null {
+  const g = v.grouping
+  if (!g) return null
+  const target = v.darts.find(d => d.coords && d.class.target)?.class.target?.label
+  return [
+    g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm`,
+    g.offsetMm === null ? null : `${Math.round(g.offsetMm)} mm off ${target}`,
+    `edge ${Math.round(g.edgeMm)} mm`,
+    v.tag === 'scoring' ? `rating ${Math.round(g.rating)}` : null,
+  ]
+    .filter(p => p !== null)
+    .join(' · ')
+}
+
+/** The scoring skill's grouping: " · grouping 12 mm · edge 4 mm", empty without a placed group */
+export function legGroupingLine(g: LegReview['grouping']): string {
+  return [
+    g.spreadMm === null ? '' : ` · grouping ${Math.round(g.spreadMm)} mm`,
+    g.edgeMm === null ? '' : ` · edge ${Math.round(g.edgeMm)} mm`,
+  ].join('')
 }
 
 /** What a dart in `label` (a likelyMisses tag: S8, Bull, 25, Outside) leaves from `left`, with its

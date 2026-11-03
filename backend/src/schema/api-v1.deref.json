@@ -3923,7 +3923,8 @@
                         "visits",
                         "skills",
                         "take",
-                        "counts"
+                        "counts",
+                        "grouping"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -3961,7 +3962,8 @@
                               "grade",
                               "text",
                               "tip",
-                              "notes"
+                              "notes",
+                              "grouping"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -4238,6 +4240,43 @@
                                     }
                                   }
                                 }
+                              },
+                              "grouping": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2",
+                                "required": [
+                                  "darts",
+                                  "spreadMm",
+                                  "offsetMm",
+                                  "edgeMm",
+                                  "rating"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "darts": {
+                                    "type": "integer",
+                                    "minimum": 2
+                                  },
+                                  "spreadMm": {
+                                    "type": "number",
+                                    "nullable": true,
+                                    "description": "Mean distance from their centroid; null unless they share a target"
+                                  },
+                                  "offsetMm": {
+                                    "type": "number",
+                                    "nullable": true,
+                                    "description": "The centroid's distance from the shared target's point"
+                                  },
+                                  "edgeMm": {
+                                    "type": "number",
+                                    "description": "Mean distance from their targets' beds"
+                                  },
+                                  "rating": {
+                                    "type": "number",
+                                    "description": "The score plus the grouping and closeness bonuses"
+                                  }
+                                }
                               }
                             }
                           }
@@ -4352,6 +4391,25 @@
                             },
                             "clean": {
                               "type": "boolean"
+                            }
+                          }
+                        },
+                        "grouping": {
+                          "type": "object",
+                          "description": "The scoring visits' mean grouping spread and edge distance; null without any",
+                          "required": [
+                            "spreadMm",
+                            "edgeMm"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "spreadMm": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "edgeMm": {
+                              "type": "number",
+                              "nullable": true
                             }
                           }
                         }
@@ -48494,7 +48552,8 @@
           "grade",
           "text",
           "tip",
-          "notes"
+          "notes",
+          "grouping"
         ],
         "additionalProperties": false,
         "properties": {
@@ -48771,6 +48830,43 @@
                 }
               }
             }
+          },
+          "grouping": {
+            "type": "object",
+            "nullable": true,
+            "description": "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2",
+            "required": [
+              "darts",
+              "spreadMm",
+              "offsetMm",
+              "edgeMm",
+              "rating"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "darts": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "spreadMm": {
+                "type": "number",
+                "nullable": true,
+                "description": "Mean distance from their centroid; null unless they share a target"
+              },
+              "offsetMm": {
+                "type": "number",
+                "nullable": true,
+                "description": "The centroid's distance from the shared target's point"
+              },
+              "edgeMm": {
+                "type": "number",
+                "description": "Mean distance from their targets' beds"
+              },
+              "rating": {
+                "type": "number",
+                "description": "The score plus the grouping and closeness bonuses"
+              }
+            }
           }
         }
       },
@@ -48836,7 +48932,8 @@
           "visits",
           "skills",
           "take",
-          "counts"
+          "counts",
+          "grouping"
         ],
         "additionalProperties": false,
         "properties": {
@@ -48874,7 +48971,8 @@
                 "grade",
                 "text",
                 "tip",
-                "notes"
+                "notes",
+                "grouping"
               ],
               "additionalProperties": false,
               "properties": {
@@ -49151,6 +49249,43 @@
                       }
                     }
                   }
+                },
+                "grouping": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2",
+                  "required": [
+                    "darts",
+                    "spreadMm",
+                    "offsetMm",
+                    "edgeMm",
+                    "rating"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "darts": {
+                      "type": "integer",
+                      "minimum": 2
+                    },
+                    "spreadMm": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "Mean distance from their centroid; null unless they share a target"
+                    },
+                    "offsetMm": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "The centroid's distance from the shared target's point"
+                    },
+                    "edgeMm": {
+                      "type": "number",
+                      "description": "Mean distance from their targets' beds"
+                    },
+                    "rating": {
+                      "type": "number",
+                      "description": "The score plus the grouping and closeness bonuses"
+                    }
+                  }
                 }
               }
             }
@@ -49267,6 +49402,25 @@
                 "type": "boolean"
               }
             }
+          },
+          "grouping": {
+            "type": "object",
+            "description": "The scoring visits' mean grouping spread and edge distance; null without any",
+            "required": [
+              "spreadMm",
+              "edgeMm"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "spreadMm": {
+                "type": "number",
+                "nullable": true
+              },
+              "edgeMm": {
+                "type": "number",
+                "nullable": true
+              }
+            }
           }
         }
       },
@@ -49329,7 +49483,8 @@
               "visits",
               "skills",
               "take",
-              "counts"
+              "counts",
+              "grouping"
             ],
             "additionalProperties": false,
             "properties": {
@@ -49367,7 +49522,8 @@
                     "grade",
                     "text",
                     "tip",
-                    "notes"
+                    "notes",
+                    "grouping"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -49644,6 +49800,43 @@
                           }
                         }
                       }
+                    },
+                    "grouping": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2",
+                      "required": [
+                        "darts",
+                        "spreadMm",
+                        "offsetMm",
+                        "edgeMm",
+                        "rating"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "darts": {
+                          "type": "integer",
+                          "minimum": 2
+                        },
+                        "spreadMm": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "Mean distance from their centroid; null unless they share a target"
+                        },
+                        "offsetMm": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The centroid's distance from the shared target's point"
+                        },
+                        "edgeMm": {
+                          "type": "number",
+                          "description": "Mean distance from their targets' beds"
+                        },
+                        "rating": {
+                          "type": "number",
+                          "description": "The score plus the grouping and closeness bonuses"
+                        }
+                      }
                     }
                   }
                 }
@@ -49758,6 +49951,25 @@
                   },
                   "clean": {
                     "type": "boolean"
+                  }
+                }
+              },
+              "grouping": {
+                "type": "object",
+                "description": "The scoring visits' mean grouping spread and edge distance; null without any",
+                "required": [
+                  "spreadMm",
+                  "edgeMm"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "spreadMm": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "edgeMm": {
+                    "type": "number",
+                    "nullable": true
                   }
                 }
               }

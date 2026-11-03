@@ -15,7 +15,7 @@ import { FriendsService } from '../friends/service.js'
 import { LobbyService } from '../lobby/service.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { segmentAt } from '../shared/board.js'
-import { COACH_GAMES, type DartScript, type Who } from './coachGames.js'
+import { COACH_GAMES, scriptedPoint, type DartScript, type Who } from './coachGames.js'
 
 // Sample data for PR previews: the accounts seedDev() creates (auth/seed.ts), playing and befriending each other
 
@@ -54,9 +54,6 @@ const GAMES: SampleGame[] = [
 ]
 
 const TAKEOUT: UserAction = { type: 'takeout' }
-
-/** A scripted dart's spot: the middle of its bed, a miss just off the board. */
-const scriptedPoint = (label: string): Point => (label === 'Miss' ? { x: 0, y: 1.05 } : pointFor(label))
 
 /** A putt towards the cup, hard enough to roll about that far (it leaves doglegs to maxStrokes). */
 function puttAt(v: MinigolfView): Point {

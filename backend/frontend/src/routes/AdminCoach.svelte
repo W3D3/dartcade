@@ -14,7 +14,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { currentUser } from '$lib/auth'
   import { coachTrail } from '$lib/admin/breadcrumbs'
-  import { betterLine, missTags, visitTiles, whatHappened } from '$lib/coach/view'
+  import { betterLine, groupingLine, missTags, visitTiles, whatHappened } from '$lib/coach/view'
   import { dartAt, dartFromLabel, sandbox } from '$lib/coach/sandbox'
   import { explainedNote } from '$shared/coach/grade'
   import type { CoachDart } from '$shared/coach/walk'
@@ -70,7 +70,7 @@
   }
 
   const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Edge', 'Out', 'CW', 'Wedges', 'Est.', 'Leave']
-  const mm = (v: number | null) => (v === null ? '–' : v.toFixed(1))
+  const mm = (v: number | null) => (v === null ? '–' : (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
   const noteLine = (n: CoachNote) =>
@@ -196,6 +196,9 @@
             </div>
             <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
               <span><b>What happened:</b> {whatHappened(visit)}</span>
+              <span class="text-text-muted"
+                >{groupingLine(visit) ?? 'No grouping: it needs two darts placed on the board with a target. Rating = score.'}</span
+              >
               {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
             </div>
           {:else}

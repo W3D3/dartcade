@@ -24,7 +24,7 @@ const WILD_WEDGES = 2
 const TOP_K = 5
 const SCORING_PRIOR: Readonly<Record<string, number>> = { T20: 1, T19: 0.6, T18: 0.3, T17: 0.3 }
 /** r = 1 is the outer double wire, 170 mm from the centre */
-const MM_PER_UNIT = 170
+export const MM_PER_UNIT = 170
 
 export type DartKind =
   | 'scoringHit'

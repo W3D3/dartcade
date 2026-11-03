@@ -63,6 +63,7 @@ describe('reviewLeg', () => {
           text: 'Two trebles.',
           tip: false,
           notes: [],
+          grouping: null,
         },
         {
           n: 2,
@@ -80,6 +81,7 @@ describe('reviewLeg', () => {
           text: 'Scored 26; your usual visit is 88.',
           tip: false,
           notes: [],
+          grouping: null,
         },
         {
           n: 3,
@@ -97,6 +99,7 @@ describe('reviewLeg', () => {
           text: 'Scored 100.',
           tip: false,
           notes: [],
+          grouping: null,
         },
         {
           n: 4,
@@ -114,6 +117,7 @@ describe('reviewLeg', () => {
           text: 'Two trebles.',
           tip: false,
           notes: [],
+          grouping: null,
         },
         {
           n: 5,
@@ -131,6 +135,7 @@ describe('reviewLeg', () => {
           text: "On 47, S1: better S15 — S1 leaves 46, which one dart can't finish.",
           tip: false,
           notes: [expect.objectContaining({ leg: 0, visit: 8, dart: 1, left: 47, thrown: 'S1', better: 'S15', tip: false })],
+          grouping: null,
         },
         {
           n: 6,
@@ -147,6 +152,7 @@ describe('reviewLeg', () => {
           text: 'Checked out on D10.',
           tip: false,
           notes: [],
+          grouping: null,
         },
       ],
       skills: {
@@ -157,6 +163,7 @@ describe('reviewLeg', () => {
       },
       take: 'Won in 17 darts. 1 setup visit left a bad number.',
       counts: { lowVisits: 1, badSetups: 1, missedDoubles: 1, clean: false },
+      grouping: { spreadMm: null, edgeMm: null },
     }
     expect(reviewLeg([wonLeg()], 0, 0, ctx(501))).toEqual(expected)
   })

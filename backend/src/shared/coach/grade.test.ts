@@ -22,6 +22,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     notes: strategyNotes(throws, evaluate),
     average,
     lastVisitOfLostLeg: lost,
+    grouping: null,
   }
 }
 
@@ -77,6 +78,31 @@ describe('scoring visits', () => {
 
   it('OK: anything else', () => {
     expect(grade(501, ['S20', 'S20', 'S20'])).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.' })
+  })
+
+  it('grades the rating, not the raw score, and says when the grouping lifted the grade', () => {
+    const rated = (names: string[], rating: number, average = 60) => ({
+      ...facts(501, names, { average }),
+      grouping: { spreadMm: 6, edgeMm: 2, rating },
+    })
+    // 60 is OK on a 60 average; rated 80 it is Good
+    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 80))).toEqual({
+      tag: 'scoring',
+      grade: 'good',
+      text: 'Scored 60, tight group (6 mm), close to the target (2 mm).',
+    })
+    // 45 is Weak on a 70 average; rated 60 it is OK
+    expect(classifyVisit(rated(['S20', 'S20', 'S5'], 60, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
+    // A rating that leaves the grade alone keeps the plain text
+    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 70))).toEqual({ tag: 'scoring', grade: 'ok', text: 'Scored 60.' })
+  })
+
+  it('a tight group never rescues a very low score', () => {
+    expect(classifyVisit({ ...facts(501, ['S5', 'S5', 'S5']), grouping: { spreadMm: 2, edgeMm: 1, rating: 37 } })).toEqual({
+      tag: 'scoring',
+      grade: 'mistake',
+      text: 'Scored 15; your usual visit is 60.',
+    })
   })
 
   it('Mistake: a strategy note on a later dart, told from the note', () => {

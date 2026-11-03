@@ -2,6 +2,7 @@
 // three A–D skills and the coach's take.
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
+import { grouping, type Grouping } from './grouping.js'
 import { fin } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
@@ -26,6 +27,8 @@ export type ReviewVisit = {
   /** The text is a tip's: shown in the blue Info style */
   tip: boolean
   notes: CoachNote[]
+  /** How its placed darts sat together, and its rating; null with fewer than 2 (grouping.ts) */
+  grouping: Grouping | null
 }
 export type SkillGrade = { grade: 'A' | 'B' | 'C' | 'D' | null; line: string }
 export type LegCounts = { lowVisits: number; badSetups: number; missedDoubles: number; clean: boolean }
@@ -39,6 +42,8 @@ export type LegReview = {
   skills: { scoring: SkillGrade; setup: SkillGrade; doubling: SkillGrade }
   take: string
   counts: LegCounts
+  /** The scoring visits' mean grouping spread and edge distance (grouping.ts); null without any */
+  grouping: { spreadMm: number | null; edgeMm: number | null }
 }
 export type ReviewContext = { startScore: number; average: number | null; opponentName: (seat: number) => string }
 
@@ -88,14 +93,17 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       return { name: d.segment.name, coords: d.coords, left: t && !bust ? t.left - dartPoints(d) : start, bust, class: cls }
     })
     const vNotes = notes.filter(n => n.visit === i)
+    // The walked darts' only: those after a bust aren't
+    const walked = reviewDarts.slice(0, vThrows.length)
+    const g = grouping(walked, v.scored)
     const grading = classifyVisit({
       start,
       throws: vThrows,
       scored: v.scored,
       then: v.remaining,
       bust: v.bust,
-      // The walked darts' only: those after a bust aren't
-      classes: reviewDarts.slice(0, vThrows.length).map(d => d.class),
+      classes: walked.map(d => d.class),
+      grouping: g,
       notes: vNotes,
       average,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
@@ -110,6 +118,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       ...grading,
       tip: grading.tip ?? false,
       notes: vNotes,
+      grouping: g,
     }
   })
 
@@ -124,6 +133,15 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     badSetups: setups.filter(bad).length,
     missedDoubles: stats.dartsAtDouble - stats.checkouts,
     clean: !visits.some(low),
+  }
+
+  const meanOf = (xs: (number | null | undefined)[]) => {
+    const ns = xs.filter(x => x != null)
+    return ns.length ? mean(ns) : null
+  }
+  const legGrouping = {
+    spreadMm: meanOf(scoringVisits.map(v => v.grouping?.spreadMm)),
+    edgeMm: meanOf(scoringVisits.map(v => v.grouping?.edgeMm)),
   }
 
   const legAverage = stats.scoringAverage
@@ -189,5 +207,6 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     skills,
     take: take.join(' '),
     counts,
+    grouping: legGrouping,
   }
 }

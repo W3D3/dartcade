@@ -2958,6 +2958,18 @@ export interface components {
             /** @description The text is a tip's (a note that leaves the grade alone) */
             tip: boolean;
             notes: components["schemas"]["CoachNote"][];
+            /** @description How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2 */
+            grouping: {
+                darts: number;
+                /** @description Mean distance from their centroid; null unless they share a target */
+                spreadMm: number | null;
+                /** @description The centroid's distance from the shared target's point */
+                offsetMm: number | null;
+                /** @description Mean distance from their targets' beds */
+                edgeMm: number;
+                /** @description The score plus the grouping and closeness bonuses */
+                rating: number;
+            } | null;
         };
         SkillGrade: {
             /** @enum {string|null} */
@@ -2984,6 +2996,11 @@ export interface components {
             };
             take: string;
             counts: components["schemas"]["LegCounts"];
+            /** @description The scoring visits' mean grouping spread and edge distance; null without any */
+            grouping: {
+                spreadMm: number | null;
+                edgeMm: number | null;
+            };
         };
         CoachLegTitle: {
             opponents: string[];

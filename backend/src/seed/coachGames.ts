@@ -1,8 +1,12 @@
 // Scripted X01 games for the sample data, with mistakes the coach is known to note (and good darts
 // it must let pass), so a preview shows the coach at work. coachGames.test.ts checks every note,
 // every visit's grade and every dart's class.
+import { pointFor } from '../bots/accuracy.js'
 import type { DartKind } from '../shared/coach/dartClass.js'
 import type { VisitGrade } from '../shared/coach/grade.js'
+
+/** A scripted dart's spot: the middle of its bed, a miss just off the board. */
+export const scriptedPoint = (label: string): { x: number; y: number } => (label === 'Miss' ? { x: 0, y: 1.05 } : pointFor(label))
 
 /** The dev accounts seedDev() creates (auth/seed.ts). */
 export type Who = 'admin' | 'luke' | 'phil' | 'michael' | 'gerwyn'
@@ -16,8 +20,8 @@ export type ExpectedNote = { seat: number; leg: 0; visit: number; dart: number }
 /** Per seat, each scripted visit's grade in the leg review */
 export type ExpectedGrades = VisitGrade[][]
 
-/** Per seat and visit, each scripted dart's class kind in the leg review. Typed darts sit at their
- *  bed's centre, so a single at 20 is a Single, not a Hit. */
+/** Per seat and visit, each scripted dart's class kind in the leg review. Scripted darts sit at their
+ *  bed's centre (scriptedPoint), so a single at 20 is a Single, not a Hit. */
 export type ExpectedKinds = DartKind[][][]
 
 type CoachSample = {
@@ -86,7 +90,8 @@ export const COACH_GAMES: CoachSample[] = [
     ],
     expect: [],
     grades: [
-      ['ok', 'ok', 'ok', 'great'],
+      // 100 from T20, S20, S20 in the middle of their beds: a tight group lifts it to Good
+      ['good', 'ok', 'ok', 'great'],
       ['great', 'ok', 'weak'],
       ['weak', 'ok', 'great'],
     ],
