@@ -15,8 +15,8 @@ const SIGMA_ATTR = 20 / 170
 const TAU = 0.01
 /** The checkout table's first darts and T16 get at least this prior */
 const MIN_PRIOR = Math.exp(-3)
-/** The aims on the number a dart landed in get at least this prior: low enough that a dart about a
- *  wedge off a good aim still reads as its miss, high enough that one further off isn't wild */
+/** The aims on the number a typed dart landed in get at least this prior: low enough that a dart
+ *  about a wedge off a good aim still reads as its miss, high enough that one further off isn't wild */
 const LANDED_PRIOR = Math.exp(-6)
 /** A dart more than this many wedges from its picked target has no target */
 const WILD_WEDGES = 2
@@ -128,7 +128,7 @@ function aimsOn(n: number): number[] {
 }
 
 /** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
- *  darts, T16 and the aims on the number the dart landed in. An aim whose likeliest outcome busts
+ *  darts, T16 and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
  *  is one only off a one-dart finish; when busting back is the best there is, every such aim is
  *  one, at prior 1. A dart in the bull or 25 has the two bull aims only. */
 export function finishCandidates(
@@ -227,7 +227,8 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   const busts = evaluation ? bustAims(evaluation) : null
   const cands =
     evaluation && busts
-      ? finishCandidates(t.left, t.darts, evaluation, landed, busts)
+      ? // A typed dart has no position, so its own bed explains it; a dart with coords meets the real candidates
+        finishCandidates(t.left, t.darts, evaluation, estimated || landed === 25 ? landed : null, busts)
       : landed === 25
         ? aimsOn(25).map(a => ({ a, prior: 1 }))
         : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimAt(id), prior }))

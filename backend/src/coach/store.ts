@@ -10,7 +10,7 @@ import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { coachable, reviewLeg } from '../shared/coach/index.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 12
+export const COACH_VERSION = 13
 
 const UPDATED = [
   'user_id',

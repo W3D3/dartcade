@@ -61,8 +61,8 @@ export const COACH_GAMES: CoachSample[] = [
     kinds: [
       [
         ['scoringHit', 'scoringHit', 'scoringHit'],
-        // From 121: T16, S16, then S20 on 57 (its own bed, though S17 was the aim to take)
-        ['route', 'route', 'route'],
+        // From 121: T16, S16, then S20 on 57: far from every aim worth taking there (S17), so wild
+        ['route', 'route', 'wild'],
         ['route', 'double'],
       ],
       [
@@ -112,7 +112,7 @@ export const COACH_GAMES: CoachSample[] = [
       [
         ['scoringSingle', 'scoringMiss', 'scoringMiss'],
         ['scoringHit', 'scoringSingle', 'scoringSingle'],
-        ['scoringHit', 'route', 'route'],
+        ['scoringHit', 'route', 'wild'],
       ],
     ],
   },
@@ -142,8 +142,8 @@ export const COACH_GAMES: CoachSample[] = [
       [
         ['scoringHit', 'scoringSingle', 'scoringSingle'],
         ['scoringMiss', 'scoringHit', 'route'],
-        // T10 on 77 and S1 on 47 hit their own beds: the aims on a dart's number are candidates
-        ['route', 'route', 'route'],
+        // T10 on 77 and S1 on 47 are far from every aim worth taking there: wild
+        ['wild', 'wild', 'route'],
         // S19 on 20 busts with D10 to throw at: not a Bust-back
         ['double', 'bust'],
         ['double'],

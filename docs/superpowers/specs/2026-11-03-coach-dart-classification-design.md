@@ -26,10 +26,10 @@ landed.
 
 **The phase** comes from the score left _before the dart_ and the darts left in the visit:
 
-| Phase       | When               | Candidate targets                                                                                                                                     |
-| ----------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Scoring** | more than 170 left | T20, T19, T18, T17                                                                                                                                    |
-| **Finish**  | 2–170 left         | the evaluator's top 5 aims for (left, darts left) **∪** the checkout table's first darts for that score **∪** T16 **∪** the aims on the landed number |
+| Phase       | When               | Candidate targets                                                                                                                                                        |
+| ----------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Scoring** | more than 170 left | T20, T19, T18, T17                                                                                                                                                       |
+| **Finish**  | 2–170 left         | the evaluator's top 5 aims for (left, darts left) **∪** the checkout table's first darts for that score **∪** T16 **∪** the aims on the landed number (typed darts only) |
 
 The candidates are then narrowed:
 
@@ -37,9 +37,10 @@ The candidates are then narrowed:
   candidates, in both phases. A dart anywhere else has no bull aim, except the Bull on 50 (the
   finishing double there). A dart attributed to that Bull counts only when it landed inside the
   inner single ring; further out it is Wild.
-- **The landed number.** The aims on the number the dart landed in (its treble, double, both
-  singles and both wires) are candidates, so a dart nowhere near a good aim reads as aimed at its
-  own bed rather than as Wild.
+- **The landed number.** For a dart without camera coords (typed, placed at its bed's centre),
+  the aims on the number it landed in (its treble, double, both singles and both wires) are
+  candidates, so it reads as aimed at its own bed rather than as Wild. A dart with coords meets
+  the real candidates only: where it landed, against the aims worth taking.
 - **One-dart finishes.** On a one-dart finish (an even score up to 40, or 50) the only double
   that is a candidate is the finishing one. A dart near another double reads as wide of it.
 - **Bust aims** (an aim whose likeliest outcome busts) are candidates only when the score is not a
@@ -62,7 +63,7 @@ prior(a) · exp(−d(dart, a)² / 2σ²)
   - Finish: `exp((v(a) − v_best) / τ)`, τ = 0.01, where v is the evaluator's value of the aim
     and v_best the best aim's. The priors are not normalised; only their ratios matter.
   - Floors: the checkout table's first darts and T16 get at least **MIN_PRIOR = exp(−3)**; the
-    aims on the landed number (and the bull aims for a dart in the bull) get at least
+    aims on a typed dart's landed number (and the bull aims for a dart in the bull) get at least
     **LANDED_PRIOR = exp(−6)**. Low enough that a dart about a wedge off a good aim still reads as
     its miss, high enough that one further off isn't Wild.
   - Bust aims, when busting back is best: prior 1.
@@ -268,9 +269,14 @@ Decisions taken while building this without the user, each with why:
   "the closest big number, or the double you were on".
 - **The checkout table's first darts and T16 get a floor of exp(−3)**, inside the top 5 too, so
   the book route is always considered.
-- **The aims on the landed number are candidates, at a lower floor exp(−6).** Without them S20 on
-  57, S1 on 47 and T10 on 77 read Wild; with the higher floor a one-wedge miss of the best aim
-  read as a hit of the landed bed.
+- **The aims on the landed number are candidates for typed darts only, at a lower floor exp(−6).**
+  A typed dart has no position, so without them S20 on 57, S1 on 47 and T10 on 77 read Wild; with
+  the higher floor a one-wedge miss of the best aim read as a hit of the landed bed. For a dart
+  with coords they made any dart far from every real aim a hit of its own bed: on 140 with 2 darts
+  (no finish this visit) a dart in the middle of the S13 read "Aimed S13 ✓", when the player was
+  scoring. With coords it now reads as a miss of T18, two wedges off, and the same three at their
+  bed centres read Wild. A value margin (own aims only within 0.15 of the best) was rejected: S20
+  on 57 needs 0.148, and 140's D13 and T13 are 0.129 and 0.102 off, so S13 read "Aimed D13".
 - **On a one-dart finish the only double candidate is the finishing one.** Otherwise a wide D16
   miss into D8 on 32 reads as a Split hit. Cost: a deliberate double-to-double split reads as a
   wide double. Accepted: 34 → D2 reads as S2 and 36 → D4 as S4 (plausible splits to 32).
@@ -280,7 +286,7 @@ Decisions taken while building this without the user, each with why:
   on 3 the target T12.
 - **No Bust-back on a one-dart finish, for the busting dart too**: on a double you go for it.
 - **Split needs both the score and the target's planned leave to be one-dart finishes.** "S3 on
-  50: Split ✓" was misleading; that is a Route.
+  50: Split ✓" was misleading; that is a Route (typed; with coords it is Wild).
 - **A dart in the Bull or 25 has the bull aims only, in both phases; a dart elsewhere has none,
   except the Bull on 50**, where an inner single next to the bull is a Bull attempt miss. Before,
   a bull in Scoring (501 → Bull) and 13 finish states read Wild. On a finish the evaluator decides

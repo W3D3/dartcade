@@ -204,15 +204,12 @@ describe('classifyDart: Finish', () => {
     })
   })
 
-  it('on 50, an inner single near the bull is a Bull attempt miss; an outer single is a route at its own bed', () => {
+  it('on 50, an inner single near the bull is a Bull attempt miss; an outer single is wild, typed a route at its own bed', () => {
     expect(classify(at(0, 0.12), 50)).toMatchObject({ kind: 'bull', hit: false, target: { aimId: 'Bull' }, actualLeave: 30 })
-    // The 3's outer single: outside the inner singles, so not the Bull; its own bed is a candidate
-    expect(classify(polar(3, (R.tr + R.so) / 2), 50)).toMatchObject({
-      kind: 'route',
-      hit: true,
-      target: { aimId: 'SO3' },
-      plannedLeave: 47,
-    })
+    // The 3's outer single: outside the inner singles, so not the Bull, and far from every other candidate
+    expect(classify(polar(3, (R.tr + R.so) / 2), 50)).toMatchObject({ kind: 'wild', target: null })
+    // Typed, it has no position: its own bed is a candidate
+    expect(classify(dart('S3'), 50)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO3' }, plannedLeave: 47 })
   })
 
   it('the table first darts and T16 keep the prior floor inside the top 5 too (100, 2 darts)', () => {
@@ -326,8 +323,9 @@ describe('classifyDart: Finish', () => {
     })
   })
 
-  it('a dart far from every good aim goes to its own bed', () => {
-    expect(classify(polar(3, 0.4), 32)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SI3' }, plannedLeave: 29 })
+  it('a dart far from every good aim is wild; typed, it goes to its own bed', () => {
+    expect(classify(polar(3, 0.4), 32)).toMatchObject({ kind: 'wild', target: null })
+    expect(classify(dart('S3'), 32)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO3' }, plannedLeave: 29 })
   })
 
   it('a typed miss is outside the double on a one-dart finish, a miss of the Bull on 50, else wild', () => {
@@ -358,13 +356,26 @@ describe('classifyDart: Finish', () => {
     expect(c.kind).toBe('bust')
   })
 
-  it("the aims on the dart's own number are candidates: S20 on 57, S1 on 47, T10 on 77 hit their beds", () => {
+  it("a typed dart's own number is a candidate: S20 on 57, S1 on 47, T10 on 77 hit their beds", () => {
     expect(classify(dart('S20'), 57, 1)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO20' }, actualLeave: 37 })
     expect(classify(dart('S1'), 47, 2)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO1' }, actualLeave: 46 })
     expect(classify(dart('T10'), 77)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'T10' }, actualLeave: 47 })
   })
 
-  it('on 40, a dart about a wedge off the D20 is its miss; one in the inner single 1 aims there', () => {
+  it('a dart with coords meets the real candidates only: the same three at their bed centres are wild', () => {
+    const centre = (id: string) => at(aim(id).x, aim(id).y)
+    expect(classify(centre('SO20'), 57, 1)).toMatchObject({ kind: 'wild', target: null })
+    expect(classify(centre('SO1'), 47, 2)).toMatchObject({ kind: 'wild', target: null })
+    expect(classify(centre('T10'), 77)).toMatchObject({ kind: 'wild', target: null })
+  })
+
+  it('140 with 2 darts (no finish this visit): the S13 centre is a T18 miss two wedges off, typed it is its own bed', () => {
+    const c = classify(at(aim('SO13').x, aim('SO13').y), 140, 2, 200)
+    expect(c).toMatchObject({ kind: 'route', hit: false, target: { aimId: 'T18' }, wedgesOff: 2, actualLeave: 127 })
+    expect(classify(dart('S13'), 140, 2, 200)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO13' } })
+  })
+
+  it('on 40, a dart about a wedge off the D20 is its miss, in the inner single 1 too', () => {
     expect(classify(at(aim('SO1').x, aim('SO1').y), 40)).toMatchObject({
       kind: 'double',
       detail: 'wide',
@@ -372,7 +383,7 @@ describe('classifyDart: Finish', () => {
       wedgesOff: 1,
     })
     expect(classify(dart('S1'), 40)).toMatchObject({ kind: 'double', detail: 'wide', target: { aimId: 'D20' } })
-    expect(classify(at(aim('SI1').x, aim('SI1').y), 40)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SI1' } })
+    expect(classify(at(aim('SI1').x, aim('SI1').y), 40)).toMatchObject({ kind: 'double', detail: 'wide', target: { aimId: 'D20' } })
   })
 
   it('a split leaves a one-dart finish; a single on a one-dart finish that leaves none is a route', () => {
