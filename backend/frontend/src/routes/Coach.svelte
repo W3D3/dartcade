@@ -11,13 +11,15 @@
   import { api, type CoachLegCounts, type CoachLegRow } from '$lib/api'
   import { flag } from '$lib/flags'
   import Pill from '$lib/components/coach/Pill.svelte'
-  import { COACH_FILTERS, coachFilter, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
+  import { Chip } from '$lib/components/ui/chip'
+  import { COACH_FILTERS, COACH_FILTER_IDS, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
+  import { readParam } from '$lib/urlState'
   import { formatWhen } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
   const enabled = flag('coach.enabled')
   const requests = createRequestGuard()
-  const filter = $derived(coachFilter($querystring))
+  const filter = $derived<CoachFilter>(readParam($querystring, 'filter', COACH_FILTER_IDS, 'all'))
 
   let counts = $state<CoachLegCounts | null>(null)
   let legs = $state<CoachLegRow[]>([])
@@ -143,13 +145,7 @@
         <section aria-label="Legs" class="card flex flex-col gap-3 p-4 md:px-[22px] md:py-5">
           <div class="flex flex-wrap items-center gap-2">
             {#each COACH_FILTERS as f (f.id)}
-              <a
-                href={f.id === 'all' ? '#/coach' : `#/coach?filter=${f.id}`}
-                aria-current={f.id === filter ? 'true' : undefined}
-                class="inline-flex h-8 items-center whitespace-nowrap rounded-full border px-3 text-[13px] no-underline {f.id === filter
-                  ? 'border-line-popover bg-surface-paused font-semibold text-text hover:text-text'
-                  : 'border-line-2 text-ink-2 hover:text-text'}">{f.label}</a
-              >
+              <Chip variant="plain" href={f.id === 'all' ? '#/coach' : `#/coach?filter=${f.id}`} selected={f.id === filter}>{f.label}</Chip>
             {/each}
             <span class="ml-auto flex flex-wrap items-center gap-x-3.5 gap-y-1">
               {#if counts}<span class="text-[13px] text-text-muted">X01 · double out · last {counts.legs} legs</span>{/if}

@@ -12,6 +12,7 @@
   import VisitNumbers from '$lib/components/coach/VisitNumbers.svelte'
   import VisitTable from '$lib/components/coach/VisitTable.svelte'
   import { Button } from '$lib/components/ui/button'
+  import { Chip } from '$lib/components/ui/chip'
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag } from '$lib/flags'
   import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
@@ -161,17 +162,9 @@
             </div>
             <div class="flex gap-1.5 overflow-x-auto xl:gap-2">
               {#each TAGS as t (t.id)}
-                <button
-                  type="button"
-                  aria-pressed={filter === t.id}
-                  onclick={() => (filter = t.id)}
-                  class="inline-flex h-8 flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-3 font-[inherit] text-[13px] {filter ===
-                  t.id
-                    ? 'border-line-popover bg-surface-paused font-semibold text-text'
-                    : 'border-line-2 bg-transparent text-ink-2 hover:text-text'}"
-                >
+                <Chip variant="plain" selected={filter === t.id} onclick={() => (filter = t.id)}>
                   {t.label}<span class={t.id === 'all' ? '' : 'hidden xl:inline'}>{tagCount(t.id)}</span>
-                </button>
+                </Chip>
               {/each}
             </div>
             {#if shown.length === 0}

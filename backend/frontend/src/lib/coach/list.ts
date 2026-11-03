@@ -18,12 +18,8 @@ export const COACH_FILTERS = [
   { id: 'lowVisits', label: 'Low visits' },
 ] as const
 export type CoachFilter = (typeof COACH_FILTERS)[number]['id']
-
-/** The Coach page's filter from its querystring (`filter=lost`); All legs when missing or unknown. */
-export function coachFilter(querystring: string | undefined): CoachFilter {
-  const f = new URLSearchParams(querystring ?? '').get('filter')
-  return COACH_FILTERS.find(x => x.id === f)?.id ?? 'all'
-}
+/** The filters' ids, for readParam (`filter=lost`) */
+export const COACH_FILTER_IDS: readonly CoachFilter[] = COACH_FILTERS.map(f => f.id)
 
 const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 

@@ -1,24 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { coachFilter, coachFound, legWhen, vsLine } from './list'
+import { coachFound, legWhen, vsLine } from './list'
 
 describe('vsLine', () => {
   it('names the opponents, or Solo without one', () => {
     expect(vsLine(['Lena'])).toBe('vs Lena')
     expect(vsLine(['Max', 'Sophie'])).toBe('vs Max, Sophie')
     expect(vsLine([])).toBe('Solo')
-  })
-})
-
-describe('coachFilter', () => {
-  it('reads the filter from the querystring', () => {
-    expect(coachFilter('filter=lost')).toBe('lost')
-    expect(coachFilter('x=1&filter=missedDoubles')).toBe('missedDoubles')
-  })
-
-  it('falls back to all legs when missing or unknown', () => {
-    expect(coachFilter(undefined)).toBe('all')
-    expect(coachFilter('')).toBe('all')
-    expect(coachFilter('filter=nope')).toBe('all')
   })
 })
 
