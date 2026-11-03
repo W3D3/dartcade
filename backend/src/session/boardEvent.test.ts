@@ -20,6 +20,15 @@ describe('parseBoardEvent', () => {
     expect(parseBoardEvent('dart.detected', detected(dart))?.kind).toBe('dart.detected')
   })
 
+  it("drops a bounce-out's position at the board's centre, also in a correction", () => {
+    const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 }
+    const stored = { segment: miss, score: 0, bouncer: true, coords: { x: 0, y: 0 }, polar: { r: 0, theta_deg: 0 } }
+    const clean = { segment: miss, score: 0, bouncer: true }
+    expect(parseBoardEvent('dart.detected', detected(stored))).toEqual({ kind: 'dart.detected', data: detected(clean) })
+    const corrected = { ...detected(stored), previous: stored }
+    expect(parseBoardEvent('dart.corrected', corrected)).toEqual({ kind: 'dart.corrected', data: { ...detected(clean), previous: clean } })
+  })
+
   it('rejects dart data outside the schema', () => {
     expect(parseBoardEvent('dart.detected', detected({ segment: { ...segment, bed: 'Weird' }, score: 20 }))).toBeNull()
   })

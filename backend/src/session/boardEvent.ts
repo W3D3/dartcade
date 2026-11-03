@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { DartCorrectedDataSchema, DartDetectedDataSchema } from '../schema/zod.js'
+import { withoutFalsePosition } from '../shared/board.js'
 import type { BoardEvent } from './types.js'
 
 // Bridge events arrive as untyped JSON (live or from the DB). The dart events, whose data
@@ -14,11 +15,12 @@ export function parseBoardEvent(kind: string, data: unknown): BoardEvent | null 
   switch (kind) {
     case 'dart.detected': {
       const r = DartDetectedDataSchema.safeParse(data)
-      return r.success ? { kind, data: r.data } : null
+      return r.success ? { kind, data: { ...r.data, dart: withoutFalsePosition(r.data.dart) } } : null
     }
     case 'dart.corrected': {
       const r = DartCorrectedDataSchema.safeParse(data)
-      return r.success ? { kind, data: r.data } : null
+      if (!r.success) return null
+      return { kind, data: { ...r.data, dart: withoutFalsePosition(r.data.dart), previous: withoutFalsePosition(r.data.previous) } }
     }
     case 'visit.opened':
     case 'takeout.finished':
