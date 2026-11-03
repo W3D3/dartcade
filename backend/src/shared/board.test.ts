@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { R, SEGS, segAngle, segmentAt } from './board.js'
+import { R, SEGS, segAngle, segmentAt, withoutFalsePosition } from './board.js'
 
 describe('segmentAt', () => {
   it('the bull and outer bull at the centre', () => {
@@ -36,5 +36,22 @@ describe('segmentAt', () => {
 
   it('all 20 numbers appear exactly once', () => {
     expect([...SEGS].sort((a, b) => a - b)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1))
+  })
+})
+
+describe('withoutFalsePosition', () => {
+  const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
+
+  it("drops a bounce-out's position and a miss's on the board", () => {
+    expect(withoutFalsePosition({ segment: miss, bouncer: true, coords: { x: 1.2, y: 0 } })).toEqual({ segment: miss, bouncer: true })
+    expect(withoutFalsePosition({ segment: miss, coords: { x: 0, y: 0 }, polar: { r: 0 } })).toEqual({ segment: miss })
+    expect(withoutFalsePosition({ segment: miss, polar: { r: 0.5 } })).toEqual({ segment: miss })
+  })
+
+  it('keeps a near miss off the board and a dart in the bull', () => {
+    const near = { segment: { ...miss, name: 'M17', number: 17 }, coords: { x: 1.052, y: 0.431 } }
+    expect(withoutFalsePosition(near)).toBe(near)
+    const bull = { segment: { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 } as const, coords: { x: 0, y: 0 } }
+    expect(withoutFalsePosition(bull)).toBe(bull)
   })
 })

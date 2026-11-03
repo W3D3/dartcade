@@ -36,3 +36,16 @@ export function segmentAt(x: number, y: number): Segment {
   const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
   return { name, number: num, bed, multiplier }
 }
+
+type Positioned = { segment: { bed: Bed }; coords?: { x: number; y: number }; polar?: { r: number }; bouncer?: boolean }
+
+/**
+ * The dart without a position that can't be where it landed: a bounce-out's, or a miss's on the
+ * board. Board Manager has sent bounce-outs at the board's centre, which read as darts in the bull.
+ */
+export function withoutFalsePosition<D extends Positioned>(dart: D): D | Omit<D, 'coords' | 'polar'> {
+  const r = dart.coords ? Math.hypot(dart.coords.x, dart.coords.y) : dart.polar?.r
+  if (r === undefined || !(dart.bouncer || (dart.segment.bed === 'Outside' && r <= R.db))) return dart
+  const { coords: _coords, polar: _polar, ...rest } = dart
+  return rest
+}
