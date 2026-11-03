@@ -1,19 +1,8 @@
 // "What the coach detects" (Coach-Mistakes): the checks this version runs, grouped as the leg
-// review tags visits. The rules live in shared/coach/grade.ts and review.ts; keep these in step.
-import {
-  GOOD_FROM,
-  GREAT_FROM,
-  LATE_DROP,
-  LATE_DROP_VISITS,
-  LONG_FINISH,
-  LOW_BELOW,
-  MISS_CLOSE_MAX,
-  MISS_CLOSE_ZERO_MM,
-  NOTE_THRESHOLD,
-  OK_FROM,
-  VERY_LOW,
-  WEAK_FROM,
-} from '$shared/coach/grade'
+// review tags visits. The rules live in shared/coach/grade.ts, notes.ts and review.ts; keep these in step.
+import { GOOD_FROM, GREAT_FROM, LOW_BELOW, MISS_CLOSE_MAX, MISS_CLOSE_ZERO_MM, OK_FROM, VERY_LOW, WEAK_FROM } from '$shared/coach/grade'
+import { NOTE_THRESHOLD } from '$shared/coach/notes'
+import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import type { VisitGrade } from '$shared/coach'
 import { DART_COSTLY_AT, DART_GOOD_FROM, DART_PLAIN_ABOVE, NEAR_MISS_MM } from './view'
 

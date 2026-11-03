@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIMS } from './aims.js'
-import { NOTE_THRESHOLD } from './grade.js'
+import { NOTE_THRESHOLD } from './notes.js'
 import { nearBull } from './aim.js'
 import { isTip, numberCost, strategyNotes } from './notes.js'
 import { dart, leg, visit, REF } from './testLegs.js'

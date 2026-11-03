@@ -5,8 +5,10 @@ import { checkoutHint } from '../checkout.js'
 import { AIMS, directOutId } from './aims.js'
 import { candidates, landedNumber, nearBull } from './aim.js'
 import type { CoachModel, Evaluation, Evaluator } from './model.js'
-import { NOTE_THRESHOLD } from './grade.js'
 import { dartPoints, type Throw } from './walk.js'
+
+/** The better aim gives at least this much more checkout chance (5 points) */
+export const NOTE_THRESHOLD = 0.05
 
 export type CoachNote = {
   leg: number

@@ -20,8 +20,6 @@ export const LOW_BELOW = 25
 export const GOOD_ABOVE = 15
 /** Scoring: this far above the average (or more) is Great */
 export const GREAT_ABOVE = 40
-/** Strategy note: the better aim gives at least this much more checkout chance (5 points) */
-export const NOTE_THRESHOLD = 0.05
 /** Setup and Doubling, the visit's grade in checkout-chance points (value.ts, plus closeness): Great from this */
 export const GREAT_FROM = 15
 /** …Good from this */
@@ -34,12 +32,6 @@ export const WEAK_FROM = -20
 export const MISS_CLOSE_MAX = 5
 /** …falling to none this far (mm) from the target's bed */
 export const MISS_CLOSE_ZERO_MM = 20
-/** Leg pattern: a long finish takes more than this many darts from 170 or less to the checkout */
-export const LONG_FINISH = 9
-/** Leg pattern: scoring visits 4 and later average this much less than visits 1–3… */
-export const LATE_DROP = 20
-/** …in a leg with at least this many scoring visits */
-export const LATE_DROP_VISITS = 6
 
 export type VisitTag = 'scoring' | 'setup' | 'doubling'
 export type VisitGrade = 'perfect' | 'great' | 'good' | 'ok' | 'weak' | 'mistake'
