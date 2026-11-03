@@ -47,9 +47,9 @@ export type DartClass = {
   /** scoringSingle: inner | outer; double: inside | outside | wide; bull: sb (25 for the Bull) | db (Bull for the 25) */
   detail: string | null
   distanceMm: number | null
-  /** + high (outside), − low (inside) */
+  /** + outside (away from the bull), − inside (towards it) */
   radialMm: number | null
-  /** + clockwise (right of the target on screen), − anticlockwise */
+  /** + clockwise (towards the next number in SEGS), − anticlockwise */
   tangentialMm: number | null
   /** The landed number's signed wedge distance from the target's, + clockwise */
   wedgesOff: number | null

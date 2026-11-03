@@ -142,7 +142,7 @@ each only above 3 mm. A dart without a position shows "· est." instead of milli
     (`schema/api-v1.yaml` + `gen:api`) and the stored review.
   - `COACH_VERSION` is bumped, so the backfill rebuilds the stored reviews.
 - **Leg review:**
-  - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm low-left",
+  - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
     "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
   - **In the selected visit's board card**, a faint line from each dart to its target.
 - **Admin sandbox:** shows each placed dart's class with all its properties. This is where the

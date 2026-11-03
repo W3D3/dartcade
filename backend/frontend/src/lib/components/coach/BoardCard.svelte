@@ -2,9 +2,9 @@
   // A visit on the board (Coach-Leg's selected visit, the sandbox): the details' muted board, the
   // better aim's bed in blue with its likely misses labelled, and each dart as a pin with its
   // name. A dart without a position sits hollow at its bed's centre; the selected one is lime
-  // with a pulsing ring.
+  // with a pulsing ring. A faint line joins each dart to the target its class picked.
   import type { ReviewDart } from '$shared/coach'
-  import { aimBed, bedCentre, type BoardTag } from '$lib/coach/view'
+  import { aimBed, aimPoint, bedCentre, type BoardTag } from '$lib/coach/view'
   import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
@@ -31,6 +31,13 @@
     darts.flatMap((d, i) => {
       const at = d.coords ?? bedCentre(d.name)
       return at ? [{ i, name: d.name, hollow: !d.coords, ...clampToView(toBoardPx(at)) }] : []
+    }),
+  )
+  const lines = $derived(
+    pins.flatMap(p => {
+      const aim = darts[p.i].class.target
+      const to = aim ? aimPoint(aim.aimId) : null
+      return to ? [{ i: p.i, x1: p.x, y1: p.y, ...toBoardPx(to) }] : []
     }),
   )
   // Centred on the miss, kept inside the board's box (a tag can carry what the miss leaves: "S8 · 8 = D4")
@@ -71,6 +78,10 @@
       </text>
     </g>
   {/each}
+
+  <g aria-hidden="true" class="stroke-text" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" opacity="0.45">
+    {#each lines as l (l.i)}<line x1={l.x1} y1={l.y1} x2={l.x} y2={l.y} />{/each}
+  </g>
 
   {#each pins as p (p.i)}
     {@const sel = p.i === selected}

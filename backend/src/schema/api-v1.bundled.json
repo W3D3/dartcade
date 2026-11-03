@@ -8789,7 +8789,7 @@
           "radialMm": {
             "type": "number",
             "nullable": true,
-            "description": "+ high (outside), − low (inside)"
+            "description": "+ outside (away from the bull), − inside"
           },
           "tangentialMm": {
             "type": "number",

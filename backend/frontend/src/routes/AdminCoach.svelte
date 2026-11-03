@@ -69,6 +69,8 @@
     add(d)
   }
 
+  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Out', 'CW', 'Wedges', 'Est.', 'Leave']
+  const mm = (v: number | null) => (v === null ? '–' : v.toFixed(1))
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
   const noteLine = (n: CoachNote) =>
@@ -152,13 +154,44 @@
               {#each visitTiles(visit) as tile, i (i)}
                 {@const n = visit.notes.find(x => x.dart === i)}
                 <li class="flex items-start gap-3">
-                  <DartTile name={tile.name} tone={tile.tone} />
+                  <DartTile name={tile.name} tone={tile.tone} label={tile.label} />
                   <span class="text-[13.5px] leading-[1.45] pt-1 {n?.tip ? 'text-ice' : ''}">
                     {#if n}<b>{n.tip ? 'Tip:' : 'Note:'}</b> {noteLine(n)}{:else}<span class="text-text-muted">Fine.</span>{/if}
                   </span>
                 </li>
               {/each}
             </ul>
+            <div class="flex flex-col gap-2">
+              <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
+              <p class="m-0 text-[12px] text-text-muted">
+                Millimetres from the target: Out is away from the bull, CW is clockwise. Leave is planned → actual.
+              </p>
+              <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-[13px] tabular-nums">
+                  <thead>
+                    <tr class="text-left text-text-muted">
+                      {#each CLASS_COLUMNS as c (c)}<th class="px-1.5 py-1 font-semibold whitespace-nowrap">{c}</th>{/each}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each visit.darts as d, i (i)}
+                      {@const c = d.class}
+                      <tr class="border-t border-line">
+                        <td class="px-1.5 py-1 font-display font-bold text-[16px]">{d.name}</td>
+                        <td class="px-1.5 py-1">{c.kind}{c.hit ? ' ✓' : ''}{c.detail ? ` (${c.detail})` : ''}</td>
+                        <td class="px-1.5 py-1">{c.target ? `${c.target.label} (${c.target.aimId})` : '–'}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.distanceMm)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.radialMm)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.tangentialMm)}</td>
+                        <td class="px-1.5 py-1 text-right">{c.wedgesOff ?? '–'}</td>
+                        <td class="px-1.5 py-1">{c.estimated ? 'yes' : 'no'}</td>
+                        <td class="px-1.5 py-1 text-right">{c.plannedLeave ?? '–'} → {c.actualLeave ?? '–'}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
               <span><b>What happened:</b> {whatHappened(visit)}</span>
               {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}

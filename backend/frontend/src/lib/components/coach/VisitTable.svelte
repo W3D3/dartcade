@@ -8,7 +8,7 @@
 
   let { visits, selected, onselect }: { visits: ReviewVisit[]; selected: number | null; onselect: (n: number) => void } = $props()
 
-  const COLUMNS = 'grid grid-cols-[34px_58px_176px_56px_52px_minmax(0,1fr)] items-center gap-3.5 px-3.5'
+  const COLUMNS = 'grid grid-cols-[34px_58px_240px_56px_52px_minmax(0,1fr)] items-center gap-3.5 px-3.5'
   const NUM = 'font-display text-[24px] font-bold text-right'
 </script>
 
@@ -31,8 +31,8 @@
       >
         <span class="font-display text-[20px] font-bold text-text-dim"><span class="sr-only">Visit </span>{v.n}</span>
         <span class={NUM}><span class="sr-only">Left </span>{v.left}</span>
-        <span class="flex gap-1.5">
-          {#each visitTiles(v) as t, i (i)}<DartTile name={t.name} tone={t.tone} />{/each}
+        <span class="flex items-start gap-1.5">
+          {#each visitTiles(v) as t, i (i)}<DartTile name={t.name} tone={t.tone} label={t.label} />{/each}
         </span>
         <span class={NUM}><span class="sr-only">Scored </span>{v.scored}</span>
         <span class="{NUM} text-text-muted"><span class="sr-only">Then </span>{v.then}</span>

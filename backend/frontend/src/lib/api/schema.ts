@@ -2908,7 +2908,7 @@ export interface components {
             /** @description scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db */
             detail: string | null;
             distanceMm: number | null;
-            /** @description + high (outside), − low (inside) */
+            /** @description + outside (away from the bull), − inside */
             radialMm: number | null;
             /** @description + clockwise, − anticlockwise */
             tangentialMm: number | null;

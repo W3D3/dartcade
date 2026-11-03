@@ -3735,7 +3735,7 @@ components:
         detail:
           { type: string, nullable: true, description: 'scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db' }
         distanceMm: { type: number, nullable: true }
-        radialMm: { type: number, nullable: true, description: '+ high (outside), − low (inside)' }
+        radialMm: { type: number, nullable: true, description: '+ outside (away from the bull), − inside' }
         tangentialMm: { type: number, nullable: true, description: '+ clockwise, − anticlockwise' }
         wedgesOff: { type: integer, nullable: true }
         estimated: { type: boolean, description: 'No camera coords: placed at the centre of the bed it landed in' }
