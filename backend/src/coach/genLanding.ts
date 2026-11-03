@@ -10,6 +10,7 @@ import { sigmaForLevel } from '../bots/levels.js'
 import { LEVEL_AVERAGE } from '../shared/botLevels.js'
 import { seededRng } from '../shared/rng.js'
 import { AIMS, type Outcome } from '../shared/coach/aims.js'
+import { dartPoints, isDoubleDart } from '../shared/coach/walk.js'
 
 const THROWS = 40_000
 const MIN_P = 0.001
@@ -23,7 +24,7 @@ for (let level = 1; level <= LEVEL_AVERAGE.length; level++) {
     for (let i = 0; i < THROWS; i++) {
       const { segment: s } = throwAt(aim, sigma, rng)
       const name = s.multiplier === 0 ? 'Miss' : s.name
-      const c = counts.get(name) ?? { points: s.number * s.multiplier, double: s.multiplier === 2 || s.number === 50, n: 0 }
+      const c = counts.get(name) ?? { points: dartPoints({ segment: s }), double: isDoubleDart({ segment: s }), n: 0 }
       c.n++
       counts.set(name, c)
     }

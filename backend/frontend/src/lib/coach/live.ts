@@ -6,7 +6,7 @@ import type { VisitGrade, VisitTag } from '$shared/coach'
 import type { Aim } from '$shared/coach/aims'
 import { AIMS } from '$shared/coach/aims'
 import type { CoachModel } from '$shared/coach/model'
-import { coachDart } from '$shared/coach/walk'
+import { afterDart, coachDart } from '$shared/coach/walk'
 import { sandbox } from './sandbox'
 import { signedPoints, visitTiles, type DartTileView } from './view'
 
@@ -41,9 +41,8 @@ export function aimPoints(a: Aim): number[] {
 /** "leaves 40", "leaves 37 or 40", "checks out" (a double or the bull to 0), "busts". */
 function leaves(left: number, a: Aim): string {
   const out = (p: number) => {
-    const after = left - p
-    const double = a.id === 'Bull' || a.id.startsWith('D')
-    return after === 0 && double ? 'checks out' : after < 2 ? 'busts' : `leaves ${after}`
+    const after = afterDart(left, p, a.id === 'Bull' || a.id.startsWith('D'))
+    return after === 'out' ? 'checks out' : after === 'bust' ? 'busts' : `leaves ${after}`
   }
   const each = [...new Set(aimPoints(a).map(out))]
   return each.length === 1 ? each[0] : `${each[0]} or ${each[1].replace(/^leaves /, '')}`

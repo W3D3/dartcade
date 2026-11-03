@@ -4,6 +4,7 @@
 // the model of their coaching level (coachLevel).
 import { LEVEL_AVERAGE } from '../botLevels.js'
 import type { Outcome } from './aims.js'
+import { afterDart } from './walk.js'
 
 /** Per aim, in AIMS order (so the evaluator's values are too): where a dart at it lands */
 export type Landing = readonly (readonly Outcome[])[]
@@ -47,54 +48,41 @@ export function coachLevel(average: number | null | undefined): number {
   return i === -1 ? LEVEL_AVERAGE.length : i + 1
 }
 
-function finishTable(landing: Landing): number[][] {
-  const t = Array.from({ length: 171 }, () => [0, 0, 0, 0])
-  for (let k = 1; k <= 3; k++) {
-    for (let r = 2; r <= 170; r++) {
-      let best = 0
-      for (const outs of landing) {
-        let v = 0
-        for (const [, points, double, p] of outs) {
-          const after = r - points
-          if (after === 0 && double) v += p
-          else if (after >= 2) v += p * t[after][k - 1]
-        }
-        if (v > best) best = v
-      }
-      t[r][k] = best
-    }
+/** The best a dart can do from (left, darts) over every aim, memoised: a checkout is worth 1, a
+ *  bust `bust`, a visit that ends on `after` without either `end(after)`. */
+function valuesOf(landing: Landing, bust: number, end: (after: number) => number) {
+  const memo = new Map<number, number>()
+  const outcome = (o: Outcome, left: number, darts: number): OutcomeValue => {
+    const after = afterDart(left, o[1], o[2])
+    if (after === 'out') return { outcome: o, after, value: 1 }
+    // The visit ends and the next starts where this one did
+    if (after === 'bust') return { outcome: o, after, value: bust }
+    return { outcome: o, after, value: darts === 1 ? end(after) : best(after, darts - 1) }
   }
-  return t
+  const value = (aim: number, left: number, darts: number): number =>
+    landing[aim].reduce((sum, o) => sum + o[3] * outcome(o, left, darts).value, 0)
+  const best = (left: number, darts: number): number => {
+    const key = left * 4 + darts
+    let v = memo.get(key)
+    if (v === undefined) {
+      v = 0
+      for (let a = 0; a < landing.length; a++) v = Math.max(v, value(a, left, darts))
+      memo.set(key, v)
+    }
+    return v
+  }
+  return { outcome, value, best }
 }
 
 /** The model for `level` from its landing table. */
 export function coachModel(level: number, landing: Landing): CoachModel {
-  const fin = finishTable(landing)
+  // This visit only: a bust and a visit that doesn't check out are both a no
+  const thisVisit = valuesOf(landing, 0, () => 0)
+  const fin = Array.from({ length: 171 }, (_, r) => [0, 1, 2, 3].map(k => (k > 0 && r >= 2 ? thisVisit.best(r, k) : 0)))
   const nextVisit = (score: number): number => (score >= 2 && score <= 170 ? fin[score][3] : 0)
 
   function evaluator(start: number, w: number): Evaluator {
-    const memo = new Map<number, number>()
-
-    const outcome = (o: Outcome, left: number, darts: number): OutcomeValue => {
-      const after = left - o[1]
-      if (after === 0 && o[2]) return { outcome: o, after: 'out', value: 1 }
-      // Below 0, on 1, or 0 without a double: the visit ends and the next starts where this one did
-      if (after < 2) return { outcome: o, after: 'bust', value: w * nextVisit(start) }
-      return { outcome: o, after, value: darts === 1 ? w * nextVisit(after) : best(after, darts - 1) }
-    }
-    const value = (aim: number, left: number, darts: number): number =>
-      landing[aim].reduce((sum, o) => sum + o[3] * outcome(o, left, darts).value, 0)
-    const best = (left: number, darts: number): number => {
-      const key = left * 4 + darts
-      let v = memo.get(key)
-      if (v === undefined) {
-        v = 0
-        for (let a = 0; a < landing.length; a++) v = Math.max(v, value(a, left, darts))
-        memo.set(key, v)
-      }
-      return v
-    }
-
+    const { outcome, value } = valuesOf(landing, w * nextVisit(start), after => w * nextVisit(after))
     return (left, darts) => ({
       values: landing.map((_, a) => value(a, left, darts)),
       outcomes: aim => landing[aim].map(o => outcome(o, left, darts)),

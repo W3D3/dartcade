@@ -5,7 +5,7 @@ import { CHECKOUTS } from '../checkoutTable.js'
 import { AIM_RINGS, AIMS, aimKind, directOutId, oneDartFinish, type Aim } from './aims.js'
 import { landedNumber } from './aim.js'
 import type { Evaluation } from './model.js'
-import { dartPoints, type Throw } from './walk.js'
+import { afterDart, dartPoints, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
 /** An amateur's spread, for guessing targets only (the strategy model keeps the coaching level's):
@@ -176,8 +176,8 @@ function wedges(n: number | null, numbers: readonly number[]): number | null {
 
 /** The score after hitting `points` from `left`; a bust goes back to the visit's `start`. */
 const leave = (left: number, points: number, double: boolean, start: number) => {
-  const after = left - points
-  return after === 0 && double ? 0 : after < 2 ? start : after
+  const after = afterDart(left, points, double)
+  return after === 'out' ? 0 : after === 'bust' ? start : after
 }
 
 /** What hitting the aim's bed scores: a wire counts as its likeliest outcome. */

@@ -42,8 +42,15 @@ export type Throw = {
 }
 
 // The bull comes as number 50 with multiplier 1, a miss as multiplier 0
-export const dartPoints = (d: CoachDart): number => d.segment.number * d.segment.multiplier
-export const isDoubleDart = (d: CoachDart): boolean => d.segment.multiplier === 2 || d.segment.number === 50
+export const dartPoints = (d: Pick<CoachDart, 'segment'>): number => d.segment.number * d.segment.multiplier
+export const isDoubleDart = (d: Pick<CoachDart, 'segment'>): boolean => d.segment.multiplier === 2 || d.segment.number === 50
+
+/** The score after a dart worth `points` from `left`, double out: 'out' on 0 with a double, 'bust'
+ *  below 2 or on 0 without one. */
+export function afterDart(left: number, points: number, double: boolean): number | 'out' | 'bust' {
+  const after = left - points
+  return after === 0 && double ? 'out' : after < 2 ? 'bust' : after
+}
 
 /** A visit's darts from `start`, up to and including the one that busts: the score before each,
  *  and whether it checked out or busted. The game keeps darts thrown after a bust; they score
@@ -52,11 +59,9 @@ export function walkVisit(start: number, darts: readonly CoachDart[]): { left: n
   const out: { left: number; checkout: boolean; bust: boolean }[] = []
   let left = start
   for (const d of darts) {
-    const after = left - dartPoints(d)
-    const checkout = after === 0 && isDoubleDart(d)
-    const bust = !checkout && after < 2
-    out.push({ left, checkout, bust })
-    if (bust) break
+    const after = afterDart(left, dartPoints(d), isDoubleDart(d))
+    out.push({ left, checkout: after === 'out', bust: after === 'bust' })
+    if (typeof after !== 'number') break
     left = after
   }
   return out
