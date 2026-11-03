@@ -1,8 +1,8 @@
 // What each dart of a coached leg most likely was: its target, its category and how far it missed.
 // It describes what probably happened; the strategy notes (notes.ts) keep the benefit of the doubt.
-import { R, SEGS } from '../board.js'
+import { HALF, R, SEGS } from '../board.js'
 import { CHECKOUTS } from '../checkoutTable.js'
-import { AIMS, directOutId, oneDartFinish, type Aim } from './aims.js'
+import { AIM_RINGS, AIMS, aimKind, directOutId, oneDartFinish, type Aim } from './aims.js'
 import { landedNumber } from './aim.js'
 import type { Evaluation } from './model.js'
 import { dartPoints, type Throw } from './walk.js'
@@ -51,6 +51,12 @@ export type DartClass = {
   radialMm: number | null
   /** + clockwise (towards the next number in SEGS), − anticlockwise */
   tangentialMm: number | null
+  /** The distance to the nearest point of the target's bed, 0 inside it (a wire, which has no
+   *  bed: distanceMm). The miss a player means: 1 mm past the treble wire, not 16 mm off its middle */
+  edgeMm: number | null
+  /** That nearest point to the dart, the same signs as radialMm and tangentialMm; 0 when not off that way */
+  edgeRadialMm: number | null
+  edgeTangentialMm: number | null
   /** The landed number's signed wedge distance from the target's, + clockwise */
   wedgesOff: number | null
   /** No camera coords: placed at the centre of the bed it landed in */
@@ -68,6 +74,9 @@ const NONE: DartClass = {
   distanceMm: null,
   radialMm: null,
   tangentialMm: null,
+  edgeMm: null,
+  edgeRadialMm: null,
+  edgeTangentialMm: null,
   wedgesOff: null,
   estimated: false,
   plannedLeave: null,
@@ -173,6 +182,31 @@ function aimPoints(a: Aim, likeliest: number): [points: number, double: boolean]
   return a.id.startsWith('W') ? [likeliest, false] : [n, false]
 }
 
+/** Wrapped to (−π, π] */
+const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
+
+/** The vector from the nearest point of `aim`'s bed to `p`, in board units, as radial (+ outside)
+ *  and tangential (+ clockwise) parts; null for a wire, which has no bed. A bed is its radial band
+ *  across its number's wedge (the bulls: a whole circle). Inside the wedge's angles the nearest
+ *  point is straight in or out; past them it is on the nearer radial edge (an arc's nearest point
+ *  there is that edge's end). */
+export function fromBed(aim: Aim, p: { x: number; y: number }): { radial: number; tangential: number } | null {
+  const kind = aimKind(aim.id)
+  if (kind === 'W') return null
+  const [r0, r1] = AIM_RINGS[kind]
+  const r = Math.hypot(p.x, p.y)
+  const theta = Math.atan2(p.y, p.x)
+  const off = wrap(theta - Math.atan2(aim.y, aim.x))
+  if (aim.numbers[0] === 25 || Math.abs(off) <= HALF) return { radial: r - Math.min(Math.max(r, r0), r1), tangential: 0 }
+  // The edge on the dart's side; the other is further for any |off| ≤ π
+  const phi = Math.atan2(aim.y, aim.x) + Math.sign(off) * HALF
+  const u = { x: Math.cos(phi), y: Math.sin(phi) }
+  const t = Math.min(Math.max(p.x * u.x + p.y * u.y, r0), r1)
+  const v = { x: p.x - t * u.x, y: p.y - t * u.y }
+  // Clockwise at phi is (sin φ, −cos φ)
+  return { radial: v.x * u.x + v.y * u.y, tangential: v.x * u.y - v.y * u.x }
+}
+
 const likeliest = (e: Evaluation, a: number) => e.outcomes(a).reduce((x, y) => (y.outcome[3] > x.outcome[3] ? y : x))
 
 const isBullAim = (a: Aim) => a.id === 'Bull' || a.id === '25'
@@ -218,7 +252,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   const nearMiddle = t.d.coords ? Math.hypot(t.d.coords.x, t.d.coords.y) <= R.si : landed === 25
   if (target?.d != null && isBullAim(AIMS[target.a]) && !nearMiddle) target = null
 
-  // Step 3: miss properties, against the target's point (a wire's point for a wire)
+  // Step 3: miss properties, against the target's point and its bed's nearest point (a wire's point for a wire)
   const base: DartClass = { ...NONE, estimated }
   const aim = target ? AIMS[target.a] : null
   if (aim) base.target = { aimId: aim.id, label: aim.label }
@@ -227,11 +261,16 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
     const ra = Math.hypot(aim.x, aim.y)
     // Clockwise is decreasing board angle; wrapped to (−π, π]
     const angle = Math.atan2(aim.y, aim.x) - Math.atan2(pos.y, pos.x)
-    const signed = Math.atan2(Math.sin(angle), Math.cos(angle))
+    const radialMm = (r - ra) * MM_PER_UNIT
+    const tangentialMm = ra * wrap(angle) * MM_PER_UNIT
+    const edge = fromBed(aim, pos)
     Object.assign(base, {
       distanceMm: target.d * MM_PER_UNIT,
-      radialMm: (r - ra) * MM_PER_UNIT,
-      tangentialMm: ra * signed * MM_PER_UNIT,
+      radialMm,
+      tangentialMm,
+      edgeMm: edge ? Math.hypot(edge.radial, edge.tangential) * MM_PER_UNIT : target.d * MM_PER_UNIT,
+      edgeRadialMm: edge ? edge.radial * MM_PER_UNIT : radialMm,
+      edgeTangentialMm: edge ? edge.tangential * MM_PER_UNIT : tangentialMm,
       wedgesOff,
     })
   }

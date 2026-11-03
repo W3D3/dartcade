@@ -4,10 +4,10 @@ import type { CoachLegRow, CoachLegTitle, GameSummary } from '$lib/api'
 import type { BedRing } from '$lib/details/boardGeometry'
 import { startOfDay } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
-import { HALF, R, SEGS } from '$shared/board'
+import { HALF, SEGS } from '$shared/board'
 import { checkoutHint } from '$shared/checkout.js'
 import type { CoachNote, ReviewVisit, VisitGrade } from '$shared/coach'
-import { AIMS, directOutId, type Aim } from '$shared/coach/aims'
+import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
 
@@ -74,8 +74,10 @@ export function dartTone(name: string, before: number): DartTone {
 export const visitTiles = (v: Pick<ReviewVisit, 'left' | 'darts'>): { name: string; tone: DartTone; label: string }[] =>
   v.darts.map((d, i) => ({ name: d.name, tone: dartTone(d.name, i === 0 ? v.left : v.darts[i - 1].left), label: dartLabel(d.class) }))
 
-/** Offsets this small get no direction word */
-const DIRECTION_MIN_MM = 3
+/** Offset parts this small get no direction word */
+const DIRECTION_MIN_MM = 0.5
+/** Millimetres as a player reads them: whole, at least 1 */
+const wholeMm = (mm: number) => `${Math.max(1, Math.round(mm))} mm`
 
 /** The number next to target `aimId` on the clockwise (+) or anticlockwise (−) side: a wire's own
  *  two numbers (W20-1: 1 clockwise, 20 anticlockwise), else the board neighbour (T20: 1, 5). */
@@ -86,14 +88,15 @@ function towards(aimId: string, clockwise: boolean): number | null {
   return i < 0 ? null : SEGS[(i + (clockwise ? 1 : 19)) % 20]
 }
 
-/** "14 mm inside, towards 1": the miss's distance and its direction parts above 3 mm, the larger
- *  first, the same wherever the target sits on the board. Radial − is inside (towards the bull),
- *  + outside; tangential names the neighbouring number on that side. Null without a camera
- *  position: the dart sits at its bed's centre, so the millimetres would be made up. */
+/** "4 mm inside, towards 1": the miss's distance from the edge of the target's bed and its
+ *  direction parts above half a millimetre, the larger first, the same wherever the target sits on
+ *  the board. Radial − is inside (towards the bull), + outside; tangential names the neighbouring
+ *  number on that side. Null without a camera position: the dart sits at its bed's centre, so the
+ *  millimetres would be made up. */
 function offset(c: DartClass): string | null {
-  if (c.estimated || c.distanceMm === null) return null
-  const r = c.radialMm ?? 0
-  const t = c.tangentialMm ?? 0
+  if (c.estimated || c.edgeMm === null) return null
+  const r = c.edgeRadialMm ?? 0
+  const t = c.edgeTangentialMm ?? 0
   const side = c.target ? towards(c.target.aimId, t > 0) : null
   const parts = [
     { mm: Math.abs(r), word: r < 0 ? 'inside' : 'outside' },
@@ -102,11 +105,11 @@ function offset(c: DartClass): string | null {
     .filter(p => p.mm > DIRECTION_MIN_MM)
     .sort((x, y) => y.mm - x.mm)
     .map(p => p.word)
-  return `${Math.round(c.distanceMm)} mm${parts.length ? ` ${parts.join(', ')}` : ''}`
+  return `${wholeMm(c.edgeMm)}${parts.length ? ` ${parts.join(', ')}` : ''}`
 }
 
-/** What a dart was aimed at and whether it got there, under its tile: "T20 ✓", "Miss T20 · 14 mm
- *  inside, towards 1", "Split → D16 ✓", "D16 inside". It never judges the choice of target (the strategy
+/** What a dart was aimed at and whether it got there, under its tile: "T20 ✓", "Miss T20 · 4 mm
+ *  inside, towards 1" (from the bed's edge), "Split → D16 ✓", "D16 inside". It never judges the choice of target (the strategy
  *  note does). Without a camera position a miss reads "· est." instead of its millimetres. */
 export function dartLabel(c: DartClass): string {
   const t = c.target?.label ?? '?'
@@ -135,7 +138,7 @@ export function dartLabel(c: DartClass): string {
       if (c.detail === 'sb') return '25 (aimed Bull)'
       if (c.detail === 'db') return 'Bull (aimed 25)'
       // Around the bull, high/low and left/right mean nothing: the distance only
-      return `Miss ${t}${c.estimated ? ' · est.' : c.distanceMm === null ? '' : ` · ${Math.round(c.distanceMm)} mm`}`
+      return `Miss ${t}${c.estimated ? ' · est.' : c.edgeMm === null ? '' : ` · ${wholeMm(c.edgeMm)}`}`
     case 'bustBack':
       return c.hit ? 'Bust-back ✓' : 'Bust-back missed'
     case 'bust':
@@ -172,25 +175,14 @@ export const aimPoint = (aimId: string): { x: number; y: number } | null => {
   const a = aimById(aimId)
   return a ? { x: a.x, y: a.y } : null
 }
-/** An AIMS id's kind: T, D, SO, SI or W (T20, D20, SO20, SI20, W20-1); Bull and 25 stay as they are */
-const kindOf = (aimId: string) => aimId.replace(/[\d-]/g, '') || aimId
 const WHOLE_TURN = 2 * Math.PI
-const AIM_RING: Record<string, [r0: number, r1: number]> = {
-  T: [R.si, R.tr],
-  D: [R.so, R.db],
-  SO: [R.tr, R.so],
-  SI: [R.bull25, R.si],
-  W: [R.tr, R.so],
-  Bull: [0, R.bull50],
-  '25': [R.bull50, R.bull25],
-}
 
 /** The bed an aim (AIMS id) sits in: a wire's is the two outer-single halves either side of it,
  *  the bulls' a whole ring. */
 export function aimBed(aimId: string): BedRing | null {
   const aim = aimById(aimId)
   if (!aim) return null
-  const [r0, r1] = AIM_RING[kindOf(aimId)]
+  const [r0, r1] = AIM_RINGS[aimKind(aimId)]
   if (aim.numbers[0] === 25) return { r0, r1, from: 0, to: WHOLE_TURN }
   const a = Math.atan2(aim.y, aim.x)
   return { r0, r1, from: a - HALF, to: a + HALF }
@@ -208,7 +200,7 @@ export function likelyMisses(aimId: string): BoardTag[] {
   const aim = aimById(aimId)
   if (!aim) return []
   const tag = (label: string, id: string): BoardTag => ({ label, x: AIM_AT[id].x, y: AIM_AT[id].y })
-  const kind = kindOf(aimId)
+  const kind = aimKind(aimId)
   if (kind === 'Bull') return [tag('25', '25')]
   if (kind === '25') return [tag('Bull', 'Bull')]
   if (kind === 'W') return aim.numbers.map(n => tag(`S${n}`, `SO${n}`))

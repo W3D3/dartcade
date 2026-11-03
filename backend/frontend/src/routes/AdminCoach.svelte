@@ -69,7 +69,7 @@
     add(d)
   }
 
-  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Out', 'CW', 'Wedges', 'Est.', 'Leave']
+  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Edge', 'Out', 'CW', 'Wedges', 'Est.', 'Leave']
   const mm = (v: number | null) => (v === null ? '–' : v.toFixed(1))
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
@@ -164,7 +164,8 @@
             <div class="flex flex-col gap-2">
               <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
               <p class="m-0 text-[12px] text-text-muted">
-                Millimetres from the target: Out is away from the bull, CW is clockwise. Leave is planned → actual.
+                Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
+                is clockwise, both from the point. Leave is planned → actual.
               </p>
               <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-[13px] tabular-nums">
@@ -181,6 +182,7 @@
                         <td class="px-1.5 py-1">{c.kind}{c.hit ? ' ✓' : ''}{c.detail ? ` (${c.detail})` : ''}</td>
                         <td class="px-1.5 py-1">{c.target ? `${c.target.label} (${c.target.aimId})` : '–'}</td>
                         <td class="px-1.5 py-1 text-right">{mm(c.distanceMm)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.edgeMm)}</td>
                         <td class="px-1.5 py-1 text-right">{mm(c.radialMm)}</td>
                         <td class="px-1.5 py-1 text-right">{mm(c.tangentialMm)}</td>
                         <td class="px-1.5 py-1 text-right">{c.wedgesOff ?? '–'}</td>

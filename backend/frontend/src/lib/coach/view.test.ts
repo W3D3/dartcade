@@ -287,7 +287,13 @@ describe('leg review text', () => {
 describe('dartLabel', () => {
   const cls = (c: Partial<DartClass>): DartClass => ({ ...NOT_COUNTED, ...c })
   const at = (label: string, aimId = label) => ({ target: { aimId, label } })
-  const off = (distanceMm: number, radialMm: number, tangentialMm: number) => ({ distanceMm, radialMm, tangentialMm })
+  /** The miss from the edge of the target's bed, the labels' numbers */
+  const off = (edgeMm: number, edgeRadialMm: number, edgeTangentialMm: number) => ({
+    distanceMm: edgeMm + 10,
+    edgeMm,
+    edgeRadialMm,
+    edgeTangentialMm,
+  })
 
   it.each<[string, Partial<DartClass>, string]>([
     ['a treble hit', { kind: 'scoringHit', hit: true, ...at('T20'), ...off(2, 1, 1) }, 'T20 ✓'],
@@ -305,25 +311,40 @@ describe('dartLabel', () => {
     ['a miss on the lower half, clockwise', { kind: 'scoringMiss', ...at('T3'), ...off(20, -6, 19) }, 'Miss T3 · 20 mm towards 19, inside'],
     ['a miss on the lower half, anticlockwise', { kind: 'route', ...at('T3'), ...off(20, 15, -12) }, 'Miss T3 · 20 mm outside, towards 17'],
     ['a miss of the 5 wrapping to the 20', { kind: 'scoringMiss', ...at('T5'), ...off(18, 0, 18) }, 'Miss T5 · 18 mm towards 20'],
-    ['a miss of the 20 wrapping to the 5', { kind: 'scoringMiss', ...at('T20'), ...off(18, 2, -18) }, 'Miss T20 · 18 mm towards 5'],
-    ['a miss of the 20, clockwise', { kind: 'scoringMiss', ...at('T20'), ...off(18, 2, 18) }, 'Miss T20 · 18 mm towards 1'],
+    ['a miss of the 20 wrapping to the 5', { kind: 'scoringMiss', ...at('T20'), ...off(18, 0, -18) }, 'Miss T20 · 18 mm towards 5'],
+    ['a miss of the 20, clockwise', { kind: 'scoringMiss', ...at('T20'), ...off(18, 0, 18) }, 'Miss T20 · 18 mm towards 1'],
     [
       "a wire miss names the wire's own numbers",
       { kind: 'route', ...at('20/1', 'W20-1'), ...off(25, 0, -25) },
       'Miss 20/1 · 25 mm towards 20',
     ],
     [
-      'a scoring miss, parts of 3 mm or less dropped',
-      { kind: 'scoringMiss', ...at('T20'), ...off(22, 3, -22) },
+      'a scoring miss, parts of half a millimetre or less dropped',
+      { kind: 'scoringMiss', ...at('T20'), ...off(22, 0.5, -22) },
       'Miss T20 · 22 mm towards 5',
     ],
+    [
+      'a miss just past the treble wire reads from the edge, not the 17 mm to its middle',
+      {
+        kind: 'scoringMiss',
+        ...at('T20'),
+        distanceMm: 16.7,
+        radialMm: 0,
+        tangentialMm: 16.7,
+        edgeMm: 0.6,
+        edgeRadialMm: 0,
+        edgeTangentialMm: 0.6,
+      },
+      'Miss T20 · 1 mm towards 1',
+    ],
+    ['a small miss on both sides', { kind: 'scoringMiss', ...at('T20'), ...off(2.2, -1.4, 1.7) }, 'Miss T20 · 2 mm towards 1, inside'],
     [
       'a scoring miss without a camera position',
       { kind: 'scoringMiss', ...at('T20'), ...off(40, -40, 2), estimated: true },
       'Miss T20 · est.',
     ],
     ['a route hit', { kind: 'route', hit: true, ...at('S20', 'SO20'), plannedLeave: 40, actualLeave: 40 }, 'Aimed S20 ✓'],
-    ['a route miss', { kind: 'route', ...at('T19'), ...off(12, 2, -12) }, 'Miss T19 · 12 mm towards 3'],
+    ['a route miss', { kind: 'route', ...at('T19'), ...off(12, 0, -12) }, 'Miss T19 · 12 mm towards 3'],
     ['a split hit', { kind: 'split', hit: true, ...at('S6', 'SO6'), plannedLeave: 32, actualLeave: 32 }, 'Split → D16 ✓'],
     ['a split miss', { kind: 'split', ...at('S6', 'SO6'), plannedLeave: 32, actualLeave: 25 }, 'Split → D16 ✗'],
     ['a split to the bull', { kind: 'split', hit: true, ...at('S10', 'SO10'), plannedLeave: 50, actualLeave: 50 }, 'Split → Bull ✓'],
@@ -332,7 +353,7 @@ describe('dartLabel', () => {
     ['a double outside', { kind: 'double', ...at('D16'), detail: 'outside', ...off(9, 9, 1) }, 'D16 outside'],
     ['a typed miss at a double', { kind: 'double', ...at('D16'), detail: 'outside', estimated: true }, 'D16 outside · est.'],
     ['a typed single at a double', { kind: 'double', ...at('D16'), detail: 'inside', ...off(15, -15, 0), estimated: true }, 'D16 inside'],
-    ['a double wide', { kind: 'double', ...at('D16'), detail: 'wide', ...off(52, 2, 52) }, 'D16 wide · 52 mm towards 8'],
+    ['a double wide', { kind: 'double', ...at('D16'), detail: 'wide', ...off(52, 0, 52) }, 'D16 wide · 52 mm towards 8'],
     [
       'a double wide and inside',
       { kind: 'double', ...at('D16'), detail: 'wide', ...off(50, -20, -45) },

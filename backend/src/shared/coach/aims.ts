@@ -17,6 +17,20 @@ export type Aim = {
  *  double (the bull is), and its chance. */
 export type Outcome = readonly [name: string, points: number, double: boolean, p: number]
 
+/** The radial band of each aim kind's bed (an AIMS id without its numbers: T, D, SO, SI, W; Bull
+ *  and 25 as they are). A wire's band is the outer single's either side of it. */
+export const AIM_RINGS: Readonly<Record<string, readonly [r0: number, r1: number]>> = {
+  T: [R.si, R.tr],
+  D: [R.so, R.db],
+  SO: [R.tr, R.so],
+  SI: [R.bull25, R.si],
+  W: [R.tr, R.so],
+  Bull: [0, R.bull50],
+  '25': [R.bull50, R.bull25],
+}
+/** An AIMS id's kind, the key of AIM_RINGS: T20 → T, W20-1 → W, Bull and 25 as they are */
+export const aimKind = (aimId: string): string => aimId.replace(/[\d-]/g, '') || aimId
+
 const at = (r: number, angle: number) => ({ x: r * Math.cos(angle), y: r * Math.sin(angle) })
 
 export const AIMS: readonly Aim[] = [

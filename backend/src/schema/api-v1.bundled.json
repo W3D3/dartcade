@@ -8734,6 +8734,9 @@
           "distanceMm",
           "radialMm",
           "tangentialMm",
+          "edgeMm",
+          "edgeRadialMm",
+          "edgeTangentialMm",
           "wedgesOff",
           "estimated",
           "plannedLeave",
@@ -8795,6 +8798,21 @@
             "type": "number",
             "nullable": true,
             "description": "+ clockwise, − anticlockwise"
+          },
+          "edgeMm": {
+            "type": "number",
+            "nullable": true,
+            "description": "From the nearest point of the target's bed, 0 inside it; a wire's is distanceMm"
+          },
+          "edgeRadialMm": {
+            "type": "number",
+            "nullable": true,
+            "description": "That vector, + outside; 0 when not off that way"
+          },
+          "edgeTangentialMm": {
+            "type": "number",
+            "nullable": true,
+            "description": "That vector, + clockwise; 0 when not off that way"
           },
           "wedgesOff": {
             "type": "integer",

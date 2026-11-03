@@ -2912,6 +2912,12 @@ export interface components {
             radialMm: number | null;
             /** @description + clockwise, − anticlockwise */
             tangentialMm: number | null;
+            /** @description From the nearest point of the target's bed, 0 inside it; a wire's is distanceMm */
+            edgeMm: number | null;
+            /** @description That vector, + outside; 0 when not off that way */
+            edgeRadialMm: number | null;
+            /** @description That vector, + clockwise; 0 when not off that way */
+            edgeTangentialMm: number | null;
             wedgesOff: number | null;
             /** @description No camera coords: placed at the centre of the bed it landed in */
             estimated: boolean;

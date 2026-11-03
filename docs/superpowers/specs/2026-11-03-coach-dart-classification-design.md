@@ -109,19 +109,30 @@ How a bust aim and Bust-back are worked out:
 
 Every dart with a target that isn't a hit gets:
 
-| Property                       | How                                                                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `distanceMm`                   | `d(dart, target) × 170` (r = 1 is the outer double wire, 170 mm)                                                                                        |
-| `radialMm`                     | the dart's radius minus the target's radius, × 170: **+ outside** (away from the bull), **− inside** (towards it)                                       |
-| `tangentialMm`                 | the target's radius × the signed angle from the target to the dart, × 170: **+ clockwise**, **− anticlockwise**                                         |
-| `wedgesOff`                    | the signed wedge distance from the target's number in `SEGS` order: 0, ±1, ±2 …                                                                         |
-| `estimated`                    | true without camera coords (bed-centre position)                                                                                                        |
-| `plannedLeave` / `actualLeave` | Split, Route, Double and Bull attempts: what the target would have left against what the dart left. For example, planned 32 (D16) and actually left 35. |
+| Property                            | How                                                                                                                                                                                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `distanceMm`                        | `d(dart, target) × 170` (r = 1 is the outer double wire, 170 mm)                                                                                                                                                                                                                         |
+| `radialMm`                          | the dart's radius minus the target's radius, × 170: **+ outside** (away from the bull), **− inside** (towards it)                                                                                                                                                                        |
+| `tangentialMm`                      | the target's radius × the signed angle from the target to the dart, × 170: **+ clockwise**, **− anticlockwise**                                                                                                                                                                          |
+| `edgeMm`                            | the distance from the dart to the nearest point of the target's **bed**, × 170; 0 inside it. The bed is the aim's radial band (treble, double, inner or outer single) across its number's wedge; the Bull and 25 a whole disc and ring. A wire has no bed: its `edgeMm` is `distanceMm`. |
+| `edgeRadialMm` / `edgeTangentialMm` | the vector from that nearest point to the dart, split the same way and with the same signs as `radialMm` / `tangentialMm`; 0 when the dart isn't off that way (a wire's: the centre values)                                                                                              |
+| `wedgesOff`                         | the signed wedge distance from the target's number in `SEGS` order: 0, ±1, ±2 …                                                                                                                                                                                                          |
+| `estimated`                         | true without camera coords (bed-centre position)                                                                                                                                                                                                                                         |
+| `plannedLeave` / `actualLeave`      | Split, Route, Double and Bull attempts: what the target would have left against what the dart left. For example, planned 32 (D16) and actually left 35.                                                                                                                                  |
 
-Wires (the target `20/1`) use the wire's point as the centre. The label names the direction with
-words that mean the same anywhere on the board: **inside** / **outside** for the radial part and
-**towards N** (the neighbouring number on that side) for the tangential part, the larger first,
-each only above 3 mm. A dart without a position shows "· est." instead of millimetres.
+Every dart with a position and a target gets these, hits too (their `edgeMm` is 0). Wires (the
+target `20/1`) use the wire's point as the centre. The centre values feed the stats and the model;
+the label uses the edge ones, the miss a player means: a dart just past the treble wire is
+"1 mm towards 1", not the 17 mm to the treble's middle. It names the direction with words that
+mean the same anywhere on the board: **inside** / **outside** for the radial part and **towards N**
+(the neighbouring number on that side) for the tangential part, the larger first, each only above
+0.5 mm, the millimetres whole and at least 1. A dart without a position shows "· est." instead of
+millimetres.
+
+The nearest point of a bed: inside the wedge's angles, straight in or out to the band (0 in it);
+past them, the nearest point of the radial edge on the dart's side (point-to-segment), which is a
+corner when the dart is also outside the band. An arc's nearest point past the wedge is its end,
+on that edge, so this is exact.
 
 ## Grading change
 

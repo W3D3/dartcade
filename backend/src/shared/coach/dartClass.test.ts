@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt, SEGS, segAngle } from '../board.js'
-import { AIMS } from './aims.js'
-import { classifyDart, finishCandidates, NOT_COUNTED } from './dartClass.js'
+import { AIM_RINGS, AIMS, aimKind } from './aims.js'
+import { classifyDart, finishCandidates, fromBed, NOT_COUNTED } from './dartClass.js'
 import { evaluator } from './model.js'
 import { dart, leg, visit } from './testLegs.js'
 import { throwsOf, type CoachDart, type Throw } from './walk.js'
@@ -111,6 +111,78 @@ describe('classifyDart: miss properties', () => {
     expect(high.target?.aimId).toBe('T20')
     expect(high.radialMm).toBeGreaterThan(0)
     expect(high.tangentialMm).toBeLessThan(0)
+  })
+})
+
+describe('classifyDart: the miss to the edge of the bed', () => {
+  it('a dart in the bed is 0 from it', () => {
+    expect(classify(at(0.03, 0.6), 501)).toMatchObject({ target: { aimId: 'T20' }, edgeMm: 0, edgeRadialMm: 0, edgeTangentialMm: 0 })
+  })
+
+  it('a dart just under the treble is that far inside it, straight in', () => {
+    const c = classify(polar(20, R.si - 0.005), 501)
+    expect(c.edgeMm).toBeCloseTo(0.85, 6)
+    expect(c.edgeRadialMm).toBeCloseTo(-0.85, 6)
+    expect(c.edgeTangentialMm).toBe(0)
+  })
+
+  it('a dart just past the treble wire, sideways, is about 1 mm off, not the 17 mm to its middle', () => {
+    const c = classify(polar(20, (R.si + R.tr) / 2, 9.35), 501)
+    expect(c).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' } })
+    expect(c.distanceMm).toBeGreaterThan(16)
+    expect(c.edgeMm).toBeCloseTo(0.6055 * Math.sin((0.35 * Math.PI) / 180) * 170, 6)
+    expect(c.edgeTangentialMm).toBeGreaterThan(0)
+    expect(c.edgeRadialMm).toBeCloseTo(0, 9)
+  })
+
+  it('past a corner of the bed, the miss is to the corner', () => {
+    const p = polar(20, R.si - 0.01, 12)
+    const c = classify(p, 501)
+    const a = segAngle(0) - Math.PI / 20
+    const corner = { x: R.si * Math.cos(a), y: R.si * Math.sin(a) }
+    expect(c.edgeMm).toBeCloseTo(Math.hypot(p.coords!.x - corner.x, p.coords!.y - corner.y) * 170, 6)
+    expect(c.edgeRadialMm).toBeLessThan(0)
+    expect(c.edgeTangentialMm).toBeGreaterThan(0)
+  })
+
+  it('the 25 is its distance past the Bull wire from the Bull', () => {
+    const c = classify(at(0, -0.06), 501)
+    expect(c.edgeMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
+    expect(c.edgeRadialMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
+  })
+
+  it('matches the nearest of densely sampled bed points', () => {
+    const sample = (id: string) => {
+      const a = aim(id)
+      const [r0, r1] = AIM_RINGS[aimKind(id)]
+      const c = Math.atan2(a.y, a.x)
+      const span = a.numbers[0] === 25 ? Math.PI : Math.PI / 20
+      const pts: { x: number; y: number }[] = []
+      for (let i = 0; i <= 60; i++)
+        for (let j = 0; j <= 60; j++) {
+          const r = r0 + ((r1 - r0) * i) / 60
+          const t = c - span + (2 * span * j) / 60
+          pts.push({ x: r * Math.cos(t), y: r * Math.sin(t) })
+        }
+      return pts
+    }
+    let seed = 7
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1
+    for (const id of ['T20', 'D3', 'SO11', 'SI6', 'Bull', '25']) {
+      const pts = sample(id)
+      for (let k = 0; k < 40; k++) {
+        const p = { x: rand(), y: rand() }
+        const e = fromBed(aim(id), p)!
+        const brute = Math.min(...pts.map(q => Math.hypot(p.x - q.x, p.y - q.y)))
+        // The grid's spacing bounds its error
+        expect(Math.hypot(e.radial, e.tangential), `${id} ${JSON.stringify(p)}`).toBeCloseTo(brute, 2)
+        expect(Math.hypot(e.radial, e.tangential)).toBeLessThanOrEqual(brute + 1e-9)
+      }
+    }
+  })
+
+  it('a wire has no bed', () => {
+    expect(fromBed(aim('W20-1'), { x: 0, y: 0.5 })).toBeNull()
   })
 })
 
