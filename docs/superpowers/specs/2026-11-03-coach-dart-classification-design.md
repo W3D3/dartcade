@@ -277,6 +277,10 @@ Decisions taken while building this without the user, each with why:
   scoring. With coords it now reads as a miss of T18, two wedges off, and the same three at their
   bed centres read Wild. A value margin (own aims only within 0.15 of the best) was rejected: S20
   on 57 needs 0.148, and 140's D13 and T13 are 0.129 and 0.102 off, so S13 read "Aimed D13".
+- **A single is one aim in either bed** (user report): when the outer or inner single of a number
+  is a candidate, so is the other bed, at the same prior. On 70 → S18 with the opponent on 40, the
+  inner S12 (leaving D20) read as a T12 miss: only the outer S12 made the top 5, and the inner
+  single is nearer the treble than the outer single's point.
 - **On a one-dart finish the only double candidate is the finishing one.** Otherwise a wide D16
   miss into D8 on 32 reads as a Split hit. Cost: a deliberate double-to-double split reads as a
   wide double. Accepted: 34 → D2 reads as S2 and 36 → D4 as S4 (plausible splits to 32).

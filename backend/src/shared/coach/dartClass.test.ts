@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { R, segmentAt, SEGS, segAngle } from '../board.js'
 import { AIM_RINGS, AIMS, aimKind } from './aims.js'
 import { classifyDart, finishCandidates, fromBed, NOT_COUNTED } from './dartClass.js'
-import { evaluator } from './model.js'
+import { evaluator, nextVisit } from './model.js'
 import { dart, leg, visit } from './testLegs.js'
 import { throwsOf, type CoachDart, type Throw } from './walk.js'
 
@@ -19,7 +19,7 @@ const polar = (n: number, r: number, deg = 0): CoachDart => {
 const aim = (id: string) => AIMS.find(a => a.id === id) ?? AIMS[0]
 
 /** One dart thrown with `left` to go (and `darts` in hand), in a visit that started on `start`. */
-function classify(d: CoachDart, left: number, darts = 3, start = left) {
+function classify(d: CoachDart, left: number, darts = 3, start = left, w = 1) {
   const after = left - d.segment.number * d.segment.multiplier
   const checkout = after === 0 && (d.segment.multiplier === 2 || d.segment.number === 50)
   const t: Throw = {
@@ -33,10 +33,10 @@ function classify(d: CoachDart, left: number, darts = 3, start = left) {
     visitDarts: [d],
     checkout,
     bust: !checkout && after < 2,
-    w: 1,
-    opponentOnOut: false,
+    w,
+    opponentOnOut: w < 1,
   }
-  return classifyDart(t, { evaluation: left > 170 ? null : evaluator(start, 1)(left, darts) })
+  return classifyDart(t, { evaluation: left > 170 ? null : evaluator(start, w)(left, darts) })
 }
 
 /** The walked throws of one visit, each classified with the visit's shared evaluator. */
@@ -373,6 +373,14 @@ describe('classifyDart: Finish', () => {
     const c = classify(at(aim('SO13').x, aim('SO13').y), 140, 2, 200)
     expect(c).toMatchObject({ kind: 'route', hit: false, target: { aimId: 'T18' }, wedgesOff: 2, actualLeave: 127 })
     expect(classify(dart('S13'), 140, 2, 200)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO13' } })
+  })
+
+  it('a single is one aim in either bed: 52 with 2 darts, the inner S12 centre is S12 leaving D20, not a T12 miss', () => {
+    // The opponent on 40 (sandbox report): their finish chance reshuffles the top aims
+    for (const id of ['SI12', 'SO12']) {
+      const c = classify(at(aim(id).x, aim(id).y), 52, 2, 70, 1 - nextVisit(40))
+      expect(c).toMatchObject({ kind: 'route', hit: true, target: { aimId: id }, plannedLeave: 40, actualLeave: 40 })
+    }
   })
 
   it('on 40, a dart about a wedge off the D20 is its miss, in the inner single 1 too', () => {

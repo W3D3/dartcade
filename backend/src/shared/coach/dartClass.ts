@@ -156,7 +156,15 @@ export function finishCandidates(
   const own = new Set((landed === null ? [] : aimsOn(landed)).filter(allowed))
   const backs = new Set(!oneDartFinish(left) && busts.best ? [...busts.aims].filter(allowed) : [])
   const floor = (a: number) => (floored.has(a) ? MIN_PRIOR : own.has(a) ? LANDED_PRIOR : 0)
-  return [...new Set([...top, ...floored, ...own, ...backs])].map(a => ({ a, prior: backs.has(a) ? 1 : Math.max(prior(a), floor(a)) }))
+  const priors = new Map(
+    [...new Set([...top, ...floored, ...own, ...backs])].map(a => [a, backs.has(a) ? 1 : Math.max(prior(a), floor(a))]),
+  )
+  // A single is one aim whichever bed it lands in: S12 on 52 thrown into the inner single isn't a T12
+  for (const [a, p] of [...priors]) {
+    const sibling = aimAt(AIMS[a].id.replace(/^S([OI])/, (_, bed: string) => (bed === 'O' ? 'SI' : 'SO')))
+    if (sibling !== a && sibling >= 0 && allowed(sibling)) priors.set(sibling, Math.max(priors.get(sibling) ?? 0, p))
+  }
+  return [...priors].map(([a, p]) => ({ a, prior: p }))
 }
 
 /** `n`'s signed wedge distance from the nearest of `numbers` in SEGS order, + clockwise. */
