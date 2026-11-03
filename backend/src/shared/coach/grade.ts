@@ -68,13 +68,13 @@ export function explainedNote(notes: readonly CoachNote[]): CoachNote | null {
   return costliest(notes.filter(n => !n.tip)) ?? costliest(notes)
 }
 
-type Closeness = Pick<DartClass, 'kind' | 'hit' | 'target' | 'estimated' | 'edgeMm'>
+type Closeness = Pick<DartClass, 'kind' | 'hit' | 'target' | 'estimated' | 'miss'>
 
 /** The credit for a dart that missed its target, the closer the more; null for a hit, a typed
  *  dart or one without a target. A hit's outcome is already in its value. */
 export function closeness(c: Closeness): number | null {
-  if (c.hit || c.estimated || c.target === null || c.edgeMm === null) return null
-  return MISS_CLOSE_MAX * Math.max(0, 1 - c.edgeMm / MISS_CLOSE_ZERO_MM)
+  if (c.hit || c.estimated || c.target === null || c.miss === null) return null
+  return MISS_CLOSE_MAX * Math.max(0, 1 - c.miss.edgeMm / MISS_CLOSE_ZERO_MM)
 }
 
 /** A dart's grade: its value change plus its closeness credit */

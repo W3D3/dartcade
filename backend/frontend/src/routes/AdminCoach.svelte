@@ -205,13 +205,13 @@
                       {@const c = d.class}
                       <tr class="border-t border-line">
                         <td class="px-1.5 py-1 font-display font-bold text-[16px]">{d.name}</td>
-                        <td class="px-1.5 py-1">{c.kind}{c.hit ? ' ✓' : ''}{c.detail ? ` (${c.detail})` : ''}</td>
+                        <td class="px-1.5 py-1">{c.kind}{c.hit ? ' ✓' : ''}{'detail' in c && c.detail ? ` (${c.detail})` : ''}</td>
                         <td class="px-1.5 py-1">{c.target ? `${c.target.label} (${c.target.aimId})` : '–'}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.distanceMm)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.edgeMm)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.radialMm)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.tangentialMm)}</td>
-                        <td class="px-1.5 py-1 text-right">{c.wedgesOff ?? '–'}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.mm ?? null)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.edgeMm ?? null)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.radialMm ?? null)}</td>
+                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.tangentialMm ?? null)}</td>
+                        <td class="px-1.5 py-1 text-right">{c.miss?.wedgesOff ?? '–'}</td>
                         <td class="px-1.5 py-1">{c.estimated ? 'yes' : 'no'}</td>
                         <td class="px-1.5 py-1 text-right">{c.plannedLeave ?? '–'} → {c.actualLeave ?? '–'}</td>
                         <td class="px-1.5 py-1 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>

@@ -39,26 +39,30 @@ export type DartKind =
   | 'wild'
   | 'notCounted'
 
-export type DartClass = {
-  kind: DartKind
+/** How far a dart with a position missed its target: all in millimetres, set together. */
+export type Miss = {
+  /** From the target's point */
+  mm: number
+  /** + outside (away from the bull), − inside (towards it) */
+  radialMm: number
+  /** + clockwise (towards the next number in SEGS), − anticlockwise */
+  tangentialMm: number
+  /** The distance to the nearest point of the target's bed, 0 inside it (a wire, which has no
+   *  bed: mm). The miss a player means: 1 mm past the treble wire, not 16 mm off its middle */
+  edgeMm: number
+  /** That nearest point to the dart, the same signs as radialMm and tangentialMm; 0 when not off that way */
+  edgeRadialMm: number
+  edgeTangentialMm: number
+  /** The landed number's signed wedge distance from the target's, + clockwise; null around the bull */
+  wedgesOff: number | null
+}
+
+type DartClassBase = {
   /** The dart landed in its target's bed, or did what it was meant to */
   hit: boolean
   target: { aimId: string; label: string } | null
-  /** scoringSingle: inner | outer; double: inside | outside | wide; bull: sb (25 for the Bull) | db (Bull for the 25) */
-  detail: string | null
-  distanceMm: number | null
-  /** + outside (away from the bull), − inside (towards it) */
-  radialMm: number | null
-  /** + clockwise (towards the next number in SEGS), − anticlockwise */
-  tangentialMm: number | null
-  /** The distance to the nearest point of the target's bed, 0 inside it (a wire, which has no
-   *  bed: distanceMm). The miss a player means: 1 mm past the treble wire, not 16 mm off its middle */
-  edgeMm: number | null
-  /** That nearest point to the dart, the same signs as radialMm and tangentialMm; 0 when not off that way */
-  edgeRadialMm: number | null
-  edgeTangentialMm: number | null
-  /** The landed number's signed wedge distance from the target's, + clockwise */
-  wedgesOff: number | null
+  /** Null without a position or a target with a point to miss */
+  miss: Miss | null
   /** No camera coords: placed at the centre of the bed it landed in */
   estimated: boolean
   /** route, split, double, bull, bustBack: what the target would have left, and what the dart left */
@@ -66,22 +70,16 @@ export type DartClass = {
   actualLeave: number | null
 }
 
-const NONE: DartClass = {
-  kind: 'wild',
-  hit: false,
-  target: null,
-  detail: null,
-  distanceMm: null,
-  radialMm: null,
-  tangentialMm: null,
-  edgeMm: null,
-  edgeRadialMm: null,
-  edgeTangentialMm: null,
-  wedgesOff: null,
-  estimated: false,
-  plannedLeave: null,
-  actualLeave: null,
-}
+/** The kinds with a `detail`, and what it says; null when there's nothing to add (a hit, a typed dart) */
+type Detailed =
+  | { kind: 'scoringSingle'; detail: 'inner' | 'outer' | null }
+  | { kind: 'double'; detail: 'inside' | 'outside' | 'wide' | null }
+  /** sb: the 25 for the Bull; db: the Bull for the 25 */
+  | { kind: 'bull'; detail: 'sb' | 'db' | null }
+
+export type DartClass = DartClassBase & (Detailed | { kind: Exclude<DartKind, Detailed['kind']> })
+
+const NONE: DartClassBase = { hit: false, target: null, miss: null, estimated: false, plannedLeave: null, actualLeave: null }
 
 /** A dart thrown after a bust in its visit: the walk (walk.ts) leaves it out, it scores nothing. */
 export const NOT_COUNTED: DartClass = { ...NONE, kind: 'notCounted' }
@@ -242,7 +240,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   if (target?.d != null && isBullAim(AIMS[target.a]) && !nearMiddle) target = null
 
   // Step 3: miss properties, against the target's point and its bed's nearest point (a wire's point for a wire)
-  const base: DartClass = { ...NONE, estimated }
+  const base: DartClassBase = { ...NONE, estimated }
   const aim = target ? AIMS[target.a] : null
   if (aim) base.target = { aimId: aim.id, label: aim.label }
   if (aim && pos && target?.d != null) {
@@ -253,15 +251,15 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
     const radialMm = (r - ra) * MM_PER_UNIT
     const tangentialMm = ra * wrap(angle) * MM_PER_UNIT
     const edge = fromBed(aim, pos)
-    Object.assign(base, {
-      distanceMm: target.d * MM_PER_UNIT,
+    base.miss = {
+      mm: target.d * MM_PER_UNIT,
       radialMm,
       tangentialMm,
       edgeMm: edge ? Math.hypot(edge.radial, edge.tangential) * MM_PER_UNIT : target.d * MM_PER_UNIT,
       edgeRadialMm: edge ? edge.radial * MM_PER_UNIT : radialMm,
       edgeTangentialMm: edge ? edge.tangential * MM_PER_UNIT : tangentialMm,
       wedgesOff,
-    })
+    }
   }
 
   // Step 2: the category

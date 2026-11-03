@@ -8737,24 +8737,16 @@
       },
       "DartClass": {
         "type": "object",
-        "description": "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust",
+        "description": "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double and bull carry a detail",
         "required": [
           "kind",
           "hit",
           "target",
-          "detail",
-          "distanceMm",
-          "radialMm",
-          "tangentialMm",
-          "edgeMm",
-          "edgeRadialMm",
-          "edgeTangentialMm",
-          "wedgesOff",
+          "miss",
           "estimated",
           "plannedLeave",
           "actualLeave"
         ],
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "type": "string",
@@ -8792,43 +8784,51 @@
               }
             }
           },
-          "detail": {
-            "type": "string",
+          "miss": {
+            "type": "object",
             "nullable": true,
-            "description": "scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db"
-          },
-          "distanceMm": {
-            "type": "number",
-            "nullable": true
-          },
-          "radialMm": {
-            "type": "number",
-            "nullable": true,
-            "description": "+ outside (away from the bull), − inside"
-          },
-          "tangentialMm": {
-            "type": "number",
-            "nullable": true,
-            "description": "+ clockwise, − anticlockwise"
-          },
-          "edgeMm": {
-            "type": "number",
-            "nullable": true,
-            "description": "From the nearest point of the target's bed, 0 inside it; a wire's is distanceMm"
-          },
-          "edgeRadialMm": {
-            "type": "number",
-            "nullable": true,
-            "description": "That vector, + outside; 0 when not off that way"
-          },
-          "edgeTangentialMm": {
-            "type": "number",
-            "nullable": true,
-            "description": "That vector, + clockwise; 0 when not off that way"
-          },
-          "wedgesOff": {
-            "type": "integer",
-            "nullable": true
+            "description": "How far it missed its target, in millimetres; null without a position or a target",
+            "required": [
+              "mm",
+              "radialMm",
+              "tangentialMm",
+              "edgeMm",
+              "edgeRadialMm",
+              "edgeTangentialMm",
+              "wedgesOff"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mm": {
+                "type": "number",
+                "description": "From the target's point"
+              },
+              "radialMm": {
+                "type": "number",
+                "description": "+ outside (away from the bull), − inside"
+              },
+              "tangentialMm": {
+                "type": "number",
+                "description": "+ clockwise, − anticlockwise"
+              },
+              "edgeMm": {
+                "type": "number",
+                "description": "From the nearest point of the target's bed, 0 inside it; a wire's is mm"
+              },
+              "edgeRadialMm": {
+                "type": "number",
+                "description": "That vector, + outside; 0 when not off that way"
+              },
+              "edgeTangentialMm": {
+                "type": "number",
+                "description": "That vector, + clockwise; 0 when not off that way"
+              },
+              "wedgesOff": {
+                "type": "integer",
+                "nullable": true,
+                "description": "The landed number from the target, + clockwise; null around the bull"
+              }
+            }
           },
           "estimated": {
             "type": "boolean",
@@ -8844,7 +8844,104 @@
             "nullable": true,
             "minimum": 0
           }
-        }
+        },
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "detail"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "scoringSingle"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "inner",
+                  "outer",
+                  null
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "detail"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "double"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "inside",
+                  "outside",
+                  "wide",
+                  null
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "detail"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "bull"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "sb",
+                  "db",
+                  null
+                ],
+                "description": "sb: the 25 for the Bull; db: the Bull for the 25"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "scoringHit",
+                  "scoringMiss",
+                  "route",
+                  "split",
+                  "bustBack",
+                  "bust",
+                  "wild",
+                  "notCounted"
+                ]
+              }
+            }
+          }
+        ]
       },
       "CoachNote": {
         "type": "object",

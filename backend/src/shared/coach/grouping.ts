@@ -30,7 +30,7 @@ export type Grouping = {
   comment: GroupingComment | null
 }
 
-type Placed = { coords: { x: number; y: number } | null; class: Pick<DartClass, 'target' | 'edgeMm'> }
+type Placed = { coords: { x: number; y: number } | null; class: Pick<DartClass, 'target' | 'miss'> }
 
 /** A bonus of `max` at 0 mm, falling linearly to 0 at `zero` mm; 0 without a value */
 const bonus = (mm: number | null, max: number, zero: number) => (mm === null ? 0 : max * Math.max(0, 1 - mm / zero))
@@ -39,7 +39,7 @@ const bonus = (mm: number | null, max: number, zero: number) => (mm === null ? 0
  *  player's 3-dart average; null with fewer than 2 placed darts, the rating then being the score. */
 export function grouping(darts: readonly Placed[], scored: number, average: number): Grouping | null {
   const placed = darts.flatMap(d =>
-    d.coords && d.class.target && d.class.edgeMm !== null ? [{ ...d.coords, aimId: d.class.target.aimId, edgeMm: d.class.edgeMm }] : [],
+    d.coords && d.class.target && d.class.miss ? [{ ...d.coords, aimId: d.class.target.aimId, edgeMm: d.class.miss.edgeMm }] : [],
   )
   if (placed.length < 2) return null
   const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length

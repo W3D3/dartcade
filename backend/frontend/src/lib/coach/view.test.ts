@@ -334,24 +334,17 @@ describe('leg review text', () => {
 })
 
 describe('dartLabel', () => {
-  const cls = (c: Partial<DartClass>): DartClass => ({ ...NOT_COUNTED, ...c })
+  const cls = (c: Partial<DartClass>) => ({ ...NOT_COUNTED, ...c }) as DartClass
   const at = (label: string, aimId = label) => ({ target: { aimId, label } })
   /** The miss from the edge of the target's bed, the labels' numbers */
   const off = (edgeMm: number, edgeRadialMm: number, edgeTangentialMm: number) => ({
-    distanceMm: edgeMm + 10,
-    edgeMm,
-    edgeRadialMm,
-    edgeTangentialMm,
+    miss: { mm: edgeMm + 10, radialMm: 0, tangentialMm: 0, edgeMm, edgeRadialMm, edgeTangentialMm, wedgesOff: null },
   })
 
   it.each<[string, Partial<DartClass>, string]>([
     ['a treble hit', { kind: 'scoringHit', hit: true, ...at('T20'), ...off(2, 1, 1) }, 'T20 ✓'],
     ['a single on scoring', { kind: 'scoringSingle', ...at('T20'), detail: 'outer', ...off(20, 18, 4) }, 'Single 20'],
-    [
-      'a scoring miss, low and left',
-      { kind: 'scoringMiss', ...at('T20'), ...off(14, -10, -9), wedgesOff: -1 },
-      'Miss T20 · 14 mm inside, towards 5',
-    ],
+    ['a scoring miss, low and left', { kind: 'scoringMiss', ...at('T20'), ...off(14, -10, -9) }, 'Miss T20 · 14 mm inside, towards 5'],
     [
       'a scoring miss, the larger part first',
       { kind: 'scoringMiss', ...at('T19'), ...off(30, 5, 29) },
@@ -377,12 +370,7 @@ describe('dartLabel', () => {
       {
         kind: 'scoringMiss',
         ...at('T20'),
-        distanceMm: 16.7,
-        radialMm: 0,
-        tangentialMm: 16.7,
-        edgeMm: 0.6,
-        edgeRadialMm: 0,
-        edgeTangentialMm: 0.6,
+        miss: { mm: 16.7, radialMm: 0, tangentialMm: 16.7, edgeMm: 0.6, edgeRadialMm: 0, edgeTangentialMm: 0.6, wedgesOff: null },
       },
       'Miss T20 · 1 mm towards 1',
     ],
@@ -428,7 +416,7 @@ describe('dartLabel', () => {
 })
 
 describe('groupingLine', () => {
-  const t20 = { ...NOT_COUNTED, kind: 'scoringSingle' as const, target: { aimId: 'T20', label: 'T20' } }
+  const t20 = { ...NOT_COUNTED, kind: 'scoringSingle' as const, detail: null, target: { aimId: 'T20', label: 'T20' } }
   const darts = [
     { name: 'S20', coords: null, left: 481, bust: false, class: t20, delta: null, closeness: null },
     { name: 'S20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20, delta: null, closeness: null },

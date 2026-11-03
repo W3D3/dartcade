@@ -136,7 +136,7 @@
               </td>
               <td class="py-1.5 text-right whitespace-nowrap">{r.distance}</td>
               {#if $debug}
-                <td class="py-1.5 pl-2 text-right">{d.class.distanceMm === null ? '–' : d.class.distanceMm.toFixed(1)}</td>
+                <td class="py-1.5 pl-2 text-right">{d.class.miss?.mm.toFixed(1) ?? '–'}</td>
                 <td class="py-1.5 pl-2 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>
                 <td class="py-1.5 pl-2 text-right">{d.closeness === null ? '–' : `+${d.closeness.toFixed(1)}`}</td>
               {/if}

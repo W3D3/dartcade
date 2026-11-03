@@ -20,15 +20,18 @@ import type { CoachDart, CoachVisit } from './walk.js'
 
 const mm = (v: number) => v / 170
 const T20 = { aimId: 'T20', label: 'T20' }
+const MISS = { mm: 0, radialMm: 0, tangentialMm: 0, edgeMm: 0, edgeRadialMm: 0, edgeTangentialMm: 0, wedgesOff: 0 }
 const placed = (x: number, y: number, edgeMm: number, target: DartClass['target'] = T20) => ({
   coords: { x, y },
-  class: { ...NOT_COUNTED, target, edgeMm },
+  class: { ...NOT_COUNTED, target, miss: { ...MISS, edgeMm } },
 })
 
 describe('grouping', () => {
   it('needs two darts with a position and a target', () => {
     expect(grouping([placed(0, 0.6, 0)], 60, 81)).toBeNull()
-    expect(grouping([placed(0, 0.6, 0), { coords: null, class: { ...NOT_COUNTED, target: T20, edgeMm: 0 } }], 60, 81)).toBeNull()
+    expect(
+      grouping([placed(0, 0.6, 0), { coords: null, class: { ...NOT_COUNTED, target: T20, miss: { ...MISS, edgeMm: 0 } } }], 60, 81),
+    ).toBeNull()
     expect(grouping([placed(0, 0.6, 0), placed(0, 0.6, 0, null)], 60, 81)).toBeNull()
   })
 

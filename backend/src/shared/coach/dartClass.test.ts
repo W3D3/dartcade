@@ -50,7 +50,7 @@ describe('classifyDart: Scoring (more than 170 left)', () => {
   it('a treble 20 is a scoring hit', () => {
     const c = classify(dart('T20'), 501)
     expect(c).toMatchObject({ kind: 'scoringHit', hit: true, target: { aimId: 'T20', label: 'T20' }, estimated: true })
-    expect(c.distanceMm).toBe(0)
+    expect(c.miss?.mm).toBe(0)
   })
 
   it('a single 20 in the inner bed is a scoring single, inner', () => {
@@ -59,21 +59,26 @@ describe('classifyDart: Scoring (more than 170 left)', () => {
 
   it('S5 next to T20 is a miss of T20, one wedge anticlockwise', () => {
     const c = classify(polar(5, 0.55, 8), 501)
-    expect(c).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, wedgesOff: -1, estimated: false })
-    expect(c.tangentialMm).toBeLessThan(0)
+    expect(c).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, miss: { wedgesOff: -1 }, estimated: false })
+    expect(c.miss?.tangentialMm).toBeLessThan(0)
   })
 
   it('S12 is a miss of T20, two wedges anticlockwise', () => {
-    expect(classify(polar(12, 0.7), 501)).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, wedgesOff: -2 })
-    expect(classify(dart('S12'), 501)).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, wedgesOff: -2, estimated: true })
+    expect(classify(polar(12, 0.7), 501)).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, miss: { wedgesOff: -2 } })
+    expect(classify(dart('S12'), 501)).toMatchObject({
+      kind: 'scoringMiss',
+      target: { aimId: 'T20' },
+      miss: { wedgesOff: -2 },
+      estimated: true,
+    })
   })
 
   it('S1 without coords goes with T20, not T18: at the same distance T20 has the higher prior', () => {
-    expect(classify(dart('S1'), 501)).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, wedgesOff: 1 })
+    expect(classify(dart('S1'), 501)).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' }, miss: { wedgesOff: 1 } })
   })
 
   it('a dart more than two wedges from every scoring treble is wild', () => {
-    expect(classify(polar(6, 0.7), 501)).toMatchObject({ kind: 'wild', target: null, distanceMm: null })
+    expect(classify(polar(6, 0.7), 501)).toMatchObject({ kind: 'wild', target: null, miss: null })
   })
 
   it('a dart in the Bull or 25 was thrown at a bull aim', () => {
@@ -95,44 +100,47 @@ describe('classifyDart: miss properties', () => {
 
   it('pins the signs: radial − is low, tangential + is clockwise (towards the 1)', () => {
     expect(c.target?.aimId).toBe('T20')
-    expect(c.radialMm).toBeCloseTo((Math.hypot(0.03, 0.58) - 0.6055) * 170, 6)
-    expect(c.radialMm).toBeLessThan(0)
-    expect(c.tangentialMm).toBeGreaterThan(0)
-    expect(c.tangentialMm).toBeCloseTo(0.6055 * (Math.PI / 2 - Math.atan2(0.58, 0.03)) * 170, 6)
+    expect(c.miss?.radialMm).toBeCloseTo((Math.hypot(0.03, 0.58) - 0.6055) * 170, 6)
+    expect(c.miss?.radialMm).toBeLessThan(0)
+    expect(c.miss?.tangentialMm).toBeGreaterThan(0)
+    expect(c.miss?.tangentialMm).toBeCloseTo(0.6055 * (Math.PI / 2 - Math.atan2(0.58, 0.03)) * 170, 6)
   })
 
-  it('distanceMm is the distance to the aim point × 170', () => {
+  it('miss.mm is the distance to the aim point × 170', () => {
     const t20 = aim('T20')
-    expect(c.distanceMm).toBeCloseTo(Math.hypot(0.03 - t20.x, 0.58 - t20.y) * 170, 6)
+    expect(c.miss?.mm).toBeCloseTo(Math.hypot(0.03 - t20.x, 0.58 - t20.y) * 170, 6)
   })
 
   it('a dart high and anticlockwise has radial + and tangential −', () => {
     const high = classify(at(-0.03, 0.62), 501)
     expect(high.target?.aimId).toBe('T20')
-    expect(high.radialMm).toBeGreaterThan(0)
-    expect(high.tangentialMm).toBeLessThan(0)
+    expect(high.miss?.radialMm).toBeGreaterThan(0)
+    expect(high.miss?.tangentialMm).toBeLessThan(0)
   })
 })
 
 describe('classifyDart: the miss to the edge of the bed', () => {
   it('a dart in the bed is 0 from it', () => {
-    expect(classify(at(0.03, 0.6), 501)).toMatchObject({ target: { aimId: 'T20' }, edgeMm: 0, edgeRadialMm: 0, edgeTangentialMm: 0 })
+    expect(classify(at(0.03, 0.6), 501)).toMatchObject({
+      target: { aimId: 'T20' },
+      miss: { edgeMm: 0, edgeRadialMm: 0, edgeTangentialMm: 0 },
+    })
   })
 
   it('a dart just under the treble is that far inside it, straight in', () => {
     const c = classify(polar(20, R.si - 0.005), 501)
-    expect(c.edgeMm).toBeCloseTo(0.85, 6)
-    expect(c.edgeRadialMm).toBeCloseTo(-0.85, 6)
-    expect(c.edgeTangentialMm).toBe(0)
+    expect(c.miss?.edgeMm).toBeCloseTo(0.85, 6)
+    expect(c.miss?.edgeRadialMm).toBeCloseTo(-0.85, 6)
+    expect(c.miss?.edgeTangentialMm).toBe(0)
   })
 
   it('a dart just past the treble wire, sideways, is about 1 mm off, not the 17 mm to its middle', () => {
     const c = classify(polar(20, (R.si + R.tr) / 2, 9.35), 501)
     expect(c).toMatchObject({ kind: 'scoringMiss', target: { aimId: 'T20' } })
-    expect(c.distanceMm).toBeGreaterThan(16)
-    expect(c.edgeMm).toBeCloseTo(0.6055 * Math.sin((0.35 * Math.PI) / 180) * 170, 6)
-    expect(c.edgeTangentialMm).toBeGreaterThan(0)
-    expect(c.edgeRadialMm).toBeCloseTo(0, 9)
+    expect(c.miss?.mm).toBeGreaterThan(16)
+    expect(c.miss?.edgeMm).toBeCloseTo(0.6055 * Math.sin((0.35 * Math.PI) / 180) * 170, 6)
+    expect(c.miss?.edgeTangentialMm).toBeGreaterThan(0)
+    expect(c.miss?.edgeRadialMm).toBeCloseTo(0, 9)
   })
 
   it('past a corner of the bed, the miss is to the corner', () => {
@@ -140,15 +148,15 @@ describe('classifyDart: the miss to the edge of the bed', () => {
     const c = classify(p, 501)
     const a = segAngle(0) - Math.PI / 20
     const corner = { x: R.si * Math.cos(a), y: R.si * Math.sin(a) }
-    expect(c.edgeMm).toBeCloseTo(Math.hypot(p.coords!.x - corner.x, p.coords!.y - corner.y) * 170, 6)
-    expect(c.edgeRadialMm).toBeLessThan(0)
-    expect(c.edgeTangentialMm).toBeGreaterThan(0)
+    expect(c.miss?.edgeMm).toBeCloseTo(Math.hypot(p.coords!.x - corner.x, p.coords!.y - corner.y) * 170, 6)
+    expect(c.miss?.edgeRadialMm).toBeLessThan(0)
+    expect(c.miss?.edgeTangentialMm).toBeGreaterThan(0)
   })
 
   it('the 25 is its distance past the Bull wire from the Bull', () => {
     const c = classify(at(0, -0.06), 501)
-    expect(c.edgeMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
-    expect(c.edgeRadialMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
+    expect(c.miss?.edgeMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
+    expect(c.miss?.edgeRadialMm).toBeCloseTo((0.06 - R.bull50) * 170, 6)
   })
 
   it('matches the nearest of densely sampled bed points', () => {
@@ -259,20 +267,27 @@ describe('classifyDart: Finish', () => {
 
   it('D16 wide: the neighbour D7', () => {
     const c = classify(polar(16, 0.975, -9.2), 32)
-    expect(c).toMatchObject({ kind: 'double', hit: false, detail: 'wide', target: { aimId: 'D16' }, wedgesOff: -1, actualLeave: 18 })
-    expect(c.tangentialMm).toBeLessThan(0)
+    expect(c).toMatchObject({
+      kind: 'double',
+      hit: false,
+      detail: 'wide',
+      target: { aimId: 'D16' },
+      miss: { wedgesOff: -1 },
+      actualLeave: 18,
+    })
+    expect(c.miss?.tangentialMm).toBeLessThan(0)
   })
 
   it('D16 wide by a whole wedge: the D7 centre, about 52 mm off, still has a target', () => {
     const c = classify(polar(7, 0.975), 32)
-    expect(c).toMatchObject({ kind: 'double', hit: false, detail: 'wide', target: { aimId: 'D16' }, wedgesOff: -1 })
-    expect(c.distanceMm).toBeCloseTo(0.9765 * 2 * Math.sin(Math.PI / 20) * 170, 0)
+    expect(c).toMatchObject({ kind: 'double', hit: false, detail: 'wide', target: { aimId: 'D16' }, miss: { wedgesOff: -1 } })
+    expect(c.miss?.mm).toBeCloseTo(0.9765 * 2 * Math.sin(Math.PI / 20) * 170, 0)
   })
 
   it('on a one-dart finish the only double is the finishing one: the D8 centre on 32 is D16 wide', () => {
     const c = classify(polar(8, 0.9765), 32)
-    expect(c).toMatchObject({ kind: 'double', hit: false, detail: 'wide', target: { aimId: 'D16' }, wedgesOff: 1 })
-    expect(c.distanceMm).toBeCloseTo(0.9765 * 2 * Math.sin(Math.PI / 20) * 170, 1)
+    expect(c).toMatchObject({ kind: 'double', hit: false, detail: 'wide', target: { aimId: 'D16' }, miss: { wedgesOff: 1 } })
+    expect(c.miss?.mm).toBeCloseTo(0.9765 * 2 * Math.sin(Math.PI / 20) * 170, 1)
   })
 
   it('a dart in the Bull or 25 has the bull aims only, on any finish', () => {
@@ -335,7 +350,7 @@ describe('classifyDart: Finish', () => {
       detail: 'outside',
       target: { aimId: 'D16' },
       estimated: true,
-      distanceMm: null,
+      miss: null,
       actualLeave: 32,
     })
     expect(classify(dart('Miss'), 50)).toMatchObject({
@@ -343,7 +358,7 @@ describe('classifyDart: Finish', () => {
       hit: false,
       detail: null,
       target: { aimId: 'Bull' },
-      distanceMm: null,
+      miss: null,
     })
     expect(classify(dart('Miss'), 37)).toMatchObject({ kind: 'wild', target: null })
   })
@@ -371,7 +386,7 @@ describe('classifyDart: Finish', () => {
 
   it('140 with 2 darts (no finish this visit): the S13 centre is a T18 miss two wedges off, typed it is its own bed', () => {
     const c = classify(at(aim('SO13').x, aim('SO13').y), 140, 2, 200)
-    expect(c).toMatchObject({ kind: 'route', hit: false, target: { aimId: 'T18' }, wedgesOff: 2, actualLeave: 127 })
+    expect(c).toMatchObject({ kind: 'route', hit: false, target: { aimId: 'T18' }, miss: { wedgesOff: 2 }, actualLeave: 127 })
     expect(classify(dart('S13'), 140, 2, 200)).toMatchObject({ kind: 'route', hit: true, target: { aimId: 'SO13' } })
   })
 
@@ -388,7 +403,7 @@ describe('classifyDart: Finish', () => {
       kind: 'double',
       detail: 'wide',
       target: { aimId: 'D20' },
-      wedgesOff: 1,
+      miss: { wedgesOff: 1 },
     })
     expect(classify(dart('S1'), 40)).toMatchObject({ kind: 'double', detail: 'wide', target: { aimId: 'D20' } })
     expect(classify(at(aim('SI1').x, aim('SI1').y), 40)).toMatchObject({ kind: 'double', detail: 'wide', target: { aimId: 'D20' } })

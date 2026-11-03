@@ -104,7 +104,7 @@ export type DartRow = { name: string; label: string; distance: string; near: boo
  *  target's bed, "–" for a hit or a dart without a position. */
 export const dartRows = (v: Pick<ReviewVisit, 'darts'>): DartRow[] =>
   v.darts.map(({ name, class: c }) => {
-    const edge = c.hit ? null : c.edgeMm
+    const edge = c.hit ? null : (c.miss?.edgeMm ?? null)
     return { name, label: dartLabel(c), distance: edge === null ? '–' : wholeMm(edge), near: edge !== null && edge <= NEAR_MISS_MM }
   })
 
@@ -128,9 +128,10 @@ function towards(aimId: string, clockwise: boolean): number | null {
  *  number on that side. Null without a camera position: the dart sits at its bed's centre, so the
  *  millimetres would be made up. */
 function offset(c: DartClass): string | null {
-  if (c.estimated || c.edgeMm === null) return null
-  const r = c.edgeRadialMm ?? 0
-  const t = c.edgeTangentialMm ?? 0
+  const m = c.miss
+  if (c.estimated || m === null) return null
+  const r = m.edgeRadialMm
+  const t = m.edgeTangentialMm
   const side = c.target ? towards(c.target.aimId, t > 0) : null
   const parts = [
     { mm: Math.abs(r), word: r < 0 ? 'inside' : 'outside' },
@@ -139,7 +140,7 @@ function offset(c: DartClass): string | null {
     .filter(p => p.mm > DIRECTION_MIN_MM)
     .sort((x, y) => y.mm - x.mm)
     .map(p => p.word)
-  return `${wholeMm(c.edgeMm)}${parts.length ? ` ${parts.join(', ')}` : ''}`
+  return `${wholeMm(m.edgeMm)}${parts.length ? ` ${parts.join(', ')}` : ''}`
 }
 
 /** What a dart was aimed at and whether it got there, under its tile: "T20 ✓", "Miss T20 · 4 mm
@@ -166,13 +167,13 @@ export function dartLabel(c: DartClass): string {
     case 'double':
       if (c.hit) return `${t} ✓`
       // A typed miss has no position: off the board is a guess
-      return c.detail === 'wide' ? `${t} wide${miss()}` : `${t} ${c.detail ?? 'missed'}${c.distanceMm === null ? ' · est.' : ''}`
+      return c.detail === 'wide' ? `${t} wide${miss()}` : `${t} ${c.detail ?? 'missed'}${c.miss === null ? ' · est.' : ''}`
     case 'bull':
       if (c.hit) return `${t} ✓`
       if (c.detail === 'sb') return '25 (aimed Bull)'
       if (c.detail === 'db') return 'Bull (aimed 25)'
       // Around the bull, high/low and left/right mean nothing: the distance only
-      return `Miss ${t}${c.estimated ? ' · est.' : c.edgeMm === null ? '' : ` · ${wholeMm(c.edgeMm)}`}`
+      return `Miss ${t}${c.estimated ? ' · est.' : c.miss === null ? '' : ` · ${wholeMm(c.miss.edgeMm)}`}`
     case 'bustBack':
       return c.hit ? 'Bust-back ✓' : 'Bust-back missed'
     case 'bust':

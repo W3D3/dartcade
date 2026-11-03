@@ -2900,7 +2900,7 @@ export interface components {
             /** @description The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart */
             closeness: number | null;
         };
-        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust */
+        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double and bull carry a detail */
         DartClass: {
             /** @enum {string} */
             kind: "scoringHit" | "scoringSingle" | "scoringMiss" | "route" | "split" | "double" | "bull" | "bustBack" | "bust" | "wild" | "notCounted";
@@ -2909,25 +2909,49 @@ export interface components {
                 aimId: string;
                 label: string;
             } | null;
-            /** @description scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db */
-            detail: string | null;
-            distanceMm: number | null;
-            /** @description + outside (away from the bull), − inside */
-            radialMm: number | null;
-            /** @description + clockwise, − anticlockwise */
-            tangentialMm: number | null;
-            /** @description From the nearest point of the target's bed, 0 inside it; a wire's is distanceMm */
-            edgeMm: number | null;
-            /** @description That vector, + outside; 0 when not off that way */
-            edgeRadialMm: number | null;
-            /** @description That vector, + clockwise; 0 when not off that way */
-            edgeTangentialMm: number | null;
-            wedgesOff: number | null;
+            /** @description How far it missed its target, in millimetres; null without a position or a target */
+            miss: {
+                /** @description From the target's point */
+                mm: number;
+                /** @description + outside (away from the bull), − inside */
+                radialMm: number;
+                /** @description + clockwise, − anticlockwise */
+                tangentialMm: number;
+                /** @description From the nearest point of the target's bed, 0 inside it; a wire's is mm */
+                edgeMm: number;
+                /** @description That vector, + outside; 0 when not off that way */
+                edgeRadialMm: number;
+                /** @description That vector, + clockwise; 0 when not off that way */
+                edgeTangentialMm: number;
+                /** @description The landed number from the target, + clockwise; null around the bull */
+                wedgesOff: number | null;
+            } | null;
             /** @description No camera coords: placed at the centre of the bed it landed in */
             estimated: boolean;
             plannedLeave: number | null;
             actualLeave: number | null;
-        };
+        } & ({
+            /** @enum {string} */
+            kind: "scoringSingle";
+            /** @enum {string|null} */
+            detail: "inner" | "outer" | null;
+        } | {
+            /** @enum {string} */
+            kind: "double";
+            /** @enum {string|null} */
+            detail: "inside" | "outside" | "wide" | null;
+        } | {
+            /** @enum {string} */
+            kind: "bull";
+            /**
+             * @description sb: the 25 for the Bull; db: the Bull for the 25
+             * @enum {string|null}
+             */
+            detail: "sb" | "db" | null;
+        } | {
+            /** @enum {string} */
+            kind: "scoringHit" | "scoringMiss" | "route" | "split" | "bustBack" | "bust" | "wild" | "notCounted";
+        });
         CoachNote: {
             leg: number;
             visit: number;
