@@ -7,7 +7,8 @@ import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModel } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart } from '$shared/coach/walk'
-import { signedPoints, visitTiles, type DartTileView } from './view'
+import { visitTiles, type DartTileView } from './dart'
+import { signedPoints } from './numbers'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
 export type LiveRow = DartTileView & { delta: string | null; close: string | null }

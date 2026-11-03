@@ -1,7 +1,7 @@
 <script lang="ts">
   // One dart as the coach's visit rows draw it (Coach-Leg): the tile above its class label, in a
   // fixed-width column; the tone, the grade word and the label come from visitTiles.
-  import type { DartTileView, DartTone } from '$lib/coach/view'
+  import type { DartTileView, DartTone } from '$lib/coach/dart'
 
   let { tile }: { tile: DartTileView } = $props()
 

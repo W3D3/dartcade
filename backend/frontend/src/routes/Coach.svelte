@@ -10,7 +10,8 @@
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegCounts, type CoachLegRow } from '$lib/api'
   import { flag } from '$lib/flags'
-  import { COACH_FILTERS, coachFilter, coachFound, legWhen, vsLine, type CoachFilter, type FoundPill } from '$lib/coach/view'
+  import Pill from '$lib/components/coach/Pill.svelte'
+  import { COACH_FILTERS, coachFilter, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
   import { formatWhen } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
@@ -28,11 +29,6 @@
   let loadMoreError = $state('')
   const now = new Date()
 
-  const TONE: Record<FoundPill['tone'], string> = {
-    red: 'bg-live/13 text-live',
-    yellow: 'bg-gold/13 text-gold',
-    green: 'bg-accent/13 text-accent',
-  }
   const COLUMNS = 'lg:grid-cols-[110px_minmax(0,1.4fr)_70px_70px_64px_minmax(0,1.4fr)_150px]'
 
   const when = (iso: string) => legWhen(iso, now)
@@ -88,21 +84,11 @@
   }
 </script>
 
-{#snippet resultPill(won: boolean)}
-  <span
-    class="inline-flex h-6 items-center rounded-full px-[9px] text-[12px] font-bold {won
-      ? 'bg-accent-tint text-accent'
-      : 'bg-live-soft text-live-text'}">{won ? 'Won' : 'Lost'}</span
-  >
-{/snippet}
+{#snippet resultPill(won: boolean)}<Pill label={won ? 'Won' : 'Lost'} tone={won ? 'lime' : 'bad'} />{/snippet}
 
 {#snippet found(row: CoachLegRow)}
   <span class="flex flex-wrap gap-1.5">
-    {#each coachFound(row) as p (p.text)}
-      <span class="inline-flex h-[22px] items-center rounded-full px-[9px] text-[12px] font-semibold whitespace-nowrap {TONE[p.tone]}"
-        >{p.text}</span
-      >
-    {/each}
+    {#each coachFound(row) as p (p.label)}<Pill {...p} />{/each}
   </span>
 {/snippet}
 
@@ -141,9 +127,7 @@
           <Scan size={22} class="text-accent" />
           <span class="font-display text-[28px] font-bold uppercase leading-none tracking-[0.02em] md:text-[34px]">Review</span>
           {#if counts}
-            <span class="inline-flex h-6 items-center rounded-full bg-surface-paused px-[9px] text-[12px] font-bold text-ink-2"
-              >{counts.legs} {counts.legs === 1 ? 'leg' : 'legs'}</span
-            >
+            <Pill label="{counts.legs} {counts.legs === 1 ? 'leg' : 'legs'}" tone="plain" />
           {/if}
         </a>
       </nav>

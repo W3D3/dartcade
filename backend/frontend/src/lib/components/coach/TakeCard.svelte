@@ -3,7 +3,7 @@
   // scoring row's line with the leg's grouping when the camera placed its darts). On
   // phones (Coach-Phone-Leg) the letters sit 3 across above the take.
   import type { LegReview, SkillGrade } from '$shared/coach'
-  import { legGroupingLine } from '$lib/coach/view'
+  import { legGroupingLine } from '$lib/coach/leg'
 
   let { take, skills, grouping }: Pick<LegReview, 'take' | 'skills' | 'grouping'> = $props()
 

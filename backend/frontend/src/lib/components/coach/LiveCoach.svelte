@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { X01Game } from '$lib/api/game-ws'
   import { keepGrade, liveAverage, liveCoach, type LiveCoach, type LiveGrade } from '$lib/coach/live'
-  import { coachedAs } from '$lib/coach/view'
+  import { coachedAs } from '$lib/coach/leg'
   import { LEVEL_AVERAGE } from '$shared/botLevels'
   import { coachLevel, loadModel, type CoachModel } from '$shared/coach/model'
   import { flag } from '$lib/flags'

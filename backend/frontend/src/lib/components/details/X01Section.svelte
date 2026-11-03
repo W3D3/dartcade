@@ -16,12 +16,14 @@
   import { x01Sides } from '$lib/details/x01'
   import { highlightDefault } from '$lib/details/page'
   import { flag } from '$lib/flags'
-  import { coachable } from '$lib/coach/view'
+  import { coachable } from '$shared/coach/coachable'
 
   let { detail, party = false }: { detail: GameDetail; party?: boolean } = $props()
   const coachEnabled = flag('coach.enabled')
   // The coach reviews your own legs only, and no invalidated game
-  const canCoach = $derived($coachEnabled && coachable(detail.game) && detail.game.mySeat !== null && !detail.game.invalidated)
+  const canCoach = $derived(
+    $coachEnabled && coachable(detail.game.mode, detail.game.config) && detail.game.mySeat !== null && !detail.game.invalidated,
+  )
 
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])

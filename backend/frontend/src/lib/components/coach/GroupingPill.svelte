@@ -1,15 +1,12 @@
 <script lang="ts">
   // A visit's grouping comment (Coach-Leg), judged against the player's average: Great/Good
   // grouping tight, Scattered weak. Nothing without a comment worth showing (groupingPill).
-  import { groupingPill } from '$lib/coach/view'
+  import { groupingPill } from '$lib/coach/tone'
   import type { Grouping } from '$shared/coach/grouping'
+  import Pill from './Pill.svelte'
 
   let { grouping }: { grouping: Pick<Grouping, 'comment'> | null } = $props()
   const pill = $derived(groupingPill(grouping))
 </script>
 
-{#if pill}
-  <span class="inline-flex items-center h-6 px-[9px] box-border rounded-full text-[12px] font-bold whitespace-nowrap normal-case {pill.cls}"
-    >{pill.label}</span
-  >
-{/if}
+{#if pill}<Pill {...pill} />{/if}

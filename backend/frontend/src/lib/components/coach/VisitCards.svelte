@@ -3,7 +3,7 @@
   // its detail (`detail`, the board) under it; tapping it again closes it.
   import type { Snippet } from 'svelte'
   import type { ReviewVisit } from '$shared/coach'
-  import { visitTiles } from '$lib/coach/view'
+  import { visitTiles } from '$lib/coach/dart'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
   import GroupingPill from './GroupingPill.svelte'

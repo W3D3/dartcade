@@ -13,20 +13,11 @@
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag } from '$lib/flags'
-  import {
-    betterLine,
-    dartRows,
-    defaultVisit,
-    GRADE_PILL,
-    groupingLine,
-    legHeading,
-    coachedAs,
-    legSubtitle,
-    legSubtitleShort,
-    missTags,
-    signedPoints,
-    valueLine,
-  } from '$lib/coach/view'
+  import { betterLine, missTags } from '$lib/coach/board'
+  import { dartRows } from '$lib/coach/dart'
+  import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
+  import { groupingLine, signedPoints, valueLine } from '$lib/coach/numbers'
+  import { GRADE_PILL } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
   import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
   import { explainedNote } from '$shared/coach/grade'

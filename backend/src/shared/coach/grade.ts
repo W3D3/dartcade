@@ -80,6 +80,25 @@ export function closeness(c: Closeness): number | null {
 /** A dart's grade: its value change plus its closeness credit */
 export const dartGrade = (delta: number, close: number | null) => delta + (close ?? 0)
 
+/** A dart's own band by its grade, on the visit scale: good from this (or a hit of its target)… */
+export const DART_GOOD_FROM = 5
+/** …plain above this, a slight loss (weak) down to and including it… */
+export const DART_PLAIN_ABOVE = -5
+/** …costly at or below this (and a bust) */
+export const DART_COSTLY_AT = -15
+/** A missed dart this close to its target's bed (mm, edgeMm) is a near miss: on a double, nearly a checkout */
+export const NEAR_MISS_MM = 5
+
+export type DartBand = 'good' | 'plain' | 'weak' | 'costly'
+
+/** The band of a graded dart (a finish or setup visit's): what colours its tile */
+export function dartBand(delta: number, close: number | null, hit: boolean, bust: boolean): DartBand {
+  const g = dartGrade(delta, close)
+  if (bust || g <= DART_COSTLY_AT) return 'costly'
+  if (hit || g >= DART_GOOD_FROM) return 'good'
+  return g > DART_PLAIN_ABOVE ? 'plain' : 'weak'
+}
+
 const byValue = (x: number): VisitGrade =>
   x >= GREAT_FROM ? 'great' : x >= GOOD_FROM ? 'good' : x >= OK_FROM ? 'ok' : x >= WEAK_FROM ? 'weak' : 'mistake'
 

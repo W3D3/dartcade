@@ -2,7 +2,7 @@
   // Every visit of a leg as a row (Coach-Leg): # · Left · Darts · Scored · Then · Coach. Clicking a
   // row selects it.
   import type { ReviewVisit } from '$shared/coach'
-  import { visitTiles } from '$lib/coach/view'
+  import { visitTiles } from '$lib/coach/dart'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
   import GroupingPill from './GroupingPill.svelte'

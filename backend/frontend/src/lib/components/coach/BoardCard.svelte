@@ -4,7 +4,7 @@
   // name. A dart without a position sits hollow at its bed's centre; the selected one is lime
   // with a pulsing ring. A faint line joins each dart to the target its class picked.
   import type { ReviewDart } from '$shared/coach'
-  import { aimBed, aimPoint, type BoardTag } from '$lib/coach/view'
+  import { aimBed, aimPoint, type BoardTag } from '$lib/coach/board'
   import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
