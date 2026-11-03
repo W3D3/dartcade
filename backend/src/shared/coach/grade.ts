@@ -4,7 +4,7 @@
 // Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of the
 // darts that missed their target.
 import { checkoutHint } from '../checkout.js'
-import { landedNumber, scoringAim } from './aim.js'
+import { landedNumber } from './aim.js'
 import { oneDartFinish } from './aims.js'
 import type { DartClass } from './dartClass.js'
 import { minDarts } from './minDarts.js'
@@ -121,7 +121,7 @@ function scoring(f: VisitFacts): VisitGrading {
   if (f.scored < VERY_LOW) return g('mistake', low)
   const grade = byAverage(f.grouping?.rating ?? f.scored, f.average)
   if (grade === 'weak') return g('weak', low)
-  const spilled = f.throws.filter(t => scoringAim(t.d, t.visitDarts) === 20 && [1, 5].includes(landedNumber(t.d) ?? 0)).length
+  const spilled = f.throws.filter((t, i) => f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
   if (spilled >= 2) return g('weak', `${spilled} darts drifted into 1 or 5.`)
   // The grouping lifted the grade above the score's: say why
   if (f.grouping && grade !== byAverage(f.scored, f.average))

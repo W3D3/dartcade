@@ -31,7 +31,6 @@ function classify(d: CoachDart, left: number, darts = 3, start = left, w = 1) {
     left,
     darts,
     d,
-    visitDarts: [d],
     checkout,
     bust: !checkout && after < 2,
     w,

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { AIMS } from './aims.js'
 import { R } from '../board.js'
-import { candidates, landedNumber, nearBull, scoringAim } from './aim.js'
+import { candidates, landedNumber, nearBull } from './aim.js'
 import { dart } from './testLegs.js'
 
 describe('landedNumber', () => {
@@ -45,36 +45,5 @@ describe('nearBull', () => {
     const ids = candidates(20, true).map(i => AIMS[i].id)
     expect(ids).toEqual(expect.arrayContaining(['Bull', '25', 'T20', 'SO1']))
     expect(ids).toHaveLength(candidates(20).length + 2)
-  })
-})
-
-describe('scoringAim', () => {
-  it('reads 20, 19, 18, 17 and their neighbours', () => {
-    expect(scoringAim(dart('S5'), [])).toBe(20)
-    expect(scoringAim(dart('T7'), [])).toBe(19)
-    expect(scoringAim(dart('S4'), [])).toBe(18)
-    expect(scoringAim(dart('S2'), [])).toBe(17)
-  })
-
-  it('leaves other numbers and the bull out', () => {
-    expect(scoringAim(dart('S12'), [])).toBeNull()
-    expect(scoringAim(dart('25'), [])).toBeNull()
-    expect(scoringAim(dart('Miss'), [])).toBeNull()
-  })
-
-  it("splits 1 and 3 by the visit's other darts", () => {
-    const one = dart('S1')
-    expect(scoringAim(one, [dart('T20'), one, dart('S20')])).toBe(20)
-    expect(scoringAim(one, [dart('S18'), one, dart('T18')])).toBe(18)
-    const three = dart('S3')
-    expect(scoringAim(three, [three, dart('S17'), dart('T17')])).toBe(17)
-    // No other darts to go by: the higher-scoring aim
-    expect(scoringAim(three, [three])).toBe(19)
-  })
-
-  it('splits by position when the darts have one', () => {
-    const one = dart('S1', { x: 0.25, y: 0.75 })
-    // The other darts sit in the 18, right of the 1
-    expect(scoringAim(one, [one, dart('T18', { x: 0.33, y: 0.5 }), dart('S18', { x: 0.4, y: 0.6 })])).toBe(18)
   })
 })

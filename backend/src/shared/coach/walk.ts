@@ -33,7 +33,6 @@ export type Throw = {
   /** Darts left in the visit, this one included */
   darts: number
   d: CoachDart
-  visitDarts: readonly CoachDart[]
   checkout: boolean
   bust: boolean
   /** The chance of a next visit: every opponent fails to check out first */
@@ -89,7 +88,6 @@ export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: nu
           left,
           darts: 3 - i,
           d: v.darts[i],
-          visitDarts: v.darts,
           checkout,
           bust,
           w,
