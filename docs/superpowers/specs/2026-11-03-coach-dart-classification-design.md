@@ -365,6 +365,11 @@ Decisions taken while building this without the user, each with why:
   little.
 - **A miss without a position shows "· est." instead of millimetres**: the bed centre would make
   the millimetres up.
+- **A bounce-out has no position** (issue #458): Board Manager has sent bounce-outs as a Miss at
+  {0, 0}, which read as "Miss Bull · 1 mm" and drew a bull note. The coach reads every stored and
+  live dart through `coachDart` (`walk.ts`), the same rule as the bridge and `parseBoardEvent`
+  (`board.ts` `withoutFalsePosition`): a bouncer, or an Outside dart within the outer double wire,
+  has no coords. It is then a typed-style miss ("D10 outside · est." on 20 with a dart).
 - **Labels measure a miss from the edge of the target's bed**, not its centre (user ruling): a dart
   just past the treble wire is a 1 mm miss to a player. The centre values stay for the stats.
 - **The rating's constants** (GROUPING_MAX 15 / GROUPING_ZERO_MM 30, CLOSENESS_MAX 8 /

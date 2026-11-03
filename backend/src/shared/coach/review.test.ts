@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { reviewLeg, scoringLetter, type LegReview } from './review.js'
 import { dart, leg, visit } from './testLegs.js'
-import type { CoachLeg, CoachVisit } from './walk.js'
+import { coachDart, type CoachLeg, type CoachVisit } from './walk.js'
 import { NOT_COUNTED, type DartClass, type DartKind } from './dartClass.js'
 
 const names = ['Admin', 'Gerwyn']
@@ -311,5 +311,22 @@ describe('reviewLeg', () => {
     expect(left).toBe(0)
     const r = reviewLeg([{ ...leg(visits), winner: 0 }], 0, 0, ctx(701))
     expect(r?.take).toMatch(/ From your first finish to the checkout took 10 darts\. Your scoring dropped after visit 3\.$/)
+  })
+
+  it("a bounce-out at the board's centre is a miss without a position, not a dart at the bull", () => {
+    // Board Manager's stored bounce-out (issue #458), on 20 with the third dart
+    const stored = {
+      polar: { r: 0, theta_deg: 0 },
+      score: 0,
+      coords: { x: 0, y: 0 },
+      bouncer: true,
+      segment: { bed: 'Outside', name: 'Miss', number: 0, multiplier: 0 },
+    } as const
+    const bounce = coachDart(stored)
+    expect(bounce.coords).toBeNull()
+    const v = visit(0, 60, ['S20', 'S20'])
+    const r = reviewLeg([leg([{ ...v, darts: [...v.darts, bounce] }])], 0, 0, ctx(60))
+    expect(r?.visits[0].darts[2]).toMatchObject({ coords: null, class: { kind: 'double', detail: 'outside', estimated: true } })
+    expect(r?.visits[0].notes).toEqual([])
   })
 })

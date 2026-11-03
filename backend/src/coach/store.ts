@@ -8,9 +8,10 @@ import { storedDetail } from '../history/detail.js'
 import type { WarnFn } from '../session/replay.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { coachable, reviewLeg } from '../shared/coach/index.js'
+import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 16
+export const COACH_VERSION = 17
 
 const UPDATED = [
   'user_id',
@@ -49,6 +50,7 @@ async function build(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Pro
   const built = await storedDetail(db, game, warn)
   if (built?.detail.mode !== 'x01') return
   const { legs } = built.detail
+  const coachLegs = legs.map(l => ({ ...l, visits: l.visits.map(v => ({ ...v, darts: v.darts.map(coachDart) })) }))
   const extra = await db
     .selectFrom('game_sessions as gs')
     .leftJoin('lobbies as l', 'l.id', 'gs.lobby_id')
@@ -82,7 +84,7 @@ async function build(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Pro
     for (const { leg } of legs) {
       // A leg's review is CPU work: let live sockets in between legs (and so between seats)
       await new Promise(resolve => setImmediate(resolve))
-      const review = reviewLeg(legs, leg, s.seat, { startScore, average, opponentName: nameOf })
+      const review = reviewLeg(coachLegs, leg, s.seat, { startScore, average, opponentName: nameOf })
       if (!review) continue
       const winner = winners.get(leg) ?? { name: null, darts: null }
       rows.push({

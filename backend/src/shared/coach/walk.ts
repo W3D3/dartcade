@@ -1,9 +1,22 @@
 // A seat's darts in a finished X01 game, with what was left before each, for the coach. Reads the
 // stored detail (games/x01.ts detail()): each visit's remaining is after it, unchanged on a bust.
+import { withoutFalsePosition, type Bed } from '../board.js'
 import { nextVisit } from './model.js'
 import { visitStart } from './visitStart.js'
 
 export type CoachDart = { segment: { name: string; number: number; multiplier: number }; coords: { x: number; y: number } | null }
+
+/** A stored or live dart as the coach reads it: no position for a bounce-out or a miss on the
+ *  board, which Board Manager has placed at the board's centre (board.ts withoutFalsePosition). */
+export function coachDart(d: {
+  segment: CoachDart['segment'] & { bed: Bed }
+  coords?: { x: number; y: number } | null
+  bouncer?: boolean
+}): CoachDart {
+  const { name, number, multiplier } = d.segment
+  const kept = withoutFalsePosition({ segment: d.segment, coords: d.coords ?? undefined, bouncer: d.bouncer })
+  return { segment: { name, number, multiplier }, coords: 'coords' in kept && kept.coords ? { x: kept.coords.x, y: kept.coords.y } : null }
+}
 export type CoachVisit = { seat: number; darts: readonly CoachDart[]; scored: number; remaining: number; bust: boolean }
 export type CoachLeg = { leg: number; visits: readonly CoachVisit[]; winner?: number | null }
 

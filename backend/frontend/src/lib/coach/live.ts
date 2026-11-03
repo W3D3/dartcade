@@ -6,7 +6,7 @@ import type { VisitGrade, VisitTag } from '$shared/coach'
 import type { Aim } from '$shared/coach/aims'
 import { AIMS } from '$shared/coach/aims'
 import { LANDING } from '$shared/coach/landing.gen'
-import type { CoachDart } from '$shared/coach/walk'
+import { coachDart } from '$shared/coach/walk'
 import { sandbox } from './sandbox'
 import { signedPoints, visitTiles, type DartTone } from './view'
 
@@ -58,11 +58,6 @@ const SCORING: readonly LiveAim[] = (() => {
     .slice(0, TOP)
     .map(({ a, points }) => ({ label: a.label, aimId: a.id, detail: `${points.toFixed(1)} a dart` }))
 })()
-
-const coachDart = (d: Dart): CoachDart => ({
-  segment: { name: d.segment.name, number: d.segment.number, multiplier: d.segment.multiplier },
-  coords: d.coords ? { x: d.coords.x, y: d.coords.y } : null,
-})
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
  *  (null: the visit's own, as the coach does without one). Solo: no opponent, w = 1. */
