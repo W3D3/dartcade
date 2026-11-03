@@ -8684,7 +8684,8 @@
           "name",
           "coords",
           "left",
-          "bust"
+          "bust",
+          "class"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8716,6 +8717,102 @@
           "bust": {
             "type": "boolean",
             "description": "This dart busted (the darts the game keeps after it are false)"
+          },
+          "class": {
+            "$ref": "#/components/schemas/DartClass"
+          }
+        }
+      },
+      "DartClass": {
+        "type": "object",
+        "description": "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust",
+        "required": [
+          "kind",
+          "hit",
+          "target",
+          "detail",
+          "distanceMm",
+          "radialMm",
+          "tangentialMm",
+          "wedgesOff",
+          "estimated",
+          "plannedLeave",
+          "actualLeave"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "scoringHit",
+              "scoringSingle",
+              "scoringMiss",
+              "route",
+              "split",
+              "double",
+              "bull",
+              "bustBack",
+              "bust",
+              "wild",
+              "notCounted"
+            ]
+          },
+          "hit": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "aimId",
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "aimId": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true,
+            "description": "scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db"
+          },
+          "distanceMm": {
+            "type": "number",
+            "nullable": true
+          },
+          "radialMm": {
+            "type": "number",
+            "nullable": true,
+            "description": "+ high (outside), − low (inside)"
+          },
+          "tangentialMm": {
+            "type": "number",
+            "nullable": true,
+            "description": "+ clockwise, − anticlockwise"
+          },
+          "wedgesOff": {
+            "type": "integer",
+            "nullable": true
+          },
+          "estimated": {
+            "type": "boolean",
+            "description": "No camera coords: placed at the centre of the bed it landed in"
+          },
+          "plannedLeave": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "actualLeave": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },

@@ -5,6 +5,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { LegReview } from '../shared/coach/review.js'
 import { type CoachCursor } from './cursor.js'
+import { COACH_VERSION } from './store.js'
 
 export type CoachLegFilter = 'all' | 'lost' | 'ranked' | 'missedDoubles' | 'badSetups' | 'lowVisits'
 export type CoachLegRow = {
@@ -131,12 +132,14 @@ export type CoachLegDetail = {
   winnerDarts: number | null
 }
 
-/** One of the user's own stored legs, or null (another user's leg, or none). The leg's winner
- *  (coach/store.ts's build-time lookup in the match detail) comes straight off the row. */
+/** One of the user's own stored legs, or null (another user's leg, none, or a stale one of an older
+ *  COACH_VERSION, whose review the API schema would refuse). The leg's winner (coach/store.ts's
+ *  build-time lookup in the match detail) comes straight off the row. */
 export async function getCoachLeg(db: Kysely<Database>, userId: string, gameId: string, leg: number): Promise<CoachLegDetail | null> {
   const row = await base(db, userId)
     .where('cl.game_id', '=', gameId)
     .where('cl.leg', '=', leg)
+    .where('cl.version', '=', COACH_VERSION)
     .select(['cl.review', 'cl.opponents', 'cl.context', 'cl.finished_at', 'cl.won', 'cl.winner_name', 'cl.winner_darts'])
     .executeTakeFirst()
   if (!row) return null

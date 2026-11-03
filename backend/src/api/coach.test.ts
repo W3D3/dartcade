@@ -2,13 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { coachApiPlugin } from './coach.js'
 import type { components } from '../schema/api.js'
+import type { DartClass } from '../shared/coach/dartClass.js'
 import type { LegReview } from '../shared/coach/review.js'
 
-// Compile-time parity (checked by `npm run typecheck`): a stored LegReview is exactly the API's
-// LegReview schema, both ways, so schema/api-v1.yaml can't quietly drift from the shared type.
+// Compile-time parity (checked by `npm run typecheck`): a stored LegReview (and its darts' class)
+// is exactly the API's schema, both ways, so schema/api-v1.yaml can't quietly drift from the shared type.
 export const legReviewParity = {
   toApi: (x: LegReview): components['schemas']['LegReview'] => x,
   fromApi: (x: components['schemas']['LegReview']): LegReview => x,
+  dartClassToApi: (x: DartClass): components['schemas']['DartClass'] => x,
+  dartClassFromApi: (x: components['schemas']['DartClass']): DartClass => x,
 }
 
 vi.mock('../auth/middleware.js', () => ({

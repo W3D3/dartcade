@@ -24,7 +24,7 @@ function legOf(script: DartScript, start: number): CoachVisit[] {
 }
 
 describe('sample games with known coach mistakes', () => {
-  it.each(COACH_GAMES.map((g, i) => [i, g] as const))('game %i', (_i, { players, config, script, expect: expected, grades }) => {
+  it.each(COACH_GAMES.map((g, i) => [i, g] as const))('game %i', (_i, { players, config, script, expect: expected, grades, kinds }) => {
     const start = (config as { startScore: number }).startScore
     const visits = legOf(script, start)
 
@@ -45,13 +45,14 @@ describe('sample games with known coach mistakes', () => {
     // Clear of the 5-point threshold, so a regenerated landing table doesn't drop them
     for (const n of noted) expect(n.cost, JSON.stringify(n)).toBeGreaterThanOrEqual(0.07)
 
-    // Every scripted visit's grade, against the game's own average (the seed users have no other)
+    // Every scripted visit's grade, against the game's own average (the seed users have no other),
+    // and every dart's class
     const winner = visits.at(-1)?.seat
-    const graded = script.map((_, seat) =>
-      reviewLeg([{ ...leg(visits), winner }], 0, seat, { startScore: start, average: null, opponentName: s => players[s] })?.visits.map(
-        v => v.grade,
-      ),
+    const reviews = script.map(
+      (_, seat) =>
+        reviewLeg([{ ...leg(visits), winner }], 0, seat, { startScore: start, average: null, opponentName: s => players[s] })?.visits,
     )
-    expect(graded).toEqual(grades)
+    expect(reviews.map(vs => vs?.map(v => v.grade))).toEqual(grades)
+    expect(reviews.map(vs => vs?.map(v => v.darts.map(d => d.class.kind)))).toEqual(kinds)
   })
 })

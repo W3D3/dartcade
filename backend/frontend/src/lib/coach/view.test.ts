@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '$shared/board'
 import { bedPath, boardSegments, type BedRing } from '$lib/details/boardGeometry'
 import type { CoachNote, ReviewVisit } from '$shared/coach'
+import { NOT_COUNTED } from '$shared/coach/dartClass'
 import {
   aimBed,
   bedCentre,
@@ -113,7 +114,7 @@ describe('coachFound', () => {
 })
 
 describe('visitTiles', () => {
-  const d = (name: string, left: number) => ({ name, coords: null, left, bust: false })
+  const d = (name: string, left: number) => ({ name, coords: null, left, bust: false, class: NOT_COUNTED })
   it('greens trebles, reds a single thrown at a double, dashes a miss', () => {
     // Coach-Leg visits 4 and 6: 180 → T20 S5 S20, then 15 → S7 S4 Miss
     expect(visitTiles({ left: 180, darts: [d('T20', 120), d('S5', 115), d('S20', 95)] }).map(t => t.tone)).toEqual([
@@ -225,7 +226,7 @@ describe('leg review text', () => {
     tip: false,
     ...n,
   })
-  const dart = (name: string, left: number, bust = false) => ({ name, coords: null, left, bust })
+  const dart = (name: string, left: number, bust = false) => ({ name, coords: null, left, bust, class: NOT_COUNTED })
 
   it('heads the leg and words its subtitles as drawn', () => {
     expect(legHeading(2, ['Lena'])).toBe('Leg 3 vs Lena')

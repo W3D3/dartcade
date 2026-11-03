@@ -4,7 +4,7 @@
 import { checkoutHint } from '../checkout.js'
 import { AIMS, directOutId } from './aims.js'
 import { candidates, landedNumber, nearBull } from './aim.js'
-import { evaluator, fin, type Evaluator } from './model.js'
+import { evaluator, fin, type Evaluation, type Evaluator } from './model.js'
 import { NOTE_THRESHOLD } from './grade.js'
 import { dartPoints, type Throw } from './walk.js'
 
@@ -31,14 +31,12 @@ export type CoachNote = {
 }
 
 /** How much checkout chance throwing at number `n` loses against the best aim, given its best aim
- *  (or the bull's or 25's with `bull`, aim.ts nearBull). `evaluate` is the visit's evaluator
- *  (model.ts), shared by its darts. */
-export function numberCost(evaluate: Evaluator, left: number, darts: number, n: number, bull = false) {
-  const evaluation = evaluate(left, darts)
+ *  (or the bull's or 25's with `bull`, aim.ts nearBull). `evaluation` is the dart's (throwEvaluations). */
+export function numberCost(evaluation: Evaluation, n: number, bull = false) {
   const v = evaluation.values
   const best = v.indexOf(Math.max(...v))
   const candidate = candidates(n, bull).reduce((a, b) => (v[b] > v[a] ? b : a))
-  return { cost: v[best] - v[candidate], best, candidate, evaluation }
+  return { cost: v[best] - v[candidate], best, candidate }
 }
 
 /** A note is a Tip, not a mistake, when the better aim was simply the direct out for `left` (not
@@ -65,21 +63,35 @@ function reason(t: Throw, thrown: string): string | null {
   return fin[after][next] === 0 ? `${name} leaves ${after}, which ${next === 1 ? 'one dart' : 'two darts'} can't finish` : null
 }
 
-/** The notes for a seat's darts on a finish (walk.ts throwsOf), in throw order. */
-export function strategyNotes(throws: readonly Throw[]): CoachNote[] {
+/** Each dart's evaluation (model.ts), null with more than 170 left: a Scoring dart has no finish
+ *  to judge. A visit's darts share one evaluator (its start and w), so they share its memo; each
+ *  dart's is computed once, for the notes and the dart classes alike. */
+export function throwEvaluations(): (t: Throw) => Evaluation | null {
+  const byVisit = new Map<string, Evaluator>()
+  const byThrow = new Map<string, Evaluation>()
+  return t => {
+    if (t.left > 170) return null
+    const visit = `${t.leg}-${t.visit}`
+    let e = byThrow.get(`${visit}-${t.dart}`)
+    if (!e) {
+      let evaluate = byVisit.get(visit)
+      if (!evaluate) byVisit.set(visit, (evaluate = evaluator(t.start, t.w)))
+      byThrow.set(`${visit}-${t.dart}`, (e = evaluate(t.left, t.darts)))
+    }
+    return e
+  }
+}
+
+/** The notes for a seat's darts on a finish (walk.ts throwsOf), in throw order. Pass the
+ *  evaluations to share them with the dart classes. */
+export function strategyNotes(throws: readonly Throw[], evaluate = throwEvaluations()): CoachNote[] {
   const notes: CoachNote[] = []
-  // One evaluator per visit: its darts share the start and w, so they share its memo
-  let visit = ''
-  let evaluate: Evaluator = evaluator(0, 0)
   for (const t of throws) {
-    if (t.left > 170 || t.checkout) continue
+    const evaluation = evaluate(t)
+    if (!evaluation || t.checkout) continue
     const n = landedNumber(t.d)
     if (n === null) continue
-    if (`${t.leg}-${t.visit}` !== visit) {
-      visit = `${t.leg}-${t.visit}`
-      evaluate = evaluator(t.start, t.w)
-    }
-    const { cost, best } = numberCost(evaluate, t.left, t.darts, n, nearBull(t.d))
+    const { cost, best } = numberCost(evaluation, n, nearBull(t.d))
     if (cost < NOTE_THRESHOLD) continue
     const thrown = t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name
     notes.push({

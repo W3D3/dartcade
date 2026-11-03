@@ -120,9 +120,17 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Bust',
         labels: ['mistake'],
         source: 'scores',
-        when: 'The visit goes below zero, leaves 1, or reaches zero without a double. It scores nothing.',
+        when: 'The visit goes below zero, leaves 1, or reaches zero without a double. It scores nothing. Not a Bust-back.',
         example: '40 left · S20 T20 → bust',
         says: 'Where it busted. Before each dart, check that its worst miss still leaves a score.',
+      },
+      {
+        name: 'Bust-back',
+        labels: ['ok'],
+        source: 'model',
+        when: "The busting dart was best thrown to bust: from a score that's hard to finish, back on the visit's start is worth more. The missed-doubles and match-dart checks still apply.",
+        example: '20 left · S10 S7 S5 → back on 20',
+        says: 'Busted on purpose to stay on 20 (D10).',
       },
       {
         name: 'Checked out',

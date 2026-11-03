@@ -63,7 +63,7 @@ describe('strategy notes: the wrong number', () => {
     // Without a position the dart may have gone at the 25 (leaving 32), which costs less
     expect(n!.cost).toBeGreaterThan(0.07)
     // In the outer single it can't have
-    const placed = numberCost(evaluator(97, 1), 57, 1, 20, nearBull(dart('S20', outer(20))))
+    const placed = numberCost(evaluator(97, 1)(57, 1), 20, nearBull(dart('S20', outer(20))))
     expect(placed.cost).toBeGreaterThan(0.1)
     // With one dart left, nobody can "set up" anything: not a Tip (see 'strategy notes: tips' below)
     expect(n!.tip).toBe(false)
@@ -132,7 +132,7 @@ describe('strategy notes: no note', () => {
     expect(noteOn(162, ['T20', 'S20', 'S19'], 2)).toBeUndefined()
     expect(noteOn(101, ['S20', 'S20', 'S1'], 2)).toBeUndefined()
     const at = (left: number, n: number, coords: { x: number; y: number }) =>
-      numberCost(evaluator(left, 1), left, 1, n, nearBull(dart(`S${n}`, coords))).cost
+      numberCost(evaluator(left, 1)(left, 1), n, nearBull(dart(`S${n}`, coords))).cost
     expect(at(82, 19, inner(19))).toBe(0)
     expect(at(61, 1, inner(1))).toBe(0)
     // Out in the outer single, the 19 wasn't thrown at the bull
@@ -150,7 +150,7 @@ describe('strategy notes: no note', () => {
         if (best !== 'Bull' && best !== '25') continue
         for (let n = 1; n <= 20; n++) {
           aimed++
-          const { cost } = numberCost(evaluate, left, darts, n, nearBull(dart(`S${n}`, inner(n))))
+          const { cost } = numberCost(evaluate(left, darts), n, nearBull(dart(`S${n}`, inner(n))))
           if (cost >= NOTE_THRESHOLD) noted.push(`${left}/${darts} S${n}`)
         }
       }
@@ -205,7 +205,7 @@ describe('strategy notes: the book', () => {
     for (const [score, entry] of Object.entries(CHECKOUTS)) {
       const firsts = [...entry.routes.map(r => [r[0], 3] as const), ...(entry.twoDarts ? [[entry.twoDarts[0], 2] as const] : [])]
       for (const [label, darts] of firsts) {
-        const { cost } = numberCost(evaluator(Number(score), 1), Number(score), darts, number(label))
+        const { cost } = numberCost(evaluator(Number(score), 1)(Number(score), darts), number(label))
         if (cost >= NOTE_THRESHOLD) costly.push(`${score}/${darts} ${label}: ${(cost * 100).toFixed(1)}`)
       }
     }

@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { reviewLeg, scoringLetter, type LegReview } from './review.js'
 import { dart, leg, visit } from './testLegs.js'
 import type { CoachLeg, CoachVisit } from './walk.js'
+import { NOT_COUNTED, type DartClass, type DartKind } from './dartClass.js'
 
 const names = ['Admin', 'Gerwyn']
+/** A dart class pinned by its kind (dartClass.test.ts pins the rest) */
+const kind = (k: DartKind): DartClass => expect.objectContaining({ kind: k })
 const ctx = (startScore: number, average: number | null = null) => ({ startScore, average, opponentName: (s: number) => names[s] })
 
 /** Seat 0 wins a 501 leg in 17 darts against a seat 1 that scores 3 a visit. */
@@ -48,9 +51,9 @@ describe('reviewLeg', () => {
           n: 1,
           left: 501,
           darts: [
-            { name: 'T20', coords: { x: 0, y: 0.6 }, left: 441, bust: false },
-            { name: 'T20', coords: null, left: 381, bust: false },
-            { name: 'S20', coords: null, left: 361, bust: false },
+            { name: 'T20', coords: { x: 0, y: 0.6 }, left: 441, bust: false, class: kind('scoringHit') },
+            { name: 'T20', coords: null, left: 381, bust: false, class: kind('scoringHit') },
+            { name: 'S20', coords: null, left: 361, bust: false, class: kind('scoringSingle') },
           ],
           scored: 140,
           then: 361,
@@ -65,9 +68,9 @@ describe('reviewLeg', () => {
           n: 2,
           left: 361,
           darts: [
-            { name: 'S20', coords: null, left: 341, bust: false },
-            { name: 'S1', coords: null, left: 340, bust: false },
-            { name: 'S5', coords: null, left: 335, bust: false },
+            { name: 'S20', coords: null, left: 341, bust: false, class: kind('scoringSingle') },
+            { name: 'S1', coords: null, left: 340, bust: false, class: kind('scoringMiss') },
+            { name: 'S5', coords: null, left: 335, bust: false, class: kind('scoringMiss') },
           ],
           scored: 26,
           then: 335,
@@ -82,9 +85,9 @@ describe('reviewLeg', () => {
           n: 3,
           left: 335,
           darts: [
-            { name: 'T20', coords: null, left: 275, bust: false },
-            { name: 'S20', coords: null, left: 255, bust: false },
-            { name: 'S20', coords: null, left: 235, bust: false },
+            { name: 'T20', coords: null, left: 275, bust: false, class: kind('scoringHit') },
+            { name: 'S20', coords: null, left: 255, bust: false, class: kind('scoringSingle') },
+            { name: 'S20', coords: null, left: 235, bust: false, class: kind('scoringSingle') },
           ],
           scored: 100,
           then: 235,
@@ -99,9 +102,9 @@ describe('reviewLeg', () => {
           n: 4,
           left: 235,
           darts: [
-            { name: 'T20', coords: null, left: 175, bust: false },
-            { name: 'T19', coords: null, left: 118, bust: false },
-            { name: 'S20', coords: null, left: 98, bust: false },
+            { name: 'T20', coords: null, left: 175, bust: false, class: kind('scoringHit') },
+            { name: 'T19', coords: null, left: 118, bust: false, class: kind('scoringHit') },
+            { name: 'S20', coords: null, left: 98, bust: false, class: kind('route') },
           ],
           scored: 137,
           then: 98,
@@ -116,9 +119,9 @@ describe('reviewLeg', () => {
           n: 5,
           left: 98,
           darts: [
-            { name: 'T17', coords: null, left: 47, bust: false },
-            { name: 'S1', coords: null, left: 46, bust: false },
-            { name: 'S6', coords: null, left: 40, bust: false },
+            { name: 'T17', coords: null, left: 47, bust: false, class: kind('route') },
+            { name: 'S1', coords: null, left: 46, bust: false, class: kind('route') },
+            { name: 'S6', coords: null, left: 40, bust: false, class: kind('route') },
           ],
           scored: 58,
           then: 40,
@@ -133,8 +136,8 @@ describe('reviewLeg', () => {
           n: 6,
           left: 40,
           darts: [
-            { name: 'S20', coords: null, left: 20, bust: false },
-            { name: 'D10', coords: null, left: 0, bust: false },
+            { name: 'S20', coords: null, left: 20, bust: false, class: kind('double') },
+            { name: 'D10', coords: null, left: 0, bust: false, class: kind('double') },
           ],
           scored: 40,
           then: 0,
@@ -226,11 +229,26 @@ describe('reviewLeg', () => {
   it('marks the dart that busted, not the last one, and leaves the darts after it at the start', () => {
     // 32 left: S16, T20 busts; the game keeps the D8 thrown after it
     const r = reviewLeg([leg([visit(0, 32, ['S16', 'T20', 'D8'])])], 0, 0, ctx(501))
-    expect(r?.visits[0].darts.map(d => [d.name, d.left, d.bust])).toEqual([
-      ['S16', 16, false],
-      ['T20', 32, true],
-      ['D8', 32, false],
+    expect(r?.visits[0].darts.map(d => [d.name, d.left, d.bust, d.class.kind])).toEqual([
+      ['S16', 16, false, 'double'],
+      ['T20', 32, true, 'bust'],
+      ['D8', 32, false, 'notCounted'],
     ])
+    expect(r?.visits[0].darts[2].class).toEqual(NOT_COUNTED)
+  })
+
+  it('spares a deliberate bust: on 20, S10 and S7 leave 3, and the third dart busts back to D10', () => {
+    for (const third of ['S5', 'T20']) {
+      const r = reviewLeg([leg([visit(0, 20, ['S10', 'S7', third])])], 0, 0, ctx(501))
+      expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'route', 'bustBack'])
+      expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'ok', text: 'Busted on purpose to stay on 20 (D10).', tip: false })
+    }
+  })
+
+  it('a bust from a bad spot stays a Mistake: on 40, S20 then S19 with D10 to throw at', () => {
+    const r = reviewLeg([leg([visit(0, 40, ['S20', 'S19'])])], 0, 0, ctx(501))
+    expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'bust'])
+    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'mistake', text: 'On 20, S19: better D10 — S19 busts.' })
   })
 
   it('counts as bad setups only the setup visits the Setup line counts', () => {

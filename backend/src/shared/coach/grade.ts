@@ -1,8 +1,10 @@
 // Every visit's tag (Scoring, Setup, Doubling), grade (Great to Mistake) and one line saying why.
 // The worst matching rule wins: Mistake > Weak > Great > Good > OK. A strategy note (not a tip) is
-// a Mistake on any visit.
+// a Mistake on any visit; a bust is one too, unless its busting dart was a Bust-back.
 import { checkoutHint } from '../checkout.js'
 import { landedNumber, scoringAim } from './aim.js'
+import { oneDartFinish } from './aims.js'
+import type { DartKind } from './dartClass.js'
 import type { CoachNote } from './notes.js'
 import type { Throw } from './walk.js'
 
@@ -33,6 +35,8 @@ export type VisitFacts = {
   scored: number
   then: number
   bust: boolean
+  /** Each walked dart's class (dartClass.ts), in throw order */
+  kinds: readonly DartKind[]
   /** This visit's notes, tips included */
   notes: CoachNote[]
   /** The player's 3-dart average (30-day, or the game's) */
@@ -50,7 +54,6 @@ export function explainedNote(notes: readonly CoachNote[]): CoachNote | null {
   return costliest(notes.filter(n => !n.tip)) ?? costliest(notes)
 }
 
-const oneDartFinish = (n: number) => n === 50 || (n % 2 === 0 && n >= 2 && n <= 40)
 const doubleName = (left: number) => (left === 50 ? 'the bull' : `D${left / 2}`)
 const list = new Intl.ListFormat('en', { type: 'conjunction' })
 const TREBLES = ['', '', 'Two trebles.', 'Three trebles.']
@@ -62,7 +65,11 @@ export function tagOf(f: VisitFacts): VisitTag {
 
 const noteText = (n: CoachNote) =>
   `${n.tip ? 'Tip: ' : ''}On ${n.left}, ${n.thrown}: better ${n.better}${n.reason === null ? '' : ` — ${n.reason}`}.`
+/** Busted on purpose to stay on the start: the busting dart was a Bust-back */
+const bustBack = (f: VisitFacts) => f.bust && f.kinds.at(-1) === 'bustBack'
 const bustText = (f: VisitFacts) => `Busted on ${f.throws.at(-1)?.left ?? f.start}.`
+const bustBackText = (f: VisitFacts) =>
+  `Busted on purpose to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
 
 function scoring(f: VisitFacts): VisitGrading {
   const g = (grade: VisitGrade, text: string): VisitGrading => ({ tag: 'scoring', grade, text })
@@ -85,7 +92,7 @@ function setup(f: VisitFacts): VisitGrading {
   const note = explainedNote(f.notes)
   const mistake = note?.tip ? null : note
   if (mistake) return g('mistake', noteText(mistake))
-  if (f.bust) return g('mistake', bustText(f))
+  if (f.bust) return bustBack(f) ? g('ok', bustBackText(f)) : g('mistake', bustText(f))
   const grade = oneDartFinish(f.then) ? 'good' : 'ok'
   if (note) return { ...g(grade, noteText(note)), tip: true }
   const route = checkoutHint(f.then, 'double', 3)
@@ -102,8 +109,12 @@ const chasedDown = (f: VisitFacts, out: boolean) =>
   (f.then === 4 || f.then === 2) &&
   f.throws.every(t => t.d.segment.multiplier === 0 || (t.d.segment.multiplier === 1 && t.d.segment.number * 2 === t.left))
 
+/** A dart on a one-dart finish with one of these classes went for something else than the double */
+const NOT_AT_DOUBLE: ReadonlySet<DartKind> = new Set(['split', 'route', 'bustBack'])
+
 function doubling(f: VisitFacts): VisitGrading {
-  const atDouble = f.throws.filter(t => oneDartFinish(t.left))
+  const back = bustBack(f)
+  const atDouble = f.throws.filter((t, i) => oneDartFinish(t.left) && !NOT_AT_DOUBLE.has(f.kinds[i]))
   const out = f.throws.find(t => t.checkout)
   const matchDart = f.lastVisitOfLostLeg && !out && atDouble.length > 0
   const note = explainedNote(f.notes)
@@ -116,11 +127,13 @@ function doubling(f: VisitFacts): VisitGrading {
   const k = atDouble.length
   const missed = `${k} dart${k === 1 ? '' : 's'} at ${list.format([...new Set(atDouble.map(t => doubleName(t.left)))])} missed.`
   if (note && !note.tip) return g('mistake', noteText(note))
-  if (f.bust) return g('mistake', bustText(f))
+  if (f.bust && !back) return g('mistake', bustText(f))
   if (matchDart && !oneDartFinish(f.then)) return g('mistake', missed)
   if (chasedDown(f, out !== undefined)) return g('weak', `Chased down to ${f.then}.`)
   if ((k >= 2 && !out) || matchDart) return g('weak', missed)
   if (out) return g('great', `Checked out on ${doubleName(out.left)}.`)
+  // Its own line, over a tip
+  if (back) return { tag: 'doubling', grade: 'ok', text: bustBackText(f) }
   return g('ok', missed)
 }
 

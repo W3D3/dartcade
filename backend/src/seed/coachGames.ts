@@ -1,6 +1,7 @@
 // Scripted X01 games for the sample data, with mistakes the coach is known to note (and good darts
-// it must let pass), so a preview shows the coach at work. coachGames.test.ts checks every note
-// and every visit's grade.
+// it must let pass), so a preview shows the coach at work. coachGames.test.ts checks every note,
+// every visit's grade and every dart's class.
+import type { DartKind } from '../shared/coach/dartClass.js'
 import type { VisitGrade } from '../shared/coach/grade.js'
 
 /** The dev accounts seedDev() creates (auth/seed.ts). */
@@ -15,12 +16,17 @@ export type ExpectedNote = { seat: number; leg: 0; visit: number; dart: number }
 /** Per seat, each scripted visit's grade in the leg review */
 export type ExpectedGrades = VisitGrade[][]
 
+/** Per seat and visit, each scripted dart's class kind in the leg review. Typed darts sit at their
+ *  bed's centre, so a single at 20 is a Single, not a Hit. */
+export type ExpectedKinds = DartKind[][][]
+
 type CoachSample = {
   players: Who[]
   config: { startScore: number; firstTo: number }
   script: DartScript
   expect: ExpectedNote[]
   grades: ExpectedGrades
+  kinds: ExpectedKinds
 }
 
 const config = { startScore: 301, firstTo: 1 }
@@ -47,6 +53,18 @@ export const COACH_GAMES: CoachSample[] = [
       ['great', 'mistake', 'great'],
       ['weak', 'weak'],
     ],
+    kinds: [
+      [
+        ['scoringHit', 'scoringHit', 'scoringHit'],
+        // From 121: T16, S16, then S20 on 57 (its own bed, though S17 was the aim to take)
+        ['route', 'route', 'route'],
+        ['route', 'double'],
+      ],
+      [
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+      ],
+    ],
   },
   // The same 57 by admin, with Luke on 20 and Michael on 10: no note, they'd likely finish first.
   // Luke's T20 on 119 and Michael's 25 on 65 are fine too
@@ -72,6 +90,24 @@ export const COACH_GAMES: CoachSample[] = [
       ['great', 'ok', 'weak'],
       ['weak', 'ok', 'great'],
     ],
+    kinds: [
+      [
+        ['scoringHit', 'scoringSingle', 'scoringSingle'],
+        ['scoringSingle', 'scoringMiss', 'scoringHit'],
+        ['route', 'route', 'double'],
+        ['double'],
+      ],
+      [
+        ['scoringHit', 'scoringHit', 'scoringSingle'],
+        ['route', 'route', 'route'],
+        ['bull', 'double', 'double'],
+      ],
+      [
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringHit', 'scoringSingle', 'scoringSingle'],
+        ['scoringHit', 'route', 'route'],
+      ],
+    ],
   },
   // Admin goes in 1 with 47 left and two darts (leaves 46; S15 would leave 32), then busts in 19
   // on 20 with D10 to throw at
@@ -94,6 +130,23 @@ export const COACH_GAMES: CoachSample[] = [
     grades: [
       ['good', 'great', 'mistake', 'mistake', 'great'],
       ['weak', 'weak', 'weak', 'weak'],
+    ],
+    kinds: [
+      [
+        ['scoringHit', 'scoringSingle', 'scoringSingle'],
+        ['scoringMiss', 'scoringHit', 'route'],
+        // T10 on 77 and S1 on 47 hit their own beds: the aims on a dart's number are candidates
+        ['route', 'route', 'route'],
+        // S19 on 20 busts with D10 to throw at: not a Bust-back
+        ['double', 'bust'],
+        ['double'],
+      ],
+      [
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+      ],
     ],
   },
 ]

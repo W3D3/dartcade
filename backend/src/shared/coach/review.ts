@@ -1,15 +1,17 @@
 // The coach's review of one seat's leg, as the leg review page renders it: every visit graded,
 // three A–D skills and the coach's take.
+import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, LATE_DROP, LATE_DROP_VISITS, LONG_FINISH, type VisitGrade, type VisitTag } from './grade.js'
 import { fin } from './model.js'
-import { strategyNotes, type CoachNote } from './notes.js'
+import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { visitStart } from './visitStart.js'
 import { dartPoints, throwsOf, type CoachLeg } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
- *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false. */
-export type ReviewDart = { name: string; coords: { x: number; y: number } | null; left: number; bust: boolean }
+ *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
+ *  `class` notCounted. */
+export type ReviewDart = { name: string; coords: { x: number; y: number } | null; left: number; bust: boolean; class: DartClass }
 export type ReviewVisit = {
   /** 1-based among the seat's visits in the leg */
   n: number
@@ -66,7 +68,8 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
 
   const average = ctx.average ?? gameAverage(legs, seat)
   const throws = throwsOf([l], seat, ctx.startScore)
-  const notes = strategyNotes(throws)
+  const evaluate = throwEvaluations()
+  const notes = strategyNotes(throws, evaluate)
   const checkout = l.visits.find(v => v.remaining === 0 && !v.bust)
   const won = checkout?.seat === seat
   const lost = l.winner != null && l.winner !== seat
@@ -81,7 +84,8 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       const t = vThrows.at(j)
       before.push(t?.left ?? start)
       const bust = t?.bust ?? false
-      return { name: d.segment.name, coords: d.coords, left: t && !bust ? t.left - dartPoints(d) : start, bust }
+      const cls = t ? classifyDart(t, { evaluation: evaluate(t) }) : NOT_COUNTED
+      return { name: d.segment.name, coords: d.coords, left: t && !bust ? t.left - dartPoints(d) : start, bust, class: cls }
     })
     const vNotes = notes.filter(n => n.visit === i)
     const grading = classifyVisit({
@@ -90,6 +94,8 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       scored: v.scored,
       then: v.remaining,
       bust: v.bust,
+      // The walked darts' only: those after a bust aren't
+      kinds: reviewDarts.slice(0, vThrows.length).map(d => d.class.kind),
       notes: vNotes,
       average,
       lastVisitOfLostLeg: lost && k === mine.length - 1,

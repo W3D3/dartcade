@@ -2894,6 +2894,29 @@ export interface components {
             left: number;
             /** @description This dart busted (the darts the game keeps after it are false) */
             bust: boolean;
+            class: components["schemas"]["DartClass"];
+        };
+        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust */
+        DartClass: {
+            /** @enum {string} */
+            kind: "scoringHit" | "scoringSingle" | "scoringMiss" | "route" | "split" | "double" | "bull" | "bustBack" | "bust" | "wild" | "notCounted";
+            hit: boolean;
+            target: {
+                aimId: string;
+                label: string;
+            } | null;
+            /** @description scoringSingle: inner | outer; double: inside | outside | wide; bull: sb | db */
+            detail: string | null;
+            distanceMm: number | null;
+            /** @description + high (outside), − low (inside) */
+            radialMm: number | null;
+            /** @description + clockwise, − anticlockwise */
+            tangentialMm: number | null;
+            wedgesOff: number | null;
+            /** @description No camera coords: placed at the centre of the bed it landed in */
+            estimated: boolean;
+            plannedLeave: number | null;
+            actualLeave: number | null;
         };
         CoachNote: {
             leg: number;

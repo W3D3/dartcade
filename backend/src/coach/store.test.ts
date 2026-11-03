@@ -10,7 +10,17 @@ import type { Seat } from '../session/types.js'
 import { games } from '../games/index.js'
 import { pointFor } from '../bots/accuracy.js'
 import { segmentAt } from '../shared/board.js'
+import { createFastify } from '../api/fastify.js'
+import { coachApiPlugin } from '../api/coach.js'
 import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs } from './store.js'
+
+vi.mock('../auth/middleware.js', () => ({
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'ann'
+    done()
+  }),
+}))
+vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(() => Promise.resolve(true)), loadFlagUser: vi.fn(() => Promise.resolve(null)) }))
 
 const fail = (msg: string, details: unknown) => {
   throw new Error(`${msg} ${JSON.stringify(details)}`)
@@ -199,6 +209,25 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
       [COACH_VERSION, 6],
       [COACH_VERSION, 3],
     ])
+  })
+
+  it('rebuilds a stale leg on request: an older version is missing, not served', async () => {
+    const game = await play()
+    await buildCoachLegs(db, game, fail)
+    // A review of the version before the dart classes
+    const [ann] = await rows()
+    const old = { ...ann.review, visits: ann.review.visits.map(v => ({ ...v, darts: v.darts.map(({ class: _, ...d }) => d) })) }
+    await db
+      .updateTable('coach_legs')
+      .set({ version: COACH_VERSION - 1, review: JSON.stringify(old) })
+      .execute()
+
+    const app = createFastify()
+    app.register(coachApiPlugin, { db })
+    const res = await app.inject({ method: 'GET', url: `/api/coach/legs/${game.id}/0` })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().review.visits[0].darts[0].class).toMatchObject({ kind: 'scoringHit' })
+    expect((await rows()).map(r => r.version)).toEqual([COACH_VERSION, COACH_VERSION])
   })
 
   it('builds at most max games per call, newest first', async () => {
