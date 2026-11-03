@@ -13,6 +13,7 @@ import { segmentAt } from '../shared/board.js'
 import { createFastify } from '../api/fastify.js'
 import { coachApiPlugin } from '../api/coach.js'
 import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs } from './store.js'
+import { coachLegsPage, coachLegsSummary, getCoachLeg } from './legs.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -99,6 +100,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
   }
 
   const rows = () => db.selectFrom('coach_legs').selectAll().orderBy('seat').execute()
+  /** What a COACH_VERSION bump leaves behind: every game built, and its rows, by the version before. */
+  async function staleAll(set: { darts?: number; review?: string } = {}) {
+    await db
+      .updateTable('coach_games')
+      .set({ version: COACH_VERSION - 1 })
+      .execute()
+    await db
+      .updateTable('coach_legs')
+      .set({ version: COACH_VERSION - 1, ...set })
+      .execute()
+  }
 
   it('stores a row per leg for each seat with an account', async () => {
     const game = await play()
@@ -200,15 +212,41 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     expect(await rows()).toHaveLength(2)
     expect(await ensureCoachLegs(db, 'ann', fail)).toBe(0)
 
-    await db
-      .updateTable('coach_legs')
-      .set({ version: COACH_VERSION - 1, darts: 99 })
-      .execute()
+    await staleAll({ darts: 99 })
     expect(await ensureCoachLegs(db, 'bob', fail)).toBe(1)
     expect((await rows()).map(r => [r.version, r.darts])).toEqual([
       [COACH_VERSION, 6],
       [COACH_VERSION, 3],
     ])
+    expect(await ensureCoachLegs(db, 'bob', fail)).toBe(0)
+  })
+
+  it('marks a game that gave no rows as built, so it is not replayed again', async () => {
+    const seats: Seat[] = [
+      { name: 'Guest', userId: null, controllerUserId: 'ann', boardId: null, boardName: null, bot: null },
+      { name: 'Ann', userId: 'ann', controllerUserId: 'ann', boardId: null, boardName: null, bot: null },
+    ]
+    // The guest checks out 41 before Ann throws a dart
+    const game = await playWith(seats, [[['S1', 'D20']], [['S1']]], { startScore: 41 })
+    expect(await ensureCoachLegs(db, 'ann', fail)).toBe(1)
+    expect(await rows()).toEqual([])
+    expect(await db.selectFrom('coach_games').select(['game_id', 'version']).execute()).toEqual([
+      { game_id: game.id, version: COACH_VERSION },
+    ])
+    expect(await ensureCoachLegs(db, 'ann', fail)).toBe(0)
+    await backfillCoachLegs(db, fail)
+    const before = await db.selectFrom('coach_games').select('built_at').executeTakeFirstOrThrow()
+    await ensureCoachGame(db, 'ann', game.id, fail)
+    expect(await db.selectFrom('coach_games').select('built_at').executeTakeFirstOrThrow()).toEqual(before)
+  })
+
+  it('serves no row of an older version, in the list, the counts or the detail', async () => {
+    const game = await play()
+    await buildCoachLegs(db, game, fail)
+    await staleAll()
+    expect((await coachLegsPage(db, 'ann', 'all', null)).rows).toEqual([])
+    expect((await coachLegsSummary(db, 'ann')).counts.legs).toBe(0)
+    expect(await getCoachLeg(db, 'ann', game.id, 0)).toBeNull()
   })
 
   it('rebuilds a stale leg on request: an older version is missing, not served', async () => {
@@ -217,10 +255,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     // A review of the version before the dart classes
     const [ann] = await rows()
     const old = { ...ann.review, visits: ann.review.visits.map(v => ({ ...v, darts: v.darts.map(({ class: _, ...d }) => d) })) }
-    await db
-      .updateTable('coach_legs')
-      .set({ version: COACH_VERSION - 1, review: JSON.stringify(old) })
-      .execute()
+    await staleAll({ review: JSON.stringify(old) })
 
     const app = createFastify()
     app.register(coachApiPlugin, { db })
@@ -294,24 +329,28 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
       ['ann', 6],
       ['bob', 3],
     ])
+    expect(await db.selectFrom('coach_games').select('game_id').execute()).toEqual([{ game_id: game.id }])
   })
 
-  it('warns about a game that fails and builds the others', async () => {
+  it('warns once about a game that fails, records nothing for it and builds the others', async () => {
     const older = await play()
     const broken = await play()
     // A detail the coach can't read, stored by the current detail code so it isn't rebuilt
     await buildCoachLegs(db, broken, fail)
     await db.updateTable('game_details').set({ detail: '{"mode":"x01","legs":5}' }).where('session_id', '=', broken.id).execute()
     await db.deleteFrom('coach_legs').execute()
+    await db.deleteFrom('coach_games').execute()
 
     const warn = vi.fn()
     expect(await ensureCoachLegs(db, 'ann', warn)).toBe(2)
     expect(warn).toHaveBeenCalledWith('coach build failed', expect.objectContaining({ id: broken.id }))
     expect(new Set((await rows()).map(r => r.game_id))).toEqual(new Set([older.id]))
+    expect(await db.selectFrom('coach_games').select('game_id').execute()).toEqual([{ game_id: older.id }])
 
-    await db.deleteFrom('coach_legs').execute()
+    // Skipped from then on (until a restart), so it doesn't take a slot of every request's cap
+    expect(await ensureCoachLegs(db, 'ann', warn)).toBe(0)
     await backfillCoachLegs(db, warn)
-    expect(new Set((await rows()).map(r => r.game_id))).toEqual(new Set([older.id]))
+    expect(warn).toHaveBeenCalledTimes(1)
   })
 
   it("grades against the average when the game finished, not today's", async () => {
@@ -333,10 +372,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     await finishGameSession(db, 'later', new Date(), [
       { placement: 1, stats: { average: 5, dartsThrown: 300 }, throwPosition: 0, forfeited: false },
     ])
-    await db
-      .updateTable('coach_legs')
-      .set({ version: COACH_VERSION - 1 })
-      .execute()
+    await staleAll()
     await ensureCoachLegs(db, 'ann', fail)
     expect((await rows())[0].review).toEqual(before)
   })

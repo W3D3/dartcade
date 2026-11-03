@@ -11,44 +11,32 @@ import { coachable, coachLevel, loadModel, reviewLeg } from '../shared/coach/ind
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 20
+export const COACH_VERSION = 21
 
-const UPDATED = [
-  'user_id',
-  'finished_at',
-  'won',
-  'ranked',
-  'darts',
-  'average',
-  'low_visits',
-  'bad_setups',
-  'missed_doubles',
-  'clean',
-  'opponents',
-  'context',
-  'review',
-  'winner_name',
-  'winner_darts',
-  'version',
-] as const
-
-// The builds under way, so the game end, a request and the backfill build a game once at a time
-const building = new Map<string, Promise<void>>()
-
-/** Builds (or rebuilds) the game's rows, unless the coach doesn't review it. */
+/** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
+ *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. */
 export async function buildCoachLegs(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<void> {
-  let pending = building.get(game.id)
-  if (!pending) {
-    pending = build(db, game, warn).finally(() => building.delete(game.id))
-    building.set(game.id, pending)
-  }
-  return pending
+  if (game.invalidated) return
+  const rows = await reviewRows(db, game, warn)
+  // Replaces the game's rows as a whole, so a leg a new version no longer reviews goes too. The lock
+  // serializes overlapping builds of one game (game end, a request, the backfill): the last one wins.
+  await db.transaction().execute(async tx => {
+    await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.coach.' || ${game.id}))`.execute(tx)
+    await tx.deleteFrom('coach_legs').where('game_id', '=', game.id).execute()
+    if (rows.length) await tx.insertInto('coach_legs').values(rows).execute()
+    await tx
+      .insertInto('coach_games')
+      .values({ game_id: game.id, version: COACH_VERSION })
+      .onConflict(oc => oc.column('game_id').doUpdateSet({ version: COACH_VERSION, built_at: new Date() }))
+      .execute()
+  })
 }
 
-async function build(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<void> {
-  if (game.invalidated || !coachable(game.game_id, game.config)) return
+/** The game's rows, one per leg and seat with an account; none when the coach doesn't review it. */
+async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<Insertable<CoachLegsTable>[]> {
+  if (!coachable(game.game_id, game.config)) return []
   const built = await storedDetail(db, game, warn)
-  if (built?.detail.mode !== 'x01') return
+  if (built?.detail.mode !== 'x01') return []
   const { legs } = built.detail
   const coachLegs = legs.map(l => ({ ...l, visits: l.visits.map(v => ({ ...v, darts: v.darts.map(coachDart) })) }))
   const extra = await db
@@ -112,27 +100,19 @@ async function build(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Pro
       })
     }
   }
-  // Replaces the game's rows as a whole, so a leg a new version no longer reviews goes too
-  await db.transaction().execute(async tx => {
-    await tx.deleteFrom('coach_legs').where('game_id', '=', game.id).execute()
-    // Over rows another server built meanwhile
-    if (rows.length)
-      await tx
-        .insertInto('coach_legs')
-        .values(rows)
-        .onConflict(oc =>
-          oc.columns(['game_id', 'leg', 'seat']).doUpdateSet(eb => Object.fromEntries(UPDATED.map(c => [c, eb.ref(`excluded.${c}`)]))),
-        )
-        .execute()
-  })
+  return rows
 }
 
+// Games whose build threw in this process: warned about once and skipped until the next boot, so
+// they don't take a slot of every request's cap (nothing is recorded, a restart retries them)
+const failed = new Set<string>()
+
 /**
- * Finished, valid, coachable games without rows of this version, newest first: the user's (any
+ * Finished, valid, coachable games not built at this version, newest first: the user's (any
  * account's with null), at most `limit`
  */
 async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: number): Promise<string[]> {
-  const q = db
+  let q = db
     .selectFrom('game_sessions as gs')
     .select('gs.id')
     .where('gs.status', '=', 'finished')
@@ -156,11 +136,12 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
     .where(eb =>
       eb.not(
         eb.exists(
-          eb.selectFrom('coach_legs as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', '=', COACH_VERSION),
+          eb.selectFrom('coach_games as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', '=', COACH_VERSION),
         ),
       ),
     )
     .orderBy('gs.finished_at', 'desc')
+  if (failed.size) q = q.where('gs.id', 'not in', [...failed])
   const rows = await (limit === undefined ? q : q.limit(limit)).execute()
   return rows.map(r => r.id)
 }
@@ -168,19 +149,21 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
 /** Builds one game, only if `userId` (when given) played in it; a game that fails is warned about
  *  and skipped, so it can't stop the others. */
 async function buildById(db: Kysely<Database>, id: string, warn: WarnFn, userId?: string): Promise<void> {
+  if (failed.has(id)) return
   try {
     const game = await getFinishedGame(db, id)
     if (game && (userId === undefined || game.seats.some(s => s.user_id === userId))) await buildCoachLegs(db, game, warn)
   } catch (err) {
+    failed.add(id)
     warn('coach build failed', { id, error: String(err) })
   }
 }
 
-/** Builds the rows of one of the user's games that has none of this version yet (a leg asked for
- *  before the game end or the backfill got to it). buildCoachLegs skips an invalid or uncoachable game. */
+/** Builds one of the user's games not built at this version yet (a leg asked for before the game
+ *  end or the backfill got to it). buildCoachLegs skips an invalid game. */
 export async function ensureCoachGame(db: Kysely<Database>, userId: string, id: string, warn: WarnFn): Promise<void> {
   const built = await db
-    .selectFrom('coach_legs')
+    .selectFrom('coach_games')
     .select('game_id')
     .where('game_id', '=', id)
     .where('version', '=', COACH_VERSION)
@@ -189,7 +172,7 @@ export async function ensureCoachGame(db: Kysely<Database>, userId: string, id: 
 }
 
 /**
- * Builds the rows of the user's most recent games that have none of this version, at most `max`
+ * Builds the user's most recent games not built at this version, at most `max`
  * games per call. Returns how many games it tried.
  */
 export async function ensureCoachLegs(db: Kysely<Database>, userId: string, warn: WarnFn, max = 10): Promise<number> {
@@ -200,9 +183,8 @@ export async function ensureCoachLegs(db: Kysely<Database>, userId: string, warn
 
 const BACKFILL_PAUSE_MS = 50
 
-/** Builds every game's missing or stale rows, newest first, pausing between games. Run once at boot. */
+/** Builds every game not built at this version, newest first, pausing between games. Run once at boot. */
 export async function backfillCoachLegs(db: Kysely<Database>, warn: WarnFn): Promise<void> {
-  // shortcut: a game no account seat threw a dart in gets no rows, so each boot builds it again; fine while that's rare
   for (const id of await unbuilt(db, null)) {
     // A pause, not just a yield: live games and requests come first
     await new Promise(resolve => setTimeout(resolve, BACKFILL_PAUSE_MS))

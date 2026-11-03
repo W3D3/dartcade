@@ -300,6 +300,14 @@ export interface CoachLegsTable {
   version: number
 }
 
+/** A game the coach has built, rows or none (migration 048, coach/store.ts). */
+export interface CoachGamesTable {
+  game_id: string
+  /** COACH_VERSION of the code that built it. */
+  version: number
+  built_at: ColumnType<Date, Date | undefined, Date>
+}
+
 /** A player's rating in one ranked mode (migration 020). */
 export interface RankedRatingsTable {
   user_id: string
@@ -510,4 +518,5 @@ export interface Database {
   user_unlocks: UserUnlocksTable
   ranked_matches: RankedMatchesTable
   coach_legs: CoachLegsTable
+  coach_games: CoachGamesTable
 }

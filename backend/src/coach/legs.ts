@@ -29,11 +29,15 @@ const COUNTS_WINDOW = 50
 const PAGE_SIZE = 40
 
 function base(db: Kysely<Database>, userId: string) {
-  return db
-    .selectFrom('coach_legs as cl')
-    .innerJoin('game_sessions as gs', 'gs.id', 'cl.game_id')
-    .where('cl.user_id', '=', userId)
-    .where('gs.invalidated_at', 'is', null)
+  return (
+    db
+      .selectFrom('coach_legs as cl')
+      .innerJoin('game_sessions as gs', 'gs.id', 'cl.game_id')
+      .where('cl.user_id', '=', userId)
+      .where('gs.invalidated_at', 'is', null)
+      // A stale row (an older COACH_VERSION) is missing until its game is rebuilt, in every read
+      .where('cl.version', '=', COACH_VERSION)
+  )
 }
 
 /** Counts over the user's 50 most recent stored legs (finished_at desc), and when the newest of
@@ -132,14 +136,12 @@ export type CoachLegDetail = {
   winnerDarts: number | null
 }
 
-/** One of the user's own stored legs, or null (another user's leg, none, or a stale one of an older
- *  COACH_VERSION, whose review the API schema would refuse). The leg's winner (coach/store.ts's
+/** One of the user's own stored legs, or null (another user's leg, none, or a stale one). The leg's winner (coach/store.ts's
  *  build-time lookup in the match detail) comes straight off the row. */
 export async function getCoachLeg(db: Kysely<Database>, userId: string, gameId: string, leg: number): Promise<CoachLegDetail | null> {
   const row = await base(db, userId)
     .where('cl.game_id', '=', gameId)
     .where('cl.leg', '=', leg)
-    .where('cl.version', '=', COACH_VERSION)
     .select(['cl.review', 'cl.opponents', 'cl.context', 'cl.finished_at', 'cl.won', 'cl.winner_name', 'cl.winner_darts'])
     .executeTakeFirst()
   if (!row) return null
