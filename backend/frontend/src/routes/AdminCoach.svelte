@@ -11,13 +11,13 @@
   import GradePill from '$lib/components/coach/GradePill.svelte'
   import GroupingPill from '$lib/components/coach/GroupingPill.svelte'
   import DartTile from '$lib/components/coach/DartTile.svelte'
+  import VisitDetail from '$lib/components/coach/VisitDetail.svelte'
+  import VisitNumbers from '$lib/components/coach/VisitNumbers.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { currentUser } from '$lib/auth'
   import { coachTrail } from '$lib/admin/breadcrumbs'
-  import { betterLine, missTags } from '$lib/coach/board'
   import { visitTiles } from '$lib/coach/dart'
-  import { groupingLine, signedPoints, whatHappened } from '$lib/coach/numbers'
   import { dartAt, dartFromLabel } from '$lib/coach/sandbox'
   import { coachOpenVisit } from '$shared/coach/openVisit'
   import { explainedNote } from '$shared/coach/grade'
@@ -93,8 +93,6 @@
     add(d)
   }
 
-  const CLASS_COLUMNS = ['Dart', 'Kind', 'Target', 'Dist', 'Edge', 'Out', 'CW', 'Wedges', 'Est.', 'Leave', 'Δ', 'Close']
-  const mm = (v: number | null) => (v === null ? '–' : (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
   const noteLine = (n: CoachNote) =>
@@ -128,13 +126,7 @@
           {/if}
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
 
-          <BoardCard
-            darts={visit?.darts ?? []}
-            selected={note?.dart ?? null}
-            better={note ? { aimId: note.betterAimId, label: note.better } : null}
-            misses={note ? missTags(note) : []}
-            onpoint={accepting ? place : undefined}
-          />
+          <BoardCard darts={visit?.darts ?? []} {note} onpoint={accepting ? place : undefined} />
 
           <form class="flex gap-2" onsubmit={addTyped}>
             <Input aria-label="Type a dart" placeholder="S20, T19, D16, Bull, 25, Miss" bind:value={typed} disabled={!accepting} />
@@ -188,6 +180,7 @@
                 </li>
               {/each}
             </ul>
+            <VisitDetail {visit} />
             <div class="flex flex-col gap-2">
               <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
               <p class="m-0 text-[12px] text-text-muted">
@@ -195,41 +188,7 @@
                 is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against a
                 {levelAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
               </p>
-              <div class="overflow-x-auto">
-                <table class="w-full border-collapse text-[13px] tabular-nums">
-                  <thead>
-                    <tr class="text-left text-text-muted">
-                      {#each CLASS_COLUMNS as c (c)}<th class="px-1.5 py-1 font-semibold whitespace-nowrap">{c}</th>{/each}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each visit.darts as d, i (i)}
-                      {@const c = d.class}
-                      <tr class="border-t border-line">
-                        <td class="px-1.5 py-1 font-display font-bold text-[16px]">{d.name}</td>
-                        <td class="px-1.5 py-1">{c.kind}{c.hit ? ' ✓' : ''}{'detail' in c && c.detail ? ` (${c.detail})` : ''}</td>
-                        <td class="px-1.5 py-1">{c.target ? `${c.target.label} (${c.target.aimId})` : '–'}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.mm ?? null)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.edgeMm ?? null)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.radialMm ?? null)}</td>
-                        <td class="px-1.5 py-1 text-right">{mm(c.miss?.tangentialMm ?? null)}</td>
-                        <td class="px-1.5 py-1 text-right">{c.miss?.wedgesOff ?? '–'}</td>
-                        <td class="px-1.5 py-1">{c.estimated ? 'yes' : 'no'}</td>
-                        <td class="px-1.5 py-1 text-right">{c.plannedLeave ?? '–'} → {c.actualLeave ?? '–'}</td>
-                        <td class="px-1.5 py-1 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>
-                        <td class="px-1.5 py-1 text-right">{d.closeness === null ? '–' : `+${d.closeness.toFixed(1)}`}</td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
-              <span><b>What happened:</b> {whatHappened(visit)}</span>
-              <span class="text-text-muted"
-                >{groupingLine(visit) ?? 'No grouping: it needs two darts placed on the board with a target. Rating = score.'}</span
-              >
-              {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
+              <VisitNumbers {visit} />
             </div>
           {:else}
             <p class="m-0 text-[14px] text-text-muted">Throw a dart to see the coach's review.</p>

@@ -2,16 +2,14 @@
 // open visit's darts as the coach classes them, and the last finished visit's grade, by the model of
 // the player's coaching level (LiveCoach.svelte loads only that level's table).
 import type { Dart } from '$lib/api/game-ws'
-import type { VisitGrade, VisitTag } from '$shared/coach'
+import type { ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
 import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModel } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart } from '$shared/coach/walk'
 import { visitTiles, type DartTileView } from './dart'
-import { signedPoints } from './numbers'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
-export type LiveRow = DartTileView & { delta: string | null; close: string | null }
 export type LiveGrade = { grade: VisitGrade; tag: VisitTag; text: string; tip: boolean; darts: string }
 export type LiveCoach = {
   /** The score before the next dart */
@@ -21,7 +19,9 @@ export type LiveCoach = {
   /** The next dart's best aims; empty once the visit is done */
   aims: LiveAim[]
   /** The open visit's darts */
-  rows: LiveRow[]
+  rows: DartTileView[]
+  /** The open visit as the coach reviews it (its numbers behind coach.debug.enabled); null before a dart */
+  visit: ReviewVisit | null
   /** The visit's grade once it is done (three darts, a bust or a checkout); else null */
   graded: LiveGrade | null
 }
@@ -50,14 +50,9 @@ export function liveCoach(model: CoachModel, start: number, darts: readonly Dart
       ? scoringAims(model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
       : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
   const v = r.visit
-  const tiles = v ? visitTiles(v) : []
-  const rows = (v?.darts ?? []).map((d, i) => ({
-    ...tiles[i],
-    delta: d.delta === null ? null : signedPoints(d.delta),
-    close: d.closeness === null || Math.round(d.closeness) === 0 ? null : `+${Math.round(d.closeness)}`,
-  }))
+  const rows = v ? visitTiles(v) : []
   const graded = r.done && v ? { grade: v.grade, tag: v.tag, text: v.text, tip: v.tip, darts: v.darts.map(d => d.name).join(' ') } : null
-  return { left: r.left, scoring, aims, rows, graded }
+  return { left: r.left, scoring, aims, rows, visit: v, graded }
 }
 
 /** The grade to show: the open visit's once it's done, the last one's while the next has no dart

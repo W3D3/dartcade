@@ -33,12 +33,12 @@ describe('liveCoach', () => {
     expect(c.scoring).toBe(false)
   })
 
-  it("lists the open visit's darts with their class, change and closeness", () => {
+  it("lists the open visit's darts with their class and change", () => {
     const c = liveCoach(REF, 81, darts('T19', 'S12'), 60)
     expect(c.left).toBe(12)
     expect(c.rows.map(r => r.name)).toEqual(['T19', 'S12'])
     expect(c.rows[0].label).toBeTruthy()
-    expect(c.rows[0].delta).toMatch(/^(0|[+−]\d+)$/)
+    expect(c.visit?.darts[0].delta).toEqual(expect.any(Number))
     expect(c.graded).toBeNull()
   })
 
@@ -50,7 +50,7 @@ describe('liveCoach', () => {
 
   it('has no change on a scoring visit', () => {
     const c = liveCoach(REF, 501, darts('T20', 'T20', 'T20'), 60)
-    expect(c.rows.every(r => r.delta === null)).toBe(true)
+    expect(c.visit?.darts.every(d => d.delta === null)).toBe(true)
     expect(c.graded?.tag).toBe('scoring')
   })
 })

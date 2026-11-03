@@ -6,17 +6,15 @@
   import Layout from '$lib/components/Layout.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
   import GradePill from '$lib/components/coach/GradePill.svelte'
-  import GroupingPill from '$lib/components/coach/GroupingPill.svelte'
   import TakeCard from '$lib/components/coach/TakeCard.svelte'
   import VisitCards from '$lib/components/coach/VisitCards.svelte'
+  import VisitDetail from '$lib/components/coach/VisitDetail.svelte'
+  import VisitNumbers from '$lib/components/coach/VisitNumbers.svelte'
   import VisitTable from '$lib/components/coach/VisitTable.svelte'
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag } from '$lib/flags'
-  import { betterLine, missTags } from '$lib/coach/board'
-  import { dartRows } from '$lib/coach/dart'
   import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
-  import { groupingLine, signedPoints, valueLine } from '$lib/coach/numbers'
   import { GRADE_PILL } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
   import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
@@ -75,9 +73,7 @@
   const visits = $derived(review?.visits ?? [])
   const shown = $derived(filter === 'all' ? visits : visits.filter(v => v.tag === filter))
   const tagCount = (id: VisitTag | 'all') => (id === 'all' ? visits.length : visits.filter(v => v.tag === id).length)
-  const select = (n: number) => {
-    selected = n
-  }
+  const select = (n: number) => (selected = n)
   // The selection among the visits the chips show: the first shown when a chip hides the selected one
   const at = $derived(
     Math.max(
@@ -91,57 +87,10 @@
 </script>
 
 {#snippet visitDetail(v: ReviewVisit)}
-  {@const note = explainedNote(v.notes)}
   <div class="flex flex-col gap-3.5">
-    <BoardCard
-      darts={v.darts}
-      selected={note?.dart ?? null}
-      better={note ? { aimId: note.betterAimId, label: note.better } : null}
-      misses={note ? missTags(note) : []}
-    />
-    <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
-      <table class="w-full border-collapse text-[13px] tabular-nums">
-        <caption class="sr-only">Visit {v.n}'s darts</caption>
-        <thead>
-          <tr class="text-left text-[11px] uppercase tracking-[0.08em] text-text-muted">
-            <th scope="col" class="py-1 pr-2 font-semibold">Dart</th>
-            <th scope="col" class="py-1 pr-2 font-semibold">Classification</th>
-            <th scope="col" class="py-1 text-right font-semibold">Distance</th>
-            {#if $debug}
-              <th scope="col" class="py-1 pl-2 text-right font-semibold">Centre</th>
-              <th scope="col" class="py-1 pl-2 text-right font-semibold">Δ</th>
-              <th scope="col" class="py-1 pl-2 text-right font-semibold">Close</th>
-            {/if}
-          </tr>
-        </thead>
-        <tbody>
-          {#each dartRows(v) as r, i (i)}
-            {@const d = v.darts[i]}
-            <tr class="border-t border-line align-top">
-              <th scope="row" class="py-1.5 pr-2 text-left font-display text-[15px] font-bold">{r.name}</th>
-              <td class="py-1.5 pr-2">
-                {r.label}{#if r.near}
-                  <span class="ml-1 inline-flex h-5 items-center rounded-full bg-good/15 px-2 text-[11px] font-bold text-good"
-                    >Near miss</span
-                  >{/if}
-              </td>
-              <td class="py-1.5 text-right whitespace-nowrap">{r.distance}</td>
-              {#if $debug}
-                <td class="py-1.5 pl-2 text-right">{d.class.miss?.mm.toFixed(1) ?? '–'}</td>
-                <td class="py-1.5 pl-2 text-right">{d.delta === null ? '–' : signedPoints(d.delta)}</td>
-                <td class="py-1.5 pl-2 text-right">{d.closeness === null ? '–' : `+${d.closeness.toFixed(1)}`}</td>
-              {/if}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-      {#if $debug}
-        {#if valueLine(v)}<span class="text-text-muted"><b>Checkout chance:</b> {valueLine(v)}</span>{/if}
-        <GroupingPill grouping={v.grouping} />
-        {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
-      {/if}
-      {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
-    </div>
+    <BoardCard darts={v.darts} note={explainedNote(v.notes)} />
+    <VisitDetail visit={v} />
+    {#if $debug}<VisitNumbers visit={v} />{/if}
     <div class="flex gap-2">
       {#if prev}
         <Button variant="outline" class="h-10 flex-1" onclick={() => select(prev.n)}><ChevronLeft size={16} />Visit {prev.n}</Button>

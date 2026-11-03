@@ -3,29 +3,27 @@
   // better aim's bed in blue with its likely misses labelled, and each dart as a pin with its
   // name. A dart without a position sits hollow at its bed's centre; the selected one is lime
   // with a pulsing ring. A faint line joins each dart to the target its class picked.
-  import type { ReviewDart } from '$shared/coach'
-  import { aimBed, aimPoint, type BoardTag } from '$lib/coach/board'
+  import type { CoachNote, ReviewDart } from '$shared/coach'
+  import { aimBed, aimPoint, missTags } from '$lib/coach/board'
   import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
 
   let {
     darts,
-    selected = null,
-    better = null,
-    misses = [],
+    note = null,
     onpoint,
   }: {
     darts: ReviewDart[]
-    /** Index into `darts` */
-    selected?: number | null
-    /** The better aim (CoachNote.betterAimId, CoachNote.better) */
-    better?: { aimId: string; label: string } | null
-    /** Where a dart at the better aim likely lands instead (likelyMisses) */
-    misses?: BoardTag[]
+    /** The note the visit explains (explainedNote): its dart selected, its better aim and that aim's likely misses drawn */
+    note?: CoachNote | null
     /** A click's board point, in board units */
     onpoint?: (p: { x: number; y: number }) => void
   } = $props()
+
+  const selected = $derived(note?.dart ?? null)
+  const better = $derived(note ? { aimId: note.betterAimId, label: note.better } : null)
+  const misses = $derived(note ? missTags(note) : [])
 
   const pins = $derived(
     darts.flatMap((d, i) => {
@@ -41,7 +39,7 @@
     }),
   )
   // Centred on the miss, kept inside the board's box (a tag can carry what the miss leaves: "S8 · 8 = D4")
-  const missTags = $derived(
+  const tags = $derived(
     misses.map(m => {
       const p = toBoardPx(m)
       const w = tagW(m.label)
@@ -61,7 +59,7 @@
 <MutedBoard {label} {onpoint} class="block w-full max-w-[300px] aspect-square mx-auto">
   {#if bed}<path d={bedPath(bed)} fill-rule="evenodd" class="fill-ice stroke-text" stroke-width="2" />{/if}
 
-  {#each missTags as m, i (i)}
+  {#each tags as m, i (i)}
     <g transform="translate({m.x} {m.y})">
       <rect y="-13" width={tagW(m.name)} height="26" rx="7" class="fill-bg stroke-ice" stroke-width="2" />
       <text
