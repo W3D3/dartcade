@@ -48,6 +48,11 @@ func toDart(t bm.BMThrow) schema.Dart {
 		v := true
 		d.Bouncer = &v
 	}
+	// Board Manager can report a bounce-out at the board's centre; neither it nor a miss
+	// inside the outer double wire (r = 1) is where the dart landed.
+	if t.Coords != nil && (t.Bouncer || t.Segment.Bed == "Outside" && math.Hypot(t.Coords.X, t.Coords.Y) <= 1) {
+		t.Coords = nil
+	}
 	if t.Coords != nil {
 		d.Coords = &schema.Coords{X: t.Coords.X, Y: t.Coords.Y}
 		r := math.Sqrt(t.Coords.X*t.Coords.X + t.Coords.Y*t.Coords.Y)

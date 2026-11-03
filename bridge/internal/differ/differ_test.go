@@ -59,6 +59,19 @@ func TestToDart_BounceOut(t *testing.T) {
 	}
 }
 
+func TestToDart_NoPositionForBounceOutOrMissOnBoard(t *testing.T) {
+	miss := bm.BMSegment{Name: "Miss", Number: 0, Bed: "Outside", Multiplier: 0}
+	for name, th := range map[string]bm.BMThrow{
+		"bounce-out at the centre": {Segment: miss, Bouncer: true, Coords: &bm.BMCoords{X: 0, Y: 0}},
+		"miss on the board":        {Segment: miss, Coords: &bm.BMCoords{X: 0.3, Y: 0.2}},
+	} {
+		d := differ.ExportedToDart(th)
+		if d.Coords != nil || d.Polar != nil {
+			t.Errorf("%s: coords=%v polar=%v want none", name, d.Coords, d.Polar)
+		}
+	}
+}
+
 func TestToDart_NearMiss(t *testing.T) {
 	th := bm.BMThrow{
 		Segment: bm.BMSegment{Name: "M17", Number: 17, Bed: "Outside", Multiplier: 0},
@@ -333,7 +346,16 @@ func TestProcess_Resync(t *testing.T) {
 }
 
 func TestProcess_BounceOut(t *testing.T) {
-	all, _ := runFixture(t, "bounce-out.jsonl")
+	// The newer Board Manager reports a bounce-out at the board's centre
+	for _, fixture := range []string{"bounce-out.jsonl", "bounce-out-centre.jsonl"} {
+		assertBounceOut(t, fixture)
+	}
+}
+
+func assertBounceOut(t *testing.T, fixture string) {
+	t.Helper()
+	all, _ := runFixture(t, fixture)
+	assertHasKind(t, all, "dart.detected")
 	for _, e := range all {
 		if e.Kind == "dart.detected" {
 			d := e.Data.(*schema.DartDetectedData)
