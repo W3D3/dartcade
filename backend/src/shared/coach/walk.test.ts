@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { throwsOf, walkVisit } from './walk.js'
+import { R } from '../board.js'
+import { landedNumber, nearBull, throwsOf, walkVisit } from './walk.js'
 import { dart, leg, visit, REF } from './testLegs.js'
 
 const { fin } = REF
@@ -82,5 +83,28 @@ describe('walkVisit', () => {
       { left: 16, after: 32, checkout: false, bust: true },
     ])
     expect(walkVisit(40, [dart('D20')])).toEqual([{ left: 40, after: 0, checkout: true, bust: false }])
+  })
+})
+
+describe('landedNumber', () => {
+  it('reads the number, with the bull and 25 as 25', () => {
+    expect([landedNumber(dart('T20')), landedNumber(dart('S5')), landedNumber(dart('Bull')), landedNumber(dart('25'))]).toEqual([
+      20, 5, 25, 25,
+    ])
+  })
+
+  it('places a miss off the board by its position, and gives up without one', () => {
+    expect(landedNumber(dart('Miss', { x: 0, y: 1.05 }))).toBe(20)
+    expect(landedNumber(dart('Miss'))).toBeNull()
+  })
+})
+
+describe('nearBull', () => {
+  it('is a single inside the inner single ring, or one without a position', () => {
+    expect(nearBull(dart('S19', { x: 0.1, y: -0.2 }))).toBe(true)
+    expect(nearBull(dart('S19'))).toBe(true)
+    expect(nearBull(dart('S20', { x: 0, y: R.si + 0.01 }))).toBe(false)
+    expect(nearBull(dart('T20'))).toBe(false)
+    expect(nearBull(dart('25'))).toBe(false)
   })
 })

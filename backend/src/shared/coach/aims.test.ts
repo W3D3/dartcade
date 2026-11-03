@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { segmentAt } from '../board.js'
-import { AIMS, aimById, aimPoints, bedAim } from './aims.js'
+import { AIMS, aimById, aimPoints, aimsOn, bedAim, neighbours } from './aims.js'
 import { LANDING } from './landing/level-7.gen.js'
 import { loadModel } from './model.js'
 
@@ -80,5 +80,21 @@ describe('bedAim', () => {
   it('has none off the board', () => {
     expect(bedAim('Miss')).toBeNull()
     expect(bedAim('M20')).toBeNull()
+  })
+})
+
+describe('aimsOn', () => {
+  it('are every aim on the numbers, wires included', () => {
+    const ids = aimsOn([20, ...neighbours(20)])
+      .map(i => AIMS[i].id)
+      .sort()
+    const on = (n: number) => [`T${n}`, `D${n}`, `SO${n}`, `SI${n}`]
+    expect(ids).toEqual([...on(5), ...on(20), ...on(1), 'W12-5', 'W5-20', 'W20-1', 'W1-18'].sort())
+    expect(
+      aimsOn([25])
+        .map(i => AIMS[i].id)
+        .sort(),
+    ).toEqual(['25', 'Bull'])
+    expect(neighbours(25)).toEqual([])
   })
 })

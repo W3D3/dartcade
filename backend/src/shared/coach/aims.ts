@@ -55,6 +55,17 @@ const INDEX = new Map(AIMS.map((a, i) => [a.id, i]))
 export const aimIndex = (id: string): number => INDEX.get(id) ?? -1
 export const aimById = (id: string): Aim | undefined => AIMS[aimIndex(id)]
 
+/** `n`'s two neighbours on the board; none for 25 */
+export function neighbours(n: number): number[] {
+  const i = SEGS.indexOf(n)
+  return i < 0 ? [] : [SEGS[(i + 19) % 20], SEGS[(i + 1) % 20]]
+}
+
+/** The aims (AIMS indexes, in AIMS order) a dart around which lands in any of `numbers`: for a
+ *  number its treble, double, singles and both wires; the bull and 25 for 25. */
+export const aimsOn = (numbers: readonly number[]): number[] =>
+  AIMS.flatMap((a, i) => (a.numbers.some(m => numbers.includes(m)) ? [i] : []))
+
 /** The aim at the centre of a segment's bed (by its name: T20, S20 (its outer single), Bull); null
  *  off the board. */
 export const bedAim = (name: string): Aim | null => aimById(/^S\d/.test(name) ? `SO${name.slice(1)}` : name) ?? null

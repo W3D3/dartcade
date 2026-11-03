@@ -1,6 +1,6 @@
 // A seat's darts in a finished X01 game, with what was left before each, for the coach. Reads the
 // stored detail (games/x01.ts detail()): each visit's remaining is after it, unchanged on a bust.
-import { withoutFalsePosition, type Bed } from '../board.js'
+import { R, segmentAt, withoutFalsePosition, type Bed } from '../board.js'
 import type { CoachModel } from './model.js'
 import { visitStart } from './visitStart.js'
 
@@ -46,6 +46,24 @@ export type Throw = {
 // The bull comes as number 50 with multiplier 1, a miss as multiplier 0
 export const dartPoints = (d: Pick<CoachDart, 'segment'>): number => d.segment.number * d.segment.multiplier
 export const isDoubleDart = (d: Pick<CoachDart, 'segment'>): boolean => d.segment.multiplier === 2 || d.segment.number === 50
+
+/** The number a dart landed in: 1–20, 25 for the bull and 25, or null for a miss we can't place. */
+export function landedNumber(d: CoachDart): number | null {
+  const { number, multiplier } = d.segment
+  if (number === 50 || number === 25) return 25
+  if (multiplier > 0 && number >= 1 && number <= 20) return number
+  if (!d.coords) return null
+  const s = segmentAt(d.coords.x, d.coords.y)
+  return s.number === 50 ? 25 : s.number
+}
+
+/** A single that may have been thrown at the bull or 25: it landed inside the inner single ring, or
+ *  it has no position to tell. */
+export const nearBull = (d: CoachDart): boolean =>
+  d.segment.multiplier === 1 &&
+  d.segment.number >= 1 &&
+  d.segment.number <= 20 &&
+  (d.coords === null || Math.hypot(d.coords.x, d.coords.y) < R.si)
 
 /** The score after a dart worth `points` from `left`, double out: 'out' on 0 with a double, 'bust'
  *  below 2 or on 0 without one. */

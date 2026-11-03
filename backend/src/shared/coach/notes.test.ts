@@ -2,12 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIMS } from './aims.js'
 import { NOTE_THRESHOLD } from './notes.js'
-import { nearBull } from './aim.js'
 import { isTip, numberCost, strategyNotes } from './notes.js'
 import { dart, leg, visit, REF } from './testLegs.js'
 
 const { evaluator } = REF
-import { throwsOf, type Throw } from './walk.js'
+import { nearBull, throwsOf, type Throw } from './walk.js'
 
 const solo = (start: number, names: string[]) => strategyNotes(throwsOf([leg([visit(0, start, names)])], 0, 501, REF), REF)
 const noteOn = (start: number, names: string[], dart: number) => solo(start, names).find(n => n.dart === dart)

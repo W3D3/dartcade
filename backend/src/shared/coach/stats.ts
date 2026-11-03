@@ -1,6 +1,6 @@
 // Execution: how the darts went where they were meant to. Scoring average until 170, busts and
 // doubles.
-import { checkoutHint } from '../checkout.js'
+import { directOutId } from './aims.js'
 import { dartPoints, type Throw } from './walk.js'
 
 export type DoubleStat = { target: string; darts: number; hits: number }
@@ -15,8 +15,6 @@ export type CoachStats = {
   checkouts: number
   dartsAtDouble: number
 }
-/** The double a one-dart finish needs, or null. */
-const doubleFor = (left: number): string | null => checkoutHint(left, 'double', 1)?.[0] ?? null
 
 /** A seat's execution stats from its darts (walk.ts throwsOf). */
 export function executionStats(throws: readonly Throw[]): CoachStats {
@@ -24,7 +22,7 @@ export function executionStats(throws: readonly Throw[]): CoachStats {
   const points = scoring.reduce((s, t) => s + dartPoints(t.d), 0)
   const doubles = new Map<string, DoubleStat>()
   for (const t of throws) {
-    const target = doubleFor(t.left)
+    const target = directOutId(t.left)
     if (!target) continue
     const s = doubles.get(target) ?? { target, darts: 0, hits: 0 }
     s.darts++

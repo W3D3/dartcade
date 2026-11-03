@@ -2,10 +2,9 @@
 // the benefit of the doubt (the best aim on the number it landed in or a neighbour, or the bull or
 // 25 for a single near the middle).
 import { checkoutHint } from '../checkout.js'
-import { AIMS, directOutId } from './aims.js'
-import { candidates, landedNumber, nearBull } from './aim.js'
+import { AIMS, aimsOn, directOutId, neighbours } from './aims.js'
 import type { CoachModel, Evaluation, Evaluator } from './model.js'
-import type { Throw } from './walk.js'
+import { landedNumber, nearBull, type Throw } from './walk.js'
 
 /** The better aim gives at least this much more checkout chance (5 points) */
 export const NOTE_THRESHOLD = 0.05
@@ -33,11 +32,12 @@ export type CoachNote = {
 }
 
 /** How much checkout chance throwing at number `n` loses against the best aim, given its best aim
- *  (or the bull's or 25's with `bull`, aim.ts nearBull). `evaluation` is the dart's (throwEvaluations). */
+ *  (or the bull's or 25's with `bull`, walk.ts nearBull): any aim on `n` or either neighbour,
+ *  since drifting a wedge sideways is the most common miss there is. `evaluation` is the dart's (throwEvaluations). */
 export function numberCost(evaluation: Evaluation, n: number, bull = false) {
   const v = evaluation.values
   const best = v.indexOf(Math.max(...v))
-  const candidate = candidates(n, bull).reduce((a, b) => (v[b] > v[a] ? b : a))
+  const candidate = aimsOn([n, ...neighbours(n), ...(bull ? [25] : [])]).reduce((a, b) => (v[b] > v[a] ? b : a))
   return { cost: v[best] - v[candidate], best, candidate }
 }
 

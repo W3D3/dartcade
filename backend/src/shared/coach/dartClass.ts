@@ -2,10 +2,9 @@
 // It describes what probably happened; the strategy notes (notes.ts) keep the benefit of the doubt.
 import { HALF, R, SEGS } from '../board.js'
 import { CHECKOUTS } from '../checkoutTable.js'
-import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
-import { landedNumber } from './aim.js'
+import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, aimsOn, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import type { Evaluation } from './model.js'
-import { afterDart, type Throw } from './walk.js'
+import { afterDart, landedNumber, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
 /** An amateur's spread, for guessing targets only (the strategy model keeps the coaching level's):
@@ -84,9 +83,6 @@ const NONE: DartClassBase = { hit: false, target: null, miss: null, estimated: f
 /** A dart thrown after a bust in its visit: the walk (walk.ts) leaves it out, it scores nothing. */
 export const NOT_COUNTED: DartClass = { ...NONE, kind: 'notCounted' }
 
-/** The checkout table's labels (T20, D16, S9, Bull, 25) as AIMS indexes, a single as its outer bed. */
-const tableAim = (label: string) => aimIndex(label.startsWith('S') ? `SO${label.slice(1)}` : label)
-
 /** Whether aim `id` can be a Finish target on `left` for a dart that didn't land in the bull: the
  *  bull aims are none, except the Bull on 50; on a one-dart finish the only double is the finishing
  *  one, so a dart near another double counts as wide of it. */
@@ -106,15 +102,6 @@ function bustAims(e: Evaluation): BustAims {
   return { aims, best: back >= Math.max(0, ...safe) }
 }
 
-/** The aims on number `n`: its treble, double, singles and both wires; the bull and 25 for 25. */
-function aimsOn(n: number): number[] {
-  if (n === 25) return [aimIndex('Bull'), aimIndex('25')]
-  const i = SEGS.indexOf(n)
-  const prev = SEGS[(i + 19) % 20]
-  const next = SEGS[(i + 1) % 20]
-  return [`T${n}`, `D${n}`, `SO${n}`, `SI${n}`, `W${n}-${next}`, `W${prev}-${n}`].map(id => aimIndex(id))
-}
-
 /** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
  *  darts, T16 and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
  *  is one only off a one-dart finish; when busting back is the best there is, every such aim is
@@ -129,7 +116,7 @@ export function finishCandidates(
   const v = e.values
   const best = Math.max(...v)
   const prior = (a: number) => Math.exp((v[a] - best) / TAU)
-  if (landed === 25) return aimsOn(25).map(a => ({ a, prior: Math.max(prior(a), LANDED_PRIOR) }))
+  if (landed === 25) return aimsOn([25]).map(a => ({ a, prior: Math.max(prior(a), LANDED_PRIOR) }))
   // The finishing double can bust (D1 on 2 likeliest lands in the S1) and still is the target
   const allowed = (a: number) =>
     finishTarget(AIMS[a].id, left) && (!oneDartFinish(left) || !busts.aims.has(a) || AIMS[a].id === directOutId(left))
@@ -139,9 +126,11 @@ export function finishCandidates(
     .sort((a, b) => v[b] - v[a] || a - b)
     .slice(0, TOP_K)
   const entry = left in CHECKOUTS ? CHECKOUTS[left] : null
-  const firsts = [...(entry?.routes ?? []), ...(darts === 2 && entry?.twoDarts ? [entry.twoDarts] : [])].map(r => tableAim(r[0]))
+  const firsts = [...(entry?.routes ?? []), ...(darts === 2 && entry?.twoDarts ? [entry.twoDarts] : [])].map(r =>
+    aimIndex(bedAim(r[0])?.id ?? ''),
+  )
   const floored = new Set([...firsts, aimIndex('T16')].filter(a => a >= 0 && allowed(a)))
-  const own = new Set((landed === null ? [] : aimsOn(landed)).filter(allowed))
+  const own = new Set((landed === null ? [] : aimsOn([landed])).filter(allowed))
   const backs = new Set(!oneDartFinish(left) && busts.best ? [...busts.aims].filter(allowed) : [])
   const floor = (a: number) => (floored.has(a) ? MIN_PRIOR : own.has(a) ? LANDED_PRIOR : 0)
   const priors = new Map(
@@ -216,7 +205,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
       ? // A typed dart has no position, so its own bed explains it; a dart with coords meets the real candidates
         finishCandidates(t.left, t.darts, evaluation, estimated || landed === 25 ? landed : null, busts)
       : landed === 25
-        ? aimsOn(25).map(a => ({ a, prior: 1 }))
+        ? aimsOn([25]).map(a => ({ a, prior: 1 }))
         : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimIndex(id), prior }))
   // A typed miss on a one-dart finish was at the double, off the board: where, nobody knows
   const out = directOutId(t.left)

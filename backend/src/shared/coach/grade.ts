@@ -4,13 +4,12 @@
 // Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of the
 // darts that missed their target.
 import { checkoutHint } from '../checkout.js'
-import { landedNumber } from './aim.js'
 import { oneDartFinish } from './aims.js'
 import type { DartClass } from './dartClass.js'
 import { minDarts } from './minDarts.js'
 import { groupingWhy, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
-import type { Throw } from './walk.js'
+import { landedNumber, type Throw } from './walk.js'
 
 /** Scoring: under this is a Mistake. On the raw score: a tight group doesn't rescue a 26 */
 export const VERY_LOW = 26
