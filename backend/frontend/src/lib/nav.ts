@@ -69,19 +69,21 @@ function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
   return toClaim > 0 ? { badge: toClaim, badgeLabel: `${toClaim} ${toClaim === 1 ? 'challenge' : 'challenges'} to claim` } : {}
 }
 
-/** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */
+/** The desktop side nav: the same pages under their long names (Coach while the coach is on), then Progress, Settings and Admin (admins and moderators). */
 export function sideLinks(
   liveSessionId: string | null,
   ranked = false,
   admin = false,
   progress: number | null = null,
   home = false,
+  coach = false,
 ): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
     ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     { href: '/play', label: 'Play', icon: 'play' },
     ...(ranked ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'ranked' as const }] : []),
+    ...(coach ? [{ href: '/coach', label: 'Coach', icon: 'coach' as const }] : []),
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
     { href: '/history', label: 'History', icon: 'history' },

@@ -76,6 +76,17 @@ describe('Progress in the nav', () => {
   })
   it('counts the challenges to claim', () => {
     expect(navTabs(0, false, 2)[1]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
+    expect(
+      sideLinks('s1', true, false, null, false, true)
+        .map(l => l.label)
+        .slice(0, 3),
+    ).toEqual(['Play', 'Matchmaking', 'Coach'])
+    expect(sideLinks('s1', true, false, null, false, true).find(l => l.label === 'Coach')).toEqual({
+      href: '/coach',
+      label: 'Coach',
+      icon: 'coach',
+    })
+    expect(sideLinks('s1').some(l => l.label === 'Coach')).toBe(false)
     expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('sits before Settings in the side nav', () => {
