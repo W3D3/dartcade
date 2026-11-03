@@ -6,6 +6,7 @@
   import { visitTiles } from '$lib/coach/view'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
+  import GroupingPill from './GroupingPill.svelte'
 
   let {
     visits,
@@ -57,9 +58,10 @@
             <span class="text-[11px] text-text-dim">{v.left} → {v.then}</span>
           </span>
         </span>
-        <span class="flex items-center gap-2">
+        <span class="flex flex-wrap items-center gap-2">
           <GradePill grade={v.grade} />
           <span class="text-[12px] capitalize text-text-dim">{v.tag}</span>
+          <GroupingPill grouping={v.grouping} />
         </span>
         <span class="text-[13px] leading-[1.45] {v.tip ? 'text-ice' : 'text-ink-2'}">{v.text}</span>
       </button>

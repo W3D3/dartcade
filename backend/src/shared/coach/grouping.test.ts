@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '../board.js'
 import { NOT_COUNTED, type DartClass } from './dartClass.js'
-import { CLOSENESS_MAX, CLOSENESS_ZERO_MM, grouping, GROUPING_MAX, GROUPING_ZERO_MM, groupingWhy } from './grouping.js'
+import {
+  CLOSENESS_MAX,
+  CLOSENESS_ZERO_MM,
+  GOOD_GROUP_MM,
+  GREAT_GROUP_MM,
+  grouping,
+  groupingComment,
+  GROUPING_MAX,
+  GROUPING_ZERO_MM,
+  groupingWhy,
+  SCATTERED_MM,
+} from './grouping.js'
 import { reviewLeg } from './review.js'
 import { leg, visit } from './testLegs.js'
 import type { CoachDart, CoachVisit } from './walk.js'
@@ -48,6 +59,17 @@ describe('grouping', () => {
     expect(groupingWhy({ spreadMm: 4, edgeMm: 45 })).toBe('tight group (4 mm)')
     // A bonus too small to name: 18 mm from the treble isn't close
     expect(groupingWhy({ spreadMm: 20, edgeMm: 18 })).toBe('')
+  })
+
+  it('comments great at and under the threshold, good up to its own, scattered at and past its own, else nothing', () => {
+    expect(groupingComment(null)).toBeNull()
+    expect(groupingComment({ spreadMm: null })).toBeNull()
+    expect(groupingComment({ spreadMm: GREAT_GROUP_MM })).toEqual({ level: 'great', text: 'Great grouping' })
+    expect(groupingComment({ spreadMm: GREAT_GROUP_MM + 0.1 })).toEqual({ level: 'good', text: 'Good grouping' })
+    expect(groupingComment({ spreadMm: GOOD_GROUP_MM })).toEqual({ level: 'good', text: 'Good grouping' })
+    expect(groupingComment({ spreadMm: GOOD_GROUP_MM + 0.1 })).toBeNull()
+    expect(groupingComment({ spreadMm: SCATTERED_MM - 0.1 })).toBeNull()
+    expect(groupingComment({ spreadMm: SCATTERED_MM })).toEqual({ level: 'scattered', text: 'Scattered' })
   })
 })
 

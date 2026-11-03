@@ -10,6 +10,7 @@ import type { CoachNote, LegReview, ReviewVisit, VisitGrade } from '$shared/coac
 import { AIM_RINGS, AIMS, aimKind, directOutId, type Aim } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { coachable as coachableGame } from '$shared/coach/coachable'
+import { groupingComment, type Grouping, type GroupingLevel } from '$shared/coach/grouping'
 
 /** The coach reviews the game (shared/coach/coachable.ts) */
 export const coachable = (game: Pick<GameSummary, 'mode' | 'config'>): boolean => coachableGame(game.mode, game.config)
@@ -159,6 +160,21 @@ export const GRADE_PILL: Record<VisitGrade | 'tip', { label: string; cls: string
   weak: { label: 'Weak', cls: 'bg-gold/15 text-gold' },
   mistake: { label: 'Mistake', cls: 'bg-live/15 text-live' },
   tip: { label: 'Tip', cls: 'bg-ice/15 text-ice' },
+}
+
+/** A grouping comment's pill classes, in the same tones as the grade pill: Great filled lime,
+ *  Good tinted green, Scattered tinted gold (the weak tone). */
+const GROUPING_CLS: Record<GroupingLevel, string> = {
+  great: 'bg-accent text-accent-fg',
+  good: 'bg-good/15 text-good',
+  scattered: 'bg-gold/15 text-gold',
+}
+
+/** A visit's grouping comment as a pill's label and classes; null without one worth saying
+ *  (groupingComment, shared/coach/grouping.ts). */
+export function groupingPill(g: Pick<Grouping, 'spreadMm'> | null): { label: string; cls: string } | null {
+  const c = groupingComment(g)
+  return c ? { label: c.text, cls: GROUPING_CLS[c.level] } : null
 }
 
 /** The centre of a segment's bed in board units (y up), a single's outer bed; null off the board. */

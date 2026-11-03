@@ -5,6 +5,7 @@
   import { visitTiles } from '$lib/coach/view'
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
+  import GroupingPill from './GroupingPill.svelte'
 
   let { visits, selected, onselect }: { visits: ReviewVisit[]; selected: number | null; onselect: (n: number) => void } = $props()
 
@@ -37,9 +38,10 @@
         <span class={NUM}><span class="sr-only">Scored </span>{v.scored}</span>
         <span class="{NUM} text-text-muted"><span class="sr-only">Then </span>{v.then}</span>
         <span class="flex min-w-0 flex-col gap-1.5">
-          <span class="flex items-center gap-2">
+          <span class="flex flex-wrap items-center gap-2">
             <GradePill grade={v.grade} />
             <span class="text-[12.5px] capitalize text-text-dim">{v.tag}</span>
+            <GroupingPill grouping={v.grouping} />
           </span>
           <span class="text-[13.5px] leading-[1.45] {v.tip ? 'text-ice' : 'text-ink-2'}">{v.text}</span>
         </span>

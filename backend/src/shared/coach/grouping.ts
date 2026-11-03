@@ -47,6 +47,25 @@ export function grouping(darts: readonly Placed[], scored: number): Grouping | n
   return { darts: placed.length, spreadMm, offsetMm, edgeMm, rating }
 }
 
+/** Reference: a tour player's group averages ~9 mm from the centroid over 3 darts (σ ≈ 9.1 mm per
+ *  axis). Great is tighter than that; an 81-average player's visit lands around or past Scattered. */
+export const GREAT_GROUP_MM = 8
+export const GOOD_GROUP_MM = 14
+export const SCATTERED_MM = 30
+
+export type GroupingLevel = 'great' | 'good' | 'scattered'
+
+/** A one-line comment on how tight a visit's group was; null without a shared-target spread, or
+ *  when it's neither tight nor scattered enough to be worth saying. */
+export function groupingComment(g: Pick<Grouping, 'spreadMm'> | null): { level: GroupingLevel; text: string } | null {
+  const mm = g?.spreadMm
+  if (mm === null || mm === undefined) return null
+  if (mm <= GREAT_GROUP_MM) return { level: 'great', text: 'Great grouping' }
+  if (mm <= GOOD_GROUP_MM) return { level: 'good', text: 'Good grouping' }
+  if (mm >= SCATTERED_MM) return { level: 'scattered', text: 'Scattered' }
+  return null
+}
+
 /** Worth naming in a grade's text; a smaller bonus still counts in the rating */
 const SAY_SPREAD_MM = 15
 const SAY_EDGE_MM = 10

@@ -6,6 +6,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
   import GradePill from '$lib/components/coach/GradePill.svelte'
+  import GroupingPill from '$lib/components/coach/GroupingPill.svelte'
   import TakeCard from '$lib/components/coach/TakeCard.svelte'
   import VisitCards from '$lib/components/coach/VisitCards.svelte'
   import VisitTable from '$lib/components/coach/VisitTable.svelte'
@@ -105,6 +106,7 @@
     />
     <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
       <span><b>What happened:</b> {whatHappened(v)}</span>
+      <GroupingPill grouping={v.grouping} />
       {#if groupingLine(v)}<span class="text-text-muted">{groupingLine(v)}</span>{/if}
       {#if note}<span class="text-ice"><b>{note.tip ? 'Tip:' : 'Better:'}</b> {betterLine(note)}</span>{/if}
     </div>

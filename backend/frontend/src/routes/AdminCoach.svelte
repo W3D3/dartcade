@@ -9,6 +9,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
   import GradePill from '$lib/components/coach/GradePill.svelte'
+  import GroupingPill from '$lib/components/coach/GroupingPill.svelte'
   import DartTile from '$lib/components/coach/DartTile.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -142,8 +143,8 @@
           <div class="flex items-baseline justify-between gap-3">
             <h2 id="sandbox-coach" class="m-0 text-[17px] font-semibold">The coach</h2>
             {#if visit}
-              <span class="inline-flex items-center gap-2 text-[13px] text-text-muted capitalize"
-                >{visit.tag}<GradePill grade={visit.grade} /></span
+              <span class="inline-flex flex-wrap items-center gap-2 text-[13px] text-text-muted capitalize"
+                >{visit.tag}<GradePill grade={visit.grade} /><GroupingPill grouping={visit.grouping} /></span
               >
             {/if}
           </div>

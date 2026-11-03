@@ -15,6 +15,7 @@ import {
   dartTone,
   defaultVisit,
   groupingLine,
+  groupingPill,
   legGroupingLine,
   legHeading,
   legSubtitle,
@@ -400,5 +401,15 @@ describe('groupingLine', () => {
     expect(legGroupingLine({ spreadMm: 12.2, edgeMm: 3.6 })).toBe(' · grouping 12 mm · edge 4 mm')
     expect(legGroupingLine({ spreadMm: null, edgeMm: 3.6 })).toBe(' · edge 4 mm')
     expect(legGroupingLine({ spreadMm: null, edgeMm: null })).toBe('')
+  })
+})
+
+describe('groupingPill', () => {
+  it('pills Great and Good in the grade tones, Scattered weak, null without a comment', () => {
+    expect(groupingPill({ spreadMm: 6 })).toEqual({ label: 'Great grouping', cls: 'bg-accent text-accent-fg' })
+    expect(groupingPill({ spreadMm: 12 })).toEqual({ label: 'Good grouping', cls: 'bg-good/15 text-good' })
+    expect(groupingPill({ spreadMm: 35 })).toEqual({ label: 'Scattered', cls: 'bg-gold/15 text-gold' })
+    expect(groupingPill({ spreadMm: 20 })).toBeNull()
+    expect(groupingPill(null)).toBeNull()
   })
 })

@@ -175,6 +175,12 @@ GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
 - **UI:** the leg review's selected visit shows "Grouping 6 mm · 2 mm off T20 · edge 1 mm ·
   rating 75" under What happened; the take's Scoring power line adds " · grouping 12 mm · edge
   4 mm" (desktop); the sandbox shows the visit's grouping line.
+- **Grouping comment:** `groupingComment(g)` (`grouping.ts`, pure) turns `spreadMm` into a one-word
+  verdict on the group itself, separate from the rating: `GREAT_GROUP_MM` 8 → "Great grouping",
+  `GOOD_GROUP_MM` 14 → "Good grouping", `SCATTERED_MM` 30 (and above) → "Scattered"; in between, or
+  without a spread, no comment. Shown as a small pill next to the grade pill and tag chip (Great
+  and Good in the grade pill's positive tones, Scattered in its weak tone) in the visit table, the
+  phone cards, the selected visit's card and the sandbox.
 
 Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of the single rates
 74.5 (OK) and scattered 25 mm rates 63.4 (OK); clustered just above the treble rates 78.6 (Good,
@@ -248,6 +254,11 @@ Decisions taken while building this without the user, each with why:
   except the Bull on 50**, where an inner single next to the bull is a Bull attempt miss. Before,
   a bull in Scoring (501 → Bull) and 13 finish states read Wild. On a finish the evaluator decides
   between Bull and 25 (on 60 a Bull reads as the 25's miss, `db`).
+- **Grouping comment thresholds (8/14/30 mm) are set against the reference player's σ ≈ 9.1 mm
+  per axis (about 9 mm mean distance from the centroid over 3 darts), not a fixed fraction of
+  `GROUPING_ZERO_MM`.** Great (≤ 8 mm) is tighter than that reference average, so it beats an
+  81-average player's typical group; Good (≤ 14 mm) still covers it; Scattered (≥ 30 mm) matches
+  `GROUPING_ZERO_MM`, past which the rating bonus is already gone.
 - **A dart attributed to the Bull on 50 that landed outside the inner single ring is Wild**: the
   wedge rule can't apply to the bull, and 100 mm "Bull misses" would poison the stats.
 - **In Scoring, a dart in the target number's double (D20 aiming T20) is a Scoring miss**
