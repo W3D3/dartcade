@@ -268,6 +268,23 @@
   // a watcher with no seats gets neither. Only shown while the game isn't won.
   const control = $derived(endControl(snapshot, viewerId))
   const canEnd = $derived(isActive && control !== null)
+  // What the end control does: the host ends the game, a player leaves it, and in a ranked game
+  // leaving is a forfeit. Everything the player reads about it is in one table.
+  type EndKind = 'end' | 'leave' | 'forfeit'
+  const endKind = $derived<EndKind>(snapshot?.ranked ? 'forfeit' : (control ?? 'end'))
+  const END_COPY: Record<EndKind, { title: string; body: string; confirm: string }> = {
+    end: { title: 'End this game?', body: 'The current game will be cancelled and all progress will be lost.', confirm: 'End game' },
+    leave: {
+      title: 'Leave the game?',
+      body: 'Your seats forfeit and are placed last; the others are ranked by their score so far.',
+      confirm: 'Leave game',
+    },
+    forfeit: {
+      title: 'Forfeit the match?',
+      body: 'Leaving a ranked match is a forfeit: it counts as a loss and moves your rating.',
+      confirm: 'Forfeit',
+    },
+  }
   $effect(() => {
     if (!snapshot || snapshot.status === 'active') return
     // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
@@ -412,7 +429,7 @@
   async function finishWin(next: WinKey) {
     if (!sessionId) return
     // The host ends the game for everyone; a 404 means it was ended already, which is fine
-    if (control === 'end' && !snapshot?.ranked) await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    if (endKind === 'end') await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
@@ -492,7 +509,7 @@
         myBoard={myBoard(snapshot)}
         ranked={snapshot.ranked ? { stakes: stakesLabel(snapshot.ranked.seats[snapshot.mySeats[0]]?.stakes ?? null) } : null}
         {canEnd}
-        endMode={control ?? 'end'}
+        endMode={endKind}
         bind:settings
         onleave={() => push(afterGameRoute(snapshot))}
         onend={() => (showEndConfirm = true)}
@@ -632,19 +649,15 @@
 
 {#if showEndConfirm}
   <ConfirmModal
-    title={snapshot?.ranked ? 'Forfeit the match?' : control === 'leave' ? 'Leave the game?' : 'End this game?'}
-    body={snapshot?.ranked
-      ? 'Leaving a ranked match is a forfeit: it counts as a loss and moves your rating.'
-      : control === 'leave'
-        ? 'Your seats forfeit and are placed last; the others are ranked by their score so far.'
-        : 'The current game will be cancelled and all progress will be lost.'}
-    confirmLabel={snapshot?.ranked ? 'Forfeit' : control === 'leave' ? 'Leave game' : 'End game'}
+    title={END_COPY[endKind].title}
+    body={END_COPY[endKind].body}
+    confirmLabel={END_COPY[endKind].confirm}
     cancelLabel="Keep playing"
     danger
     onconfirm={() => {
       showEndConfirm = false
-      if (control === 'leave' || snapshot?.ranked) leaveGame()
-      else void endSession()
+      if (endKind === 'end') void endSession()
+      else leaveGame()
     }}
     oncancel={() => (showEndConfirm = false)}
   />
