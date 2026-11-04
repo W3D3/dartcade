@@ -3,6 +3,7 @@
   // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, paused, board, settings, end.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import RankedPill from '$lib/components/ranked/RankedPill.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import type { Board } from '$lib/api'
   import type { GameSettings } from '$lib/gameSettings.js'
@@ -21,6 +22,7 @@
     compact = false,
     paused = false,
     myBoard = null,
+    ranked = null,
     settings = $bindable(),
     onleave,
     onend,
@@ -45,6 +47,8 @@
     paused?: boolean
     /** Remote games: the viewer's own board, and whether its bridge is connected. */
     myBoard?: MyBoard | null
+    /** A ranked game: the pill, the stakes ("Win +16 · Loss −14", null while placing), and Forfeit instead of Leave and End. */
+    ranked?: { stakes: string | null } | null
     settings: GameSettings
     onleave: () => void
     onend: () => void
@@ -52,6 +56,8 @@
   } = $props()
 
   let showSettings = $state(false)
+  // Ranked: the one who can end it forfeits instead
+  const forfeits = $derived(ranked !== null && canEnd)
 </script>
 
 {#if compact}
@@ -73,6 +79,8 @@
           >
             <span class="w-[6px] h-[6px] rounded-[1px] bg-text-muted"></span>PAUSED
           </span>
+        {:else if ranked}
+          <RankedPill />
         {:else if myBoard && !myBoard.online}
           <span
             role="status"
@@ -82,7 +90,9 @@
           </span>
         {/if}
       </span>
-      {#if meta}<span class="text-[12px] text-text-muted truncate">{meta}</span>{/if}
+      {#if meta || ranked?.stakes}
+        <span class="text-[12px] text-text-muted truncate">{[meta, ranked?.stakes].filter(Boolean).join(' · ')}</span>
+      {/if}
     </div>
     <span class="ml-auto flex items-center gap-[6px] shrink-0">
       {#if showViewToggle}
@@ -108,7 +118,13 @@
         <Settings size={19} />
       </Button>
       {#if canEnd}
-        <Button variant="destructive" size="icon" class="ml-1" onclick={onend} aria-label={endMode === 'end' ? 'End game' : 'Leave game'}>
+        <Button
+          variant="destructive"
+          size="icon"
+          class="ml-1"
+          onclick={onend}
+          aria-label={forfeits ? 'Forfeit game' : endMode === 'end' ? 'End game' : 'Leave game'}
+        >
           <X size={18} />
         </Button>
       {/if}
@@ -116,14 +132,18 @@
   </header>
 {:else}
   <header class="h-[60px] px-5 gap-[14px] xl:h-16 xl:px-7 xl:gap-6 shrink-0 box-border flex items-center border-b border-line bg-surface-1">
-    <Button variant="outline" size="md" onclick={onleave} class="pl-[10px] pr-[14px] text-ink-2">
+    <Button variant="outline" size="md" onclick={forfeits ? onend : onleave} class="pl-[10px] pr-[14px] text-ink-2">
       <ChevronLeft size={18} />
-      Leave
+      {forfeits ? 'Forfeit' : 'Leave'}
     </Button>
 
     <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
       <h1 class="m-0 font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
       {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
+      {#if ranked}
+        <RankedPill />
+        {#if ranked.stakes}<span class="shrink-0 font-mono text-[13px] text-text-muted">{ranked.stakes}</span>{/if}
+      {/if}
     </div>
 
     <div class="ml-auto flex items-center gap-3 xl:gap-4 shrink-0">
@@ -169,7 +189,7 @@
         <Settings size={22} />
       </Button>
 
-      {#if canEnd}
+      {#if canEnd && !forfeits}
         <span class="w-px h-6 bg-line-strong" aria-hidden="true"></span>
         <Button variant="destructive" size="md" onclick={onend}>
           <X size={14} />
