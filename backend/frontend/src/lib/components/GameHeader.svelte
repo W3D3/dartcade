@@ -79,8 +79,6 @@
           >
             <span class="w-[6px] h-[6px] rounded-[1px] bg-text-muted"></span>PAUSED
           </span>
-        {:else if ranked}
-          <RankedPill />
         {:else if myBoard && !myBoard.online}
           <span
             role="status"
@@ -88,6 +86,8 @@
           >
             <span class="w-[6px] h-[6px] box-border rounded-full border-[1.5px] border-warn"></span>BOARD OFFLINE
           </span>
+        {:else if ranked}
+          <RankedPill />
         {/if}
       </span>
       {#if meta || ranked?.stakes}
