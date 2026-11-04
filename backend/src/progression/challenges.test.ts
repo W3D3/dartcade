@@ -7,6 +7,7 @@ import {
   generateChallenge,
   generateSet,
   inPeriod,
+  LEG_DART_LIMIT,
   legDartLimit,
   metricOf,
   periodEnd,
@@ -145,10 +146,20 @@ describe('applyGame', () => {
     expect(challengeTitle({ templateId: c.templateId, target: 10, state: after.state })).toBe('Hit 10 different doubles (D20, D16)')
   })
 
-  it('sets the leg dart limit from your average', () => {
-    expect(legDartLimit(null)).toBe(30)
-    expect(legDartLimit(80)).toBe(15)
-    expect(legDartLimit(20)).toBe(45)
+  it('sets the leg dart limit by average class, at every class boundary', () => {
+    const classes = Object.keys(LEG_DART_LIMIT).map(Number)
+    expect(classes).toEqual(Array.from({ length: 17 }, (_, i) => 20 + 5 * i))
+    classes.forEach((c, i) => {
+      expect(legDartLimit(c)).toBe(LEG_DART_LIMIT[c])
+      expect(legDartLimit(c + 4.9)).toBe(LEG_DART_LIMIT[c])
+      // Just under a class is the class below (the lowest has nothing below it)
+      expect(legDartLimit(c - 0.1)).toBe(LEG_DART_LIMIT[classes[Math.max(0, i - 1)]])
+      // Better classes never get a longer limit
+      if (i > 0) expect(LEG_DART_LIMIT[c]).toBeLessThanOrEqual(LEG_DART_LIMIT[classes[i - 1]])
+    })
+    expect(legDartLimit(19.9)).toBe(45)
+    expect(legDartLimit(135)).toBe(18)
+    expect(legDartLimit(null)).toBe(36)
     const hard = { templateId: 'd.leg-limit', progress: 0, state: { limit: 24 } }
     const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 24, startScore: 501 }
     expect(applyGame(hard, game({ checkouts: [checkout] }))!.progress).toBe(1)
