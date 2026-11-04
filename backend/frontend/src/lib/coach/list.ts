@@ -24,6 +24,14 @@ export const COACH_FILTER_IDS: readonly CoachFilter[] = COACH_FILTERS.map(f => f
 /** The leg list's desktop grid: When, Leg, Result, Darts, Avg, Coach found, Review */
 export const LEG_COLUMNS = 'lg:grid-cols-[110px_minmax(0,1.4fr)_70px_70px_64px_minmax(0,1.4fr)_150px]'
 
+/** Whether the Coach list asks the server again for reviews it is still building: only while some
+ *  are pending and no request (the first load, Show more, the last ask) is still running. */
+export const shouldRefresh = (pending: number, busy: boolean): boolean => pending > 0 && !busy
+
+/** Whether a refresh fetches one more page: until it has the `shown` rows the user had open, as far
+ *  as the list goes, so asking again doesn't fold what Show more opened back to the first page. */
+export const needsAnotherPage = (fetched: number, shown: number, next: string | null): boolean => next !== null && fetched < shown
+
 const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /** A leg row's "Coach found" pills: missed doubles red (Bad), bad setups and low visits orange (Weak); a clean leg only its lime pill */

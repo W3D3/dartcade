@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { coachFound, legWhen, vsLine } from './list'
+import { coachFound, legWhen, needsAnotherPage, shouldRefresh, vsLine } from './list'
 
 describe('vsLine', () => {
   it('names the opponents, or Solo without one', () => {
@@ -48,5 +48,24 @@ describe('coachFound', () => {
 
   it('is empty with nothing found', () => {
     expect(coachFound(row)).toEqual([])
+  })
+})
+
+describe('asking again while reviews are built', () => {
+  it('asks while games are pending, and stops at 0', () => {
+    expect(shouldRefresh(3, false)).toBe(true)
+    expect(shouldRefresh(0, false)).toBe(false)
+  })
+
+  it('never asks while a request is still running (no overlap)', () => {
+    expect(shouldRefresh(3, true)).toBe(false)
+  })
+
+  it('fetches pages until it has the rows the user had open, keeping their Show more', () => {
+    expect(needsAnotherPage(40, 80, 'c2')).toBe(true)
+    expect(needsAnotherPage(80, 80, 'c3')).toBe(false)
+    expect(needsAnotherPage(40, 15, 'c2')).toBe(false)
+    // the list got shorter than what was open: stop at its end
+    expect(needsAnotherPage(40, 80, null)).toBe(false)
   })
 })
