@@ -120,6 +120,15 @@
         >+{item.xp}<XpBadge /></span
       >
     </div>
+    {#if item.chips.length > 0}
+      <ul class="flex flex-wrap gap-[6px]" aria-label="So far">
+        {#each item.chips as chip (chip)}
+          <li class="rounded-full border border-accent-line-strong px-[9px] py-[2px] text-[12px] font-bold tabular-nums text-accent">
+            {chip}
+          </li>
+        {/each}
+      </ul>
+    {/if}
     <Progress
       aria-label="{item.progress} of {item.target}"
       value={item.progress}
