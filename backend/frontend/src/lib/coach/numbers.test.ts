@@ -91,6 +91,19 @@ describe('gradeWorking', () => {
     expect(w.scale.marker).toBe(10.15)
   })
 
+  it("charges a bust for the visit's darts it kept from being thrown, on its own line", () => {
+    const bust = { ...finish, bust: true, darts: [dart('Miss', -3), { ...dart('S10', -15), bust: true }] }
+    expect(gradeWorking(bust).parts).toEqual([
+      'Start: 121 left, 34.0% to check out',
+      'Miss: Δ −3.0',
+      'S10: Δ −15.0',
+      'S10 bust: 1 dart not thrown −5.0',
+    ])
+    // The third dart's bust costs no dart
+    const third = { ...bust, darts: [dart('Miss', -3), dart('Miss', -3), { ...dart('S10', -15), bust: true }] }
+    expect(gradeWorking(third).parts.some(p => p.includes('not thrown'))).toBe(false)
+  })
+
   it('keeps the marker on the bar, names a bust and the rule that overrode the value', () => {
     expect(gradeWorking({ ...finish, value: { ...finish.value, points: 95 } }).scale.marker).toBe(80)
     expect(gradeWorking({ ...finish, bust: true, value: { ...finish.value, points: -16 } }).result).toBe(

@@ -41,6 +41,8 @@ export const WEAK_FROM = -20
 export const MISS_CLOSE_MAX = 5
 /** …falling to none this far (mm) from the target's bed */
 export const MISS_CLOSE_ZERO_MM = 20
+/** A bust costs this many points for each dart of the visit it kept from being thrown */
+export const BUST_DART_LOST = 5
 
 export type VisitTag = 'scoring' | 'setup' | 'doubling'
 /** Best to worst */
@@ -121,8 +123,11 @@ export function closeness(c: Closeness): number | null {
   return MISS_CLOSE_MAX * Math.max(0, 1 - c.miss.edgeMm / MISS_CLOSE_ZERO_MM)
 }
 
-/** A dart's grade: its value change plus its closeness credit */
-export const dartGrade = (delta: number, close: number | null) => delta + (close ?? 0)
+/** The points a bust with the visit's dart `dart` (0–2) costs for the darts it kept from being thrown */
+export const bustPenalty = (dart: number) => BUST_DART_LOST * (2 - dart)
+
+/** A dart's grade: its value change plus its closeness credit, less a bust's penalty */
+export const dartGrade = (delta: number, close: number | null, penalty = 0) => delta + (close ?? 0) - penalty
 
 /** A dart's own band by its grade, on the visit scale: good from this (or a hit of its target)… */
 export const DART_GOOD_FROM = 5
@@ -165,9 +170,15 @@ const noteText = (n: CoachNote) =>
   `${n.tip ? 'Tip: ' : ''}On ${n.left}, ${n.thrown}: better ${n.better}${n.reason === null ? '' : ` — ${n.reason}`}.`
 /** Busted on purpose to stay on the start: the busting dart was a Bust-back */
 const bustBack = (f: VisitFacts) => f.bust && f.classes.at(-1)?.kind === 'bustBack'
-const bustText = (f: VisitFacts) => `Busted on ${f.throws.at(-1)?.left ?? f.start}.`
+const ORDINAL = ['first', 'second', 'third']
+const dartName = (t: Throw) => (t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name)
+/** "Busted on the second dart (S10 on 8)."; " Back on 40." when it busted from another score */
+function bustText(f: VisitFacts): string {
+  const t = f.throws.at(-1)!
+  return `Busted on the ${ORDINAL[t.dart]} dart (${dartName(t)} on ${t.left}).${t.left === f.start ? '' : ` Back on ${f.start}.`}`
+}
 const bustBackText = (f: VisitFacts) =>
-  `Busted on purpose to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
+  `Busted on purpose with the ${ORDINAL[f.throws.at(-1)!.dart]} dart to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
 
 type Graded = { grade: VisitGrade; text: string; value: VisitValue }
 
@@ -204,7 +215,7 @@ const atDouble = (f: VisitFacts) => f.throws.some((t, i) => oneDartFinish(t.left
  *  the closeness credit of each missed dart. */
 function finishing(f: VisitFacts): Graded {
   const out = f.throws.find(t => t.checkout)
-  const total = f.throws.reduce((s, _, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i])), 0)
+  const total = f.throws.reduce((s, t, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i]), t.bust ? bustPenalty(t.dart) : 0), 0)
   const grade = bandOf(total, FINISH_BANDS)
   const g = (grade: VisitGrade, text: string): Graded => ({ grade, text, value: { points: total, scoring: null, rule: null } })
   // A bust ends on the start's next visit (value.ts): graded like any other end, told as a bust
@@ -216,8 +227,7 @@ function finishing(f: VisitFacts): Graded {
   const cost = Math.round(-f.deltas[worst])
   if (total >= 0 || cost < 1) return g(grade, leave)
   const t = f.throws[worst]
-  const name = t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name
-  return g(grade, `${name} on ${t.left} cost ${cost}% checkout chance: ${leave}`)
+  return g(grade, `${dartName(t)} on ${t.left} cost ${cost}% checkout chance: ${leave}`)
 }
 
 /** The visit keeps the fewest darts to check out its start: its darts plus the fewest from what it left */

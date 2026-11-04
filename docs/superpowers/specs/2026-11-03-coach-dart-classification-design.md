@@ -159,12 +159,20 @@ missed."). Scoring visits keep their rules (see Visit rating).
   max(0, 1 − edgeMm / MISS_CLOSE_ZERO_MM)` (5 points, 20 mm) in `ReviewDart.closeness`; a hit, a
   typed dart and a dart without a target get none (null). A hit's outcome is already in its delta.
 - **A dart's grade** is delta + closeness; **the visit's** is the sum over its walked darts.
+- **A bust's penalty** (user ruling: a bust also costs the darts it kept you from throwing): the
+  busting dart's grade loses `BUST_DART_LOST` (5) points for each later dart of the visit
+  (`bustPenalty`), a Bust-back's too. On 8 (D4), the opponent nowhere near, at level 7: a bust with
+  the first dart is −28 (Bad), with the second −23 (Bad), with the third −18 (Weak), the same as
+  three missed darts that stay on 8 (−18, Weak). The debug block shows it on its own line
+  ("S10 bust: 1 dart not thrown −5.0").
 - **Order:** (1) a strategy note (not a tip) → Bad, its text; (2) Perfect (fewest darts);
   (3) otherwise by the visit's points on the eight-grade scale (see Eight grades). A bust and a
   Bust-back are graded the same way (user ruling: "a bust can be better than leaving D1": 32 →
-  S16, T8 busting back to 32 is Weak at −19, 32 → S16, S8, S6 leaving 2 is Bad at −40); the
+  S16, T8 busting back to 32 is −24 with its penalty, 32 → S16, S8, S6 leaving 2 is −40); the
   Bust-back class stays on the dart.
-- **Texts:** a bust "Busted on 16." / "Busted on purpose to stay on 20 (D10)."; a checkout
+- **Texts:** a bust names its dart, "Busted on the second dart (T8 on 16). Back on 32." (the
+  "Back on" only when it busted from another score than the start) / "Busted on purpose with the
+  third dart to stay on 20 (D10)."; a checkout
   "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
   the value); otherwise, when the points are below 0 and the costliest dart lost at least 1 point,
   "S19 on 56 cost 15% checkout chance: 37 left is a single to double (S5 · D16)."; else

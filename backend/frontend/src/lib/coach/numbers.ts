@@ -1,7 +1,7 @@
 // The numbers behind a visit's grade (VisitNumbers: the sandbox, and Coach-Leg with
 // coach.debug.enabled): what each dart left, how the grade was worked out, the grouping.
 import type { GradeRule, ReviewVisit, VisitGrade } from '$shared/coach'
-import { bandOf, FINISH_BANDS, SCORING_BANDS, VERY_LOW, type GradeBands } from '$shared/coach/grade'
+import { bandOf, bustPenalty, FINISH_BANDS, SCORING_BANDS, VERY_LOW, type GradeBands } from '$shared/coach/grade'
 import { bandText } from './checks'
 import { GRADE_PILL } from './tone'
 
@@ -58,7 +58,7 @@ const RULE_TEXT: Record<NonNullable<GradeRule>, string> = {
 }
 
 /** The working behind a visit's grade. Setup and Doubling: the start's checkout chance, each
- *  walked dart's Δ and closeness, their sum on the checkout-chance scale. Scoring: scored + grouping
+ *  walked dart's Δ and closeness, a bust's penalty for the darts it cost, their sum on the checkout-chance scale. Scoring: scored + grouping
  *  + closeness = rating, against the average. */
 export function gradeWorking(v: Pick<ReviewVisit, 'tag' | 'left' | 'bust' | 'darts' | 'value'>): GradeWorking {
   const { points, scoring, rule } = v.value
@@ -68,8 +68,13 @@ export function gradeWorking(v: Pick<ReviewVisit, 'tag' | 'left' | 'bust' | 'dar
   const parts = finish
     ? [
         `Start: ${v.left} left, ${one(v.value.startChance ?? 0)}% to check out`,
-        ...v.darts.flatMap(d =>
-          d.delta === null ? [] : [`${d.name}: Δ ${signedOne(d.delta)}${d.closeness === null ? '' : `, closeness +${one(d.closeness)}`}`],
+        ...v.darts.flatMap((d, i) =>
+          d.delta === null
+            ? []
+            : [
+                `${d.name}: Δ ${signedOne(d.delta)}${d.closeness === null ? '' : `, closeness +${one(d.closeness)}`}`,
+                ...(d.bust && i < 2 ? [`${d.name} bust: ${i === 1 ? '1 dart' : '2 darts'} not thrown −${one(bustPenalty(i))}`] : []),
+              ],
         ),
       ]
     : [

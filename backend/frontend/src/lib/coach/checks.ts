@@ -1,6 +1,7 @@
 // "What the coach detects" (Coach-Mistakes): the checks this version runs, grouped as the leg
 // review tags visits. The rules live in shared/coach/grade.ts, notes.ts and review.ts; keep these in step.
 import {
+  BUST_DART_LOST,
   DART_COSTLY_AT,
   DART_GOOD_FROM,
   DART_PLAIN_ABOVE,
@@ -143,9 +144,9 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Bust',
         labels: ['inaccuracy', 'weak', 'bad'],
         source: 'model',
-        when: "The visit goes below zero, leaves 1, or reaches zero without a double. It scores nothing and you're back on the visit's start: graded by checkout chance like any visit, so busting back to 32 beats leaving 2.",
+        when: `The visit goes below zero, leaves 1, or reaches zero without a double. It scores nothing and you're back on the visit's start: graded by checkout chance like any visit, so busting back to 32 beats leaving 2, less ${BUST_DART_LOST} points for each of the visit's darts the bust kept you from throwing.`,
         example: '40 left · S20 T20 → bust',
-        says: 'Where it busted. Before each dart, check that its worst miss still leaves a score.',
+        says: 'Which dart busted, and on what: Busted on the second dart (T20 on 20). Before each dart, check that its worst miss still leaves a score.',
       },
       {
         name: 'Bust-back',
@@ -153,7 +154,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         source: 'model',
         when: "The busting dart was best thrown to bust: from a score that's hard to finish, back on the visit's start is worth more. Graded by checkout chance like any visit.",
         example: '20 left · S10 S7 S5 → back on 20',
-        says: 'Busted on purpose to stay on 20 (D10).',
+        says: 'Busted on purpose with the third dart to stay on 20 (D10).',
       },
       {
         name: 'Checked out',

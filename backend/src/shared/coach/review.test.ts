@@ -372,7 +372,12 @@ describe('reviewLeg', () => {
     for (const third of ['S5', 'T20']) {
       const r = reviewLeg([leg([visit(0, 20, ['S10', 'S7', third])])], 0, 0, ctx(501))
       expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'route', 'bustBack'])
-      expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'weak', text: 'Busted on purpose to stay on 20 (D10).', tip: false })
+      expect(r?.visits[0]).toMatchObject({
+        tag: 'doubling',
+        grade: 'weak',
+        text: 'Busted on purpose with the third dart to stay on 20 (D10).',
+        tip: false,
+      })
     }
   })
 
