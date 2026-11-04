@@ -51,6 +51,8 @@
   import { flag } from '$lib/flags'
   import { coachable } from '$shared/coach/coachable'
   import LiveCoachSkeleton from '$lib/components/coach/LiveCoachSkeleton.svelte'
+  import { stakesLabel } from '$lib/ranked/inGame'
+  import { rankedOutcome, type RankedOutcome } from '$lib/ranked/result'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
 
@@ -285,7 +287,9 @@
   const who = $derived(snapshot ? whoOf(snapshot) : [])
   // The keypad: picked with Enter on your turn (also while your board is offline: the drawn board
   // takes manual darts too). Someone else's turn always shows the board, live.
-  const keypad = $derived(picksView(remote) && viewMode === 'entry')
+  // A ranked game can turn hand entry off (the server refuses it then): no keypad, no toggle
+  const manualEntry = $derived(snapshot?.ranked?.manualEntry ?? true)
+  const keypad = $derived(picksView(remote) && viewMode === 'entry' && manualEntry)
   const darts = $derived(game?.currentVisitDarts ?? [])
   // Camera view: the still of the chosen camera of the board the player up throws on (or null)
   const cameraSrc = $derived(cameraStillUrl(snapshot, settings.boardView, cameraVersions))
@@ -394,8 +398,13 @@
   // The win screen's buttons (winActions). Rematch goes through the lobby page, which starts the
   // same game again (solo) or marks the host ready (shared) - see rematchStep
   const winButtons = $derived(winActions(snapshot, viewerId))
-  const WIN_LABELS: Record<WinAction, string> = { rematch: 'Rematch', lobby: 'Back to lobby', play: 'Back to Play' }
-  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play' }
+  const WIN_LABELS: Record<WinAction, string> = {
+    rematch: 'Rematch',
+    lobby: 'Back to lobby',
+    play: 'Back to Play',
+    ranked: 'Find next match',
+  }
+  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play', ranked: '/matchmaking' }
   async function finishWin(next: WinAction) {
     if (!sessionId) return
     // The host ends the game for everyone; a 404 means it was ended already, which is fine
@@ -403,6 +412,21 @@
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
+  // A ranked game's rating card: the server records the result when the game ends, a moment later
+  let rankedResult = $state<RankedOutcome | null>(null)
+  $effect(() => {
+    if (!win || !snapshot?.ranked || rankedResult) return
+    const gone = new AbortController()
+    void (async () => {
+      for (let tries = 0; tries < 6 && !gone.signal.aborted; tries++) {
+        const { data } = await api.GET('/api/ranked/me')
+        const outcome = data ? rankedOutcome(data, sessionId) : null
+        if (outcome) return void (rankedResult = outcome)
+        await new Promise(r => setTimeout(r, 1000))
+      }
+    })()
+    return () => gone.abort()
+  })
 </script>
 
 <!-- The live coach's panel or its models didn't load -->
@@ -445,12 +469,14 @@
         onhistory={() => push(`/history/${sessionId}`)}
         xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
         winnerId={$progression ? (snapshot.seats[win.competitors[0]?.seats[0] ?? -1]?.userId ?? null) : null}
+        rankedGame={snapshot.ranked !== null}
+        ranked={rankedResult}
       />
     {:else}
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && !p121Finished && picksView(remote)}
+        showViewToggle={!bullOff && !minigolf && !p121Finished && picksView(remote) && manualEntry}
         boards={myBoards}
         {gameId}
         scoreBased={snapshot.scoreBased}
@@ -458,6 +484,7 @@
         compact={$isPhone}
         paused={remote.kind === 'waiting'}
         myBoard={myBoard(snapshot)}
+        ranked={snapshot.ranked ? { stakes: stakesLabel(snapshot.ranked.seats[snapshot.mySeats[0]]?.stakes ?? null) } : null}
         {canEnd}
         endMode={control ?? 'end'}
         bind:settings
@@ -599,11 +626,13 @@
 
 {#if showEndConfirm}
   <ConfirmModal
-    title={control === 'leave' ? 'Leave the game?' : 'End this game?'}
-    body={control === 'leave'
-      ? 'Your seats forfeit and are placed last; the others are ranked by their score so far.'
-      : 'The current game will be cancelled and all progress will be lost.'}
-    confirmLabel={control === 'leave' ? 'Leave game' : 'End game'}
+    title={snapshot?.ranked ? 'Forfeit the match?' : control === 'leave' ? 'Leave the game?' : 'End this game?'}
+    body={snapshot?.ranked
+      ? 'Leaving a ranked match is a forfeit: it counts as a loss and moves your rating.'
+      : control === 'leave'
+        ? 'Your seats forfeit and are placed last; the others are ranked by their score so far.'
+        : 'The current game will be cancelled and all progress will be lost.'}
+    confirmLabel={snapshot?.ranked ? 'Forfeit' : control === 'leave' ? 'Leave game' : 'End game'}
     cancelLabel="Keep playing"
     danger
     onconfirm={() => {
