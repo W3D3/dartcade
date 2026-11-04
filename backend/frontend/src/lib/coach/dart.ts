@@ -2,7 +2,7 @@
 // and the selected visit's dart table.
 import { SEGS } from '$shared/board'
 import type { ReviewDart, ReviewVisit } from '$shared/coach'
-import { aimById, aimKind, directOutId } from '$shared/coach/aims'
+import { aimById, aimKind, directOutId, oneDartFinish } from '$shared/coach/aims'
 import type { DartClass } from '$shared/coach/dartClass'
 import { dartBand, NEAR_MISS_MM, type DartBand } from '$shared/coach/grade'
 
@@ -91,8 +91,21 @@ function offset(c: DartClass): string | null {
   return `${wholeMm(m.edgeMm)}${parts.length ? ` ${parts.join(', ')}` : ''}`
 }
 
+/** A route at a double whose hit leaves a one-dart finish: 64 → D16, double to double */
+const setupDouble = (c: DartClass) =>
+  c.target !== null && aimKind(c.target.aimId) === 'D' && c.plannedLeave !== null && oneDartFinish(c.plannedLeave)
+
+/** Where a setup double's miss went, as a Double attempt's: outside (scored nothing), inside (its
+ *  number), wide (another) */
+function setupMiss(c: DartClass): 'inside' | 'outside' | 'wide' {
+  const double = 2 * Number(c.target?.aimId.slice(1))
+  if (c.actualLeave === (c.plannedLeave ?? 0) + double) return 'outside'
+  return c.miss?.wedgesOff === 0 ? 'inside' : 'wide'
+}
+
 /** What a dart was aimed at and whether it got there, under its tile: "T20 ✓", "Miss T20 · 4 mm
- *  inside, towards 1" (from the bed's edge), "Split → D16 ✓", "D16 inside". It never judges the choice of target (the strategy
+ *  inside, towards 1" (from the bed's edge), "Split → D16 ✓", "D16 inside", a setup double "D16 ✓
+ *  double to double". It never judges the choice of target (the strategy
  *  note does). Without a camera position a miss reads "· est." instead of its millimetres. */
 export function dartLabel(c: DartClass): string {
   const t = c.target?.label ?? '?'
@@ -101,6 +114,9 @@ export function dartLabel(c: DartClass): string {
     return o ? ` · ${o}` : c.estimated ? ' · est.' : ''
   }
   const tick = (hit: boolean) => (hit ? '✓' : '✗')
+  // A typed miss has no position: off the board is a guess
+  const doubleMiss = (where: string | null) =>
+    where === 'wide' ? `${t} wide${miss()}` : `${t} ${where ?? 'missed'}${c.miss === null ? ' · est.' : ''}`
   switch (c.kind) {
     case 'scoringHit':
       return `${t} ✓`
@@ -109,13 +125,12 @@ export function dartLabel(c: DartClass): string {
     case 'scoringMiss':
       return `Miss ${t}${miss()}`
     case 'route':
+      if (setupDouble(c)) return c.hit ? `${t} ✓ double to double` : doubleMiss(setupMiss(c))
       return c.hit ? `Aimed ${t} ✓` : `Miss ${t}${miss()}`
     case 'split':
       return `Split → ${directOutId(c.plannedLeave ?? 0) ?? '?'} ${tick(c.hit)}`
     case 'double':
-      if (c.hit) return `${t} ✓`
-      // A typed miss has no position: off the board is a guess
-      return c.detail === 'wide' ? `${t} wide${miss()}` : `${t} ${c.detail ?? 'missed'}${c.miss === null ? ' · est.' : ''}`
+      return c.hit ? `${t} ✓` : doubleMiss(c.detail)
     case 'bull':
       if (c.hit) return `${t} ✓`
       if (c.detail === 'sb') return '25 (aimed Bull)'

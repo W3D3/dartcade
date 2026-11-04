@@ -102,8 +102,15 @@ function bustAims(e: Evaluation): BustAims {
   return { aims, best: back >= Math.max(0, ...safe) }
 }
 
+/** Off a one-dart finish, the doubles (AIMS indexes) whose hit leaves one, double to double: 64 →
+ *  D12–D20 and D7 (50 left), 80 → D20 and D15 */
+export const setupDoubles = (left: number): number[] =>
+  oneDartFinish(left)
+    ? []
+    : Array.from({ length: 20 }, (_, i) => i + 1).flatMap(n => (oneDartFinish(left - 2 * n) ? [aimIndex(`D${n}`)] : []))
+
 /** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
- *  darts, T16 and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
+ *  darts, T16, the setup doubles and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
  *  is one only off a one-dart finish; when busting back is the best there is, every such aim is
  *  one, at prior 1. A dart in the bull or 25 has the two bull aims only. */
 export function finishCandidates(
@@ -129,7 +136,7 @@ export function finishCandidates(
   const firsts = [...(entry?.routes ?? []), ...(darts === 2 && entry?.twoDarts ? [entry.twoDarts] : [])].map(r =>
     aimIndex(bedAim(r[0])?.id ?? ''),
   )
-  const floored = new Set([...firsts, aimIndex('T16')].filter(a => a >= 0 && allowed(a)))
+  const floored = new Set([...firsts, aimIndex('T16'), ...setupDoubles(left)].filter(a => a >= 0 && allowed(a)))
   const own = new Set((landed === null ? [] : aimsOn([landed])).filter(allowed))
   const backs = new Set(!oneDartFinish(left) && busts.best ? [...busts.aims].filter(allowed) : [])
   const floor = (a: number) => (floored.has(a) ? MIN_PRIOR : own.has(a) ? LANDED_PRIOR : 0)
@@ -241,6 +248,10 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
       }
     }
   }
+  // A dart in a setup double's bed was at it, however strong the aim next to it (S16 by D16 on 64)
+  const setup = evaluation && pos && seg.multiplier === 2 ? aimIndex(`D${seg.number}`) : -1
+  if (pos && setup >= 0 && setupDoubles(t.left).includes(setup))
+    target = { a: setup, d: Math.hypot(pos.x - AIMS[setup].x, pos.y - AIMS[setup].y) }
   const wedgesOff = target ? wedges(landed, AIMS[target.a].numbers) : null
   if (wedgesOff !== null && Math.abs(wedgesOff) > WILD_WEDGES) target = null
   // The Bull on 50 is the only bull aim for a dart outside the bull (finishTarget). Its misses

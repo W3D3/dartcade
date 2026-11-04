@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt, SEGS, segAngle } from '../board.js'
 import { AIM_RINGS, AIMS, aimKind } from './aims.js'
-import { classifyDart, finishCandidates, fromBed, nearestBedPoint, NOT_COUNTED } from './dartClass.js'
+import { classifyDart, finishCandidates, fromBed, nearestBedPoint, NOT_COUNTED, setupDoubles } from './dartClass.js'
+import { loadModel } from './model.js'
 import { dart, leg, visit, REF } from './testLegs.js'
 
 const { evaluator, nextVisit } = REF
@@ -463,6 +464,53 @@ describe('classifyDart: Finish', () => {
   it('a dart aimed to bust that did not is a Bust-back miss (13 left, last dart, at T20, lands in T1)', () => {
     const c = classify(polar(1, 0.6055, 10 - 18), 13, 1, 32)
     expect(c).toMatchObject({ kind: 'bustBack', hit: false, target: { aimId: 'T20' }, plannedLeave: 32, actualLeave: 10 })
+  })
+})
+
+describe('classifyDart: setup doubles (double to double)', () => {
+  const ids = (left: number) => setupDoubles(left).map(a => AIMS[a].id)
+  it('are the doubles whose hit leaves a one-dart finish, none on a one-dart finish', () => {
+    expect(ids(64)).toEqual(expect.arrayContaining(['D7', 'D12', 'D16', 'D20']))
+    expect(ids(64)).not.toContain('D8')
+    expect(ids(72)).toEqual(expect.arrayContaining(['D16', 'D20', 'D11']))
+    expect(ids(80).sort()).toEqual(['D15', 'D20'])
+    expect(ids(32)).toEqual([])
+  })
+
+  it("84 → S20, then a dart 4 mm inside the D16 bed's outer edge is a hit of D16 at every level", async () => {
+    const d = polar(16, 1 - 4 / 170)
+    for (let level = 1; level <= 10; level++) {
+      const m = await loadModel(level)
+      const t: Throw = {
+        leg: 0,
+        visit: 0,
+        dart: 1,
+        start: 84,
+        left: 64,
+        after: 32,
+        darts: 2,
+        d,
+        checkout: false,
+        bust: false,
+        w: 1,
+        opponentOnOut: false,
+      }
+      expect(classifyDart(t, { evaluation: m.evaluator(84, 1)(64, 2) }), `level ${level}`).toMatchObject({
+        kind: 'route',
+        hit: true,
+        target: { aimId: 'D16' },
+        plannedLeave: 32,
+      })
+    }
+  })
+
+  it('a near miss of it is its miss: just inside D16 on 64', () => {
+    expect(classify(polar(16, R.so - 2 / 170), 64, 2)).toMatchObject({
+      kind: 'route',
+      hit: false,
+      target: { aimId: 'D16' },
+      plannedLeave: 32,
+    })
   })
 })
 

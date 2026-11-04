@@ -117,6 +117,18 @@ describe('dartLabel', () => {
     ],
     ['a route hit', { kind: 'route', hit: true, ...at('S20', 'SO20'), plannedLeave: 40, actualLeave: 40 }, 'Aimed S20 ✓'],
     ['a route miss', { kind: 'route', ...at('T19'), ...off(12, 0, -12) }, 'Miss T19 · 12 mm towards 3'],
+    ['a setup double hit', { kind: 'route', hit: true, ...at('D16'), plannedLeave: 32, actualLeave: 32 }, 'D16 ✓ double to double'],
+    [
+      'a setup double inside',
+      { kind: 'route', ...at('D16'), miss: { ...off(4, -4, 0).miss, wedgesOff: 0 }, plannedLeave: 32, actualLeave: 48 },
+      'D16 inside',
+    ],
+    ['a setup double outside', { kind: 'route', ...at('D16'), ...off(5, 5, 0), plannedLeave: 32, actualLeave: 64 }, 'D16 outside'],
+    [
+      'a setup double wide',
+      { kind: 'route', ...at('D16'), miss: { ...off(30, 0, 30).miss, wedgesOff: 1 }, plannedLeave: 32, actualLeave: 48 },
+      'D16 wide · 30 mm towards 8',
+    ],
     ['a split hit', { kind: 'split', hit: true, ...at('S6', 'SO6'), plannedLeave: 32, actualLeave: 32 }, 'Split → D16 ✓'],
     ['a split miss', { kind: 'split', ...at('S6', 'SO6'), plannedLeave: 32, actualLeave: 25 }, 'Split → D16 ✗'],
     ['a split to the bull', { kind: 'split', hit: true, ...at('S10', 'SO10'), plannedLeave: 50, actualLeave: 50 }, 'Split → Bull ✓'],

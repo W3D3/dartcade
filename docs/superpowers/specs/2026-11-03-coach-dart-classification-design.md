@@ -48,6 +48,13 @@ The candidates are then narrowed:
   likeliest outcome busts (D1 on 2). When busting back is worth at least every other aim, every
   bust aim is a candidate.
 - T16 is a candidate for setup shots only, never for scoring.
+- **Setup doubles** (user ruling): on a score that isn't a one-dart finish, every double whose hit
+  leaves one (64 → D12–D20 and D7, 72 → D16–D20 and D11, 80 → D20 and D15) is a candidate, with the
+  book's floor (`setupDoubles`). A dart in a setup double's bed is that double's hit whatever the
+  aims next to it: on 64 at level 3 the S16 (leaving 48) outweighs D16's floor, and a dart 4 mm
+  inside the D16 wire read "Miss S16 · 4 mm outside". A near miss reads as its miss. Their label
+  says the route: "D16 ✓ double to double", and a miss like a Double attempt's ("D16 inside",
+  "D16 outside", "D16 wide · 30 mm towards 8").
 
 **The pick.** The target is the candidate aim point _a_ that maximises
 
@@ -62,7 +69,7 @@ prior(a) · exp(−d(dart, a)² / 2σ²)
   - Scoring: T20 1.0, T19 0.6, T18 0.3, T17 0.3. In the bull: Bull 1, 25 1.
   - Finish: `exp((v(a) − v_best) / τ)`, τ = 0.01, where v is the evaluator's value of the aim
     and v_best the best aim's. The priors are not normalised; only their ratios matter.
-  - Floors: the checkout table's first darts and T16 get at least **MIN_PRIOR = exp(−3)**; the
+  - Floors: the checkout table's first darts, T16 and the setup doubles get at least **MIN_PRIOR = exp(−3)**; the
     aims on a typed dart's landed number (and the bull aims for a dart in the bull) get at least
     **LANDED_PRIOR = exp(−6)**. Low enough that a dart about a wedge off a good aim still reads as
     its miss, high enough that one further off isn't Wild.
@@ -349,7 +356,7 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - `COACH_VERSION` is bumped, so the backfill rebuilds the stored reviews.
 - **Leg review:**
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
-    "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
+    "Split → D16 ✓", "D16 inside", "D16 ✓ double to double", "Bust-back ✓", "Wild".
   - **In the selected visit's board card**, a faint line from each dart that missed to the nearest
     point of its target's bed (`nearestBedPoint` in `dartClass.ts`, the point `edgeMm` is measured
     from; `edgeLineEnd` in `lib/coach/board.ts`); a hit and a dart without a position draw none.
@@ -483,6 +490,10 @@ Decisions taken while building this without the user, each with why:
   miss into D8 on 32 reads as a Split hit. Cost: a deliberate double-to-double split reads as a
   wide double. Accepted: 34 → D2 reads as S2 and 36 → D4 as S4 (plausible splits to 32).
 - **The finishing double stays a candidate even when its likeliest outcome busts** (D1 on 2).
+- **The route texts keep the book's route, never double to double.** The evaluator agrees: at
+  levels 3, 5, 7, 9 and 10 its best aim on 41–170 (one, two or three darts, 50 aside) is never a
+  double; on 64, 72 and 80 with two darts the best double is 1–3 points behind T16 or T20 (level 7:
+  64 D16 73.0% against T16 75.7%, 72 D20 71.8% against 74.0%, 80 D20 70.5% against T20 71.9%).
 - **Bust aims are candidates only off a one-dart finish, and when busting back is best all of
   them are, at prior 1.** S7 on 10 read as a Bust-back; ties in the top 5 gave a typed T20 busting
   on 3 the target T12.
