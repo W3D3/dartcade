@@ -28,20 +28,15 @@ export type ChallengeGame = {
   /** Counts at all: enough darts, not forfeited (the XP rules' qualifying game). */
   qualifies: boolean
   won: boolean
-  vsHuman: boolean
-  ranked: boolean
-  lobby: boolean
   boardDarts: number
   visits: Visit[]
   checkouts: Checkout[]
-  /** X01: legs you lost. */
-  legsLost: number
+  /** X01: whether you won each finished leg, in order. */
+  legResults: boolean[]
   /** X01: the most you trailed the leader by at a visit's end, in a leg. */
   maxDeficit: number
   /** X01: your 3-dart average. */
   average: number | null
-  /** The other accounts you played with. */
-  people: string[]
 }
 
 /** What the generator scales targets and picks templates from. */
@@ -49,14 +44,14 @@ export type ChallengeContext = {
   /** Board darts and qualifying games per active day over the last 30 days; null for a new player. */
   dartsPerDay: number | null
   gamesPerDay: number | null
-  /** Your best X01 3-dart average of the last 30 days; null without one. */
+  /** Your best X01 3-dart average of the last 30 days; null without one (sets the leg challenge's dart limit). */
   bestAverage: number | null
   /** Modes on for you that you haven't played for 14 days ("try something"). */
   untriedModes: string[]
 }
 
 /** A challenge's running state: the games already counted, and whatever a template remembers. */
-export type ChallengeState = { games?: string[]; set?: (string | number)[]; run?: number; threshold?: number }
+export type ChallengeState = { games?: string[]; set?: (string | number)[]; run?: number; limit?: number }
 
 type Template = {
   id: string
@@ -69,9 +64,7 @@ type Template = {
   base: number
   floor?: number
   scale?: 'darts' | 'games'
-  /** Only offered when this holds. */
-  eligible?: (ctx: ChallengeContext) => boolean
-  /** State a new challenge starts with. */
+  /** State a new challenge starts with (a target set by your level). */
   init?: (ctx: ChallengeContext) => ChallengeState
   /** The progress after a game (absolute), and the state to keep. */
   step: (g: ChallengeGame, progress: number, state: ChallengeState) => { progress: number; state?: ChallengeState }
@@ -97,6 +90,12 @@ const trebles = (g: ChallengeGame) => g.visits.reduce((a, v) => a + v.segs.filte
 const doubles = (g: ChallengeGame) => g.visits.reduce((a, v) => a + v.segs.filter(isDouble).length, 0)
 const tons = (g: ChallengeGame, min: number) => g.visits.filter(v => !v.bust && (v.scored ?? 0) >= min).length
 const finishedOn = (g: ChallengeGame) => g.checkouts.flatMap(c => (isDouble(c.last) && c.last.n <= 20 ? [c.last.n] : []))
+const allSegs = (g: ChallengeGame) => g.visits.flatMap(v => v.segs)
+const dName = (n: number) => (n === 25 ? 'Bull' : `D${n}`)
+
+/** The most darts a 501 leg may take: the player's average plus a quarter, as a multiple of three (30 without an average). */
+export const legDartLimit = (average: number | null): number =>
+  Math.min(45, Math.max(15, Math.round((501 * 3) / ((average ?? 40) * 1.25) / 3) * 3))
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Try something": a mode you haven't played for 14 days. Its id is `d.try.<mode>`. */
@@ -139,9 +138,37 @@ export const TEMPLATES: readonly Template[] = [
     period: 'daily',
     difficulty: 'medium',
     metric: 'wins',
-    title: () => 'Win a game against another player',
+    title: () => 'Win a game',
     base: 1,
-    step: once(g => g.qualifies && g.won && g.vsHuman),
+    step: once(g => g.qualifies && g.won),
+  },
+  {
+    id: 'd.tons60',
+    period: 'daily',
+    difficulty: 'medium',
+    metric: 'tons',
+    title: n => `Score 60 or more in ${plural(n, 'visit')}`,
+    base: 5,
+    floor: 2,
+    step: count(g => tons(g, 60)),
+  },
+  {
+    id: 'd.bullseye',
+    period: 'daily',
+    difficulty: 'medium',
+    metric: 'bull',
+    title: () => 'Hit the bullseye',
+    base: 1,
+    step: once(g => allSegs(g).some(isBull)),
+  },
+  {
+    id: 'd.two-trebles',
+    period: 'daily',
+    difficulty: 'medium',
+    metric: 'trebles',
+    title: () => 'Hit two trebles in one visit',
+    base: 1,
+    step: once(g => g.visits.some(v => v.segs.filter(s => s.m === 3).length >= 2)),
   },
   {
     id: 'd.trebles',
@@ -168,7 +195,7 @@ export const TEMPLATES: readonly Template[] = [
   {
     id: 'd.tons',
     period: 'daily',
-    difficulty: 'medium',
+    difficulty: 'hard',
     metric: 'tons',
     title: n => `Score 100 or more in ${plural(n, 'visit')}`,
     base: 3,
@@ -186,49 +213,39 @@ export const TEMPLATES: readonly Template[] = [
     step: once(g => finishedOn(g).includes(16)),
   },
   {
-    id: 'd.leg21',
+    id: 'd.leg-limit',
     period: 'daily',
     difficulty: 'hard',
     metric: 'leg-darts',
-    title: () => 'Win a 501 leg in 21 darts or fewer',
+    title: (_n, s) => `Win a 501 leg in ${s.limit ?? legDartLimit(null)} darts or fewer`,
     base: 1,
-    step: once(g => g.checkouts.some(c => c.startScore === 501 && c.darts <= 21)),
-  },
-  {
-    id: 'd.bull',
-    period: 'daily',
-    difficulty: 'hard',
-    metric: 'finish',
-    title: () => 'Check out on the bull',
-    base: 1,
-    step: once(g => g.checkouts.some(c => isBull(c.last))),
-  },
-  {
-    id: 'd.three-trebles',
-    period: 'daily',
-    difficulty: 'hard',
-    metric: 'trebles',
-    title: () => 'Hit three different trebles in one visit',
-    base: 1,
-    step: once(g => g.visits.some(v => v.segs.length === 3 && v.segs.every(s => s.m === 3) && new Set(v.segs.map(s => s.n)).size === 3)),
+    init: ctx => ({ limit: legDartLimit(ctx.bestAverage) }),
+    step: (g, p, s) => ({
+      progress: g.checkouts.some(c => c.startScore === 501 && c.darts <= (s.limit ?? 0)) ? Math.max(p, 1) : p,
+      state: s,
+    }),
   },
   {
     id: 'd.comeback',
     period: 'daily',
     difficulty: 'hard',
     metric: 'wins',
-    title: () => 'Win a game after trailing by 150 or more',
+    title: () => 'Win a game after trailing by 100 or more',
     base: 1,
-    step: once(g => g.qualifies && g.won && g.maxDeficit >= 150),
+    step: once(g => g.qualifies && g.won && g.maxDeficit >= 100),
   },
   {
-    id: 'd.big-doubles',
+    id: 'd.ten-doubles',
     period: 'daily',
     difficulty: 'hard',
     metric: 'doubles',
-    title: () => 'Hit a double 20, a double 19 and a double 18 today',
-    base: 3,
-    step: distinct(g => g.visits.flatMap(v => v.segs.filter(s => s.m === 2 && s.n >= 18 && s.n <= 20).map(s => s.n))),
+    title: (_n, s) => `Hit 10 different doubles${s.set?.length ? ` (${s.set.map(n => dName(Number(n))).join(', ')})` : ''}`,
+    base: 10,
+    step: distinct(g =>
+      allSegs(g)
+        .filter(s => isDouble(s) && (s.n <= 20 || s.n === 25))
+        .map(s => s.n),
+    ),
   },
   {
     id: 'd.140-run',
@@ -247,27 +264,34 @@ export const TEMPLATES: readonly Template[] = [
     }),
   },
   {
-    id: 'd.same-single',
+    id: 'd.six-same',
     period: 'daily',
     difficulty: 'hard',
     metric: 'grouping',
-    title: () => 'Throw all three darts of a visit into the same single (not 20)',
+    title: () => 'Throw 6 darts in a row into the same segment',
     base: 1,
-    step: once(g =>
-      g.visits.some(v => v.segs.length === 3 && v.segs.every(s => s.m === 1 && s.n === v.segs[0].n && s.n !== 20 && s.n <= 20)),
-    ),
+    step: once(g => {
+      let run = 0
+      let prev: Seg | null = null
+      for (const s of allSegs(g)) {
+        run = s.m > 0 && prev && s.n === prev.n && s.m === prev.m ? run + 1 : 1
+        prev = s
+        if (s.m > 0 && run >= 6) return true
+      }
+      return false
+    }),
   },
   {
     id: 'd.atc-ten',
     period: 'daily',
     difficulty: 'hard',
     metric: 'atc',
-    title: () => 'Around the Clock: reach 10 within your first 15 darts',
+    title: () => 'Around the Clock: reach 10 within your first 18 darts',
     base: 1,
     step: once(g => {
       if (g.mode !== 'atc') return false
       let target = 1
-      for (const s of g.visits.flatMap(v => v.segs).slice(0, 15)) if (s.m > 0 && s.n === target) target++
+      for (const s of g.visits.flatMap(v => v.segs).slice(0, 18)) if (s.m > 0 && s.n === target) target++
       return target > 10
     }),
   },
@@ -304,14 +328,23 @@ export const TEMPLATES: readonly Template[] = [
     step: distinct(g => (g.qualifies ? [g.mode] : [])),
   },
   {
-    id: 'w.tons',
+    id: 'w.tons60',
     period: 'weekly',
     difficulty: 'medium',
     metric: 'tons',
-    title: n => `Score 100 or more ${n} times`,
-    base: 8,
-    floor: 3,
-    step: count(g => tons(g, 100)),
+    title: n => `Score 60 or more ${n} times`,
+    base: 15,
+    floor: 5,
+    step: count(g => tons(g, 60)),
+  },
+  {
+    id: 'w.big-checkout',
+    period: 'weekly',
+    difficulty: 'medium',
+    metric: 'checkouts',
+    title: () => 'Check out 60 or more',
+    base: 1,
+    step: once(g => g.checkouts.some(c => c.value >= 60)),
   },
   {
     id: 'w.wins',
@@ -326,33 +359,14 @@ export const TEMPLATES: readonly Template[] = [
   },
   // Weekly, hard and creative
   {
-    id: 'w.ranked-lobby',
+    id: 'w.tons',
     period: 'weekly',
     difficulty: 'hard',
-    metric: 'wins',
-    title: n => `Win ${n} ranked or lobby games`,
-    base: 5,
-    step: count(g => (g.qualifies && g.won && g.vsHuman && (g.ranked || g.lobby) ? 1 : 0)),
-  },
-  {
-    id: 'w.beat-average',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'average',
-    title: (_n, s) => `Beat your best 3-dart average of the last 30 days (${(s.threshold ?? 0).toFixed(1)})`,
-    base: 1,
-    eligible: ctx => ctx.bestAverage !== null,
-    init: ctx => ({ threshold: ctx.bestAverage ?? 0 }),
-    step: (g, p, s) => ({ progress: g.qualifies && (g.average ?? 0) > (s.threshold ?? Infinity) ? Math.max(p, 1) : p }),
-  },
-  {
-    id: 'w.big-checkouts',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'checkouts',
-    title: () => 'Check out above 100 three times',
-    base: 3,
-    step: count(g => g.checkouts.filter(c => c.value > 100).length),
+    metric: 'tons',
+    title: n => `Score 100 or more ${n} times`,
+    base: 8,
+    floor: 3,
+    step: count(g => tons(g, 100)),
   },
   {
     id: 'w.win-modes',
@@ -361,56 +375,24 @@ export const TEMPLATES: readonly Template[] = [
     metric: 'modes',
     title: () => 'Win a game in three different modes',
     base: 3,
-    step: distinct(g => (g.qualifies && g.won && g.vsHuman ? [g.mode] : [])),
+    step: distinct(g => (g.qualifies && g.won ? [g.mode] : [])),
   },
   {
-    id: 'w.finish-set',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'finish',
-    title: () => 'Finish legs on D16, D20 and D8',
-    base: 3,
-    step: distinct(g => finishedOn(g).filter(n => n === 16 || n === 20 || n === 8)),
-  },
-  {
-    id: 'w.people',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'people',
-    title: () => 'Play with 5 different people',
-    base: 5,
-    step: distinct(g => (g.qualifies ? g.people : [])),
-  },
-  {
-    id: 'w.win-run',
+    id: 'w.leg-run',
     period: 'weekly',
     difficulty: 'hard',
     metric: 'win-run',
-    title: () => 'Win three games in a row against humans',
-    base: 3,
+    title: n => `Win ${n} legs in a row`,
+    base: 2,
     step: (g, p, s) => {
-      if (!g.qualifies || !g.vsHuman) return { progress: p, state: s }
-      const run = g.won ? (s.run ?? 0) + 1 : 0
-      return { progress: Math.max(p, run), state: { ...s, run } }
+      let run = s.run ?? 0
+      let best = p
+      for (const won of g.legResults) {
+        run = won ? run + 1 : 0
+        best = Math.max(best, run)
+      }
+      return { progress: best, state: { ...s, run } }
     },
-  },
-  {
-    id: 'w.all-numbers',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'numbers',
-    title: () => 'Hit every number from 1 to 20 in a single game',
-    base: 1,
-    step: once(g => new Set(g.visits.flatMap(v => v.segs.filter(s => s.m > 0 && s.n <= 20).map(s => s.n))).size === 20),
-  },
-  {
-    id: 'w.ranked-clean',
-    period: 'weekly',
-    difficulty: 'hard',
-    metric: 'ranked',
-    title: () => 'Win a ranked match without losing a leg',
-    base: 1,
-    step: once(g => g.ranked && g.won && g.legsLost === 0),
   },
 ]
 
@@ -470,9 +452,7 @@ export function generateChallenge(
   const want = difficulty ?? slotDifficulty(rng, slot)
   const tries = ctx.untriedModes.map(tryTemplate).filter(t => !usedMetrics.includes(t.metric))
   const useTry = period === 'daily' && slot === 1 && tries.length > 0 && rng() < 0.5
-  const pool = useTry
-    ? tries
-    : TEMPLATES.filter(t => t.period === period && t.difficulty === want && !usedMetrics.includes(t.metric) && (t.eligible?.(ctx) ?? true))
+  const pool = useTry ? tries : TEMPLATES.filter(t => t.period === period && t.difficulty === want && !usedMetrics.includes(t.metric))
   // Every metric taken (never with today's catalogue): any template of the difficulty
   const t = pick(rng, pool.length > 0 ? pool : TEMPLATES.filter(x => x.period === period && x.difficulty === want))
   return {

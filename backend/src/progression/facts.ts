@@ -32,10 +32,10 @@ export function challengeGame(
   const startScore =
     typeof game.config === 'object' && game.config !== null && 'startScore' in game.config ? Number(game.config.startScore) : 0
   const checkouts: Checkout[] = []
-  let legsLost = 0
+  const legResults: boolean[] = []
   let maxDeficit = 0
   for (const leg of detail?.legs ?? []) {
-    if (leg.winner !== null && leg.winner !== seat) legsLost++
+    if (leg.winner !== null) legResults.push(leg.winner === seat)
     // Remaining per seat as the leg goes: how far you trailed the leader
     const left = new Map<number, number>()
     for (const v of leg.visits) {
@@ -56,25 +56,16 @@ export function challengeGame(
     }
   }
 
-  const people = [
-    ...new Set(
-      game.seats.flatMap(s => (!s.bot && s.seat !== seat ? [s.userId ?? s.controllerUserId] : [])).filter(u => u !== null && u !== userId),
-    ),
-  ].filter((u): u is string => u !== null)
   return {
     id: game.id,
     mode: game.gameId,
     qualifies: qualifies({ ...player, previousBest: null }),
     won: player.placement === 1 && player.opponents.length > 0,
-    vsHuman: player.opponents.includes('human'),
-    ranked: player.ranked,
-    lobby: game.lobbyId !== null,
     boardDarts: player.darts.camera,
     visits,
     checkouts,
-    legsLost,
+    legResults,
     maxDeficit,
     average: player.stats.average ?? null,
-    people,
   }
 }
