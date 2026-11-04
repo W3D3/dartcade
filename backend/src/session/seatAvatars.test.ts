@@ -13,7 +13,6 @@ const baseStore: EngineStore = {
   finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
   getAvatars: vi.fn().mockResolvedValue(new Map()),
-  isRanked: vi.fn().mockResolvedValue(false),
 }
 
 describe('seat avatars in the snapshot', () => {

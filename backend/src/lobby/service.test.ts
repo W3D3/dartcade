@@ -24,7 +24,6 @@ const makeStore = () =>
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
     getAvatars: vi.fn().mockResolvedValue(new Map()),
-    isRanked: vi.fn().mockResolvedValue(false),
   }) satisfies EngineStore
 const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
 // The last lobby or me message (a /ws/me socket also gets the friends list when it opens)

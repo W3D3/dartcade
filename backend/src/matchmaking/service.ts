@@ -3,10 +3,11 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { getAccountsByIds, type Avatar } from '../db/users.js'
 import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
-import { insertRankedMatch, matchRatings, recordRankedGame, unrecordedRankedGames } from '../db/ranked.js'
+import { matchRatings, recordRankedGame, unrecordedRankedGames } from '../db/ranked.js'
 import type { GameEnded, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError } from '../session/errors.js'
 import type { Seat } from '../session/types.js'
+import type { X01Config } from '../games/x01.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
 import { ACCEPT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
@@ -61,7 +62,7 @@ export type MatchmakingDeps = {
 const userIdsOf = (s: Search): string[] => s.players.map(p => p.userId)
 
 /** The game a match plays: X01 501, double out, first to 2 or 3 legs, a bull off decides who starts. */
-export function rankedConfig(mode: RankedMode, firstTo: FirstTo): Record<string, unknown> {
+export function rankedConfig(mode: RankedMode, firstTo: FirstTo): X01Config {
   return {
     startScore: 501,
     inMode: 'straight',
@@ -348,27 +349,21 @@ export class MatchmakingService {
     const [a, b] = found.sides
     const mode = a.mode
     const seats = await this.seatsOf([...a.players, ...b.players])
-    let sessionId: string
     try {
-      ;({ sessionId } = await this.deps.engine.createWithSeats({
+      await this.deps.engine.createWithSeats({
         ownerUserId: a.userIds[0],
         gameId: 'x01',
         config: rankedConfig(mode, found.firstTo),
         seats,
-        ranked: true,
+        ranked: { mode, sides: [a.userIds, b.userIds] },
         lobbyName: `Ranked ${mode}`,
-      }))
+      })
     } catch (err) {
       // Someone started another game meanwhile: their side stops searching, the other goes back
       const busy = err instanceof ActiveSessionError ? [err.userId] : []
       if (busy.length === 0) this.warn('ranked game failed to start', { matchId: found.id, error: String(err) })
       this.drop(found, busy, false)
       return
-    }
-    try {
-      await insertRankedMatch(this.deps.db, { sessionId, mode, sides: [a.userIds, b.userIds] })
-    } catch (err) {
-      this.warn('ranked match not stored: its ratings will not move', { sessionId, error: String(err) })
     }
     this.push([...a.userIds, ...b.userIds, ...this.searchersOf(mode)])
   }

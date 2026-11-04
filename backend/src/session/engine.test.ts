@@ -37,7 +37,6 @@ function makeStore() {
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
     getAvatars: vi.fn().mockResolvedValue(new Map()),
-    isRanked: vi.fn().mockResolvedValue(false),
   } satisfies EngineStore
 }
 
@@ -846,6 +845,7 @@ describe('rebuild', () => {
       players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      ranked: null,
     }
     const bad: StoredGameSession = {
       id: 'bad-1',
@@ -859,6 +859,7 @@ describe('rebuild', () => {
       players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      ranked: null,
     }
     const warn = vi.fn()
     const store = makeStore()
@@ -924,6 +925,7 @@ describe('Around the Clock with multipliers on to the bull (#343)', () => {
       players: [{ name: 'Alice', user_id: id, controller_user_id: id, board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      ranked: null,
     })
     const store = makeStore()
     store.getActiveSessions.mockResolvedValue([row('old', 1), row('new', atcModule.version)])
@@ -1166,6 +1168,7 @@ describe('rebuild with seats', () => {
         ],
         lobby_id: null,
         lobby_name: null,
+        ranked: null,
       } satisfies StoredGameSession,
     ])
     const engine = new SessionEngine(store, push)
@@ -1203,6 +1206,7 @@ describe('rebuild resumes a bot', () => {
         players: [{ name: 'Bot Lvl 10', user_id: null, controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: 10 }],
         lobby_id: null,
         lobby_name: null,
+        ranked: null,
       } satisfies StoredGameSession,
     ])
     const engine = new SessionEngine(store, push)
@@ -1691,6 +1695,7 @@ describe('lobby games', () => {
       created_at: new Date(),
       lobby_id: id === 'ok' ? 'l1' : 'l2',
       lobby_name: 'Friday darts',
+      ranked: null,
       players: [
         { name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: null },
         { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null, bot_level: null },
@@ -1731,6 +1736,7 @@ describe('lobby games', () => {
       created_at: new Date(),
       lobby_id: 'l2',
       lobby_name: 'Friday darts',
+      ranked: null,
       players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null, bot_level: null }],
     }
     store.getActiveSessions.mockResolvedValue([row])
@@ -1894,6 +1900,7 @@ describe('a config prepared at start (Minigolf: the published course)', () => {
         ],
         lobby_id: null,
         lobby_name: null,
+        ranked: null,
       } satisfies StoredGameSession,
     ])
     const after = new SessionEngine(restarted, push)

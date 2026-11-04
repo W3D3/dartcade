@@ -12,6 +12,7 @@ import type {
 import type { UserAction } from '../schema/game-ws.js'
 import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
+import type { RankedMode } from '../shared/ranked.js'
 import type { components } from '../schema/api.js'
 
 // Aliases for shorter names throughout the backend
@@ -28,6 +29,9 @@ export type {
 }
 
 export type Player = { name: string }
+
+/** What makes a game ranked: the queue it came from and the accounts of each side. */
+export type RankedGame = { mode: RankedMode; sides: [string[], string[]] }
 
 /** A point in board units (see backend/src/shared/board.ts) — what botTarget aims a dart at. */
 export type Point = { x: number; y: number }
@@ -244,8 +248,8 @@ export interface Session {
   nextSeq: number
   totalDarts: number[]
   totalVisits: number[]
-  /** Started by the ranked queue: no player aborts it (leaving forfeits) and either side starts its bull off. */
-  ranked: boolean
+  /** Started by the ranked queue; null for any other game. No player owns it: nobody aborts it (leaving forfeits) and either side starts its bull off. */
+  ranked: RankedGame | null
   /** Seat indices that have forfeited, ascending. */
   forfeited: number[]
   /** The game's committed visits since the bull off, newest last, as they were before each was

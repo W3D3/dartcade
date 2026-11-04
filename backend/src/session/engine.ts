@@ -1,7 +1,7 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
 import { applyInput, awaitsFinish, isManualReset, overflowsVisit, takeoutWins, type GameInput } from './apply.js'
-import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
+import type { GameConfig, RankedGame, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
 import { newSeed, seededRng, shuffle } from './rng.js'
@@ -12,7 +12,6 @@ import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameErro
 import type { Database } from '../db/schema.js'
 import { getAvatars, type Avatar } from '../db/users.js'
 import * as queries from '../db/queries.js'
-import { isRankedMatch } from '../db/ranked.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
 
@@ -89,8 +88,6 @@ export interface EngineStore {
   abortSession(id: string, finishedAt: Date, abortedByUserId: string | null): Promise<void>
   /** The profile pictures of these accounts, for the seats of the snapshot. */
   getAvatars(userIds: string[]): Promise<Map<string, Avatar>>
-  /** Whether the ranked queue started the stored game. */
-  isRanked(sessionId: string): Promise<boolean>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
@@ -104,7 +101,6 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
     abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
     getAvatars: ids => getAvatars(db, ids),
-    isRanked: id => isRankedMatch(db, id),
   }
 }
 
@@ -118,8 +114,8 @@ export type NewSessionSpec = {
   lobbyName?: string | null
   /** Random throw order: the seats are shuffled with the game's seed before they're stored. */
   shuffleSeats?: boolean
-  /** Started by the ranked queue. */
-  ranked?: boolean
+  /** Started by the ranked queue; stored with the session, in one transaction. */
+  ranked?: RankedGame
 }
 
 const distinct = <T>(xs: (T | null)[]): T[] => [...new Set(xs.filter((x): x is T => x !== null))]
@@ -288,6 +284,7 @@ export class SessionEngine {
         rng_seed: seed,
         config,
         lobby_id: lobbyId,
+        ranked: spec.ranked,
         players: seats.map(s => ({
           name: s.name,
           user_id: s.userId,
@@ -567,7 +564,7 @@ export class SessionEngine {
       lobbyName: row.lobby_name,
       version: row.game_version,
       avatars,
-      ranked: await this.store.isRanked(row.id),
+      ranked: row.ranked ?? undefined,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
@@ -606,7 +603,7 @@ export class SessionEngine {
       // The places the server saves, so no screen re-ranks the seats itself
       results: session.status === 'finished' ? results(session).map(r => ({ placement: r.placement, forfeited: r.forfeited })) : null,
       finishPending: session.status === 'active' && ((session.takeoutHeld === true && takeoutWins(session)) || awaitsFinish(session)),
-      rankedGame: session.ranked,
+      rankedGame: session.ranked !== null,
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
