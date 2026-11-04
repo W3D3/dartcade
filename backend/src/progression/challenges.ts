@@ -67,6 +67,8 @@ type Template = {
   scale?: 'darts' | 'games'
   /** State a new challenge starts with (a target set by your level). */
   init?: (ctx: ChallengeContext) => ChallengeState
+  /** What the row shows under the title (the doubles hit so far); none when unset. */
+  chips?: (state: ChallengeState) => string[]
   /** The progress after a game (absolute), and the state to keep. */
   step: (g: ChallengeGame, progress: number, state: ChallengeState) => { progress: number; state?: ChallengeState }
 }
@@ -265,7 +267,8 @@ export const TEMPLATES: readonly Template[] = [
     period: 'daily',
     difficulty: 'hard',
     metric: 'doubles',
-    title: (_n, s) => `Hit 10 different doubles${s.set?.length ? ` (${s.set.map(n => dName(Number(n))).join(', ')})` : ''}`,
+    title: () => 'Hit 10 different doubles',
+    chips: s => (s.set ?? []).map(n => dName(Number(n))),
     base: 10,
     step: distinct(g =>
       allSegs(g)
@@ -524,6 +527,9 @@ export function applyGame(
   const next = t.step(g, c.progress, c.state)
   return { progress: next.progress, state: { ...(next.state ?? c.state), games: [...(c.state.games ?? []), g.id] } }
 }
+
+export const challengeChips = (c: { templateId: string; state: ChallengeState }): string[] =>
+  templateById(c.templateId)?.chips?.(c.state) ?? []
 
 export function challengeTitle(c: { templateId: string; target: number; state: ChallengeState }): string {
   return templateById(c.templateId)?.title(c.target, c.state) ?? 'Challenge'

@@ -7,6 +7,7 @@ const item = (id: string, completed: boolean) => ({
   id,
   slot: 1,
   title: 'Throw 100 darts on a board',
+  chips: [] as string[],
   difficulty: 'easy' as const,
   target: 100,
   progress: completed ? 100 : 20,
