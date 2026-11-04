@@ -385,6 +385,17 @@ export const TEMPLATES: readonly Template[] = [
   },
   // Weekly, hard and creative
   {
+    id: 'w.wins-hard',
+    period: 'weekly',
+    difficulty: 'hard',
+    metric: 'wins',
+    title: n => `Win ${plural(n, 'game')}`,
+    base: 10,
+    floor: 4,
+    scale: 'games',
+    step: count(g => (g.qualifies && g.won ? 1 : 0)),
+  },
+  {
     id: 'w.tons',
     period: 'weekly',
     difficulty: 'hard',
