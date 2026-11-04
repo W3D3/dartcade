@@ -4,6 +4,7 @@
 import { seededRng, type Rng } from '../shared/rng.js'
 import { addDays, daysBetween } from '../shared/progression.js'
 import { gameTitle } from '../shared/gameNames.js'
+import { AVG_CLASS_MIN, avgClass } from '../shared/avgClass.js'
 
 export type Period = 'daily' | 'weekly'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -93,9 +94,34 @@ const finishedOn = (g: ChallengeGame) => g.checkouts.flatMap(c => (isDouble(c.la
 const allSegs = (g: ChallengeGame) => g.visits.flatMap(v => v.segs)
 const dName = (n: number) => (n === 25 ? 'Bull' : `D${n}`)
 
-/** The most darts a 501 leg may take: the player's average plus a quarter, as a multiple of three (30 without an average). */
+/**
+ * The most darts a 501 leg may take, one target per average class (the Avg-Classes 5-point classes
+ * of your best 30-day X01 average): roughly what 90% of the class's average needs. The top class
+ * gets 18, the 70s 27 and 24. Under class 20 the lowest target applies. Without an average yet a
+ * casual 36 (about class 50).
+ */
+export const LEG_DART_LIMIT: Readonly<Record<number, number>> = {
+  20: 45,
+  25: 45,
+  30: 45,
+  35: 45,
+  40: 42,
+  45: 39,
+  50: 36,
+  55: 33,
+  60: 30,
+  65: 27,
+  70: 27,
+  75: 24,
+  80: 24,
+  85: 21,
+  90: 21,
+  95: 21,
+  100: 18,
+}
+const NO_AVERAGE_LEG_LIMIT = 36
 export const legDartLimit = (average: number | null): number =>
-  Math.min(45, Math.max(15, Math.round((501 * 3) / ((average ?? 40) * 1.25) / 3) * 3))
+  average === null ? NO_AVERAGE_LEG_LIMIT : LEG_DART_LIMIT[avgClass(average) ?? AVG_CLASS_MIN]
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Try something": a mode you haven't played for 14 days. Its id is `d.try.<mode>`. */
