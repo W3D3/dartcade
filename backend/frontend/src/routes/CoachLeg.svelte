@@ -3,6 +3,7 @@
   // visit graded. From xl the selected visit shows on the board in the right rail (40% wide, so its
   // board is big and the visit list still fits at 1280); on phones and tablets it opens under its card.
   import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/svelte'
+  import { MediaQuery } from 'svelte/reactivity'
   import Layout from '$lib/components/Layout.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
   import GradePill from '$lib/components/coach/GradePill.svelte'
@@ -26,6 +27,8 @@
   const debug = flag('coach.debug.enabled')
   const requests = createRequestGuard()
   const now = new Date()
+  // From xl: the visit table and the rail; below it the cards
+  const wide = new MediaQuery('min-width: 1280px')
 
   let review = $state<LegReview | null>(null)
   let title = $state<CoachLegTitle | null>(null)
@@ -132,8 +135,9 @@
           <h1 class="m-0 font-display text-[30px] font-bold uppercase leading-none tracking-[0.02em] xl:text-[44px]">
             {legHeading(review.leg, title.opponents)}
           </h1>
-          <span class="text-[13px] text-text-muted xl:hidden">{legSubtitleShort(title, review.darts, review.average, now)}</span>
-          <span class="hidden text-[15px] text-text-muted xl:inline">{legSubtitle(title, review.darts, now)}</span>
+          <span class="text-[13px] text-text-muted xl:text-[15px]"
+            >{wide.current ? legSubtitle(title, review.darts, now) : legSubtitleShort(title, review.darts, review.average, now)}</span
+          >
           <span class="text-[13px] text-text-dim xl:text-[14px]">{coachedAs(review.coachLevel)}</span>
         </div>
         <Button variant="outline" href="#/history/{params.gameId}" class="h-11 text-[15px] font-semibold">Match details</Button>
@@ -144,7 +148,7 @@
           <TakeCard take={review.take} skills={review.skills} grouping={review.grouping} />
 
           <section aria-label="Every visit" class="flex flex-col gap-2.5 xl:card xl:px-[22px] xl:py-5">
-            <div class="hidden flex-wrap items-center gap-3.5 xl:flex">
+            {#if wide.current}<div class="flex flex-wrap items-center gap-3.5">
               <h2 class="m-0 font-display text-[24px] font-bold uppercase">Every visit</h2>
               <ul class="m-0 ml-auto flex list-none flex-wrap gap-3.5 p-0" aria-label="Visits per grade">
                 {#each VISIT_GRADES as g (g)}
@@ -155,33 +159,27 @@
                   </li>
                 {/each}
               </ul>
-            </div>
+            </div>{/if}
             <div class="flex gap-1.5 overflow-x-auto xl:gap-2">
               {#each TAGS as t (t.id)}
                 <Chip variant="plain" selected={filter === t.id} onclick={() => (filter = t.id)}>
-                  {t.label}<span class={t.id === 'all' ? '' : 'hidden xl:inline'}>{tagCount(t.id)}</span>
+                  {t.label}{#if t.id === 'all' || wide.current}<span>{tagCount(t.id)}</span>{/if}
                 </Chip>
               {/each}
             </div>
             {#if shown.length === 0}
               <p class="m-0 py-4 text-[14px] text-text-muted">No visits with this tag.</p>
+            {:else if wide.current}
+              <VisitTable visits={shown} selected={current ? current.n : null} onselect={select} />
             {:else}
-              <div class="hidden xl:block"><VisitTable visits={shown} selected={current ? current.n : null} onselect={select} /></div>
-              <div class="xl:hidden">
-                {#key review}<VisitCards
-                    visits={shown}
-                    selected={current ? current.n : null}
-                    onselect={select}
-                    detail={visitDetail}
-                  />{/key}
-              </div>
+              {#key review}<VisitCards visits={shown} selected={current ? current.n : null} onselect={select} detail={visitDetail} />{/key}
             {/if}
           </section>
         </div>
 
-        {#if current}
+        {#if current && wide.current}
           <aside
-            class="card hidden flex-col gap-3.5 px-[22px] py-5 xl:sticky xl:top-6 xl:flex xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto"
+            class="card sticky top-6 flex max-h-[calc(100dvh-3rem)] flex-col gap-3.5 overflow-y-auto px-[22px] py-5"
             aria-label="Selected visit"
           >
             <div class="flex items-baseline justify-between">

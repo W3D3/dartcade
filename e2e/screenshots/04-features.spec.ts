@@ -135,7 +135,7 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
 
 test('coach: the review list, a leg with a bad visit, and the admin sandbox', async ({ browser }) => {
   // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts) has two Bad visits;
-  // the leg review opens on the first one by default (defaultVisit in lib/coach/view.ts)
+  // the leg review opens on the first one by default (defaultVisit in lib/coach/leg.ts)
   for (const [view, suffix] of [
     [VIEW.wide, 'desktop'],
     [VIEW.phone, 'phone'],
@@ -152,14 +152,12 @@ test('coach: the review list, a leg with a bad visit, and the admin sandbox', as
       .click()
     await page.waitForURL(url => url.hash.startsWith('#/coach/leg/'))
     await expect(page.getByRole('region', { name: 'Every visit' })).toBeVisible()
-    // A desktop-only grade summary (hidden at this width) sits earlier in the DOM than the visit
-    // list, so getByText('Bad').first() must stay scoped to what's actually on screen
+    // A Bad visit, among what is on screen
     await expect(page.getByText('Bad', { exact: true }).filter({ visible: true }).first()).toBeVisible()
     // On a phone the selected visit's card starts collapsed: open it to show its board and "Better:" line
     if (suffix === 'phone') await page.locator('li.bg-card-active button').first().click()
     await expect(page.getByText('Better:').first()).toBeVisible()
-    // Each dart's class label sits under its tile (dartLabel in lib/coach/view.ts); the desktop-only
-    // VisitTable (hidden at this width) sits earlier in the DOM than the visible visit list
+    // Each dart's class label sits under its tile (dartLabel in lib/coach/dart.ts)
     await expect(
       page
         .getByText(/✓|Miss |wide|inside|outside/)

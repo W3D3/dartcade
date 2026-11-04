@@ -5,7 +5,7 @@
   import type { ReviewVisit } from '$shared/coach'
   import { betterLine } from '$lib/coach/board'
   import { dartRows } from '$lib/coach/dart'
-  import { TILE_TONE } from '$lib/coach/tone'
+  import DartTile from './DartTile.svelte'
   import Pill from './Pill.svelte'
 
   let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'explained'> } = $props()
@@ -25,16 +25,9 @@
     <tbody>
       {#each dartRows(visit) as r, i (i)}
         <tr class="border-t border-line align-top">
-          <th scope="row" class="py-1.5 pr-2 text-left"
-            ><span
-              class="inline-flex h-6 min-w-[40px] items-center justify-center rounded-[6px] px-1.5 font-display text-[15px] font-bold {TILE_TONE[
-                r.tile.tone
-              ]} {r.tile.offBoard ? 'border-[1.5px] border-dashed border-danger-line' : ''}"
-              >{r.tile.name}{#if r.tile.word}<span class="sr-only">, {r.tile.word}</span>{/if}</span
-            ></th
-          >
+          <th scope="row" class="py-1.5 pr-2 text-left"><DartTile tile={r.tile} compact /></th>
           <td class="py-1.5 pr-2"
-            >{r.label}{#if r.near}&nbsp;<Pill label="Near miss" tone="good" />{/if}</td
+            >{r.tile.label}{#if r.near}&nbsp;<Pill label="Near miss" tone="good" />{/if}</td
           >
           <td class="py-1.5 text-right whitespace-nowrap">{r.distance}</td>
         </tr>

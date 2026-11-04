@@ -39,7 +39,7 @@ export const visitTiles = (v: Pick<ReviewVisit, 'darts'>): DartTileView[] =>
   })
 
 /** `tile`: the dart in its visit-row tile's tone */
-export type DartRow = { tile: DartTileView; label: string; distance: string; near: boolean }
+export type DartRow = { tile: DartTileView; distance: string; near: boolean }
 
 /** The selected visit's dart table (Coach-Leg): each dart's tile, class label and its distance to
  *  its target's bed, "4 mm from D16"; "–" for a hit or a dart without a position. */
@@ -49,7 +49,6 @@ export const dartRows = (v: Pick<ReviewVisit, 'darts'>): DartRow[] => {
     const edge = c.hit || !c.target ? null : (c.miss?.edgeMm ?? null)
     return {
       tile: tiles[i],
-      label: tiles[i].label,
       distance: edge === null ? '–' : `${wholeMm(edge)} from ${c.target?.label}`,
       near: edge !== null && edge <= NEAR_MISS_MM,
     }
