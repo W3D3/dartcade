@@ -4,8 +4,8 @@ import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
-import { fewestChance } from './minDarts.js'
-import type { CoachModel } from './model.js'
+import { fewestPath } from './minDarts.js'
+import type { CoachModels } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { deltasOf, visitValues } from './value.js'
@@ -67,9 +67,6 @@ export type LegReview = {
   /** The scoring visits' mean grouping spread and edge distance (grouping.ts); null without any */
   grouping: { spreadMm: number | null; edgeMm: number | null }
 }
-/** `model`: the player's coaching level's (model.ts coachLevel, from the same average);
- *  `referenceModel`: always the fixed reference level (model.ts DEFAULT_COACH_LEVEL), used only
- *  for the fewest-darts path's chance (how hard it was, the same for every player) */
 /** Leg pattern: a long finish takes more than this many darts from 170 or less to the checkout */
 export const LONG_FINISH = 9
 /** Leg pattern: scoring visits 4 and later average this much less than visits 1–3… */
@@ -80,8 +77,8 @@ export const LATE_DROP_VISITS = 6
 export type ReviewContext = {
   startScore: number
   average: number | null
-  model: CoachModel
-  referenceModel: CoachModel
+  /** The player's coaching level's model (from the same average) and the reference landing */
+  models: CoachModels
   opponentName: (seat: number) => string
 }
 
@@ -110,7 +107,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   if (!l || darts === 0) return null
 
   const average = ctx.average ?? gameAverage(legs, seat)
-  const { model } = ctx
+  const { model, reference } = ctx.models
   const throws = throwsOf([l], seat, ctx.startScore, model)
   const evaluate = throwEvaluations(model)
   const notes = strategyNotes(throws, model, evaluate)
@@ -160,7 +157,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       average,
       first: k === 0,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
-      fewestChance: fewestChance(ctx.referenceModel.landing, start, vThrows.length),
+      fewest: fewestPath(reference, start, vThrows.length, v.remaining, v.bust),
     })
     return {
       n: k + 1,

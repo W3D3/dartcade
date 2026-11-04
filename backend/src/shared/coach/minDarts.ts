@@ -54,3 +54,9 @@ export function fewestChance(landing: Landing, left: number, darts: number): num
   }
   return keep(left, darts)
 }
+
+/** A visit from `start` that threw `darts` darts and left `then` (not on a bust) kept the
+ *  fewest-darts path when its darts plus the fewest from `then` are the fewest from `start`: then
+ *  the chance (0–1) the `reference` level keeps it (how hard it was), else null. */
+export const fewestPath = (reference: Landing, start: number, darts: number, then: number, bust: boolean): number | null =>
+  !bust && minDarts(start) === darts + minDarts(then) ? fewestChance(reference, start, darts) : null

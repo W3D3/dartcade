@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { coachLevel, loadModel } from './model.js'
 import { reviewLeg, scoringLetter, type LegReview } from './review.js'
-import { dart, leg, visit, REF } from './testLegs.js'
+import { dart, leg, visit, REF, REFS } from './testLegs.js'
 import { coachDart, type CoachLeg, type CoachVisit } from './walk.js'
 import { NOT_COUNTED, type DartClass, type DartKind } from './dartClass.js'
 
@@ -11,8 +11,7 @@ const kind = (k: DartKind): DartClass => expect.objectContaining({ kind: k })
 const ctx = (startScore: number, average: number | null = null) => ({
   startScore,
   average,
-  model: REF,
-  referenceModel: REF,
+  models: REFS,
   opponentName: (s: number) => names[s],
 })
 
@@ -475,8 +474,7 @@ describe('the coaching level', () => {
     const r = reviewLeg([leg([visit(0, start, names)])], 0, 0, {
       startScore: 501,
       average,
-      model,
-      referenceModel: REF,
+      models: { model, reference: REF.landing },
       opponentName: () => '',
     })!
     const v = r.visits[0]

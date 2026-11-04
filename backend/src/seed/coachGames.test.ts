@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { reviewLeg } from '../shared/coach/index.js'
 import { strategyNotes } from '../shared/coach/notes.js'
-import { leg, visit, REF } from '../shared/coach/testLegs.js'
+import { leg, visit, REF, REFS } from '../shared/coach/testLegs.js'
 import { throwsOf, type CoachVisit } from '../shared/coach/walk.js'
 import { COACH_GAMES, scriptedPoint, type DartScript } from './coachGames.js'
 
@@ -54,8 +54,7 @@ describe('sample games with known coach mistakes', () => {
         reviewLeg([{ ...leg(visits), winner }], 0, seat, {
           startScore: start,
           average: null,
-          model: REF,
-          referenceModel: REF,
+          models: REFS,
           opponentName: s => players[s],
         })?.visits,
     )

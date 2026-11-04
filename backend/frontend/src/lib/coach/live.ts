@@ -43,7 +43,7 @@ export function liveCoach(
   darts: readonly Dart[],
   average: number | null,
 ): LiveCoach {
-  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), model, referenceModel, TOP)
+  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), { model, reference: referenceModel.landing }, TOP)
   const scoring = r.left > 170
   const aims = r.done
     ? []

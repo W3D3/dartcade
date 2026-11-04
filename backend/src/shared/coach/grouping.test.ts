@@ -15,7 +15,7 @@ import {
   SCATTERED_RATIO,
 } from './grouping.js'
 import { reviewLeg } from './review.js'
-import { leg, visit, REF } from './testLegs.js'
+import { leg, visit, REFS } from './testLegs.js'
 import type { CoachDart, CoachVisit } from './walk.js'
 
 const mm = (v: number) => v / 170
@@ -116,8 +116,7 @@ describe('a visit rated on its score, grouping and closeness', () => {
   const review = (darts: readonly CoachDart[], average = 60) => {
     const scored = darts.reduce((s, d) => s + d.segment.number * d.segment.multiplier, 0)
     const v: CoachVisit = { seat: 0, darts, scored, remaining: 501 - scored, bust: false }
-    return reviewLeg([leg([v])], 0, 0, { startScore: 501, average, model: REF, referenceModel: REF, opponentName: () => 'Opponent' })!
-      .visits[0]
+    return reviewLeg([leg([v])], 0, 0, { startScore: 501, average, models: REFS, opponentName: () => 'Opponent' })!.visits[0]
   }
   const mid = (R.tr + R.so) / 2
 

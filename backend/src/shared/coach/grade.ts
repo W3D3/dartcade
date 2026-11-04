@@ -77,10 +77,10 @@ export type VisitFacts = {
   first: boolean
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
-  /** The chance (0–1) the fixed reference level (model.ts DEFAULT_COACH_LEVEL, an 81 average)
-   *  keeps the fewest-darts path from `start` for this visit's darts (minDarts.ts fewestChance):
-   *  how hard a fewest-darts visit was, the same for every player */
-  fewestChance: number
+  /** On a visit that kept the fewest-darts path: the chance (0–1) the fixed reference level
+   *  (model.ts DEFAULT_COACH_LEVEL, an 81 average) keeps it (minDarts.ts fewestPath), how hard it
+   *  was, the same for every player; else null */
+  fewest: number | null
 }
 /** What overrode or capped the value: the fewest-darts finish when it was hard (Brilliant) or not
  *  (`fewest`: lifted to Excellent), a strategy note (Bad), a very low score (Weak at best), darts
@@ -320,9 +320,6 @@ function finishing(f: VisitFacts): Graded {
   return g(grade, `${dartName(t)} on ${t.left} cost ${cost}% checkout chance: ${leave}`)
 }
 
-/** The visit keeps the fewest darts to check out its start: its darts plus the fewest from what it left */
-const fewest = (f: VisitFacts) => !f.bust && minDarts(f.start) === f.throws.length + minDarts(f.then)
-
 function fewestText(f: VisitFacts): string {
   const out = f.throws.find(t => t.checkout)
   if (out) return `Checked out in the fewest darts (${doubleName(out.left)}).`
@@ -349,9 +346,9 @@ export function classifyVisit(f: VisitFacts): VisitGrading {
   // A note says another aim was better: Bad on any visit
   if (note && !note.tip) return g('bad', noteText(note), 'note')
   // A tip leaves the grade alone, and the fewest darts keep their own line
-  if (fewest(f)) {
-    const chance = f.fewestChance * 100
-    if (f.fewestChance < BRILLIANT_CHANCE) return g('brilliant', fewestText(f), 'brilliant', false, chance)
+  if (f.fewest !== null) {
+    const chance = f.fewest * 100
+    if (f.fewest < BRILLIANT_CHANCE) return g('brilliant', fewestText(f), 'brilliant', false, chance)
     // Excellent is the best a value gives, so the floor is the grade; the rule only when it lifted it
     return g('excellent', fewestText(f), graded.grade === 'excellent' ? graded.value.rule : 'fewest', false, chance)
   }

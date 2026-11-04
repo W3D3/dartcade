@@ -1,7 +1,7 @@
 // The coach on a visit still being thrown (the live panel, the admin sandbox): the visit reviewed the
 // way the coach reviews a real leg, and the next dart's best aims.
 import { AIMS, type Aim } from './aims.js'
-import type { CoachModel } from './model.js'
+import type { CoachModel, CoachModels } from './model.js'
 import { reviewLeg, type ReviewVisit } from './review.js'
 import { walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
 
@@ -65,20 +65,13 @@ export function scoringAims({ landing }: CoachModel, top: number): { aim: Aim; p
   return bestPerLabel(points, a => a.points, top)
 }
 
-/** The open visit after `darts`, and the `top` best aims for the next dart. `model`: the player's
- *  coaching level's (coachLevel of `input.average`); `referenceModel`: the fixed reference level
- *  (model.ts DEFAULT_COACH_LEVEL), for the fewest-darts path's chance. */
-export function coachOpenVisit(
-  input: OpenVisitInput,
-  darts: readonly CoachDart[],
-  model: CoachModel,
-  referenceModel: CoachModel,
-  top: number,
-): OpenVisit {
+/** The open visit after `darts`, and the `top` best aims for the next dart. `models.model`: the
+ *  player's coaching level's (coachLevel of `input.average`). */
+export function coachOpenVisit(input: OpenVisitInput, darts: readonly CoachDart[], models: CoachModels, top: number): OpenVisit {
+  const { model } = models
   const leg = openVisitLeg(input, darts)
   const visit =
-    reviewLeg([leg], 0, 0, { startScore: input.start, average: input.average, model, referenceModel, opponentName: () => 'Opponent' })
-      ?.visits[0] ?? null
+    reviewLeg([leg], 0, 0, { startScore: input.start, average: input.average, models, opponentName: () => 'Opponent' })?.visits[0] ?? null
   const left = visit ? (visit.darts.at(-1)?.left ?? input.start) : input.start
   const done = visit !== null && (visit.bust || visit.then === 0 || darts.length >= 3)
   if (done) return { visit, left, done, next: [] }

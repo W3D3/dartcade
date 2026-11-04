@@ -22,7 +22,7 @@ import {
   type VisitFacts,
 } from './grade.js'
 import { classifyDart } from './dartClass.js'
-import { fewestChance } from './minDarts.js'
+import { fewestPath } from './minDarts.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
 import { leg, seg, visit, REF } from './testLegs.js'
 import { dartDeltas } from './value.js'
@@ -48,7 +48,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     first: start === 501,
     lastVisitOfLostLeg: lost,
     grouping: null,
-    fewestChance: fewestChance(REF.landing, start, throws.length),
+    fewest: fewestPath(REF.landing, start, throws.length, v.remaining, v.bust),
   }
 }
 

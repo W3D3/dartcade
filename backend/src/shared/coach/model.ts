@@ -107,6 +107,17 @@ const TABLES: Partial<Record<number, () => Promise<{ LANDING: Landing }>>> = {
 }
 const models = new Map<number, Promise<CoachModel>>()
 
+/** The models a review needs: `model` the player's coaching level's (coachLevel); `reference` the
+ *  fixed reference level's landing (DEFAULT_COACH_LEVEL), for how hard the fewest-darts path was,
+ *  the same for every player (minDarts.ts fewestPath). */
+export type CoachModels = { model: CoachModel; reference: Landing }
+
+/** The coaching level's model and the reference landing, loaded together. */
+export async function loadCoachModels(level: number): Promise<CoachModels> {
+  const [model, reference] = await Promise.all([loadModel(level), loadModel(DEFAULT_COACH_LEVEL)])
+  return { model, reference: reference.landing }
+}
+
 /** The model for a bot level (1–10), loaded and built once per level. */
 export function loadModel(level: number): Promise<CoachModel> {
   const load = TABLES[level]

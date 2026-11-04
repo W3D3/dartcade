@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { dartAt, dartFromLabel } from './sandbox'
 import { coachOpenVisit, openVisitLeg } from '$shared/coach/openVisit'
-import { REF } from '$shared/coach/testLegs'
+import { REFS } from '$shared/coach/testLegs'
 import type { CoachDart } from '$shared/coach/walk'
 
 const darts = (...names: string[]): CoachDart[] => names.map(n => dartFromLabel(n)!)
@@ -42,14 +42,14 @@ describe('openVisitLeg', () => {
 
 describe('coachOpenVisit', () => {
   it('shows no visit and the best aims before the first dart', () => {
-    const r = coachOpenVisit(solo(40), [], REF, REF, 5)
+    const r = coachOpenVisit(solo(40), [], REFS, 5)
     expect(r).toMatchObject({ visit: null, left: 40, done: false })
     expect(r.next[0].aim.label).toBe('D20')
     expect(r.next).toHaveLength(5)
   })
 
   it('grades S20 on 57 with one dart Bad (97: S20, S20, S20)', () => {
-    const r = coachOpenVisit(solo(97), darts('S20', 'S20', 'S20'), REF, REF, 5)
+    const r = coachOpenVisit(solo(97), darts('S20', 'S20', 'S20'), REFS, 5)
     expect(r.done).toBe(true)
     expect(r.next).toEqual([])
     expect(r.visit).toMatchObject({ grade: 'bad', tip: false })
@@ -58,7 +58,7 @@ describe('coachOpenVisit', () => {
   })
 
   it('gives a tip for S14 on 24 solo', () => {
-    const r = coachOpenVisit(solo(24), darts('S14'), REF, REF, 5)
+    const r = coachOpenVisit(solo(24), darts('S14'), REFS, 5)
     expect(r.visit).toMatchObject({ tip: true, text: 'Tip: On 24, S14: better D12.' })
     expect(r.visit!.notes[0]).toMatchObject({ thrown: 'S14', better: 'D12', tip: true })
     expect(r.done).toBe(false)
@@ -67,12 +67,12 @@ describe('coachOpenVisit', () => {
   })
 
   it('drops the tip when the opponent is on 32', () => {
-    const r = coachOpenVisit({ start: 24, opponent: 32, average: 60 }, darts('S14'), REF, REF, 5)
+    const r = coachOpenVisit({ start: 24, opponent: 32, average: 60 }, darts('S14'), REFS, 5)
     expect(r.visit!.notes[0]).toMatchObject({ thrown: 'S14', better: 'D12', tip: false })
     expect(r.visit).toMatchObject({ grade: 'bad', tip: false })
   })
 
   it('stops after a checkout', () => {
-    expect(coachOpenVisit(solo(40), darts('D20'), REF, REF, 5)).toMatchObject({ done: true, left: 0, next: [] })
+    expect(coachOpenVisit(solo(40), darts('D20'), REFS, 5)).toMatchObject({ done: true, left: 0, next: [] })
   })
 })

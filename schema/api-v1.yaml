@@ -3871,7 +3871,7 @@ components:
               {
                 type: number,
                 nullable: true,
-                description: "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null",
+                description: "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null",
               }
             points:
               {

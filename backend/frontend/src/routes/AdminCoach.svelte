@@ -66,7 +66,7 @@
   const referenceModel = $derived(refLoaded.model)
   const result = $derived(
     start !== null && average !== null && !inputError && model?.level === level && referenceModel?.level === DEFAULT_COACH_LEVEL
-      ? coachOpenVisit({ start, opponent, average }, darts, model, referenceModel, TOP)
+      ? coachOpenVisit({ start, opponent, average }, darts, { model, reference: referenceModel.landing }, TOP)
       : null,
   )
   const visit = $derived(result?.visit ?? null)

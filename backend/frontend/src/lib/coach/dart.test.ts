@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { bedAim } from '$shared/coach/aims'
 import { NOT_COUNTED, type DartClass } from '$shared/coach/dartClass'
 import { coachOpenVisit } from '$shared/coach/openVisit'
-import { REF } from '$shared/coach/testLegs'
+import { REFS } from '$shared/coach/testLegs'
 import type { CoachDart } from '$shared/coach/walk'
 import { dartAt, dartFromLabel } from './sandbox'
 import { dartLabel, dartRows, dartTone, visitTiles } from './dart'
@@ -27,8 +27,7 @@ describe('visitTiles', () => {
   })
 
   // On 20 left with the third dart (60: S20, S20; the user's examples), the dart's tone and its word
-  const tile = (d: CoachDart) =>
-    visitTiles(coachOpenVisit({ start: 60, opponent: null, average: 60 }, [S20, S20, d], REF, REF, 5).visit!)[2]
+  const tile = (d: CoachDart) => visitTiles(coachOpenVisit({ start: 60, opponent: null, average: 60 }, [S20, S20, d], REFS, 5).visit!)[2]
   const S20 = dartFromLabel('S20')!
   it('a miss 10 mm outside D10 is a slight loss, not costly', () => {
     expect(tile(dartAt({ x: 1.008, y: -0.3276 }))).toMatchObject({ name: 'M10', tone: 'weak', offBoard: true, word: 'slight loss' })
@@ -58,8 +57,7 @@ describe('dartRows', () => {
     const v = coachOpenVisit(
       { start: 20, opponent: null, average: 60 },
       [dartAt({ x: 0.965, y: -0.3137 }), dartAt({ x: 1.008, y: -0.3276 }), dartFromLabel('D10')!],
-      REF,
-      REF,
+      REFS,
       5,
     ).visit!
     expect(dartRows(v).map(r => [r.tile.name, r.tile.tone, r.distance, r.near])).toEqual([
