@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { R, segmentAt, SEGS, segAngle } from '../board.js'
 import { AIM_RINGS, AIMS, aimKind } from './aims.js'
-import { classifyDart, finishCandidates, fromBed, NOT_COUNTED } from './dartClass.js'
+import { classifyDart, finishCandidates, fromBed, nearestBedPoint, NOT_COUNTED } from './dartClass.js'
 import { dart, leg, visit, REF } from './testLegs.js'
 
 const { evaluator, nextVisit } = REF
@@ -193,6 +193,26 @@ describe('classifyDart: the miss to the edge of the bed', () => {
 
   it('a wire has no bed', () => {
     expect(fromBed(aim('W20-1'), { x: 0, y: 0.5 })).toBeNull()
+    expect(nearestBedPoint(aim('W20-1'), { x: 0, y: 0.5 })).toBeNull()
+  })
+
+  it("nearestBedPoint is the bed's point fromBed measures from, inside the bed", () => {
+    for (const [id, p] of [
+      ['D16', polar(16, 1.1).coords!],
+      ['D16', polar(16, 0.9, 20).coords!],
+      ['T20', polar(1, 0.5).coords!],
+      ['Bull', { x: 0.2, y: -0.1 }],
+    ] as const) {
+      const q = nearestBedPoint(aim(id), p)!
+      const e = fromBed(aim(id), p)!
+      expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeCloseTo(Math.hypot(e.radial, e.tangential), 9)
+      // On the bed (its edge), not the aim point
+      const s = segmentAt(q.x + (aim(id).x - q.x) * 0.01, q.y + (aim(id).y - q.y) * 0.01)
+      expect(s.name, id).toBe(aim(id).label)
+    }
+    // Straight out from D16's middle: the outer wire on the dart's line
+    const q = nearestBedPoint(aim('D16'), polar(16, 1.1).coords!)!
+    expect(Math.hypot(q.x, q.y)).toBeCloseTo(R.db, 9)
   })
 })
 

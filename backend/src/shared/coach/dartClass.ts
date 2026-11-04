@@ -160,24 +160,44 @@ const leave = (left: number, points: number, double: boolean, start: number) => 
 /** Wrapped to (−π, π] */
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
 
-/** The vector from the nearest point of `aim`'s bed to `p`, in board units, as radial (+ outside)
- *  and tangential (+ clockwise) parts; null for a wire, which has no bed. A bed is its radial band
- *  across its number's wedge (the bulls: a whole circle). Inside the wedge's angles the nearest
- *  point is straight in or out; past them it is on the nearer radial edge (an arc's nearest point
- *  there is that edge's end). */
-export function fromBed(aim: Aim, p: { x: number; y: number }): { radial: number; tangential: number } | null {
+/** The nearest point of `aim`'s bed to `p` (board units), and the radial edge it lies on when `p`
+ *  is past the wedge's angles (null inside them, or for the bulls); null for a wire, which has no
+ *  bed. A bed is its radial band across its number's wedge (the bulls: a whole circle). Inside the
+ *  wedge's angles the nearest point is straight in or out; past them it is on the nearer radial
+ *  edge (an arc's nearest point there is that edge's end). */
+function nearestInBed(
+  aim: Aim,
+  p: { x: number; y: number },
+): { q: { x: number; y: number }; edge: { x: number; y: number } | null } | null {
   const kind = aimKind(aim.id)
   if (kind === 'W') return null
   const [r0, r1] = AIM_RINGS[kind]
   const r = Math.hypot(p.x, p.y)
-  const theta = Math.atan2(p.y, p.x)
-  const off = wrap(theta - Math.atan2(aim.y, aim.x))
-  if (aim.numbers[0] === 25 || Math.abs(off) <= HALF) return { radial: r - Math.min(Math.max(r, r0), r1), tangential: 0 }
+  const off = wrap(Math.atan2(p.y, p.x) - Math.atan2(aim.y, aim.x))
+  if (aim.numbers[0] === 25 || Math.abs(off) <= HALF) {
+    const rr = Math.min(Math.max(r, r0), r1)
+    // At the very centre any direction is straight out: the aim's
+    const [ux, uy] = r > 0 ? [p.x / r, p.y / r] : [Math.cos(Math.atan2(aim.y, aim.x)), Math.sin(Math.atan2(aim.y, aim.x))]
+    return { q: { x: ux * rr, y: uy * rr }, edge: null }
+  }
   // The edge on the dart's side; the other is further for any |off| ≤ π
   const phi = Math.atan2(aim.y, aim.x) + Math.sign(off) * HALF
   const u = { x: Math.cos(phi), y: Math.sin(phi) }
   const t = Math.min(Math.max(p.x * u.x + p.y * u.y, r0), r1)
-  const v = { x: p.x - t * u.x, y: p.y - t * u.y }
+  return { q: { x: t * u.x, y: t * u.y }, edge: u }
+}
+
+/** The nearest point of `aim`'s bed to `p`, in board units; null for a wire. */
+export const nearestBedPoint = (aim: Aim, p: { x: number; y: number }) => nearestInBed(aim, p)?.q ?? null
+
+/** The vector from the nearest point of `aim`'s bed to `p`, in board units, as radial (+ outside)
+ *  and tangential (+ clockwise) parts; null for a wire, which has no bed. */
+export function fromBed(aim: Aim, p: { x: number; y: number }): { radial: number; tangential: number } | null {
+  const near = nearestInBed(aim, p)
+  if (!near) return null
+  const { q, edge: u } = near
+  if (!u) return { radial: Math.hypot(p.x, p.y) - Math.hypot(q.x, q.y), tangential: 0 }
+  const v = { x: p.x - q.x, y: p.y - q.y }
   // Clockwise at phi is (sin φ, −cos φ)
   return { radial: v.x * u.x + v.y * u.y, tangential: v.x * u.y - v.y * u.x }
 }

@@ -2,9 +2,9 @@
   // A visit on the board (Coach-Leg's selected visit, the sandbox): the details' muted board, the
   // better aim's bed in blue with its likely misses labelled, and each dart as a pin with its
   // name. A dart without a position sits hollow at its bed's centre; the selected one is lime
-  // with a pulsing ring. A faint line joins each dart to the target its class picked.
+  // with a pulsing ring. A faint line joins each dart that missed to the nearest point of its target's bed.
   import type { CoachNote, ReviewDart } from '$shared/coach'
-  import { aimBed, aimPoint, missTags } from '$lib/coach/board'
+  import { aimBed, aimPoint, edgeLineEnd, missTags } from '$lib/coach/board'
   import { BOARD_VIEW_HALF, clampToView, toBoardPx } from '$lib/details/heatmap'
   import { bedPath } from '$lib/details/boardGeometry'
   import MutedBoard from '$lib/components/details/MutedBoard.svelte'
@@ -33,8 +33,7 @@
   )
   const lines = $derived(
     pins.flatMap(p => {
-      const aim = darts[p.i].class.target
-      const to = aim ? aimPoint(aim.aimId) : null
+      const to = edgeLineEnd(darts[p.i])
       return to ? [{ i: p.i, x1: p.x, y1: p.y, ...toBoardPx(to) }] : []
     }),
   )

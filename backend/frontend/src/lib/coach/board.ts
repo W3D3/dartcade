@@ -3,7 +3,8 @@
 import type { BedRing } from '$lib/details/boardGeometry'
 import { HALF, SEGS } from '$shared/board'
 import { checkoutHint } from '$shared/checkout.js'
-import type { CoachNote } from '$shared/coach'
+import type { CoachNote, ReviewDart } from '$shared/coach'
+import { nearestBedPoint } from '$shared/coach/dartClass'
 import { AIM_RINGS, AIMS, aimById, aimIndex, aimKind, aimPoints } from '$shared/coach/aims'
 
 /** An aim's point (AIMS id) in board units; null for an unknown id */
@@ -12,6 +13,15 @@ export const aimPoint = (aimId: string): { x: number; y: number } | null => {
   return a ? { x: a.x, y: a.y } : null
 }
 const WHOLE_TURN = 2 * Math.PI
+
+/** Where a dart's faint line on the board ends: the nearest point of its target's bed (a wire's
+ *  point for a wire); null for a hit, a dart without a position or a target, or one in the bed. */
+export function edgeLineEnd(d: Pick<ReviewDart, 'coords' | 'class'>): { x: number; y: number } | null {
+  const c = d.class
+  const aim = c.target ? aimById(c.target.aimId) : undefined
+  if (!d.coords || !aim || c.hit || !c.miss || c.miss.edgeMm <= 0) return null
+  return nearestBedPoint(aim, d.coords) ?? { x: aim.x, y: aim.y }
+}
 
 /** The bed an aim (AIMS id) sits in: a wire's is the two outer-single halves either side of it,
  *  the bulls' a whole ring. */

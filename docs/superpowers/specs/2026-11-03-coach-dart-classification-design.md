@@ -350,7 +350,9 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
 - **Leg review:**
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
     "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
-  - **In the selected visit's board card**, a faint line from each dart to its target.
+  - **In the selected visit's board card**, a faint line from each dart that missed to the nearest
+    point of its target's bed (`nearestBedPoint` in `dartClass.ts`, the point `edgeMm` is measured
+    from; `edgeLineEnd` in `lib/coach/board.ts`); a hit and a dart without a position draw none.
   - **The selected visit's card** (a right rail from 1280 px (xl), 40% of the page and at least
     380 px, sticky while the visit list scrolls, its board up to 420 px; the visit table, narrower
     than 640 px there, puts each row's coach line under its darts; inline under its card on

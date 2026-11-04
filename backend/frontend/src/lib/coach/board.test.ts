@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { R, segmentAt } from '$shared/board'
 import { bedPath, boardSegments, type BedRing } from '$lib/details/boardGeometry'
 import type { CoachNote } from '$shared/coach'
-import { aimBed, betterLine, likelyMisses, missLeaves, missTags } from './board'
+import { NOT_COUNTED } from '$shared/coach/dartClass'
+import { aimBed, betterLine, edgeLineEnd, likelyMisses, missLeaves, missTags } from './board'
 
 /** The segment just inside each end of a bed, halfway through its ring */
 const ends = (b: BedRing) => {
@@ -96,5 +97,23 @@ describe('the better aim', () => {
     expect(betterLine(note({ left: 47, darts: 2, better: 'S20', betterAimId: 'SO20' }))).toBe(
       'with 47 left and 2 darts, throw at S20 (blue).',
     )
+  })
+})
+
+describe('edgeLineEnd', () => {
+  const miss = { mm: 20, radialMm: 20, tangentialMm: 0, edgeMm: 8, edgeRadialMm: 8, edgeTangentialMm: 0, wedgesOff: 0 }
+  const missed = (coords: { x: number; y: number } | null, hit = false) => ({
+    coords,
+    class: { ...NOT_COUNTED, kind: 'double' as const, detail: null, hit, target: { aimId: 'D20', label: 'D20' }, miss: hit ? null : miss },
+  })
+  it("ends on the target bed's nearest point, not its middle", () => {
+    // Straight out past D20: the outer double wire on the 20's centre line
+    const end = edgeLineEnd(missed({ x: 0, y: 1.05 }))
+    expect(end?.x).toBeCloseTo(0, 9)
+    expect(end?.y).toBeCloseTo(R.db, 9)
+  })
+  it('draws none for a hit or a dart without a position', () => {
+    expect(edgeLineEnd(missed({ x: 0, y: 0.98 }, true))).toBeNull()
+    expect(edgeLineEnd(missed(null))).toBeNull()
   })
 })
