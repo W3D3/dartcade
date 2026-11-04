@@ -54,54 +54,41 @@
           ? 'bg-surface-panel border border-danger-line'
           : 'bg-surface-panel border border-line-2',
   )
-  const eyebrowColor = $derived(
-    tone === 'max' ? '' : tone === 'ton' ? 'text-accent font-bold' : tone === 'bust' ? 'text-danger-text font-bold' : 'text-text-muted',
-  )
+  const eyebrowColor = $derived(tone === 'max' ? '' : tone === 'bust' ? 'text-danger-text font-bold' : 'text-text-muted')
   const sumColor = $derived(tone === 'ton' ? 'text-accent' : tone === 'bust' ? 'text-danger-text line-through' : '')
-  const quiet = $derived(tone === 'max' ? '' : 'text-text-dim')
-  const afterColor = $derived(tone === 'max' ? '' : 'text-ink-3')
 </script>
 
-<span class="sr-only" role="status" aria-live="polite">{band.eyebrow}: {band.sum}. {band.afterLabel} {band.after}</span>
-
-{#if compact}
+<!-- The canvas' card (Match, Tablet-Match, VisitFX): the label at the left edge, the total centred.
+     The tile beside the slots (phone, portrait, solo) is as wide as its container allows: wide enough, the label
+     goes left of the total in two lines (Match-Vertical); narrower (320px phone), above it. -->
+<div
+  bind:this={boxEl}
+  role="status"
+  aria-label="{band.eyebrow}: {band.sum}"
+  class="relative rounded-[12px] md:rounded-[14px] {compact
+    ? '@container h-[58px] md:h-[min(124px,14vh)] box-border'
+    : 'px-[14px] md:px-4 xl:px-[18px] py-1 md:py-2 xl:py-[10px]'} {box}"
+>
   <div
-    bind:this={boxEl}
-    class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}"
+    class="flex items-center {compact
+      ? 'size-full flex-col justify-center px-1 @min-[190px]:flex-row @min-[190px]:justify-between @min-[190px]:gap-1 @min-[190px]:px-4'
+      : 'justify-center'}"
   >
-    <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
-      <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
-    </span>
     <span
-      class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}"
+      class="uppercase leading-tight {compact
+        ? 'max-w-full truncate text-[8px] md:text-[13px] font-semibold tracking-[0.06em] @min-[190px]:w-min @min-[190px]:overflow-visible @min-[190px]:whitespace-normal @min-[190px]:text-[12px] @min-[190px]:tracking-[0.14em] @min-[260px]:text-[14px]'
+        : 'absolute left-[14px] md:left-4 xl:left-5 top-1/2 -translate-y-1/2 text-[11px] md:text-[12px] xl:text-[14px] tracking-[0.1em]'} {eyebrowColor}"
+      >{band.eyebrow}</span
+    >
+    <span
+      class="sum font-display font-bold leading-[0.85] tracking-[-0.01em] tabular-nums {compact
+        ? 'text-[28px] md:text-[80px] @min-[190px]:md:text-[64px] @min-[260px]:md:text-[80px]'
+        : 'text-[48px] md:text-[72px] xl:text-[min(96px,11vh)]'} {sumColor}"
       class:fx-tick={band.bigDart}>{@render sum()}</span
     >
-    <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
-      <span class="{quiet} truncate">{band.afterLabel}</span>
-      <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
-    </span>
-    {#if tone === 'max'}{@render burst()}{/if}
   </div>
-{:else}
-  <div
-    bind:this={boxEl}
-    class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}"
-  >
-    <span class="flex flex-col items-end gap-[2px] text-right">
-      <span class="text-[12px] label-caps {eyebrowColor}">{band.eyebrow}</span>
-      <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
-    </span>
-    <span
-      class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}"
-      class:fx-tick={band.bigDart}>{@render sum()}</span
-    >
-    <span class="flex flex-col gap-[2px]">
-      <span class="text-[12px] label-caps {quiet}">{band.afterLabel}</span>
-      <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
-    </span>
-    {#if tone === 'max'}{@render burst()}{/if}
-  </div>
-{/if}
+  {#if tone === 'max'}{@render burst()}{/if}
+</div>
 
 <!-- A bust's sum is struck through, which doesn't reach into the wheels: it stands still -->
 {#snippet sum()}{#if band.bust}{band.sum}{:else}<RollingNumber value={band.sum} normal="up" reset={visit} />{/if}{/snippet}

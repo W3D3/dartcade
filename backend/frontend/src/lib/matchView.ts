@@ -76,15 +76,10 @@ export function matchView(snapshot: Snapshot | null, history: VisitHistory, sett
     ? x01Band({
         darts,
         bust,
-        left: remaining,
         // What the engine actually took off, when the visit's start is known
         scored: !bust && visitStart !== null ? visitStart - remaining : undefined,
       })
-    : atcBand({
-        dartCount: darts.length,
-        advanced: atcAdvanced(hitCount, visitStart, hits),
-        target: atcPlayers[currentPlayer]?.target ?? '',
-      })
+    : atcBand({ advanced: atcAdvanced(hitCount, visitStart, hits) })
   // Every finished visit: the visit sum starts over at 0 without rolling
   const visitKey = (game?.totalVisits ?? []).reduce((a, v) => a + v, 0)
   const popIndex = isX01 ? bigDartIndex(darts, { opened, bust }) : null
