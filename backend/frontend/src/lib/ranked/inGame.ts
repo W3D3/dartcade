@@ -36,8 +36,11 @@ export function disconnected(ranked: RankedState, mySeats: readonly number[], sk
   return null
 }
 
-/** A seat's rank and rating for its chip: both null for a guest or bot, a rank-less "Placement" while placing. */
-export function seatRank(seat: RankedState['seats'][number]): { rank: Rank | null; rating: number | null } | null {
+/** A seat's rank and rating for its chip. */
+export type SeatRank = { rank: Rank | null; rating: number | null }
+
+/** Null for a guest or bot; a rank-less "Placement" chip while placing. */
+export function seatRank(seat: RankedState['seats'][number]): SeatRank | null {
   if (seat.rating === null && seat.rankIndex === null && seat.placement === null) return null
   return { rank: seat.rankIndex === null ? null : rank(seat.rankIndex), rating: seat.rating }
 }
