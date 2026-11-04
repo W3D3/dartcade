@@ -50,6 +50,7 @@
   import WinScreen from '../lib/components/WinScreen.svelte'
   import { flag } from '$lib/flags'
   import { coachable } from '$shared/coach/coachable'
+  import LiveCoachSkeleton from '$lib/components/coach/LiveCoachSkeleton.svelte'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
 
@@ -411,7 +412,9 @@
 
 {#snippet liveCoach(compact: boolean)}
   {#if liveCoachPanel && x01}
-    {#await liveCoachPanel then { default: LiveCoach }}
+    {#await liveCoachPanel}
+      <LiveCoachSkeleton {compact} />
+    {:then { default: LiveCoach }}
       <LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} failed={coachFailed} {compact} />
     {:catch}
       {@render coachFailed()}

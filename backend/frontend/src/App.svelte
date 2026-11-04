@@ -16,6 +16,7 @@
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
+  import CoachLoading from './routes/CoachLoading.svelte'
   import RouteLoadFailed from './routes/RouteLoadFailed.svelte'
   import Lobby from './routes/Lobby.svelte'
   import Join from './routes/Join.svelte'
@@ -74,19 +75,24 @@
       loading: RouteLoading,
     }),
   })
-  // The coach pages load on demand: they're behind a flag and bring the coach's own code
+  // The coach pages load on demand: they're behind a flag and bring the coach's own code. Each shows
+  // its own skeleton meanwhile (`loadingParams` is wrap()'s, passed to it as `params`)
   const loadCoach = Object.assign(() => import('./routes/Coach.svelte').catch(() => ({ default: RouteLoadFailed })), {
-    loading: RouteLoading,
+    loading: CoachLoading,
+    loadingParams: { page: 'list' },
   })
   const loadCoachChecks = Object.assign(() => import('./routes/CoachChecks.svelte').catch(() => ({ default: RouteLoadFailed })), {
-    loading: RouteLoading,
+    loading: CoachLoading,
+    loadingParams: { page: 'checks' },
   })
   const loadCoachLeg = Object.assign(() => import('./routes/CoachLeg.svelte').catch(() => ({ default: RouteLoadFailed })), {
-    loading: RouteLoading,
+    loading: CoachLoading,
+    loadingParams: { page: 'leg' },
   })
   // The admin sandbox runs the coach's checkout model in the browser
   const loadAdminCoach = Object.assign(() => import('./routes/AdminCoach.svelte').catch(() => ({ default: RouteLoadFailed })), {
-    loading: RouteLoading,
+    loading: CoachLoading,
+    loadingParams: { page: 'sandbox' },
   })
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),

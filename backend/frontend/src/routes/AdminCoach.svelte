@@ -143,7 +143,8 @@
           </form>
           {#if typedError}<ErrorText>{typedError}</ErrorText>{/if}
           <p class="m-0 text-[13px] text-text-muted">
-            {#if !result}Fix the inputs to throw.
+            {#if !inputError && !loaded.models && !loaded.failed}Loading level {level}'s model…
+            {:else if !result}Fix the inputs to throw.
             {:else if result.done}{visit?.bust ? 'Bust' : visit?.then === 0 ? 'Checked out' : 'Three darts thrown'}: undo or clear to throw
               again.
             {:else}Click the board or type a dart: dart {darts.length + 1} of 3, {result.left} left.{/if}

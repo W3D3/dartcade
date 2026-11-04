@@ -21,6 +21,9 @@ export type CoachFilter = (typeof COACH_FILTERS)[number]['id']
 /** The filters' ids, for readParam (`filter=lost`) */
 export const COACH_FILTER_IDS: readonly CoachFilter[] = COACH_FILTERS.map(f => f.id)
 
+/** The leg list's desktop grid: When, Leg, Result, Darts, Avg, Coach found, Review */
+export const LEG_COLUMNS = 'lg:grid-cols-[110px_minmax(0,1.4fr)_70px_70px_64px_minmax(0,1.4fr)_150px]'
+
 const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /** A leg row's "Coach found" pills: missed doubles red (Bad), bad setups and low visits orange (Weak); a clean leg only its lime pill */

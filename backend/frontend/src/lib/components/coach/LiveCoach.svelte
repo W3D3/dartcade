@@ -19,6 +19,7 @@
   import DartTile from './DartTile.svelte'
   import GradePill from './GradePill.svelte'
   import VisitNumbers from './VisitNumbers.svelte'
+  import LiveCoachSkeleton from './LiveCoachSkeleton.svelte'
 
   // `mine`: the viewer throws this game, so the coach grades with their 30-day average
   let { game, mine, failed, compact = false }: { game: X01Game; mine: boolean; failed: Snippet; compact?: boolean } = $props()
@@ -113,8 +114,8 @@
 {/snippet}
 
 {#if !live}
-  <!-- The model is loading: nothing to show yet, unless it failed -->
-  {#if loaded.failed}{@render failed()}{/if}
+  <!-- The model is loading, unless it failed -->
+  {#if loaded.failed}{@render failed()}{:else}<LiveCoachSkeleton {compact} />{/if}
 {:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">

@@ -9,10 +9,13 @@
   import CountCards from '$lib/components/coach/CountCards.svelte'
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegCounts, type CoachLegRow } from '$lib/api'
-  import { flag } from '$lib/flags'
+  import { flag, flagsLoaded } from '$lib/flags'
   import Pill from '$lib/components/coach/Pill.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
+  import LegRowsSkeleton from '$lib/components/coach/LegRowsSkeleton.svelte'
+  import ListSkeleton from '$lib/components/coach/ListSkeleton.svelte'
   import { Chip } from '$lib/components/ui/chip'
-  import { COACH_FILTERS, COACH_FILTER_IDS, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
+  import { COACH_FILTERS, COACH_FILTER_IDS, LEG_COLUMNS as COLUMNS, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
   import { readParam } from '$lib/urlState'
   import { formatWhen } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
@@ -29,9 +32,12 @@
   let loadingMore = $state(false)
   let error = $state('')
   let loadMoreError = $state('')
+  // The first request is slow while the server reviews games (after an update): say so after a moment
+  let slow = $state(false)
+  // How many of your latest games the server still has to review; while some do, the page asks again
+  let pending = $state(0)
+  let loads = $state(0)
   const now = new Date()
-
-  const COLUMNS = 'lg:grid-cols-[110px_minmax(0,1.4fr)_70px_70px_64px_minmax(0,1.4fr)_150px]'
 
   const when = (iso: string) => legWhen(iso, now)
   const updated = $derived.by(() => {
@@ -48,6 +54,8 @@
     updatedAt = data.updatedAt
     legs = cursor === null ? data.legs : [...legs, ...data.legs]
     nextCursor = data.nextCursor
+    pending = data.pending
+    loads++
   }
 
   /** Loads the first page for filter `f`, replacing the list */
@@ -57,14 +65,32 @@
     loadingMore = false
     error = ''
     loadMoreError = ''
+    slow = false
+    const slowTimer = setTimeout(() => (slow = true), 1500)
     load(f, null, token)
       .catch((e: unknown) => {
         if (requests.isCurrent(token)) error = e instanceof Error ? e.message : "Couldn't load your legs"
       })
       .finally(() => {
+        clearTimeout(slowTimer)
         if (requests.isCurrent(token)) loading = false
       })
   }
+
+  // While the server is still reviewing recent games, ask again: each request reviews up to 10 more.
+  // The first page comes back in place, without the skeleton; a failed ask stops asking.
+  $effect(() => {
+    // `loads` too: another ask that leaves `pending` where it was still asks again
+    if (pending === 0 || loads === 0 || loading || loadingMore) return
+    const token = requests.current()
+    const f = filter
+    const timer = setTimeout(() => {
+      load(f, null, token).catch(() => {
+        if (requests.isCurrent(token)) pending = 0
+      })
+    }, 1000)
+    return () => clearTimeout(timer)
+  })
 
   // A new filter (or the flag turning on) starts over
   $effect(() => {
@@ -117,7 +143,9 @@
       {/if}
     </header>
 
-    {#if !$enabled}
+    {#if !$enabled && !$flagsLoaded}
+      <ListSkeleton />
+    {:else if !$enabled}
       <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
     {:else}
       <nav aria-label="Coach" class="flex gap-[30px] border-b border-surface-paused">
@@ -134,13 +162,19 @@
         </a>
       </nav>
 
-      {#if counts?.legs === 0}
+      {#if pending > 0 && !loading}
+        <p role="status" class="m-0 flex items-center gap-2 text-[14px] text-text-muted">
+          <LoaderCircle size={16} class="animate-spin motion-reduce:animate-none" />Reviewing your latest games… {pending} to go
+        </p>
+      {/if}
+
+      {#if counts?.legs === 0 && pending === 0}
         <EmptyState title="Nothing to review yet" text="Play an X01 game with double out to get a review.">
           {#snippet icon()}<Target size={24} />{/snippet}
           {#snippet actions()}<a class="underline" href="#/play">Play</a>{/snippet}
         </EmptyState>
       {:else}
-        {#if counts}<CountCards {counts} />{/if}
+        {#if counts || loading}<CountCards {counts} />{/if}
 
         <section aria-label="Legs" class="card flex flex-col gap-3 p-4 md:px-[22px] md:py-5">
           <div class="flex flex-wrap items-center gap-2">
@@ -156,12 +190,15 @@
           </div>
 
           {#if loading}
-            <p class="m-0 flex items-center gap-2 py-8 text-[15px] text-text-muted">
-              <LoaderCircle size={18} class="animate-spin" /> Loading legs…
-            </p>
+            <div aria-busy="true" class="flex flex-col gap-3">
+              <p role="status" class="m-0 text-[14px] text-text-muted {slow ? '' : 'sr-only'}">
+                {slow ? 'Reviewing your latest games… This can take a moment after an update.' : 'Loading your coach reviews…'}
+              </p>
+              <LegRowsSkeleton />
+            </div>
           {:else if error}
-            <div role="alert" class="flex flex-wrap items-center gap-3 py-8">
-              <p class="m-0 text-[15px] text-text-muted">{error}</p>
+            <div class="flex flex-wrap items-center gap-3 py-8">
+              <ErrorText class="text-[15px]">{error}</ErrorText>
               <Button variant="outline" onclick={() => reload(filter)}>Retry</Button>
             </div>
           {:else if legs.length === 0}
