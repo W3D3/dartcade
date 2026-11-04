@@ -35,8 +35,8 @@ describe('sendRequest', () => {
     expect(POST).not.toHaveBeenCalled()
   })
   it('sends the name without the @', async () => {
-    POST.mockResolvedValue(reply(201, { status: 'requested' }))
-    expect(await sendRequest('@sam.180')).toEqual({ ok: true, text: 'Request sent to @sam.180' })
+    POST.mockResolvedValue(reply(201, { id: 'r1', status: 'pending' }))
+    expect(await sendRequest('@sam.180')).toEqual({ ok: true, text: 'Request sent to @sam.180', id: 'r1', accepted: false })
     expect(POST).toHaveBeenCalledWith('/api/friends/requests', { body: { name: 'sam.180' } })
   })
 })

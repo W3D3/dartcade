@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import FriendRow from '../components/friends/FriendRow.svelte'
 import RequestsPanel from '../components/friends/RequestsPanel.svelte'
-import AddFriendCard from '../components/friends/AddFriendCard.svelte'
+import FriendSearch from '../components/friends/FriendSearch.svelte'
 import StatusDot from '../components/friends/StatusDot.svelte'
 import FriendsTabsHarness from './fixtures/FriendsTabsHarness.svelte'
 
@@ -75,12 +75,19 @@ describe('RequestsPanel', () => {
   })
 })
 
-describe('AddFriendCard', () => {
-  it('has the field, the button and the helper copy', () => {
-    const out = render(AddFriendCard, { props: {} }).body
-    expect(out).toContain('placeholder="@username"')
-    expect(out).toContain('Send request')
-    expect(out).toContain("They'll see it in Friends and on their badge. Once they accept, you see each other's status.")
+describe('FriendSearch', () => {
+  it('is one labelled combobox with the rule line under it', () => {
+    const out = render(FriendSearch, { props: { query: '', friends: [lena], outgoing: [], onquery: noop } }).body
+    expect(out).toContain('role="combobox"')
+    expect(out).toContain('aria-label="Search friends or find people"')
+    expect(out).toContain('placeholder="Search friends, or find people by name or email"')
+    expect(out).toContain('Names: type 3 or more letters. Email: exact address only.')
+    expect(out).not.toContain('Clear search')
+  })
+
+  it('offers to clear what is typed', () => {
+    const out = render(FriendSearch, { props: { query: 'len', friends: [lena], outgoing: [], onquery: noop } }).body
+    expect(out).toContain('aria-label="Clear search"')
   })
 })
 
