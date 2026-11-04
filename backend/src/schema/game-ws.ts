@@ -783,6 +783,10 @@ export interface SnapshotBase {
    * Seats the viewer controls.
    */
   mySeats: number[]
+  /**
+   * A ranked game's rules and clock; null or missing for a game that is not ranked.
+   */
+  ranked?: RankedState | null
 }
 export interface Player {
   name: string
@@ -796,6 +800,98 @@ export interface Player {
 export interface SeatPlace {
   placement: number
   forfeited: boolean
+}
+/**
+ * A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "RankedState".
+ */
+export interface RankedState {
+  now: string
+  /**
+   * The queue the match came from.
+   */
+  mode: '1v1' | '2v2'
+  /**
+   * Time each visit gets before the reserve is used.
+   */
+  visitSeconds: number
+  /**
+   * The reserve each seat (each team in a team game) starts with.
+   */
+  reserveSeconds: number
+  /**
+   * Darts may be entered by hand; when false the server rejects them.
+   */
+  manualEntry: boolean
+  /**
+   * When the visit of the seat that is up runs over and its reserve starts to run. null: no visit clock is running (the bull off before the first visit, a finished game, a visit held for Finish); show the time as paused.
+   */
+  visitDeadline: string | null
+  /**
+   * When the seat that is up has used its whole reserve and forfeits the match. null exactly when visitDeadline is.
+   */
+  forfeitAt: string | null
+  /**
+   * Same order as players.
+   */
+  seats: {
+    /**
+     * Reserve left at `now`, whole seconds, counting the open visit.
+     */
+    reserveSeconds: number
+    /**
+     * The seat is up and its visit has run over, so its reserve is running.
+     */
+    inReserve: boolean
+    /**
+     * Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected.
+     */
+    disconnectForfeitAt: string | null
+    /**
+     * RP the seat's side gains for a win and loses for a loss; null while placing.
+     */
+    stakes: {
+      win: number
+      loss: number
+    } | null
+    /**
+     * The player's rating (RP) when the match started; null while they are still in their placement matches (the hidden placement rating is never sent) and for a guest or bot.
+     */
+    rating: number | null
+    /**
+     * The rank the player held when the match started, 0 (Wood I) to 29 (Elite V) as RankedRating.rankIndex; `rank(i)` from shared/ranked gives the Rank. null while placing.
+     */
+    rankIndex: number | null
+    /**
+     * Progress through the placement matches; null once the player has a rank.
+     */
+    placement: {
+      /**
+       * Placement matches played before this one.
+       */
+      played: number
+      /**
+       * Placement matches a player plays before they get a rank.
+       */
+      of: number
+    } | null
+    /**
+     * What the finished match did to the player's rating; null until the result is recorded (and for a guest, a bot, or a match that was not rated). Promoted is rankIndexAfter above rankIndexBefore.
+     */
+    result: {
+      /**
+       * RP the match moved the player by (negative for a loss); null for a placement match, whose rating is hidden. Show `placement` progress instead, and rankIndexAfter on the match that finishes placing.
+       */
+      change: number | null
+      rankIndexBefore: number | null
+      /**
+       * null when the player is still placing after this match.
+       */
+      rankIndexAfter: number | null
+    } | null
+  }[]
 }
 /**
  * A committed Higher Lower visit: its round, total and outcome.
