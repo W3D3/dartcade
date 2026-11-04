@@ -170,7 +170,7 @@ test('coach: the review list, a leg with a bad visit, and the admin sandbox', as
 
   // Admin sandbox: 501 left, three darts clicked tight round T20 (T20 T20 S20, all aimed at T20) at
   // the default 60 average: an Excellent Scoring visit whose ~4 mm group shows the Great grouping pill
-  // (judged against the ~14 mm a 60 average groups in) and the grouping line with its rating
+  // (judged against the ~16 mm an intermediate, the tier a 60 average suggests, groups in) and the grouping line with its rating
   const admin = await open(browser, 'admin', VIEW.wide)
   await admin.page.goto('/#/admin/coach')
   await admin.page.getByLabel('Score left').fill('501')
@@ -184,7 +184,7 @@ test('coach: the review list, a leg with a bad visit, and the admin sandbox', as
   ]) {
     await admin.page.mouse.click(box.x + ((x * 170 + 235) / 470) * box.width, box.y + ((-y * 170 + 235) / 470) * box.height)
   }
-  await expect(admin.page.getByText(/Grouping \d+ mm \(yours: ~\d+ mm\)/)).toBeVisible()
+  await expect(admin.page.getByText(/Grouping \d+ mm \(target: ~\d+ mm\)/)).toBeVisible()
   await expect(admin.page.getByText('Great grouping').first()).toBeVisible()
   await shot(admin.page, 'coach/sandbox-desktop.png', { settle: 1200 })
   await expect(admin.page.getByRole('heading', { name: 'Dart classes' })).toBeVisible()

@@ -11,7 +11,7 @@ import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
-import type { CoachTierId } from './tiers.js'
+import { tierOf, type CoachTierId } from './tiers.js'
 import { throwsOf, type CoachLeg } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
@@ -144,7 +144,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     const vNotes = notes.filter(n => n.visit === i)
     // The walked darts' only: those after a bust aren't
     const walked = reviewDarts.slice(0, vThrows.length)
-    const g = grouping(walked, v.scored, average)
+    const g = grouping(walked, v.scored, tierOf(model.tier).average)
     const grading = classifyVisit({
       start,
       throws: vThrows,
