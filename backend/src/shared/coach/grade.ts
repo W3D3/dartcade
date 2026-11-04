@@ -225,9 +225,6 @@ function scoring(f: VisitFacts): Graded {
   return g(grade, ((grade === 'great' || grade === 'excellent') && TREBLES[trebles]) || `Scored ${f.scored}.`)
 }
 
-/** Some dart went at the double on a one-dart finish (the bull on 50) */
-const atDouble = (f: VisitFacts) => f.throws.some((t, i) => oneDartFinish(t.left) && ['double', 'bull'].includes(f.classes[i].kind))
-
 const COUNT = ['no', 'one', 'two', 'three']
 /** Where a dart at the double missed it; a bull's detail is sb (in the 25) or none */
 const WHERE: Record<string, string> = { inside: 'inside', outside: 'outside', wide: 'wide', sb: 'in the 25' }
@@ -340,7 +337,7 @@ export function classifyVisit(f: VisitFacts): VisitGrading {
   const tag = tagOf(f)
   const note = explainedNote(f.notes)
   const out = f.throws.some(t => t.checkout)
-  const matchDart = f.lastVisitOfLostLeg && !out && atDouble(f)
+  const matchDart = f.lastVisitOfLostLeg && !out && f.throws.some((t, i) => atTheDouble(t, f.classes[i]))
   const graded = tag === 'scoring' ? scoring(f) : finishing(f)
   const g = (grade: VisitGrade, text: string, rule: GradeRule, tip = false, fewestChance: number | null = null): VisitGrading => ({
     tag,

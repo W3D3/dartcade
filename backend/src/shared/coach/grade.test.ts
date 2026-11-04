@@ -24,7 +24,7 @@ import {
 import { classifyDart } from './dartClass.js'
 import { fewestChance } from './minDarts.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
-import { leg, visit, REF } from './testLegs.js'
+import { leg, seg, visit, REF } from './testLegs.js'
 import { dartDeltas } from './value.js'
 import { throwsOf, type CoachDart, type CoachVisit } from './walk.js'
 
@@ -462,6 +462,9 @@ describe('setup and doubling visits: graded by value', () => {
     })
     // Never on a setup: no dart went at a double
     expect(grade(150, ['S20', 'S20', 'S20'], { lost: true }).text).not.toMatch(/match dart/)
+    // Nor in the 25 on 40: the bull is the double on 50 only, so the note's better D20 stands alone
+    const in25 = { seat: 0, darts: [{ segment: seg('25'), coords: { x: 0, y: 0.06 } }], scored: 25, remaining: 15, bust: false }
+    expect(classifyVisit(facts(40, [], { lost: true, visit: in25 })).text).toBe('Tip: On 40, 25: better D20.')
   })
 })
 
