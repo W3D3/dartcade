@@ -2,10 +2,12 @@
   // One leg's review (Coach-Leg, Coach-Phone-Leg): the coach's take and skill letters, then every
   // visit graded. From xl the selected visit shows on the board in the right rail (40% wide, so its
   // board is big and the visit list still fits at 1280); on phones and tablets it opens under its card.
-  import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/svelte'
+  import { ChevronLeft, ChevronRight } from '@lucide/svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import Layout from '$lib/components/Layout.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
+  import LegSkeleton from '$lib/components/coach/LegSkeleton.svelte'
   import GradePill from '$lib/components/coach/GradePill.svelte'
   import TakeCard from '$lib/components/coach/TakeCard.svelte'
   import VisitCards from '$lib/components/coach/VisitCards.svelte'
@@ -15,7 +17,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Chip } from '$lib/components/ui/chip'
   import { api, type CoachLegTitle } from '$lib/api'
-  import { flag } from '$lib/flags'
+  import { flag, flagsLoaded } from '$lib/flags'
   import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
   import { GRADE_STYLE } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
@@ -111,21 +113,21 @@
         ><ChevronLeft size={16} />Review</a
       >
     {/snippet}
-    {#if !$enabled || phase !== 'ready'}{@render breadcrumb()}{/if}
-    {#if !$enabled}
+    {#if (!$enabled && !$flagsLoaded) || ($enabled && phase === 'loading')}
+      <LegSkeleton {breadcrumb} />
+    {:else if !$enabled}
+      {@render breadcrumb()}
       <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
-    {:else if phase === 'loading'}
-      <p class="m-0 flex items-center gap-2 py-8 text-[15px] text-text-muted">
-        <LoaderCircle size={18} class="animate-spin" /> Loading the leg…
-      </p>
     {:else if phase === 'missing'}
+      {@render breadcrumb()}
       <div class="flex flex-col gap-2 py-8">
         <p class="m-0 text-[17px] font-semibold">This leg has no review</p>
         <a href="#/coach" class="text-[15px]">Back to the coach</a>
       </div>
     {:else if phase === 'failed' || !review || !title}
-      <div role="alert" class="flex flex-wrap items-center gap-3 py-8">
-        <p class="m-0 text-[15px] text-text-muted">Couldn't load the leg.</p>
+      {@render breadcrumb()}
+      <div class="flex flex-wrap items-center gap-3 py-8">
+        <ErrorText class="text-[15px]">Couldn't load the leg.</ErrorText>
         <Button variant="outline" onclick={() => void load(params.gameId, params.leg)}>Retry</Button>
       </div>
     {:else}

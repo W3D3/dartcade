@@ -3,7 +3,7 @@
 // signed-in user changes. Design: docs/superpowers/specs/2026-10-12-feature-flags-design.md
 import { OpenFeature, ProviderEvents } from '@openfeature/web-sdk'
 import { OFREPWebProvider } from '@openfeature/ofrep-web-provider'
-import { readable, type Readable } from 'svelte/store'
+import { readable, writable, type Readable } from 'svelte/store'
 
 const contextOf = (userId: string | null) => ({ targetingKey: userId ?? 'anonymous' })
 
@@ -11,12 +11,21 @@ const contextOf = (userId: string | null) => ({ targetingKey: userId ?? 'anonymo
 // provider's onContextChange, even when the context is unchanged, which makes it refetch now.
 let currentUserId: string | null = null
 
+const loaded = writable(false)
+/** Whether the first flags fetch is over (or failed): until then every flag reads its fallback, so a
+ *  page behind a flag shows it's loading rather than that it's off. */
+export const flagsLoaded: Readable<boolean> = { subscribe: loaded.subscribe }
+
 /** Starts reading flags from the backend, for this user (null: signed out). Polls every 30s so an
  *  admin's runtime override reaches open tabs without a reload. */
 export async function startFlags(userId: string | null): Promise<void> {
   currentUserId = userId
-  await OpenFeature.setContext(contextOf(userId))
-  await OpenFeature.setProviderAndWait(new OFREPWebProvider({ baseUrl: window.location.origin, pollInterval: 30_000 }))
+  try {
+    await OpenFeature.setContext(contextOf(userId))
+    await OpenFeature.setProviderAndWait(new OFREPWebProvider({ baseUrl: window.location.origin, pollInterval: 30_000 }))
+  } finally {
+    loaded.set(true)
+  }
 }
 
 /** The signed-in user changed (sign-in, sign-out, the dev user switch): the provider refetches. */

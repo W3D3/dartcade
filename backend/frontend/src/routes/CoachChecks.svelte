@@ -1,7 +1,7 @@
 <script lang="ts">
   // "What the coach detects" (Coach-Mistakes): every check this version runs, from lib/coach/checks.ts.
   import Layout from '$lib/components/Layout.svelte'
-  import { flag } from '$lib/flags'
+  import { flag, flagsLoaded } from '$lib/flags'
   import { CHECK_GROUPS, GRADE_LEGEND, SOURCES, type CheckSource } from '$lib/coach/checks'
   import GradePill from '$lib/components/coach/GradePill.svelte'
   import { TONE_TEXT, type PillTone } from '$lib/coach/tone'
@@ -31,7 +31,8 @@
     </header>
 
     {#if !$enabled}
-      <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
+      <!-- Until the flags load, nothing: the checks are on the page already, not fetched -->
+      {#if $flagsLoaded}<p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>{/if}
     {:else}
       <div class="flex flex-wrap items-start gap-7">
         <div class="flex min-w-0 max-w-full flex-col gap-2">
