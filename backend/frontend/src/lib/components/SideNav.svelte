@@ -12,6 +12,7 @@
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
+  import { queueView, tick } from '$lib/ranked/queueCard'
 
   const inviteCount = $derived($me?.invites.length ?? 0)
 
@@ -20,6 +21,7 @@
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
 
+  const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const links = $derived(
     sideLinks(
       $activeSessionId,
@@ -66,6 +68,16 @@
           <ShieldCheck size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {/if}
         {link.label}
+        {#if link.icon === 'ranked' && queue?.kind === 'searching'}
+          <!-- Searching: the blinking dot and the time so far, wherever you browse -->
+          <span
+            class="ml-auto inline-flex items-center gap-[6px] font-mono text-[12px] text-accent"
+            role="timer"
+            aria-label="Searching for {queue.clock}"
+          >
+            <span class="h-[6px] w-[6px] rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{queue.clock}
+          </span>
+        {/if}
         {#if link.icon === 'live' && !link.disabled}
           <span class="ml-auto w-2 h-2 rounded-full bg-live" aria-hidden="true"></span>
         {/if}
