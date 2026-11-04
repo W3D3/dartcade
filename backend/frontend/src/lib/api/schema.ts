@@ -3037,10 +3037,30 @@ export interface components {
             value: {
                 /** @description The checkout chance (%) before the first dart; null on Scoring */
                 startChance: number | null;
-                /** @description On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null */
+                /** @description On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
                 fewestChance: number | null;
-                /** @description On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average */
+                /** @description On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average */
                 points: number;
+                /** @description Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring */
+                terms: {
+                    /** @description The dart's change in checkout chance, in percentage points */
+                    delta: number;
+                    /** @description The credit for missing its target by little; null for a hit or a typed dart */
+                    closeness: number | null;
+                    /** @description A bust's cost for the darts it kept from being thrown; 0 without one */
+                    penalty: number;
+                }[];
+                /**
+                 * @description The points' band on bands, before rule
+                 * @enum {string}
+                 */
+                band: "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+                /** @description The tag's scale, best first and complete: Bad's from is null (everything below the last bound) */
+                bands: {
+                    /** @enum {string} */
+                    grade: "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+                    from: number | null;
+                }[];
                 /** @description A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling */
                 scoring: {
                     scored: number;
@@ -3050,7 +3070,7 @@ export interface components {
                     average: number;
                 } | null;
                 /**
-                 * @description What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5
+                 * @description What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5
                  * @enum {string|null}
                  */
                 rule: "brilliant" | "fewest" | "note" | "veryLow" | "spill" | null;

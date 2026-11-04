@@ -186,6 +186,9 @@ describe('scoring visits', () => {
       points: -60,
       rule: null,
       scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 0, average: 60 },
+      terms: [],
+      band: 'bad',
+      bands: [...SCORING_BANDS, { grade: 'bad', from: null }],
       fewestChance: null,
     })
     expect(grade(501, ['T20', 'T19', 'T19']).value).toMatchObject({ rule: 'brilliant', points: 114 })
@@ -360,7 +363,15 @@ describe('setup and doubling visits: graded by value', () => {
   it('121 → S20, T17, S18: a good setup to D16', () => {
     const f = facts(121, ['S20', 'T17', 'S18'])
     expect(points(f)).toBeGreaterThanOrEqual(GOOD_FROM)
-    expect(classifyVisit(f).value).toEqual({ points: points(f), scoring: null, rule: null, fewestChance: null })
+    expect(classifyVisit(f).value).toEqual({
+      points: points(f),
+      scoring: null,
+      terms: f.deltas.map((delta, i) => ({ delta, closeness: closeness(f.classes[i]), penalty: 0 })),
+      band: 'good',
+      bands: [...FINISH_BANDS, { grade: 'bad', from: null }],
+      rule: null,
+      fewestChance: null,
+    })
     expect(classifyVisit(f)).toMatchObject({
       tag: 'doubling',
       grade: 'good',
@@ -550,6 +561,13 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
     const note = { ...explainedNote(facts(24, ['S14', 'D5']).notes)!, tip: false }
     expect(classifyVisit({ ...f, notes: [note] }).grade).toBe('bad')
     expect(classifyVisit({ ...f, notes: [{ ...note, tip: true as const }] }).grade).toBe('brilliant')
+  })
+
+  it("sends each dart's terms: a bust's penalty for the darts it kept from being thrown", () => {
+    const { value } = classifyVisit({ ...facts(40, ['S20', 'S20']), notes: [] })
+    expect(value.terms.map(t => t.penalty)).toEqual([0, BUST_DART_LOST])
+    expect(value.points).toBeCloseTo(value.terms.reduce((s, t) => s + dartGrade(t.delta, t.closeness, t.penalty), 0))
+    expect(value).toMatchObject({ band: 'bad', rule: null })
   })
 
   it('records an override only when it moved the band: a note on a visit already Bad', () => {

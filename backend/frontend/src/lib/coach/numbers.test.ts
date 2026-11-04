@@ -69,7 +69,16 @@ describe('gradeWorking', () => {
     left: 121,
     bust: false,
     darts: [dart('S20', -4.4), dart('M17', 10.8, 2.25), dart('S18', 1.5)],
-    value: { points: 10.15, scoring: null, rule: null, startChance: 34.04, fewestChance: null },
+    value: {
+      points: 10.15,
+      scoring: null,
+      terms: [],
+      band: 'good' as const,
+      bands: [],
+      rule: null,
+      startChance: 34.04,
+      fewestChance: null,
+    },
   }
 
   it("adds a finish visit's darts from its start chance and places the sum in its band", () => {
@@ -126,6 +135,9 @@ describe('gradeWorking', () => {
       value: {
         points: 11.5,
         scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 71.5, average: 60 },
+        terms: [],
+        band: 'good',
+        bands: [],
         rule: 'spill',
         startChance: null,
         fewestChance: null,

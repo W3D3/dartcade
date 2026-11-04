@@ -4672,6 +4672,9 @@
                                 "required": [
                                   "points",
                                   "scoring",
+                                  "terms",
+                                  "band",
+                                  "bands",
                                   "rule",
                                   "startChance",
                                   "fewestChance"
@@ -4686,11 +4689,82 @@
                                   "fewestChance": {
                                     "type": "number",
                                     "nullable": true,
-                                    "description": "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null"
+                                    "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                                   },
                                   "points": {
                                     "type": "number",
-                                    "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                                    "description": "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average"
+                                  },
+                                  "terms": {
+                                    "type": "array",
+                                    "description": "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "delta",
+                                        "closeness",
+                                        "penalty"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "delta": {
+                                          "type": "number",
+                                          "description": "The dart's change in checkout chance, in percentage points"
+                                        },
+                                        "closeness": {
+                                          "type": "number",
+                                          "nullable": true,
+                                          "description": "The credit for missing its target by little; null for a hit or a typed dart"
+                                        },
+                                        "penalty": {
+                                          "type": "number",
+                                          "description": "A bust's cost for the darts it kept from being thrown; 0 without one"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "band": {
+                                    "type": "string",
+                                    "enum": [
+                                      "excellent",
+                                      "great",
+                                      "good",
+                                      "ok",
+                                      "inaccuracy",
+                                      "weak",
+                                      "bad"
+                                    ],
+                                    "description": "The points' band on bands, before rule"
+                                  },
+                                  "bands": {
+                                    "type": "array",
+                                    "description": "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "grade",
+                                        "from"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "grade": {
+                                          "type": "string",
+                                          "enum": [
+                                            "excellent",
+                                            "great",
+                                            "good",
+                                            "ok",
+                                            "inaccuracy",
+                                            "weak",
+                                            "bad"
+                                          ]
+                                        },
+                                        "from": {
+                                          "type": "number",
+                                          "nullable": true
+                                        }
+                                      }
+                                    }
                                   },
                                   "scoring": {
                                     "type": "object",
@@ -4733,7 +4807,7 @@
                                       "spill",
                                       null
                                     ],
-                                    "description": "What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
+                                    "description": "What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
                                   }
                                 }
                               }
@@ -49779,6 +49853,9 @@
             "required": [
               "points",
               "scoring",
+              "terms",
+              "band",
+              "bands",
               "rule",
               "startChance",
               "fewestChance"
@@ -49793,11 +49870,82 @@
               "fewestChance": {
                 "type": "number",
                 "nullable": true,
-                "description": "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null"
+                "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
               },
               "points": {
                 "type": "number",
-                "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                "description": "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average"
+              },
+              "terms": {
+                "type": "array",
+                "description": "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "delta",
+                    "closeness",
+                    "penalty"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "delta": {
+                      "type": "number",
+                      "description": "The dart's change in checkout chance, in percentage points"
+                    },
+                    "closeness": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "The credit for missing its target by little; null for a hit or a typed dart"
+                    },
+                    "penalty": {
+                      "type": "number",
+                      "description": "A bust's cost for the darts it kept from being thrown; 0 without one"
+                    }
+                  }
+                }
+              },
+              "band": {
+                "type": "string",
+                "enum": [
+                  "excellent",
+                  "great",
+                  "good",
+                  "ok",
+                  "inaccuracy",
+                  "weak",
+                  "bad"
+                ],
+                "description": "The points' band on bands, before rule"
+              },
+              "bands": {
+                "type": "array",
+                "description": "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "grade",
+                    "from"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "grade": {
+                      "type": "string",
+                      "enum": [
+                        "excellent",
+                        "great",
+                        "good",
+                        "ok",
+                        "inaccuracy",
+                        "weak",
+                        "bad"
+                      ]
+                    },
+                    "from": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  }
+                }
               },
               "scoring": {
                 "type": "object",
@@ -49840,7 +49988,7 @@
                   "spill",
                   null
                 ],
-                "description": "What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
+                "description": "What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
               }
             }
           }
@@ -50508,6 +50656,9 @@
                   "required": [
                     "points",
                     "scoring",
+                    "terms",
+                    "band",
+                    "bands",
                     "rule",
                     "startChance",
                     "fewestChance"
@@ -50522,11 +50673,82 @@
                     "fewestChance": {
                       "type": "number",
                       "nullable": true,
-                      "description": "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null"
+                      "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                     },
                     "points": {
                       "type": "number",
-                      "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                      "description": "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average"
+                    },
+                    "terms": {
+                      "type": "array",
+                      "description": "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "delta",
+                          "closeness",
+                          "penalty"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "delta": {
+                            "type": "number",
+                            "description": "The dart's change in checkout chance, in percentage points"
+                          },
+                          "closeness": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The credit for missing its target by little; null for a hit or a typed dart"
+                          },
+                          "penalty": {
+                            "type": "number",
+                            "description": "A bust's cost for the darts it kept from being thrown; 0 without one"
+                          }
+                        }
+                      }
+                    },
+                    "band": {
+                      "type": "string",
+                      "enum": [
+                        "excellent",
+                        "great",
+                        "good",
+                        "ok",
+                        "inaccuracy",
+                        "weak",
+                        "bad"
+                      ],
+                      "description": "The points' band on bands, before rule"
+                    },
+                    "bands": {
+                      "type": "array",
+                      "description": "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "grade",
+                          "from"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "grade": {
+                            "type": "string",
+                            "enum": [
+                              "excellent",
+                              "great",
+                              "good",
+                              "ok",
+                              "inaccuracy",
+                              "weak",
+                              "bad"
+                            ]
+                          },
+                          "from": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        }
+                      }
                     },
                     "scoring": {
                       "type": "object",
@@ -50569,7 +50791,7 @@
                         "spill",
                         null
                       ],
-                      "description": "What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
+                      "description": "What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
                     }
                   }
                 }
@@ -51382,6 +51604,9 @@
                       "required": [
                         "points",
                         "scoring",
+                        "terms",
+                        "band",
+                        "bands",
                         "rule",
                         "startChance",
                         "fewestChance"
@@ -51396,11 +51621,82 @@
                         "fewestChance": {
                           "type": "number",
                           "nullable": true,
-                          "description": "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null"
+                          "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                         },
                         "points": {
                           "type": "number",
-                          "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                          "description": "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average"
+                        },
+                        "terms": {
+                          "type": "array",
+                          "description": "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "delta",
+                              "closeness",
+                              "penalty"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "delta": {
+                                "type": "number",
+                                "description": "The dart's change in checkout chance, in percentage points"
+                              },
+                              "closeness": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "The credit for missing its target by little; null for a hit or a typed dart"
+                              },
+                              "penalty": {
+                                "type": "number",
+                                "description": "A bust's cost for the darts it kept from being thrown; 0 without one"
+                              }
+                            }
+                          }
+                        },
+                        "band": {
+                          "type": "string",
+                          "enum": [
+                            "excellent",
+                            "great",
+                            "good",
+                            "ok",
+                            "inaccuracy",
+                            "weak",
+                            "bad"
+                          ],
+                          "description": "The points' band on bands, before rule"
+                        },
+                        "bands": {
+                          "type": "array",
+                          "description": "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "grade",
+                              "from"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "grade": {
+                                "type": "string",
+                                "enum": [
+                                  "excellent",
+                                  "great",
+                                  "good",
+                                  "ok",
+                                  "inaccuracy",
+                                  "weak",
+                                  "bad"
+                                ]
+                              },
+                              "from": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            }
+                          }
                         },
                         "scoring": {
                           "type": "object",
@@ -51443,7 +51739,7 @@
                             "spill",
                             null
                           ],
-                          "description": "What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
+                          "description": "What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
                         }
                       }
                     }

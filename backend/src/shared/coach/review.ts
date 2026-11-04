@@ -2,7 +2,7 @@
 // three A–D skills and the coach's take.
 import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
-import { closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
+import { explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
 import { classifyVisit } from './visitText.js'
 import { grouping, type Grouping } from './grouping.js'
 import { fewestPath } from './minDarts.js'
@@ -123,7 +123,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     const vThrows = throws.filter(t => t.visit === i)
     const values = start > 170 ? [] : visitValues(vThrows, evaluate, model)
     const deltas = deltasOf(values)
-    const reviewDarts = v.darts.map((d, j): ReviewDart => {
+    const reviewDarts = v.darts.map((d, j): Omit<ReviewDart, 'closeness'> => {
       // Undefined for a dart after the bust
       const t = vThrows.at(j)
       before.push(t?.left ?? start)
@@ -138,7 +138,6 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
         bust,
         class: cls,
         delta,
-        closeness: delta === null ? null : closeness(cls),
       }
     })
     const vNotes = notes.filter(n => n.visit === i)
@@ -163,7 +162,8 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     return {
       n: k + 1,
       left: start,
-      darts: reviewDarts,
+      // A walked dart's closeness is the one its grade summed (grade.ts DartTerm)
+      darts: reviewDarts.map((d, j) => ({ ...d, closeness: grading.value.terms.at(j)?.closeness ?? null })),
       scored: v.scored,
       then: v.remaining,
       bust: v.bust,

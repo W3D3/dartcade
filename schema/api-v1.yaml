@@ -3863,7 +3863,7 @@ components:
         value:
           type: object
           description: 'How the grade was worked out (shared/coach/grade.ts VisitValue)'
-          required: [points, scoring, rule, startChance, fewestChance]
+          required: [points, scoring, terms, band, bands, rule, startChance, fewestChance]
           additionalProperties: false
           properties:
             startChance: { type: number, nullable: true, description: 'The checkout chance (%) before the first dart; null on Scoring' }
@@ -3876,8 +3876,38 @@ components:
             points:
               {
                 type: number,
-                description: "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average",
+                description: "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average",
               }
+            terms:
+              type: array
+              description: "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring"
+              items:
+                type: object
+                required: [delta, closeness, penalty]
+                additionalProperties: false
+                properties:
+                  delta: { type: number, description: "The dart's change in checkout chance, in percentage points" }
+                  closeness:
+                    {
+                      type: number,
+                      nullable: true,
+                      description: 'The credit for missing its target by little; null for a hit or a typed dart',
+                    }
+                  penalty: { type: number, description: "A bust's cost for the darts it kept from being thrown; 0 without one" }
+            band:
+              type: string
+              enum: [excellent, great, good, ok, inaccuracy, weak, bad]
+              description: "The points' band on bands, before rule"
+            bands:
+              type: array
+              description: "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)"
+              items:
+                type: object
+                required: [grade, from]
+                additionalProperties: false
+                properties:
+                  grade: { type: string, enum: [excellent, great, good, ok, inaccuracy, weak, bad] }
+                  from: { type: number, nullable: true }
             scoring:
               type: object
               nullable: true
@@ -3894,7 +3924,7 @@ components:
               type: string
               nullable: true
               enum: [brilliant, fewest, note, veryLow, spill, null]
-              description: 'What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5'
+              description: 'What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5'
     SkillGrade:
       type: object
       required: [grade, line]

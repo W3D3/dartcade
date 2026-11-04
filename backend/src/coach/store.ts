@@ -12,7 +12,7 @@ import { coachable, coachLevel, loadCoachModels, reviewLeg } from '../shared/coa
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 25
+export const COACH_VERSION = 26
 
 /** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
  *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. A

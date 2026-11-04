@@ -52,7 +52,7 @@ export type VisitTag = 'scoring' | 'setup' | 'doubling'
 export const VISIT_GRADES = ['brilliant', 'excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'] as const
 export type VisitGrade = (typeof VISIT_GRADES)[number]
 /** A value-graded class: every grade but Brilliant, which only the fewest-darts rule gives */
-type ValueGrade = Exclude<VisitGrade, 'brilliant'>
+export type ValueGrade = Exclude<VisitGrade, 'brilliant'>
 export type VisitFacts = {
   /** The score before the visit */
   start: number
@@ -86,10 +86,25 @@ export type VisitFacts = {
 export type GradeRule = 'brilliant' | 'fewest' | 'note' | 'veryLow' | 'spill' | null
 /** The rating's parts on a Scoring visit: scored + grouping + closeness = rating */
 export type ScoringValue = { scored: number; grouping: number; closeness: number; rating: number; average: number }
+/** A Setup or Doubling dart's part of the visit's points: its value change (value.ts), its
+ *  closeness credit (null for a hit or a typed dart) and a bust's penalty (0 without one) */
+export type DartTerm = { delta: number; closeness: number | null; penalty: number }
+/** One band of a complete scale: Bad's `from` is null (everything below the last bound) */
+export type ScaleBand = { grade: ValueGrade; from: number | null }
 /** How the grade was worked out (the debug view). `points` on the tag's scale: a Setup or Doubling
- *  visit's Σ (dart Δ + closeness), a Scoring visit's rating − average; `scoring` its parts there;
+ *  visit's Σ `terms` (Δ + closeness − penalty, one per walked dart), a Scoring visit's rating −
+ *  average (`scoring` its parts, `terms` empty); `band` the points' band on `bands`, before `rule`;
  *  `fewestChance` (%) the fewest-darts path's chance on a visit that kept it, else null. */
-export type VisitValue = { points: number; scoring: ScoringValue | null; rule: GradeRule; fewestChance: number | null }
+export type VisitValue = {
+  points: number
+  scoring: ScoringValue | null
+  terms: DartTerm[]
+  band: ValueGrade
+  /** The tag's scale, best first and complete */
+  bands: ScaleBand[]
+  rule: GradeRule
+  fewestChance: number | null
+}
 /** A visit's tag and grade, and how the grade was worked out */
 export type Grading = { tag: VisitTag; grade: VisitGrade; value: VisitValue }
 
@@ -199,24 +214,37 @@ function scoringValue(f: VisitFacts): { points: number; scoring: ScoringValue } 
   return { points: scoring.rating - f.average, scoring }
 }
 
-/** Setup and Doubling: how much the darts changed the checkout chance (value.ts), plus the
- *  closeness credit of each missed dart, less a bust's penalty. A bust ends on the start's next
- *  visit (value.ts): graded like any other end. */
-const finishPoints = (f: VisitFacts) =>
-  f.throws.reduce((s, t, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i]), t.bust ? bustPenalty(t.dart) : 0), 0)
+/** Setup and Doubling, each dart: how much it changed the checkout chance (value.ts), plus its
+ *  closeness credit, less a bust's penalty. A bust ends on the start's next visit (value.ts): graded
+ *  like any other end. */
+const finishTerms = (f: VisitFacts): DartTerm[] =>
+  f.throws.map((t, i) => ({ delta: f.deltas[i], closeness: closeness(f.classes[i]), penalty: t.bust ? bustPenalty(t.dart) : 0 }))
 
 /** The visit's grade: its value's band, then the first override that applies; the rule is
  *  recorded only when it moved the band. */
 export function gradeVisit(f: VisitFacts): Grading {
   const tag = tagOf(f)
-  const { points, scoring } = tag === 'scoring' ? scoringValue(f) : { points: finishPoints(f), scoring: null }
-  const band = bandOf(points, tag === 'scoring' ? SCORING_BANDS : FINISH_BANDS)
+  const terms = tag === 'scoring' ? [] : finishTerms(f)
+  const { points, scoring } =
+    tag === 'scoring'
+      ? scoringValue(f)
+      : { points: terms.reduce((s, d) => s + dartGrade(d.delta, d.closeness, d.penalty), 0), scoring: null }
+  const bands = tag === 'scoring' ? SCORING_BANDS : FINISH_BANDS
+  const band = bandOf(points, bands)
   const o = OVERRIDES.find(x => x.applies(f))
   const grade = o ? overridden(o, band) : band
   const fewest = o?.rule === 'brilliant' || o?.rule === 'fewest' ? f.fewest : null
   return {
     tag,
     grade,
-    value: { points, scoring, rule: o && grade !== band ? o.rule : null, fewestChance: fewest === null ? null : fewest * 100 },
+    value: {
+      points,
+      scoring,
+      terms,
+      band,
+      bands: [...bands, { grade: 'bad', from: null }],
+      rule: o && grade !== band ? o.rule : null,
+      fewestChance: fewest === null ? null : fewest * 100,
+    },
   }
 }
