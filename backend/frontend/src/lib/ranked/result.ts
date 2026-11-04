@@ -1,15 +1,16 @@
-// What the ranked result screen says about the rating (MM-Result board): the RP change, the rank
-// before and after, and how far a placing player is. Built from the profile the server serves
-// once the game is recorded (`GET /api/ranked/me`).
+// What the ranked result screen says about the rating (MM-Result board). The match's own result
+// (RP change, rank before and after) comes with the game's snapshot, the extra cards from the profile.
 import type { components } from '$lib/api/schema'
-import { PLACEMENT_MATCHES, rank, rankIndexFor, type Rank } from '$shared/ranked.js'
-import { rankProgress } from '$lib/home/view'
-import { signedRp, type RankedGame, type RankedRating } from './view'
+import { nextStage, rank, type Rank } from '$shared/ranked.js'
+import { fmtAvg } from '$lib/playerStats'
+import { record } from './view'
+import { seatRank, type RankedState } from './inGame'
+import { signedRp } from './view'
 
 type RankedProfile = components['schemas']['RankedProfile']
 
 export type RankedOutcome = {
-  mode: RankedGame['mode']
+  mode: RankedState['mode']
   won: boolean
   /** "+17 RP" / "−14 RP"; null for a placement match, whose RP stay hidden. */
   change: string | null
@@ -20,53 +21,54 @@ export type RankedOutcome = {
   rankAfter: Rank | null
   /** The stage went up or down with this game; null when it did not. */
   moved: 'promoted' | 'demoted' | null
-  /** Placement matches played out of five; null once placed. */
+  /** Placement matches played out of the total, counting this one; null once placed. */
   placing: { played: number; of: number } | null
   /** Progress to the next stage, 0 to 100, and the line under the bar; null while placing or at the top. */
   progress: { pct: number; line: string } | null
-  /** "4 wins in a row" once it is two or more of either kind. */
-  streak: string | null
-  /** Wins and losses over the mode. */
-  record: { score: string; line: string }
-  opponentRating: number | null
+  /** The other side's seat and rank, for "[Gold I · 1 301 RP]" under their name (1v1 only). */
+  opponent: { seat: number; rank: Rank | null; rating: number | null } | null
 }
 
-/** The game's line in the profile's recent list, and its rating; null until the server has recorded it. */
-export function rankedOutcome(profile: RankedProfile, sessionId: string): RankedOutcome | null {
-  const game = profile.recent.find(g => g.sessionId === sessionId)
-  const rating = game && profile.ratings.find(r => r.mode === game.mode)
-  if (!game || !rating) return null
-  const placed = rating.rankIndex !== null && rating.rating !== null
-  const after = placed ? rating.rating : null
-  const before = after !== null && game.change !== null ? after - game.change : null
-  const rankAfter = rating.rankIndex === null ? null : rank(rating.rankIndex)
-  // Reconstructed from the rating before; a demotion buffer can hold you above it, never below
-  const rankBefore = before === null ? null : rank(rankIndexFor(before))
+/** The viewer's seat's result; null until the server has recorded it (and for a guest or an unrated match). */
+export function rankedOutcome(ranked: RankedState, seatIndex: number, won: boolean): RankedOutcome | null {
+  const seat = ranked.seats.at(seatIndex)
+  const result = seat?.result
+  if (!result) return null
+  const { change, rankIndexBefore, rankIndexAfter } = result
+  const before = change === null || seat.rating === null ? null : seat.rating
+  const after = before === null || change === null ? null : before + change
+  const rankAfter = rankIndexAfter === null ? null : rank(rankIndexAfter)
+  const rankBefore = rankIndexBefore === null ? null : rank(rankIndexBefore)
   const moved =
     rankAfter && rankBefore && rankAfter.index !== rankBefore.index ? (rankAfter.index > rankBefore.index ? 'promoted' : 'demoted') : null
-  const bar = rankProgress(rating)
+  const next = rankAfter && after !== null ? nextStage(rankAfter.index, after) : null
+  const otherSeat = ranked.seats.length === 2 ? 1 - seatIndex : -1
+  const other = ranked.seats[otherSeat] ? seatRank(ranked.seats[otherSeat]) : null
   return {
-    mode: game.mode,
-    won: game.won,
-    change: game.change === null ? null : `${signedRp(game.change)} RP`,
+    mode: ranked.mode,
+    won,
+    change: change === null ? null : `${signedRp(change)} RP`,
     before,
     after,
     rankBefore,
     rankAfter,
     moved,
-    placing: placed ? null : { played: rating.matches, of: PLACEMENT_MATCHES },
-    progress: bar && { pct: bar.pct, line: bar.line },
-    streak: streakLine(rating),
-    record: {
-      score: `${rating.wins}–${rating.matches - rating.wins}`,
-      line: `${Math.floor((rating.wins / Math.max(1, rating.matches)) * 100)}% won`,
-    },
-    opponentRating: game.opponents.length === 1 ? game.opponents[0].rating : null,
+    placing: rankIndexAfter === null && seat.placement ? { played: seat.placement.played + 1, of: seat.placement.of } : null,
+    progress:
+      rankAfter && after !== null && next
+        ? {
+            pct: Math.max(0, Math.min(100, Math.round(((after - rankAfter.min) / (next.rank.min - rankAfter.min)) * 100))),
+            line: `${next.missing} RP to ${next.rank.name}`,
+          }
+        : null,
+    opponent: other && { seat: otherSeat, ...other },
   }
 }
 
-function streakLine(r: RankedRating): string | null {
-  if (r.streak >= 2) return `${r.streak} wins in a row`
-  if (r.streak <= -2) return `${-r.streak} losses in a row`
-  return null
+export type RankedExtras = { onlineAverage: string; onlineLine: string; record: string; recordLine: string }
+
+/** The Online average and Record cards, from the profile (after the match is recorded). */
+export function rankedExtras(profile: RankedProfile): RankedExtras {
+  const rec = record(profile.ratings)
+  return { onlineAverage: fmtAvg(profile.onlineAverage), onlineLine: 'Last 20 ranked matches', record: rec.score, recordLine: rec.line }
 }

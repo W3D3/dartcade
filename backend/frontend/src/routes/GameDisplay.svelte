@@ -52,7 +52,7 @@
   import { coachable } from '$shared/coach/coachable'
   import LiveCoachSkeleton from '$lib/components/coach/LiveCoachSkeleton.svelte'
   import { stakesLabel } from '$lib/ranked/inGame'
-  import { rankedOutcome, type RankedOutcome } from '$lib/ranked/result'
+  import { rankedExtras, rankedOutcome, type RankedExtras } from '$lib/ranked/result'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
 
@@ -416,14 +416,20 @@
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
-  // A ranked game's rating card: the server records the result before it sends the final snapshot
-  let rankedResult = $state<RankedOutcome | null>(null)
-  let rankedRequested = false
+  // A ranked game's rating card comes with the snapshot once the server recorded the result; the
+  // online average and record cards come from the profile, fetched once the game is won
+  const rankedResult = $derived.by(() => {
+    const seat = snapshot?.mySeats[0]
+    const placement = snapshot?.results?.[seat ?? -1]?.placement
+    return snapshot?.ranked && seat !== undefined && placement !== undefined ? rankedOutcome(snapshot.ranked, seat, placement === 1) : null
+  })
+  let rankedExtrasView = $state<RankedExtras | null>(null)
+  let rankedExtrasRequested = false
   $effect(() => {
-    if (!win || !snapshot?.ranked || rankedRequested) return
-    rankedRequested = true
+    if (!rankedResult || rankedExtrasRequested) return
+    rankedExtrasRequested = true
     void api.GET('/api/ranked/me').then(({ data }) => {
-      if (data) rankedResult = rankedOutcome(data, sessionId)
+      if (data) rankedExtrasView = rankedExtras(data)
     })
   })
 </script>
@@ -468,8 +474,9 @@
         onhistory={() => push(`/history/${sessionId}`)}
         xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
         winnerId={$progression ? (snapshot.seats[win.competitors[0]?.seats[0] ?? -1]?.userId ?? null) : null}
-        rankedGame={snapshot.ranked !== null}
+        rankedGame={!!snapshot.ranked}
         ranked={rankedResult}
+        rankedExtras={rankedExtrasView}
       />
     {:else}
       <GameHeader

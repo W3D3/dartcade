@@ -4,6 +4,7 @@
 // whose own clock is off still counts down right.
 import type { Snapshot } from '$lib/api'
 import { clockView, type ClockView } from './clock'
+import { rank, type Rank } from '$shared/ranked.js'
 import { signedRp } from './view'
 
 export type RankedState = NonNullable<Snapshot['ranked']>
@@ -18,6 +19,8 @@ export const clockSkew = (ranked: RankedState): number => Date.parse(ranked.now)
 
 /** The up seat's visit and reserve at `now` (this screen's clock), hidden until close to the limit. */
 export function upClock(ranked: RankedState, skew: number, now: number): ClockView {
+  // No deadline: no visit clock is running (the bull off, a finished game)
+  if (ranked.visitDeadline === null || ranked.forfeitAt === null) return { phase: 'hidden' }
   const server = now + skew
   return clockView({
     visitLeft: (Date.parse(ranked.visitDeadline) - server) / 1000,
@@ -31,4 +34,10 @@ export function disconnected(ranked: RankedState, mySeats: readonly number[], sk
     if (s.disconnectForfeitAt !== null && !mySeats.includes(seat)) return { seat, forfeitAt: Date.parse(s.disconnectForfeitAt) - skew }
   }
   return null
+}
+
+/** A seat's rank and rating for its chip: both null for a guest or bot, a rank-less "Placement" while placing. */
+export function seatRank(seat: RankedState['seats'][number]): { rank: Rank | null; rating: number | null } | null {
+  if (seat.rating === null && seat.rankIndex === null && seat.placement === null) return null
+  return { rank: seat.rankIndex === null ? null : rank(seat.rankIndex), rating: seat.rating }
 }
