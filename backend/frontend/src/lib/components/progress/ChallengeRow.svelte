@@ -105,6 +105,15 @@
           {/if}
         </div>
         {#if item.target > 1}<div class="mt-[2px] text-[13px] text-text-muted tabular-nums">{item.progress} of {item.target}</div>{/if}
+        {#if item.chips.length > 0}
+          <ul class="mt-[6px] flex flex-wrap gap-[6px]" aria-label="So far">
+            {#each item.chips as chip (chip)}
+              <li class="rounded-full border border-accent-line-strong px-[9px] py-[2px] text-[12px] font-bold tabular-nums text-accent">
+                {chip}
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
       {#if close}<span class="shrink-0 rounded-full bg-gold px-[10px] py-1 text-[12px] font-bold text-accent-fg">1 to go</span>{/if}
       {#if item.canReroll && onreroll}
