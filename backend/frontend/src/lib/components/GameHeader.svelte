@@ -39,7 +39,7 @@
     /** Whether the end-of-game control shows at all. */
     canEnd: boolean
     /** The host ends the game for everyone; anyone else with seats leaves (forfeits them). */
-    endMode?: 'end' | 'leave'
+    endMode?: 'end' | 'leave' | 'forfeit'
     showViewToggle?: boolean
     /** The phone header: back, title and meta, keypad toggle, end, settings. */
     compact?: boolean
@@ -47,7 +47,7 @@
     paused?: boolean
     /** Remote games: the viewer's own board, and whether its bridge is connected. */
     myBoard?: MyBoard | null
-    /** A ranked game: the pill, the stakes ("Win +16 · Loss −14", null while placing), and Forfeit instead of Leave and End. */
+    /** A ranked game: the pill and the stakes ("Win +16 · Loss −14", null while placing). */
     ranked?: { stakes: string | null } | null
     settings: GameSettings
     onleave: () => void
@@ -56,16 +56,16 @@
   } = $props()
 
   let showSettings = $state(false)
-  // Ranked: the one who can end it forfeits instead
-  const forfeits = $derived(ranked !== null && canEnd)
+  // A forfeit is the way out of a ranked game, from either Leave control: it asks first
+  const forfeits = $derived(endMode === 'forfeit' && canEnd)
 </script>
 
 {#if compact}
   <header class="h-14 shrink-0 box-border pl-1 pr-3 flex items-center gap-[6px] border-b border-line bg-surface-1">
     <button
       type="button"
-      onclick={onleave}
-      aria-label="Leave game"
+      onclick={forfeits ? onend : onleave}
+      aria-label={forfeits ? 'Forfeit game' : 'Leave game'}
       class="w-11 h-11 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer"
     >
       <ChevronLeft size={18} />
