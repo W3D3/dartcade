@@ -92,6 +92,7 @@ describe('reviewLeg', () => {
           grouping: null,
           value: {
             startChance: null,
+            fewestChance: null,
             points: expect.closeTo(51.6, 1),
             rule: null,
             scoring: { scored: 140, grouping: 0, closeness: 0, rating: 140, average: (501 / 17) * 3 },
@@ -176,14 +177,15 @@ describe('reviewLeg', () => {
           then: 98,
           bust: false,
           tag: 'scoring',
-          // 235 is a 5-dart finish, 98 a 2-dart one
-          grade: 'perfect',
+          // 235 is a 5-dart finish, 98 a 2-dart one: level 7 keeps that path 25% of the time, just
+          // too often for Brilliant
+          grade: 'excellent',
           text: 'Scored 137: 98 left is still a treble to double (T20 · D19), the fewest possible.',
           tip: false,
           notes: [],
           explained: null,
           grouping: null,
-          value: expect.objectContaining({ rule: 'perfect' }),
+          value: expect.objectContaining({ rule: 'fewest', fewestChance: expect.closeTo(25.2, 1) }),
         },
         {
           n: 5,
@@ -230,7 +232,7 @@ describe('reviewLeg', () => {
           notes: [expect.objectContaining({ leg: 0, visit: 8, dart: 1, left: 47, thrown: 'S1', better: 'S15', tip: false })],
           explained: expect.objectContaining({ visit: 8, dart: 1, better: 'S15' }),
           grouping: null,
-          value: { startChance: expect.any(Number), points: expect.closeTo(-2.1, 1), rule: 'note', scoring: null },
+          value: { startChance: expect.any(Number), points: expect.closeTo(-2.1, 1), rule: 'note', scoring: null, fewestChance: null },
         },
         {
           n: 6,
@@ -267,7 +269,7 @@ describe('reviewLeg', () => {
           notes: [],
           explained: null,
           grouping: null,
-          value: { startChance: expect.any(Number), points: expect.closeTo(9.1, 1), rule: null, scoring: null },
+          value: { startChance: expect.any(Number), points: expect.closeTo(9.1, 1), rule: null, scoring: null, fewestChance: null },
         },
       ],
       skills: {

@@ -50,11 +50,13 @@ function scaleOf(bands: GradeBands, points: number): GradeScale {
   return { min, max, bands: rows, ticks, marker: Math.min(max, Math.max(min, points)) }
 }
 
-const RULE_TEXT: Record<NonNullable<GradeRule>, string> = {
-  perfect: 'Perfect: fewest darts — value ignored',
-  note: 'Bad: a strategy note — value ignored',
-  veryLow: `Under ${VERY_LOW} scored: capped at Weak`,
-  spill: 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',
+/** The line for the rule that overrode or capped the value; `chance` the fewest-darts path's (%) */
+const RULE_TEXT: Record<NonNullable<GradeRule>, (chance: number) => string> = {
+  brilliant: chance => `Brilliant: fewest darts, a ${Math.round(chance)}% chance`,
+  fewest: () => 'Excellent floor: fewest darts',
+  note: () => 'Bad: a strategy note — value ignored',
+  veryLow: () => `Under ${VERY_LOW} scored: capped at Weak`,
+  spill: () => 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',
 }
 
 /** The working behind a visit's grade. Setup and Doubling: the start's checkout chance, each
@@ -87,7 +89,7 @@ export function gradeWorking(v: Pick<ReviewVisit, 'tag' | 'left' | 'bust' | 'dar
     parts,
     result: `${sum} → ${GRADE_PILL[band].label} (${bandText(bands, band)})${bust}`,
     scale: scaleOf(bands, points),
-    rule: rule === null ? null : RULE_TEXT[rule],
+    rule: rule === null ? null : RULE_TEXT[rule](v.value.fewestChance ?? 0),
   }
 }
 

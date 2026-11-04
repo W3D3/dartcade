@@ -23,8 +23,8 @@
   --color-live-text: #ff8a80;
   /* The coach's eight visit grades (lib/coach/tone.ts), after chess.com's move classes: each base
      colour fills or tints a pill, its -text variant is the text on that tint or on a card (≥ 4.5:1) */
-  --color-grade-perfect: #1baca6;
-  --color-grade-perfect-text: #4fd6cf;
+  --color-grade-brilliant: #1baca6;
+  --color-grade-brilliant-text: #4fd6cf;
   --color-grade-excellent: #81b64c;
   --color-grade-excellent-text: #a3d670;
   --color-grade-great: #5c8bb0;

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SEGS, segAngle, segmentAt } from '../board.js'
 import {
+  BRILLIANT_CHANCE,
   BUST_DART_LOST,
   classifyVisit,
   closeness,
@@ -21,6 +22,7 @@ import {
   type VisitFacts,
 } from './grade.js'
 import { classifyDart } from './dartClass.js'
+import { fewestChance } from './minDarts.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
 import { leg, visit, REF } from './testLegs.js'
 import { dartDeltas } from './value.js'
@@ -46,6 +48,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     first: start === 501,
     lastVisitOfLostLeg: lost,
     grouping: null,
+    fewestChance: fewestChance(REF.landing, start, throws.length),
   }
 }
 
@@ -184,8 +187,9 @@ describe('scoring visits', () => {
       points: -60,
       rule: null,
       scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 0, average: 60 },
+      fewestChance: null,
     })
-    expect(grade(501, ['T20', 'T19', 'T19']).value).toMatchObject({ rule: 'perfect', points: 114 })
+    expect(grade(501, ['T20', 'T19', 'T19']).value).toMatchObject({ rule: 'brilliant', points: 114 })
   })
 
   it('Bad: a strategy note on a later dart, told from the note', () => {
@@ -357,7 +361,7 @@ describe('setup and doubling visits: graded by value', () => {
   it('121 → S20, T17, S18: a good setup to D16', () => {
     const f = facts(121, ['S20', 'T17', 'S18'])
     expect(points(f)).toBeGreaterThanOrEqual(GOOD_FROM)
-    expect(classifyVisit(f).value).toEqual({ points: points(f), scoring: null, rule: null })
+    expect(classifyVisit(f).value).toEqual({ points: points(f), scoring: null, rule: null, fewestChance: null })
     expect(classifyVisit(f)).toMatchObject({
       tag: 'doubling',
       grade: 'good',
@@ -461,24 +465,40 @@ describe('setup and doubling visits: graded by value', () => {
   })
 })
 
-describe('Perfect: the visit keeps the fewest-darts finish', () => {
-  const perfect = (start: number, names: string[]) => grade(start, names).grade === 'perfect'
+describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at least', () => {
+  const fewest = (start: number, names: string[]) => grade(start, names).value.fewestChance !== null
 
   it('scoring visits that leave a finish in the fewest darts', () => {
-    expect(grade(501, ['T20', 'T19', 'T19'])).toMatchObject({ tag: 'scoring', grade: 'perfect', text: 'Nine-darter still on.', tip: false })
+    expect(grade(501, ['T20', 'T19', 'T19'])).toMatchObject({
+      tag: 'scoring',
+      grade: 'brilliant',
+      text: 'Nine-darter still on.',
+      tip: false,
+    })
     expect(grade(501, ['T20', 'T20', 'T17']).text).toBe('Nine-darter still on.')
-    expect(perfect(501, ['T20', 'T20', 'T20'])).toBe(true)
+    expect(fewest(501, ['T20', 'T20', 'T20'])).toBe(true)
     // 361 needs 7
-    expect(perfect(501, ['T20', 'T20', 'S20'])).toBe(false)
+    expect(fewest(501, ['T20', 'T20', 'S20'])).toBe(false)
     expect(grade(211, ['T20', 'T20', 'T17'])).toMatchObject({
       tag: 'scoring',
-      grade: 'perfect',
+      grade: 'brilliant',
       text: 'Scored 171: 40 left is still a one-dart finish (D20), the fewest possible.',
       tip: false,
     })
-    expect(perfect(211, ['T20', 'T19', 'T20'])).toBe(true)
+    expect(fewest(211, ['T20', 'T19', 'T20'])).toBe(true)
     // 31 is a 2-dart finish: 5 darts from 211, not 4
-    expect(perfect(211, ['T20', 'T20', 'T20'])).toBe(false)
+    expect(fewest(211, ['T20', 'T20', 'T20'])).toBe(false)
+  })
+
+  it('501 → 180 and 501 → 171 are Brilliant: level 7 keeps a nine-darter on in about 4% of visits', () => {
+    for (const names of [
+      ['T20', 'T20', 'T20'],
+      ['T20', 'T19', 'T19'],
+    ]) {
+      const g = grade(501, names)
+      expect(g).toMatchObject({ grade: 'brilliant', value: { rule: 'brilliant' } })
+      expect(g.value.fewestChance).toBeCloseTo(4.2, 1)
+    }
   })
 
   it('the nine-darter line only on the seat first visit', () => {
@@ -487,29 +507,46 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
     )
   })
 
-  it('checkouts in the fewest darts', () => {
-    expect(grade(40, ['D20'])).toMatchObject({
-      tag: 'doubling',
-      grade: 'perfect',
-      text: 'Checked out in the fewest darts (D20).',
-      tip: false,
-    })
-    expect(grade(40, ['S20', 'D10']).grade).not.toBe('perfect')
-    expect(grade(100, ['T20', 'D20']).text).toBe('Checked out in the fewest darts (D20).')
-    expect(grade(170, ['T20', 'T20', 'Bull']).text).toBe('Checked out in the fewest darts (the bull).')
+  it('checkouts in the fewest darts: Brilliant from a hard finish, Excellent from an easy one', () => {
+    // 120 → D20 D20 D20: 17.7% at level 7 to check out 120 in three darts
+    const d120 = grade(120, ['D20', 'D20', 'D20'])
+    expect(d120).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (D20).', value: { rule: 'brilliant' } })
+    expect(d120.value.fewestChance).toBeCloseTo(17.7, 1)
+    // 100 → T20 D20: 12.3%
+    const t100 = grade(100, ['T20', 'D20'])
+    expect(t100).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (D20).' })
+    expect(t100.value.fewestChance).toBeCloseTo(12.3, 1)
+    expect(grade(170, ['T20', 'T20', 'Bull'])).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (the bull).' })
+    // 40 → D20: 36.2%, above BRILLIANT_CHANCE: the Excellent floor
+    const d40 = grade(40, ['D20'])
+    expect(d40.value.fewestChance! / 100).toBeGreaterThan(BRILLIANT_CHANCE)
+    expect(d40).toMatchObject({ tag: 'doubling', grade: 'excellent', text: 'Checked out in the fewest darts (D20).', tip: false })
+    expect(d40.value.rule).toBe(bandOf(d40.value.points, FINISH_BANDS) === 'excellent' ? null : 'fewest')
   })
 
-  it('a setup visit can be Perfect', () => {
-    expect(grade(169, ['T20', 'T19', 'S12'])).toMatchObject({ tag: 'setup', grade: 'perfect' })
+  it('a visit off the fewest darts keeps its value grade', () => {
+    for (const names of [
+      ['S20', 'S10', 'D5'],
+      ['S20', 'D10'],
+    ]) {
+      const g = grade(40, names)
+      expect(g.grade, names.join(' ')).toBe(bandOf(g.value.points, FINISH_BANDS))
+      expect(g.value).toMatchObject({ rule: null, fewestChance: null })
+    }
+  })
+
+  it('a setup visit can keep the fewest darts', () => {
+    expect(fewest(169, ['T20', 'T19', 'S12'])).toBe(true)
+    expect(grade(169, ['T20', 'T19', 'S12']).tag).toBe('setup')
   })
 
   it('never on a bust; a strategy note wins, a tip does not', () => {
-    expect(perfect(40, ['T20'])).toBe(false)
-    // 98 → T20 D19: the fewest; a forced note keeps it Bad, a tip leaves it Perfect
+    expect(fewest(40, ['T20'])).toBe(false)
+    // 98 → T20 D19: the fewest; a forced note keeps it Bad, a tip leaves it Brilliant
     const f = facts(98, ['T20', 'D19'])
-    expect(classifyVisit(f).grade).toBe('perfect')
+    expect(classifyVisit(f).grade).toBe('brilliant')
     const note = { ...explainedNote(facts(24, ['S14', 'D5']).notes)!, tip: false }
     expect(classifyVisit({ ...f, notes: [note] }).grade).toBe('bad')
-    expect(classifyVisit({ ...f, notes: [{ ...note, tip: true as const }] }).grade).toBe('perfect')
+    expect(classifyVisit({ ...f, notes: [{ ...note, tip: true as const }] }).grade).toBe('brilliant')
   })
 })

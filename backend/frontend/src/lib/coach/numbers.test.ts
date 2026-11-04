@@ -69,7 +69,7 @@ describe('gradeWorking', () => {
     left: 121,
     bust: false,
     darts: [dart('S20', -4.4), dart('M17', 10.8, 2.25), dart('S18', 1.5)],
-    value: { points: 10.15, scoring: null, rule: null, startChance: 34.04 },
+    value: { points: 10.15, scoring: null, rule: null, startChance: 34.04, fewestChance: null },
   }
 
   it("adds a finish visit's darts from its start chance and places the sum in its band", () => {
@@ -109,7 +109,12 @@ describe('gradeWorking', () => {
     expect(gradeWorking({ ...finish, bust: true, value: { ...finish.value, points: -16 } }).result).toBe(
       'Σ −16.0 → Weak (−20 to −15) (a bust: valued back on the start)',
     )
-    expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'perfect' } }).rule).toBe('Perfect: fewest darts — value ignored')
+    expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'brilliant', fewestChance: 14.2 } }).rule).toBe(
+      'Brilliant: fewest darts, a 14% chance',
+    )
+    expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'fewest', fewestChance: 36 } }).rule).toBe(
+      'Excellent floor: fewest darts',
+    )
   })
 
   it("adds a scoring visit's rating and compares it with the average", () => {
@@ -123,6 +128,7 @@ describe('gradeWorking', () => {
         scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 71.5, average: 60 },
         rule: 'spill',
         startChance: null,
+        fewestChance: null,
       },
     })
     expect(w.parts).toEqual(['Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5', 'Your average: 60.0'])

@@ -1,6 +1,6 @@
-// Every visit's tag (Scoring, Setup, Doubling), grade (Perfect to Bad, eight classes) and one line
+// Every visit's tag (Scoring, Setup, Doubling), grade (Brilliant to Bad, eight classes) and one line
 // saying why. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
-// finish is Perfect. Otherwise a Scoring visit is graded on its rating against the average, a Setup
+// finish is Brilliant when that was hard for the coaching level, else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
 // or Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of
 // the darts that missed their target. The bands were set on real legs (the spec's calibration table).
 import { checkoutHint } from '../checkout.js'
@@ -41,15 +41,18 @@ export const WEAK_FROM = -20
 export const MISS_CLOSE_MAX = 5
 /** …falling to none this far (mm) from the target's bed */
 export const MISS_CLOSE_ZERO_MM = 20
+/** A fewest-darts visit is Brilliant when the coaching level keeps that path from its start less
+ *  often than this (minDarts.ts fewestChance), else Excellent at least */
+export const BRILLIANT_CHANCE = 0.25
 /** A bust costs this many points for each dart of the visit it kept from being thrown */
 export const BUST_DART_LOST = 5
 
 export type VisitTag = 'scoring' | 'setup' | 'doubling'
 /** Best to worst */
-export const VISIT_GRADES = ['perfect', 'excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'] as const
+export const VISIT_GRADES = ['brilliant', 'excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'] as const
 export type VisitGrade = (typeof VISIT_GRADES)[number]
-/** A value-graded class: every grade but Perfect, which only the fewest-darts rule gives */
-type ValueGrade = Exclude<VisitGrade, 'perfect'>
+/** A value-graded class: every grade but Brilliant, which only the fewest-darts rule gives */
+type ValueGrade = Exclude<VisitGrade, 'brilliant'>
 export type VisitFacts = {
   /** The score before the visit */
   start: number
@@ -72,15 +75,20 @@ export type VisitFacts = {
   first: boolean
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
+  /** The chance (0–1) the coaching level keeps the fewest-darts path from `start` for this
+   *  visit's darts (minDarts.ts fewestChance): how hard a fewest-darts visit was */
+  fewestChance: number
 }
-/** What overrode or capped the value: the fewest-darts finish (Perfect), a strategy note (Bad), a
- *  very low score (Weak at best), darts spilled into 1 or 5 (Inaccuracy at best); null: the value's band */
-export type GradeRule = 'perfect' | 'note' | 'veryLow' | 'spill' | null
+/** What overrode or capped the value: the fewest-darts finish when it was hard (Brilliant) or not
+ *  (`fewest`: lifted to Excellent), a strategy note (Bad), a very low score (Weak at best), darts
+ *  spilled into 1 or 5 (Inaccuracy at best); null: the value's band */
+export type GradeRule = 'brilliant' | 'fewest' | 'note' | 'veryLow' | 'spill' | null
 /** The rating's parts on a Scoring visit: scored + grouping + closeness = rating */
 export type ScoringValue = { scored: number; grouping: number; closeness: number; rating: number; average: number }
 /** How the grade was worked out (the debug view). `points` on the tag's scale: a Setup or Doubling
- *  visit's Σ (dart Δ + closeness), a Scoring visit's rating − average; `scoring` its parts there. */
-export type VisitValue = { points: number; scoring: ScoringValue | null; rule: GradeRule }
+ *  visit's Σ (dart Δ + closeness), a Scoring visit's rating − average; `scoring` its parts there;
+ *  `fewestChance` (%) the fewest-darts path's chance on a visit that kept it, else null. */
+export type VisitValue = { points: number; scoring: ScoringValue | null; rule: GradeRule; fewestChance: number | null }
 /** `tip`: the text is a tip's (a note that leaves the grade alone) */
 export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string; tip: boolean; value: VisitValue }
 
@@ -193,7 +201,11 @@ function scoring(f: VisitFacts): Graded {
     average: f.average,
   }
   const points = sv.rating - f.average
-  const g = (grade: VisitGrade, text: string, rule: GradeRule = null): Graded => ({ grade, text, value: { points, scoring: sv, rule } })
+  const g = (grade: VisitGrade, text: string, rule: GradeRule = null): Graded => ({
+    grade,
+    text,
+    value: { points, scoring: sv, rule, fewestChance: null },
+  })
   const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
   const grade = bandOf(points, SCORING_BANDS)
   const capped = (cap: VisitGrade, rule: GradeRule) => (worse(grade, cap) === grade ? null : rule)
@@ -289,7 +301,11 @@ function finishing(f: VisitFacts): Graded {
   const out = f.throws.find(t => t.checkout)
   const total = f.throws.reduce((s, t, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i]), t.bust ? bustPenalty(t.dart) : 0), 0)
   const grade = bandOf(total, FINISH_BANDS)
-  const g = (grade: VisitGrade, text: string): Graded => ({ grade, text, value: { points: total, scoring: null, rule: null } })
+  const g = (grade: VisitGrade, text: string): Graded => ({
+    grade,
+    text,
+    value: { points: total, scoring: null, rule: null, fewestChance: null },
+  })
   // A bust ends on the start's next visit (value.ts): graded like any other end, told as a bust
   const doubling = tagOf(f) === 'doubling'
   if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f, doubling ? doublingStory(f, f.throws.length - 1, true) : []))
@@ -305,9 +321,9 @@ function finishing(f: VisitFacts): Graded {
 }
 
 /** The visit keeps the fewest darts to check out its start: its darts plus the fewest from what it left */
-const perfect = (f: VisitFacts) => !f.bust && minDarts(f.start) === f.throws.length + minDarts(f.then)
+const fewest = (f: VisitFacts) => !f.bust && minDarts(f.start) === f.throws.length + minDarts(f.then)
 
-function perfectText(f: VisitFacts): string {
+function fewestText(f: VisitFacts): string {
   const out = f.throws.find(t => t.checkout)
   if (out) return `Checked out in the fewest darts (${doubleName(out.left)}).`
   const k = minDarts(f.then)
@@ -323,17 +339,22 @@ export function classifyVisit(f: VisitFacts): VisitGrading {
   const out = f.throws.some(t => t.checkout)
   const matchDart = f.lastVisitOfLostLeg && !out && atDouble(f)
   const graded = tag === 'scoring' ? scoring(f) : finishing(f)
-  const g = (grade: VisitGrade, text: string, rule: GradeRule, tip = false): VisitGrading => ({
+  const g = (grade: VisitGrade, text: string, rule: GradeRule, tip = false, fewestChance: number | null = null): VisitGrading => ({
     tag,
     grade,
     text: matchDart ? `Missed the match dart. ${text}` : text,
     tip,
-    value: { ...graded.value, rule },
+    value: { ...graded.value, rule, fewestChance },
   })
   // A note says another aim was better: Bad on any visit
   if (note && !note.tip) return g('bad', noteText(note), 'note')
-  // A tip leaves the grade alone, and Perfect keeps its own line
-  if (perfect(f)) return g('perfect', perfectText(f), 'perfect')
+  // A tip leaves the grade alone, and the fewest darts keep their own line
+  if (fewest(f)) {
+    const chance = f.fewestChance * 100
+    if (f.fewestChance < BRILLIANT_CHANCE) return g('brilliant', fewestText(f), 'brilliant', false, chance)
+    // Excellent is the best a value gives, so the floor is the grade; the rule only when it lifted it
+    return g('excellent', fewestText(f), graded.grade === 'excellent' ? graded.value.rule : 'fewest', false, chance)
+  }
   // A tip's line, unless the visit ended on a bust or a checkout, which say so
   return note && !f.bust && !out
     ? g(graded.grade, noteText(note), graded.value.rule, true)

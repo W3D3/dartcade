@@ -172,7 +172,7 @@ missed."). Scoring visits keep their rules (see Visit rating).
   the first dart is −28 (Bad), with the second −23 (Bad), with the third −18 (Weak), the same as
   three missed darts that stay on 8 (−18, Weak). The debug block shows it on its own line
   ("S10 bust: 1 dart not thrown −5.0").
-- **Order:** (1) a strategy note (not a tip) → Bad, its text; (2) Perfect (fewest darts);
+- **Order:** (1) a strategy note (not a tip) → Bad, its text; (2) the fewest darts (Brilliant when hard, else Excellent at least);
   (3) otherwise by the visit's points on the eight-grade scale (see Eight grades). A bust and a
   Bust-back are graded the same way (user ruling: "a bust can be better than leaving D1": 32 →
   S16, T8 busting back to 32 is −24 with its penalty, 32 → S16, S8, S6 leaving 2 is −40); the
@@ -180,7 +180,7 @@ missed."). Scoring visits keep their rules (see Visit rating).
 - **Texts:** a bust names its dart, "Busted on the second dart (T8 on 16). Back on 32." (the
   "Back on" only when it busted from another score than the start) / "Busted on purpose with the
   third dart to stay on 20 (D10)."; a checkout
-  "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
+  "Checked out on D16." (the fewest darts keep their own); a tip-only visit the tip's text (the grade from
   the value); a Doubling visit without a checkout (user ruling) what happened to the double, then
   where you stand, from the darts' classes: a run of darts at one double as one phrase with where
   they missed (inside, outside, wide; the bull's in the 25) and, from placed darts, their mean
@@ -258,9 +258,9 @@ Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of 
 ## Eight grades
 
 User report: "I almost only got OK even though I had some slips". The six grades became eight,
-best to worst, after chess.com's move classes: **Perfect, Excellent, Great, Good, OK,
-Inaccuracy, Weak, Bad** (`VISIT_GRADES` in `grade.ts`; `perfect | excellent | great | good | ok |
-inaccuracy | weak | bad`). Perfect stays the fewest-darts rule and a non-tip strategy note still
+best to worst, after chess.com's move classes: **Brilliant, Excellent, Great, Good, OK,
+Inaccuracy, Weak, Bad** (`VISIT_GRADES` in `grade.ts`; `brilliant | excellent | great | good | ok |
+inaccuracy | weak | bad`; Brilliant replaced Perfect, see Brilliant visit). Brilliant stays a fewest-darts rule and a non-tip strategy note still
 makes any visit Bad, whatever its cost (one rule the player can learn, and a note already means
 at least `NOTE_THRESHOLD` lost). Every other visit is graded by its value on its tag's scale
 (`FINISH_BANDS`, `SCORING_BANDS`, each class from its lower bound, Bad below the last):
@@ -282,12 +282,15 @@ blunder, and a 2 still falls to Bad by value), and two or more darts at the 20 s
 spill's. A bust is graded by its value as before. The low visits count, the clean leg, the take
 and the Setup skill still count Weak and Bad only.
 
+¹ Calibrated before Brilliant replaced Perfect: those six are now Brilliant or Excellent by
+their chance.
+
 **Calibration** on the dev database's coached legs (the user's 13 games, 16 legs, 114 visits, regraded
 with the current model; 61-start test games with typed darts included):
 
 | Class      | Before (6 grades) | After | Of which Scoring / Setup+Doubling |
 | ---------- | ----------------- | ----- | --------------------------------- |
-| Perfect    | 6                 | 6     | 0 / 6                             |
+| Perfect¹   | 6                 | 6     | 0 / 6                             |
 | Excellent  | –                 | 8     | 4 / 4                             |
 | Great      | 11                | 9     | 6 / 3                             |
 | Good       | 11                | 16    | 10 / 6                            |
@@ -303,7 +306,7 @@ gives away 3–9 points is an Inaccuracy, a whole visit of missed doubles or a c
 finish) and Excellent (a hard one). The bands are named constants in `grade.ts`, to be retuned
 as more legs come in.
 
-**Colours** (`--color-grade-*` in `app.css`, one tone map in `lib/coach/tone.ts`): Perfect teal
+**Colours** (`--color-grade-*` in `app.css`, one tone map in `lib/coach/tone.ts`): Brilliant teal
 #1baca6 (filled, dark text, halo), Excellent green #81b64c (filled, dark text), Great blue
 #5c8bb0, Good pale green #95b776, OK grey #8f9085, Inaccuracy yellow #f7c631, Weak orange
 #e58f2a, Bad red #ca3431; the tinted pills use a lighter `-text` variant, each at least 6.3:1
@@ -316,34 +319,48 @@ busting dart Bad red).
 **How the grade was worked out** (`coach.debug.enabled`, the `VisitNumbers` block): the server
 adds `ReviewVisit.value` = `{ points, scoring, rule, startChance }`: the points on the tag's
 scale, a Scoring visit's rating parts (scored + grouping bonus + closeness bonus = rating, and the
-average), the rule that overrode or capped the value (`perfect`, `note`, `veryLow`, `spill`) and
+average), the rule that overrode or capped the value (`brilliant`, `fewest`, `note`, `veryLow`, `spill`), the fewest-darts path's chance (`fewestChance`, %, on a visit that kept it) and
 the checkout chance before the first dart. `gradeWorking` (`lib/coach/numbers.ts`, pure) turns it
 into text — "Start: 121 left, 34.0% to check out", "S20: Δ −4.4", "M17: Δ +10.8, closeness +2.3",
 "Σ +10.2 → Good (+2 to +20)"; "Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5", "Your
-average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Perfect: fewest darts — value
-ignored" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
+average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Brilliant: fewest darts, a 14% chance" / "Excellent floor: fewest darts" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
 (hidden from screen readers: the text says it all).
 
-## Perfect visit
+## Brilliant visit
 
-A new top grade, above Great, on any tag (`perfect` in `VisitGrade`). A visit is **Perfect**
-when it keeps the fewest-darts finish: `!bust && minDarts(start) === darts + minDarts(left)`,
-where `darts` is the visit's walked darts (fewer than 3 on a checkout) and `minDarts(0) = 0`.
-`minDarts` (`shared/coach/minDarts.ts`) is a small table, double out (D1–D20 or the bull):
-the fewest darts scoring exactly m with any dart, then the best finishing double; 501 is 9,
-361 is 7, 330 and 327 are 6, 171 and 159 are 4, 170 is 3, 99 is 3, 100 is 2.
+The top grade, above Excellent, on any tag (`brilliant` in `VisitGrade`; user ruling: it
+replaced Perfect, which every fewest-darts visit got however easy). A visit keeps the
+**fewest-darts finish** when `!bust && minDarts(start) === darts + minDarts(left)`, where `darts`
+is the visit's walked darts (fewer than 3 on a checkout) and `minDarts(0) = 0`. `minDarts`
+(`shared/coach/minDarts.ts`) is a small table, double out (D1–D20 or the bull): the fewest darts
+scoring exactly m with any dart, then the best finishing double; 501 is 9, 361 is 7, 330 and 327
+are 6, 171 and 159 are 4, 170 is 3, 99 is 3, 100 is 2.
 
-- 501 → T20 T19 T19 (327 left), 171 (330 left) and 180 are Perfect; T20 T20 S20 (361, 7 darts)
-  is not. 211 → T20 T20 T17 (40) and T20 T19 T20 (34) are; T20 T20 T20 (31, a 2-dart finish)
-  is not. 40 → D20 and 100 → T20 D20 and 170 → T20 T20 Bull are; 40 → S20 D10 is graded by its value (Good).
+Such a visit is **Brilliant** when it was hard for the coaching level: its chance of doing it from
+the visit's start is below `BRILLIANT_CHANCE` (0.25, `grade.ts`). Any other fewest-darts visit is
+**Excellent** (a floor; nothing a value gives is higher), with the rule `fewest` when the floor
+lifted it.
+
+- **The chance** (`fewestChance(landing, start, darts)` in `minDarts.ts`, exact on the level's
+  landing table, no approximation): the chance a player of the level, aiming every dart for it,
+  keeps the fewest-darts path for the visit's darts. Each dart must take exactly one dart off
+  `minDarts` (none can take more) and a checkout ends it kept, maximised over the aims per state.
+  On a checkout in the fewest darts this is the chance to check out from the start in that many
+  darts (equal to the model's `fin[start][darts]`); on a scoring or setup visit, the chance of a
+  visit that keeps the path. It is `ReviewVisit.value.fewestChance` (%).
+- At level 7 (an 81 average): 120 → D20 D20 D20 is Brilliant (17.7%), 100 → T20 D20 Brilliant
+  (12.3%), 170 → T20 T20 Bull Brilliant (3.1%), 501 → 180 and 501 → 171 Brilliant (4.2%: the
+  start's chance, the same for both), 40 → D20 Excellent (36.2%), 235 → T20 T19 S20 (98 left)
+  Excellent (25.2%, just above). 40 → S20 S10 D5 and 40 → S20 D10 aren't the fewest darts and keep
+  their value grade.
 - It is checked before every other grade rule except the strategy note and the bust: a bust is
-  never Perfect, and a note (not a tip) keeps its Mistake.
-- Texts: "Checked out in the fewest darts (D20)."; otherwise "Scored 174: 327 left is still a
-  6-dart finish, the fewest possible."; on the seat's first visit from 501 leaving a 6-dart
-  finish, "Nine-darter still on."
-- The grade pill is filled teal with a halo; the leg review's grade counts and the checks page
-  list it first. Nothing counts grades as "great or better" today: the skills and the take look at
-  Weak and Bad only, so Perfect needs no other wiring.
+  never on the fewest darts, and a note (not a tip) keeps its Bad.
+- Texts (Brilliant and the Excellent floor alike): "Checked out in the fewest darts (D20).";
+  otherwise "Scored 174: 327 left is still a 6-dart finish, the fewest possible."; on the seat's
+  first visit from 501 leaving a 6-dart finish, "Nine-darter still on."
+- The grade pill is filled teal with a halo (chess.com's Brilliant colour, Perfect's before); the
+  leg review's grade counts and the checks page list it first. Nothing counts grades as "great or
+  better" today: the skills and the take look at Weak and Bad only.
 
 ## Data and UI
 
@@ -432,7 +449,7 @@ which the 81-average model called a loss).
 - **Reviews:** the level comes from the same 30-day average (as of the game's finish) the scoring
   grades use, and is stored in the review JSON (`LegReview.coachLevel`, no migration), so a review
   doesn't shift when the average changes; the leg review says "Coached as a 46 average".
-- **Unchanged by the level:** the grade thresholds, Perfect (`minDarts`), the scoring grades
+- **Unchanged by the level:** the grade thresholds, the fewest-darts rule (`minDarts`; Brilliant's chance does follow the level), the scoring grades
   against the average, the grouping comment's own average-based expectation, and the dart classes'
   attribution σ (`SIGMA_ATTR`).
 - **Sandbox:** "Your average" picks the level the same way and shows "Coaching level: 3 (≈ 46
@@ -549,9 +566,9 @@ Decisions taken while building this without the user, each with why:
 
 - **The worst grade is Bad** (user ruling), `bad` in the code and the API since the eight grades
   (it was `mistake`).
-- **Perfect: the note wins.** A visit with a strategy note (not a tip) stays Bad even if it
-  kept the fewest darts: the coach doesn't call a visit perfect while saying another aim was
-  better. A tip-only visit can still be Perfect, and keeps the Perfect line (as a checkout keeps
+- **Fewest darts: the note wins.** A visit with a strategy note (not a tip) stays Bad even if it
+  kept the fewest darts: the coach doesn't call a visit brilliant while saying another aim was
+  better. A tip-only visit can still be Brilliant or Excellent, and keeps the fewest-darts line (as a checkout keeps
   its own line over a tip); the tip still shows in the visit's note.
 - **"Nine-darter still on." only on the seat's first visit from 501**: a later visit on 501 (after
   a zero visit, or in a 701 game) can't be on a nine-darter.

@@ -3827,7 +3827,7 @@ components:
         then: { type: integer, minimum: 0 }
         bust: { type: boolean }
         tag: { type: string, enum: [scoring, setup, doubling] }
-        grade: { type: string, enum: [perfect, excellent, great, good, ok, inaccuracy, weak, bad] }
+        grade: { type: string, enum: [brilliant, excellent, great, good, ok, inaccuracy, weak, bad] }
         text: { type: string }
         tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }
         notes: { type: array, items: { $ref: '#/components/schemas/CoachNote' } }
@@ -3859,10 +3859,16 @@ components:
         value:
           type: object
           description: 'How the grade was worked out (shared/coach/grade.ts VisitValue)'
-          required: [points, scoring, rule, startChance]
+          required: [points, scoring, rule, startChance, fewestChance]
           additionalProperties: false
           properties:
             startChance: { type: number, nullable: true, description: 'The checkout chance (%) before the first dart; null on Scoring' }
+            fewestChance:
+              {
+                type: number,
+                nullable: true,
+                description: "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null",
+              }
             points:
               {
                 type: number,
@@ -3883,8 +3889,8 @@ components:
             rule:
               type: string
               nullable: true
-              enum: [perfect, note, veryLow, spill, null]
-              description: 'What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5'
+              enum: [brilliant, fewest, note, veryLow, spill, null]
+              description: 'What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5'
     SkillGrade:
       type: object
       required: [grade, line]

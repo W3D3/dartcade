@@ -9107,7 +9107,7 @@
           "grade": {
             "type": "string",
             "enum": [
-              "perfect",
+              "brilliant",
               "excellent",
               "great",
               "good",
@@ -9218,7 +9218,8 @@
               "points",
               "scoring",
               "rule",
-              "startChance"
+              "startChance",
+              "fewestChance"
             ],
             "additionalProperties": false,
             "properties": {
@@ -9226,6 +9227,11 @@
                 "type": "number",
                 "nullable": true,
                 "description": "The checkout chance (%) before the first dart; null on Scoring"
+              },
+              "fewestChance": {
+                "type": "number",
+                "nullable": true,
+                "description": "On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null"
               },
               "points": {
                 "type": "number",
@@ -9265,13 +9271,14 @@
                 "type": "string",
                 "nullable": true,
                 "enum": [
-                  "perfect",
+                  "brilliant",
+                  "fewest",
                   "note",
                   "veryLow",
                   "spill",
                   null
                 ],
-                "description": "What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5"
+                "description": "What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5"
               }
             }
           }

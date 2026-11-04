@@ -7,7 +7,7 @@ import type { Grouping, GroupingLevel } from '$shared/coach/grouping'
 
 /** Each tone's text colour: what text-only uses (counts, letters, legends) wear */
 export const TONE_TEXT = {
-  perfect: 'text-grade-perfect-text',
+  brilliant: 'text-grade-brilliant-text',
   excellent: 'text-grade-excellent-text',
   great: 'text-grade-great-text',
   good: 'text-grade-good-text',
@@ -21,9 +21,9 @@ export const TONE_TEXT = {
 } as const satisfies Record<VisitGrade | 'lime' | 'plain' | 'info', string>
 export type PillTone = keyof typeof TONE_TEXT
 
-/** A tone's pill: Perfect filled with a halo and Excellent filled (dark text), the rest tinted */
+/** A tone's pill: Brilliant filled with a halo and Excellent filled (dark text), the rest tinted */
 const TONE_PILL: Record<PillTone, string> = {
-  perfect: 'bg-grade-perfect text-accent-fg ring-[3px] ring-grade-perfect/35',
+  brilliant: 'bg-grade-brilliant text-accent-fg ring-[3px] ring-grade-brilliant/35',
   excellent: 'bg-grade-excellent text-accent-fg',
   great: `bg-grade-great/20 ${TONE_TEXT.great}`,
   good: `bg-grade-good/18 ${TONE_TEXT.good}`,
@@ -64,7 +64,7 @@ export const SKILL_TONE: Record<NonNullable<SkillGrade['grade']> | 'none', PillT
 
 /** A visit's grade pill, each grade in its own tone. Tip is a note that leaves the grade alone, in the blue Info style. */
 export const GRADE_PILL: Record<VisitGrade | 'tip', PillView> = {
-  perfect: { label: 'Perfect', tone: 'perfect' },
+  brilliant: { label: 'Brilliant', tone: 'brilliant' },
   excellent: { label: 'Excellent', tone: 'excellent' },
   great: { label: 'Great', tone: 'great' },
   good: { label: 'Good', tone: 'good' },

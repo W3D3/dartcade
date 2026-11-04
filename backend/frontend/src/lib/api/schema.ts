@@ -3003,7 +3003,7 @@ export interface components {
             /** @enum {string} */
             tag: "scoring" | "setup" | "doubling";
             /** @enum {string} */
-            grade: "perfect" | "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+            grade: "brilliant" | "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
             text: string;
             /** @description The text is a tip's (a note that leaves the grade alone) */
             tip: boolean;
@@ -3034,6 +3034,8 @@ export interface components {
             value: {
                 /** @description The checkout chance (%) before the first dart; null on Scoring */
                 startChance: number | null;
+                /** @description On a visit that kept the fewest-darts path: the coaching level's chance (%) to keep it from the start (shared/coach/minDarts.ts fewestChance); else null */
+                fewestChance: number | null;
                 /** @description On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average */
                 points: number;
                 /** @description A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling */
@@ -3045,10 +3047,10 @@ export interface components {
                     average: number;
                 } | null;
                 /**
-                 * @description What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5
+                 * @description What overrode or capped the value: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5
                  * @enum {string|null}
                  */
-                rule: "perfect" | "note" | "veryLow" | "spill" | null;
+                rule: "brilliant" | "fewest" | "note" | "veryLow" | "spill" | null;
             };
         };
         SkillGrade: {

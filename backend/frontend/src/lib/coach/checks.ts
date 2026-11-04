@@ -1,6 +1,7 @@
 // "What the coach detects" (Coach-Mistakes): the checks this version runs, grouped as the leg
 // review tags visits. The rules live in shared/coach/grade.ts, notes.ts and review.ts; keep these in step.
 import {
+  BRILLIANT_CHANCE,
   BUST_DART_LOST,
   DART_COSTLY_AT,
   DART_GOOD_FROM,
@@ -45,7 +46,7 @@ const scaleText = (bands: GradeBands) =>
   [...bands.map(b => b.grade), 'bad' as const].map(g => `${GRADE_PILL[g].label} ${bandText(bands, g)}`).join(', ')
 
 const MEANING: Record<VisitGrade, string> = {
-  perfect: 'the fewest darts possible',
+  brilliant: 'the fewest darts, when that was hard',
   excellent: 'a big gain',
   great: 'a strong outcome',
   good: 'did the job',
@@ -56,13 +57,13 @@ const MEANING: Record<VisitGrade, string> = {
 }
 
 /** One legend entry per class, best first, with its bands: `finish` in checkout-chance points
- *  (Setup and Doubling), `scoring` against your average; null for Perfect, which a rule gives */
+ *  (Setup and Doubling), `scoring` against your average; null for Brilliant, which a rule gives */
 export type GradeLegend = { label: VisitGrade; text: string; finish: string | null; scoring: string | null }
 export const GRADE_LEGEND: GradeLegend[] = VISIT_GRADES.map(g => ({
   label: g,
   text: MEANING[g],
-  finish: g === 'perfect' ? null : bandText(FINISH_BANDS, g),
-  scoring: g === 'perfect' ? null : bandText(SCORING_BANDS, g),
+  finish: g === 'brilliant' ? null : bandText(FINISH_BANDS, g),
+  scoring: g === 'brilliant' ? null : bandText(SCORING_BANDS, g),
 }))
 
 const notePoints = Math.round(NOTE_THRESHOLD * 100)
@@ -74,10 +75,10 @@ export const CHECK_GROUPS: CheckGroup[] = [
     checks: [
       {
         name: 'Fewest darts',
-        labels: ['perfect'],
-        source: 'scores',
-        when: 'The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.',
-        example: '501 · T20 T19 T19 → 327, still 6 darts from a checkout',
+        labels: ['brilliant', 'excellent'],
+        source: 'model',
+        when: `The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Brilliant when a player one level above your average keeps that path from the visit's start less than ${Math.round(BRILLIANT_CHANCE * 100)}% of the time (a checkout: the chance to check out in that many darts), else Excellent at least. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.`,
+        example: '501 · T20 T20 T20 → 321, still on a nine-darter (about 4%): Brilliant; 40 · D20 (about 36%): Excellent',
         says: 'What is left and in how many darts (Nine-darter still on, from 501); on a checkout, the double.',
       },
       {

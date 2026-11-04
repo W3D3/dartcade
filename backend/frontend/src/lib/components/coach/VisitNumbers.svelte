@@ -26,7 +26,7 @@
   /** A point's place on the bar, in % */
   const at = (p: number) => ((p - working.scale.min) / (working.scale.max - working.scale.min)) * 100
   const FILL: Record<VisitGrade, string> = {
-    perfect: 'bg-grade-perfect',
+    brilliant: 'bg-grade-brilliant',
     excellent: 'bg-grade-excellent',
     great: 'bg-grade-great',
     good: 'bg-grade-good',

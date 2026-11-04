@@ -4,6 +4,7 @@ import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
 import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
+import { fewestChance } from './minDarts.js'
 import type { CoachModel } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
@@ -151,6 +152,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       average,
       first: k === 0,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
+      fewestChance: fewestChance(model.landing, start, vThrows.length),
     })
     return {
       n: k + 1,
