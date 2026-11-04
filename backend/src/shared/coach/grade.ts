@@ -59,7 +59,7 @@ export type VisitFacts = {
   then: number
   bust: boolean
   /** Each walked dart's class (dartClass.ts), in throw order */
-  classes: readonly Closeness[]
+  classes: readonly DartClass[]
   /** Each walked dart's value change (value.ts dartDeltas); empty on a Scoring visit */
   deltas: readonly number[]
   /** How its placed darts sat together (grouping.ts); null with fewer than 2 */
@@ -172,13 +172,15 @@ const noteText = (n: CoachNote) =>
 const bustBack = (f: VisitFacts) => f.bust && f.classes.at(-1)?.kind === 'bustBack'
 const ORDINAL = ['first', 'second', 'third']
 const dartName = (t: Throw) => (t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name)
-/** "Busted on the second dart (S10 on 8)."; " Back on 40." when it busted from another score */
-function bustText(f: VisitFacts): string {
-  const t = f.throws.at(-1)!
-  return `Busted on the ${ORDINAL[t.dart]} dart (${dartName(t)} on ${t.left}).${t.left === f.start ? '' : ` Back on ${f.start}.`}`
+/** "Busted on the first dart (S10 on 8)."; after darts thrown before it, what they did (a
+ *  Doubling visit's, `after`) and " Back on 40." */
+function bustText(f: VisitFacts, after: readonly string[] = []): string {
+  const t = f.throws[f.throws.length - 1]
+  const before = after.length ? `, after ${after.join(', ')}` : ''
+  return `Busted on the ${ORDINAL[t.dart]} dart (${dartName(t)} on ${t.left})${before}.${t.dart === 0 ? '' : ` Back on ${f.start}.`}`
 }
 const bustBackText = (f: VisitFacts) =>
-  `Busted on purpose with the ${ORDINAL[f.throws.at(-1)!.dart]} dart to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
+  `Busted on purpose with the ${ORDINAL[f.throws[f.throws.length - 1].dart]} dart to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
 
 type Graded = { grade: VisitGrade; text: string; value: VisitValue }
 
@@ -211,6 +213,76 @@ function scoring(f: VisitFacts): Graded {
 /** Some dart went at the double on a one-dart finish (the bull on 50) */
 const atDouble = (f: VisitFacts) => f.throws.some((t, i) => oneDartFinish(t.left) && ['double', 'bull'].includes(f.classes[i].kind))
 
+const COUNT = ['no', 'one', 'two', 'three']
+/** Where a dart at the double missed it; a bull's detail is sb (in the 25) or none */
+const WHERE: Record<string, string> = { inside: 'inside', outside: 'outside', wide: 'wide', sb: 'in the 25' }
+const whereOf = (c: DartClass) => WHERE[('detail' in c && c.detail) || 'wide']
+const targetName = (c: DartClass) => (c.target?.aimId === 'Bull' ? 'the bull' : (c.target?.label ?? 'the double'))
+/** A dart at the double on a one-dart finish (the bull on 50) */
+const atTheDouble = (t: Throw, c: DartClass) => oneDartFinish(t.left) && (c.kind === 'double' || (c.kind === 'bull' && t.left === 50))
+
+/** Missed darts at one double: "3 darts at D4, all just outside (5 mm on average)", "2 darts at
+ *  D16 missed (one inside, one wide)"; as `misses`, the bust's after: "one miss outside D4",
+ *  "two misses at D4 (one inside, one wide)". The mm (edgeMm) from the placed darts only. */
+function doubleMisses(cs: readonly DartClass[], misses: boolean): string {
+  const n = cs.length
+  const target = targetName(cs[0])
+  const placed = cs.flatMap(c => (c.miss && !c.estimated ? [c.miss.edgeMm] : []))
+  const mmAvg = placed.length ? Math.round(placed.reduce((a, b) => a + b, 0) / placed.length) : null
+  const mm = mmAvg === null ? '' : `${mmAvg} mm${n > 1 ? ' on average' : ''}`
+  const wheres = cs.map(whereOf)
+  const same = wheres.every(w => w === wheres[0])
+  if (same) {
+    const where = `${mmAvg !== null && mmAvg <= NEAR_MISS_MM ? 'just ' : ''}${wheres[0]}`
+    const paren = mm ? ` (${mm})` : ''
+    const place = wheres[0] === 'in the 25' ? where : `${where}${wheres[0] === 'wide' ? ' of' : ''} ${target}`
+    if (misses) return `${COUNT[n]} ${n === 1 ? 'miss' : 'misses'} ${place}${paren}`
+    return `${n} ${n === 1 ? 'dart' : 'darts'} at ${target}, ${n === 1 ? '' : 'all '}${where}${paren}`
+  }
+  const counts = [...new Set(wheres)].map(w => `${COUNT[wheres.filter(x => x === w).length]} ${w}`).join(', ')
+  const paren = ` (${counts}${mm ? `, ${mm}` : ''})`
+  return misses ? `${COUNT[n]} misses at ${target}${paren}` : `${n} darts at ${target} missed${paren}`
+}
+
+/** A dart on a finish that wasn't at the double: "the third split to D8", "the second missed the
+ *  split to D2 (S1)", "the first was S7", "the third missed" */
+function otherDart(t: Throw, c: DartClass): string {
+  const ord = `the ${ORDINAL[t.dart]}`
+  if (c.kind === 'split' && c.plannedLeave !== null)
+    return c.hit
+      ? `${ord} split to ${doubleName(c.plannedLeave)}`
+      : `${ord} missed the split to ${doubleName(c.plannedLeave)} (${dartName(t)})`
+  return t.after === t.left ? `${ord} missed` : `${ord} was ${dartName(t)}`
+}
+
+/** What the darts from the first one on a one-dart finish up to `end` did: a run of darts at one
+ *  double as one phrase, any other dart on its own. */
+function doublingStory(f: VisitFacts, end: number, misses: boolean): string[] {
+  const phrases: string[] = []
+  let i = f.throws.findIndex(t => oneDartFinish(t.left))
+  while (i >= 0 && i < end) {
+    const c = f.classes[i]
+    if (!atTheDouble(f.throws[i], c)) {
+      phrases.push(otherDart(f.throws[i], c))
+      i++
+      continue
+    }
+    let j = i + 1
+    while (j < end && atTheDouble(f.throws[j], f.classes[j]) && f.classes[j].target?.aimId === c.target?.aimId) j++
+    phrases.push(doubleMisses(f.classes.slice(i, j), misses))
+    i = j
+  }
+  return phrases
+}
+
+/** A Doubling visit that didn't check out: what happened to the double, then where you stand.
+ *  "3 darts at D4, all just outside (5 mm on average). Still on 8."; a new score with its route */
+function doublingText(f: VisitFacts): string {
+  const story = doublingStory(f, f.throws.length, false).join(', ')
+  const stand = f.then === f.start ? `Still on ${f.start}.` : (routeText(f.then, checkoutHint(f.then, 'double', 3)) ?? `${f.then} left.`)
+  return `${story[0].toUpperCase()}${story.slice(1)}. ${stand}`
+}
+
 /** Setup and Doubling: graded by how much the darts changed the checkout chance (value.ts), plus
  *  the closeness credit of each missed dart. */
 function finishing(f: VisitFacts): Graded {
@@ -219,8 +291,10 @@ function finishing(f: VisitFacts): Graded {
   const grade = bandOf(total, FINISH_BANDS)
   const g = (grade: VisitGrade, text: string): Graded => ({ grade, text, value: { points: total, scoring: null, rule: null } })
   // A bust ends on the start's next visit (value.ts): graded like any other end, told as a bust
-  if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f))
+  const doubling = tagOf(f) === 'doubling'
+  if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f, doubling ? doublingStory(f, f.throws.length - 1, true) : []))
   if (out) return g(grade, `Checked out on ${doubleName(out.left)}.`)
+  if (doubling) return g(grade, doublingText(f))
   const route = checkoutHint(f.then, 'double', 3)
   const leave = routeText(f.then, route) ?? `${f.then} left: no checkout in three darts.`
   const worst = f.throws.reduce((a, _, i) => (f.deltas[i] < f.deltas[a] ? i : a), 0)

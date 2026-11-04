@@ -174,7 +174,14 @@ missed."). Scoring visits keep their rules (see Visit rating).
   "Back on" only when it busted from another score than the start) / "Busted on purpose with the
   third dart to stay on 20 (D10)."; a checkout
   "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
-  the value); otherwise, when the points are below 0 and the costliest dart lost at least 1 point,
+  the value); a Doubling visit without a checkout (user ruling) what happened to the double, then
+  where you stand, from the darts' classes: a run of darts at one double as one phrase with where
+  they missed (inside, outside, wide; the bull's in the 25) and, from placed darts, their mean
+  `edgeMm` ("just" within `NEAR_MISS_MM`), any other dart on its own (a split, a miss, the dart):
+  "3 darts at D4, all just outside (5 mm on average). Still on 8.", "2 darts at D16 missed (one
+  outside, one inside), 1 dart at D8, inside. 8 left is a one-dart finish (D4)."; a bust there
+  says what came before it: "Busted on the second dart (S10 on 8), after one miss outside D4.
+  Back on 8." No pattern tip. A Setup visit, when the points are below 0 and the costliest dart lost at least 1 point,
   "S19 on 56 cost 15% checkout chance: 37 left is a single to double (S5 · D16)."; else
   what was left: "32 left is a one-dart finish (D16)." or "169 left: no checkout in three darts.".
   A route is named by its shape (`routeShape`): "one-dart finish" for one dart (D16, Bull), else

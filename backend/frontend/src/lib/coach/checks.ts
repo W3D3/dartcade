@@ -124,7 +124,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         source: 'model',
         when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_BANDS)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
         example: '121 left · S20 T17 S18 → 32 (D16): +8, Good',
-        says: 'When the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route. On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
+        says: 'A setup: when the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route (37 left is a single to double, S5 · D16). A doubling visit without a checkout: what happened to the double, then where you stand (3 darts at D4, all just outside, 5 mm on average. Still on 8.). On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
       },
     ],
   },
