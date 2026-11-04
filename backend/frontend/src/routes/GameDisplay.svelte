@@ -271,7 +271,8 @@
   // What the end control does: the host ends the game, a player leaves it, and in a ranked game
   // leaving is a forfeit. Everything the player reads about it is in one table.
   type EndKind = 'end' | 'leave' | 'forfeit'
-  const endKind = $derived<EndKind>(snapshot?.ranked ? 'forfeit' : (control ?? 'end'))
+  // null for a viewer with no end control (a watcher): nothing to end, nothing to send
+  const endKind = $derived<EndKind | null>(control === null ? null : snapshot?.ranked ? 'forfeit' : control)
   const END_COPY: Record<EndKind, { title: string; body: string; confirm: string }> = {
     end: { title: 'End this game?', body: 'The current game will be cancelled and all progress will be lost.', confirm: 'End game' },
     leave: {
@@ -509,7 +510,7 @@
         myBoard={myBoard(snapshot)}
         ranked={snapshot.ranked ? { stakes: stakesLabel(snapshot.ranked.seats[snapshot.mySeats[0]]?.stakes ?? null) } : null}
         {canEnd}
-        endMode={endKind}
+        endMode={endKind ?? 'end'}
         bind:settings
         onleave={() => push(afterGameRoute(snapshot))}
         onend={() => (showEndConfirm = true)}
@@ -649,15 +650,15 @@
 
 {#if showEndConfirm}
   <ConfirmModal
-    title={END_COPY[endKind].title}
-    body={END_COPY[endKind].body}
-    confirmLabel={END_COPY[endKind].confirm}
+    title={END_COPY[endKind ?? 'end'].title}
+    body={END_COPY[endKind ?? 'end'].body}
+    confirmLabel={END_COPY[endKind ?? 'end'].confirm}
     cancelLabel="Keep playing"
     danger
     onconfirm={() => {
       showEndConfirm = false
       if (endKind === 'end') void endSession()
-      else leaveGame()
+      else if (endKind) leaveGame()
     }}
     oncancel={() => (showEndConfirm = false)}
   />
