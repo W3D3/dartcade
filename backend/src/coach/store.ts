@@ -1,6 +1,8 @@
 // The coach's stored reviews (coach_legs): one row per leg and seat with an account in a coachable
 // X01 game, built when the game finishes; missing or stale ones are rebuilt later. A game's marker
-// (coach_games) says which COACH_VERSION built its rows, and whether it was built at all.
+// (coach_games) says which COACH_VERSION built its rows, and whether it was built at all. Each row
+// keeps the coach target its player had (coach_legs.target): once they pick another, the row is
+// stale and its game is rebuilt the same way, so a new target regrades their legs.
 import { sql, type Insertable, type Kysely } from 'kysely'
 import type { CoachLegsTable, Database } from '../db/schema.js'
 import { getFinishedGame, type HistoryGame } from '../db/history.js'
@@ -14,6 +16,9 @@ import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
 export const COACH_VERSION = 29
+
+/** The current coach target of a coach_legs row's player (`cl`): their preference, auto when unset */
+export const currentTarget = sql<string>`coalesce((SELECT u.preferences->>'coachTarget' FROM "user" u WHERE u.id = cl.user_id), 'auto')`
 
 /** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
  *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. A
@@ -108,6 +113,7 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
         review: JSON.stringify(review),
         winner_name: winner.name,
         winner_darts: winner.darts,
+        target,
       })
     }
   }
@@ -119,9 +125,10 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
 const failed = new Set<string>()
 
 /**
- * Finished, valid X01 games not built at this version (or a newer one), newest first: the user's
- * (any account's with null), at most `limit`. Whether the coach reviews one is coachable()'s call
- * in buildCoachLegs, which marks the others with no rows.
+ * Finished, valid X01 games not built at this version (or a newer one), or built at this version
+ * with a row of the user's (any account's with null) graded for a coach target they no longer have,
+ * newest first: the user's (any account's with null), at most `limit`. Whether the coach reviews one
+ * is coachable()'s call in buildCoachLegs, which marks the others with no rows.
  */
 async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: number, recent?: number): Promise<string[]> {
   let q = db
@@ -140,13 +147,19 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
           .where('gp.user_id', userId === null ? 'is not' : '=', userId),
       ),
     )
-    .where(eb =>
-      eb.not(
+    .where(eb => {
+      const marker = (op: '>=' | '=') =>
         eb.exists(
-          eb.selectFrom('coach_games as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', '>=', COACH_VERSION),
-        ),
-      ),
-    )
+          eb.selectFrom('coach_games as c').select('c.game_id').whereRef('c.game_id', '=', 'gs.id').where('c.version', op, COACH_VERSION),
+        )
+      let stale = eb
+        .selectFrom('coach_legs as cl')
+        .select('cl.seat')
+        .whereRef('cl.game_id', '=', 'gs.id')
+        .where('cl.target', '<>', currentTarget)
+      if (userId !== null) stale = stale.where('cl.user_id', '=', userId)
+      return eb.or([eb.not(marker('>=')), eb.and([marker('='), eb.exists(stale)])])
+    })
     .orderBy('gs.finished_at', 'desc')
   if (failed.size) q = q.where('gs.id', 'not in', [...failed])
   // Only among the user's `recent` latest finished X01 games
@@ -184,8 +197,9 @@ async function buildById(db: Kysely<Database>, id: string, warn: WarnFn, userId?
   }
 }
 
-/** Builds one of the user's games not built at this version (or a newer one) yet (a leg asked for before the game
- *  end or the backfill got to it). buildCoachLegs skips an invalid game. */
+/** Builds one of the user's games not built at this version (or a newer one) yet, or whose rows of
+ *  theirs were graded for another coach target (a leg asked for before the game end, the backfill
+ *  or the list got to it). buildCoachLegs skips an invalid game. */
 export async function ensureCoachGame(db: Kysely<Database>, userId: string, id: string, warn: WarnFn): Promise<void> {
   const built = await db
     .selectFrom('coach_games')
@@ -193,7 +207,14 @@ export async function ensureCoachGame(db: Kysely<Database>, userId: string, id: 
     .where('game_id', '=', id)
     .where('version', '>=', COACH_VERSION)
     .executeTakeFirst()
-  if (!built) await buildById(db, id, warn, userId)
+  const stale = await db
+    .selectFrom('coach_legs as cl')
+    .select('cl.seat')
+    .where('cl.game_id', '=', id)
+    .where('cl.user_id', '=', userId)
+    .where('cl.target', '<>', currentTarget)
+    .executeTakeFirst()
+  if (!built || stale) await buildById(db, id, warn, userId)
 }
 
 /**

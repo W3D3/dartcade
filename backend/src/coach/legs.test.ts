@@ -113,6 +113,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach legs reads', () => {
         review: JSON.stringify(review({ leg, seat, won, darts: f.darts ?? 9, counts: { lowVisits, badSetups, missedDoubles, clean } })),
         winner_name: f.winnerName ?? null,
         winner_darts: f.winnerDarts ?? null,
+        target: 'auto',
       })
       .execute()
   }

@@ -306,6 +306,8 @@ export interface CoachLegsTable {
   winner_name: string | null
   /** The winner's darts in this leg; null along with winner_name. */
   winner_darts: number | null
+  /** The coach target it was graded for (user.preferences.coachTarget then: auto or a tier, migration 054) */
+  target: string
 }
 
 /** A game the coach has built, rows or none (migration 048, coach/store.ts). */
