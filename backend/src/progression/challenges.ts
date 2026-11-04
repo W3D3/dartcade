@@ -4,6 +4,7 @@
 import { seededRng, type Rng } from '../shared/rng.js'
 import { addDays, daysBetween } from '../shared/progression.js'
 import { gameTitle } from '../shared/gameNames.js'
+import { avgClass } from '../shared/avgClass.js'
 
 export type Period = 'daily' | 'weekly'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -66,6 +67,8 @@ type Template = {
   scale?: 'darts' | 'games'
   /** State a new challenge starts with (a target set by your level). */
   init?: (ctx: ChallengeContext) => ChallengeState
+  /** What the row shows under the title (the doubles hit so far); none when unset. */
+  chips?: (state: ChallengeState) => string[]
   /** The progress after a game (absolute), and the state to keep. */
   step: (g: ChallengeGame, progress: number, state: ChallengeState) => { progress: number; state?: ChallengeState }
 }
@@ -93,9 +96,12 @@ const finishedOn = (g: ChallengeGame) => g.checkouts.flatMap(c => (isDouble(c.la
 const allSegs = (g: ChallengeGame) => g.visits.flatMap(v => v.segs)
 const dName = (n: number) => (n === 25 ? 'Bull' : `D${n}`)
 
-/** The most darts a 501 leg may take: the player's average plus a quarter, as a multiple of three (30 without an average). */
+/**
+ * The most darts a 501 leg may take: what 90% of your average class (Avg-Classes) needs, in whole
+ * visits, between 15 and 45. A player with no average counts as class 40.
+ */
 export const legDartLimit = (average: number | null): number =>
-  Math.min(45, Math.max(15, Math.round((501 * 3) / ((average ?? 40) * 1.25) / 3) * 3))
+  Math.min(45, Math.max(15, Math.round((501 * 3) / ((avgClass(average) ?? 40) * 0.9) / 3) * 3))
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Try something": a mode you haven't played for 14 days. Its id is `d.try.<mode>`. */
@@ -239,7 +245,8 @@ export const TEMPLATES: readonly Template[] = [
     period: 'daily',
     difficulty: 'hard',
     metric: 'doubles',
-    title: (_n, s) => `Hit 10 different doubles${s.set?.length ? ` (${s.set.map(n => dName(Number(n))).join(', ')})` : ''}`,
+    title: () => 'Hit 10 different doubles',
+    chips: s => (s.set ?? []).map(n => dName(Number(n))),
     base: 10,
     step: distinct(g =>
       allSegs(g)
@@ -358,6 +365,17 @@ export const TEMPLATES: readonly Template[] = [
     step: count(g => (g.qualifies && g.won ? 1 : 0)),
   },
   // Weekly, hard and creative
+  {
+    id: 'w.wins-hard',
+    period: 'weekly',
+    difficulty: 'hard',
+    metric: 'wins',
+    title: n => `Win ${plural(n, 'game')}`,
+    base: 10,
+    floor: 4,
+    scale: 'games',
+    step: count(g => (g.qualifies && g.won ? 1 : 0)),
+  },
   {
     id: 'w.tons',
     period: 'weekly',
@@ -487,6 +505,9 @@ export function applyGame(
   const next = t.step(g, c.progress, c.state)
   return { progress: next.progress, state: { ...(next.state ?? c.state), games: [...(c.state.games ?? []), g.id] } }
 }
+
+export const challengeChips = (c: { templateId: string; state: ChallengeState }): string[] =>
+  templateById(c.templateId)?.chips?.(c.state) ?? []
 
 export function challengeTitle(c: { templateId: string; target: number; state: ChallengeState }): string {
   return templateById(c.templateId)?.title(c.target, c.state) ?? 'Challenge'

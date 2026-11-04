@@ -3,6 +3,7 @@ import {
   type ChallengeContext,
   type ChallengeGame,
   applyGame,
+  challengeChips,
   challengeTitle,
   generateChallenge,
   generateSet,
@@ -66,6 +67,25 @@ describe('generateSet', () => {
     const tries = sets('daily', { ...ctx, untriedModes: ['atc'] }).filter(s => s[0].templateId === 'd.try.atc')
     expect(tries.length).toBeGreaterThan(100)
     expect(challengeTitle(tries[0][0])).toBe('Play a game of Around the Clock')
+  })
+})
+
+describe('the catalogue', () => {
+  it('keeps every period and difficulty offering a template, and sets never run out of metrics', () => {
+    for (const period of ['daily', 'weekly'] as const)
+      for (const d of ['easy', 'medium', 'hard'] as const) expect(TEMPLATES.some(t => t.period === period && t.difficulty === d)).toBe(true)
+    const metrics = (period: string, d: string) =>
+      new Set(TEMPLATES.filter(t => t.period === period && t.difficulty === d).map(t => t.metric))
+    // A set holds one metric per slot, so each slot's pool must outlast the other two slots' picks
+    expect(metrics('weekly', 'hard').size).toBeGreaterThan(2)
+    expect(metrics('daily', 'hard').size).toBeGreaterThan(2)
+  })
+
+  it('does not break on a removed template stored in an old challenge', () => {
+    const old = { templateId: 'd.leg21', progress: 0, state: {}, target: 1 }
+    expect(applyGame(old, game())).toBeNull()
+    expect(challengeTitle(old)).toBe('Challenge')
+    expect(challengeChips(old)).toEqual([])
   })
 })
 
@@ -142,12 +162,15 @@ describe('applyGame', () => {
     const c = { templateId: 'd.ten-doubles', progress: 0, state: {} }
     const after = applyGame(c, game({ visits: [{ leg: 0, segs: [D(20), D(16), D(20)], scored: null, bust: false }] }))!
     expect(after.progress).toBe(2)
-    expect(challengeTitle({ templateId: c.templateId, target: 10, state: after.state })).toBe('Hit 10 different doubles (D20, D16)')
+    expect(challengeTitle({ templateId: c.templateId, target: 10, state: after.state })).toBe('Hit 10 different doubles')
+    expect(challengeChips({ templateId: c.templateId, state: after.state })).toEqual(['D20', 'D16'])
   })
 
   it('sets the leg dart limit from your average', () => {
-    expect(legDartLimit(null)).toBe(30)
-    expect(legDartLimit(80)).toBe(15)
+    expect(legDartLimit(null)).toBe(42)
+    expect(legDartLimit(72)).toBe(24)
+    expect(legDartLimit(110)).toBe(18)
+    expect(legDartLimit(130)).toBe(18)
     expect(legDartLimit(20)).toBe(45)
     const hard = { templateId: 'd.leg-limit', progress: 0, state: { limit: 24 } }
     const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 24, startScore: 501 }

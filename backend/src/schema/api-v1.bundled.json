@@ -12067,6 +12067,7 @@
                 "id",
                 "slot",
                 "title",
+                "chips",
                 "difficulty",
                 "target",
                 "progress",
@@ -12087,6 +12088,13 @@
                 },
                 "title": {
                   "type": "string"
+                },
+                "chips": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "What the row lists under the title, e.g. the doubles hit so far; empty for most"
                 },
                 "difficulty": {
                   "type": "string",
