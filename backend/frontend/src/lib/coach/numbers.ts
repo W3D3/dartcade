@@ -2,8 +2,14 @@
 // coach.debug.enabled): what each dart left, how the grade was worked out, the grouping.
 import type { GradeRule, ReviewVisit, VisitGrade } from '$shared/coach'
 import { bandOf, bustPenalty, FINISH_BANDS, SCORING_BANDS, VERY_LOW, type GradeBands } from '$shared/coach/grade'
+import { averageForLevel } from '$shared/botLevels'
+import { DEFAULT_COACH_LEVEL } from '$shared/coach/model'
 import { bandText } from './checks'
 import { GRADE_PILL } from './tone'
+
+/** The fixed reference level's average (model.ts DEFAULT_COACH_LEVEL): what the fewest-darts
+ *  chance is always measured against */
+const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
 
 /** "S19 (76 left), T20 (16 left), S1 (15 left)."; the busting dart "T8 bust", a dart the game kept
  *  after it "S5 (not counted)", a checkout "D4 out" */
@@ -50,10 +56,11 @@ function scaleOf(bands: GradeBands, points: number): GradeScale {
   return { min, max, bands: rows, ticks, marker: Math.min(max, Math.max(min, points)) }
 }
 
-/** The line for the rule that overrode or capped the value; `chance` the fewest-darts path's (%) */
+/** The line for the rule that overrode or capped the value; `chance` the fewest-darts path's (%,
+ *  the fixed reference level's) */
 const RULE_TEXT: Record<NonNullable<GradeRule>, (chance: number) => string> = {
-  brilliant: chance => `Brilliant: fewest darts, a ${Math.round(chance)}% chance`,
-  fewest: () => 'Excellent floor: fewest darts',
+  brilliant: chance => `Brilliant: fewest darts, a ${Math.round(chance)}% chance for an ${REFERENCE_AVERAGE} average`,
+  fewest: chance => `Excellent floor: fewest darts (${Math.round(chance)}% for an ${REFERENCE_AVERAGE} average)`,
   note: () => 'Bad: a strategy note — value ignored',
   veryLow: () => `Under ${VERY_LOW} scored: capped at Weak`,
   spill: () => 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',

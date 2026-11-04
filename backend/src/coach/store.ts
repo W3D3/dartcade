@@ -8,11 +8,11 @@ import { x01AverageSince } from '../db/ranked.js'
 import { storedDetail } from '../history/detail.js'
 import type { WarnFn } from '../session/replay.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
-import { coachable, coachLevel, loadModel, reviewLeg } from '../shared/coach/index.js'
+import { coachable, coachLevel, DEFAULT_COACH_LEVEL, loadModel, reviewLeg } from '../shared/coach/index.js'
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 24
+export const COACH_VERSION = 25
 
 /** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
  *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. A
@@ -73,6 +73,8 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
     ]),
   )
 
+  // The fewest-darts path's chance is always judged against this fixed level, not the player's own
+  const referenceModel = await loadModel(DEFAULT_COACH_LEVEL)
   const rows: Insertable<CoachLegsTable>[] = []
   for (const s of game.seats) {
     if (s.user_id === null || s.bot_level !== null) continue
@@ -83,7 +85,7 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
     for (const { leg } of legs) {
       // A leg's review is CPU work: let live sockets in between legs (and so between seats)
       await new Promise(resolve => setImmediate(resolve))
-      const review = reviewLeg(coachLegs, leg, s.seat, { startScore, average, model, opponentName: nameOf })
+      const review = reviewLeg(coachLegs, leg, s.seat, { startScore, average, model, referenceModel, opponentName: nameOf })
       if (!review) continue
       const winner = winners.get(leg) ?? { name: null, darts: null }
       rows.push({

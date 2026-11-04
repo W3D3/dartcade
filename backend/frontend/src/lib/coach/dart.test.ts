@@ -27,7 +27,8 @@ describe('visitTiles', () => {
   })
 
   // On 20 left with the third dart (60: S20, S20; the user's examples), the dart's tone and its word
-  const tile = (d: CoachDart) => visitTiles(coachOpenVisit({ start: 60, opponent: null, average: 60 }, [S20, S20, d], REF, 5).visit!)[2]
+  const tile = (d: CoachDart) =>
+    visitTiles(coachOpenVisit({ start: 60, opponent: null, average: 60 }, [S20, S20, d], REF, REF, 5).visit!)[2]
   const S20 = dartFromLabel('S20')!
   it('a miss 10 mm outside D10 is a slight loss, not costly', () => {
     expect(tile(dartAt({ x: 1.008, y: -0.3276 }))).toMatchObject({ name: 'M10', tone: 'weak', offBoard: true, word: 'slight loss' })
@@ -57,6 +58,7 @@ describe('dartRows', () => {
     const v = coachOpenVisit(
       { start: 20, opponent: null, average: 60 },
       [dartAt({ x: 0.965, y: -0.3137 }), dartAt({ x: 1.008, y: -0.3276 }), dartFromLabel('D10')!],
+      REF,
       REF,
       5,
     ).visit!

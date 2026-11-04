@@ -1,7 +1,8 @@
 <!--
   The live coach beside a solo X01 game (coach.live.enabled): the next dart's best aims, this visit's
   darts as the coach classes them, the last visit's grade. GameDisplay loads it lazily; it fetches
-  only the model of the player's coaching level (one level above their 30-day average); `compact` (phones, tablets) folds it into one line that opens.
+  the model of the player's coaching level (one level above their 30-day average) and, for the
+  fewest-darts path's chance, the fixed reference level's (DEFAULT_COACH_LEVEL); `compact` (phones, tablets) folds it into one line that opens.
 -->
 <script lang="ts">
   import type { X01Game } from '$lib/api/game-ws'
@@ -10,7 +11,7 @@
   import type { ReviewVisit } from '$shared/coach'
   import { coachedAs } from '$lib/coach/leg'
   import { averageForLevel } from '$shared/botLevels'
-  import { coachLevel } from '$shared/coach/model'
+  import { coachLevel, DEFAULT_COACH_LEVEL } from '$shared/coach/model'
   import { coachModel } from '$lib/coach/model.svelte'
   import { flag } from '$lib/flags'
   import { api } from '$lib/api/client'
@@ -38,7 +39,14 @@
   const level = $derived(thirtyDay === undefined ? null : coachLevel(thirtyDay))
   const loaded = coachModel(() => level)
   const model = $derived(loaded.model)
-  const live = $derived(model ? liveCoach(model, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null)
+  // The fewest-darts path's chance is always judged against this fixed level, not the player's own
+  const refLoaded = coachModel(() => DEFAULT_COACH_LEVEL)
+  const referenceModel = $derived(refLoaded.model)
+  const live = $derived(
+    model && referenceModel
+      ? liveCoach(model, referenceModel, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value)
+      : null,
+  )
   const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
   const levelAverage = $derived(model ? averageForLevel(model.level) : null)
   const rows = $derived(live?.visit ? visitTiles(live.visit) : [])
@@ -110,7 +118,9 @@
 
 {#if !live}
   <!-- The model is loading: nothing to show yet, unless it failed -->
-  {#if loaded.failed}<p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>{/if}
+  {#if loaded.failed || refLoaded.failed}<p class="m-0 text-[13px] text-text-muted" role="status">
+      The coach couldn't load. Reload to try again.
+    </p>{/if}
 {:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">

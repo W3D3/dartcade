@@ -323,7 +323,7 @@ average), the rule that overrode or capped the value (`brilliant`, `fewest`, `no
 the checkout chance before the first dart. `gradeWorking` (`lib/coach/numbers.ts`, pure) turns it
 into text — "Start: 121 left, 34.0% to check out", "S20: Δ −4.4", "M17: Δ +10.8, closeness +2.3",
 "Σ +10.2 → Good (+2 to +20)"; "Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5", "Your
-average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Brilliant: fewest darts, a 14% chance" / "Excellent floor: fewest darts" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
+average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Brilliant: fewest darts, a 14% chance for an 81 average" / "Excellent floor: fewest darts (36% for an 81 average)" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
 (hidden from screen readers: the text says it all).
 
 ## Brilliant visit
@@ -336,18 +336,21 @@ is the visit's walked darts (fewer than 3 on a checkout) and `minDarts(0) = 0`. 
 scoring exactly m with any dart, then the best finishing double; 501 is 9, 361 is 7, 330 and 327
 are 6, 171 and 159 are 4, 170 is 3, 99 is 3, 100 is 2.
 
-Such a visit is **Brilliant** when it was hard for the coaching level: its chance of doing it from
-the visit's start is below `BRILLIANT_CHANCE` (0.25, `grade.ts`). Any other fewest-darts visit is
-**Excellent** (a floor; nothing a value gives is higher), with the rule `fewest` when the floor
-lifted it.
+Such a visit is **Brilliant** when it was hard for the fixed reference level — `DEFAULT_COACH_LEVEL`
+(7, an 81 average), never the player's own coaching level, so a low-level player's easy checkout
+doesn't read as Brilliant: its chance of doing it from the visit's start, by the reference level's
+landing table (`ReviewContext.referenceModel`), is below `BRILLIANT_CHANCE` (0.25, `grade.ts`). Any
+other fewest-darts visit is **Excellent** (a floor; nothing a value gives is higher), with the rule
+`fewest` when the floor lifted it.
 
-- **The chance** (`fewestChance(landing, start, darts)` in `minDarts.ts`, exact on the level's
-  landing table, no approximation): the chance a player of the level, aiming every dart for it,
-  keeps the fewest-darts path for the visit's darts. Each dart must take exactly one dart off
+- **The chance** (`fewestChance(landing, start, darts)` in `minDarts.ts`, exact on the reference
+  level's landing table, no approximation): the chance a reference-level player, aiming every dart
+  for it, keeps the fewest-darts path for the visit's darts. Each dart must take exactly one dart off
   `minDarts` (none can take more) and a checkout ends it kept, maximised over the aims per state.
   On a checkout in the fewest darts this is the chance to check out from the start in that many
-  darts (equal to the model's `fin[start][darts]`); on a scoring or setup visit, the chance of a
-  visit that keeps the path. It is `ReviewVisit.value.fewestChance` (%).
+  darts (equal to the reference model's `fin[start][darts]`); on a scoring or setup visit, the
+  chance of a visit that keeps the path. It is `ReviewVisit.value.fewestChance` (%) — the same for
+  every player, since the level it's judged against never changes.
 - At level 7 (an 81 average): 120 → D20 D20 D20 is Brilliant (17.7%), 100 → T20 D20 Brilliant
   (12.3%), 170 → T20 T20 Bull Brilliant (3.1%), 501 → 180 and 501 → 171 Brilliant (4.2%: the
   start's chance, the same for both), 40 → D20 Excellent (36.2%), 235 → T20 T19 S20 (98 left)
@@ -422,8 +425,10 @@ wide screens (1280 px and up), a folded line above the dart slots below that and
 - The average it grades against: your 30-day X01 average from your profile, else this game's, else
   none (the visit's own).
 - `lib/coach/live.ts` and the panel load in a lazy chunk, only once the panel shows; the panel then
-  fetches the landing table of your coaching level only (from your 30-day average; level 7 until
-  the profile arrives or without one) and says "Coached as a 46 average.".
+  fetches the landing table of your coaching level (from your 30-day average; level 7 until
+  the profile arrives or without one) and says "Coached as a 46 average."; it also fetches the
+  fixed reference level's table (`DEFAULT_COACH_LEVEL`, often the same chunk), for the
+  fewest-darts path's chance.
 
 ## Coaching level
 
@@ -442,14 +447,15 @@ which the 81-average model called a loss).
   and evaluator; `loadModel(level)` imports a level's table lazily (one chunk each in the SPA) and
   builds its model once. Everything that coaches takes the model explicitly (`throwsOf`,
   `throwEvaluations`, `strategyNotes`, `dartDeltas`, `reviewLeg`'s `ctx.model`, the sandbox and the
-  live panel).
+  live panel); `reviewLeg`'s `ctx.referenceModel` is always `DEFAULT_COACH_LEVEL`'s, for the
+  fewest-darts path's chance.
 - **`coachLevel(average)`:** the level whose `LEVEL_AVERAGE` is the smallest one strictly above the
   average (40 → level 3, 46; 80 → level 7, 81; 81 → level 8, 90); level 10 at or above 105; level 7
   (`DEFAULT_COACH_LEVEL`) without an average.
 - **Reviews:** the level comes from the same 30-day average (as of the game's finish) the scoring
   grades use, and is stored in the review JSON (`LegReview.coachLevel`, no migration), so a review
   doesn't shift when the average changes; the leg review says "Coached as a 46 average".
-- **Unchanged by the level:** the grade thresholds, the fewest-darts rule (`minDarts`; Brilliant's chance does follow the level), the scoring grades
+- **Unchanged by the level:** the grade thresholds, the fewest-darts rule (`minDarts`; Brilliant's chance is always the fixed reference level's, never the player's), the scoring grades
   against the average, the grouping comment's own average-based expectation, and the dart classes'
   attribution σ (`SIGMA_ATTR`).
 - **Sandbox:** "Your average" picks the level the same way and shows "Coaching level: 3 (≈ 46

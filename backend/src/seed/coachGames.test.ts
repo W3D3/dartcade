@@ -51,8 +51,13 @@ describe('sample games with known coach mistakes', () => {
     const winner = visits.at(-1)?.seat
     const reviews = script.map(
       (_, seat) =>
-        reviewLeg([{ ...leg(visits), winner }], 0, seat, { startScore: start, average: null, model: REF, opponentName: s => players[s] })
-          ?.visits,
+        reviewLeg([{ ...leg(visits), winner }], 0, seat, {
+          startScore: start,
+          average: null,
+          model: REF,
+          referenceModel: REF,
+          opponentName: s => players[s],
+        })?.visits,
     )
     expect(reviews.map(vs => vs?.map(v => v.grade))).toEqual(grades)
     expect(reviews.map(vs => vs?.map(v => v.darts.map(d => d.class.kind)))).toEqual(kinds)

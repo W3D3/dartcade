@@ -33,10 +33,17 @@ function leaves(left: number, a: Aim): string {
 }
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
- *  (null: the visit's own, as the coach does without one), `model` their coaching level's. Solo:
- *  no opponent, w = 1. */
-export function liveCoach(model: CoachModel, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
-  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), model, TOP)
+ *  (null: the visit's own, as the coach does without one), `model` their coaching level's,
+ *  `referenceModel` the fixed reference level's (model.ts DEFAULT_COACH_LEVEL), for the
+ *  fewest-darts path's chance. Solo: no opponent, w = 1. */
+export function liveCoach(
+  model: CoachModel,
+  referenceModel: CoachModel,
+  start: number,
+  darts: readonly Dart[],
+  average: number | null,
+): LiveCoach {
+  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), model, referenceModel, TOP)
   const scoring = r.left > 170
   const aims = r.done
     ? []

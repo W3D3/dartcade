@@ -1,6 +1,7 @@
 // Every visit's tag (Scoring, Setup, Doubling), grade (Brilliant to Bad, eight classes) and one line
 // saying why. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
-// finish is Brilliant when that was hard for the coaching level, else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
+// finish is Brilliant when that was hard for the fixed reference level (model.ts DEFAULT_COACH_LEVEL,
+// an 81 average — not the player's own coaching level), else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
 // or Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of
 // the darts that missed their target. The bands were set on real legs (the spec's calibration table).
 import { checkoutHint } from '../checkout.js'
@@ -41,8 +42,9 @@ export const WEAK_FROM = -20
 export const MISS_CLOSE_MAX = 5
 /** …falling to none this far (mm) from the target's bed */
 export const MISS_CLOSE_ZERO_MM = 20
-/** A fewest-darts visit is Brilliant when the coaching level keeps that path from its start less
- *  often than this (minDarts.ts fewestChance), else Excellent at least */
+/** A fewest-darts visit is Brilliant when the fixed reference level (model.ts DEFAULT_COACH_LEVEL,
+ *  an 81 average) keeps that path from its start less often than this (minDarts.ts fewestChance),
+ *  else Excellent at least */
 export const BRILLIANT_CHANCE = 0.25
 /** A bust costs this many points for each dart of the visit it kept from being thrown */
 export const BUST_DART_LOST = 5
@@ -75,8 +77,9 @@ export type VisitFacts = {
   first: boolean
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
-  /** The chance (0–1) the coaching level keeps the fewest-darts path from `start` for this
-   *  visit's darts (minDarts.ts fewestChance): how hard a fewest-darts visit was */
+  /** The chance (0–1) the fixed reference level (model.ts DEFAULT_COACH_LEVEL, an 81 average)
+   *  keeps the fewest-darts path from `start` for this visit's darts (minDarts.ts fewestChance):
+   *  how hard a fewest-darts visit was, the same for every player */
   fewestChance: number
 }
 /** What overrode or capped the value: the fewest-darts finish when it was hard (Brilliant) or not

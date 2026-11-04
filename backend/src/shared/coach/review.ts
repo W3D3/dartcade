@@ -67,7 +67,9 @@ export type LegReview = {
   /** The scoring visits' mean grouping spread and edge distance (grouping.ts); null without any */
   grouping: { spreadMm: number | null; edgeMm: number | null }
 }
-/** `model`: the player's coaching level's (model.ts coachLevel, from the same average) */
+/** `model`: the player's coaching level's (model.ts coachLevel, from the same average);
+ *  `referenceModel`: always the fixed reference level (model.ts DEFAULT_COACH_LEVEL), used only
+ *  for the fewest-darts path's chance (how hard it was, the same for every player) */
 /** Leg pattern: a long finish takes more than this many darts from 170 or less to the checkout */
 export const LONG_FINISH = 9
 /** Leg pattern: scoring visits 4 and later average this much less than visits 1–3… */
@@ -75,7 +77,13 @@ export const LATE_DROP = 20
 /** …in a leg with at least this many scoring visits */
 export const LATE_DROP_VISITS = 6
 
-export type ReviewContext = { startScore: number; average: number | null; model: CoachModel; opponentName: (seat: number) => string }
+export type ReviewContext = {
+  startScore: number
+  average: number | null
+  model: CoachModel
+  referenceModel: CoachModel
+  opponentName: (seat: number) => string
+}
 
 const NONE: SkillGrade = { grade: null, line: '–' }
 const RANK = { A: 0, B: 1, C: 2, D: 3 }
@@ -152,7 +160,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       average,
       first: k === 0,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
-      fewestChance: fewestChance(model.landing, start, vThrows.length),
+      fewestChance: fewestChance(ctx.referenceModel.landing, start, vThrows.length),
     })
     return {
       n: k + 1,

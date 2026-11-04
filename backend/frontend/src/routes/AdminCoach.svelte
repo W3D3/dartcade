@@ -23,7 +23,7 @@
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
   import { averageForLevel } from '$shared/botLevels'
-  import { coachLevel } from '$shared/coach/model'
+  import { coachLevel, DEFAULT_COACH_LEVEL } from '$shared/coach/model'
   import { coachModel } from '$lib/coach/model.svelte'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -61,9 +61,12 @@
   const levelAverage = $derived(averageForLevel(level))
   const loaded = coachModel(() => level)
   const model = $derived(loaded.model)
+  // The fewest-darts path's chance is always judged against this fixed level, not the typed average
+  const refLoaded = coachModel(() => DEFAULT_COACH_LEVEL)
+  const referenceModel = $derived(refLoaded.model)
   const result = $derived(
-    start !== null && average !== null && !inputError && model?.level === level
-      ? coachOpenVisit({ start, opponent, average }, darts, model, TOP)
+    start !== null && average !== null && !inputError && model?.level === level && referenceModel?.level === DEFAULT_COACH_LEVEL
+      ? coachOpenVisit({ start, opponent, average }, darts, model, referenceModel, TOP)
       : null,
   )
   const visit = $derived(result?.visit ?? null)
@@ -118,7 +121,7 @@
             <p class="m-0 text-[13px] text-text-muted">Coaching level: {level} (≈ {levelAverage} average)</p>
           {/if}
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
-          {#if loaded.failed}<ErrorText>Level {level}'s model couldn't load. Reload to try again.</ErrorText>{/if}
+          {#if loaded.failed || refLoaded.failed}<ErrorText>Level {level}'s model couldn't load. Reload to try again.</ErrorText>{/if}
 
           <BoardCard darts={visit?.darts ?? []} {note} onpoint={accepting ? place : undefined} />
 

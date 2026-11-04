@@ -12,6 +12,7 @@ const ctx = (startScore: number, average: number | null = null) => ({
   startScore,
   average,
   model: REF,
+  referenceModel: REF,
   opponentName: (s: number) => names[s],
 })
 
@@ -471,7 +472,13 @@ describe('the coaching level', () => {
   /** One solo visit reviewed for a player with `average`, by the model one level above it */
   async function graded(average: number, start: number, names: string[]) {
     const model = await loadModel(coachLevel(average))
-    const r = reviewLeg([leg([visit(0, start, names)])], 0, 0, { startScore: 501, average, model, opponentName: () => '' })!
+    const r = reviewLeg([leg([visit(0, start, names)])], 0, 0, {
+      startScore: 501,
+      average,
+      model,
+      referenceModel: REF,
+      opponentName: () => '',
+    })!
     const v = r.visits[0]
     return { level: r.coachLevel, grade: v.grade, delta: v.darts.reduce((s, d) => s + (d.delta ?? 0), 0) }
   }

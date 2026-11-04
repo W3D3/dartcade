@@ -17,7 +17,13 @@ import {
 import { NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
+import { DEFAULT_COACH_LEVEL } from '$shared/coach/model'
+import { averageForLevel } from '$shared/botLevels'
 import { GRADE_PILL } from './tone'
+
+/** The fixed reference level's average (model.ts DEFAULT_COACH_LEVEL): the Brilliant rule's chance
+ *  is always measured against this player, not the viewer's own coaching level */
+const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
 
 /** A check's label: a visit grade, or tip (Info: worth knowing, not graded) */
 export type CheckLabel = VisitGrade | 'tip'
@@ -77,7 +83,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Fewest darts',
         labels: ['brilliant', 'excellent'],
         source: 'model',
-        when: `The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Brilliant when a player one level above your average keeps that path from the visit's start less than ${Math.round(BRILLIANT_CHANCE * 100)}% of the time (a checkout: the chance to check out in that many darts), else Excellent at least. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.`,
+        when: `The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Brilliant when an ${REFERENCE_AVERAGE}-average player — the coach's fixed reference, not your own level — keeps that path from the visit's start less than ${Math.round(BRILLIANT_CHANCE * 100)}% of the time (a checkout: the chance to check out in that many darts), else Excellent at least. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.`,
         example: '501 · T20 T20 T20 → 321, still on a nine-darter (about 4%): Brilliant; 40 · D20 (about 36%): Excellent',
         says: 'What is left and in how many darts (Nine-darter still on, from 501); on a checkout, the double.',
       },

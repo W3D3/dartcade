@@ -12,7 +12,7 @@ const darts = (...names: string[]): Dart[] =>
 
 describe('liveCoach', () => {
   it('on a finish: the three best aims with their chance and what they leave', () => {
-    const c = liveCoach(REF, 40, [], 60)
+    const c = liveCoach(REF, REF, 40, [], 60)
     expect(c.scoring).toBe(false)
     expect(c.aims).toHaveLength(3)
     expect(c.aims[0]).toMatchObject({ label: 'D20', aimId: 'D20' })
@@ -21,20 +21,20 @@ describe('liveCoach', () => {
   })
 
   it('over 170: the scoring aims by points a dart, T20 first', () => {
-    const c = liveCoach(REF, 501, [], 60)
+    const c = liveCoach(REF, REF, 501, [], 60)
     expect(c.scoring).toBe(true)
     expect(c.aims.map(a => a.label)).toEqual(['T20', 'T19', 'T18'])
     expect(c.aims[0].detail).toMatch(/^\d+\.\d a dart$/)
   })
 
   it('switches to checkout aims once the visit gets to 170 or less', () => {
-    const c = liveCoach(REF, 200, darts('T20'), 60)
+    const c = liveCoach(REF, REF, 200, darts('T20'), 60)
     expect(c.left).toBe(140)
     expect(c.scoring).toBe(false)
   })
 
   it("lists the open visit's darts with their class and change", () => {
-    const c = liveCoach(REF, 81, darts('T19', 'S12'), 60)
+    const c = liveCoach(REF, REF, 81, darts('T19', 'S12'), 60)
     expect(c.left).toBe(12)
     expect(c.visit?.darts.map(d => d.name)).toEqual(['T19', 'S12'])
     expect(c.visit?.darts[0].delta).toEqual(expect.any(Number))
@@ -42,14 +42,14 @@ describe('liveCoach', () => {
   })
 
   it('grades the visit once it is done, and offers no more aims', () => {
-    const c = liveCoach(REF, 40, darts('D20'), 60)
+    const c = liveCoach(REF, REF, 40, darts('D20'), 60)
     expect(c.aims).toEqual([])
     expect(c.done).toBe(true)
     expect(c.visit?.tag).toBe('doubling')
   })
 
   it('has no change on a scoring visit', () => {
-    const c = liveCoach(REF, 501, darts('T20', 'T20', 'T20'), 60)
+    const c = liveCoach(REF, REF, 501, darts('T20', 'T20', 'T20'), 60)
     expect(c.visit?.darts.every(d => d.delta === null)).toBe(true)
     expect(c.done && c.visit?.tag).toBe('scoring')
   })
@@ -65,11 +65,11 @@ describe('liveAverage', () => {
 })
 
 describe('shownVisit', () => {
-  const done = liveCoach(REF, 40, darts('S20', 'S10', 'D5'), 60)
+  const done = liveCoach(REF, REF, 40, darts('S20', 'S10', 'D5'), 60)
   it('shows the last finished visit until the next visit has a dart', () => {
     const last = shownVisit(null, done)
     expect(last).toBe(done.visit)
-    expect(shownVisit(last, liveCoach(REF, 81, [], 60))).toBe(last)
-    expect(shownVisit(last, liveCoach(REF, 81, darts('T19'), 60))).toBeNull()
+    expect(shownVisit(last, liveCoach(REF, REF, 81, [], 60))).toBe(last)
+    expect(shownVisit(last, liveCoach(REF, REF, 81, darts('T19'), 60))).toBeNull()
   })
 })
