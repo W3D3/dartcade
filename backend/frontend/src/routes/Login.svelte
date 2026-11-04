@@ -127,6 +127,7 @@
           <label for="login-email" class="field-label">Email</label>
           <Input
             id="login-email"
+            name="email"
             type="email"
             bind:value={email}
             autocomplete={showPasskey ? 'username webauthn' : 'username'}
@@ -144,6 +145,7 @@
           </div>
           <Input
             id="login-password"
+            name="password"
             type="password"
             bind:value={password}
             autocomplete="current-password"
