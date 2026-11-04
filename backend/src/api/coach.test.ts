@@ -21,12 +21,12 @@ vi.mock('../auth/middleware.js', () => ({
   }),
 }))
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
-vi.mock('../coach/store.js', () => ({ ensureCoachLegs: vi.fn(), ensureCoachGame: vi.fn() }))
+vi.mock('../coach/store.js', () => ({ ensureCoachLegs: vi.fn(), ensureCoachGame: vi.fn(), pendingCoachGames: vi.fn() }))
 vi.mock('../coach/legs.js', () => ({ coachLegsSummary: vi.fn(), coachLegsPage: vi.fn(), getCoachLeg: vi.fn() }))
 vi.mock('../db/ranked.js', () => ({ x01AverageSince: vi.fn() }))
 
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
-import { ensureCoachGame, ensureCoachLegs } from '../coach/store.js'
+import { ensureCoachGame, ensureCoachLegs, pendingCoachGames } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 import { x01AverageSince } from '../db/ranked.js'
 
@@ -55,6 +55,7 @@ beforeEach(() => {
   vi.mocked(flagEnabled).mockResolvedValue(true)
   vi.mocked(loadFlagUser).mockResolvedValue(null)
   vi.mocked(ensureCoachLegs).mockResolvedValue(0)
+  vi.mocked(pendingCoachGames).mockResolvedValue(0)
 })
 
 describe('GET /api/coach/legs', () => {
@@ -106,6 +107,18 @@ describe('GET /api/coach/legs', () => {
       },
     ])
     expect(typeof body.nextCursor).toBe('string')
+    expect(body.pending).toBe(0)
+  })
+
+  it('says how many recent games still wait for a review', async () => {
+    vi.mocked(coachLegsSummary).mockResolvedValue({
+      counts: { legs: 0, lowVisits: 0, badSetups: 0, missedDoubles: 0, cleanLegs: 0 },
+      updatedAt: null,
+    })
+    vi.mocked(coachLegsPage).mockResolvedValue({ rows: [], next: null })
+    vi.mocked(pendingCoachGames).mockResolvedValue(12)
+    const res = await app().inject({ method: 'GET', url: '/api/coach/legs' })
+    expect(res.json().pending).toBe(12)
   })
 
   it('passes the filter through, defaulting to all', async () => {

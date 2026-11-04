@@ -120,7 +120,7 @@ const failed = new Set<string>()
  * (any account's with null), at most `limit`. Whether the coach reviews one is coachable()'s call
  * in buildCoachLegs, which marks the others with no rows.
  */
-async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: number): Promise<string[]> {
+async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: number, recent?: number): Promise<string[]> {
   let q = db
     .selectFrom('game_sessions as gs')
     .select('gs.id')
@@ -146,6 +146,24 @@ async function unbuilt(db: Kysely<Database>, userId: string | null, limit?: numb
     )
     .orderBy('gs.finished_at', 'desc')
   if (failed.size) q = q.where('gs.id', 'not in', [...failed])
+  // Only among the user's `recent` latest finished X01 games
+  if (recent !== undefined && userId !== null)
+    q = q.where('gs.id', 'in', eb =>
+      eb
+        .selectFrom('game_sessions as r')
+        .select('r.id')
+        .where('r.status', '=', 'finished')
+        .where('r.finished_at', 'is not', null)
+        .where('r.invalidated_at', 'is', null)
+        .where('r.game_id', '=', 'x01')
+        .where(e =>
+          e.exists(
+            e.selectFrom('game_players as rp').select('rp.seat').whereRef('rp.session_id', '=', 'r.id').where('rp.user_id', '=', userId),
+          ),
+        )
+        .orderBy('r.finished_at', 'desc')
+        .limit(recent),
+    )
   const rows = await (limit === undefined ? q : q.limit(limit)).execute()
   return rows.map(r => r.id)
 }
@@ -183,6 +201,12 @@ export async function ensureCoachLegs(db: Kysely<Database>, userId: string, warn
   const ids = await unbuilt(db, userId, max)
   for (const id of ids) await buildById(db, id, warn)
   return ids.length
+}
+
+/** How many of the user's 50 latest finished X01 games (about the coach page's 50 legs) still wait for
+ *  a review at this version: the page says so and asks again, each request building up to 10. */
+export async function pendingCoachGames(db: Kysely<Database>, userId: string): Promise<number> {
+  return (await unbuilt(db, userId, undefined, 50)).length
 }
 
 const BACKFILL_PAUSE_MS = 50

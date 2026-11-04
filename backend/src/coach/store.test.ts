@@ -12,7 +12,7 @@ import { pointFor } from '../bots/accuracy.js'
 import { segmentAt } from '../shared/board.js'
 import { createFastify } from '../api/fastify.js'
 import { coachApiPlugin } from '../api/coach.js'
-import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs } from './store.js'
+import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs, pendingCoachGames } from './store.js'
 import { coachLegsPage, coachLegsSummary, getCoachLeg } from './legs.js'
 
 vi.mock('../auth/middleware.js', () => ({
@@ -280,6 +280,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     expect(new Set((await rows()).map(r => r.game_id))).toEqual(new Set([second.id]))
     expect(await ensureCoachLegs(db, 'ann', fail, 1)).toBe(1)
     expect(new Set((await rows()).map(r => r.game_id))).toEqual(new Set([first.id, second.id]))
+  })
+
+  it("counts the user's recent games still waiting for a review", async () => {
+    await play()
+    await play()
+    expect(await pendingCoachGames(db, 'ann')).toBe(2)
+    await ensureCoachLegs(db, 'ann', fail, 1)
+    expect(await pendingCoachGames(db, 'ann')).toBe(1)
+    await ensureCoachLegs(db, 'ann', fail)
+    expect(await pendingCoachGames(db, 'ann')).toBe(0)
   })
 
   it('skips invalidated games', async () => {
