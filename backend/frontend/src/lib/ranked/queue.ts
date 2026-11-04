@@ -78,24 +78,25 @@ export function pausedFor(pausedUntil: string | null, now: number): string | nul
   return left > 0 ? clock(left) : null
 }
 
-// Each request answers with an error message to show, or null when it went through
-
-export async function startSearch(mode: RankedMode, firstTo: FirstTo): Promise<string | null> {
-  const { error } = await api.POST('/api/matchmaking/search', { body: { mode, firstTo } })
-  return error ? error.error : null
+// Each request answers with an error message to show, or null when it went through. A request
+// that never got an answer (offline) says so instead of rejecting.
+type Answer = { error?: { error: string } }
+async function send(request: () => Promise<Answer>): Promise<string | null> {
+  try {
+    const { error } = await request()
+    return error ? error.error : null
+  } catch {
+    return 'Could not reach the server. Check your connection and try again.'
+  }
 }
 
-export async function cancelSearch(): Promise<string | null> {
-  const { error } = await api.DELETE('/api/matchmaking/search')
-  return error ? error.error : null
-}
+export const startSearch = (mode: RankedMode, firstTo: FirstTo) =>
+  send(() => api.POST('/api/matchmaking/search', { body: { mode, firstTo } }))
 
-export async function acceptMatch(matchId: string): Promise<string | null> {
-  const { error } = await api.POST('/api/matchmaking/matches/{matchId}/accept', { params: { path: { matchId } } })
-  return error ? error.error : null
-}
+export const cancelSearch = () => send(() => api.DELETE('/api/matchmaking/search'))
 
-export async function declineMatch(matchId: string): Promise<string | null> {
-  const { error } = await api.POST('/api/matchmaking/matches/{matchId}/decline', { params: { path: { matchId } } })
-  return error ? error.error : null
-}
+export const acceptMatch = (matchId: string) =>
+  send(() => api.POST('/api/matchmaking/matches/{matchId}/accept', { params: { path: { matchId } } }))
+
+export const declineMatch = (matchId: string) =>
+  send(() => api.POST('/api/matchmaking/matches/{matchId}/decline', { params: { path: { matchId } } }))
