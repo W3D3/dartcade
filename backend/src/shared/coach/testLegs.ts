@@ -1,11 +1,11 @@
 // Builds X01 legs for the coach's tests the way the game stores them (games/x01.ts detail()).
-import { LANDING } from './landing/level-13.gen.js'
+import { LANDING } from './landing/semipro.gen.js'
 import { coachModel, type CoachModels } from './model.js'
 import type { CoachDart, CoachLeg, CoachVisit } from './walk.js'
 
-/** Level 13's model (80 average), loaded without waiting: what the tests' numbers were pinned on */
-export const REF = coachModel(13, LANDING)
-/** Level 13 coaching against itself as the reference: a review's models in the tests */
+/** The semi-pro tier's model (75 average), loaded without waiting: what the tests' numbers are pinned on */
+export const REF = coachModel('semipro', LANDING)
+/** The semi-pro tier coaching against itself, the Brilliant reference: a review's models in the tests */
 export const REFS: CoachModels = { model: REF, reference: REF.landing }
 
 export function seg(name: string): CoachDart['segment'] {

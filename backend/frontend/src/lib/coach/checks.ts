@@ -16,7 +16,7 @@ import {
 import { NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
-import { REFERENCE_AVERAGE } from '$shared/coach/model'
+import { BRILLIANT_TIER, tierOf } from '$shared/coach/tiers'
 import { bandText, scaleText } from './numbers'
 
 /** A check's label: a visit grade, or tip (Info: worth knowing, not graded) */
@@ -63,8 +63,8 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Fewest darts',
         labels: ['brilliant', 'excellent'],
         source: 'model',
-        when: `The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Brilliant when an ${REFERENCE_AVERAGE}-average player — the coach's fixed reference, not your own level — keeps that path from the visit's start less than ${Math.round(BRILLIANT_CHANCE * 100)}% of the time (a checkout: the chance to check out in that many darts), else Excellent at least. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.`,
-        example: '501 · T20 T20 T20 → 321, still on a nine-darter (about 4%): Brilliant; 40 · D20 (about 36%): Excellent',
+        when: `The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Brilliant when ${tierOf(BRILLIANT_TIER).as} (a ${tierOf(BRILLIANT_TIER).average} average) — the coach's fixed reference, not the tier you're graded as — keeps that path from the visit's start less than ${Math.round(BRILLIANT_CHANCE * 100)}% of the time (a checkout: the chance to check out in that many darts), else Excellent at least. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.`,
+        example: '501 · T20 T20 T20 → 321, still on a nine-darter (about 3%): Brilliant; 40 · D20 (about 32%): Excellent',
         says: 'What is left and in how many darts (Nine-darter still on, from 501); on a checkout, the double.',
       },
       {
@@ -109,7 +109,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Checkout chance',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'model',
-        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_SCALE)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
+        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player of the tier you're graded as (shown on each leg: the one your 30-day average reached, else the next one up) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_SCALE)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
         example: '121 left · S20 T17 S18 → 32 (D16): +8, Good',
         says: 'A setup: when the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route (37 left is a single to double, S5 · D16). A doubling visit without a checkout: what happened to the double, then where you stand (3 darts at D4, all just outside, 5 mm on average. Still on 8.). On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
       },

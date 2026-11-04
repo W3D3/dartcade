@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LEVEL_SIGMA, sigmaForLevel } from './levels.js'
 import { LEVEL_AVERAGE } from '../shared/botLevels.js'
-import { pickTarget, throwAt } from './accuracy.js'
-import { seededRng } from '../session/rng.js'
+import { simulatedAverage } from './simulatedAverage.js'
 
 describe('LEVEL_SIGMA', () => {
   it('has exactly 20 levels, each a positive number', () => {
@@ -20,36 +19,9 @@ describe('LEVEL_SIGMA', () => {
   })
 
   it('every level lands within 10% of its calibration target', () => {
-    const avgOver = (sigma: number, legs: number) => {
-      const rng = seededRng(99)
-      let darts = 0
-      let visits501 = 0
-      for (let i = 0; i < legs; i++) {
-        let remaining = 501
-        let dartsThisVisit = 0
-        let scoreAtVisitStart = remaining
-        while (remaining > 0) {
-          const dartsLeft = 3 - dartsThisVisit
-          const target = pickTarget(remaining, dartsLeft, 'double')
-          const { segment: seg } = throwAt(target, sigma, rng)
-          darts++
-          dartsThisVisit++
-          const value = seg.name === 'Bull' ? 50 : seg.multiplier * seg.number
-          const next = remaining - value
-          const bust = next < 0 || next === 1 || (next === 0 && seg.bed !== 'Double')
-          remaining = bust ? scoreAtVisitStart : next
-          if (bust || dartsThisVisit >= 3 || remaining === 0) {
-            dartsThisVisit = 0
-            scoreAtVisitStart = remaining
-          }
-        }
-        visits501 += 501
-      }
-      return (visits501 / darts) * 3
-    }
     // Few legs per level, so the band is wider than calibrate.ts's own search needs
     LEVEL_AVERAGE.forEach((target, i) => {
-      const avg = avgOver(LEVEL_SIGMA[i], 200)
+      const avg = simulatedAverage(LEVEL_SIGMA[i], 200)
       expect(Math.abs(avg - target) / target, `level ${i + 1}: ${avg.toFixed(1)} vs ${target}`).toBeLessThan(0.1)
     })
   }, 120_000)

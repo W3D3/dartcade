@@ -1,9 +1,9 @@
-// The coach's checkout model for one bot level (landing/level-N.gen.ts), double out, bull 25/50:
-// how likely each aim is to lead to a checkout this visit, or in the next one weighted by the
-// chance of getting it (w: the opponents don't check out first). The coach judges a player with
-// the model of their coaching level (coachLevel).
-import { averageForLevel, LEVEL_AVERAGE } from '../botLevels.js'
+// The coach's checkout model for one coaching tier (tiers.ts, landing/<tier>.gen.ts), double out,
+// bull 25/50: how likely each aim is to lead to a checkout this visit, or in the next one weighted by
+// the chance of getting it (w: the opponents don't check out first). The coach judges a player with
+// the model of their target tier (tiers.ts targetTier).
 import type { Outcome } from './aims.js'
+import { BRILLIANT_TIER, type CoachTierId } from './tiers.js'
 import { afterDart } from './walk.js'
 
 /** Per aim, in AIMS order (so the evaluator's values are too): where a dart at it lands */
@@ -21,8 +21,8 @@ export type Evaluation = {
 export type Evaluator = (left: number, darts: number) => Evaluation
 
 export type CoachModel = {
-  /** The bot level (1–20) whose throws the landing table is from */
-  level: number
+  /** The tier whose throws the landing table is from */
+  tier: CoachTierId
   landing: Landing
   /** fin[r][k]: the chance to check out r (0–170) with at most k darts (0–3) this visit; a bust is a no. */
   fin: readonly (readonly number[])[]
@@ -31,23 +31,6 @@ export type CoachModel = {
   /** Values within one visit that started on `start`, with w the chance of a next visit. Spots of
    *  the same visit share the evaluator, so they share its memo. */
   evaluator: (start: number, w: number) => Evaluator
-}
-
-/** Without an average the coach uses level 13 (80 average): the one reference model it had before levels */
-export const DEFAULT_COACH_LEVEL = 13
-/** The reference level's average: what the fewest-darts path's chance is measured against */
-export const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
-
-/**
- * The level the coach judges a player against: one level above their average, the smallest
- * LEVEL_AVERAGE strictly above it (a 42 average is coached as level 5, 45). The aims, values and
- * grades are what a slightly better player would expect, so the coach asks for a step up and not
- * a pro's game. Above level 20's average: level 20. No average: DEFAULT_COACH_LEVEL.
- */
-export function coachLevel(average: number | null | undefined): number {
-  if (average == null || !Number.isFinite(average)) return DEFAULT_COACH_LEVEL
-  const i = LEVEL_AVERAGE.findIndex(a => a > average)
-  return i === -1 ? LEVEL_AVERAGE.length : i + 1
 }
 
 /** The best a dart can do from (left, darts) over every aim, memoised: a checkout is worth 1, a
@@ -76,8 +59,8 @@ function valuesOf(landing: Landing, bust: number, end: (after: number) => number
   return { outcome, value, best }
 }
 
-/** The model for `level` from its landing table. */
-export function coachModel(level: number, landing: Landing): CoachModel {
+/** The model for `tier` from its landing table. */
+export function coachModel(tier: CoachTierId, landing: Landing): CoachModel {
   // This visit only: a bust and a visit that doesn't check out are both a no
   const thisVisit = valuesOf(landing, 0, () => 0)
   const fin = Array.from({ length: 171 }, (_, r) => [0, 1, 2, 3].map(k => (k > 0 && r >= 2 ? thisVisit.best(r, k) : 0)))
@@ -91,55 +74,42 @@ export function coachModel(level: number, landing: Landing): CoachModel {
     })
   }
 
-  return { level, landing, fin, nextVisit, evaluator }
+  return { tier, landing, fin, nextVisit, evaluator }
 }
 
-// One chunk per level: the browser fetches only the table it coaches with
-const TABLES: Partial<Record<number, () => Promise<{ LANDING: Landing }>>> = {
-  1: () => import('./landing/level-1.gen.js'),
-  2: () => import('./landing/level-2.gen.js'),
-  3: () => import('./landing/level-3.gen.js'),
-  4: () => import('./landing/level-4.gen.js'),
-  5: () => import('./landing/level-5.gen.js'),
-  6: () => import('./landing/level-6.gen.js'),
-  7: () => import('./landing/level-7.gen.js'),
-  8: () => import('./landing/level-8.gen.js'),
-  9: () => import('./landing/level-9.gen.js'),
-  10: () => import('./landing/level-10.gen.js'),
-  11: () => import('./landing/level-11.gen.js'),
-  12: () => import('./landing/level-12.gen.js'),
-  13: () => import('./landing/level-13.gen.js'),
-  14: () => import('./landing/level-14.gen.js'),
-  15: () => import('./landing/level-15.gen.js'),
-  16: () => import('./landing/level-16.gen.js'),
-  17: () => import('./landing/level-17.gen.js'),
-  18: () => import('./landing/level-18.gen.js'),
-  19: () => import('./landing/level-19.gen.js'),
-  20: () => import('./landing/level-20.gen.js'),
+// One chunk per tier: the browser fetches only the table it coaches with
+const TABLES: Record<CoachTierId, () => Promise<{ LANDING: Landing }>> = {
+  beginner: () => import('./landing/beginner.gen.js'),
+  pub: () => import('./landing/pub.gen.js'),
+  intermediate: () => import('./landing/intermediate.gen.js'),
+  semipro: () => import('./landing/semipro.gen.js'),
+  pro: () => import('./landing/pro.gen.js'),
+  worldclass: () => import('./landing/worldclass.gen.js'),
 }
-const models = new Map<number, Promise<CoachModel>>()
+const models = new Map<CoachTierId, Promise<CoachModel>>()
 
-/** The models a review needs: `model` the player's coaching level's (coachLevel); `reference` the
- *  fixed reference level's landing (DEFAULT_COACH_LEVEL), for how hard the fewest-darts path was,
- *  the same for every player (minDarts.ts fewestPath). */
+/** The models a review needs: `model` the player's target tier's; `reference` the Brilliant tier's
+ *  landing (tiers.ts BRILLIANT_TIER), for how hard the fewest-darts path was, the same for every
+ *  player (minDarts.ts fewestPath). */
 export type CoachModels = { model: CoachModel; reference: Landing }
 
-/** The coaching level's model and the reference landing, loaded together. */
-export async function loadCoachModels(level: number): Promise<CoachModels> {
-  const [model, reference] = await Promise.all([loadModel(level), loadModel(DEFAULT_COACH_LEVEL)])
+/** The target tier's model and the reference landing, loaded together. */
+export async function loadCoachModels(tier: CoachTierId): Promise<CoachModels> {
+  const [model, reference] = await Promise.all([loadModel(tier), loadModel(BRILLIANT_TIER)])
   return { model, reference: reference.landing }
 }
 
-/** The model for a bot level (1–20), loaded and built once per level. */
-export function loadModel(level: number): Promise<CoachModel> {
-  const load = TABLES[level]
-  if (!load) return Promise.reject(new Error(`coach level out of range: ${level}`))
-  let m = models.get(level)
+/** The model for a tier, loaded and built once per tier. */
+export function loadModel(tier: CoachTierId): Promise<CoachModel> {
+  // A stored or sent tier is a string at runtime: an unknown one has no table
+  if (!Object.hasOwn(TABLES, tier)) return Promise.reject(new Error(`unknown coach tier: ${tier}`))
+  const load = TABLES[tier]
+  let m = models.get(tier)
   if (!m) {
-    m = load().then(t => coachModel(level, t.LANDING))
+    m = load().then(t => coachModel(tier, t.LANDING))
     // A failed fetch (a deploy replaced the chunk) can be tried again
-    m.catch(() => models.delete(level))
-    models.set(level, m)
+    m.catch(() => models.delete(tier))
+    models.set(tier, m)
   }
   return m
 }

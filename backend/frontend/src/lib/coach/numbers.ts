@@ -2,8 +2,11 @@
 // coach.debug.enabled): what each dart left, how the grade was worked out, the grouping.
 import type { GradeRule, ReviewVisit, VisitGrade } from '$shared/coach'
 import { VERY_LOW, type ScaleBand } from '$shared/coach/grade'
-import { REFERENCE_AVERAGE } from '$shared/coach/model'
+import { BRILLIANT_TIER, tierOf } from '$shared/coach/tiers'
 import { GRADE_STYLE } from './tone'
+
+/** "a semi-pro": who the Brilliant chance is measured for */
+const REFERENCE = tierOf(BRILLIANT_TIER).as
 
 /** "S19 (76 left), T20 (16 left), S1 (15 left)."; the busting dart "T8 bust", a dart the game kept
  *  after it "S5 (not counted)", a checkout "D4 out" */
@@ -74,8 +77,8 @@ function scaleOf(scale: readonly ScaleBand[], points: number): GradeScale {
 /** The line for the rule that overrode or capped the value; `chance` the fewest-darts path's (%,
  *  the fixed reference level's) */
 const RULE_TEXT: Record<NonNullable<GradeRule>, (chance: number) => string> = {
-  brilliant: chance => `Brilliant: fewest darts, a ${Math.round(chance)}% chance for an ${REFERENCE_AVERAGE} average`,
-  fewest: chance => `Excellent floor: fewest darts (${Math.round(chance)}% for an ${REFERENCE_AVERAGE} average)`,
+  brilliant: chance => `Brilliant: fewest darts, a ${Math.round(chance)}% chance for ${REFERENCE}`,
+  fewest: chance => `Excellent floor: fewest darts (${Math.round(chance)}% for ${REFERENCE})`,
   note: () => 'Bad: a strategy note — value ignored',
   veryLow: () => `Under ${VERY_LOW} scored: capped at Weak`,
   spill: () => 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',

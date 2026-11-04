@@ -2,7 +2,7 @@
 // their shared target and how close they came to their targets' beds; and the visit's rating, its
 // score plus a bonus for each. Only darts the camera placed count: a typed dart has no position.
 import { aimById } from './aims.js'
-import { LEVEL_AVERAGE, LEVEL_SIGMA, SIGMA_JITTER } from '../botLevels.js'
+import { SIGMA_JITTER, sigmaForAverage } from '../botLevels.js'
 import { MM_PER_UNIT, type DartClass } from './dartClass.js'
 
 // --- The rating's bonuses, to be tuned with the admin sandbox ---
@@ -65,21 +65,10 @@ export function grouping(darts: readonly Placed[], scored: number, average: numb
   }
 }
 
-/** The aiming sigma (board units, per axis) of a player with this 3-dart average: the bots'
- *  calibration (botLevels.ts), log-linear between levels, clamped outside them. */
-function sigmaForAverage(average: number): number {
-  const last = LEVEL_AVERAGE.length - 1
-  if (average <= LEVEL_AVERAGE[0]) return LEVEL_SIGMA[0]
-  if (average >= LEVEL_AVERAGE[last]) return LEVEL_SIGMA[last]
-  const i = LEVEL_AVERAGE.findIndex(a => a > average) - 1
-  const t = (average - LEVEL_AVERAGE[i]) / (LEVEL_AVERAGE[i + 1] - LEVEL_AVERAGE[i])
-  return Math.exp(Math.log(LEVEL_SIGMA[i]) + t * (Math.log(LEVEL_SIGMA[i + 1]) - Math.log(LEVEL_SIGMA[i])))
-}
-
 /** The mean distance from their centroid of `n` darts thrown by a player of this average: for a
  *  normal spread of sigma per axis, sigma·√((n−1)/n)·√(π/2) (≈ 1.02 sigma for 3 darts). */
 export function expectedSpreadMm(average: number, n: number): number {
-  // A level's darts each get a log-normal multiple of its sigma, on average e^(J²/2) ≈ 1.13 wider
+  // A player's darts each get a log-normal multiple of its sigma, on average e^(J²/2) ≈ 1.13 wider
   const jitter = Math.exp(SIGMA_JITTER ** 2 / 2)
   return sigmaForAverage(average) * jitter * Math.sqrt((n - 1) / n) * Math.sqrt(Math.PI / 2) * MM_PER_UNIT
 }

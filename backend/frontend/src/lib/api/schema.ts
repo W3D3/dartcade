@@ -3094,7 +3094,7 @@ export interface components {
                 edgeMm: number;
                 /** @description The score plus the grouping and closeness bonuses */
                 rating: number;
-                /** @description The spread a player of the seat's average groups this many darts in */
+                /** @description The spread a player of the target tier groups this many darts in */
                 expectedSpreadMm: number;
                 /** @description The spread against the expected one; null without a spread or when unremarkable */
                 comment: {
@@ -3107,7 +3107,7 @@ export interface components {
             value: {
                 /** @description The checkout chance (%) before the first dart; null on Scoring */
                 startChance: number | null;
-                /** @description On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
+                /** @description On a visit that kept the fewest-darts path: the fixed reference tier's chance (%, the semi-pro, a 75 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
                 fewestChance: number | null;
                 /** @description On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average */
                 points: number;
@@ -3157,9 +3157,13 @@ export interface components {
             missedDoubles: number;
             clean: boolean;
         };
+        /**
+         * @description A coaching tier (shared/coach/tiers.ts): the level whose checkout model graded the leg
+         * @enum {string}
+         */
+        CoachTier: "beginner" | "pub" | "intermediate" | "semipro" | "pro" | "worldclass";
         LegReview: {
-            /** @description The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played */
-            coachLevel: number;
+            coachTier: components["schemas"]["CoachTier"];
             leg: number;
             seat: number;
             won: boolean;
