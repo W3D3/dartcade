@@ -44,7 +44,7 @@ describe('queueView', () => {
       line: 'You started · ±75 RP',
     })
     const member = queueView(mm({ search: search() }), 'lena', NOW)!
-    expect(member).toMatchObject({ canCancel: false, line: 'Christoph started it · ±75 RP' })
+    expect(member).toMatchObject({ canCancel: false, cancelLabel: 'Leave queue', line: 'Christoph started it · ±75 RP' })
   })
 
   it('is the solo card without a lobby', () => {

@@ -69,7 +69,7 @@
     >
   {:else if view.kind === 'searching' && view.canCancel}
     <Button variant="outline" disabled={busy} onclick={() => void run(cancelSearch)} class="h-[34px] text-[13px]"
-      ><X size={14} aria-hidden="true" />Cancel search</Button
+      ><X size={14} aria-hidden="true" />{view.cancelLabel}</Button
     >
   {/if}
   {#if error}<ErrorText class="text-[12px]">{error}</ErrorText>{/if}

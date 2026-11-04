@@ -10,6 +10,14 @@ export const tick = readable(Date.now(), set => {
   return () => clearInterval(id)
 })
 
+// TODO: flip to true when dartcade-38's matchmaking PR lets either member of a duo
+// DELETE /api/matchmaking/search (it answers 403 for the partner until then). Leaving cancels the
+// whole duo search; the other member then sees "X left the queue" (matchmaking.ended, reason 'left').
+export const MEMBERS_CAN_LEAVE = false
+
+/** What stops a search: the host cancels it, a duo's other member leaves the queue. */
+export const stopLabel = (host: boolean): string => (host ? 'Cancel search' : 'Leave queue')
+
 export type QueueView = {
   kind: 'searching' | 'found' | 'accepted'
   /** "SEARCHING · 2V2", "MATCH FOUND", "ACCEPTED · WAITING" (shown in capitals). */
@@ -22,8 +30,10 @@ export type QueueView = {
   clock: string
   /** The phone strip's one line: "Searching · Ranked 2v2". */
   strip: string
-  /** Who may stop it: the one who searched, else the rest of the duo can only wait. */
+  /** Who may stop it: the one who searched, and the rest of the duo once the server allows it. */
   canCancel: boolean
+  /** "Cancel search" for the one who searched, "Leave queue" for their partner. */
+  cancelLabel: string
   /** The found match, for Accept and Decline; null while searching. */
   matchId: string | null
   /** Found: the seconds left to accept, for the drain bar. */
@@ -45,6 +55,7 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
       clock: `0:${String(left).padStart(2, '0')}`,
       strip: accepted ? `Waiting · ${name}` : 'Match found',
       canCancel: false,
+      cancelLabel: '',
       matchId: match.id,
       secondsLeft: left,
     }
@@ -59,7 +70,8 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
     line: `${duo ? (host ? 'You started' : `${search.players[0]} started it`) : 'Ranked'} · ±${search.range} RP`,
     clock: clock((now - Date.parse(search.since)) / 1000),
     strip: `Searching · Ranked ${search.mode}`,
-    canCancel: host,
+    canCancel: host || MEMBERS_CAN_LEAVE,
+    cancelLabel: stopLabel(host),
     matchId: null,
     secondsLeft: 0,
   }
