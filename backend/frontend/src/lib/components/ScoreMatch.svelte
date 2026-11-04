@@ -15,6 +15,8 @@
   import ControlBar from './ControlBar.svelte'
   import DartSlots from './DartSlots.svelte'
   import OfflineNotice from './OfflineNotice.svelte'
+  import RankedClock from './ranked/RankedClock.svelte'
+  import { clockSkew, disconnected } from '$lib/ranked/inGame'
   import TurnStatusBar from './TurnStatusBar.svelte'
   import VisitBand from './VisitBand.svelte'
   import WaitingCard from './WaitingCard.svelte'
@@ -98,6 +100,9 @@
   const isActive = $derived(snapshot.status === 'active')
   const game = $derived(snapshot.gameId === 'x01' || snapshot.gameId === 'atc' ? snapshot.game : null)
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
+  // A ranked game's clock; the big screen only watches and shows none
+  const ranked = $derived(isActive && !viewOnly ? snapshot.ranked : null)
+  const skew = $derived(ranked ? clockSkew(ranked) : 0)
   const darts = $derived(game?.currentVisitDarts ?? [])
   // A kiosk has no viewer: no "Garage · manual entry" lines under the names
   const lines = $derived(viewOnly ? snapshot.seats.map(() => null) : seatLines(snapshot))
@@ -152,9 +157,29 @@
   {/if}
 {/snippet}
 
+{#snippet rankedClock()}
+  {#if ranked}
+    <RankedClock
+      {ranked}
+      {skew}
+      mySeats={snapshot.mySeats}
+      names={players.map(p => p.name)}
+      up={currentPlayer}
+      waiting={remote.kind === 'waiting'}
+    />
+  {/if}
+{/snippet}
+
 {#snippet waitingCard(compact: boolean)}
   {#if remote.kind === 'waiting'}
-    <WaitingCard name={remote.name} disconnectedAt={remote.disconnectedAt} canAbort={remote.canAbort} {onabort} {compact} />
+    <WaitingCard
+      name={remote.name}
+      disconnectedAt={remote.disconnectedAt}
+      canAbort={remote.canAbort}
+      {onabort}
+      {compact}
+      forfeitAt={ranked ? (disconnected(ranked, snapshot.mySeats, skew)?.forfeitAt ?? null) : null}
+    />
   {/if}
 {/snippet}
 
@@ -194,6 +219,7 @@
 {#snippet portraitCenter()}
   <!-- Portrait (Match-Vertical): this visit and the slots in one strip, the controls, then the board fills the rest -->
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
+  {@render rankedClock()}
   <div class="shrink-0 grid gap-[10px] items-start {settings.visitSum ? 'grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)]' : 'grid-cols-1'}">
     {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
     <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
@@ -216,6 +242,7 @@
 
 {#snippet phoneCenter()}
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} compact />{/if}
+  {@render rankedClock()}
   <!-- Phones: everything fits without scrolling; the board, keypad or waiting card takes what's left -->
   {#if remote.kind === 'waiting'}
     <div class="flex-1 min-h-[160px] flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(true)}</div>
@@ -238,6 +265,7 @@
 
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
+  {@render rankedClock()}
   {#if keypad}
     {@render keypadView('min-h-0')}
   {:else if remote.kind === 'waiting' && variant === 'party'}
