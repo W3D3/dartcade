@@ -69,6 +69,7 @@
   "bmStatus": null,
   "status": "active",
   "results": null,
+  "rankedGame": false,
   "finishPending": false,
   "canUndoVisit": false,
   "scoreBased": true,

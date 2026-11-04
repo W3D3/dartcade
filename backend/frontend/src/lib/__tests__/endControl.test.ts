@@ -3,12 +3,13 @@ import type { Snapshot } from '$lib/api'
 import { endControl, afterGameRoute, leaveRefused, winActions } from '../endControl.js'
 import fixture from './fixtures/x01-snapshot.json'
 
-const snap = (patch: { ownerUserId?: string; mySeats?: number[]; lobbyId?: string | null } = {}): Snapshot => {
+const snap = (patch: { ownerUserId?: string; mySeats?: number[]; rankedGame?: boolean; lobbyId?: string | null } = {}): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
   return {
     ...base,
     ownerUserId: patch.ownerUserId ?? base.ownerUserId,
     mySeats: patch.mySeats ?? base.mySeats,
+    rankedGame: patch.rankedGame ?? base.rankedGame,
     lobbyId: patch.lobbyId === undefined ? base.lobbyId : patch.lobbyId,
   }
 }
@@ -16,6 +17,10 @@ const snap = (patch: { ownerUserId?: string; mySeats?: number[]; lobbyId?: strin
 describe('endControl', () => {
   it('gives the host End', () => {
     expect(endControl(snap({ ownerUserId: 'host', mySeats: [0] }), 'host')).toBe('end')
+  })
+
+  it('gives the owner of a ranked game Leave, never End', () => {
+    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], rankedGame: true }), 'host')).toBe('leave')
   })
 
   it('gives a seated non-host Leave', () => {

@@ -355,6 +355,7 @@ export class MatchmakingService {
         gameId: 'x01',
         config: rankedConfig(mode, found.firstTo),
         seats,
+        ranked: true,
         lobbyName: `Ranked ${mode}`,
       }))
     } catch (err) {
@@ -412,8 +413,14 @@ export class MatchmakingService {
     }
   }
 
-  /** At start-up: ranked games that finished while the server was down move their ratings now. */
+  /** Ranked games that finished without their ratings moving (the server was down, a write failed) move them now. */
   async settleAll(): Promise<void> {
-    for (const sessionId of await unrecordedRankedGames(this.deps.db)) await recordRankedGame(this.deps.db, sessionId)
+    for (const sessionId of await unrecordedRankedGames(this.deps.db)) {
+      try {
+        await recordRankedGame(this.deps.db, sessionId)
+      } catch (err) {
+        this.warn('ranked result not recorded', { sessionId, error: String(err) })
+      }
+    }
   }
 }

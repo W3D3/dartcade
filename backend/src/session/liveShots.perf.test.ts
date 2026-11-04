@@ -20,6 +20,7 @@ const store = () => ({
   finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
   getAvatars: vi.fn().mockResolvedValue(new Map()),
+  isRanked: vi.fn().mockResolvedValue(false),
 })
 
 it('keeps the event loop free while a live full-power 3D shot simulates', async () => {

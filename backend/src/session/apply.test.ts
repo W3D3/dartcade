@@ -34,6 +34,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     totalVisits: Array<number>(n).fill(0),
     boardStatus: new Map(),
     forfeited: [],
+    ranked: false,
     undoable: [],
     dartsLeftOnBoard: false,
   }

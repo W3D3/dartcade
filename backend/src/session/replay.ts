@@ -48,6 +48,7 @@ export function newSession(a: {
   version?: number
   /** The seated accounts' profile pictures (a replay for history needs none). */
   avatars?: Map<string, Avatar>
+  ranked?: boolean
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
@@ -74,6 +75,7 @@ export function newSession(a: {
     totalVisits: Array<number>(players.length).fill(0),
     boardStatus: new Map(),
     forfeited: [],
+    ranked: a.ranked ?? false,
     undoable: [],
     dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,

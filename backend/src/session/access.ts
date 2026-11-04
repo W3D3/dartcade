@@ -28,6 +28,12 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 }
 
 // Actions on the turn in progress: only whoever controls the seat that's up
+function bullOffNeedsRethrow(session: Session): boolean {
+  const view = session.module.view(session.currentState, session.players)
+  return 'bullOff' in view && view.bullOff?.result?.rethrow === true
+}
+
+const BULL_OFF_ACTIONS = new Set(['bulloff_start', 'bulloff_rethrow'])
 const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip', 'p121_give_up'])
 
 /** The action as it may be applied (forfeit gets its seats), or null when the user may not send it. */
@@ -44,6 +50,12 @@ export function authorizeAction(session: Session, userId: string, action: UserAc
     const covered = new Set([...mine, ...session.forfeited].map(i => teamOf[i]))
     if (covered.size >= new Set(teamOf).size) return null
     return { type: 'forfeit', seats: mine }
+  }
+  // A ranked game has no host to wait for: either side starts the bull off, and repeats it only
+  // when its result calls for that (a tie, nobody on the bull), never to get a second go
+  if (session.ranked && BULL_OFF_ACTIONS.has(action.type)) {
+    if (action.type === 'bulloff_rethrow' && !bullOffNeedsRethrow(session)) return null
+    return session.seats.some(s => s.controllerUserId === userId) ? action : null
   }
   // The bull off's start/rethrow and any game action decide for everyone: the host
   return isHost(userId, session) ? action : null

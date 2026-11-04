@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { authorizeAction, canAccessSession, canWatchSession, isHost } from './access.js'
+import { applyInput } from './apply.js'
 import { newSession } from './replay.js'
 import { x01Module } from '../games/x01.js'
 import type { Seat } from './types.js'
@@ -25,6 +26,51 @@ function game(seats: Seat[], owner = 'host') {
     createdAt: new Date(),
   })
 }
+
+describe('authorizeAction in a ranked game', () => {
+  const seats = [seat('Ann', 'ann', 'a'), seat('Bob', 'bob', 'b')]
+  const newGame = () => ({
+    ...newSession({
+      id: 's1',
+      ownerUserId: 'ann',
+      boardId: null,
+      module: x01Module,
+      config: { ...x01Module.defaultConfig, bullOff: 'pdc' },
+      seats,
+      seed: 1,
+      createdAt: new Date(),
+    }),
+    ranked: true,
+  })
+  const bull = { name: '50', number: 50, bed: 'Double', multiplier: 1 } as const
+  const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
+  // Each seat throws its one bull off dart (by hand) and takes it out
+  const bullOff = (darts: [typeof bull | typeof miss, typeof bull | typeof miss]) => {
+    const s = newGame()
+    const at = new Date()
+    for (const segment of darts) {
+      applyInput(s, { source: 'user', action: { type: 'add_dart', segment } }, at)
+      applyInput(s, { source: 'user', action: { type: 'takeout' } }, at)
+    }
+    return s
+  }
+
+  it('lets either seat start the bull off, and nobody else', () => {
+    const s = newGame()
+    expect(authorizeAction(s, 'ann', { type: 'bulloff_start' })).toEqual({ type: 'bulloff_start' })
+    expect(authorizeAction(s, 'bob', { type: 'bulloff_start' })).toEqual({ type: 'bulloff_start' })
+    expect(authorizeAction(s, 'carl', { type: 'bulloff_start' })).toBeNull()
+  })
+
+  it('lets a seat repeat the bull off when nobody hit the bull, but not after a clear result', () => {
+    const tie = bullOff([miss, miss])
+    expect(authorizeAction(tie, 'bob', { type: 'bulloff_rethrow' })).toEqual({ type: 'bulloff_rethrow' })
+    expect(authorizeAction(tie, 'carl', { type: 'bulloff_rethrow' })).toBeNull()
+    const clear = bullOff([bull, miss])
+    expect(authorizeAction(clear, 'bob', { type: 'bulloff_rethrow' })).toBeNull()
+    expect(authorizeAction(clear, 'ann', { type: 'bulloff_rethrow' })).toBeNull()
+  })
+})
 
 const seg = { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } as const
 
