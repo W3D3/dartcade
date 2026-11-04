@@ -14,6 +14,7 @@
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import SearchPanel from '$lib/components/ranked/SearchPanel.svelte'
+  import WhatHappensNext from '$lib/components/ranked/WhatHappensNext.svelte'
   import { Lock } from '@lucide/svelte'
   import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
   import { api } from '$lib/api'
@@ -279,6 +280,7 @@
           {/if}
           {#if searchingDuo}
             <SearchPanel />
+            <WhatHappensNext />
           {:else if host}
             <NextGameCard
               lobby={l}
