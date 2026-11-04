@@ -233,21 +233,26 @@ GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
   edge 1 mm · rating 75" under What happened; the take's Scoring power line adds " · grouping 12 mm · edge
   4 mm" (desktop); the sandbox shows the visit's grouping line.
 - **Grouping comment:** a verdict on the group itself, separate from the rating, judged against the
-  player's level. `expectedSpreadMm(average, n)` (`grouping.ts`, pure) is the mean distance from
-  the centroid that `n` darts from a player of that 3-dart average would show (the average the
-  grades use: 30-day as of the game's finish, else the game's own). `groupingComment(spreadMm,
-  expected)` compares the ratio r = spread / expected: `GREAT_GROUP_RATIO` 0.8 → "Great
-  grouping", `GOOD_GROUP_RATIO` 1.0 → "Good grouping", `SCATTERED_RATIO` 2.0 (and above) →
-  "Scattered"; in between, or without a spread, no comment. Both land in the visit's grouping
+  tier the player is graded as (Target tiers), not their own average. `expectedSpreadMm(average,
+  n)` (`grouping.ts`, pure) is the mean distance from the centroid that `n` darts from a player of
+  that 3-dart average would show; `grouping()` gets the target tier's average. `groupingComment(spreadMm,
+  expected)` compares the ratio r = spread / expected and the spread itself: "Great grouping" at
+  r ≤ `GREAT_GROUP_RATIO` 0.6 and ≤ `GREAT_GROUP_MM` 10 mm, "Good grouping" at r ≤
+  `GOOD_GROUP_RATIO` 0.85 and ≤ `GOOD_GROUP_MM` 15 mm, "Scattered" at r ≥ `SCATTERED_RATIO` 2.0;
+  in between, or without a spread, no comment. Both land in the visit's grouping
   (`expectedSpreadMm`, `comment`), so the client only shows them. Expected over 3 darts: about
-  28 mm at a 40 average, 16 mm at 60, 10.5 mm at 81, 7.3 mm at 100; the same 13 mm group is Good
-  for the 60 player and unremarkable for the 81. The grade text names the grouping only when the
+  40 mm for a beginner (30), 24 mm for a pub player (45), 16 mm for an intermediate (60), 12 mm for
+  a semi-pro (75), 8.9 mm for a pro (90), 6.4 mm for world class (105). Examples: graded as an
+  intermediate, 9 mm is Great, 13 mm Good, 20 mm nothing, 32 mm Scattered; as a pro, 5 mm Great,
+  7 mm Good, 9 mm nothing, 18 mm Scattered; as a beginner the caps hold, 9 mm Great, 12 mm only
+  Good, 20 mm nothing, 80 mm Scattered. The grade text names the grouping only when the
   comment is Great or Good ("great grouping (6 mm)"), so it never praises a group the pill calls
   Scattered. Shown as a small outlined pill next to the grade pill and tag chip (information, not
   a grade: transparent, a thin neutral border, regular weight, a crosshair icon in Excellent green
   for Great, Good green for Good, Inaccuracy yellow for Scattered) in the
-  visit table, the phone cards, the selected visit's card and the sandbox (from its "Your
-  average" field); the grouping line adds the expectation: "Grouping 12 mm (yours: ~14 mm) · …".
+  visit table, the phone cards, the selected visit's card and the sandbox (from the tier its "Your
+  average" field suggests); the grouping line adds the expectation: "Grouping 12 mm (target: ~16 mm) · …".
+  The rating's grouping bonus stays absolute.
   The rating's grouping bonus stays absolute.
 
 Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of the single rates
@@ -336,26 +341,30 @@ is the visit's walked darts (fewer than 3 on a checkout) and `minDarts(0) = 0`. 
 scoring exactly m with any dart, then the best finishing double; 501 is 9, 361 is 7, 330 and 327
 are 6, 171 and 159 are 4, 170 is 3, 99 is 3, 100 is 2.
 
-Such a visit is **Brilliant** when it was hard for the fixed reference level — `DEFAULT_COACH_LEVEL`
-(7, an 81 average), never the player's own coaching level, so a low-level player's easy checkout
-doesn't read as Brilliant: its chance of doing it from the visit's start, by the reference level's
-landing table (`ReviewContext.referenceModel`), is below `BRILLIANT_CHANCE` (0.25, `grade.ts`). Any
+Such a visit is **Brilliant** when it was hard for the fixed reference tier — `BRILLIANT_TIER`
+(the semi-pro, a 75 average), never the tier the player is graded as, so a low-tier player's easy
+checkout doesn't read as Brilliant: its chance of doing it from the visit's start, by the reference
+tier's landing table (`CoachModels.reference`), is below `BRILLIANT_CHANCE` (0.25, `grade.ts`). Any
 other fewest-darts visit is **Excellent** (a floor; nothing a value gives is higher), with the rule
 `fewest` when the floor lifted it.
 
 - **The chance** (`fewestChance(landing, start, darts)` in `minDarts.ts`, exact on the reference
-  level's landing table, no approximation): the chance a reference-level player, aiming every dart
+  tier's landing table, no approximation): the chance a reference-tier player, aiming every dart
   for it, keeps the fewest-darts path for the visit's darts. Each dart must take exactly one dart off
   `minDarts` (none can take more) and a checkout ends it kept, maximised over the aims per state.
   On a checkout in the fewest darts this is the chance to check out from the start in that many
   darts (equal to the reference model's `fin[start][darts]`); on a scoring or setup visit, the
   chance of a visit that keeps the path. It is `ReviewVisit.value.fewestChance` (%) — the same for
-  every player, since the level it's judged against never changes.
-- At level 7 (an 81 average): 120 → D20 D20 D20 is Brilliant (17.7%), 100 → T20 D20 Brilliant
-  (12.3%), 170 → T20 T20 Bull Brilliant (3.1%), 501 → 180 and 501 → 171 Brilliant (4.2%: the
-  start's chance, the same for both), 40 → D20 Excellent (36.2%), 235 → T20 T19 S20 (98 left)
-  Excellent (25.2%, just above). 40 → S20 S10 D5 and 40 → S20 D10 aren't the fewest darts and keep
-  their value grade.
+  every player, since the tier it's judged against never changes.
+- For a semi-pro (75): 120 → D20 D20 D20 is Brilliant (13.4%), 100 → T20 D20 Brilliant (9.4%),
+  170 → T20 T20 Bull Brilliant (2.0%), 501 → 180 and 501 → 171 Brilliant (2.8%: the start's chance,
+  the same for both), 40 → D20 Excellent (32.0%), 60 → S20 D20 Excellent (28.3%), 235 → T20 T19
+  S20 (98 left) Brilliant (19.4%). 40 → S20 S10 D5 and 40 → S20 D10 aren't the fewest darts and
+  keep their value grade. Against the old level-7 reference (81) the chances all fell, so more
+  visits are Brilliant: 235 → 98 (25.2% → 19.4%), 169 → T20 T19 S12 (25.1% → 19.2%) and 50 → Bull
+  (27.3% → 22.4%) moved up from Excellent; the rest kept their grade (100 → T20 D20 12.3% → 9.4%,
+  120 → 17.7% → 13.4%, 180/171 4.2% → 2.8%, 170 3.1% → 2.0%, 40 → D20 36.2% → 32.0%, 60 → S20 D20
+  33.2% → 28.3%, 32 → D16 36.0% → 31.6%).
 - It is checked before every other grade rule except the strategy note and the bust: a bust is
   never on the fewest darts, and a note (not a tip) keeps its Bad.
 - Texts (Brilliant and the Excellent floor alike): "Checked out in the fewest darts (D20).";
@@ -416,8 +425,7 @@ wide screens (1280 px and up), a folded line above the dart slots below that and
 - **Aim now**: the next dart's three best aims (`bestAims` in `lib/coach/sandbox.ts`, w = 1: no
   opponent), each with its chance to check out this visit or the next and what it leaves
   ("T19 · 64% · leaves 67"). Over 170 left nothing checks out soon enough to rank by chance, so it
-  shows the three aims with the most points a dart for the coaching level's player (its landing table).
-  At level 7: T20, T19, T18.
+  shows the three aims with the most points a dart for a player of the target tier (its landing table).
 - **This visit**: each dart as the leg review classes it (`dartLabel`), with its change in checkout
   chance and its near-miss credit (`value.ts`); none on a scoring visit.
 - **Last visit**: once the visit is done (three darts, a bust or a checkout) its grade and line from
@@ -425,41 +433,58 @@ wide screens (1280 px and up), a folded line above the dart slots below that and
 - The average it grades against: your 30-day X01 average from your profile, else this game's, else
   none (the visit's own).
 - `lib/coach/live.ts` and the panel load in a lazy chunk, only once the panel shows; the panel then
-  fetches the landing table of your coaching level (from your 30-day average; level 7 until
-  the profile arrives or without one) and says "Coached as a 46 average."; it also fetches the
-  fixed reference level's table (`DEFAULT_COACH_LEVEL`, often the same chunk), for the
+  fetches the landing table of your target tier (your pick, or on auto the one your 30-day average
+  suggests, once `GET /api/coach/average` answers) and says "Graded as a pro (90 average)."; it
+  also fetches the Brilliant tier's table (`BRILLIANT_TIER`, often the same chunk), for the
   fewest-darts path's chance.
 
-## Coaching level
+## Target tiers
 
 The checkout model (notes, dart classes' finish priors, values and deltas, the costs quoted, the
-setup leave reasons, the opponents' w) exists for every bot level 1–10, and the coach judges a
-player with the model of the level just above their own average (user ruling: "the one higher than
-the user's average to coach them into getting better": a 40 average was happy with 60 on 100,
-which the 81-average model called a loss).
+setup leave reasons, the opponents' w, the grouping comment) exists for six target tiers, and the
+coach grades a player as the tier they pick (user ruling; it replaced the ten bot-level models).
 
+| Tier         | `id`           | Average |
+| ------------ | -------------- | ------- |
+| Beginner     | `beginner`     | 30      |
+| Pub player   | `pub`          | 45      |
+| Intermediate | `intermediate` | 60      |
+| Semi-pro     | `semipro`      | 75      |
+| Pro          | `pro`          | 90      |
+| World class  | `worldclass`   | 105     |
+
+- **One list** (`shared/coach/tiers.ts` `COACH_TIERS`: id, name, average), shared by the server and
+  the SPA.
 - **Tables:** `npm run gen:coach` (`src/coach/genLanding.ts`) writes
-  `shared/coach/landing/level-N.gen.ts` per level: 40,000 seeded throws per aim with that level's
-  `LEVEL_SIGMA` and the bots' `SIGMA_JITTER` (the same Monte Carlo as before; level 7's numbers are
-  the old `landing.gen.ts`'s, byte for byte). 19–84 kB of source each (level 1 is widest), 11–52 kB
-  minified, 2.6–10 kB gzipped.
-- **The model** (`model.ts`): `coachModel(level, landing)` builds a level's finish table, nextVisit
-  and evaluator; `loadModel(level)` imports a level's table lazily (one chunk each in the SPA) and
-  builds its model once. Everything that coaches takes the model explicitly (`throwsOf`,
-  `throwEvaluations`, `strategyNotes`, `dartDeltas`, `reviewLeg`'s `ctx.model`, the sandbox and the
-  live panel); `reviewLeg`'s `ctx.referenceModel` is always `DEFAULT_COACH_LEVEL`'s, for the
-  fewest-darts path's chance.
-- **`coachLevel(average)`:** the level whose `LEVEL_AVERAGE` is the smallest one strictly above the
-  average (40 → level 3, 46; 80 → level 7, 81; 81 → level 8, 90); level 10 at or above 105; level 7
-  (`DEFAULT_COACH_LEVEL`) without an average.
-- **Reviews:** the level comes from the same 30-day average (as of the game's finish) the scoring
-  grades use, and is stored in the review JSON (`LegReview.coachLevel`, no migration), so a review
-  doesn't shift when the average changes; the leg review says "Coached as a 46 average".
-- **Unchanged by the level:** the grade thresholds, the fewest-darts rule (`minDarts`; Brilliant's chance is always the fixed reference level's, never the player's), the scoring grades
-  against the average, the grouping comment's own average-based expectation, and the dart classes'
-  attribution σ (`SIGMA_ATTR`).
-- **Sandbox:** "Your average" picks the level the same way and shows "Coaching level: 3 (≈ 46
-  average)".
+  `shared/coach/landing/<id>.gen.ts` per tier: 40,000 seeded throws per aim with the bots' throw
+  model at `sigmaForAverage(average)` (`shared/botLevels.ts`: `LEVEL_SIGMA` log-linear between the
+  `LEVEL_AVERAGE`s, the same mapping the grouping's expected spread uses) and the bots' own
+  `SIGMA_JITTER` per dart, as the level tables had. Beginner and world class are levels 1 and 10's
+  tables (30 and 105 are calibrated averages), pro is level 8's (90); the others are interpolated.
+  19–84 kB of source each (beginner is widest); the browser loads one per tier.
+- **The model** (`model.ts`): `coachModel(tier, landing)`, `loadModel(tier)` (one lazy chunk per
+  tier), `loadCoachModels(tier)` the tier's model plus the Brilliant tier's landing.
+- **The target** is the account preference `coachTarget` (`'auto'` or a tier id, `user.preferences`,
+  `ACCOUNT_KEYS` in the SPA, `GET`/`PUT /api/me/preferences`). `targetTier(target, average)`: the
+  picked tier, or on auto `suggestedTier(average)`: the tier whose average equals the player's
+  30-day average, else the next one above (52 → intermediate, 60 → intermediate, 60.1 → semi-pro);
+  world class above 105; intermediate without an average.
+- **Selector:** "Coach me as…" on the Coach page's header and in Settings → Game preferences (a
+  Coach card, behind `coach.enabled`): the six tiers with their averages, the suggested one marked
+  "Recommended for you". Picking the suggested tier stores auto, so it keeps following the average;
+  any other stores that tier. The suggestion comes from `GET /api/coach/average`, now open with
+  `coach.enabled` as well as `coach.live.enabled`.
+- **Reviews:** built with the player's target as it is at build time and the 30-day average as of
+  the game's finish (the auto tier and the scoring grades). The review says the tier
+  (`LegReview.coachTier`): "Graded as a pro (90 average)". Each `coach_legs` row keeps the target
+  it was graded for (`target`, migration 054); a row whose target is no longer its player's
+  preference is hidden from every read (`legs.ts`) and its game counts as unbuilt (`store.ts`
+  `unbuilt`, `ensureCoachGame`), so the list's builds (up to 10 games a request, the page asking
+  again while some wait) and a leg request rebuild it. Only that player's games are pending; a
+  rebuild regrades the other seats with their own current targets.
+- **Unchanged by the tier:** the grade thresholds, the fewest-darts rule, the scoring grades
+  against the player's own average, and the dart classes' attribution σ (`SIGMA_ATTR`).
+- **Sandbox:** "Your average" picks the tier auto would and shows "Graded as: Pro (90 average)".
 
 ## Testing
 
@@ -534,9 +559,10 @@ Decisions taken while building this without the user, each with why:
   centroid (≈ 1.02σ for 3 darts, 0.89σ for 2), × 170 mm per unit, × e^(J²/2) ≈ 1.13 for the bots'
   log-normal per-dart jitter (`SIGMA_JITTER` J = 0.5, also in `shared/botLevels.ts`): a level's
   darts are on average that much wider than its σ.
-- **The comment ratios (0.8 / 1.0 / 2.0) are set so Good means at or better than your level's
-  usual group, Great clearly better, and Scattered twice as wide.** Below a 30 average the
-  expectation is clamped at level 1's ~35 mm, so a beginner's 29 mm spray still reads Good.
+- **The grouping comment is judged against the target tier (0.6 / 0.85 / 2.0, capped at 10 and
+  15 mm)** (user ruling): Good means tighter than the tier you aim for usually groups, Great
+  clearly tighter. The millimetre caps keep a beginner's ~40 mm expectation from calling a 25 mm
+  spray Great.
 - **A dart attributed to the Bull on 50 that landed outside the inner single ring is Wild**: the
   wedge rule can't apply to the bull, and 100 mm "Bull misses" would poison the stats.
 - **In Scoring, a dart in the target number's double (D20 aiming T20) is a Scoring miss**
@@ -583,19 +609,27 @@ Decisions taken while building this without the user, each with why:
   are first guesses**, to be tuned in the sandbox. Three typed misses at D16 from 32 are −19
   (Weak); S16, S8, S4 chasing it down to 4 is −23.5 (Mistake); a camera visit of three misses 2 mm
   outside D16 earns +13.5 back and is OK.
-- **The reference player is the coaching level's**: the level one above the seat's 30-day average
-  (Coaching level), so the grade says how the darts compare with a slightly better player from the
-  same spot. At level 7 (an 80 average) a checkout from an easy finish is Good (32 → S16, D8:
-  +7.6), from a hard one Great (81 → T19, S12, D6: +21); for a 40 average (level 3) 32 → S16, S8,
-  D4 is Great (+41.9) and 100 → S20, S20, S20 Good (+9.3, OK at level 7: −2.7).
-- **Coaching level: one above, not the player's own level** (the user's choice). A player exactly
-  on a level's average is coached by the next one up; a player with no 30-day average by level 7,
-  as before (their scoring grades still use the game's average). The opponents' threat (w) uses the
-  same level's model: their real level isn't known.
-- **The level is stored per leg**, inside the review JSON: a rebuild (COACH_VERSION) recomputes it
-  from the average as of the game's finish, so it stays the same.
-- **The live panel fetches level 7 first** when the player's profile hasn't loaded yet (or never
-  will, with progression off), then the right level's table.
+- **The reference player is the target tier's**, so the grade says how the darts compare with a
+  player of the tier you aim for from the same spot: 100 → S20, S20, S20 is Good (+9.7) for a
+  pub player (a 40 average on auto) and a small loss (−3.8, Inaccuracy) for a pro (80 on auto).
+- **Auto suggests the tier reached or the next one up** (the user's choice): a player exactly on a
+  tier's average is graded as that tier, otherwise the next one above; without a 30-day average,
+  intermediate (their scoring grades still use the game's average). The opponents' threat (w)
+  uses the same tier's model: their real level isn't known.
+- **The target is stored per row** (`coach_legs.target`), the tier inside the review JSON: a
+  rebuild for a new COACH_VERSION keeps an auto row's tier (from the average as of the game's
+  finish); a new target makes the player's rows stale, hidden until rebuilt. While a regrade runs
+  the Coach page lists only the legs already regraded and says how many games still wait.
+- **Picking the recommended tier stores auto**, not the tier: it follows the player's average up.
+- **The live panel waits for `GET /api/coach/average`** before it loads a table (the target alone
+  could load the wrong tier on auto).
+- **Brilliant against the semi-pro (75), no hidden 81 table** (user ruling): the chances fell, so
+  a few easy-ish fewest-darts visits moved from Excellent to Brilliant (see Brilliant visit).
+- **Tests pin their numbers on the semi-pro model** (`testLegs.ts` `REF`), the closest tier to the
+  old level 7. Moving off level 7 changed some pinned grades, not tuned back: three misses at D16
+  from 32, a bust from 8 and a Bust-back on 20 went from Weak to Bad (−20 instead of −18); 76 →
+  S20 S16 D20 from Good to Great; the book's second route on 45 (S19) now costs a semi-pro 5.1
+  points (a strategy note) against S13.
 - **A tip keeps the value's grade** and shows its text; a bust's or checkout's text wins over a tip.
 - **The costliest dart is picked by its delta alone** (the cost quoted is checkout chance), and only
   named when the visit's points are below 0 and that dart lost at least 1 point.
