@@ -5,13 +5,14 @@
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
   import { fmtAvg } from '$lib/playerStats'
   import { onDestroy, onMount } from 'svelte'
-  import { Clock, Crosshair, Hourglass, Search, User, Users, X } from '@lucide/svelte'
+  import { Clock, Hourglass, Search, User, Users } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
+  import SearchPanel from '$lib/components/ranked/SearchPanel.svelte'
   import StatCard from '$lib/components/ranked/StatCard.svelte'
   import { api } from '$lib/api'
   import type { components } from '$lib/api/schema'
@@ -19,8 +20,7 @@
   import { numberFlag } from '$lib/flags'
   import { RESERVE_SECONDS, VISIT_SECONDS } from '$shared/ranked.js'
   import { me } from '$lib/lobby/sockets'
-  import { currentUser } from '$lib/auth'
-  import { cancelSearch, pausedFor, searchView, startSearch } from '$lib/ranked/queue'
+  import { pausedFor, startSearch } from '$lib/ranked/queue'
 
   type Profile = components['schemas']['RankedProfile']
 
@@ -50,8 +50,6 @@
   onDestroy(() => clearInterval(ticker))
 
   const search = $derived($me?.matchmaking?.search ?? null)
-  const searching = $derived(search ? searchView(search, tick) : null)
-  const youHost = $derived(search !== null && search.hostUserId === $currentUser?.id)
   const paused = $derived(pausedFor($me?.matchmaking?.pausedUntil ?? null, tick))
   let busy = $state(false)
   let searchError = $state('')
@@ -59,12 +57,6 @@
   async function find() {
     busy = true
     searchError = (await startSearch(queue, firstTo)) ?? ''
-    busy = false
-  }
-
-  async function cancel() {
-    busy = true
-    searchError = (await cancelSearch()) ?? ''
     busy = false
   }
 
@@ -138,86 +130,8 @@
       </div>
 
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
-        {#if search && searching}
-          <section
-            aria-label={searching.title}
-            aria-live="polite"
-            class="box-border flex flex-col gap-4 rounded-[16px] border-2 border-accent-line bg-surface-panel px-4 py-4 md:px-6 md:py-[22px]"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">{searching.title}</h2>
-              <span class="text-[12px] text-text-muted md:text-[13px]">{searching.format}</span>
-            </div>
-            <div class="flex flex-grow items-center gap-5 md:gap-7 md:px-1 md:py-[6px]">
-              <div class="relative h-[120px] w-[120px] flex-shrink-0 md:h-[176px] md:w-[176px]">
-                {#each [0, 0.8, 1.6] as delay (delay)}
-                  <span
-                    aria-hidden="true"
-                    class="absolute inset-0 animate-radar rounded-full border-2 border-accent opacity-0 motion-reduce:hidden"
-                    style:animation-delay="{delay}s"
-                  ></span>
-                {/each}
-                <span
-                  class="absolute inset-[22%] flex flex-col items-center justify-center gap-[2px] rounded-full border border-accent-line bg-surface-1"
-                >
-                  <Crosshair size={18} class="text-accent" />
-                  <span role="timer" aria-label="Time searching" class="font-display text-[22px] font-bold leading-none md:text-[28px]"
-                    >{searching.elapsed}</span
-                  >
-                </span>
-              </div>
-              <div class="flex min-w-0 flex-grow flex-col gap-[14px]">
-                {#if search.mode === '2v2'}
-                  <span class="truncate text-[14px] font-semibold">{searching.players}</span>
-                {/if}
-                <div class="flex flex-col gap-1">
-                  <span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Rating range</span>
-                  <span class="text-[15px]"
-                    ><strong class="font-mono font-medium">{searching.range}</strong>
-                    <span class="text-text-muted">· widens every 30 s</span></span
-                  >
-                </div>
-                {#if searching.bar}
-                  <div class="flex w-full flex-col gap-2">
-                    <div class="relative h-[10px] rounded-[5px] bg-surface-chip">
-                      <span
-                        class="absolute top-0 bottom-0 rounded-[5px] border border-accent-line-strong bg-accent-line transition-[left,right] duration-700"
-                        style:left="{searching.bar.inset}%"
-                        style:right="{searching.bar.inset}%"
-                      ></span>
-                      <span class="absolute top-[-5px] left-1/2 -ml-[2px] h-5 w-1 rounded-[2px] bg-accent"></span>
-                    </div>
-                    <div class="flex justify-between gap-2 font-mono text-[11px] text-text-dim md:text-[12px]">
-                      <span>{searching.bar.low}</span><span class="truncate text-accent">{searching.bar.you}</span><span
-                        >{searching.bar.high}</span
-                      >
-                    </div>
-                  </div>
-                {/if}
-                <span class="text-[13px] text-text-muted">{searching.searching}</span>
-              </div>
-            </div>
-            <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-4">
-              <span class="flex-grow text-[13px] leading-[1.45] text-text-muted">
-                {#if search.mode === '2v2' && !youHost}
-                  Only your duo's host can cancel. When a match is found, you get 10 seconds to accept on any screen.
-                {:else}
-                  Keep browsing. When a match is found, you get 10 seconds to accept on any screen.
-                {/if}
-              </span>
-              {#if search.mode === '1v1' || youHost}
-                <button
-                  type="button"
-                  disabled={busy}
-                  onclick={cancel}
-                  class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong bg-transparent px-[22px] font-[inherit] text-[15px] font-semibold text-text"
-                >
-                  <X size={18} />Cancel search
-                </button>
-              {/if}
-            </div>
-            {#if searchError}<ErrorText>{searchError}</ErrorText>{/if}
-          </section>
+        {#if search}
+          <SearchPanel />
         {:else}
           <section
             aria-label="Find a match"
