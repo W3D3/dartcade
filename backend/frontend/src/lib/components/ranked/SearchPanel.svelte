@@ -21,17 +21,21 @@
 
   async function cancel() {
     busy = true
-    error = (await cancelSearch()) ?? ''
-    busy = false
+    try {
+      error = (await cancelSearch()) ?? ''
+    } finally {
+      busy = false
+    }
   }
 </script>
 
 {#if search && view}
   <section
     aria-label={view.title}
-    aria-live="polite"
     class="box-border flex flex-col gap-4 rounded-[16px] border-2 border-accent-line bg-surface-panel px-4 py-4 md:px-6 md:py-[22px]"
   >
+    <!-- Only this is announced: the timer below changes every second -->
+    <span class="sr-only" role="status">Searching, {view.range}</span>
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">{view.title}</h2>
       <span class="text-[12px] text-text-muted md:text-[13px]">{view.format}</span>
