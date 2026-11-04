@@ -4,7 +4,7 @@ import { HALF, R, SEGS } from '../board.js'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, aimsOn, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import type { Evaluation } from './model.js'
-import { afterDart, landedNumber, type Throw } from './walk.js'
+import { afterDart, landedNumber, settle, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
 /** An amateur's spread, for guessing targets only (the strategy model keeps the coaching level's):
@@ -164,12 +164,6 @@ function wedges(n: number | null, numbers: readonly number[]): number | null {
   return off.reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a))
 }
 
-/** The score after hitting `points` from `left`; a bust goes back to the visit's `start`. */
-const leave = (left: number, points: number, double: boolean, start: number) => {
-  const after = afterDart(left, points, double)
-  return after === 'out' ? 0 : after === 'bust' ? start : after
-}
-
 /** Wrapped to (−π, π] */
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
 
@@ -324,7 +318,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   if (top.after === 'bust' && mayBustBack) return { ...base, kind: 'bustBack', plannedLeave: t.start, actualLeave }
   // A wire counts as its likeliest outcome
   const points = aimPoints(aim)
-  const plannedLeave = leave(t.left, points.length > 1 ? top.outcome[1] : points[0], isDoubleAim(aim), t.start)
+  const plannedLeave = settle(afterDart(t.left, points.length > 1 ? top.outcome[1] : points[0], isDoubleAim(aim)), t.start)
   const leaves = { ...base, plannedLeave, actualLeave }
 
   if (isBullAim(aim)) return { ...leaves, ...bull() }

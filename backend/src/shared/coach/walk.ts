@@ -72,6 +72,9 @@ export function afterDart(left: number, points: number, double: boolean): number
   return after === 0 && double ? 'out' : after < 2 ? 'bust' : after
 }
 
+/** The score a dart leaves (afterDart's `after`): 0 on a checkout, the visit's `start` again on a bust */
+export const settle = (after: number | 'out' | 'bust', start: number): number => (after === 'out' ? 0 : after === 'bust' ? start : after)
+
 export type Step = Pick<Throw, 'left' | 'after' | 'checkout' | 'bust'>
 
 /** A visit's darts from `start`, up to and including the one that busts: the score before and
@@ -82,7 +85,7 @@ export function walkVisit(start: number, darts: readonly CoachDart[]): Step[] {
   let left = start
   for (const d of darts) {
     const after = afterDart(left, dartPoints(d), isDoubleDart(d))
-    out.push({ left, after: after === 'out' ? 0 : after === 'bust' ? start : after, checkout: after === 'out', bust: after === 'bust' })
+    out.push({ left, after: settle(after, start), checkout: after === 'out', bust: after === 'bust' })
     if (typeof after !== 'number') break
     left = after
   }
