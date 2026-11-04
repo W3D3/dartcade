@@ -14,7 +14,8 @@
   import { me } from '$lib/lobby/sockets'
   import { indicatorView } from '$lib/lobby/format'
   import QueueCard from './ranked/QueueCard.svelte'
-  import { queueView, tick } from '$lib/ranked/queueCard'
+  import { queueView } from '$lib/ranked/queueCard'
+  import { tick } from '$lib/ranked/tick'
   import { currentUser } from '$lib/auth'
 
   const summary = $derived($me?.lobby ?? null)
