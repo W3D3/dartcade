@@ -3,6 +3,7 @@
   // how long (from the server's disconnectedAt); only the host gets Abort.
   import { Unplug, X } from '@lucide/svelte'
   import { formatElapsed } from '$lib/remote'
+  import { reconnectView } from '$lib/ranked/clock'
 
   let {
     name,
@@ -10,6 +11,7 @@
     canAbort,
     onabort,
     compact = false,
+    forfeitAt = null,
   }: {
     name: string
     /** Server time their game closed; null if they haven't opened it since the server started. */
@@ -17,6 +19,8 @@
     canAbort: boolean
     onabort: () => void
     compact?: boolean
+    /** A ranked game: when they forfeit if they stay away, on this screen's clock (ms). */
+    forfeitAt?: number | null
   } = $props()
 
   let now = $state(Date.now())
@@ -28,6 +32,7 @@
       clearInterval(t)
     }
   })
+  const forfeitLeft = $derived(forfeitAt === null ? null : reconnectView(forfeitAt, now).left)
   const elapsed = $derived(disconnectedAt === null ? null : formatElapsed(disconnectedAt, now))
 </script>
 
@@ -55,7 +60,11 @@
     {/if}
   </span>
   <p class="m-0 max-w-[300px] text-text-muted leading-[1.5] {compact ? 'text-[13px]' : 'text-[15px]'}">
-    Their score is kept. The game carries on as soon as {name} is back.
+    {#if forfeitLeft !== null}
+      If {name} is not back in <span class="font-mono text-text tabular-nums">{forfeitLeft}</span>, you win by forfeit.
+    {:else}
+      Their score is kept. The game carries on as soon as {name} is back.
+    {/if}
   </p>
   {#if canAbort}
     <div class="mt-2 flex flex-col items-center gap-2">
