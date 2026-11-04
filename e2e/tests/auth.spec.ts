@@ -50,3 +50,24 @@ test('login then sign out lands on login page', async ({ page }) => {
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await page.waitForURL('**/#/login')
 })
+
+// Password managers (Bitwarden) score fields by autocomplete, type and name; the final DOM must keep these (#473, #326)
+const attrs = (page: import('@playwright/test').Page, id: string) =>
+  page.locator(`#${id}`).evaluate(el => ({
+    type: el.getAttribute('type'),
+    name: el.getAttribute('name'),
+    autocomplete: el.getAttribute('autocomplete'),
+  }))
+
+test('register form: email is an email, the name a nickname, the password new', async ({ page }) => {
+  await page.goto('/#/register')
+  expect(await attrs(page, 'reg-email')).toEqual({ type: 'email', name: 'email', autocomplete: 'email' })
+  expect(await attrs(page, 'reg-name')).toMatchObject({ name: 'nickname', autocomplete: 'nickname' })
+  expect(await attrs(page, 'reg-password')).toEqual({ type: 'password', name: 'password', autocomplete: 'new-password' })
+})
+
+test('sign-in form: the email is the username the manager saves', async ({ page }) => {
+  await page.goto('/#/login')
+  expect(await attrs(page, 'login-email')).toEqual({ type: 'email', name: 'email', autocomplete: 'username' })
+  expect(await attrs(page, 'login-password')).toEqual({ type: 'password', name: 'password', autocomplete: 'current-password' })
+})
