@@ -7,6 +7,9 @@
   import GameXpChip from './progress/GameXpChip.svelte'
   import Celebration from './progress/Celebration.svelte'
   import MarksGrid from './cricket/MarksGrid.svelte'
+  import RankedPill from './ranked/RankedPill.svelte'
+  import RatingCard from './ranked/RatingCard.svelte'
+  import type { RankedOutcome } from '$lib/ranked/result'
   import { profileOf } from '$lib/progress/profiles'
   import { cardColors } from '$lib/progress/look'
   import type { Competitor, WinView } from '$lib/winScreen'
@@ -23,6 +26,8 @@
     onhistory = null,
     xpSessionId = null,
     winnerId = null,
+    ranked = null,
+    rankedGame = false,
   }: {
     view: WinView
     title: string
@@ -41,6 +46,9 @@
     xpSessionId?: string | null
     /** The winner's account (the winning team's first player): their celebration plays (progression); null: none. */
     winnerId?: string | null
+    /** A ranked game: the header says so, and the rating card shows once the server has recorded the result (`ranked` is null until then). */
+    ranked?: RankedOutcome | null
+    rankedGame?: boolean
   } = $props()
 
   const winnerProfile = $derived(winnerId ? profileOf(winnerId) : null)
@@ -139,7 +147,8 @@
   >
     <h1 class="m-0 font-display font-bold text-[22px] md:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
     <span class="hidden md:inline text-[14px] text-text-muted truncate">{meta}</span>
-    {#if lobbyName}
+    {#if rankedGame}<RankedPill />{/if}
+    {#if lobbyName && !rankedGame}
       <span
         title="Lobby game"
         class="hidden md:inline-flex shrink-0 max-w-[240px] h-7 px-[10px] items-center rounded-full bg-surface-active border border-accent-line text-accent text-[13px] font-semibold"
@@ -189,7 +198,9 @@
           </div>
 
           <div class="flex flex-col items-center gap-1">
-            <span class="text-[13px] tracking-[0.14em] uppercase text-accent font-bold">{view.kicker}</span>
+            <span class="text-[13px] tracking-[0.14em] uppercase text-accent font-bold"
+              >{rankedGame ? `Ranked · ${view.kicker}` : view.kicker}</span
+            >
             {#if second}
               <span
                 class="font-display font-bold text-[96px] md:text-[132px] xl:text-[168px] leading-[0.82] tracking-[0.01em] whitespace-nowrap"
@@ -229,6 +240,10 @@
             </div>
           {/if}
         </section>
+
+        {#if rankedGame && ranked}
+          <div class="rise r2 flex justify-center"><RatingCard outcome={ranked} /></div>
+        {/if}
 
         {#if view.checkout}
           <p class="rise r2 -mt-[6px] mb-0 text-center text-[16px] md:text-[18px] text-ink-2">
