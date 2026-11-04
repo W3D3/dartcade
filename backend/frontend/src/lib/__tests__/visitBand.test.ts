@@ -16,14 +16,10 @@ describe('isBigDart', () => {
 })
 
 describe('x01Band', () => {
-  it('shows the sum and what is left', () => {
-    expect(x01Band({ darts: [d(60)], left: 81, bust: false })).toEqual({
+  it('shows the sum', () => {
+    expect(x01Band({ darts: [d(60)], bust: false })).toEqual({
       eyebrow: 'This visit',
-      progress: '1 of 3 darts',
-      progressShort: '1 of 3',
       sum: '60',
-      afterLabel: 'Left after',
-      after: '81',
       fx: 'none',
       bigDart: true,
       bust: false,
@@ -31,16 +27,16 @@ describe('x01Band', () => {
   })
 
   it('celebrates a ton and a maximum', () => {
-    expect(x01Band({ darts: [d(60), d(60), d(20)], left: 361, bust: false })).toMatchObject({
+    expect(x01Band({ darts: [d(60), d(60), d(20)], bust: false })).toMatchObject({
       eyebrow: 'Ton plus',
       fx: 'ton',
       bigDart: false,
     })
-    expect(x01Band({ darts: [d(60), d(60), d(60)], left: 321, bust: false })).toMatchObject({ eyebrow: 'Maximum', fx: 'max', sum: '180' })
+    expect(x01Band({ darts: [d(60), d(60), d(60)], bust: false })).toMatchObject({ eyebrow: 'Maximum', fx: 'max', sum: '180' })
   })
 
   it('uses the points actually scored when known (darts before opening do not count)', () => {
-    expect(x01Band({ darts: [d(60), d(60), d(60)], left: 501, bust: false, scored: 0 })).toMatchObject({
+    expect(x01Band({ darts: [d(60), d(60), d(60)], bust: false, scored: 0 })).toMatchObject({
       sum: '0',
       eyebrow: 'This visit',
       fx: 'none',
@@ -49,7 +45,7 @@ describe('x01Band', () => {
   })
 
   it('a bust never celebrates', () => {
-    expect(x01Band({ darts: [d(60), d(60)], left: 101, bust: true })).toMatchObject({
+    expect(x01Band({ darts: [d(60), d(60)], bust: true })).toMatchObject({
       eyebrow: 'Bust',
       fx: 'none',
       bigDart: false,
@@ -59,14 +55,10 @@ describe('x01Band', () => {
 })
 
 describe('atcBand', () => {
-  it('shows targets advanced and the target now', () => {
-    expect(atcBand({ dartCount: 2, advanced: 1, target: '14' })).toEqual({
+  it('shows targets advanced', () => {
+    expect(atcBand({ advanced: 1 })).toEqual({
       eyebrow: 'This visit',
-      progress: '2 of 3 darts',
-      progressShort: '2 of 3',
       sum: '+1',
-      afterLabel: 'Target now',
-      after: '14',
       fx: 'none',
       bigDart: false,
       bust: false,
@@ -82,7 +74,7 @@ describe('atcAdvanced', () => {
 
 describe('shouldReplay', () => {
   const band = (sum: string, fx: 'none' | 'ton' | 'max' = 'ton', bigDart = false) => ({
-    ...x01Band({ darts: [], left: 0, bust: false }),
+    ...x01Band({ darts: [], bust: false }),
     sum,
     fx,
     bigDart,
