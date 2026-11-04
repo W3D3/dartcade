@@ -10,11 +10,13 @@ import {
   EXCELLENT_FROM,
   explainedNote,
   FINISH_BANDS,
+  FINISH_SCALE,
   GOOD_FROM,
   MISS_CLOSE_MAX,
   MISS_CLOSE_ZERO_MM,
   OK_FROM,
   SCORING_BANDS,
+  SCORING_SCALE,
   tagOf,
   WEAK_FROM,
   type VisitFacts,
@@ -188,7 +190,7 @@ describe('scoring visits', () => {
       scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 0, average: 60 },
       terms: [],
       band: 'bad',
-      bands: [...SCORING_BANDS, { grade: 'bad', from: null }],
+      bands: SCORING_SCALE,
       fewestChance: null,
     })
     expect(grade(501, ['T20', 'T19', 'T19']).value).toMatchObject({ rule: 'brilliant', points: 114 })
@@ -368,7 +370,7 @@ describe('setup and doubling visits: graded by value', () => {
       scoring: null,
       terms: f.deltas.map((delta, i) => ({ delta, closeness: closeness(f.classes[i]), penalty: 0 })),
       band: 'good',
-      bands: [...FINISH_BANDS, { grade: 'bad', from: null }],
+      bands: FINISH_SCALE,
       rule: null,
       fewestChance: null,
     })

@@ -62,17 +62,18 @@ export const SKILL_TONE: Record<NonNullable<SkillGrade['grade']> | 'none', PillT
   none: 'ok',
 }
 
-/** A visit's grade pill, each grade in its own tone. Tip is a note that leaves the grade alone, in the blue Info style. */
-export const GRADE_PILL: Record<VisitGrade | 'tip', PillView> = {
-  brilliant: { label: 'Brilliant', tone: 'brilliant' },
-  excellent: { label: 'Excellent', tone: 'excellent' },
-  great: { label: 'Great', tone: 'great' },
-  good: { label: 'Good', tone: 'good' },
-  ok: { label: 'OK', tone: 'ok' },
-  inaccuracy: { label: 'Inaccuracy', tone: 'inaccuracy' },
-  weak: { label: 'Weak', tone: 'weak' },
-  bad: { label: 'Bad', tone: 'bad' },
-  tip: { label: 'Tip', tone: 'info' },
+/** Each grade's style: its word, its pill's tone, its stretch of the debug view's scale bar. Tip
+ *  is a note that leaves the grade alone, in the blue Info style. */
+export const GRADE_STYLE: Record<VisitGrade | 'tip', PillView & { fill: string }> = {
+  brilliant: { label: 'Brilliant', tone: 'brilliant', fill: 'bg-grade-brilliant' },
+  excellent: { label: 'Excellent', tone: 'excellent', fill: 'bg-grade-excellent' },
+  great: { label: 'Great', tone: 'great', fill: 'bg-grade-great' },
+  good: { label: 'Good', tone: 'good', fill: 'bg-grade-good' },
+  ok: { label: 'OK', tone: 'ok', fill: 'bg-grade-ok' },
+  inaccuracy: { label: 'Inaccuracy', tone: 'inaccuracy', fill: 'bg-grade-inaccuracy' },
+  weak: { label: 'Weak', tone: 'weak', fill: 'bg-grade-weak' },
+  bad: { label: 'Bad', tone: 'bad', fill: 'bg-grade-bad' },
+  tip: { label: 'Tip', tone: 'info', fill: 'bg-ice' },
 }
 
 /** A grouping comment's icon colour: Great and Good in the grade greens, Scattered Inaccuracy yellow */

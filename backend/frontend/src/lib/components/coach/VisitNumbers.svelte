@@ -2,8 +2,9 @@
   // The numbers behind a visit's grade, for checking the model (the sandbox; Coach-Leg and the live
   // coach with coach.debug.enabled): what each dart left, its class in full, its change in checkout
   // chance and closeness credit, and the visit's grouping.
-  import type { ReviewVisit, VisitGrade } from '$shared/coach'
-  import { gradeWorking, groupingLine, signedPoints, whatHappened } from '$lib/coach/numbers'
+  import type { ReviewVisit } from '$shared/coach'
+  import { gradeWorking, groupingLine, one, signedPoints, whatHappened } from '$lib/coach/numbers'
+  import GradeScale from './GradeScale.svelte'
 
   let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'grouping' | 'tag' | 'left' | 'bust' | 'value'> } = $props()
 
@@ -21,20 +22,8 @@
     ['Δ', 'Change in checkout chance (points)'],
     ['Close', 'Near-miss credit (points)'],
   ]
-  const mm = (v: number | null) => (v === null ? '–' : (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))
+  const mm = (v: number | null) => (v === null ? '–' : one(v))
   const working = $derived(gradeWorking(visit))
-  /** A point's place on the bar, in % */
-  const at = (p: number) => ((p - working.scale.min) / (working.scale.max - working.scale.min)) * 100
-  const FILL: Record<VisitGrade, string> = {
-    brilliant: 'bg-grade-brilliant',
-    excellent: 'bg-grade-excellent',
-    great: 'bg-grade-great',
-    good: 'bg-grade-good',
-    ok: 'bg-grade-ok',
-    inaccuracy: 'bg-grade-inaccuracy',
-    weak: 'bg-grade-weak',
-    bad: 'bg-grade-bad',
-  }
 </script>
 
 <div class="flex flex-col gap-2 text-[13.5px] leading-[1.45]">
@@ -75,25 +64,7 @@
     </ul>
     <span class="text-ink-2">{working.result}</span>
     {#if working.rule}<span class="font-semibold text-ice">{working.rule}</span>{/if}
-    <!-- The scale: its classes as coloured stretches, the bounds labelled (alternately above and
-         below so near ones don't collide) and a marker at the visit's points; the text above says it all -->
-    <div aria-hidden="true" class="relative mx-3 mt-5 mb-6 h-2.5">
-      {#each working.scale.bands as b (b.grade)}
-        <span class="absolute inset-y-0 {FILL[b.grade]}" style:left="{at(b.from)}%" style:width="{at(b.to) - at(b.from)}%"></span>
-      {/each}
-      {#each working.scale.ticks as t, i (t)}
-        <span
-          class="absolute -translate-x-1/2 text-[11px] leading-none tabular-nums {i % 2
-            ? 'top-[calc(100%+4px)]'
-            : 'bottom-[calc(100%+4px)]'}"
-          style:left="{at(t)}%">{signedPoints(t)}</span
-        >
-      {/each}
-      <span
-        class="absolute -inset-y-1.5 w-[3px] -translate-x-1/2 rounded-full bg-text ring-2 ring-bg"
-        style:left="{at(working.scale.marker)}%"
-      ></span>
-    </div>
+    <GradeScale scale={working.scale} />
   </section>
   <span class="text-text-muted"
     >{groupingLine(visit) ?? 'No grouping: it needs two darts placed on the board with a target. Rating = score.'}</span

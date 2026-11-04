@@ -126,6 +126,10 @@ export const SCORING_BANDS: GradeBands = [
   { grade: 'inaccuracy', from: SCORING_INACCURACY_FROM },
   { grade: 'weak', from: SCORING_WEAK_FROM },
 ]
+/** The complete scales the debug view draws: the bands, then Bad below the last bound */
+const complete = (bands: GradeBands): ScaleBand[] => [...bands, { grade: 'bad', from: null }]
+export const FINISH_SCALE = complete(FINISH_BANDS)
+export const SCORING_SCALE = complete(SCORING_BANDS)
 /** The band `points` falls in */
 export const bandOf = (points: number, bands: GradeBands): ValueGrade => bands.find(b => points >= b.from)?.grade ?? 'bad'
 /** The worse of two grades, and the better */
@@ -242,7 +246,7 @@ export function gradeVisit(f: VisitFacts): Grading {
       scoring,
       terms,
       band,
-      bands: [...bands, { grade: 'bad', from: null }],
+      bands: tag === 'scoring' ? SCORING_SCALE : FINISH_SCALE,
       rule: o && grade !== band ? o.rule : null,
       fewestChance: fewest === null ? null : fewest * 100,
     },

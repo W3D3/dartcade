@@ -6,24 +6,18 @@ import {
   DART_COSTLY_AT,
   DART_GOOD_FROM,
   DART_PLAIN_ABOVE,
-  FINISH_BANDS,
+  FINISH_SCALE,
   MISS_CLOSE_MAX,
   MISS_CLOSE_ZERO_MM,
   NEAR_MISS_MM,
-  SCORING_BANDS,
+  SCORING_SCALE,
   VERY_LOW,
-  type GradeBands,
 } from '$shared/coach/grade'
 import { NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
-import { DEFAULT_COACH_LEVEL } from '$shared/coach/model'
-import { averageForLevel } from '$shared/botLevels'
-import { GRADE_PILL } from './tone'
-
-/** The fixed reference level's average (model.ts DEFAULT_COACH_LEVEL): the Brilliant rule's chance
- *  is always measured against this player, not the viewer's own coaching level */
-const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
+import { REFERENCE_AVERAGE } from '$shared/coach/model'
+import { bandText, scaleText } from './numbers'
 
 /** A check's label: a visit grade, or tip (Info: worth knowing, not graded) */
 export type CheckLabel = VisitGrade | 'tip'
@@ -36,20 +30,6 @@ export const SOURCES: Record<CheckSource, { label: string; text: string }> = {
   scores: { label: 'Scores', text: 'From the segments your darts hit' },
   model: { label: 'Model', text: "From the checkout model: each aim's chance to finish" },
 }
-
-/** Points with their sign: "+20", "−15", "0" */
-const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
-
-/** A grade's band on a scale: "+20 to +60", "+60 or more", "below −20" */
-export function bandText(bands: GradeBands, grade: VisitGrade): string {
-  const i = bands.findIndex(b => b.grade === grade)
-  if (i < 0) return `below ${signed(bands[bands.length - 1].from)}`
-  return i === 0 ? `${signed(bands[0].from)} or more` : `${signed(bands[i].from)} to ${signed(bands[i - 1].from)}`
-}
-
-/** "Excellent +60 or more, Great +20 to +60, …, Bad below −20": every class of a scale */
-const scaleText = (bands: GradeBands) =>
-  [...bands.map(b => b.grade), 'bad' as const].map(g => `${GRADE_PILL[g].label} ${bandText(bands, g)}`).join(', ')
 
 const MEANING: Record<VisitGrade, string> = {
   brilliant: 'the fewest darts, when that was hard',
@@ -68,8 +48,8 @@ export type GradeLegend = { label: VisitGrade; text: string; finish: string | nu
 export const GRADE_LEGEND: GradeLegend[] = VISIT_GRADES.map(g => ({
   label: g,
   text: MEANING[g],
-  finish: g === 'brilliant' ? null : bandText(FINISH_BANDS, g),
-  scoring: g === 'brilliant' ? null : bandText(SCORING_BANDS, g),
+  finish: g === 'brilliant' ? null : bandText(FINISH_SCALE, g),
+  scoring: g === 'brilliant' ? null : bandText(SCORING_SCALE, g),
 }))
 
 const notePoints = Math.round(NOTE_THRESHOLD * 100)
@@ -99,7 +79,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Rating against your average',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'scores',
-        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_BANDS)}.`,
+        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_SCALE)}.`,
         example: 'S20 S20 S1 = 41 · your average 60: −19, Weak',
         says: 'One loose visit happens; a few in a row mean the rhythm went.',
       },
@@ -129,7 +109,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Checkout chance',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'model',
-        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_BANDS)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
+        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_SCALE)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
         example: '121 left · S20 T17 S18 → 32 (D16): +8, Good',
         says: 'A setup: when the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route (37 left is a single to double, S5 · D16). A doubling visit without a checkout: what happened to the double, then where you stand (3 darts at D4, all just outside, 5 mm on average. Still on 8.). On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
       },

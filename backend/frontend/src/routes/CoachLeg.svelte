@@ -16,7 +16,7 @@
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag } from '$lib/flags'
   import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
-  import { GRADE_PILL } from '$lib/coach/tone'
+  import { GRADE_STYLE } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
   import { VISIT_GRADES, type LegReview, type ReviewVisit, type VisitTag } from '$shared/coach'
 
@@ -150,7 +150,7 @@
                 {#each VISIT_GRADES as g (g)}
                   <li class="inline-flex items-center gap-1.5">
                     <GradePill grade={g} /><span class="text-[13px] text-text-muted"
-                      ><span class="sr-only">{GRADE_PILL[g].label}: </span>{visits.filter(v => v.grade === g).length}</span
+                      ><span class="sr-only">{GRADE_STYLE[g].label}: </span>{visits.filter(v => v.grade === g).length}</span
                     >
                   </li>
                 {/each}

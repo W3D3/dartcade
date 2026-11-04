@@ -2,7 +2,7 @@
 // how likely each aim is to lead to a checkout this visit, or in the next one weighted by the
 // chance of getting it (w: the opponents don't check out first). The coach judges a player with
 // the model of their coaching level (coachLevel).
-import { LEVEL_AVERAGE } from '../botLevels.js'
+import { averageForLevel, LEVEL_AVERAGE } from '../botLevels.js'
 import type { Outcome } from './aims.js'
 import { afterDart } from './walk.js'
 
@@ -35,6 +35,8 @@ export type CoachModel = {
 
 /** Without an average the coach uses level 7 (81 average): the one reference model it had before levels */
 export const DEFAULT_COACH_LEVEL = 7
+/** The reference level's average: what the fewest-darts path's chance is measured against */
+export const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
 
 /**
  * The level the coach judges a player against: one level above their average, the smallest
