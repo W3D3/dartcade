@@ -4,7 +4,19 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listUsers, getUser, setRole, setVerified, listUserAudit, banUser, unbanUser, type AdminUserRow } from '../db/adminUsers.js'
+import {
+  listUsers,
+  getUser,
+  getUserActivity,
+  boardIdsByOwner,
+  setRole,
+  setVerified,
+  listUserAudit,
+  banUser,
+  unbanUser,
+  type AdminUserRow,
+} from '../db/adminUsers.js'
+import { bridgeConnections as liveBridges, type BridgeConnections } from '../bridge-gw/connections.js'
 import { grantXp } from '../db/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -14,9 +26,11 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** After a ban is stored (sessions already gone): closes their sockets, lobby and games (auth/ban.ts) */
   onBanned?: (userId: string) => Promise<void>
+  /** The live bridge connections (default: the app's) */
+  bridges?: BridgeConnections
 }
 
-function serialize(row: AdminUserRow) {
+function serialize(row: AdminUserRow, bridges: { connected: number; total: number }) {
   return {
     id: row.id,
     name: row.name,
@@ -26,6 +40,7 @@ function serialize(row: AdminUserRow) {
     createdAt: row.createdAt.toISOString(),
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
     avatar: row.avatar,
+    bridges,
     ban: row.ban && { category: row.ban.category, until: row.ban.until?.toISOString() ?? null, note: row.ban.note },
   }
 }
@@ -34,9 +49,23 @@ function serialize(row: AdminUserRow) {
 export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
   const adminOnly = [requireAuth, requireAdmin]
+  const live = opts.bridges ?? liveBridges
+
+  /** The rows as the API shows them: with how many of the owner's bridges are connected right now */
+  async function present(rows: AdminUserRow[]) {
+    const boards = await boardIdsByOwner(
+      db,
+      rows.map(r => r.id),
+    )
+    return rows.map(r => {
+      const ids = boards.get(r.id) ?? []
+      return serialize(r, { connected: live.connectedFor(ids).length, total: ids.length })
+    })
+  }
+  const presentOne = async (row: AdminUserRow) => (await present([row]))[0]
 
   app.get<Route<'listAdminUsers'>>('/api/admin/users', { preValidation: adminOnly, schema: fromSpec('listAdminUsers') }, async req => ({
-    users: (await listUsers(db, req.query.q)).map(serialize),
+    users: await present(await listUsers(db, req.query.q)),
   }))
 
   app.get<Route<'listUserAudit'>>(
@@ -47,13 +76,34 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     }),
   )
 
+  app.get<Route<'getUserActivity'>>(
+    '/api/admin/users/:id/activity',
+    { preValidation: adminOnly, schema: fromSpec('getUserActivity') },
+    async req => {
+      const activity = await getUserActivity(db, req.params.id)
+      if (!activity) throw new ApiError(404, { error: 'not found' })
+      const boardNames = new Map(activity.account.boards.map(b => [b.id, b.name]))
+      return {
+        bridges: live.connectedFor([...boardNames.keys()]).map(({ boardDbId, conn }) => ({
+          boardId: boardDbId,
+          boardName: boardNames.get(boardDbId) ?? '',
+          version: conn.bridgeVersion ?? null,
+          connectedAt: conn.connectedAt.toISOString(),
+        })),
+        account: activity.account,
+        games: { ...activity.games, lastAt: activity.games.lastAt?.toISOString() ?? null },
+        darts: activity.darts,
+      }
+    },
+  )
+
   app.put<Route<'setUserRole'>>('/api/admin/users/:id/role', { preValidation: adminOnly, schema: fromSpec('setUserRole') }, async req => {
     const result = await setRole(db, req.params.id, req.body.role)
     if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
     if (result === 'last-admin') throw new ApiError(409, { error: 'There must be at least one admin' })
     const user = await getUser(db, req.params.id)
     if (!user) throw new ApiError(404, { error: 'not found' })
-    return serialize(user)
+    return presentOne(user)
   })
 
   app.put<Route<'setUserVerified'>>(
@@ -65,7 +115,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
       const user = await getUser(db, req.params.id)
       if (!user) throw new ApiError(404, { error: 'not found' })
       req.log.info({ targetId: req.params.id, verified: req.body.verified, adminId: req.userId }, 'admin set user verified')
-      return serialize(user)
+      return presentOne(user)
     },
   )
 
@@ -88,7 +138,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     await opts.onBanned?.(req.params.id)
     const user = await getUser(db, req.params.id)
     if (!user) throw new ApiError(404, { error: 'not found' })
-    return serialize(user)
+    return presentOne(user)
   })
 
   app.delete<Route<'unbanUser'>>('/api/admin/users/:id/ban', { preValidation: adminOnly, schema: fromSpec('unbanUser') }, async req => {
@@ -96,7 +146,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     req.log.info({ targetId: req.params.id, adminId: req.userId }, 'admin unbanned user')
     const user = await getUser(db, req.params.id)
     if (!user) throw new ApiError(404, { error: 'not found' })
-    return serialize(user)
+    return presentOne(user)
   })
 
   done()

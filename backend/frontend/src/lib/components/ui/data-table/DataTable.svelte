@@ -28,6 +28,8 @@
     resizable = false,
     growColumn,
     narrowRow,
+    rowDetail,
+    isExpanded,
     tableClass = 'min-w-[720px]',
     headClass = 'p-3 font-semibold text-text-muted',
     cellClass = 'p-3',
@@ -65,6 +67,9 @@
     growColumn?: string
     /** Below lg, each row as this card instead of the table (rowHref still makes it a link). */
     narrowRow?: Snippet<[TData]>
+    /** With isExpanded: shown in a full-width row under a row that is expanded. */
+    rowDetail?: Snippet<[TData]>
+    isExpanded?: (row: TData) => boolean
     /** Classes for the <table>; the default keeps a wide table scrolling rather than squashed. */
     tableClass?: string
     /** Classes for the header cells and the body cells (padding, type). */
@@ -232,6 +237,11 @@
               </td>
             {/each}
           </tr>
+          {#if rowDetail && isExpanded?.(row.original)}
+            <tr class="border-b border-line-3 bg-surface-inset last:border-0">
+              <td colspan={row.getVisibleCells().length} class="p-0">{@render rowDetail(row.original)}</td>
+            </tr>
+          {/if}
         {/each}
       {/each}
     </tbody>

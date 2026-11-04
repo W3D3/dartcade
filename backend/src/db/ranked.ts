@@ -39,7 +39,7 @@ export async function getRatings(db: Kysely<Database>, userId: string): Promise<
 }
 
 /** The `ranked_results` rows (as `alias`) of games that still count: a moderator hasn't invalidated them. */
-const counts = (alias = 'ranked_results') =>
+export const counts = (alias = 'ranked_results') =>
   sql<boolean>`NOT EXISTS (SELECT 1 FROM game_sessions gi WHERE gi.id = ${sql.ref(`${alias}.session_id`)} AND gi.invalidated_at IS NOT NULL)`
 
 /** How far each mode's rating moved since `since`, placement matches left out (0 without games since then). */

@@ -1,12 +1,12 @@
 // Admin user management: list accounts, set their role (admin, moderator, none), give them XP, ban them (schema/api-v1.yaml, tag admin).
-import { api, type AdminUser, type UserAuditEntry } from '$lib/api'
+import { api, type AdminUser, type AdminUserActivity, type UserAuditEntry } from '$lib/api'
 import type { BanCategory } from '$shared/bans.js'
 import { banLine } from '$lib/bans'
 import { isBanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 import { xpForLevel } from '$shared/progression.js'
 
-export type { AdminUser }
+export type { AdminUser, AdminUserActivity }
 
 /** Every account matching `q` (blank: everyone), newest first, at most 50. Null: the request failed. */
 export async function listUsers(q: string): Promise<AdminUser[] | null> {
@@ -230,4 +230,19 @@ export function saveColumnVisibility(storage: Pick<Storage, 'setItem'> | null, v
   } catch {
     // Storage full or blocked: visibility just doesn't persist
   }
+}
+
+/** One account's bridges, games and darts, for its expanded row. Null: the request failed. */
+export async function loadUserActivity(id: string): Promise<AdminUserActivity | null> {
+  const res = await api.GET('/api/admin/users/{id}/activity', { params: { path: { id } } })
+  return res.data ?? null
+}
+
+/** "3 / 5" for the Bridges column: connected out of all paired. */
+export const bridgesText = (b: AdminUser['bridges']): string => `${b.connected} / ${b.total}`
+
+/** "12 manual (8%)": how much of `total` was typed in by hand; "none manual" when nothing was. */
+export function manualShare(manual: number, total: number): string {
+  if (manual === 0) return 'none manual'
+  return `${manual.toLocaleString('en-US')} manual (${Math.round((manual / total) * 100)}%)`
 }

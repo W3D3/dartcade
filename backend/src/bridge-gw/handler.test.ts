@@ -59,6 +59,7 @@ describe('BridgeConnections', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: false,
     }
     const conn2 = {
@@ -70,6 +71,7 @@ describe('BridgeConnections', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: false,
     }
     bc.add(conn1)
@@ -92,6 +94,7 @@ describe('BridgeConnections', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: true,
     }
     bc.add(conn)
@@ -111,6 +114,7 @@ describe('BridgeConnections', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: true,
     })
     const old = mk(),
@@ -137,6 +141,7 @@ describe('BridgeConnections', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: false,
     }
     bc.add(conn)
@@ -157,6 +162,7 @@ describe('BridgeConnections', () => {
       bmVersion: '1.0.7',
       bmUrl: 'http://192.168.0.109:3180',
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: true,
     }
     bc.add(conn)
@@ -855,6 +861,7 @@ describe('BridgeConnections.send', () => {
       bmVersion: null,
       bmUrl: null,
       bridgeUpdatable: false,
+      connectedAt: new Date(),
       helloReceived: false,
     }
     bc.add(conn)

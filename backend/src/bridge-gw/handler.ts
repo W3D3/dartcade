@@ -209,6 +209,7 @@ export function handleBridgeConnection(
     bmUrl: null,
     bridgeUpdatable: false,
     helloReceived: false,
+    connectedAt: new Date(),
   }
 
   // Authenticate once. The result gates message processing below.

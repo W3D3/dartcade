@@ -157,7 +157,7 @@ test('admin: hub and users', async ({ browser }) => {
   await michael.ctx.close()
   await api(page).put(`/api/admin/users/${michaelId}/verified`, { verified: false })
 
-  // Wide enough for the row buttons to sit side by side, as on a real desktop
+  // Wide enough for the table columns to sit side by side, as on a real desktop
   await page.setViewportSize({ width: 1600, height: 760 })
   await page.goto('/#/admin/users')
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
@@ -166,17 +166,19 @@ test('admin: hub and users', async ({ browser }) => {
 
   // A row button: click, confirm, the dialog closes and the page is interactive again
   // (no stray overlay left capturing clicks) and the row reflects the change
-  const row = page.getByRole('row').filter({ hasText: 'Michael' })
-  await row.getByRole('button', { name: 'Mark verified' }).click()
+  await page.getByRole('button', { name: 'Activity of Michael' }).click()
+  await page.getByRole('button', { name: 'Mark verified' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Mark verified' }).click()
   await expect(dialog).toBeHidden()
-  await expect(row.getByRole('button', { name: 'Mark unverified' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mark unverified' }).last()).toBeVisible()
+  await page.getByRole('button', { name: 'Activity of Michael' }).click()
 
   // Something to show in Phil's audit log, then the log itself
   await api(page).post(`/api/admin/users/${philId}/xp`, { amount: 1000 })
-  await page.getByRole('row').filter({ hasText: /phil/i }).getByRole('button', { name: 'Audit log' }).click()
+  await page.getByRole('button', { name: 'Activity of Phil' }).click()
+  await page.getByRole('button', { name: 'Audit log' }).click()
   const audit = page.getByRole('dialog')
   await expect(audit.getByText('Gave XP').first()).toBeVisible()
   await audit.screenshot({ path: docPath('admin/user-audit-desktop.png'), animations: 'disabled' })

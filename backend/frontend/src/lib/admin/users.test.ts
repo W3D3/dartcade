@@ -10,6 +10,8 @@ import {
   roleActions,
   roleChange,
   grantSummary,
+  bridgesText,
+  manualShare,
   type AdminUser,
 } from './users'
 
@@ -23,9 +25,21 @@ function user(id: string): AdminUser {
     createdAt: '2026-01-01T00:00:00.000Z',
     lastLoginAt: null,
     avatar: { kind: 'none' },
+    bridges: { connected: 0, total: 0 },
     ban: null,
   }
 }
+
+describe('bridges and darts text', () => {
+  it('shows connected out of paired', () => {
+    expect(bridgesText({ connected: 1, total: 3 })).toBe('1 / 3')
+  })
+
+  it('gives the manual share of the darts', () => {
+    expect(manualShare(0, 50)).toBe('none manual')
+    expect(manualShare(1234, 5000)).toBe('1,234 manual (25%)')
+  })
+})
 
 describe('joinedDate', () => {
   it('formats as day month year', () => {

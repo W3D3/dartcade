@@ -16,6 +16,7 @@ export type BridgeConn = {
   /** From bridge.hello: it can update itself (bridge.update). */
   bridgeUpdatable: boolean
   helloReceived: boolean
+  connectedAt: Date
 }
 
 /** A bridge event as received. */
@@ -72,6 +73,14 @@ export class BridgeConnections {
 
   isOnline(boardDbId: string): boolean {
     return this.byBoard.has(boardDbId)
+  }
+
+  /** The connected bridge of each of these boards (a bridge fronts one board per connection). */
+  connectedFor(boardDbIds: string[]): { boardDbId: string; conn: BridgeConn }[] {
+    return boardDbIds.flatMap(boardDbId => {
+      const conn = this.byBoard.get(boardDbId)
+      return conn ? [{ boardDbId, conn }] : []
+    })
   }
 
   /** Connected bridge sockets, and the boards they registered. */
