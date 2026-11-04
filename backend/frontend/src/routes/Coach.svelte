@@ -8,14 +8,24 @@
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import CountCards from '$lib/components/coach/CountCards.svelte'
   import { Button } from '$lib/components/ui/button'
-  import { api, type CoachLegCounts, type CoachLegRow } from '$lib/api'
+  import { api, type CoachLegCounts, type CoachLegPage, type CoachLegRow } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
   import Pill from '$lib/components/coach/Pill.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import LegRowsSkeleton from '$lib/components/coach/LegRowsSkeleton.svelte'
   import ListSkeleton from '$lib/components/coach/ListSkeleton.svelte'
   import { Chip } from '$lib/components/ui/chip'
-  import { COACH_FILTERS, COACH_FILTER_IDS, LEG_COLUMNS as COLUMNS, coachFound, legWhen, vsLine, type CoachFilter } from '$lib/coach/list'
+  import {
+    COACH_FILTERS,
+    COACH_FILTER_IDS,
+    LEG_COLUMNS as COLUMNS,
+    coachFound,
+    needsAnotherPage,
+    shouldRefresh,
+    legWhen,
+    vsLine,
+    type CoachFilter,
+  } from '$lib/coach/list'
   import { readParam } from '$lib/urlState'
   import { formatWhen } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
@@ -36,7 +46,7 @@
   let slow = $state(false)
   // How many of your latest games the server still has to review; while some do, the page asks again
   let pending = $state(0)
-  let loads = $state(0)
+  let refreshing = $state(false)
   const now = new Date()
 
   const when = (iso: string) => legWhen(iso, now)
@@ -46,16 +56,42 @@
     return w.day === 'Today' ? w.time : `${w.day} ${w.time}`
   })
 
-  async function load(f: CoachFilter, cursor: string | null, token: number) {
+  async function fetchPage(f: CoachFilter, cursor: string | null): Promise<CoachLegPage> {
     const { data } = await api.GET('/api/coach/legs', { params: { query: { filter: f, ...(cursor !== null && { cursor }) } } })
-    if (!requests.isCurrent(token)) return // a newer filter took over
     if (!data) throw new Error("Couldn't load your legs")
-    counts = data.counts
-    updatedAt = data.updatedAt
-    legs = cursor === null ? data.legs : [...legs, ...data.legs]
-    nextCursor = data.nextCursor
-    pending = data.pending
-    loads++
+    return data
+  }
+
+  /** Shows `page` (the last one fetched) with `rows`, the whole list */
+  function show(page: CoachLegPage, rows: CoachLegRow[]) {
+    counts = page.counts
+    updatedAt = page.updatedAt
+    legs = rows
+    nextCursor = page.nextCursor
+    pending = page.pending
+  }
+
+  async function load(f: CoachFilter, cursor: string | null, token: number) {
+    const page = await fetchPage(f, cursor)
+    if (requests.isCurrent(token)) show(page, cursor === null ? page.legs : [...legs, ...page.legs]) // else a newer filter took over
+  }
+
+  /** Asks again while reviews are being built: as many rows as the user has open, swapped in at once */
+  async function refresh(f: CoachFilter, shown: number, token: number) {
+    refreshing = true
+    try {
+      let page = await fetchPage(f, null)
+      const rows = [...page.legs]
+      while (requests.isCurrent(token) && needsAnotherPage(rows.length, shown, page.nextCursor)) {
+        page = await fetchPage(f, page.nextCursor)
+        rows.push(...page.legs)
+      }
+      if (requests.isCurrent(token)) show(page, rows)
+    } catch {
+      if (requests.isCurrent(token)) pending = 0 // a failed ask stops asking
+    } finally {
+      refreshing = false
+    }
   }
 
   /** Loads the first page for filter `f`, replacing the list */
@@ -77,20 +113,18 @@
       })
   }
 
-  // While the server is still reviewing recent games, ask again: each request reviews up to 10 more.
-  // The first page comes back in place, without the skeleton; a failed ask stops asking.
+  // While the server is still reviewing recent games, ask again a second after the last answer: each
+  // request reviews up to 10 more. Runs again when `refreshing` turns off, so asks never overlap.
   $effect(() => {
-    // `loads` too: another ask that leaves `pending` where it was still asks again
-    if (pending === 0 || loads === 0 || loading || loadingMore) return
+    if (!shouldRefresh(pending, loading || loadingMore || refreshing)) return
     const token = requests.current()
     const f = filter
-    const timer = setTimeout(() => {
-      load(f, null, token).catch(() => {
-        if (requests.isCurrent(token)) pending = 0
-      })
-    }, 1000)
+    const shown = legs.length
+    const timer = setTimeout(() => void refresh(f, shown, token), 1000)
     return () => clearTimeout(timer)
   })
+  // Leaving the page drops the request in flight, so a refresh stops fetching pages
+  $effect(() => () => void requests.start())
 
   // A new filter (or the flag turning on) starts over
   $effect(() => {
@@ -98,7 +132,7 @@
   })
 
   async function more() {
-    if (nextCursor === null || loadingMore) return
+    if (nextCursor === null || loadingMore || refreshing) return
     const token = requests.current()
     loadingMore = true
     loadMoreError = ''
