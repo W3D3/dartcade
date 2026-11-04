@@ -2552,6 +2552,33 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/friends/search:
+    get:
+      operationId: searchFriendCandidates
+      summary: Find people to add by part of a name or an exact email
+      tags: [friends]
+      parameters:
+        - {
+            name: q,
+            in: query,
+            required: true,
+            schema: { type: string, minLength: 1, maxLength: 254 },
+            description: 'Part of a name, or an exact email; fewer than 3 characters finds nothing',
+          }
+      responses:
+        '200':
+          description: Up to 10 accounts, names starting with q first; not you
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [users]
+                additionalProperties: false
+                properties:
+                  users: { type: array, items: { $ref: '#/components/schemas/FriendSearchResult' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/friends/requests:
     post:
       operationId: sendFriendRequest
@@ -3172,6 +3199,21 @@ components:
       additionalProperties: false
       properties:
         name: { type: string, minLength: 1, maxLength: 64, description: 'Their exact name, any case; a leading @ is fine' }
+    FriendSearchResult:
+      type: object
+      required: [id, name, avatar, mutualFriends, request]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar: { $ref: '#/components/schemas/Avatar' }
+        mutualFriends: { type: integer, minimum: 0 }
+        request:
+          {
+            type: string,
+            enum: [none, sent, received, friends],
+            description: 'friends; or an open request sent by you or received from them; or none',
+          }
     FriendRequestResult:
       type: object
       required: [id, status]

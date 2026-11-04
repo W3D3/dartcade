@@ -54,6 +54,66 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     await friends.close()
   })
 
+  describe('search', () => {
+    const names = async (who: string, term: string) => (await friends.search(who, term)).map(u => u.name)
+
+    it('finds part of a name from three characters, names starting with it first', async () => {
+      expect(await names('chris', 'len')).toEqual(['Lena'])
+      expect(await names('chris', '@LEN')).toEqual(['Lena'])
+      expect(await names('chris', 'le')).toEqual([])
+      expect(await names('chris', 'am.')).toEqual(['sam.180'])
+      expect(await names('chris', '%%%')).toEqual([])
+    })
+
+    it('finds an exact email only, any case', async () => {
+      expect(await names('chris', 'MAX@example.com')).toEqual(['Max'])
+      expect(await names('chris', 'ax@example.com')).toEqual([])
+      expect(await names('chris', 'max@example')).toEqual([])
+    })
+
+    it('leaves out yourself and flagged names, and caps the list', async () => {
+      expect(await names('chris', 'christoph')).toEqual([])
+      expect(await names('chris', 'lena')).toEqual(['Lena']) // not the flagged LENA
+      await db
+        .insertInto('user')
+        .values(Array.from({ length: 12 }, (_, i) => user(`bulk${i}`, `bulk.${String(i).padStart(2, '0')}`)))
+        .execute()
+      expect(await friends.search('chris', 'bulk')).toHaveLength(10)
+      await db.deleteFrom('user').where('id', 'like', 'bulk%').execute()
+    })
+
+    it('finds someone who is not discoverable only by their exact name', async () => {
+      await db.updateTable('user').set({ discoverable: false }).where('id', '=', 'sam').execute()
+      try {
+        expect(await names('chris', 'am.1')).toEqual([])
+        expect(await names('chris', 'sam@example.com')).toEqual([])
+        expect(await names('chris', 'SAM.180')).toEqual(['sam.180'])
+      } finally {
+        await db.updateTable('user').set({ discoverable: true }).where('id', '=', 'sam').execute()
+      }
+    })
+
+    it('marks friends', async () => {
+      const r = await friends.request('chris', 'Max')
+      await friends.accept('max', r.id)
+      expect(await friends.search('chris', 'max')).toMatchObject([{ id: 'max', request: 'friends' }])
+    })
+
+    it('shows an open request and the friends in common', async () => {
+      const toLena = await friends.request('chris', 'Lena')
+      const toMax = await friends.request('max', 'Christoph')
+      expect(await friends.search('chris', 'lena')).toMatchObject([{ id: 'lena', request: 'sent', mutualFriends: 0 }])
+      expect(await friends.search('chris', 'max')).toMatchObject([{ id: 'max', request: 'received' }])
+      expect(await friends.search('lena', 'christoph')).toMatchObject([{ id: 'chris', request: 'received' }])
+      await friends.accept('lena', toLena.id)
+      await friends.accept('chris', toMax.id)
+      // sam asks lena: lena is the friend sam and chris share
+      const r = await friends.request('sam', 'Lena')
+      await friends.accept('lena', r.id)
+      expect(await friends.search('chris', 'sam.180')).toMatchObject([{ id: 'sam', request: 'none', mutualFriends: 1 }])
+    })
+  })
+
   it('sends a request by exact name, any case, with spaces or an @ around', async () => {
     const r = await friends.request('chris', '  @lena ')
     expect(r).toEqual({ id: expect.any(String), status: 'pending' })

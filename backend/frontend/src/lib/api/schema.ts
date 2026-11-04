@@ -2157,6 +2157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/friends/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find people to add by part of a name or an exact email */
+        get: operations["searchFriendCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends/requests": {
         parameters: {
             query?: never;
@@ -2551,6 +2568,17 @@ export interface components {
         FriendRequest: {
             /** @description Their exact name, any case; a leading @ is fine */
             name: string;
+        };
+        FriendSearchResult: {
+            id: string;
+            name: string;
+            avatar: components["schemas"]["Avatar"];
+            mutualFriends: number;
+            /**
+             * @description friends; or an open request sent by you or received from them; or none
+             * @enum {string}
+             */
+            request: "none" | "sent" | "received" | "friends";
         };
         FriendRequestResult: {
             id: string;
@@ -8677,6 +8705,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FriendList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    searchFriendCandidates: {
+        parameters: {
+            query: {
+                /** @description Part of a name, or an exact email; fewer than 3 characters finds nothing */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 10 accounts, names starting with q first; not you */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        users: components["schemas"]["FriendSearchResult"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];

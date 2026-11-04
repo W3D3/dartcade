@@ -18,9 +18,12 @@ import { KeyedQueue } from '../util/keyedQueue.js'
 type FriendList = components['schemas']['FriendList']
 type LastSeen = components['schemas']['LastSeen']
 type PlayerFriends = components['schemas']['PlayerFriends']
+type FriendSearchResult = components['schemas']['FriendSearchResult']
 export type RequestOutcome = { id: string; status: 'pending' | 'accepted' }
 
 const REQUEST_ATTEMPTS = 3
+const SEARCH_MIN = 3
+const SEARCH_LIMIT = 10
 
 export type FriendsDeps = {
   db: Kysely<Database>
@@ -253,6 +256,19 @@ export class FriendsService {
       // Mutual friends first; the rest keep the by-name order of the query
       .sort((a, b) => Number(b.mutual) - Number(a.mutual))
     return { ...lastSeen, mutualCount, friends }
+  }
+
+  /** Up to SEARCH_LIMIT accounts by part of a name or an exact email, with friends in common; a short term finds nothing. */
+  async search(userId: string, rawTerm: string): Promise<FriendSearchResult[]> {
+    const term = normalizeName(rawTerm).replace(/^@/, '')
+    if (Array.from(term).length < SEARCH_MIN) return []
+    const hits = await q.searchUsersForFriends(this.db, term, userId, SEARCH_LIMIT)
+    const mutual = await q.mutualFriendCounts(
+      this.db,
+      userId,
+      hits.map(h => h.id),
+    )
+    return hits.map(h => ({ ...h, mutualFriends: mutual.get(h.id) ?? 0 }))
   }
 
   /** Asks someone by exact name. A request to someone who already asked you accepts theirs. */
