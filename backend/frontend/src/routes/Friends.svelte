@@ -9,7 +9,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
-  import AddFriendCard from '$lib/components/friends/AddFriendCard.svelte'
+  import FriendSearch from '$lib/components/friends/FriendSearch.svelte'
   import FriendsSection from '$lib/components/friends/FriendsSection.svelte'
   import { querystring } from 'svelte-spa-router'
   import { readParam, setParam } from '$lib/urlState'
@@ -22,13 +22,17 @@
   import { me } from '$lib/lobby/sockets'
   import { createFriendActions } from '$lib/friends/controller.svelte'
   import { setInvisible } from '$lib/presence'
-  import { FRIENDS_TABS, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
+  import { FRIENDS_TABS, filterFriends, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
 
   const invisible = $derived($currentUser?.invisible ?? false)
   const list = $derived($me?.friends ?? { friends: [], incoming: [], outgoing: [] })
   const loaded = $derived($me?.friends != null)
-  const groups = $derived(splitOnline(list.friends))
+  // The name filter is in the URL too (#/friends?q=len)
+  const query = $derived(new URLSearchParams($querystring ?? '').get('q') ?? '')
+  const setQuery = (v: string) => setParam('/friends', $querystring, 'q', v === '' ? null : v)
+  const shown = $derived(filterFriends(list.friends, query))
+  const groups = $derived(splitOnline(shown))
   const counts = $derived(tabCounts(list))
   const myLobbyId = $derived($me?.lobby?.id ?? null)
   const noRequests = $derived(list.incoming.length === 0 && list.outgoing.length === 0)
@@ -79,8 +83,14 @@
       <div
         class="flex flex-col gap-[14px] md:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
       >
+        <!-- One field for your friends and everyone else; on phones it sticks to the top of the page -->
+        <div
+          class="order-first lg:order-none lg:col-start-1 max-md:sticky max-md:top-0 max-md:z-30 max-md:-mx-4 max-md:bg-bg max-md:px-4 max-md:py-2"
+        >
+          <FriendSearch {query} friends={list.friends} outgoing={list.outgoing} onquery={setQuery} />
+        </div>
         <!-- One panel whatever the tab (phones show every list stacked); it follows the selected tab -->
-        <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-none flex flex-col gap-[14px] md:gap-5 min-w-0">
+        <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-none lg:col-start-1 flex flex-col gap-[14px] md:gap-5 min-w-0">
           {#if loaded && list.friends.length === 0}
             <div class={tab === 'requests' ? 'md:hidden' : ''}>
               <EmptyState
@@ -91,7 +101,9 @@
               </EmptyState>
             </div>
           {:else}
-            {#if tab === 'online' && groups.online.length === 0}
+            {#if query !== '' && shown.length === 0}
+              <p class="m-0 text-[15px] text-text-muted {tab === 'requests' ? 'md:hidden' : ''}">No friend matches “{query.trim()}”.</p>
+            {:else if tab === 'online' && groups.online.length === 0}
               <p class="hidden md:block m-0 text-[15px] text-text-muted">Nobody's online right now.</p>
             {/if}
             <FriendsSection
@@ -126,13 +138,12 @@
           {/if}
         </Tabs.Content>
 
-        <aside class="order-1 lg:order-none flex flex-col gap-[14px] md:gap-4 min-w-0">
+        <aside class="order-1 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 flex flex-col gap-[14px] md:gap-4 min-w-0">
           <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
              Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
           <div class="order-first md:order-last">
             <StatusCard {invisible} onchange={(v: boolean) => actions.once(() => setInvisible(v))} />
           </div>
-          <AddFriendCard />
           <section
             aria-label="Friend requests"
             class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:card {noRequests ? 'max-md:hidden' : ''}"

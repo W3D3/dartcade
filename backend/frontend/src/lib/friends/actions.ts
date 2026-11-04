@@ -1,15 +1,32 @@
 // The Friends page's requests to the server. Each resolves with what to show, never throws on a
 // refusal; the updated list comes back on /ws/me.
-import { api } from '$lib/api'
+import { api, type FriendSearchHit } from '$lib/api'
 import { describeConflict, type Refusal } from '$lib/lobby/input'
 import { joinRefusal, parseFriendName, sendOutcome } from './view'
 
-export async function sendRequest(raw: string): Promise<{ ok: boolean; text: string }> {
+export async function sendRequest(raw: string): Promise<{ ok: boolean; text: string; id?: string; accepted?: boolean }> {
   const name = parseFriendName(raw)
   if (name === '') return { ok: false, text: 'Type their name' }
   const res = await api.POST('/api/friends/requests', { body: { name } })
-  return sendOutcome(res.response.status, res.error, name)
+  const outcome = sendOutcome(res.response.status, res.error, name)
+  return { ...outcome, id: res.data?.id, accepted: res.data?.status === 'accepted' }
 }
+
+/** What a people list came back with; a failure says whether it was the rate limit. */
+export type PeopleResult = { users: FriendSearchHit[] } | { error: 'rate' | 'failed' }
+
+async function peopleOf(call: () => Promise<{ data?: { users: FriendSearchHit[] }; response: Response }>): Promise<PeopleResult> {
+  try {
+    const res = await call()
+    return res.data ? { users: res.data.users } : { error: res.response.status === 429 ? 'rate' : 'failed' }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
+export const searchPeople = (q: string) => peopleOf(() => api.GET('/api/friends/search', { params: { query: { q } } }))
+
+export const loadSuggestions = () => peopleOf(() => api.GET('/api/friends/suggestions'))
 
 export async function answerRequest(id: string, answer: 'accept' | 'decline'): Promise<string | null> {
   const res =
