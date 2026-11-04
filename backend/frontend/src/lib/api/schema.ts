@@ -2918,6 +2918,8 @@ export interface components {
         };
         CoachLegPage: {
             counts: components["schemas"]["CoachLegCounts"];
+            /** @description How many of the user's 50 latest X01 games still wait for a review (after an update); each request reviews up to 10 more */
+            pending: number;
             legs: components["schemas"]["CoachLegRow"][];
             nextCursor: string | null;
             /** Format: date-time */

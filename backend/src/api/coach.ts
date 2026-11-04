@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
-import { ensureCoachGame, ensureCoachLegs } from '../coach/store.js'
+import { ensureCoachGame, ensureCoachLegs, pendingCoachGames } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 import { decodeCoachCursor, encodeCoachCursor } from '../coach/cursor.js'
 import { x01AverageSince } from '../db/ranked.js'
@@ -43,12 +43,17 @@ export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
       const after = cursor === undefined ? null : decodeCoachCursor(cursor)
       if (cursor !== undefined && after === null) return reply.code(400).send({ error: 'invalid cursor' })
       await ensureCoachLegs(db, req.userId, (message, details) => req.log.warn({ details }, message))
-      const [summary, page] = await Promise.all([coachLegsSummary(db, req.userId), coachLegsPage(db, req.userId, filter, after)])
+      const [summary, page, pending] = await Promise.all([
+        coachLegsSummary(db, req.userId),
+        coachLegsPage(db, req.userId, filter, after),
+        pendingCoachGames(db, req.userId),
+      ])
       return reply.send({
         counts: summary.counts,
         legs: page.rows.map(r => ({ ...r, finishedAt: r.finishedAt.toISOString() })),
         nextCursor: page.next ? encodeCoachCursor(page.next) : null,
         updatedAt: summary.updatedAt ? summary.updatedAt.toISOString() : null,
+        pending,
       })
     },
   )
