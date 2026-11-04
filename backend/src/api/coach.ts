@@ -24,12 +24,15 @@ export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   }
   const requireCoach = (userId: string) => requireFlag('coach.enabled', userId)
 
-  // The live coach's average: the one a stored review of a game finished now would grade with (store.ts)
+  // The live coach's average: the one a stored review of a game finished now would grade with
+  // (store.ts); also what the Coach page suggests a tier from
   app.get<Route<'getCoachAverage'>>(
     '/api/coach/average',
     { preValidation: requireAuth, schema: fromSpec('getCoachAverage') },
     async (req, reply) => {
-      await requireFlag('coach.live.enabled', req.userId)
+      const flagUser = await loadFlagUser(db, req.userId)
+      if (!(await flagEnabled('coach.enabled', flagUser)) && !(await flagEnabled('coach.live.enabled', flagUser)))
+        throw new ApiError(404, { error: 'not found' })
       return reply.send({ average: await x01AverageSince(db, req.userId, PROFILE_AVERAGE_DAYS) })
     },
   )

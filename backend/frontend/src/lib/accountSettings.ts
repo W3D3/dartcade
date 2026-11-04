@@ -5,7 +5,7 @@ import { defaultSettings, loadSettings, parseSettings, saveSettings, type GameSe
 /**
  * The settings that follow the account to every board and device: the ones on Settings' Game
  * preferences and Caller sections. Everything else (volume, the match screen's board and input
- * view, minigolf's aim dial) stays on each device. A match's game settings drawer changes the
+ * view, minigolf's aim dial) stays on each device. The coach's target tier is set on the Coach page too. A match's game settings drawer changes the
  * same switches on that device only; Settings writes them to the account.
  */
 export const ACCOUNT_KEYS = [
@@ -28,6 +28,7 @@ export const ACCOUNT_KEYS = [
   'x01OutMode',
   'x01FirstTo',
   'x01BullOff',
+  'coachTarget',
 ] as const satisfies readonly (keyof GameSettings)[]
 export type AccountSettings = Pick<GameSettings, (typeof ACCOUNT_KEYS)[number]>
 
@@ -58,6 +59,7 @@ export const accountPart = (s: GameSettings): AccountSettings => ({
   x01OutMode: s.x01OutMode,
   x01FirstTo: s.x01FirstTo,
   x01BullOff: s.x01BullOff,
+  coachTarget: s.coachTarget,
 })
 
 function copy(to: Partial<AccountSettings>, from: AccountSettings, key: keyof AccountSettings): void {
@@ -112,6 +114,13 @@ export function writeThrough(s: GameSettings, api: Api = defaultApi): void {
   if (!shown || ACCOUNT_KEYS.some(k => shown[k] !== now[k])) accountSettings.set(now)
   clearTimeout(timer)
   timer = setTimeout(() => void flush(api), WRITE_DELAY_MS)
+}
+
+/** Writes the pending changes now rather than after the delay; for a change the caller waits on (the
+ *  coach's target tier regrades the legs it shows next). */
+export function flushAccountSettings(api: Api = defaultApi): Promise<void> {
+  clearTimeout(timer)
+  return flush(api)
 }
 
 async function flush(api: Api): Promise<void> {
