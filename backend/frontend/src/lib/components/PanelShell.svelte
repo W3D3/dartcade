@@ -6,6 +6,8 @@
   import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import type { PillKind } from './pills.js'
+  import RankChip from './ranked/RankChip.svelte'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { SeatLine } from '$lib/remote'
   import { nameTone, playerCard, type CardTone } from '$lib/playerCard'
   import { cn } from '$lib/utils.js'
@@ -24,6 +26,7 @@
     tone = null,
     label,
     pillLabel,
+    rank = null,
     class: className,
   }: {
     who: Who
@@ -47,6 +50,8 @@
     label?: string
     /** The pill's text, when it differs from its kind's ("Out · 2nd"). */
     pillLabel?: string
+    /** A ranked game: the seat's rank chip under the name row. */
+    rank?: SeatRank | null
     /** A layout's own width (121's solo card is narrower below xl). */
     class?: string
   } = $props()
@@ -89,6 +94,7 @@
       {#if pill && pillInRow}<PlayerPill kind={pill} label={pillLabel} />{/if}
     </span>
   </div>
+  {#if rank}<RankChip rank={rank.rank} rating={rank.rating} />{/if}
   {#if pill && !pillInRow}<PlayerPill kind={pill} label={pillLabel} />{/if}
   {#if waiting}{@render waiting()}{:else}{@render children()}{/if}
 </section>

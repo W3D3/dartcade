@@ -6,6 +6,7 @@
   import RollingNumber from './RollingNumber.svelte'
   import { x01Averages, x01Roll } from '$lib/playerStats'
   import type { PillKind } from './pills.js'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
   import type { Snippet } from 'svelte'
@@ -20,6 +21,7 @@
     seat = null,
     chalkboard,
     waiting,
+    rank = null,
   }: {
     who: Who
     p: X01PlayerView
@@ -32,6 +34,7 @@
     seat?: SeatLine | null
     chalkboard: boolean
     waiting?: Snippet
+    rank?: SeatRank | null
   } = $props()
 
   const scoreSize = $derived(
@@ -42,7 +45,7 @@
   const valueSize = $derived(solo ? 'text-[44px]' : portrait ? 'text-[30px] lg:text-[40px]' : 'text-[30px] xl:text-[44px]')
 </script>
 
-<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} pillInRow={solo}>
+<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} {rank} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

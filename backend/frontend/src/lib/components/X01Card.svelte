@@ -9,6 +9,7 @@
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
+  import type { SeatRank } from '$lib/ranked/inGame'
 
   let {
     who,
@@ -16,12 +17,14 @@
     active,
     pill,
     seat = null,
+    rank = null,
   }: {
     who: Who
     p: X01PlayerView
     active: boolean
     pill: PillKind | null
     seat?: SeatLine | null
+    rank?: SeatRank | null
   } = $props()
 
   const stats = $derived([
@@ -30,7 +33,7 @@
   ])
 </script>
 
-<PanelShell {who} {active} portrait {pill} {seat} pillInRow>
+<PanelShell {who} {active} portrait {pill} {seat} {rank} pillInRow>
   {#snippet aside()}
     {#if p.firstTo > 1}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

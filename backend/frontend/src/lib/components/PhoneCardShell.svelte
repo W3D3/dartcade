@@ -7,6 +7,8 @@
   import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import type { PillKind } from './pills.js'
+  import RankChip from './ranked/RankChip.svelte'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { SeatLine } from '$lib/remote'
   import { ACTIVE_CARD } from '$lib/playerCard'
 
@@ -17,6 +19,7 @@
     seat,
     class: className,
     aside,
+    rank = null,
     children,
   }: {
     who: Who
@@ -27,6 +30,8 @@
     /** Gap between the header and the content. */
     class: string
     aside?: Snippet
+    /** A ranked game: the seat's rank chip under the header. */
+    rank?: SeatRank | null
     children: Snippet
   } = $props()
   const name = $derived(who.name)
@@ -39,5 +44,6 @@
     {#if pill}<PlayerPill kind={pill} small />{/if}
     {@render aside?.()}
   </div>
+  {#if rank}<div class="mt-1"><RankChip rank={rank.rank} rating={rank.rating} /></div>{/if}
   {@render children()}
 </section>

@@ -16,7 +16,7 @@
   import DartSlots from './DartSlots.svelte'
   import OfflineNotice from './OfflineNotice.svelte'
   import RankedClock from './ranked/RankedClock.svelte'
-  import { clockSkew, disconnected } from '$lib/ranked/inGame'
+  import { clockSkew, disconnected, seatRank } from '$lib/ranked/inGame'
   import TurnStatusBar from './TurnStatusBar.svelte'
   import VisitBand from './VisitBand.svelte'
   import WaitingCard from './WaitingCard.svelte'
@@ -103,6 +103,7 @@
   // A ranked game's clock; the big screen only watches and shows none
   const ranked = $derived(isActive && !viewOnly ? snapshot.ranked : null)
   const skew = $derived(ranked ? clockSkew(ranked) : 0)
+  const rankOf = (i: number) => (ranked?.seats[i] ? seatRank(ranked.seats[i]) : null)
   const darts = $derived(game?.currentVisitDarts ?? [])
   // A kiosk has no viewer: no "Garage · manual entry" lines under the names
   const lines = $derived(viewOnly ? snapshot.seats.map(() => null) : seatLines(snapshot))
@@ -311,6 +312,7 @@
       seat={lines[i] ?? null}
       chalkboard={settings.chalkboard}
       waiting={isWaiting ? seatWaiting : undefined}
+      rank={rankOf(i)}
     />
   {:else}
     <AtcPanel
@@ -376,7 +378,14 @@
         <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
           {#if up && !keypad}
             {#if isX01}
-              <PhoneX01Card who={who[i]} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
+              <PhoneX01Card
+                who={who[i]}
+                p={x01Players[i]}
+                pill={pillFor(i, false)}
+                seat={line}
+                chalkboard={settings.chalkboard}
+                rank={rankOf(i)}
+              />
             {:else}
               <PhoneAtcCard who={who[i]} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
             {/if}
@@ -451,6 +460,7 @@
               active={i === currentPlayer && isActive}
               pill={pillFor(i, true)}
               seat={lines[i] ?? null}
+              rank={rankOf(i)}
             />
           {:else}
             <AtcCard
