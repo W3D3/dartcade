@@ -159,11 +159,11 @@ missed."). Scoring visits keep their rules (see Visit rating).
   max(0, 1 − edgeMm / MISS_CLOSE_ZERO_MM)` (5 points, 20 mm) in `ReviewDart.closeness`; a hit, a
   typed dart and a dart without a target get none (null). A hit's outcome is already in its delta.
 - **A dart's grade** is delta + closeness; **the visit's** is the sum over its walked darts.
-- **Order:** (1) a strategy note (not a tip) → Mistake, its text; (2) Perfect (fewest darts);
-  (3) otherwise by the visit's points (constants in `grade.ts`): Great ≥ +15 (`GREAT_FROM`), Good ≥
-  +5, OK ≥ −10, Weak ≥ −20 (`WEAK_FROM`), else Mistake. A bust and a Bust-back are graded the same
-  way (user ruling: "a bust can be better than leaving D1": 32 → S16, T8 busting back to 32 is
-  Weak at −19, 32 → S16, S8, S6 leaving 2 is a Mistake at −40); the Bust-back class stays on the dart.
+- **Order:** (1) a strategy note (not a tip) → Bad, its text; (2) Perfect (fewest darts);
+  (3) otherwise by the visit's points on the eight-grade scale (see Eight grades). A bust and a
+  Bust-back are graded the same way (user ruling: "a bust can be better than leaving D1": 32 →
+  S16, T8 busting back to 32 is Weak at −19, 32 → S16, S8, S6 leaving 2 is Bad at −40); the
+  Bust-back class stays on the dart.
 - **Texts:** a bust "Busted on 16." / "Busted on purpose to stay on 20 (D10)."; a checkout
   "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
   the value); otherwise, when the points are below 0 and the costliest dart lost at least 1 point,
@@ -174,9 +174,8 @@ missed."). Scoring visits keep their rules (see Visit rating).
 - **Removed:** the missed-doubles count, chased down, the short-finish rule, the leave-based
   OK/Good for setups, bust → Mistake and Bust-back → OK, and the darts-at-the-double counting
   (`doubleDepth`). The leg's doubling stats (`stats.ts` darts at a double) are separate and stay.
-- **UI:** the sandbox's Dart classes table has Δ (signed, rounded) and Close columns; the leg
-  review's selected visit shows "Checkout chance: S20 −4 · T17 +11 · S18 +2 · near misses +3"
-  under What happened. The dart tiles' labels don't change.
+- **UI:** the sandbox's Dart classes table has Δ (signed, rounded) and Close columns; the debug
+  block shows how the grade was worked out (see Eight grades). The dart tiles' labels don't change.
 
 ## Visit rating
 
@@ -197,7 +196,7 @@ The constants (one block at the top of `grouping.ts`, to be tuned with the admin
 GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
 
 - **Grading:** a Scoring visit compares its rating, not its raw score, with the average
-  thresholds (Weak, Good, Great). VERY_LOW stays on the raw score. The text still quotes the real
+  (the scoring bands of Eight grades). VERY_LOW stays on the raw score. The text still quotes the real
   score; when the rating lifted the grade above the raw score's, it says why: "Scored 60, tight
   group (6 mm), close to the target (7 mm)."
 - **Every visit** gets its grouping in `ReviewVisit.grouping` (null without one); only Scoring
@@ -218,8 +217,9 @@ GROUPING_MAX 15, GROUPING_ZERO_MM 30, CLOSENESS_MAX 8, CLOSENESS_ZERO_MM 40.
   28 mm at a 40 average, 16 mm at 60, 10.5 mm at 81, 7.3 mm at 100; the same 13 mm group is Good
   for the 60 player and unremarkable for the 81. The grade text names the grouping only when the
   comment is Great or Good ("great grouping (6 mm)"), so it never praises a group the pill calls
-  Scattered. Shown as a small pill next to the grade pill and
-  tag chip (Great and Good in the grade pill's positive tones, Scattered in its weak tone) in the
+  Scattered. Shown as a small outlined pill next to the grade pill and tag chip (information, not
+  a grade: transparent, a thin neutral border, regular weight, a crosshair icon in Excellent green
+  for Great, Good green for Good, Inaccuracy yellow for Scattered) in the
   visit table, the phone cards, the selected visit's card and the sandbox (from its "Your
   average" field); the grouping line adds the expectation: "Grouping 12 mm (yours: ~14 mm) · …".
   The rating's grouping bonus stays absolute.
@@ -228,6 +228,75 @@ Examples on a 60 average (S20 × 3, scored 60): clustered 6 mm in the middle of 
 74.5 (OK) and scattered 25 mm rates 63.4 (OK); clustered just above the treble rates 78.6 (Good,
 "Scored 60, great grouping (6 mm), close to the target (7 mm).") and the same by the double 72.0
 (OK). Typed darts have no grouping: the rating is the score.
+
+## Eight grades
+
+User report: "I almost only got OK even though I had some slips". The six grades became eight,
+best to worst, after chess.com's move classes: **Perfect, Excellent, Great, Good, OK,
+Inaccuracy, Weak, Bad** (`VISIT_GRADES` in `grade.ts`; `perfect | excellent | great | good | ok |
+inaccuracy | weak | bad`). Perfect stays the fewest-darts rule and a non-tip strategy note still
+makes any visit Bad, whatever its cost (one rule the player can learn, and a note already means
+at least `NOTE_THRESHOLD` lost). Every other visit is graded by its value on its tag's scale
+(`FINISH_BANDS`, `SCORING_BANDS`, each class from its lower bound, Bad below the last):
+
+| Class      | Setup, Doubling (Σ Δ + closeness) | Scoring (rating − average) |
+| ---------- | --------------------------------- | -------------------------- |
+| Excellent  | +60 or more (`EXCELLENT_FROM`)    | +50 or more                |
+| Great      | +20 to +60 (`GREAT_FROM`)         | +25 to +50                 |
+| Good       | +2 to +20 (`GOOD_FROM`)           | +10 to +25                 |
+| OK         | −2 to +2 (`OK_FROM`)              | −5 to +10                  |
+| Inaccuracy | −15 to −2 (`INACCURACY_FROM`)     | −15 to −5                  |
+| Weak       | −20 to −15 (`WEAK_FROM`)          | −30 to −15                 |
+| Bad        | below −20                         | below −30                  |
+
+Two scoring rules cap the value's class rather than replace it: a visit under `VERY_LOW` (26)
+is Weak at best (it was always Bad; with eight classes a 21 on a 36 average is a slip, not a
+blunder, and a 2 still falls to Bad by value), and two or more darts at the 20 spilled into 1 or
+5 make it Inaccuracy at best (it was Weak); below Inaccuracy the low-score text wins over the
+spill's. A bust is graded by its value as before. The low visits count, the clean leg, the take
+and the Setup skill still count Weak and Bad only.
+
+**Calibration** on the dev database's coached legs (the user's 13 games, 16 legs, 114 visits, regraded
+with the current model; 61-start test games with typed darts included):
+
+| Class      | Before (6 grades) | After | Of which Scoring / Setup+Doubling |
+| ---------- | ----------------- | ----- | --------------------------------- |
+| Perfect    | 6                 | 6     | 0 / 6                             |
+| Excellent  | –                 | 8     | 4 / 4                             |
+| Great      | 11                | 9     | 6 / 3                             |
+| Good       | 11                | 16    | 10 / 6                            |
+| OK         | 41                | 12    | 4 / 8                             |
+| Inaccuracy | –                 | 36    | 1 / 35                            |
+| Weak       | 29                | 19    | 8 / 11                            |
+| Bad        | 16                | 8     | 1 / 7                             |
+
+Setup visits sat between −9 and +6 (most lose a few points to a single), checkouts between +50
+and +72, missed doubles and busts between −4 and −29: OK is now the narrow ±2 band, a setup that
+gives away 3–9 points is an Inaccuracy, a whole visit of missed doubles or a cheap bust (−10 to
+−15) too, a costly bust Weak, and only big losses Bad. Checkouts split Great (from an easy
+finish) and Excellent (a hard one). The bands are named constants in `grade.ts`, to be retuned
+as more legs come in.
+
+**Colours** (`--color-grade-*` in `app.css`, one tone map in `lib/coach/tone.ts`): Perfect teal
+#1baca6 (filled, dark text, halo), Excellent green #81b64c (filled, dark text), Great blue
+#5c8bb0, Good pale green #95b776, OK grey #8f9085, Inaccuracy yellow #f7c631, Weak orange
+#e58f2a, Bad red #ca3431; the tinted pills use a lighter `-text` variant, each at least 6.3:1
+on its tint over the card (the app is dark only, so there is no light variant). The same map
+colours the grade pills, the leg review's eight counts, the checks page legend, the take's skill
+letters (A Excellent, B Good, C Weak, D Bad), the Coach page's counts and found pills and the dart
+tiles (good Excellent green, even OK grey, slight loss Inaccuracy yellow, costly Weak orange, the
+busting dart Bad red).
+
+**How the grade was worked out** (`coach.debug.enabled`, the `VisitNumbers` block): the server
+adds `ReviewVisit.value` = `{ points, scoring, rule, startChance }`: the points on the tag's
+scale, a Scoring visit's rating parts (scored + grouping bonus + closeness bonus = rating, and the
+average), the rule that overrode or capped the value (`perfect`, `note`, `veryLow`, `spill`) and
+the checkout chance before the first dart. `gradeWorking` (`lib/coach/numbers.ts`, pure) turns it
+into text — "Start: 121 left, 34.0% to check out", "S20: Δ −4.4", "M17: Δ +10.8, closeness +2.3",
+"Σ +10.2 → Good (+2 to +20)"; "Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5", "Your
+average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Perfect: fewest darts — value
+ignored" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
+(hidden from screen readers: the text says it all).
 
 ## Perfect visit
 
@@ -246,9 +315,9 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
 - Texts: "Checked out in the fewest darts (D20)."; otherwise "Scored 174: 327 left is still a
   6-dart finish, the fewest possible."; on the seat's first visit from 501 leaving a 6-dart
   finish, "Nine-darter still on."
-- The grade pill is Great's filled lime with a lime halo; the leg review's grade counts and the
-  checks page list it above Great. Nothing counts grades as "great or better" today: the skills
-  and the take look at Weak and Mistake only, so Perfect needs no other wiring.
+- The grade pill is filled teal with a halo; the leg review's grade counts and the checks page
+  list it first. Nothing counts grades as "great or better" today: the skills and the take look at
+  Weak and Bad only, so Perfect needs no other wiring.
 
 ## Data and UI
 
@@ -265,16 +334,17 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - **In the selected visit's board card**, a faint line from each dart to its target.
   - **The selected visit's card** (400 px wide from 1440 px, sticky while the visit list scrolls;
     inline under its card on phones) keeps the board, the grade, the tag and the "Better:" line,
-    and shows the darts as a table: Dart, Classification (the tile's label), Distance (`edgeMm`,
-    whole mm, "–" for a hit or a dart without a position). A missed dart within `NEAR_MISS_MM`
+    and shows the darts as a table: Dart (in its tile's colour), Classification (the tile's label),
+    Distance (`edgeMm`, whole mm, to the named target: "4 mm from D16"; "–" for a hit or a dart
+    without a position). A missed dart within `NEAR_MISS_MM`
     (5 mm) of its target's bed is tagged "Near miss": on a double, nearly a checkout.
   - **`coach.debug.enabled`** (nobody by default) shows the model's numbers for checking it,
     one block (`VisitNumbers`) under the card and under the live panel's darts: what each dart
     left, every class property, Δ and closeness, the checkout-chance line and the grouping line
     (the aims' checkout % stay for everyone). The admin sandbox always shows it.
   - **Each tile's colour is the dart's own grade** (`dartGrade`: its delta plus closeness credit):
-    green for a hit of its target or +5 and up, plain above −5, gold (the grade pill's Weak tone)
-    down to −15, red (its Mistake tone) at −15 or below and for a bust. The bands are grading
+    green (Excellent's) for a hit of its target or +5 and up, plain (OK's grey) above −5, yellow
+    (Inaccuracy's) down to −15, orange (Weak's) at −15 or below, red (Bad's) for the busting dart. The bands are grading
     policy: `dartBand` in `shared/coach/grade.ts`, next to `dartGrade`. A dart without a delta
     (Scoring, after a bust) keeps the plain look: treble, double and bull green, single plain,
     miss red-lettered. An off-board miss is dashed in every tone. The tile's screen-reader text
@@ -443,10 +513,9 @@ Decisions taken while building this without the user, each with why:
 - **Stored reviews from an older `COACH_VERSION` aren't served**; they take the rebuild path, since
   the API's required `class` would refuse them.
 
-- **The Mistake grade reads "Bad" to players** (user ruling): the pill, the filter chips, the
-  checks legend and the coach's take ("One bad visit and one weak visit."). The value stays
-  `mistake` in the code, the API and this spec.
-- **Perfect: the note wins.** A visit with a strategy note (not a tip) stays a Mistake even if it
+- **The worst grade is Bad** (user ruling), `bad` in the code and the API since the eight grades
+  (it was `mistake`).
+- **Perfect: the note wins.** A visit with a strategy note (not a tip) stays Bad even if it
   kept the fewest darts: the coach doesn't call a visit perfect while saying another aim was
   better. A tip-only visit can still be Perfect, and keeps the Perfect line (as a checkout keeps
   its own line over a tip); the tip still shows in the visit's note.
