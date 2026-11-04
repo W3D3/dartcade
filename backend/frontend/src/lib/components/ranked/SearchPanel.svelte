@@ -8,6 +8,7 @@
   import { me } from '$lib/lobby/sockets'
   import { currentUser } from '$lib/auth'
   import { cancelSearch, searchView } from '$lib/ranked/queue'
+  import { MEMBERS_CAN_LEAVE, stopLabel } from '$lib/ranked/queueCard'
 
   let now = $state(Date.now())
   const ticker = setInterval(() => (now = Date.now()), 1000)
@@ -16,6 +17,7 @@
   const search = $derived($me?.matchmaking?.search ?? null)
   const view = $derived(search ? searchView(search, now) : null)
   const youHost = $derived(search !== null && search.hostUserId === $currentUser?.id)
+  const canStop = $derived(search !== null && (search.mode === '1v1' || youHost || MEMBERS_CAN_LEAVE))
   let busy = $state(false)
   let error = $state('')
 
@@ -89,20 +91,20 @@
     </div>
     <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-4">
       <span class="flex-grow text-[13px] leading-[1.45] text-text-muted">
-        {#if search.mode === '2v2' && !youHost}
-          Only your duo's host can cancel. When a match is found, you get 10 seconds to accept on any screen.
+        {#if search.mode === '2v2' && !canStop}
+          Only your duo's host can stop the search. When a match is found, you get 10 seconds to accept on any screen.
         {:else}
           Keep browsing. When a match is found, you get 10 seconds to accept on any screen.
         {/if}
       </span>
-      {#if search.mode === '1v1' || youHost}
+      {#if canStop}
         <button
           type="button"
           disabled={busy}
           onclick={cancel}
           class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong bg-transparent px-[22px] font-[inherit] text-[15px] font-semibold text-text"
         >
-          <X size={18} />Cancel search
+          <X size={18} />{stopLabel(youHost)}
         </button>
       {/if}
     </div>
