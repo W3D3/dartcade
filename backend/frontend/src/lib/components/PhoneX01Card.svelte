@@ -9,18 +9,21 @@
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
   import type { SeatLine } from '$lib/remote'
+  import type { SeatRank } from '$lib/ranked/inGame'
 
   let {
     who,
     p,
     pill,
     seat,
+    rank = null,
     chalkboard,
   }: {
     who: Who
     p: X01PlayerView
     pill: PillKind | null
     seat: SeatLine | null
+    rank?: SeatRank | null
     chalkboard: boolean
   } = $props()
   const name = $derived(who.name)
@@ -32,7 +35,7 @@
   ])
 </script>
 
-<PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} class="gap-2">
+<PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} {rank} class="gap-2">
   {#snippet aside()}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}
   {/snippet}
