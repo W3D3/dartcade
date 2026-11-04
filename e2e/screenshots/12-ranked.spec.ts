@@ -7,7 +7,7 @@ import { BASE, VIEW, api, open, shot, hostLobby, addGuest, startLobbyGame, endAc
 // RANKED_DIR names the docs folder, to shoot the same scenes on another build.
 const DIR = process.env.RANKED_DIR ?? 'ranked-ingame'
 
-type Scene = 'header' | 'visit' | 'reserve' | 'away'
+type Scene = 'header' | 'visit' | 'reserve' | 'away' | 'result'
 const SECOND = 1000
 
 /** Ends the viewer's running games through the API: the phone header has no End button to click. */
@@ -23,26 +23,45 @@ function rankedState(scene: Scene) {
   const now = Date.now()
   const iso = (ms: number) => new Date(ms).toISOString()
   const stakes = { win: 16, loss: 14 }
-  const seat = (over = {}) => ({ reserveSeconds: 300, inReserve: false, disconnectForfeitAt: null, stakes, ...over })
-  const base = { now: iso(now), visitSeconds: 120, reserveSeconds: 300, manualEntry: true }
+  const seat = (over = {}) => ({
+    reserveSeconds: 300,
+    inReserve: false,
+    disconnectForfeitAt: null,
+    stakes,
+    rating: 1284,
+    rankIndex: 14,
+    placement: null,
+    result: null,
+    ...over,
+  })
+  const anna = { rating: 1301, rankIndex: 15 }
+  const base = { now: iso(now), mode: '1v1', visitSeconds: 120, reserveSeconds: 300, manualEntry: true }
   switch (scene) {
     case 'header':
-      return { ...base, visitDeadline: iso(now + 110 * SECOND), forfeitAt: iso(now + 410 * SECOND), seats: [seat(), seat()] }
+      return { ...base, visitDeadline: iso(now + 110 * SECOND), forfeitAt: iso(now + 410 * SECOND), seats: [seat(), seat(anna)] }
     case 'visit':
-      return { ...base, visitDeadline: iso(now + 19 * SECOND), forfeitAt: iso(now + 319 * SECOND), seats: [seat(), seat()] }
+      return { ...base, visitDeadline: iso(now + 19 * SECOND), forfeitAt: iso(now + 319 * SECOND), seats: [seat(), seat(anna)] }
     case 'reserve':
       return {
         ...base,
         visitDeadline: iso(now - 5 * SECOND),
         forfeitAt: iso(now + 14 * SECOND),
-        seats: [seat({ reserveSeconds: 14, inReserve: true }), seat()],
+        seats: [seat({ reserveSeconds: 14, inReserve: true }), seat(anna)],
       }
     case 'away':
       return {
         ...base,
         visitDeadline: iso(now + 110 * SECOND),
         forfeitAt: iso(now + 410 * SECOND),
-        seats: [seat(), seat({ disconnectForfeitAt: iso(now + 102 * SECOND) })],
+        seats: [seat(), seat({ ...anna, disconnectForfeitAt: iso(now + 102 * SECOND) })],
+      }
+    case 'result':
+      // 1 293 was Silver V, 1 310 is Gold I: what the server records when the game ends
+      return {
+        ...base,
+        visitDeadline: null,
+        forfeitAt: null,
+        seats: [seat({ rating: 1293, result: { change: 17, rankIndexBefore: 14, rankIndexAfter: 15 } }), seat(anna)],
       }
   }
 }
@@ -93,7 +112,7 @@ for (const [view, name] of [
     const { ctx, page } = await open(browser, 'admin', view)
     const lobby = await hostLobby(page, 'Ranked 1v1', X01({ startScore: 40, firstTo: 1 }))
     await addGuest(page, lobby, 'Anna K.')
-    await rankedSnapshots(page, () => 'header')
+    await rankedSnapshots(page, () => 'result')
     const sessionId = await startLobbyGame(page, lobby)
     // 1 293 was Silver V, 1 310 is Gold I: the profile the server serves once the game is recorded
     await page.route('**/api/ranked/me', route =>
