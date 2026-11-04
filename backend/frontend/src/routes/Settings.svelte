@@ -10,6 +10,7 @@
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
+  import FriendsPrivacyCard from '$lib/components/settings/FriendsPrivacyCard.svelte'
   import FeedbackCard from '$lib/components/settings/FeedbackCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
@@ -130,6 +131,7 @@
           <div class="flex flex-col gap-4 md:gap-5">
             <YourCard />
             <NameCard />
+            <FriendsPrivacyCard />
           </div>
           <div class="flex flex-col gap-4 md:gap-5">
             <AccountCard />

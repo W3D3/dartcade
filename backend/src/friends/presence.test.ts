@@ -78,4 +78,17 @@ describe('Presence', () => {
     vi.advanceTimersByTime(60_000)
     expect(changed).toHaveBeenCalledTimes(2) // the two connects only
   })
+
+  it('close says who was online: open sockets and users inside the grace, each once', () => {
+    const p = new Presence(vi.fn())
+    p.connect('lena')
+    p.connect('lena')
+    p.connect('max')
+    p.disconnect('max')
+    p.connect('sam')
+    p.disconnect('sam')
+    p.connect('sam') // back before the grace ended
+    expect(p.close().sort()).toEqual(['lena', 'max', 'sam'])
+    expect(p.close()).toEqual([])
+  })
 })

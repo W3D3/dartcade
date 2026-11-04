@@ -14,6 +14,19 @@ export const FRIENDS_TABS: readonly FriendsTab[] = ['all', 'online', 'requests']
 
 export const isOnline = (f: Friend): boolean => f.status.kind !== 'offline'
 
+export type LastSeen = NonNullable<Friend['lastSeen']>
+
+const LAST_SEEN_TEXT: Record<LastSeen, string> = {
+  now: 'Last online just now',
+  today: 'Last online today',
+  yesterday: 'Last online yesterday',
+  week: 'Last online this week',
+  older: 'Last online a while ago',
+}
+
+/** "Last online today": coarse on purpose, the server never sends an exact time. */
+export const lastSeenText = (lastSeen: LastSeen | undefined): string => (lastSeen ? LAST_SEEN_TEXT[lastSeen] : 'Offline')
+
 /** The line under a friend's name: "In Friday darts", "Playing X01", "Online", "Offline". */
 export function statusLine(f: Friend): { text: string; tone: 'ink' | 'playing' | 'muted' } {
   const s = f.status
@@ -25,7 +38,7 @@ export function statusLine(f: Friend): { text: string; tone: 'ink' | 'playing' |
     case 'online':
       return { text: 'Online', tone: 'ink' }
     case 'offline':
-      return { text: 'Offline', tone: 'muted' }
+      return { text: lastSeenText(f.lastSeen), tone: 'muted' }
   }
 }
 

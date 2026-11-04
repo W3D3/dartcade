@@ -20,6 +20,13 @@ export interface UserTable {
   name_changed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
   /** Friends see this user as offline (migration 016). */
   invisible: ColumnType<boolean, boolean | undefined, boolean>
+  /** Who sees when this user was last online (migration 050). */
+  show_last_online: ColumnType<'friends' | 'nobody', 'friends' | 'nobody' | undefined, 'friends' | 'nobody'>
+  /** Who sees this user's friends list (migration 050). */
+  friends_visibility: ColumnType<'friends' | 'me', 'friends' | 'me' | undefined, 'friends' | 'me'>
+  /** Friend search finds this user by partial name or email (migration 050). */
+  discoverable: ColumnType<boolean, boolean | undefined, boolean>
+  last_seen_at: ColumnType<Date | null, Date | null | undefined, Date | null>
   /** Account-wide preferences, only the ones set (migration 022; API schema Preferences). */
   preferences: ColumnType<components['schemas']['Preferences'], never, RawBuilder<unknown>>
   /** better-auth admin plugin (migration 019): 'admin', 'user' or null. */

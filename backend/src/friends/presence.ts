@@ -59,11 +59,13 @@ export class Presence {
     this.onChange(userId)
   }
 
-  /** The server stops: clears the grace timers; sockets closing after this start none. */
-  close(): void {
+  /** The server stops: clears the grace timers; sockets closing after this start none. Returns who was online. */
+  close(): string[] {
     this.closed = true
+    const online = [...new Set([...this.sockets.keys(), ...this.leaving.keys()])]
     for (const timer of this.leaving.values()) clearTimeout(timer)
     this.leaving.clear()
     this.sockets.clear()
+    return online
   }
 }

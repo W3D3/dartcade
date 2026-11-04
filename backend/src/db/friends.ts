@@ -15,6 +15,8 @@ export type FriendshipRow = {
   /** The other side is Invisible: their friends see them offline. */
   otherInvisible: boolean
   otherAvatar: Avatar
+  /** When the other side was last online, if they let their friends see it (show_last_online); null otherwise. */
+  otherLastSeenAt: Date | null
   createdAt: Date
   respondedAt: Date | null
 }
@@ -95,6 +97,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     other_id: string
     other_name: string
     other_invisible: boolean
+    other_last_seen_at: Date | null
     other_avatar_kind: 'none' | 'preset' | 'upload'
     other_avatar_preset: string | null
     other_avatar_background: string | null
@@ -103,6 +106,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     responded_at: Date | null
   }>`
     SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible,
+      CASE WHEN u.show_last_online = 'friends' THEN u.last_seen_at END AS other_last_seen_at,
       u.avatar_kind AS other_avatar_kind, u.avatar_preset AS other_avatar_preset, u.avatar_background AS other_avatar_background,
       u.avatar_version AS other_avatar_version, f.created_at, f.responded_at
     FROM friendships f
@@ -117,6 +121,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     otherId: r.other_id,
     otherName: r.other_name,
     otherInvisible: r.other_invisible,
+    otherLastSeenAt: r.other_last_seen_at,
     otherAvatar: toAvatar({
       avatar_kind: r.other_avatar_kind,
       avatar_preset: r.other_avatar_preset,
@@ -188,4 +193,35 @@ export async function pendingInviteesOf(db: Kysely<Database>, lobbyId: string): 
     .where('status', '=', 'pending')
     .execute()
   return new Set(rows.map(r => r.invitee_user_id))
+}
+
+/** At most this often per user: a reconnecting browser is not a write each time. */
+const LAST_SEEN_EVERY = '5 minutes'
+
+/** The user's last socket closed: remember it (migration 050), unless it was remembered a moment ago. */
+export async function touchLastSeen(db: Kysely<Database>, userId: string, at: Date): Promise<void> {
+  await sql`UPDATE "user" SET last_seen_at = ${at}
+    WHERE id = ${userId} AND (last_seen_at IS NULL OR last_seen_at < ${at}::timestamptz - ${LAST_SEEN_EVERY}::interval)`.execute(db)
+}
+
+/** The server stops with these users online: remember it for them all at once, throttle or not. */
+export async function setLastSeen(db: Kysely<Database>, userIds: string[], at: Date): Promise<void> {
+  if (userIds.length > 0) await db.updateTable('user').set({ last_seen_at: at }).where('id', 'in', userIds).execute()
+}
+
+/** What a profile's Friends section needs to know about its owner. */
+export async function privacyOf(db: Kysely<Database>, userId: string) {
+  const row = await db
+    .selectFrom('user')
+    .select(['invisible', 'show_last_online', 'friends_visibility', 'last_seen_at'])
+    .where('id', '=', userId)
+    .executeTakeFirst()
+  return (
+    row && {
+      invisible: row.invisible,
+      showLastOnline: row.show_last_online,
+      friendsVisibility: row.friends_visibility,
+      lastSeenAt: row.last_seen_at,
+    }
+  )
 }

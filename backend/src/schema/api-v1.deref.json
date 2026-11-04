@@ -20510,6 +20510,9 @@
                     "nameNeedsChange",
                     "suggestedName",
                     "invisible",
+                    "showLastOnline",
+                    "friendsVisibility",
+                    "discoverable",
                     "isAdmin",
                     "isModerator",
                     "impersonating",
@@ -20549,6 +20552,26 @@
                     "invisible": {
                       "type": "boolean",
                       "description": "Friends see you as offline"
+                    },
+                    "showLastOnline": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "nobody"
+                      ],
+                      "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+                    },
+                    "friendsVisibility": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "me"
+                      ],
+                      "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+                    },
+                    "discoverable": {
+                      "type": "boolean",
+                      "description": "Friend search finds you by partial name or email; exact-name requests work either way"
                     },
                     "isAdmin": {
                       "type": "boolean",
@@ -20786,6 +20809,25 @@
                   "invisible": {
                     "type": "boolean"
                   },
+                  "showLastOnline": {
+                    "type": "string",
+                    "enum": [
+                      "friends",
+                      "nobody"
+                    ],
+                    "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+                  },
+                  "friendsVisibility": {
+                    "type": "string",
+                    "enum": [
+                      "friends",
+                      "me"
+                    ],
+                    "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+                  },
+                  "discoverable": {
+                    "type": "boolean"
+                  },
                   "avatar": {
                     "title": "AvatarChoice",
                     "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. foreground and background are required, and each must be a built-in finish, when kind is 'preset'; the two layers are picked independently. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
@@ -20837,6 +20879,9 @@
                     "nameNeedsChange",
                     "suggestedName",
                     "invisible",
+                    "showLastOnline",
+                    "friendsVisibility",
+                    "discoverable",
                     "isAdmin",
                     "isModerator",
                     "impersonating",
@@ -20876,6 +20921,26 @@
                     "invisible": {
                       "type": "boolean",
                       "description": "Friends see you as offline"
+                    },
+                    "showLastOnline": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "nobody"
+                      ],
+                      "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+                    },
+                    "friendsVisibility": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "me"
+                      ],
+                      "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+                    },
+                    "discoverable": {
+                      "type": "boolean",
+                      "description": "Friend search finds you by partial name or email; exact-name requests work either way"
                     },
                     "isAdmin": {
                       "type": "boolean",
@@ -21203,6 +21268,9 @@
                     "nameNeedsChange",
                     "suggestedName",
                     "invisible",
+                    "showLastOnline",
+                    "friendsVisibility",
+                    "discoverable",
                     "isAdmin",
                     "isModerator",
                     "impersonating",
@@ -21242,6 +21310,26 @@
                     "invisible": {
                       "type": "boolean",
                       "description": "Friends see you as offline"
+                    },
+                    "showLastOnline": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "nobody"
+                      ],
+                      "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+                    },
+                    "friendsVisibility": {
+                      "type": "string",
+                      "enum": [
+                        "friends",
+                        "me"
+                      ],
+                      "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+                    },
+                    "discoverable": {
+                      "type": "boolean",
+                      "description": "Friend search finds you by partial name or email; exact-name requests work either way"
                     },
                     "isAdmin": {
                       "type": "boolean",
@@ -31212,6 +31300,285 @@
         }
       }
     },
+    "/api/users/{id}/friends": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPlayerFriends",
+        "summary": "A player's friends section: their friends (if you may see the list), the mutual count, when they were last online (friends only)",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "The section",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "mutualCount",
+                    "friends"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "lastSeen": {
+                      "title": "LastSeen",
+                      "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+                      "type": "string",
+                      "enum": [
+                        "now",
+                        "today",
+                        "yesterday",
+                        "week",
+                        "older"
+                      ]
+                    },
+                    "mutualCount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Friends you both have; 0 on your own profile"
+                    },
+                    "friends": {
+                      "type": "array",
+                      "nullable": true,
+                      "description": "Their friends, mutual ones first; null when you may not see the list (only the count)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar",
+                          "mutual",
+                          "relation"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "mutual": {
+                            "type": "boolean",
+                            "description": "Also your friend"
+                          },
+                          "relation": {
+                            "type": "string",
+                            "enum": [
+                              "self",
+                              "friend",
+                              "requested",
+                              "incoming",
+                              "none"
+                            ],
+                            "description": "To you: yourself, your friend, a request you sent (requested), a request they sent you (incoming), or nothing"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/challenges": {
       "get": {
         "operationId": "getChallenges",
@@ -33096,6 +33463,18 @@
                                   }
                                 }
                               }
+                            ]
+                          },
+                          "lastSeen": {
+                            "title": "LastSeen",
+                            "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+                            "type": "string",
+                            "enum": [
+                              "now",
+                              "today",
+                              "yesterday",
+                              "week",
+                              "older"
                             ]
                           }
                         }
@@ -43092,6 +43471,18 @@
                         }
                       }
                     }
+                  ]
+                },
+                "lastSeen": {
+                  "title": "LastSeen",
+                  "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+                  "type": "string",
+                  "enum": [
+                    "now",
+                    "today",
+                    "yesterday",
+                    "week",
+                    "older"
                   ]
                 }
               }
@@ -58520,6 +58911,9 @@
           "nameNeedsChange",
           "suggestedName",
           "invisible",
+          "showLastOnline",
+          "friendsVisibility",
+          "discoverable",
           "isAdmin",
           "isModerator",
           "impersonating",
@@ -58559,6 +58953,26 @@
           "invisible": {
             "type": "boolean",
             "description": "Friends see you as offline"
+          },
+          "showLastOnline": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "nobody"
+            ],
+            "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+          },
+          "friendsVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ],
+            "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+          },
+          "discoverable": {
+            "type": "boolean",
+            "description": "Friend search finds you by partial name or email; exact-name requests work either way"
           },
           "isAdmin": {
             "type": "boolean",
@@ -58651,6 +59065,154 @@
           }
         }
       },
+      "ShowLastOnline": {
+        "type": "string",
+        "enum": [
+          "friends",
+          "nobody"
+        ],
+        "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+      },
+      "FriendsVisibility": {
+        "type": "string",
+        "enum": [
+          "friends",
+          "me"
+        ],
+        "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+      },
+      "PlayerFriends": {
+        "type": "object",
+        "required": [
+          "mutualCount",
+          "friends"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "lastSeen": {
+            "title": "LastSeen",
+            "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+            "type": "string",
+            "enum": [
+              "now",
+              "today",
+              "yesterday",
+              "week",
+              "older"
+            ]
+          },
+          "mutualCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Friends you both have; 0 on your own profile"
+          },
+          "friends": {
+            "type": "array",
+            "nullable": true,
+            "description": "Their friends, mutual ones first; null when you may not see the list (only the count)",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "avatar",
+                "mutual",
+                "relation"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "avatar": {
+                  "title": "Avatar",
+                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "foreground",
+                        "background"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "preset"
+                          ]
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "description": "The finish of the mark in front"
+                        },
+                        "background": {
+                          "type": "string",
+                          "description": "The finish of the disc behind it"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "upload"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                        }
+                      }
+                    }
+                  ]
+                },
+                "mutual": {
+                  "type": "boolean",
+                  "description": "Also your friend"
+                },
+                "relation": {
+                  "type": "string",
+                  "enum": [
+                    "self",
+                    "friend",
+                    "requested",
+                    "incoming",
+                    "none"
+                  ],
+                  "description": "To you: yourself, your friend, a request you sent (requested), a request they sent you (incoming), or nothing"
+                }
+              }
+            }
+          }
+        }
+      },
       "Country": {
         "type": "string",
         "nullable": true,
@@ -58668,6 +59230,25 @@
             "maxLength": 64
           },
           "invisible": {
+            "type": "boolean"
+          },
+          "showLastOnline": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "nobody"
+            ],
+            "description": "Who sees when you were last online (coarse steps; never while Invisible)"
+          },
+          "friendsVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ],
+            "description": "Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count."
+          },
+          "discoverable": {
             "type": "boolean"
           },
           "avatar": {
@@ -66197,6 +66778,18 @@
           }
         }
       },
+      "LastSeen": {
+        "title": "LastSeen",
+        "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+        "type": "string",
+        "enum": [
+          "now",
+          "today",
+          "yesterday",
+          "week",
+          "older"
+        ]
+      },
       "FriendPlaying": {
         "title": "FriendPlaying",
         "type": "object",
@@ -66551,6 +67144,18 @@
                   }
                 }
               }
+            ]
+          },
+          "lastSeen": {
+            "title": "LastSeen",
+            "description": "When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).",
+            "type": "string",
+            "enum": [
+              "now",
+              "today",
+              "yesterday",
+              "week",
+              "older"
             ]
           }
         }

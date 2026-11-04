@@ -11,6 +11,7 @@ import {
   setAvatarUpload,
   setCountry,
   setInvisible,
+  setPrivacy,
   updatePreferences,
   UnknownAvatarFinishError,
 } from '../db/users.js'
@@ -75,6 +76,11 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       await opts.onRenamed?.(req.userId, name)
     }
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
+    await setPrivacy(db, req.userId, {
+      show_last_online: req.body.showLastOnline,
+      friends_visibility: req.body.friendsVisibility,
+      discoverable: req.body.discoverable,
+    })
     if (req.body.country !== undefined) {
       if (req.body.country !== null && !isCountryCode(req.body.country)) throw new ApiError(400, { error: 'unknown country' })
       await setCountry(db, req.userId, req.body.country)

@@ -16,6 +16,7 @@ vi.mock('../db/users.js', () => ({
   getAccount: vi.fn(),
   getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }),
   setInvisible: vi.fn(),
+  setPrivacy: vi.fn(),
   setCountry: vi.fn(),
   setAvatar: vi.fn(),
   setAvatarUpload: vi.fn(),
@@ -33,6 +34,7 @@ import {
   setAvatarUpload,
   setCountry,
   setInvisible,
+  setPrivacy,
   updatePreferences,
   UnknownAvatarFinishError,
 } from '../db/users.js'
@@ -54,6 +56,9 @@ beforeEach(() => {
       email: 'p@x',
       nameNeedsChange: true,
       invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
@@ -83,6 +88,9 @@ describe('/api/me', () => {
       email: 'p@x',
       nameNeedsChange: true,
       invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       isAdmin: false,
       isModerator: false,
       impersonating: false,
@@ -111,6 +119,9 @@ describe('/api/me', () => {
       email: 'a@x',
       nameNeedsChange: false,
       invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       role: 'admin',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
@@ -128,6 +139,9 @@ describe('/api/me', () => {
       email: 'm@x',
       nameNeedsChange: false,
       invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       role: 'moderator',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
@@ -147,6 +161,9 @@ describe('/api/me', () => {
       email: 'p@x',
       nameNeedsChange: false,
       invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
@@ -180,6 +197,9 @@ describe('/api/me', () => {
       email: 'p@x',
       nameNeedsChange: false,
       invisible: true,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
@@ -191,6 +211,19 @@ describe('/api/me', () => {
     expect(renameUser).not.toHaveBeenCalled()
     expect(onChanged).toHaveBeenCalledWith('old')
     expect(JSON.parse(res.body).invisible).toBe(true)
+  })
+
+  it('saves the friends and privacy settings, and refuses unknown values', async () => {
+    const a = app()
+    const ok = await a.inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { showLastOnline: 'nobody', friendsVisibility: 'me', discoverable: false },
+    })
+    expect(ok.statusCode).toBe(200)
+    expect(setPrivacy).toHaveBeenCalledWith({}, 'old', { show_last_online: 'nobody', friends_visibility: 'me', discoverable: false })
+    const bad = await a.inject({ method: 'PATCH', url: '/api/me', payload: { friendsVisibility: 'everyone' } })
+    expect(bad.statusCode).toBe(400)
   })
 
   it('sets and clears the country, and refuses a code that is not a country', async () => {

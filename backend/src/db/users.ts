@@ -14,6 +14,9 @@ export type Account = {
   email: string
   nameNeedsChange: boolean
   invisible: boolean
+  showLastOnline: 'friends' | 'nobody'
+  friendsVisibility: 'friends' | 'me'
+  discoverable: boolean
   /** better-auth's admin role (migration 019); see auth/admin.ts for who is an admin. */
   role: string | null
   /** When the account was made, ISO 8601. */
@@ -49,6 +52,9 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       'email',
       'name_needs_change',
       'invisible',
+      'show_last_online',
+      'friends_visibility',
+      'discoverable',
       'role',
       'createdAt',
       'avatar_kind',
@@ -66,6 +72,9 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       email: row.email,
       nameNeedsChange: row.name_needs_change,
       invisible: row.invisible,
+      showLastOnline: row.show_last_online,
+      friendsVisibility: row.friends_visibility,
+      discoverable: row.discoverable,
       role: row.role,
       createdAt: row.createdAt.toISOString(),
       avatar: toAvatar(row),
@@ -157,6 +166,17 @@ export async function setName(db: Kysely<Database>, userId: string, name: string
     .set({ name, name_needs_change: false, ...(counts && { name_changed_at: new Date() }) })
     .where('id', '=', userId)
     .execute()
+}
+
+/** Friends & privacy settings (migration 050); a field left out stays as it is. */
+export async function setPrivacy(
+  db: Kysely<Database>,
+  userId: string,
+  p: { show_last_online?: 'friends' | 'nobody'; friends_visibility?: 'friends' | 'me'; discoverable?: boolean },
+): Promise<void> {
+  // Kysely skips undefined values; only a set with nothing in it is invalid SQL
+  if (p.show_last_online === undefined && p.friends_visibility === undefined && p.discoverable === undefined) return
+  await db.updateTable('user').set(p).where('id', '=', userId).execute()
 }
 
 /** Invisible: friends see the user as offline. */
