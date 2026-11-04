@@ -7,6 +7,7 @@ import {
   generateChallenge,
   generateSet,
   inPeriod,
+  legDartLimit,
   metricOf,
   periodEnd,
   periodKey,
@@ -21,16 +22,12 @@ const game = (over: Partial<ChallengeGame> = {}): ChallengeGame => ({
   mode: 'x01',
   qualifies: true,
   won: true,
-  vsHuman: true,
-  ranked: false,
-  lobby: true,
   boardDarts: 30,
   visits: [],
   checkouts: [],
-  legsLost: 0,
+  legResults: [],
   maxDeficit: 0,
   average: 60,
-  people: ['bob'],
   ...over,
 })
 
@@ -69,14 +66,6 @@ describe('generateSet', () => {
     const tries = sets('daily', { ...ctx, untriedModes: ['atc'] }).filter(s => s[0].templateId === 'd.try.atc')
     expect(tries.length).toBeGreaterThan(100)
     expect(challengeTitle(tries[0][0])).toBe('Play a game of Around the Clock')
-  })
-
-  it('only offers beating your average when you have one', () => {
-    const ids = sets('weekly').flatMap(s => s.map(c => c.templateId))
-    expect(ids).not.toContain('w.beat-average')
-    const withAvg = sets('weekly', { ...ctx, bestAverage: 61.5 }).flatMap(s => s.filter(c => c.templateId === 'w.beat-average'))
-    expect(withAvg[0].state).toEqual({ threshold: 61.5 })
-    expect(challengeTitle(withAvg[0])).toBe('Beat your best 3-dart average of the last 30 days (61.5)')
   })
 })
 
@@ -124,17 +113,56 @@ describe('applyGame', () => {
     expect(c.progress).toBe(2)
   })
 
-  it('keeps a win run, broken by a loss to a human', () => {
-    let c = { templateId: 'w.win-run', progress: 0, state: {} }
-    for (const [id, won] of [
-      ['a', true],
-      ['b', false],
-      ['c', true],
-      ['d', true],
+  it('keeps a leg win run across games, broken by a lost leg', () => {
+    let c = { templateId: 'w.leg-run', progress: 0, state: {} }
+    for (const [id, legResults] of [
+      ['a', [true, false]],
+      ['b', [true]],
+      ['c', [true, true, false]],
     ] as const) {
-      c = { ...c, ...applyGame(c, game({ id, won }))! }
+      c = { ...c, ...applyGame(c, game({ id, legResults: [...legResults] }))! }
     }
-    expect(c.progress).toBe(2)
+    expect(c.progress).toBe(3)
+  })
+
+  it('counts six darts in a row in the same segment, across visits', () => {
+    const seg = (n: number, m: number) => ({ n, m })
+    const visit = (...segs: { n: number; m: number }[]) => ({ leg: 0, segs, scored: null, bust: false })
+    const c = { templateId: 'd.six-same', progress: 0, state: {} }
+    const five = [visit(seg(20, 1), seg(20, 1), seg(20, 1)), visit(seg(20, 1), seg(20, 1), seg(5, 1))]
+    expect(applyGame(c, game({ visits: five }))!.progress).toBe(0)
+    const six = [visit(seg(20, 1), seg(20, 1), seg(20, 1)), visit(seg(20, 1), seg(20, 1), seg(20, 1))]
+    expect(applyGame(c, game({ visits: six }))!.progress).toBe(1)
+    const mixed = [visit(seg(20, 3), seg(20, 3), seg(20, 1)), visit(seg(20, 3), seg(20, 3), seg(20, 3))]
+    expect(applyGame(c, game({ visits: mixed }))!.progress).toBe(0)
+  })
+
+  it('names the doubles hit so far', () => {
+    const D = (n: number) => ({ n, m: 2 })
+    const c = { templateId: 'd.ten-doubles', progress: 0, state: {} }
+    const after = applyGame(c, game({ visits: [{ leg: 0, segs: [D(20), D(16), D(20)], scored: null, bust: false }] }))!
+    expect(after.progress).toBe(2)
+    expect(challengeTitle({ templateId: c.templateId, target: 10, state: after.state })).toBe('Hit 10 different doubles (D20, D16)')
+  })
+
+  it('sets the leg dart limit from your average', () => {
+    expect(legDartLimit(null)).toBe(30)
+    expect(legDartLimit(80)).toBe(15)
+    expect(legDartLimit(20)).toBe(45)
+    const hard = { templateId: 'd.leg-limit', progress: 0, state: { limit: 24 } }
+    const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 24, startScore: 501 }
+    expect(applyGame(hard, game({ checkouts: [checkout] }))!.progress).toBe(1)
+    expect(applyGame(hard, game({ checkouts: [{ ...checkout, darts: 27 }] }))!.progress).toBe(0)
+  })
+
+  it('counts bullseyes and two trebles in a visit', () => {
+    const bull = { templateId: 'd.bullseye', progress: 0, state: {} }
+    expect(applyGame(bull, game({ visits: [{ leg: 0, segs: [{ n: 25, m: 2 }], scored: null, bust: false }] }))!.progress).toBe(1)
+    const two = { templateId: 'd.two-trebles', progress: 0, state: {} }
+    const T = (n: number) => ({ n, m: 3 })
+    expect(applyGame(two, game({ visits: [{ leg: 0, segs: [T(20), T(20), { n: 1, m: 1 }], scored: null, bust: false }] }))!.progress).toBe(
+      1,
+    )
   })
 
   it('reads visits and checkouts', () => {
@@ -142,9 +170,9 @@ describe('applyGame', () => {
     expect(applyGame({ templateId: 'd.140-run', progress: 0, state: {} }, game({ visits: run }))!.progress).toBe(1)
     const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 18, startScore: 501 }
     expect(applyGame({ templateId: 'd.d16', progress: 0, state: {} }, game({ checkouts: [checkout] }))!.progress).toBe(1)
-    expect(applyGame({ templateId: 'd.leg21', progress: 0, state: {} }, game({ checkouts: [checkout] }))!.progress).toBe(1)
-    const bull = { ...checkout, last: { n: 25, m: 2 } }
-    expect(applyGame({ templateId: 'd.bull', progress: 0, state: {} }, game({ checkouts: [bull] }))!.progress).toBe(1)
+    expect(
+      applyGame({ templateId: 'w.big-checkout', progress: 0, state: {} }, game({ checkouts: [{ ...checkout, value: 60 }] }))!.progress,
+    ).toBe(1)
   })
 
   it('knows every template it generates', () => {
