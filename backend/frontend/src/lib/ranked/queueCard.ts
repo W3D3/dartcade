@@ -8,8 +8,11 @@ import { acceptedLine, clock, secondsLeft, youAccepted } from './queue'
 // whole duo search; the other member then sees "X left the queue" (matchmaking.ended, reason 'left').
 export const MEMBERS_CAN_LEAVE = false
 
-/** What stops a search: the host cancels it, a duo's other member leaves the queue. */
-export const stopLabel = (host: boolean): string => (host ? 'Cancel search' : 'Leave queue')
+/** Who may stop a search and what the button says: whoever started it cancels (a solo search is its own host); a duo's other member leaves the queue once the server allows it. */
+export function stopRule(search: { hostUserId: string }, userId: string | null): { allowed: boolean; label: string } {
+  const host = search.hostUserId === userId
+  return { allowed: host || MEMBERS_CAN_LEAVE, label: host ? 'Cancel search' : 'Leave queue' }
+}
 
 export type QueueView = {
   kind: 'searching' | 'found' | 'accepted'
@@ -56,6 +59,7 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
   if (!search) return null
   const duo = search.mode === '2v2'
   const host = search.hostUserId === userId
+  const stop = stopRule(search, userId)
   return {
     kind: 'searching',
     tag: `Searching · ${search.mode}`,
@@ -63,8 +67,8 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
     line: `${duo ? (host ? 'You started' : `${search.players[0]} started it`) : 'Ranked'} · ±${search.range} RP`,
     clock: clock((now - Date.parse(search.since)) / 1000),
     strip: `Searching · Ranked ${search.mode}`,
-    canCancel: host || MEMBERS_CAN_LEAVE,
-    cancelLabel: stopLabel(host),
+    canCancel: stop.allowed,
+    cancelLabel: stop.label,
     matchId: null,
     secondsLeft: 0,
   }
