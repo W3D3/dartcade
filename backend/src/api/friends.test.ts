@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import rateLimit from '@fastify/rate-limit'
 import { createFastify } from './fastify.js'
 import { friendsApiPlugin } from './friends.js'
 import { FriendError } from '../friends/errors.js'
@@ -14,6 +15,7 @@ const empty = { friends: [], incoming: [], outgoing: [] }
 function makeApp() {
   const friends = {
     list: vi.fn().mockResolvedValue(empty),
+    search: vi.fn().mockResolvedValue([]),
     request: vi.fn().mockResolvedValue({ id: 'f1', status: 'pending' }),
     accept: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
@@ -32,6 +34,20 @@ describe('friends API', () => {
     const res = await app.inject({ method: 'GET', url: '/api/friends' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toEqual(empty)
+  })
+
+  it('searches for the signed-in user, and only 30 times a minute', async () => {
+    const { friends } = makeApp()
+    const app = createFastify()
+    await app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
+    app.register(friendsApiPlugin, { friends: friends as any })
+    const search = () => app.inject({ method: 'GET', url: '/api/friends/search?q=len' })
+    const first = await search()
+    expect(first.statusCode).toBe(200)
+    expect(JSON.parse(first.body)).toEqual({ users: [] })
+    expect(friends.search).toHaveBeenCalledWith('chris', 'len')
+    for (let i = 1; i < 30; i++) expect((await search()).statusCode).toBe(200)
+    expect((await search()).statusCode).toBe(429)
   })
 
   it('answers a new request 201 and a crossing one 200', async () => {

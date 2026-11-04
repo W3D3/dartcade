@@ -31,6 +31,41 @@ export async function findUserByName(db: Kysely<Database>, name: string): Promis
     .executeTakeFirst()
 }
 
+export type FriendSearchHit = {
+  id: string
+  name: string
+  avatar: Avatar
+  /** How the two stand: `friends`, an open request `sent` by the searcher or `received` from the hit, or `none`. */
+  request: 'none' | 'sent' | 'received' | 'friends'
+}
+
+/**
+ * Who "Add a friend" finds: names containing `term` (names starting with it first) or an email equal
+ * to it. Not the searcher or flagged names; someone not discoverable only by their exact name; friends are found too, marked as such. The one place the rules live.
+ */
+export async function searchUsersForFriends(db: Kysely<Database>, term: string, userId: string, limit: number): Promise<FriendSearchHit[]> {
+  const { rows } = await sql<{
+    id: string
+    name: string
+    request: FriendSearchHit['request']
+    avatar_kind: 'none' | 'preset' | 'upload'
+    avatar_preset: string | null
+    avatar_background: string | null
+    avatar_version: number
+  }>`
+    SELECT u.id, u.name, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version,
+      CASE WHEN f.id IS NULL THEN 'none' WHEN f.status = 'accepted' THEN 'friends' WHEN f.requester_id = ${userId} THEN 'sent' ELSE 'received' END AS request
+    FROM "user" u
+    LEFT JOIN friendships f ON (f.requester_id = ${userId} AND f.addressee_id = u.id) OR (f.addressee_id = ${userId} AND f.requester_id = u.id)
+    WHERE u.id <> ${userId}
+      AND NOT u.name_needs_change
+      AND (u.discoverable OR lower(u.name) = lower(${term}))
+      AND (strpos(lower(u.name), lower(${term})) > 0 OR lower(u.email) = lower(${term}))
+    ORDER BY starts_with(lower(u.name), lower(${term})) DESC, lower(u.name), u.id
+    LIMIT ${limit}`.execute(db)
+  return rows.map(r => ({ id: r.id, name: r.name, request: r.request, avatar: toAvatar(r) }))
+}
+
 export async function friendshipBetween(db: Kysely<Database>, a: string, b: string) {
   return db
     .selectFrom('friendships')
