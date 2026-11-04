@@ -404,12 +404,17 @@
   const winSecondary = $derived(winButtons.secondary)
 </script>
 
+<!-- The live coach's panel or its models didn't load -->
+{#snippet coachFailed()}
+  <p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
+{/snippet}
+
 {#snippet liveCoach(compact: boolean)}
   {#if liveCoachPanel && x01}
     {#await liveCoachPanel then { default: LiveCoach }}
-      <LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} {compact} />
+      <LiveCoach game={x01} mine={viewerId !== null && snapshot?.seats[0]?.userId === viewerId} failed={coachFailed} {compact} />
     {:catch}
-      <p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
+      {@render coachFailed()}
     {/await}
   {/if}
 {/snippet}

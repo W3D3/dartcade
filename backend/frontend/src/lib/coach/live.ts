@@ -4,7 +4,7 @@
 import type { Dart } from '$lib/api/game-ws'
 import type { ReviewVisit } from '$shared/coach'
 import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
-import type { CoachModel } from '$shared/coach/model'
+import type { CoachModels } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart } from '$shared/coach/walk'
 
@@ -33,22 +33,15 @@ function leaves(left: number, a: Aim): string {
 }
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
- *  (null: the visit's own, as the coach does without one), `model` their coaching level's,
- *  `referenceModel` the fixed reference level's (model.ts DEFAULT_COACH_LEVEL), for the
- *  fewest-darts path's chance. Solo: no opponent, w = 1. */
-export function liveCoach(
-  model: CoachModel,
-  referenceModel: CoachModel,
-  start: number,
-  darts: readonly Dart[],
-  average: number | null,
-): LiveCoach {
-  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), { model, reference: referenceModel.landing }, TOP)
+ *  (null: the visit's own, as the coach does without one), `models` their coaching level's
+ *  (loadCoachModels). Solo: no opponent, w = 1. */
+export function liveCoach(models: CoachModels, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
+  const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), models, TOP)
   const scoring = r.left > 170
   const aims = r.done
     ? []
     : scoring
-      ? scoringAims(model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
+      ? scoringAims(models.model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
       : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
   return { left: r.left, scoring, aims, visit: r.visit, done: r.done }
 }

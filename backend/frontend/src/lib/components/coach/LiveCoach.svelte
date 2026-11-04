@@ -1,18 +1,19 @@
 <!--
   The live coach beside a solo X01 game (coach.live.enabled): the next dart's best aims, this visit's
   darts as the coach classes them, the last visit's grade. GameDisplay loads it lazily; it fetches
-  the model of the player's coaching level (one level above their 30-day average) and, for the
-  fewest-darts path's chance, the fixed reference level's (DEFAULT_COACH_LEVEL); `compact` (phones, tablets) folds it into one line that opens.
+  the models of the player's coaching level (one level above their 30-day average); `failed` is
+  GameDisplay's text for when they don't load; `compact` (phones, tablets) folds it into one line that opens.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import type { X01Game } from '$lib/api/game-ws'
   import { liveAverage, liveCoach, shownVisit, type LiveCoach } from '$lib/coach/live'
   import { visitTiles } from '$lib/coach/dart'
   import type { ReviewVisit } from '$shared/coach'
   import { coachedAs } from '$lib/coach/leg'
   import { averageForLevel } from '$shared/botLevels'
-  import { coachLevel, DEFAULT_COACH_LEVEL } from '$shared/coach/model'
-  import { coachModel } from '$lib/coach/model.svelte'
+  import { coachLevel } from '$shared/coach/model'
+  import { coachModels } from '$lib/coach/model.svelte'
   import { flag } from '$lib/flags'
   import { api } from '$lib/api/client'
   import DartTile from './DartTile.svelte'
@@ -20,7 +21,7 @@
   import VisitNumbers from './VisitNumbers.svelte'
 
   // `mine`: the viewer throws this game, so the coach grades with their 30-day average
-  let { game, mine, compact = false }: { game: X01Game; mine: boolean; compact?: boolean } = $props()
+  let { game, mine, failed, compact = false }: { game: X01Game; mine: boolean; failed: Snippet; compact?: boolean } = $props()
 
   // The visit's numbers are for checking the model
   const debug = flag('coach.debug.enabled')
@@ -37,15 +38,10 @@
   const average = $derived(liveAverage(thirtyDay, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
   // The review's level (coachLevel of the same average); none until the average is known
   const level = $derived(thirtyDay === undefined ? null : coachLevel(thirtyDay))
-  const loaded = coachModel(() => level)
-  const model = $derived(loaded.model)
-  // The fewest-darts path's chance is always judged against this fixed level, not the player's own
-  const refLoaded = coachModel(() => DEFAULT_COACH_LEVEL)
-  const referenceModel = $derived(refLoaded.model)
+  const loaded = coachModels(() => level)
+  const model = $derived(loaded.models?.model ?? null)
   const live = $derived(
-    model && referenceModel
-      ? liveCoach(model, referenceModel, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value)
-      : null,
+    loaded.models ? liveCoach(loaded.models, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null,
   )
   const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
   const levelAverage = $derived(model ? averageForLevel(model.level) : null)
@@ -118,9 +114,7 @@
 
 {#if !live}
   <!-- The model is loading: nothing to show yet, unless it failed -->
-  {#if loaded.failed || refLoaded.failed}<p class="m-0 text-[13px] text-text-muted" role="status">
-      The coach couldn't load. Reload to try again.
-    </p>{/if}
+  {#if loaded.failed}{@render failed()}{/if}
 {:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">
