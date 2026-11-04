@@ -38,15 +38,23 @@ export const visitTiles = (v: Pick<ReviewVisit, 'darts'>): DartTileView[] =>
     return { name: d.name, tone, offBoard: d.bedAimId === null, word: d.delta === null ? null : TONE_WORD[tone], label: dartLabel(d.class) }
   })
 
-export type DartRow = { name: string; label: string; distance: string; near: boolean }
+/** `tile`: the dart in its visit-row tile's tone */
+export type DartRow = { tile: DartTileView; label: string; distance: string; near: boolean }
 
-/** The selected visit's dart table (Coach-Leg): each dart's class label and its distance to the
- *  target's bed, "–" for a hit or a dart without a position. */
-export const dartRows = (v: Pick<ReviewVisit, 'darts'>): DartRow[] =>
-  v.darts.map(({ name, class: c }) => {
-    const edge = c.hit ? null : (c.miss?.edgeMm ?? null)
-    return { name, label: dartLabel(c), distance: edge === null ? '–' : wholeMm(edge), near: edge !== null && edge <= NEAR_MISS_MM }
+/** The selected visit's dart table (Coach-Leg): each dart's tile, class label and its distance to
+ *  its target's bed, "4 mm from D16"; "–" for a hit or a dart without a position. */
+export const dartRows = (v: Pick<ReviewVisit, 'darts'>): DartRow[] => {
+  const tiles = visitTiles(v)
+  return v.darts.map(({ class: c }, i) => {
+    const edge = c.hit || !c.target ? null : (c.miss?.edgeMm ?? null)
+    return {
+      tile: tiles[i],
+      label: tiles[i].label,
+      distance: edge === null ? '–' : `${wholeMm(edge)} from ${c.target?.label}`,
+      near: edge !== null && edge <= NEAR_MISS_MM,
+    }
   })
+}
 
 /** Offset parts this small get no direction word */
 const DIRECTION_MIN_MM = 0.5

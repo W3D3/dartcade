@@ -52,7 +52,7 @@ describe('visitTiles', () => {
 })
 
 describe('dartRows', () => {
-  it("gives a miss's distance to the bed, marks one within 5 mm a near miss, a hit and a typed dart none", () => {
+  it("gives a miss's distance to its target's bed, marks one within 5 mm a near miss, a hit and a typed dart none", () => {
     // On 20: two misses outside D10, then D10
     const v = coachOpenVisit(
       { start: 20, opponent: null, average: 60 },
@@ -60,10 +60,10 @@ describe('dartRows', () => {
       REF,
       5,
     ).visit!
-    expect(dartRows(v).map(r => [r.name, r.distance, r.near])).toEqual([
-      ['M10', '3 mm', true],
-      ['M10', '10 mm', false],
-      ['D10', '–', false],
+    expect(dartRows(v).map(r => [r.tile.name, r.tile.tone, r.distance, r.near])).toEqual([
+      ['M10', 'plain', '3 mm from D10', true],
+      ['M10', 'plain', '10 mm from D10', false],
+      ['D10', 'good', '–', false],
     ])
   })
 })
