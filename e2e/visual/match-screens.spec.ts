@@ -15,7 +15,7 @@ const VIEW = {
   portrait: { width: 820, height: 1180 },
 } as const
 type View = keyof typeof VIEW
-type Scene = { mode: string; players: number; view: View; keypad?: boolean; config?: object; name?: string }
+type Scene = { mode: string; players: number; view: View; keypad?: boolean; config?: object; name?: string; play?: string[] }
 
 const MODES = ['x01', 'atc', 'p121', 'hilo', 'minigolf']
 const SCENES: Scene[] = [
@@ -29,6 +29,14 @@ const SCENES: Scene[] = [
   ...MODES.filter(m => m !== 'minigolf').map((mode): Scene => ({ mode, players: 2, view: 'desktop', keypad: true })),
   ...['x01', 'atc', 'p121'].map((mode): Scene => ({ mode, players: 1, view: 'desktop' })),
   { mode: 'x01', players: 2, view: 'narrow' },
+  // Visits thrown first, so the averages and the checkout show real numbers (they are dashes before the first dart)
+  {
+    mode: 'x01',
+    players: 1,
+    view: 'desktop',
+    name: 'x01-1p-desktop-played',
+    play: ['Treble 20', 'Single 19', 'Double 16', 'next', 'Single 20', 'Single 5', 'Single 1', 'next', 'Single 1', 'Single 1', 'Single 1'],
+  },
   { mode: 'x01', players: 4, view: 'desktop', config: { format: 'teams', teams: [0, 1, 0, 1] }, name: 'x01-teams-desktop' },
 ]
 const sceneName = (s: Scene) => s.name ?? `${s.mode}-${s.players}p-${s.view}${s.keypad ? '-keypad' : ''}`
@@ -79,6 +87,14 @@ for (const scene of SCENES) {
       await page.goto(`/#/session/${sessionId}`)
       // "End" in the header, "End game" on phones
       await expect(page.getByRole('button', { name: /^End( game)?$/ })).toBeVisible()
+      for (const step of scene.play ?? []) {
+        if (step === 'next') await page.getByRole('button', { name: 'Next player' }).click()
+        else {
+          const [ring, number] = step.split(' ')
+          if (ring !== 'Single') await page.getByRole('button', { name: ring, exact: true }).click()
+          await page.click(`button[aria-label="${step}"]`)
+        }
+      }
       // A game without a board opens on the keypad: pick the view each scene shows (phones keep their default)
       const view = scene.keypad ? 'Enter' : 'Board'
       const toggle = page
