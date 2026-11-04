@@ -1,7 +1,7 @@
 <script lang="ts">
   // One leg's review (Coach-Leg, Coach-Phone-Leg): the coach's take and skill letters, then every
-  // visit graded. The selected visit shows on the board in the right rail; on phones it opens under
-  // its card.
+  // visit graded. From xl the selected visit shows on the board in the right rail (40% wide, so its
+  // board is big and the visit list still fits at 1280); on phones and tablets it opens under its card.
   import { ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import BoardCard from '$lib/components/coach/BoardCard.svelte'
@@ -139,9 +139,7 @@
         <Button variant="outline" href="#/history/{params.gameId}" class="h-11 text-[15px] font-semibold">Match details</Button>
       </header>
 
-      <div
-        class="flex flex-col gap-4 min-[1440px]:grid min-[1440px]:grid-cols-[minmax(0,1fr)_400px] min-[1440px]:items-start min-[1440px]:gap-5"
-      >
+      <div class="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(380px,40%)] xl:items-start xl:gap-5">
         <div class="flex min-w-0 flex-col gap-4">
           <TakeCard take={review.take} skills={review.skills} grouping={review.grouping} />
 
@@ -183,7 +181,7 @@
 
         {#if current}
           <aside
-            class="card hidden flex-col gap-3.5 px-[22px] py-5 xl:flex min-[1440px]:sticky min-[1440px]:top-6 min-[1440px]:max-h-[calc(100dvh-3rem)] min-[1440px]:overflow-y-auto"
+            class="card hidden flex-col gap-3.5 px-[22px] py-5 xl:sticky xl:top-6 xl:flex xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto"
             aria-label="Selected visit"
           >
             <div class="flex items-baseline justify-between">

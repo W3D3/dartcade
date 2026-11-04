@@ -351,8 +351,10 @@ the fewest darts scoring exactly m with any dart, then the best finishing double
   - **Under each dart tile**, a short label: "T20 ✓", "Single 20", "Miss T20 · 14 mm inside, towards 1",
     "Split → D16 ✓", "D16 inside", "Bust-back ✓", "Wild".
   - **In the selected visit's board card**, a faint line from each dart to its target.
-  - **The selected visit's card** (400 px wide from 1440 px, sticky while the visit list scrolls;
-    inline under its card on phones) keeps the board, the grade, the tag and the "Better:" line,
+  - **The selected visit's card** (a right rail from 1280 px (xl), 40% of the page and at least
+    380 px, sticky while the visit list scrolls, its board up to 420 px; the visit table, narrower
+    than 640 px there, puts each row's coach line under its darts; inline under its card on
+    phones and tablets) keeps the board, the grade, the tag and the "Better:" line,
     and shows the darts as a table: Dart (in its tile's colour), Classification (the tile's label),
     Distance (`edgeMm`, whole mm, to the named target: "4 mm from D16"; "–" for a hit or a dart
     without a position). A missed dart within `NEAR_MISS_MM`

@@ -56,7 +56,7 @@
   const tagX = (p: { x: number; name: string }) => (p.x > 120 ? p.x - 16 - tagW(p.name) : p.x + 16)
 </script>
 
-<MutedBoard {label} {onpoint} class="block w-full max-w-[300px] aspect-square mx-auto">
+<MutedBoard {label} {onpoint} class="block w-full max-w-[420px] aspect-square mx-auto">
   {#if bed}<path d={bedPath(bed)} fill-rule="evenodd" class="fill-ice stroke-text" stroke-width="2" />{/if}
 
   {#each tags as m, i (i)}
