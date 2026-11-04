@@ -80,7 +80,7 @@ export const GRADE_STYLE: Record<VisitGrade | 'tip', PillView & { fill: string }
 const GROUPING_TONE: Record<GroupingLevel, PillTone> = { great: 'excellent', good: 'good', scattered: 'inaccuracy' }
 
 /** A visit's grouping comment for its outlined, informational pill; null without one worth saying
- *  (groupingComment, shared/coach/grouping.ts, judged on the server against the player's average). */
+ *  (groupingComment, shared/coach/grouping.ts, judged on the server against the target tier's spread). */
 export function groupingPill(g: Pick<Grouping, 'comment'> | null): PillView | null {
   const c = g?.comment
   return c ? { label: c.text, tone: GROUPING_TONE[c.level] } : null

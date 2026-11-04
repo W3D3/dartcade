@@ -54,8 +54,10 @@ describe('groupingLine', () => {
   const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 
   it("words a visit's grouping, its target from a placed dart", () => {
-    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe('Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75')
-    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm')
+    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe(
+      'Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75',
+    )
+    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm')
   })
   it('leaves the spread out without a shared target, and is null without a grouping', () => {
     expect(groupingLine({ darts, tag: 'scoring', grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')

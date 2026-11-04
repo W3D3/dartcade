@@ -117,8 +117,8 @@ export function gradeWorking(v: Pick<ReviewVisit, 'left' | 'bust' | 'darts' | 'v
   }
 }
 
-/** "Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed
- *  darts sat together against the spread expected at the player's average, the spread and offset
+/** "Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed
+ *  darts sat together against the spread expected of the tier they're graded as, the spread and offset
  *  only when they shared a target, the rating only on a Scoring
  *  visit (the only grade it feeds); null without a grouping. */
 export function groupingLine(v: Pick<ReviewVisit, 'darts' | 'grouping' | 'tag'>): string | null {
@@ -126,7 +126,7 @@ export function groupingLine(v: Pick<ReviewVisit, 'darts' | 'grouping' | 'tag'>)
   if (!g) return null
   const target = v.darts.find(d => d.coords && d.class.target)?.class.target?.label
   return [
-    g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm (yours: ~${Math.round(g.expectedSpreadMm)} mm)`,
+    g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm (target: ~${Math.round(g.expectedSpreadMm)} mm)`,
     g.offsetMm === null ? null : `${Math.round(g.offsetMm)} mm off ${target}`,
     `edge ${Math.round(g.edgeMm)} mm`,
     v.tag === 'scoring' ? `rating ${Math.round(g.rating)}` : null,

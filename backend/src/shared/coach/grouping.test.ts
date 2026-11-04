@@ -5,7 +5,9 @@ import {
   CLOSENESS_MAX,
   CLOSENESS_ZERO_MM,
   expectedSpreadMm,
+  GOOD_GROUP_MM,
   GOOD_GROUP_RATIO,
+  GREAT_GROUP_MM,
   GREAT_GROUP_RATIO,
   grouping,
   groupingComment,
@@ -69,11 +71,11 @@ describe('grouping', () => {
     expect(groupingWhy({ spreadMm: 20, edgeMm: 18, comment: null })).toBe('')
   })
 
-  it('expects the spread a bot of the same average throws: 81 → ~10.5 mm over 3 darts (jitter included), wider lower down', () => {
+  it('expects the spread a bot of the same average throws: 81 → ~10.7 mm over 3 darts (jitter included), wider lower down', () => {
     expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.68, 1)
     // 2 darts sit closer to their own centroid than 3
     expect(expectedSpreadMm(81, 2)).toBeLessThan(expectedSpreadMm(81, 3))
-    const avgs = [10, 30, 40, 60, 81, 100, 105, 130]
+    const avgs = [10, 20, 30, 40, 60, 81, 100, 115, 130]
     for (let i = 1; i < avgs.length; i++) expect(expectedSpreadMm(avgs[i], 3)).toBeLessThanOrEqual(expectedSpreadMm(avgs[i - 1], 3))
     expect(expectedSpreadMm(60, 3)).toBeGreaterThan(expectedSpreadMm(81, 3))
     // Clamped outside the calibrated levels (20–115)
@@ -82,6 +84,7 @@ describe('grouping', () => {
   })
 
   it('comments on the spread against the expected one: great, good, nothing, scattered', () => {
+    expect([GREAT_GROUP_RATIO, GREAT_GROUP_MM, GOOD_GROUP_RATIO, GOOD_GROUP_MM, SCATTERED_RATIO]).toEqual([0.6, 10, 0.85, 15, 2])
     expect(groupingComment(null, 10)).toBeNull()
     expect(groupingComment(10 * GREAT_GROUP_RATIO, 10)).toEqual({ level: 'great', text: 'Great grouping' })
     expect(groupingComment(10 * GREAT_GROUP_RATIO + 0.01, 10)).toEqual({ level: 'good', text: 'Good grouping' })
@@ -91,17 +94,28 @@ describe('grouping', () => {
     expect(groupingComment(10 * SCATTERED_RATIO, 10)).toEqual({ level: 'scattered', text: 'Scattered' })
   })
 
-  it('judges the same group by the player: 14 mm is good for a 60 average, unremarkable for an 81', () => {
-    // Three darts on a 14 mm circle round T20's point (0, 0.6055): each 13 mm from the centroid
-    const ring = [0, 120, 240].map(deg =>
-      placed(mm(14) * Math.cos((deg * Math.PI) / 180), 0.6055 + mm(14) * Math.sin((deg * Math.PI) / 180), 0),
-    )
-    const at60 = grouping(ring, 60, 60)
-    const at81 = grouping(ring, 60, 81)
-    expect(at60?.spreadMm).toBeCloseTo(14, 9)
-    expect(at60?.comment).toEqual({ level: 'good', text: 'Good grouping' })
-    expect(at81?.comment).toBeNull()
-    expect(at81?.expectedSpreadMm).toBe(expectedSpreadMm(81, 3))
+  it('caps Great at 10 mm and Good at 15 mm, however wide the expected spread', () => {
+    expect(groupingComment(GREAT_GROUP_MM, 40)?.level).toBe('great')
+    expect(groupingComment(GREAT_GROUP_MM + 0.01, 40)?.level).toBe('good')
+    expect(groupingComment(GOOD_GROUP_MM, 40)?.level).toBe('good')
+    expect(groupingComment(GOOD_GROUP_MM + 0.01, 40)).toBeNull()
+  })
+
+  it('judges a group against the target tier: an intermediate, a pro and a beginner', () => {
+    /** Three darts on a circle of `r` mm round T20's point (0, 0.6055): their spread is r */
+    const ring = (r: number) =>
+      [0, 120, 240].map(deg => placed(mm(r) * Math.cos((deg * Math.PI) / 180), 0.6055 + mm(r) * Math.sin((deg * Math.PI) / 180), 0))
+    const said = (target: number) => (r: number) => grouping(ring(r), 60, target)?.comment?.level ?? null
+    expect(grouping(ring(13), 60, 60)?.spreadMm).toBeCloseTo(13, 9)
+    // An intermediate (60) groups 3 darts in ~16 mm: Great to 9.75, Good to 13.8, Scattered from 32.5
+    expect(expectedSpreadMm(60, 3)).toBeCloseTo(16.26, 1)
+    expect([9, 13, 20, 33].map(said(60))).toEqual(['great', 'good', null, 'scattered'])
+    // A pro (90) in ~9 mm: the same 9 mm is only what a pro throws; Great to 5.4, Good to 7.7, Scattered from 18.1
+    expect(expectedSpreadMm(90, 3)).toBeCloseTo(9.02, 1)
+    expect([5, 7, 9, 19].map(said(90))).toEqual(['great', 'good', null, 'scattered'])
+    // A beginner (30) in ~40 mm: the caps keep 12 mm only Good and 20 mm unremarkable; Scattered from 78
+    expect(expectedSpreadMm(30, 3)).toBeCloseTo(39.04, 1)
+    expect([9, 12, 20, 80].map(said(30))).toEqual(['great', 'good', null, 'scattered'])
   })
 })
 

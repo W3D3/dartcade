@@ -13,6 +13,7 @@ import {
   SCORING_SCALE,
   VERY_LOW,
 } from '$shared/coach/grade'
+import { GOOD_GROUP_MM, GOOD_GROUP_RATIO, GREAT_GROUP_MM, GREAT_GROUP_RATIO, SCATTERED_RATIO } from '$shared/coach/grouping'
 import { NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
@@ -79,7 +80,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Rating against your average',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'scores',
-        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_SCALE)}.`,
+        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_SCALE)}. The group itself is judged against the spread expected of the tier you're graded as: Great grouping at ${GREAT_GROUP_RATIO}× that or less (and at most ${GREAT_GROUP_MM} mm), Good at ${GOOD_GROUP_RATIO}× or less (and at most ${GOOD_GROUP_MM} mm), Scattered from ${SCATTERED_RATIO}×.`,
         example: 'S20 S20 S1 = 41 · your average 60: −19, Weak',
         says: 'One loose visit happens; a few in a row mean the rhythm went.',
       },

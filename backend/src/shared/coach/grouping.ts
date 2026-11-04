@@ -24,7 +24,7 @@ export type Grouping = {
   edgeMm: number
   /** The visit's score plus the grouping and closeness bonuses */
   rating: number
-  /** The spread a player of this average groups `darts` darts in (expectedSpreadMm) */
+  /** The spread a player of the target tier's average groups `darts` darts in (expectedSpreadMm) */
   expectedSpreadMm: number
   /** The spread against that expectation; null without a spread or when it's unremarkable */
   comment: GroupingComment | null
@@ -40,8 +40,9 @@ export const groupingBonus = (spreadMm: number | null) => bonus(spreadMm, GROUPI
 export const closenessBonus = (edgeMm: number) => bonus(edgeMm, CLOSENESS_MAX, CLOSENESS_ZERO_MM)
 
 /** The visit's grouping from its walked darts (those after a bust left out), its score and the
- *  player's 3-dart average; null with fewer than 2 placed darts, the rating then being the score. */
-export function grouping(darts: readonly Placed[], scored: number, average: number): Grouping | null {
+ *  target tier's average (tiers.ts), whose spread the comment judges it against; null with fewer
+ *  than 2 placed darts, the rating then being the score. */
+export function grouping(darts: readonly Placed[], scored: number, targetAverage: number): Grouping | null {
   const placed = darts.flatMap(d =>
     d.coords && d.class.target && d.class.miss ? [{ ...d.coords, aimId: d.class.target.aimId, edgeMm: d.class.miss.edgeMm }] : [],
   )
@@ -53,7 +54,7 @@ export function grouping(darts: readonly Placed[], scored: number, average: numb
   const offsetMm = aim ? Math.hypot(c.x - aim.x, c.y - aim.y) * MM_PER_UNIT : null
   const edgeMm = mean(placed.map(p => p.edgeMm))
   const rating = scored + groupingBonus(spreadMm) + closenessBonus(edgeMm)
-  const expected = expectedSpreadMm(average, placed.length)
+  const expected = expectedSpreadMm(targetAverage, placed.length)
   return {
     darts: placed.length,
     spreadMm,
@@ -68,27 +69,31 @@ export function grouping(darts: readonly Placed[], scored: number, average: numb
 /** The mean distance from their centroid of `n` darts thrown by a player of this average: for a
  *  normal spread of sigma per axis, sigma·√((n−1)/n)·√(π/2) (≈ 1.02 sigma for 3 darts). */
 export function expectedSpreadMm(average: number, n: number): number {
-  // A player's darts each get a log-normal multiple of its sigma, on average e^(J²/2) ≈ 1.13 wider
+  // A level's darts each get a log-normal multiple of its sigma, on average e^(J²/2) ≈ 1.13 wider
   const jitter = Math.exp(SIGMA_JITTER ** 2 / 2)
   return sigmaForAverage(average) * jitter * Math.sqrt((n - 1) / n) * Math.sqrt(Math.PI / 2) * MM_PER_UNIT
 }
 
-/** A visit's spread over the one expected for the player's average: Great at or below, Good at
- *  or below, Scattered at or above. */
-export const GREAT_GROUP_RATIO = 0.8
-export const GOOD_GROUP_RATIO = 1
+/** A visit's spread against the one expected for the target tier: Great at or below GREAT_GROUP_RATIO
+ *  of it and GREAT_GROUP_MM, Good at or below GOOD_GROUP_RATIO and GOOD_GROUP_MM, Scattered at or
+ *  above SCATTERED_RATIO. The millimetre caps keep a beginner's wide expectation from praising a
+ *  loose group. */
+export const GREAT_GROUP_RATIO = 0.6
+export const GREAT_GROUP_MM = 10
+export const GOOD_GROUP_RATIO = 0.85
+export const GOOD_GROUP_MM = 15
 export const SCATTERED_RATIO = 2
 
 export type GroupingLevel = 'great' | 'good' | 'scattered'
 export type GroupingComment = { level: GroupingLevel; text: string }
 
-/** A one-line comment on how tight a visit's group was for the player; null without a
+/** A one-line comment on how tight a visit's group was for the target tier; null without a
  *  shared-target spread, or when it's neither tight nor scattered enough to be worth saying. */
 export function groupingComment(spreadMm: number | null, expectedMm: number): GroupingComment | null {
   if (spreadMm === null) return null
   const r = spreadMm / expectedMm
-  if (r <= GREAT_GROUP_RATIO) return { level: 'great', text: 'Great grouping' }
-  if (r <= GOOD_GROUP_RATIO) return { level: 'good', text: 'Good grouping' }
+  if (r <= GREAT_GROUP_RATIO && spreadMm <= GREAT_GROUP_MM) return { level: 'great', text: 'Great grouping' }
+  if (r <= GOOD_GROUP_RATIO && spreadMm <= GOOD_GROUP_MM) return { level: 'good', text: 'Good grouping' }
   if (r >= SCATTERED_RATIO) return { level: 'scattered', text: 'Scattered' }
   return null
 }
