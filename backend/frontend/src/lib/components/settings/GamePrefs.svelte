@@ -1,15 +1,20 @@
 <script lang="ts">
   // Settings' Game preferences (Settings-Game board): the account-wide switches a match's game
   // settings drawer also changes (on that device only), and X01's New game defaults for the Play
-  // page, offered with X01's own options. Only rows with a setting behind them.
+  // page, offered with X01's own options, and the tier the coach grades you as (behind coach.enabled).
+  // Only rows with a setting behind them.
   import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import { parseSettings, type GameSettings } from '$lib/gameSettings.js'
   import { gameModes } from '$lib/gameModes'
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
+  import CoachTargetSelect from '$lib/components/coach/CoachTargetSelect.svelte'
+  import { flag } from '$lib/flags'
 
   let { settings = $bindable() }: { settings: GameSettings } = $props()
+
+  const coach = flag('coach.enabled')
 
   const during = [
     { key: 'checkoutSuggestions', label: 'Checkout suggestions', sub: 'In the dart slots when you can finish' },
@@ -67,6 +72,11 @@
             onchange={v => set('x01BullOff', v)}
           />
         </fieldset>
+      </SettingsCard>
+    {/if}
+    {#if $coach}
+      <SettingsCard id="coach-target" title="Coach" description="The level the coach grades your legs and the live coach as.">
+        <CoachTargetSelect />
       </SettingsCard>
     {/if}
   </div>

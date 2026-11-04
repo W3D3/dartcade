@@ -279,8 +279,9 @@ paths:
       summary: The signed-in user's 30-day X01 average, the one the coach grades with
       description: >-
         The average a stored review grades with (x01AverageSince over the last 30 days), so the
-        live coach picks the same level and grades against the same number. 404 while
-        coach.live.enabled is off for the user.
+        live coach picks the same tier and grades against the same number; the Coach page
+        suggests a tier from it. 404 while both coach.enabled and coach.live.enabled are off for
+        the user.
       tags: [coach]
       responses:
         '200':
@@ -4979,6 +4980,12 @@ components:
         x01OutMode: { type: string, enum: [straight, double, master], description: 'New game defaults: X01 check-out' }
         x01FirstTo: { type: integer, minimum: 1, maximum: 99, description: 'New game defaults: X01 legs to win' }
         x01BullOff: { type: string, enum: ['off', wdc, pdc], description: 'New game defaults: X01 throw order (off: lobby order)' }
+        coachTarget:
+          {
+            type: string,
+            enum: [auto, beginner, pub, intermediate, semipro, pro, worldclass],
+            description: 'The tier the coach grades you as; auto: the one your 30-day average suggests',
+          }
         timeZone: { type: string, minLength: 1, maxLength: 64, description: 'IANA time zone the day streak and daily limits count days in' }
         equipped:
           type: object

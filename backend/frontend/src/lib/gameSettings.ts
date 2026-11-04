@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { COACH_TIER_IDS, type CoachTarget } from '$shared/coach/tiers'
 import type { ScoreUpdates } from './heldScore.js'
 
 /** In-game display and sound settings, cached per device in localStorage; the account-wide ones
@@ -57,6 +58,8 @@ export interface GameSettings {
   x01OutMode: 'straight' | 'double' | 'master'
   x01FirstTo: number
   x01BullOff: 'off' | 'wdc' | 'pdc'
+  /** The tier the coach grades you as (shared/coach/tiers.ts); auto: the one your 30-day average suggests. */
+  coachTarget: CoachTarget
 }
 
 export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3', 'combined'] as const
@@ -106,6 +109,7 @@ export const defaultSettings: GameSettings = {
   x01OutMode: 'double',
   x01FirstTo: 3,
   x01BullOff: 'off',
+  coachTarget: 'auto',
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -170,6 +174,10 @@ const SettingsSchema = z
       .catch(d.x01FirstTo)
       .default(d.x01FirstTo),
     x01BullOff: z.enum(['off', 'wdc', 'pdc']).catch(d.x01BullOff).default(d.x01BullOff),
+    coachTarget: z
+      .enum(['auto', ...COACH_TIER_IDS])
+      .catch(d.coachTarget)
+      .default(d.coachTarget),
   })
   .catch({ ...d })
 

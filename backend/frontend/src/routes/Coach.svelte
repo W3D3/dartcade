@@ -7,6 +7,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import CountCards from '$lib/components/coach/CountCards.svelte'
+  import CoachTargetSelect from '$lib/components/coach/CoachTargetSelect.svelte'
   import { Button } from '$lib/components/ui/button'
   import { api, type CoachLegCounts, type CoachLegPage, type CoachLegRow } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
@@ -172,8 +173,16 @@
         <h1 class="m-0 hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Coach</h1>
         <p class="m-0 text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
       </div>
-      {#if $enabled && updated}
-        <span class="flex items-center gap-2 text-[13px] text-text-dim"><Clock size={14} />Updated after your last game · {updated}</span>
+      {#if $enabled}
+        <div class="flex flex-col items-start gap-2 md:items-end">
+          <!-- A new target regrades your legs: the list starts over -->
+          <CoachTargetSelect onchanged={() => reload(filter)} />
+          {#if updated}
+            <span class="flex items-center gap-2 text-[13px] text-text-dim"
+              ><Clock size={14} />Updated after your last game · {updated}</span
+            >
+          {/if}
+        </div>
       {/if}
     </header>
 

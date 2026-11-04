@@ -222,7 +222,7 @@ export interface paths {
         };
         /**
          * The signed-in user's 30-day X01 average, the one the coach grades with
-         * @description The average a stored review grades with (x01AverageSince over the last 30 days), so the live coach picks the same level and grades against the same number. 404 while coach.live.enabled is off for the user.
+         * @description The average a stored review grades with (x01AverageSince over the last 30 days), so the live coach picks the same tier and grades against the same number; the Coach page suggests a tier from it. 404 while both coach.enabled and coach.live.enabled are off for the user.
          */
         get: operations["getCoachAverage"];
         put?: never;
@@ -3848,6 +3848,11 @@ export interface components {
              * @enum {string}
              */
             x01BullOff?: "off" | "wdc" | "pdc";
+            /**
+             * @description The tier the coach grades you as; auto: the one your 30-day average suggests
+             * @enum {string}
+             */
+            coachTarget?: "auto" | "beginner" | "pub" | "intermediate" | "semipro" | "pro" | "worldclass";
             /** @description IANA time zone the day streak and daily limits count days in */
             timeZone?: string;
             /** @description The perks worn on the profile card; read-only here, set through PUT /api/progress/equip */

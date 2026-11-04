@@ -10,7 +10,8 @@
   import { liveAverage, liveCoach, shownVisit, type LiveCoach } from '$lib/coach/live'
   import { visitTiles } from '$lib/coach/dart'
   import type { ReviewVisit } from '$shared/coach'
-  import { gradedAs, suggestedTier, tierOf } from '$shared/coach/tiers'
+  import { gradedAs, targetTier, tierOf } from '$shared/coach/tiers'
+  import { coachTarget } from '$lib/coach/target'
   import { coachModels } from '$lib/coach/model.svelte'
   import { flag } from '$lib/flags'
   import { api } from '$lib/api/client'
@@ -35,8 +36,8 @@
       )
   })
   const average = $derived(liveAverage(thirtyDay, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
-  // The review's tier (from the same average); none until the average is known
-  const tier = $derived(thirtyDay === undefined ? null : suggestedTier(thirtyDay))
+  // The review's tier (your pick, or the one the same average suggests); none until the average is known
+  const tier = $derived(thirtyDay === undefined ? null : targetTier($coachTarget, thirtyDay))
   const loaded = coachModels(() => tier)
   const model = $derived(loaded.models?.model ?? null)
   const live = $derived(

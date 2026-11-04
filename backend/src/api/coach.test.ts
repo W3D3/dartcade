@@ -235,15 +235,20 @@ describe('GET /api/coach/legs/:gameId/:leg', () => {
 })
 
 describe('GET /api/coach/average', () => {
-  it("returns the user's 30-day X01 average, behind coach.live.enabled", async () => {
+  it("returns the user's 30-day X01 average, behind coach.enabled or coach.live.enabled", async () => {
     vi.mocked(x01AverageSince).mockResolvedValue(48.2)
     const res = await app().inject({ method: 'GET', url: '/api/coach/average' })
     expect(JSON.parse(res.body)).toEqual({ average: 48.2 })
     expect(x01AverageSince).toHaveBeenCalledWith(expect.anything(), 'ann', 30)
-    expect(flagEnabled).toHaveBeenCalledWith('coach.live.enabled', null)
+    expect(flagEnabled).toHaveBeenCalledWith('coach.enabled', null)
   })
 
-  it('404s while coach.live.enabled is off', async () => {
+  it('answers with only the live coach on (the Coach page suggests a tier from it too)', async () => {
+    vi.mocked(flagEnabled).mockImplementation(key => Promise.resolve(key === 'coach.live.enabled'))
+    expect((await app().inject({ method: 'GET', url: '/api/coach/average' })).statusCode).toBe(200)
+  })
+
+  it('404s while both are off', async () => {
     vi.mocked(flagEnabled).mockResolvedValue(false)
     expect((await app().inject({ method: 'GET', url: '/api/coach/average' })).statusCode).toBe(404)
   })

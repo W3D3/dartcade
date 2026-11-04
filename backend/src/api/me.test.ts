@@ -380,11 +380,11 @@ describe('/api/me/preferences', () => {
     const res = await app().inject({
       method: 'PUT',
       url: '/api/me/preferences',
-      payload: { callerOn: true, x01StartScore: 301, callerVoice: null, volume: 0.2, evil: 'x'.repeat(1000) },
+      payload: { callerOn: true, x01StartScore: 301, callerVoice: null, coachTarget: 'pro', volume: 0.2, evil: 'x'.repeat(1000) },
     })
     expect(res.statusCode).toBe(200)
-    expect(updatePreferences).toHaveBeenCalledWith({}, 'old', { callerOn: true, x01StartScore: 301, callerVoice: null })
-    expect(JSON.parse(res.body)).toEqual({ chalkboard: false, callerOn: true, x01StartScore: 301, callerVoice: null })
+    expect(updatePreferences).toHaveBeenCalledWith({}, 'old', { callerOn: true, x01StartScore: 301, callerVoice: null, coachTarget: 'pro' })
+    expect(JSON.parse(res.body)).toEqual({ chalkboard: false, callerOn: true, x01StartScore: 301, callerVoice: null, coachTarget: 'pro' })
   })
 
   it.each([
@@ -393,6 +393,7 @@ describe('/api/me/preferences', () => {
     ['an unknown check-out', { x01OutMode: 'triple' }],
     ['zero legs', { x01FirstTo: 0 }],
     ['an oversized voice id', { callerVoice: 'v'.repeat(201) }],
+    ['an unknown coach tier', { coachTarget: 'level7' }],
   ])('rejects %s', async (_what, payload) => {
     const res = await app().inject({ method: 'PUT', url: '/api/me/preferences', payload })
     expect(res.statusCode).toBe(400)

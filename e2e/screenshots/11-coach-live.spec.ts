@@ -26,7 +26,10 @@ test('coach: live panel in solo x01', async ({ browser }) => {
 
   const phone = await open(browser, 'phil', VIEW.phone)
   await openHash(phone.page, `/session/${session}`)
-  await phone.page.getByText('Coach', { exact: true }).click()
+  // The folded panel, not its loading skeleton: a click on the skeleton opens nothing
+  const folded = phone.page.getByRole('group', { name: 'Coach' })
+  await expect(folded).toBeVisible({ timeout: 20_000 })
+  await folded.getByText('Coach', { exact: true }).click()
   await expect(phone.page.getByRole('heading', { name: 'Aim now' })).toBeVisible()
   await shot(phone.page, 'coach/live-phone.png')
   await phone.ctx.close()

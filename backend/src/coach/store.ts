@@ -5,10 +5,11 @@ import { sql, type Insertable, type Kysely } from 'kysely'
 import type { CoachLegsTable, Database } from '../db/schema.js'
 import { getFinishedGame, type HistoryGame } from '../db/history.js'
 import { x01AverageSince } from '../db/ranked.js'
+import { getPreferences } from '../db/users.js'
 import { storedDetail } from '../history/detail.js'
 import type { WarnFn } from '../session/replay.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
-import { coachable, loadCoachModels, reviewLeg, suggestedTier } from '../shared/coach/index.js'
+import { coachable, loadCoachModels, reviewLeg, targetTier } from '../shared/coach/index.js'
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
@@ -78,8 +79,10 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
     if (s.user_id === null || s.bot_level !== null) continue
     // The player's average when the game finished, so a rebuild grades it the same
     const average = await x01AverageSince(db, s.user_id, PROFILE_AVERAGE_DAYS, game.finished_at)
-    // Coached as the tier that average suggests; the review stores the tier, so it doesn't shift later
-    const models = await loadCoachModels(suggestedTier(average))
+    // Graded as the tier the player picked, or on auto the one that average suggests; the review
+    // stores the tier, so it doesn't shift with the average later
+    const target = (await getPreferences(db, s.user_id))?.coachTarget ?? 'auto'
+    const models = await loadCoachModels(targetTier(target, average))
     for (const { leg } of legs) {
       // A leg's review is CPU work: let live sockets in between legs (and so between seats)
       await new Promise(resolve => setImmediate(resolve))
