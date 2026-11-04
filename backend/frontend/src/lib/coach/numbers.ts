@@ -39,7 +39,8 @@ export function bandText(scale: readonly ScaleBand[], grade: VisitGrade): string
 }
 
 /** "Excellent +60 or more, Great +20 to +60, …, Bad below −20": every class of a scale */
-export const scaleText = (scale: readonly ScaleBand[]) => scale.map(b => `${GRADE_STYLE[b.grade].label} ${bandText(scale, b.grade)}`).join(', ')
+export const scaleText = (scale: readonly ScaleBand[]) =>
+  scale.map(b => `${GRADE_STYLE[b.grade].label} ${bandText(scale, b.grade)}`).join(', ')
 
 /** A grade scale drawn as a bar, in % of its width: each class's stretch, the bounds between them
  *  (`ticks`, lowest first) and where the visit's points fall (`marker`, kept on the bar) */

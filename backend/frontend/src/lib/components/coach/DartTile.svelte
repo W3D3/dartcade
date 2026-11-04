@@ -14,7 +14,8 @@
       ? 'min-w-[40px] h-6 rounded-[6px] text-[15px]'
       : 'min-w-[46px] h-[30px] rounded-[7px] text-[18px]'} {TILE_TONE[tile.tone]} {tile.offBoard
       ? 'border-[1.5px] border-dashed border-danger-line'
-      : ''}">{tile.name}{#if tile.word}<span class="sr-only">, {tile.word}</span>{/if}</span
+      : ''}"
+    >{tile.name}{#if tile.word}<span class="sr-only">, {tile.word}</span>{/if}</span
   >
 {/snippet}
 

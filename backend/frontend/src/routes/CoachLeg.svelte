@@ -149,17 +149,17 @@
 
           <section aria-label="Every visit" class="flex flex-col gap-2.5 xl:card xl:px-[22px] xl:py-5">
             {#if wide.current}<div class="flex flex-wrap items-center gap-3.5">
-              <h2 class="m-0 font-display text-[24px] font-bold uppercase">Every visit</h2>
-              <ul class="m-0 ml-auto flex list-none flex-wrap gap-3.5 p-0" aria-label="Visits per grade">
-                {#each VISIT_GRADES as g (g)}
-                  <li class="inline-flex items-center gap-1.5">
-                    <GradePill grade={g} /><span class="text-[13px] text-text-muted"
-                      ><span class="sr-only">{GRADE_STYLE[g].label}: </span>{visits.filter(v => v.grade === g).length}</span
-                    >
-                  </li>
-                {/each}
-              </ul>
-            </div>{/if}
+                <h2 class="m-0 font-display text-[24px] font-bold uppercase">Every visit</h2>
+                <ul class="m-0 ml-auto flex list-none flex-wrap gap-3.5 p-0" aria-label="Visits per grade">
+                  {#each VISIT_GRADES as g (g)}
+                    <li class="inline-flex items-center gap-1.5">
+                      <GradePill grade={g} /><span class="text-[13px] text-text-muted"
+                        ><span class="sr-only">{GRADE_STYLE[g].label}: </span>{visits.filter(v => v.grade === g).length}</span
+                      >
+                    </li>
+                  {/each}
+                </ul>
+              </div>{/if}
             <div class="flex gap-1.5 overflow-x-auto xl:gap-2">
               {#each TAGS as t (t.id)}
                 <Chip variant="plain" selected={filter === t.id} onclick={() => (filter = t.id)}>

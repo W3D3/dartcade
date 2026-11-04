@@ -6,8 +6,7 @@ export const chipVariants = tv({
   variants: {
     variant: {
       accent: 'px-3 py-1 transition-colors',
-      plain:
-        'inline-flex h-8 flex-none items-center gap-1.5 whitespace-nowrap px-3 no-underline cursor-pointer hover:text-text',
+      plain: 'inline-flex h-8 flex-none items-center gap-1.5 whitespace-nowrap px-3 no-underline cursor-pointer hover:text-text',
     },
     selected: { true: '', false: '' },
   },

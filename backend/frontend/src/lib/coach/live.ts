@@ -41,7 +41,11 @@ export function liveCoach(models: CoachModels, start: number, darts: readonly Da
   const aims = r.done
     ? []
     : scoring
-      ? scoringAims(models.model, TOP).map(({ aim, points }) => ({ label: aim.label, aimId: aim.id, detail: `${points.toFixed(1)} a dart` }))
+      ? scoringAims(models.model, TOP).map(({ aim, points }) => ({
+          label: aim.label,
+          aimId: aim.id,
+          detail: `${points.toFixed(1)} a dart`,
+        }))
       : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
   return { left: r.left, scoring, aims, visit: r.visit, done: r.done }
 }
