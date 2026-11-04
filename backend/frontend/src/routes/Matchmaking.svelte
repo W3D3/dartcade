@@ -56,8 +56,11 @@
 
   async function find() {
     busy = true
-    searchError = (await startSearch(queue, firstTo)) ?? ''
-    busy = false
+    try {
+      searchError = (await startSearch(queue, firstTo)) ?? ''
+    } finally {
+      busy = false
+    }
   }
 
   const queues = [
@@ -92,6 +95,8 @@
     </header>
 
     {#if error}<ErrorText>{error}</ErrorText>{/if}
+    <!-- A running search can be cancelled even when the profile did not load -->
+    {#if search && !profile}<SearchPanel />{/if}
 
     {#if !profile && !error}
       <PageLoading />

@@ -15,8 +15,11 @@
 
   async function run(request: () => Promise<string | null>) {
     busy = true
-    error = (await request()) ?? ''
-    busy = false
+    try {
+      error = (await request()) ?? ''
+    } finally {
+      busy = false
+    }
   }
 </script>
 
