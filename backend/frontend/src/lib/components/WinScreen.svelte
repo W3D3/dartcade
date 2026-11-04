@@ -9,7 +9,9 @@
   import MarksGrid from './cricket/MarksGrid.svelte'
   import RankedPill from './ranked/RankedPill.svelte'
   import RatingCard from './ranked/RatingCard.svelte'
-  import type { RankedOutcome } from '$lib/ranked/result'
+  import RankChip from './ranked/RankChip.svelte'
+  import ResultStats from './ranked/ResultStats.svelte'
+  import type { RankedExtras, RankedOutcome } from '$lib/ranked/result'
   import { profileOf } from '$lib/progress/profiles'
   import { cardColors } from '$lib/progress/look'
   import type { Competitor, WinView } from '$lib/winScreen'
@@ -27,6 +29,7 @@
     xpSessionId = null,
     winnerId = null,
     ranked = null,
+    rankedExtras = null,
     rankedGame = false,
   }: {
     view: WinView
@@ -48,6 +51,8 @@
     winnerId?: string | null
     /** A ranked game: the header says so, and the rating card shows once the server has recorded the result (`ranked` is null until then). */
     ranked?: RankedOutcome | null
+    /** The online average and record cards, once the profile loaded. */
+    rankedExtras?: RankedExtras | null
     rankedGame?: boolean
   } = $props()
 
@@ -119,6 +124,13 @@
   })
 </script>
 
+{#snippet opponentRank(c: Competitor)}
+  {#if ranked?.opponent && c.seats.includes(ranked.opponent.seat)}<RankChip
+      rank={ranked.opponent.rank}
+      rating={ranked.opponent.rating}
+    />{/if}
+{/snippet}
+
 {#snippet who(c: Competitor)}
   {#if c.members.length}<span class="text-[14px] text-ink-2">{c.members.join(' & ')}</span>{/if}
 {/snippet}
@@ -185,6 +197,7 @@
                 >{winner.name}</span
               >
               {@render who(winner)}
+              {@render opponentRank(winner)}
               <span class="text-[15px] text-text-muted">{winner.sub}</span>
             </div>
             <span class="glow flex rounded-full shadow-[0_0_0_4px_var(--color-bg),0_0_0_7px_var(--color-accent)]">
@@ -235,6 +248,7 @@
                   >{second.name}</span
                 >
                 {@render who(second)}
+                {@render opponentRank(second)}
                 <span class="text-[15px] text-text-dim">{second.sub}</span>
               </div>
             </div>
@@ -242,7 +256,10 @@
         </section>
 
         {#if rankedGame && ranked}
-          <div class="rise r2 flex justify-center"><RatingCard outcome={ranked} /></div>
+          <div class="rise r2 flex flex-col gap-3 items-center">
+            <RatingCard outcome={ranked} />
+            {#if rankedExtras}<ResultStats extras={rankedExtras} />{/if}
+          </div>
         {/if}
 
         {#if view.checkout}
