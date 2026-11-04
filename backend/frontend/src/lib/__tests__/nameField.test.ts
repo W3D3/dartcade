@@ -13,6 +13,12 @@ describe('NameField', () => {
     expect(html).toMatch(new RegExp(`role="status" id="${describedBy}"|id="${describedBy}"[^>]*role="status"`))
   })
 
+  it('tells password managers it is a nickname, not the login', () => {
+    const html = render(NameField, { props: { id: 'reg-name', label: 'Name' } }).body
+    expect(html).toContain('name="nickname"')
+    expect(html).toContain('autocomplete="nickname"')
+  })
+
   it('shows the "@" prefix by default, but not when prefix is off', () => {
     const withPrefix = render(NameField, { props: { id: 'reg-name', label: 'Name' } }).body
     expect(withPrefix).toContain('>@<')
