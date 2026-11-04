@@ -14,25 +14,7 @@ const snap = (patch: { ownerUserId?: string; mySeats?: number[]; rankedGame?: bo
   }
 }
 
-const rankedSnap = (patch: Parameters<typeof snap>[0]): Snapshot => ({
-  ...snap(patch),
-  ranked: {
-    now: '2026-11-04T12:00:00Z',
-    visitSeconds: 120,
-    reserveSeconds: 300,
-    manualEntry: true,
-    visitDeadline: '2026-11-04T12:02:00Z',
-    forfeitAt: '2026-11-04T12:07:00Z',
-    seats: [],
-  },
-})
-
 describe('endControl', () => {
-  it('gives the host of a ranked game Leave, not End: it can only be forfeited', () => {
-    expect(endControl(rankedSnap({ ownerUserId: 'host', mySeats: [0] }), 'host')).toBe('leave')
-    expect(endControl(rankedSnap({ ownerUserId: 'host', mySeats: [] }), 'host')).toBeNull()
-  })
-
   it('gives the host End', () => {
     expect(endControl(snap({ ownerUserId: 'host', mySeats: [0] }), 'host')).toBe('end')
   })
@@ -97,12 +79,5 @@ describe('winActions', () => {
 
   it('a game outside a lobby: Back to Play', () => {
     expect(winActions(snap({ ownerUserId: 'host', lobbyId: null }), 'host')).toEqual({ primary: 'play', secondary: null })
-  })
-})
-
-describe('winActions in a ranked game', () => {
-  it('goes on to the next match, whoever you are', () => {
-    expect(winActions(rankedSnap({ ownerUserId: 'host' }), 'host')).toEqual({ primary: 'ranked', secondary: null })
-    expect(winActions(rankedSnap({ ownerUserId: 'host' }), 'guest')).toEqual({ primary: 'ranked', secondary: null })
   })
 })

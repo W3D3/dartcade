@@ -397,35 +397,34 @@
    * DELETE here blocks nothing. Only the host sends it (anyone else's always 403s). */
   // The win screen's buttons (winActions). Rematch goes through the lobby page, which starts the
   // same game again (solo) or marks the host ready (shared) - see rematchStep
-  const winButtons = $derived(winActions(snapshot, viewerId))
-  const WIN_LABELS: Record<WinAction, string> = {
+  // A ranked game goes on to the next match (its End control is the server's to decide, see endControl)
+  type WinKey = WinAction | 'ranked'
+  const winButtons = $derived<{ primary: WinKey; secondary: WinAction | null }>(
+    snapshot?.ranked ? { primary: 'ranked', secondary: null } : winActions(snapshot, viewerId),
+  )
+  const WIN_LABELS: Record<WinKey, string> = {
     rematch: 'Rematch',
     lobby: 'Back to lobby',
     play: 'Back to Play',
     ranked: 'Find next match',
   }
-  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play', ranked: '/matchmaking' }
-  async function finishWin(next: WinAction) {
+  const WIN_ROUTES: Record<WinKey, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play', ranked: '/matchmaking' }
+  async function finishWin(next: WinKey) {
     if (!sessionId) return
     // The host ends the game for everyone; a 404 means it was ended already, which is fine
-    if (control === 'end') await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    if (control === 'end' && !snapshot?.ranked) await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
-  // A ranked game's rating card: the server records the result when the game ends, a moment later
+  // A ranked game's rating card: the server records the result before it sends the final snapshot
   let rankedResult = $state<RankedOutcome | null>(null)
+  let rankedRequested = false
   $effect(() => {
-    if (!win || !snapshot?.ranked || rankedResult) return
-    const gone = new AbortController()
-    void (async () => {
-      for (let tries = 0; tries < 6 && !gone.signal.aborted; tries++) {
-        const { data } = await api.GET('/api/ranked/me')
-        const outcome = data ? rankedOutcome(data, sessionId) : null
-        if (outcome) return void (rankedResult = outcome)
-        await new Promise(r => setTimeout(r, 1000))
-      }
-    })()
-    return () => gone.abort()
+    if (!win || !snapshot?.ranked || rankedRequested) return
+    rankedRequested = true
+    void api.GET('/api/ranked/me').then(({ data }) => {
+      if (data) rankedResult = rankedOutcome(data, sessionId)
+    })
   })
 </script>
 
@@ -637,7 +636,7 @@
     danger
     onconfirm={() => {
       showEndConfirm = false
-      if (control === 'leave') leaveGame()
+      if (control === 'leave' || snapshot?.ranked) leaveGame()
       else void endSession()
     }}
     oncancel={() => (showEndConfirm = false)}
