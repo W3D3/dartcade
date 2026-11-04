@@ -1,14 +1,7 @@
 // The ranked queue on the lobby card, the tablet rail and the phone strip (MM-Lobby-States
 // board): searching (host or member), a match found with its Accept button, accepted and waiting.
-import { readable } from 'svelte/store'
 import type { Matchmaking } from '$lib/lobby/sockets'
 import { acceptedLine, clock, secondsLeft, youAccepted } from './queue'
-
-/** Ticks while something subscribes, for the timers on these cards. */
-export const tick = readable(Date.now(), set => {
-  const id = setInterval(() => set(Date.now()), 250)
-  return () => clearInterval(id)
-})
 
 // TODO: flip to true when dartcade-38's matchmaking PR lets either member of a duo
 // DELETE /api/matchmaking/search (it answers 403 for the partner until then). Leaving cancels the

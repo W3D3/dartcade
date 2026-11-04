@@ -12,7 +12,8 @@
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
-  import { queueView, tick } from '$lib/ranked/queueCard'
+  import { queueView } from '$lib/ranked/queueCard'
+  import { tick } from '$lib/ranked/tick'
 
   const inviteCount = $derived($me?.invites.length ?? 0)
 
