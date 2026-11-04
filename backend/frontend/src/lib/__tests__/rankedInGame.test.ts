@@ -1,19 +1,28 @@
 import { describe, it, expect } from 'vitest'
-import { disconnected, stakesLabel, upClock, type RankedState } from '../ranked/inGame.js'
+import { disconnected, seatRank, stakesLabel, upClock, type RankedState } from '../ranked/inGame.js'
 
 const T0 = Date.parse('2026-11-04T12:00:00Z')
 const iso = (ms: number) => new Date(ms).toISOString()
+const seat = (over: Partial<RankedState['seats'][number]> = {}): RankedState['seats'][number] => ({
+  reserveSeconds: 300,
+  inReserve: false,
+  disconnectForfeitAt: null,
+  stakes: { win: 16, loss: 14 },
+  rating: 1284,
+  rankIndex: 14,
+  placement: null,
+  result: null,
+  ...over,
+})
 const ranked = (over: Partial<RankedState> = {}): RankedState => ({
   now: iso(T0),
+  mode: '1v1',
   visitSeconds: 120,
   reserveSeconds: 300,
   manualEntry: true,
   visitDeadline: iso(T0 + 120_000),
   forfeitAt: iso(T0 + 420_000),
-  seats: [
-    { reserveSeconds: 300, inReserve: false, disconnectForfeitAt: null, stakes: { win: 16, loss: 14 } },
-    { reserveSeconds: 300, inReserve: false, disconnectForfeitAt: null, stakes: { win: 14, loss: 16 } },
-  ],
+  seats: [seat(), seat()],
   ...over,
 })
 
@@ -46,8 +55,26 @@ describe('upClock', () => {
   })
 })
 
+describe('upClock without a clock', () => {
+  it('is hidden when no visit clock is running', () => {
+    expect(upClock(ranked({ visitDeadline: null, forfeitAt: null }), 0, T0)).toEqual({ phase: 'hidden' })
+  })
+})
+
+describe('seatRank', () => {
+  it('gives the rank and rating of a ranked player', () => {
+    expect(seatRank(seat())).toMatchObject({ rank: { name: 'Silver V' }, rating: 1284 })
+  })
+  it('gives a placing player no rank and no rating', () => {
+    expect(seatRank(seat({ rating: null, rankIndex: null, placement: { played: 2, of: 5 } }))).toEqual({ rank: null, rating: null })
+  })
+  it('gives a guest or bot nothing', () => {
+    expect(seatRank(seat({ rating: null, rankIndex: null, placement: null }))).toBeNull()
+  })
+})
+
 describe('disconnected', () => {
-  const away = ranked({ seats: [ranked().seats[0], { ...ranked().seats[1], disconnectForfeitAt: iso(T0 + 102_000) }] })
+  const away = ranked({ seats: [seat(), seat({ disconnectForfeitAt: iso(T0 + 102_000) })] })
   it('finds the opponent who left, with the deadline on this screen`s clock', () => {
     expect(disconnected(away, [0], 5_000)).toEqual({ seat: 1, forfeitAt: T0 + 97_000 })
   })

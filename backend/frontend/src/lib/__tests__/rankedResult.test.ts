@@ -1,64 +1,65 @@
 import { describe, it, expect } from 'vitest'
 import { rankedOutcome } from '../ranked/result.js'
-import type { components } from '../api/schema'
+import type { RankedState } from '../ranked/inGame.js'
 
-type Profile = components['schemas']['RankedProfile']
-const avatar = { type: 'none' } as never
-const game = (over: Partial<Profile['recent'][number]> = {}): Profile['recent'][number] => ({
-  sessionId: 's1',
-  mode: '1v1',
-  won: true,
-  change: 17,
-  at: '2026-11-04T12:00:00Z',
-  opponents: [{ userId: 'u2', name: 'Anna K.', rating: 1301, avatar }],
+type Seat = RankedState['seats'][number]
+const seat = (over: Partial<Seat> = {}): Seat => ({
+  reserveSeconds: 300,
+  inReserve: false,
+  disconnectForfeitAt: null,
+  stakes: { win: 17, loss: 13 },
+  rating: 1293,
+  rankIndex: 14,
+  placement: null,
+  result: { change: 17, rankIndexBefore: 14, rankIndexAfter: 15 },
   ...over,
 })
-const rating = (over: Partial<Profile['ratings'][number]> = {}): Profile['ratings'][number] => ({
+const ranked = (mine: Seat, theirs: Seat = seat({ rating: 1301, rankIndex: 15, result: null })): RankedState => ({
+  now: '2026-11-04T12:00:00Z',
   mode: '1v1',
-  rating: 1290,
-  rankIndex: 15,
-  matches: 41,
-  wins: 24,
-  streak: 4,
-  change30d: 46,
-  ...over,
-})
-const profile = (g: Profile['recent'][number], r: Profile['ratings'][number]): Profile => ({
-  ratings: [r],
-  onlineAverage: null,
-  recent: [g],
+  visitSeconds: 120,
+  reserveSeconds: 300,
+  manualEntry: true,
+  visitDeadline: null,
+  forfeitAt: null,
+  seats: [mine, theirs],
 })
 
 describe('rankedOutcome', () => {
-  it('is null until the game is recorded', () => {
-    expect(rankedOutcome(profile(game({ sessionId: 'other' }), rating()), 's1')).toBeNull()
+  it('is null until the server recorded the result', () => {
+    expect(rankedOutcome(ranked(seat({ result: null })), 0, true)).toBeNull()
   })
 
-  it('says what a win moved, and promotes when the stage went up', () => {
-    // 1 273 was Silver V (index 14), 1 290 is Gold I (index 15)
-    const o = rankedOutcome(profile(game(), rating()), 's1')!
-    expect(o).toMatchObject({
-      change: '+17 RP',
-      before: 1273,
-      after: 1290,
-      moved: 'promoted',
-      streak: '4 wins in a row',
-      opponentRating: 1301,
-    })
+  it('says what a win moved and promotes when the stage went up', () => {
+    const o = rankedOutcome(ranked(seat()), 0, true)!
+    expect(o).toMatchObject({ change: '+17 RP', before: 1293, after: 1310, moved: 'promoted', placing: null })
     expect(o.rankBefore?.name).toBe('Silver V')
     expect(o.rankAfter?.name).toBe('Gold I')
-    expect(o.record).toEqual({ score: '24–17', line: '58% won' })
+    expect(o.progress).toEqual({ pct: 20, line: '40 RP to Gold II' })
+    expect(o.opponent).toMatchObject({ seat: 1, rating: 1301, rank: { name: 'Gold I' } })
   })
 
   it('shows no move when the stage held, and a minus sign on a loss', () => {
-    const o = rankedOutcome(profile(game({ won: false, change: -14 }), rating({ rating: 1370, rankIndex: 16, streak: -1 })), 's1')!
-    expect(o).toMatchObject({ change: '−14 RP', before: 1384, moved: null, streak: null })
+    const o = rankedOutcome(
+      ranked(seat({ rating: 1384, rankIndex: 16, result: { change: -14, rankIndexBefore: 16, rankIndexAfter: 16 } })),
+      0,
+      false,
+    )!
+    expect(o).toMatchObject({ change: '−14 RP', after: 1370, moved: null, won: false })
   })
 
-  it('hides the rating while placing and counts the placement matches', () => {
+  it('counts the placement match and hides the rating', () => {
     const o = rankedOutcome(
-      profile(game({ change: null }), rating({ rating: null, rankIndex: null, matches: 2, wins: 1, streak: 1 })),
-      's1',
+      ranked(
+        seat({
+          rating: null,
+          rankIndex: null,
+          placement: { played: 2, of: 5 },
+          result: { change: null, rankIndexBefore: null, rankIndexAfter: null },
+        }),
+      ),
+      0,
+      true,
     )!
     expect(o).toMatchObject({
       change: null,
@@ -66,8 +67,25 @@ describe('rankedOutcome', () => {
       after: null,
       rankAfter: null,
       moved: null,
-      placing: { played: 2, of: 5 },
+      placing: { played: 3, of: 5 },
       progress: null,
     })
+  })
+
+  it('reveals the rank on the match that finishes placing', () => {
+    const o = rankedOutcome(
+      ranked(
+        seat({
+          rating: null,
+          rankIndex: null,
+          placement: { played: 4, of: 5 },
+          result: { change: null, rankIndexBefore: null, rankIndexAfter: 9 },
+        }),
+      ),
+      0,
+      true,
+    )!
+    expect(o).toMatchObject({ change: null, placing: null, moved: null })
+    expect(o.rankAfter?.name).toBe('Bronze V')
   })
 })

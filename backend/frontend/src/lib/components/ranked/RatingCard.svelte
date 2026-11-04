@@ -46,6 +46,16 @@
           : `${PLACEMENT_MATCHES - outcome.placing.played} more matches until your rank is revealed.`}
       </span>
     </div>
+  {:else if outcome.after === null && rankAfter}
+    <!-- The match that finished the placement: the rank is shown for the first time -->
+    <div class="flex items-center gap-3 rounded-[12px] border border-warn-line bg-warn-panel px-4 py-3">
+      <RankBadge rank={rankAfter} size={52} />
+      <span class="flex flex-col">
+        <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_COLOR[rankAfter.tier]}>Placed</span>
+        <span class="font-display text-[30px] font-bold uppercase leading-none">{rankAfter.name}</span>
+        <span class="text-[12px] text-text-muted">Your rank is yours now</span>
+      </span>
+    </div>
   {:else if outcome.after !== null}
     {#if outcome.moved && rankBefore && rankAfter}
       <div
@@ -84,9 +94,7 @@
           class="flex h-[6px] overflow-hidden rounded-[3px] bg-line"
           ><span class="bg-accent" style:width="{outcome.progress.pct}%"></span></span
         >
-        <span class="text-[13px] text-text-muted"
-          >{outcome.progress.line}{#if outcome.streak}&nbsp;· {outcome.streak}{/if}</span
-        >
+        <span class="text-[13px] text-text-muted">{outcome.progress.line}</span>
       </div>
     {/if}
   {/if}
