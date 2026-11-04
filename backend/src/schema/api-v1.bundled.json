@@ -8917,8 +8917,7 @@
               "kind": {
                 "type": "string",
                 "enum": [
-                  "double",
-                  "route"
+                  "double"
                 ]
               },
               "detail": {
@@ -8930,7 +8929,34 @@
                   "wide",
                   null
                 ],
-                "description": "Where a miss at the double went; a route's only when it missed a setup double, else null"
+                "description": "Where a miss at the double went"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "detail"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "route"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "hit",
+                  "inside",
+                  "outside",
+                  "wide",
+                  null
+                ],
+                "description": "Only at a setup double (double to double): hit, or where the miss went; else null"
               }
             }
           },

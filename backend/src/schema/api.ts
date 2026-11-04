@@ -2959,12 +2959,20 @@ export interface components {
             detail: "inner" | "outer" | null;
         } | {
             /** @enum {string} */
-            kind: "double" | "route";
+            kind: "double";
             /**
-             * @description Where a miss at the double went; a route's only when it missed a setup double, else null
+             * @description Where a miss at the double went
              * @enum {string|null}
              */
             detail: "inside" | "outside" | "wide" | null;
+        } | {
+            /** @enum {string} */
+            kind: "route";
+            /**
+             * @description Only at a setup double (double to double): hit, or where the miss went; else null
+             * @enum {string|null}
+             */
+            detail: "hit" | "inside" | "outside" | "wide" | null;
         } | {
             /** @enum {string} */
             kind: "bull";

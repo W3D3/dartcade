@@ -72,8 +72,9 @@ type DartClassBase = {
 /** The kinds with a `detail`, and what it says; null when there's nothing to add (a hit, a typed dart) */
 type Detailed =
   | { kind: 'scoringSingle'; detail: 'inner' | 'outer' | null }
-  /** A route's only when it went at a setup double and missed it */
-  | { kind: 'double' | 'route'; detail: 'inside' | 'outside' | 'wide' | null }
+  | { kind: 'double'; detail: 'inside' | 'outside' | 'wide' | null }
+  /** A route's only at a setup double (double to double): hit, or where the miss went */
+  | { kind: 'route'; detail: 'hit' | 'inside' | 'outside' | 'wide' | null }
   /** sb: the 25 for the Bull; db: the Bull for the 25 */
   | { kind: 'bull'; detail: 'sb' | 'db' | null }
 
@@ -329,5 +330,5 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   // A split leaves a one-dart finish from one; anything else on a finish is a route
   if (oneDartFinish(t.left) && oneDartFinish(plannedLeave)) return { ...leaves, kind: 'split', hit }
   const setup = isDoubleAim(aim) && oneDartFinish(plannedLeave)
-  return { ...leaves, kind: 'route', hit, detail: setup ? missed(hit) : null }
+  return { ...leaves, kind: 'route', hit, detail: setup ? (missed(hit) ?? 'hit') : null }
 }
