@@ -2922,7 +2922,7 @@ export interface components {
             /** @description The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart */
             closeness: number | null;
         };
-        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double and bull carry a detail */
+        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double, route and bull carry a detail */
         DartClass: {
             /** @enum {string} */
             kind: "scoringHit" | "scoringSingle" | "scoringMiss" | "route" | "split" | "double" | "bull" | "bustBack" | "bust" | "wild" | "notCounted";
@@ -2959,8 +2959,11 @@ export interface components {
             detail: "inner" | "outer" | null;
         } | {
             /** @enum {string} */
-            kind: "double";
-            /** @enum {string|null} */
+            kind: "double" | "route";
+            /**
+             * @description Where a miss at the double went; a route's only when it missed a setup double, else null
+             * @enum {string|null}
+             */
             detail: "inside" | "outside" | "wide" | null;
         } | {
             /** @enum {string} */
@@ -2972,7 +2975,7 @@ export interface components {
             detail: "sb" | "db" | null;
         } | {
             /** @enum {string} */
-            kind: "scoringHit" | "scoringMiss" | "route" | "split" | "bustBack" | "bust" | "wild" | "notCounted";
+            kind: "scoringHit" | "scoringMiss" | "split" | "bustBack" | "bust" | "wild" | "notCounted";
         });
         CoachNote: {
             leg: number;

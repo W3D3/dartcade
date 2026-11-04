@@ -510,7 +510,14 @@ describe('classifyDart: setup doubles (double to double)', () => {
       hit: false,
       target: { aimId: 'D16' },
       plannedLeave: 32,
+      detail: 'inside',
     })
+  })
+
+  it("says where a miss went, like a double's; other routes have no detail", () => {
+    expect(classify(polar(16, 1 + 2 / 170), 64, 2)).toMatchObject({ kind: 'route', target: { aimId: 'D16' }, detail: 'outside' })
+    expect(classify(dart('D16'), 64, 2)).toMatchObject({ kind: 'route', hit: true, detail: null })
+    expect(classify(dart('S3'), 50)).toMatchObject({ kind: 'route', detail: null })
   })
 })
 

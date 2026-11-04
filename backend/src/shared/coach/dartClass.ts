@@ -72,7 +72,8 @@ type DartClassBase = {
 /** The kinds with a `detail`, and what it says; null when there's nothing to add (a hit, a typed dart) */
 type Detailed =
   | { kind: 'scoringSingle'; detail: 'inner' | 'outer' | null }
-  | { kind: 'double'; detail: 'inside' | 'outside' | 'wide' | null }
+  /** A route's only when it went at a setup double and missed it */
+  | { kind: 'double' | 'route'; detail: 'inside' | 'outside' | 'wide' | null }
   /** sb: the 25 for the Bull; db: the Bull for the 25 */
   | { kind: 'bull'; detail: 'sb' | 'db' | null }
 
@@ -112,18 +113,23 @@ export const setupDoubles = (left: number): number[] =>
 /** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
  *  darts, T16, the setup doubles and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
  *  is one only off a one-dart finish; when busting back is the best there is, every such aim is
- *  one, at prior 1. A dart in the bull or 25 has the two bull aims only. */
+ *  one, at prior 1. A dart in the bull or 25 has the two bull aims only; a dart in a setup double's
+ *  bed (`doubleIn`: the number of the double it landed in) that double only, however strong the
+ *  aim next to it (S16 by D16 on 64). */
 export function finishCandidates(
   left: number,
   darts: number,
   e: Evaluation,
   landed: number | null,
+  doubleIn: number | null = null,
   busts = bustAims(e),
 ): { a: number; prior: number }[] {
   const v = e.values
   const best = Math.max(...v)
   const prior = (a: number) => Math.exp((v[a] - best) / TAU)
   if (landed === 25) return aimsOn([25]).map(a => ({ a, prior: Math.max(prior(a), LANDED_PRIOR) }))
+  const setup = doubleIn === null ? -1 : aimIndex(`D${doubleIn}`)
+  if (setup >= 0 && setupDoubles(left).includes(setup)) return [{ a: setup, prior: 1 }]
   // The finishing double can bust (D1 on 2 likeliest lands in the S1) and still is the target
   const allowed = (a: number) =>
     finishTarget(AIMS[a].id, left) && (!oneDartFinish(left) || !busts.aims.has(a) || AIMS[a].id === directOutId(left))
@@ -230,7 +236,14 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   const cands =
     evaluation && busts
       ? // A typed dart has no position, so its own bed explains it; a dart with coords meets the real candidates
-        finishCandidates(t.left, t.darts, evaluation, estimated || landed === 25 ? landed : null, busts)
+        finishCandidates(
+          t.left,
+          t.darts,
+          evaluation,
+          estimated || landed === 25 ? landed : null,
+          pos && seg.multiplier === 2 ? seg.number : null,
+          busts,
+        )
       : landed === 25
         ? aimsOn([25]).map(a => ({ a, prior: 1 }))
         : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimIndex(id), prior }))
@@ -248,10 +261,6 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
       }
     }
   }
-  // A dart in a setup double's bed was at it, however strong the aim next to it (S16 by D16 on 64)
-  const setup = evaluation && pos && seg.multiplier === 2 ? aimIndex(`D${seg.number}`) : -1
-  if (pos && setup >= 0 && setupDoubles(t.left).includes(setup))
-    target = { a: setup, d: Math.hypot(pos.x - AIMS[setup].x, pos.y - AIMS[setup].y) }
   const wedgesOff = target ? wedges(landed, AIMS[target.a].numbers) : null
   if (wedgesOff !== null && Math.abs(wedgesOff) > WILD_WEDGES) target = null
   // The Bull on 50 is the only bull aim for a dart outside the bull (finishTarget). Its misses
@@ -319,11 +328,12 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
   const leaves = { ...base, plannedLeave, actualLeave }
 
   if (isBullAim(aim)) return { ...leaves, ...bull() }
-  if (aim.id === out) {
-    const detail = t.checkout ? null : seg.multiplier === 0 ? 'outside' : seg.number === n ? 'inside' : 'wide'
-    return { ...leaves, kind: 'double', hit: t.checkout, detail }
-  }
+  // Where a miss at a double went: outside (off the board), inside (its number), wide (another)
+  const missed = (hit: boolean) => (hit ? null : seg.multiplier === 0 ? 'outside' : seg.number === n ? 'inside' : 'wide')
+  if (aim.id === out) return { ...leaves, kind: 'double', hit: t.checkout, detail: missed(t.checkout) }
+  const hit = inBed || actualLeave === plannedLeave
   // A split leaves a one-dart finish from one; anything else on a finish is a route
-  const split = oneDartFinish(t.left) && oneDartFinish(plannedLeave)
-  return { ...leaves, kind: split ? 'split' : 'route', hit: inBed || actualLeave === plannedLeave }
+  if (oneDartFinish(t.left) && oneDartFinish(plannedLeave)) return { ...leaves, kind: 'split', hit }
+  const setup = isDoubleAim(aim) && oneDartFinish(plannedLeave)
+  return { ...leaves, kind: 'route', hit, detail: setup ? missed(hit) : null }
 }

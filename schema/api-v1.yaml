@@ -3745,7 +3745,7 @@ components:
           description: 'The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart'
     DartClass:
       type: object
-      description: "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double and bull carry a detail"
+      description: "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double, route and bull carry a detail"
       required: [kind, hit, target, miss, estimated, plannedLeave, actualLeave]
       properties:
         kind:
@@ -3787,8 +3787,12 @@ components:
         - type: object
           required: [kind, detail]
           properties:
-            kind: { type: string, enum: [double] }
-            detail: { type: string, nullable: true, enum: [inside, outside, wide, null] }
+            kind: { type: string, enum: [double, route] }
+            detail:
+              type: string
+              nullable: true
+              enum: [inside, outside, wide, null]
+              description: "Where a miss at the double went; a route's only when it missed a setup double, else null"
         - type: object
           required: [kind, detail]
           properties:
@@ -3797,7 +3801,7 @@ components:
         - type: object
           required: [kind]
           properties:
-            kind: { type: string, enum: [scoringHit, scoringMiss, route, split, bustBack, bust, wild, notCounted] }
+            kind: { type: string, enum: [scoringHit, scoringMiss, split, bustBack, bust, wild, notCounted] }
     CoachNote:
       type: object
       required: [leg, visit, dart, left, darts, thrown, better, betterAimId, cost, reason, book, tip]

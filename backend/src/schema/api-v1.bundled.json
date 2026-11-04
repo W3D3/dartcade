@@ -8774,7 +8774,7 @@
       },
       "DartClass": {
         "type": "object",
-        "description": "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double and bull carry a detail",
+        "description": "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double, route and bull carry a detail",
         "required": [
           "kind",
           "hit",
@@ -8917,7 +8917,8 @@
               "kind": {
                 "type": "string",
                 "enum": [
-                  "double"
+                  "double",
+                  "route"
                 ]
               },
               "detail": {
@@ -8928,7 +8929,8 @@
                   "outside",
                   "wide",
                   null
-                ]
+                ],
+                "description": "Where a miss at the double went; a route's only when it missed a setup double, else null"
               }
             }
           },
@@ -8968,7 +8970,6 @@
                 "enum": [
                   "scoringHit",
                   "scoringMiss",
-                  "route",
                   "split",
                   "bustBack",
                   "bust",
