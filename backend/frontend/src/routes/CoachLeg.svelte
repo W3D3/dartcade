@@ -18,9 +18,10 @@
   import { Chip } from '$lib/components/ui/chip'
   import { api, type CoachLegTitle } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
-  import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
+  import { defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
   import { GRADE_STYLE } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
+  import { gradedAs } from '$shared/coach/tiers'
   import { VISIT_GRADES, type LegReview, type ReviewVisit, type VisitTag } from '$shared/coach'
 
   let { params }: { params: { gameId: string; leg: string } } = $props()
@@ -140,7 +141,7 @@
           <span class="text-[13px] text-text-muted xl:text-[15px]"
             >{wide.current ? legSubtitle(title, review.darts, now) : legSubtitleShort(title, review.darts, review.average, now)}</span
           >
-          <span class="text-[13px] text-text-dim xl:text-[14px]">{coachedAs(review.coachLevel)}</span>
+          <span class="text-[13px] text-text-dim xl:text-[14px]">{gradedAs(review.coachTier)}</span>
         </div>
         <Button variant="outline" href="#/history/{params.gameId}" class="h-11 text-[15px] font-semibold">Match details</Button>
       </header>

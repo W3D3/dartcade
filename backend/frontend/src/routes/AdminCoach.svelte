@@ -22,8 +22,7 @@
   import { coachOpenVisit } from '$shared/coach/openVisit'
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
-  import { averageForLevel } from '$shared/botLevels'
-  import { coachLevel } from '$shared/coach/model'
+  import { suggestedTier, tierOf } from '$shared/coach/tiers'
   import { coachModels } from '$lib/coach/model.svelte'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -56,10 +55,10 @@
           ? 'Your average is a whole number from 1 to 180.'
           : '',
   )
-  // The model of the level one above the average, as the coach picks it; fetched per level
-  const level = $derived(coachLevel(average))
-  const levelAverage = $derived(averageForLevel(level))
-  const loaded = coachModels(() => level)
+  // The tier the average suggests, as the coach picks it on auto; fetched per tier
+  const tier = $derived(tierOf(suggestedTier(average)))
+  const tierAverage = $derived(tier.average)
+  const loaded = coachModels(() => tier.id)
   const result = $derived(
     start !== null && average !== null && !inputError && loaded.models
       ? coachOpenVisit({ start, opponent, average }, darts, loaded.models, TOP)
@@ -114,10 +113,10 @@
             </div>
           </div>
           {#if average !== null}
-            <p class="m-0 text-[13px] text-text-muted">Coaching level: {level} (≈ {levelAverage} average)</p>
+            <p class="m-0 text-[13px] text-text-muted">Graded as: {tier.name} ({tierAverage} average)</p>
           {/if}
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
-          {#if loaded.failed}<ErrorText>Level {level}'s model couldn't load. Reload to try again.</ErrorText>{/if}
+          {#if loaded.failed}<ErrorText>The {tier.name} model couldn't load. Reload to try again.</ErrorText>{/if}
 
           <BoardCard darts={visit?.darts ?? []} {note} onpoint={accepting ? place : undefined} />
 
@@ -143,7 +142,7 @@
           </form>
           {#if typedError}<ErrorText>{typedError}</ErrorText>{/if}
           <p class="m-0 text-[13px] text-text-muted">
-            {#if !inputError && !loaded.models && !loaded.failed}Loading level {level}'s model…
+            {#if !inputError && !loaded.models && !loaded.failed}Loading the {tier.name} model…
             {:else if !result}Fix the inputs to throw.
             {:else if result.done}{visit?.bust ? 'Bust' : visit?.then === 0 ? 'Checked out' : 'Three darts thrown'}: undo or clear to throw
               again.
@@ -180,7 +179,7 @@
               <p class="m-0 text-[12px] text-text-muted">
                 Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
                 is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against a
-                {levelAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
+                {tierAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
               </p>
               <VisitNumbers {visit} />
             </div>

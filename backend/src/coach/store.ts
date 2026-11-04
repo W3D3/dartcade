@@ -8,11 +8,11 @@ import { x01AverageSince } from '../db/ranked.js'
 import { storedDetail } from '../history/detail.js'
 import type { WarnFn } from '../session/replay.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
-import { coachable, coachLevel, loadCoachModels, reviewLeg } from '../shared/coach/index.js'
+import { coachable, loadCoachModels, reviewLeg, suggestedTier } from '../shared/coach/index.js'
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 28
+export const COACH_VERSION = 29
 
 /** Builds (or rebuilds) the game's rows and marks it built at this version (coach_games), even when
  *  the coach reviews none of it. An invalidated game is left unmarked, so restoring it builds it. A
@@ -78,8 +78,8 @@ async function reviewRows(db: Kysely<Database>, game: HistoryGame, warn: WarnFn)
     if (s.user_id === null || s.bot_level !== null) continue
     // The player's average when the game finished, so a rebuild grades it the same
     const average = await x01AverageSince(db, s.user_id, PROFILE_AVERAGE_DAYS, game.finished_at)
-    // Coached one level above that average; the review stores the level, so it doesn't shift later
-    const models = await loadCoachModels(coachLevel(average))
+    // Coached as the tier that average suggests; the review stores the tier, so it doesn't shift later
+    const models = await loadCoachModels(suggestedTier(average))
     for (const { leg } of legs) {
       // A leg's review is CPU work: let live sockets in between legs (and so between seats)
       await new Promise(resolve => setImmediate(resolve))

@@ -31,7 +31,7 @@ import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 import { x01AverageSince } from '../db/ranked.js'
 
 const review: LegReview = {
-  coachLevel: 7,
+  coachTier: 'semipro',
   leg: 0,
   seat: 0,
   won: true,

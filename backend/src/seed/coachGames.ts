@@ -94,9 +94,9 @@ export const COACH_GAMES: CoachSample[] = [
     expect: [],
     grades: [
       // 100 from T20, S20, S20 in the middle of their beds: a tight group lifts it to Good
-      ['good', 'ok', 'inaccuracy', 'excellent'],
+      ['good', 'ok', 'ok', 'excellent'],
       // 140 leaves 161, still a 3-dart finish (Brilliant); from 65, 25 then S20 and S10 chase D10 down to 10
-      ['brilliant', 'ok', 'bad'],
+      ['brilliant', 'good', 'bad'],
       // 26 on an 88 average is Bad; 140 Excellent
       ['bad', 'good', 'excellent'],
     ],

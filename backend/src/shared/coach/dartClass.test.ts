@@ -3,6 +3,7 @@ import { R, segmentAt, SEGS, segAngle } from '../board.js'
 import { AIM_RINGS, AIMS, aimKind } from './aims.js'
 import { classifyDart, finishCandidates, fromBed, nearestBedPoint, NOT_COUNTED, setupDoubles } from './dartClass.js'
 import { loadModel } from './model.js'
+import { COACH_TIER_IDS } from './tiers.js'
 import { dart, leg, visit, REF } from './testLegs.js'
 
 const { evaluator, nextVisit } = REF
@@ -333,8 +334,8 @@ describe('classifyDart: Finish', () => {
   })
 
   it('sweep 2–40: a dart at a neighbour double centre goes to the finishing double', () => {
-    // A split single on the same number is a likelier target there: S2 leaves 32, S4 leaves 28
-    const exceptions: Record<string, string> = { '34 D2': 'SO2', '36 D4': 'SO4' }
+    // A split single on the same number is a likelier target there: S2 leaves 32
+    const exceptions: Record<string, string> = { '34 D2': 'SO2' }
     for (let left = 2; left <= 40; left += 2) {
       const i = SEGS.indexOf(left / 2)
       for (const n of [SEGS[(i + 19) % 20], SEGS[(i + 1) % 20]]) {
@@ -446,7 +447,7 @@ describe('classifyDart: Finish', () => {
     const [, , c] = visitClasses(20, ['S10', 'S7', 'T20'])
     expect(c).toMatchObject({ kind: 'bustBack', hit: true, target: { aimId: 'T20' }, plannedLeave: 20, actualLeave: 20 })
     const busts = finishCandidates(3, 1, evaluator(20, 1)(3, 1), null).filter(x => x.prior === 1)
-    expect(busts.map(x => AIMS[x.a].id)).toEqual(expect.arrayContaining(['T20', 'D20', 'SO20', 'T5']))
+    expect(busts.map(x => AIMS[x.a].id)).toEqual(expect.arrayContaining(['T20', 'SO20', 'T19', 'T5']))
   })
 
   it('20 → S10, S7, bust is a Bust-back: back on 20 beats S1 leaving 2', () => {
@@ -477,10 +478,10 @@ describe('classifyDart: setup doubles (double to double)', () => {
     expect(ids(32)).toEqual([])
   })
 
-  it("84 → S20, then a dart 4 mm inside the D16 bed's outer edge is a hit of D16 at every level", async () => {
+  it("84 → S20, then a dart 4 mm inside the D16 bed's outer edge is a hit of D16 at every tier", async () => {
     const d = polar(16, 1 - 4 / 170)
-    for (let level = 1; level <= 20; level++) {
-      const m = await loadModel(level)
+    for (const tier of COACH_TIER_IDS) {
+      const m = await loadModel(tier)
       const t: Throw = {
         leg: 0,
         visit: 0,
@@ -495,14 +496,14 @@ describe('classifyDart: setup doubles (double to double)', () => {
         w: 1,
         opponentOnOut: false,
       }
-      expect(classifyDart(t, { evaluation: m.evaluator(84, 1)(64, 2) }), `level ${level}`).toMatchObject({
+      expect(classifyDart(t, { evaluation: m.evaluator(84, 1)(64, 2) }), tier).toMatchObject({
         kind: 'route',
         hit: true,
         target: { aimId: 'D16' },
         plannedLeave: 32,
       })
     }
-  }, 30_000)
+  })
 
   it('a near miss of it is its miss: just inside D16 on 64', () => {
     expect(classify(polar(16, R.so - 2 / 170), 64, 2)).toMatchObject({

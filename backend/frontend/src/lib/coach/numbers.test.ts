@@ -142,10 +142,10 @@ describe('gradeWorking', () => {
       'Σ −16.0 → Weak (−20 to −15) (a bust: valued back on the start)',
     )
     expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'brilliant', fewestChance: 14.2 } }).rule).toBe(
-      'Brilliant: fewest darts, a 14% chance for an 80 average',
+      'Brilliant: fewest darts, a 14% chance for a semi-pro',
     )
     expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'fewest', fewestChance: 36 } }).rule).toBe(
-      'Excellent floor: fewest darts (36% for an 80 average)',
+      'Excellent floor: fewest darts (36% for a semi-pro)',
     )
   })
 

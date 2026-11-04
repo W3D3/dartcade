@@ -1,6 +1,6 @@
 // The live coach on the solo X01 match screen (coach.live.enabled): the next dart's best aims, the
 // open visit's darts as the coach classes them, and the last finished visit's grade, by the model of
-// the player's coaching level (LiveCoach.svelte loads only that level's table).
+// the player's target tier (LiveCoach.svelte loads only that tier's table).
 import type { Dart } from '$lib/api/game-ws'
 import type { ReviewVisit } from '$shared/coach'
 import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
@@ -33,7 +33,7 @@ function leaves(left: number, a: Aim): string {
 }
 
 /** The coach on the open visit: `start` is the score when it started, `average` the player's
- *  (null: the visit's own, as the coach does without one), `models` their coaching level's
+ *  (null: the visit's own, as the coach does without one), `models` their target tier's
  *  (loadCoachModels). Solo: no opponent, w = 1. */
 export function liveCoach(models: CoachModels, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
   const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), models, TOP)

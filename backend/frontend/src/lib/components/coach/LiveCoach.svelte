@@ -1,7 +1,7 @@
 <!--
   The live coach beside a solo X01 game (coach.live.enabled): the next dart's best aims, this visit's
   darts as the coach classes them, the last visit's grade. GameDisplay loads it lazily; it fetches
-  the models of the player's coaching level (one level above their 30-day average); `failed` is
+  the models of the tier the player is graded as (tiers.ts targetTier); `failed` is
   GameDisplay's text for when they don't load; `compact` (phones, tablets) folds it into one line that opens.
 -->
 <script lang="ts">
@@ -10,9 +10,7 @@
   import { liveAverage, liveCoach, shownVisit, type LiveCoach } from '$lib/coach/live'
   import { visitTiles } from '$lib/coach/dart'
   import type { ReviewVisit } from '$shared/coach'
-  import { coachedAs } from '$lib/coach/leg'
-  import { averageForLevel } from '$shared/botLevels'
-  import { coachLevel } from '$shared/coach/model'
+  import { gradedAs, suggestedTier, tierOf } from '$shared/coach/tiers'
   import { coachModels } from '$lib/coach/model.svelte'
   import { flag } from '$lib/flags'
   import { api } from '$lib/api/client'
@@ -37,15 +35,15 @@
       )
   })
   const average = $derived(liveAverage(thirtyDay, game.pointsScored[0] ?? 0, game.dartsThrown[0] ?? 0))
-  // The review's level (coachLevel of the same average); none until the average is known
-  const level = $derived(thirtyDay === undefined ? null : coachLevel(thirtyDay))
-  const loaded = coachModels(() => level)
+  // The review's tier (from the same average); none until the average is known
+  const tier = $derived(thirtyDay === undefined ? null : suggestedTier(thirtyDay))
+  const loaded = coachModels(() => tier)
   const model = $derived(loaded.models?.model ?? null)
   const live = $derived(
     loaded.models ? liveCoach(loaded.models, game.visitStartScores[0] ?? game.scores[0], game.currentVisitDarts, average.value) : null,
   )
-  const coached = $derived(model ? `${coachedAs(model.level)}.` : '')
-  const levelAverage = $derived(model ? averageForLevel(model.level) : null)
+  const coached = $derived(model ? `${gradedAs(model.tier)}.` : '')
+  const tierAverage = $derived(model ? tierOf(model.tier).average : null)
   const rows = $derived(live?.visit ? visitTiles(live.visit) : [])
   // The last finished visit's grade stays until the next visit's first dart
   let last = $state.raw<ReviewVisit | null>(null)
@@ -77,7 +75,7 @@
       </ol>
       <p class="m-0 text-[12px] text-text-dim">
         {live.scoring
-          ? `Points a dart for a ${levelAverage}-average player.`
+          ? `Points a dart for a ${tierAverage}-average player.`
           : 'Chance to check out this visit or the next, and what the aim leaves.'}
       </p>
     {:else}

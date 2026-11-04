@@ -93,7 +93,7 @@ export function walkVisit(start: number, darts: readonly CoachDart[]): Step[] {
 }
 
 /** Every dart `seat` threw, leg by leg. `startScore` is the game's start, for opponents yet to throw.
- *  The opponents' checkout chances (w) are `model`'s too: they're taken to play at the coached level. */
+ *  The opponents' checkout chances (w) are `model`'s too: they're taken to play at the coached tier. */
 export function throwsOf(legs: readonly CoachLeg[], seat: number, startScore: number, { nextVisit }: CoachModel): Throw[] {
   const out: Throw[] = []
   for (const l of legs) {

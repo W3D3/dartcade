@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { AIMS } from './aims.js'
-import { coachLevel, loadModel } from './model.js'
+import { loadModel } from './model.js'
+import { suggestedTier, targetTier } from './tiers.js'
 import { REF } from './testLegs.js'
 
 const { evaluator, fin, nextVisit } = REF
@@ -66,23 +67,43 @@ describe('the evaluator', () => {
   })
 })
 
-describe('the coaching level', () => {
-  it('is the level one above the average, level 20 above it all, level 13 without one', () => {
-    expect([30, 39.9, 40, 46, 80, 81, 104, 105, 140].map(coachLevel)).toEqual([4, 5, 6, 7, 14, 14, 18, 19, 20])
-    expect([0, 12].map(coachLevel)).toEqual([1, 1])
-    expect([null, undefined, NaN].map(coachLevel)).toEqual([13, 13, 13])
+describe('the coaching tier', () => {
+  it('is the tier the average reached exactly, else the next one up; world class above it all, intermediate without one', () => {
+    expect([0, 30, 30.1, 45, 52, 60, 60.1, 75, 89.9, 90, 104, 105, 140].map(suggestedTier)).toEqual([
+      'beginner',
+      'beginner',
+      'pub',
+      'pub',
+      'intermediate',
+      'intermediate',
+      'semipro',
+      'semipro',
+      'pro',
+      'pro',
+      'worldclass',
+      'worldclass',
+      'worldclass',
+    ])
+    expect([null, undefined, NaN].map(suggestedTier)).toEqual(['intermediate', 'intermediate', 'intermediate'])
   })
 
-  it('loads each level once, and level 13 is the tests’ reference', async () => {
-    const m = await loadModel(13)
-    expect(await loadModel(13)).toBe(m)
-    expect(m.level).toBe(13)
+  it("is the player's pick, or the suggestion on auto", () => {
+    expect(targetTier('pro', 40)).toBe('pro')
+    expect(targetTier('auto', 40)).toBe('pub')
+    expect(targetTier(undefined, null)).toBe('intermediate')
+    expect(targetTier('level7', 52)).toBe('intermediate')
+  })
+
+  it('loads each tier once, and semi-pro is the tests’ reference', async () => {
+    const m = await loadModel('semipro')
+    expect(await loadModel('semipro')).toBe(m)
+    expect(m.tier).toBe('semipro')
     expect(m.fin).toEqual(REF.fin)
-    await expect(loadModel(21)).rejects.toThrow()
+    await expect(loadModel('level7' as never)).rejects.toThrow()
   })
 
   it('gives a better player a better chance from every finish', async () => {
-    const [low, high] = await Promise.all([loadModel(3), loadModel(9)])
+    const [low, high] = await Promise.all([loadModel('pub'), loadModel('pro')])
     for (const r of [40, 60, 100, 121, 170]) expect(high.nextVisit(r)).toBeGreaterThan(low.nextVisit(r))
   })
 })

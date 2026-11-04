@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { segmentAt } from '../board.js'
 import { AIMS, aimById, aimPoints, aimsOn, bedAim, neighbours } from './aims.js'
-import { LANDING } from './landing/level-13.gen.js'
+import { LANDING } from './landing/semipro.gen.js'
 import { loadModel } from './model.js'
+import { COACH_TIER_IDS } from './tiers.js'
 
 describe('the aim points', () => {
   it('has a treble, double, two singles and a wire per number, plus the bull and 25', () => {
@@ -30,9 +31,9 @@ describe('the aim points', () => {
 })
 
 describe('the landing table', () => {
-  it("has one row per aim at every level, each aim's chances summing to 1 give or take the dropped tail", async () => {
-    for (let level = 1; level <= 20; level++) {
-      const { landing } = await loadModel(level)
+  it("has one row per aim at every tier, each aim's chances summing to 1 give or take the dropped tail", async () => {
+    for (const tier of COACH_TIER_IDS) {
+      const { landing } = await loadModel(tier)
       expect(landing).toHaveLength(AIMS.length)
       for (const outs of landing) {
         const sum = outs.reduce((s, o) => s + o[3], 0)
@@ -41,9 +42,9 @@ describe('the landing table', () => {
         expect(sum).toBeLessThanOrEqual(1.001)
       }
     }
-  }, 30_000)
+  })
 
-  it('hits T20 about a third of the time, as an 80-average player does', () => {
+  it('hits T20 about a third of the time, as a semi-pro (75 average) does', () => {
     const t20 = LANDING[AIMS.findIndex(a => a.id === 'T20')]
     const hit = t20.find(o => o[0] === 'T20')![3]
     expect(hit).toBeGreaterThan(0.28)

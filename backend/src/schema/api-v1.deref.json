@@ -4070,7 +4070,7 @@
                     "review": {
                       "type": "object",
                       "required": [
-                        "coachLevel",
+                        "coachTier",
                         "leg",
                         "seat",
                         "won",
@@ -4084,11 +4084,17 @@
                       ],
                       "additionalProperties": false,
                       "properties": {
-                        "coachLevel": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 20,
-                          "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+                        "coachTier": {
+                          "type": "string",
+                          "enum": [
+                            "beginner",
+                            "pub",
+                            "intermediate",
+                            "semipro",
+                            "pro",
+                            "worldclass"
+                          ],
+                          "description": "A coaching tier (shared/coach/tiers.ts): the level whose checkout model graded the leg"
                         },
                         "leg": {
                           "type": "integer",
@@ -4671,7 +4677,7 @@
                                   },
                                   "expectedSpreadMm": {
                                     "type": "number",
-                                    "description": "The spread a player of the seat's average groups this many darts in"
+                                    "description": "The spread a player of the target tier groups this many darts in"
                                   },
                                   "comment": {
                                     "type": "object",
@@ -4721,7 +4727,7 @@
                                   "fewestChance": {
                                     "type": "number",
                                     "nullable": true,
-                                    "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
+                                    "description": "On a visit that kept the fewest-darts path: the fixed reference tier's chance (%, the semi-pro, a 75 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                                   },
                                   "points": {
                                     "type": "number",
@@ -51147,7 +51153,7 @@
               },
               "expectedSpreadMm": {
                 "type": "number",
-                "description": "The spread a player of the seat's average groups this many darts in"
+                "description": "The spread a player of the target tier groups this many darts in"
               },
               "comment": {
                 "type": "object",
@@ -51197,7 +51203,7 @@
               "fewestChance": {
                 "type": "number",
                 "nullable": true,
-                "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
+                "description": "On a visit that kept the fewest-darts path: the fixed reference tier's chance (%, the semi-pro, a 75 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
               },
               "points": {
                 "type": "number",
@@ -51372,10 +51378,22 @@
           }
         }
       },
+      "CoachTier": {
+        "type": "string",
+        "enum": [
+          "beginner",
+          "pub",
+          "intermediate",
+          "semipro",
+          "pro",
+          "worldclass"
+        ],
+        "description": "A coaching tier (shared/coach/tiers.ts): the level whose checkout model graded the leg"
+      },
       "LegReview": {
         "type": "object",
         "required": [
-          "coachLevel",
+          "coachTier",
           "leg",
           "seat",
           "won",
@@ -51389,11 +51407,17 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "coachLevel": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 20,
-            "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+          "coachTier": {
+            "type": "string",
+            "enum": [
+              "beginner",
+              "pub",
+              "intermediate",
+              "semipro",
+              "pro",
+              "worldclass"
+            ],
+            "description": "A coaching tier (shared/coach/tiers.ts): the level whose checkout model graded the leg"
           },
           "leg": {
             "type": "integer",
@@ -51976,7 +52000,7 @@
                     },
                     "expectedSpreadMm": {
                       "type": "number",
-                      "description": "The spread a player of the seat's average groups this many darts in"
+                      "description": "The spread a player of the target tier groups this many darts in"
                     },
                     "comment": {
                       "type": "object",
@@ -52026,7 +52050,7 @@
                     "fewestChance": {
                       "type": "number",
                       "nullable": true,
-                      "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
+                      "description": "On a visit that kept the fewest-darts path: the fixed reference tier's chance (%, the semi-pro, a 75 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                     },
                     "points": {
                       "type": "number",
@@ -52349,7 +52373,7 @@
           "review": {
             "type": "object",
             "required": [
-              "coachLevel",
+              "coachTier",
               "leg",
               "seat",
               "won",
@@ -52363,11 +52387,17 @@
             ],
             "additionalProperties": false,
             "properties": {
-              "coachLevel": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 20,
-                "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+              "coachTier": {
+                "type": "string",
+                "enum": [
+                  "beginner",
+                  "pub",
+                  "intermediate",
+                  "semipro",
+                  "pro",
+                  "worldclass"
+                ],
+                "description": "A coaching tier (shared/coach/tiers.ts): the level whose checkout model graded the leg"
               },
               "leg": {
                 "type": "integer",
@@ -52950,7 +52980,7 @@
                         },
                         "expectedSpreadMm": {
                           "type": "number",
-                          "description": "The spread a player of the seat's average groups this many darts in"
+                          "description": "The spread a player of the target tier groups this many darts in"
                         },
                         "comment": {
                           "type": "object",
@@ -53000,7 +53030,7 @@
                         "fewestChance": {
                           "type": "number",
                           "nullable": true,
-                          "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
+                          "description": "On a visit that kept the fewest-darts path: the fixed reference tier's chance (%, the semi-pro, a 75 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
                         },
                         "points": {
                           "type": "number",

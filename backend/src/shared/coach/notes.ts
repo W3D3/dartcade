@@ -85,7 +85,7 @@ export function throwEvaluations(model: CoachModel): (t: Throw) => Evaluation | 
 }
 
 /** The notes for a seat's darts on a finish (walk.ts throwsOf), in throw order, by `model` (the
- *  player's coaching level). Pass the evaluations to share them with the dart classes. */
+ *  player's target tier). Pass the evaluations to share them with the dart classes. */
 export function strategyNotes(throws: readonly Throw[], model: CoachModel, evaluate = throwEvaluations(model)): CoachNote[] {
   const notes: CoachNote[] = []
   for (const t of throws) {

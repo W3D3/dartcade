@@ -10,7 +10,7 @@ export type OpenVisitInput = {
   start: number
   /** The opponent's score left; null: solo */
   opponent: number | null
-  /** Your 3-dart average, for the scoring grades (the model is its coaching level's); null: the visit's own */
+  /** Your 3-dart average, for the scoring grades (the model is your target tier's); null: the visit's own */
   average: number | null
 }
 
@@ -66,7 +66,7 @@ export function scoringAims({ landing }: CoachModel, top: number): { aim: Aim; p
 }
 
 /** The open visit after `darts`, and the `top` best aims for the next dart. `models.model`: the
- *  player's coaching level's (coachLevel of `input.average`). */
+ *  player's target tier's (tiers.ts targetTier). */
 export function coachOpenVisit(input: OpenVisitInput, darts: readonly CoachDart[], models: CoachModels, top: number): OpenVisit {
   const { model } = models
   const leg = openVisitLeg(input, darts)

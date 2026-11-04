@@ -11,6 +11,7 @@ import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
 import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
+import type { CoachTierId } from './tiers.js'
 import { throwsOf, type CoachLeg } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
@@ -54,8 +55,8 @@ export type ReviewVisit = {
 export type SkillGrade = { grade: 'A' | 'B' | 'C' | 'D' | null; line: string }
 export type LegCounts = { lowVisits: number; badSetups: number; missedDoubles: number; clean: boolean }
 export type LegReview = {
-  /** The bot level whose model judged the leg (model.ts coachLevel) */
-  coachLevel: number
+  /** The tier whose model judged the leg (tiers.ts targetTier) */
+  coachTier: CoachTierId
   leg: number
   seat: number
   won: boolean
@@ -78,7 +79,7 @@ export const LATE_DROP_VISITS = 6
 export type ReviewContext = {
   startScore: number
   average: number | null
-  /** The player's coaching level's model (from the same average) and the reference landing */
+  /** The player's target tier's model and the reference landing */
   models: CoachModels
   opponentName: (seat: number) => string
 }
@@ -250,7 +251,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     take.push('Your scoring dropped after visit 3.')
 
   return {
-    coachLevel: model.level,
+    coachTier: model.tier,
     leg,
     seat,
     won,

@@ -17,6 +17,19 @@ export const LEVEL_SIGMA: readonly number[] = [
 /** The spread of a bot dart's log-normal sigma multiplier (bots/accuracy.ts), calibrated with LEVEL_SIGMA */
 export const SIGMA_JITTER = 0.5
 
+/** The aiming sigma (board units, per axis) of a player with this 3-dart average: the bots'
+ *  calibration, log-linear between levels, clamped outside them (the coach reads players far
+ *  off the table, so no extrapolating). A dart still gets the SIGMA_JITTER multiplier on top,
+ *  as a bot's does. */
+export function sigmaForAverage(average: number): number {
+  const last = LEVEL_AVERAGE.length - 1
+  if (average <= LEVEL_AVERAGE[0]) return LEVEL_SIGMA[0]
+  if (average >= LEVEL_AVERAGE[last]) return LEVEL_SIGMA[last]
+  const i = LEVEL_AVERAGE.findIndex(a => a > average) - 1
+  const t = (average - LEVEL_AVERAGE[i]) / (LEVEL_AVERAGE[i + 1] - LEVEL_AVERAGE[i])
+  return Math.exp(Math.log(LEVEL_SIGMA[i]) + t * (Math.log(LEVEL_SIGMA[i + 1]) - Math.log(LEVEL_SIGMA[i])))
+}
+
 /** The calibrated average for a bot level (1-20); throws outside that range. */
 export function averageForLevel(level: number): number {
   const i = Math.round(level) - 1
