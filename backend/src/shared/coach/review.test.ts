@@ -178,7 +178,7 @@ describe('reviewLeg', () => {
           tag: 'scoring',
           // 235 is a 5-dart finish, 98 a 2-dart one
           grade: 'perfect',
-          text: 'Scored 137: 98 left is still a 2-dart finish, the fewest possible.',
+          text: 'Scored 137: 98 left is still a treble to double (T20 · D19), the fewest possible.',
           tip: false,
           notes: [],
           explained: null,

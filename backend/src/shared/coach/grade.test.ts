@@ -12,6 +12,7 @@ import {
   MISS_CLOSE_MAX,
   MISS_CLOSE_ZERO_MM,
   OK_FROM,
+  routeShape,
   SCORING_BANDS,
   tagOf,
   WEAK_FROM,
@@ -61,6 +62,20 @@ describe('bandOf', () => {
     expect(bandOf(WEAK_FROM - 0.1, FINISH_BANDS)).toBe('bad')
     expect(bandOf(0, SCORING_BANDS)).toBe('ok')
     expect(bandOf(-100, SCORING_BANDS)).toBe('bad')
+  })
+})
+
+describe('routeShape', () => {
+  it('names a route by its beds, a single double a one-dart finish', () => {
+    expect(routeShape(['D16'])).toBe('one-dart finish')
+    expect(routeShape(['Bull'])).toBe('one-dart finish')
+    expect(routeShape(['S16', 'D16'])).toBe('single to double')
+    expect(routeShape(['T20', 'D8'])).toBe('treble to double')
+    expect(routeShape(['25', 'D20'])).toBe('single bull to double')
+    expect(routeShape(['T20', 'S11', 'Bull'])).toBe('treble to single to bull')
+    expect(routeShape(['T20', 'T20', 'Bull'])).toBe('treble to treble to bull')
+    expect(routeShape(['S20', 'T20', 'D20'])).toBe('single to treble to double')
+    expect(routeShape(['T20', 'T19', 'D12'])).toBe('treble to treble to double')
   })
 })
 
@@ -299,7 +314,7 @@ describe('setup and doubling visits: graded by value', () => {
     expect(classifyVisit(f)).toMatchObject({
       tag: 'setup',
       grade: 'bad',
-      text: 'S19 on 56 cost 15% checkout chance: 37 left is a 2-dart finish (S5 · D16).',
+      text: 'S19 on 56 cost 15% checkout chance: 37 left is a single to double (S5 · D16).',
       tip: false,
     })
   })
@@ -308,7 +323,7 @@ describe('setup and doubling visits: graded by value', () => {
     const f = facts(121, ['S20', 'T17', 'S18'])
     expect(points(f)).toBeGreaterThanOrEqual(GOOD_FROM)
     expect(classifyVisit(f).value).toEqual({ points: points(f), scoring: null, rule: null })
-    expect(classifyVisit(f)).toMatchObject({ tag: 'doubling', grade: 'good', text: '32 left is a 1-dart finish (D16).', tip: false })
+    expect(classifyVisit(f)).toMatchObject({ tag: 'doubling', grade: 'good', text: '32 left is a one-dart finish (D16).', tip: false })
   })
 
   it('a checkout is told by its double', () => {
@@ -321,23 +336,23 @@ describe('setup and doubling visits: graded by value', () => {
     expect(grade(170, ['T20', 'T20', 'S25'])).toMatchObject({
       tag: 'doubling',
       grade: 'good',
-      text: '25 left is a 2-dart finish (S9 · D8).',
+      text: '25 left is a single to double (S9 · D8).',
       tip: false,
     })
     expect(grade(150, ['S20', 'S20', 'S20'])).toMatchObject({
       tag: 'setup',
       grade: 'weak',
-      text: 'S20 on 110 cost 7% checkout chance: 90 left is a 2-dart finish (T20 · D15).',
+      text: 'S20 on 110 cost 7% checkout chance: 90 left is a treble to double (T20 · D15).',
       tip: false,
     })
-    expect(classifyVisit({ ...facts(170, ['S1', 'Miss', 'Miss']), notes: [] }).text).toMatch(/: 169 left: no 3-dart finish\.$/)
+    expect(classifyVisit({ ...facts(170, ['S1', 'Miss', 'Miss']), notes: [] }).text).toMatch(/: 169 left: no checkout in three darts\.$/)
   })
 
   it('three darts missed at the double: Weak', () => {
     expect(grade(32, ['Miss', 'Miss', 'Miss'])).toMatchObject({
       tag: 'doubling',
       grade: 'weak',
-      text: 'Miss on 32 cost 9% checkout chance: 32 left is a 1-dart finish (D16).',
+      text: 'Miss on 32 cost 9% checkout chance: 32 left is a one-dart finish (D16).',
       tip: false,
     })
   })
@@ -391,7 +406,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
     expect(grade(211, ['T20', 'T20', 'T17'])).toMatchObject({
       tag: 'scoring',
       grade: 'perfect',
-      text: 'Scored 171: 40 left is still a 1-dart finish, the fewest possible.',
+      text: 'Scored 171: 40 left is still a one-dart finish (D20), the fewest possible.',
       tip: false,
     })
     expect(perfect(211, ['T20', 'T19', 'T20'])).toBe(true)
@@ -401,7 +416,7 @@ describe('Perfect: the visit keeps the fewest-darts finish', () => {
 
   it('the nine-darter line only on the seat first visit', () => {
     expect(classifyVisit({ ...facts(501, ['T20', 'T20', 'T20']), first: false }).text).toBe(
-      'Scored 180: 321 left is still a 6-dart finish, the fewest possible.',
+      'Scored 180: 321 left is still 6 darts from a checkout, the fewest possible.',
     )
   })
 

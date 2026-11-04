@@ -76,7 +76,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         labels: ['perfect'],
         source: 'scores',
         when: 'The visit keeps the fewest-darts finish: its darts plus the fewest that check out what it left are the fewest that check out its start. Marks any visit, setups and checkouts too; a bust or a strategy note (not a tip) rules it out.',
-        example: '501 · T20 T19 T19 → 327, a 6-dart finish',
+        example: '501 · T20 T19 T19 → 327, still 6 darts from a checkout',
         says: 'What is left and in how many darts (Nine-darter still on, from 501); on a checkout, the double.',
       },
       {

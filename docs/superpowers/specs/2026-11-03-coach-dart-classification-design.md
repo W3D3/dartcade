@@ -167,8 +167,12 @@ missed."). Scoring visits keep their rules (see Visit rating).
 - **Texts:** a bust "Busted on 16." / "Busted on purpose to stay on 20 (D10)."; a checkout
   "Checked out on D16." (Perfect keeps its own); a tip-only visit the tip's text (the grade from
   the value); otherwise, when the points are below 0 and the costliest dart lost at least 1 point,
-  "S19 on 56 cost 15% checkout chance: 37 left is a 2-dart finish (S5 · D16)."; else
-  what was left: "32 left is a 1-dart finish (D16)." or "169 left: no 3-dart finish.". The last
+  "S19 on 56 cost 15% checkout chance: 37 left is a single to double (S5 · D16)."; else
+  what was left: "32 left is a one-dart finish (D16)." or "169 left: no checkout in three darts.".
+  A route is named by its shape (`routeShape`): "one-dart finish" for one dart (D16, Bull), else
+  its darts' beds in order: "single to double" (S16 · D16), "treble to double" (T20 · D8),
+  "treble to single to bull" (T20 · S11 · Bull), "treble to treble to double"; the 25 is a
+  "single bull" ("single bull to double", 25 · D20). The last
   visit of a lost leg with a dart at a double (class Double, or Bull on 50) starts with "Missed the
   match dart. ".
 - **Removed:** the missed-doubles count, chased down, the short-finish rule, the leave-based

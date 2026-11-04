@@ -144,6 +144,16 @@ export function dartBand(delta: number, close: number | null, hit: boolean, bust
 }
 
 const doubleName = (left: number) => (left === 50 ? 'the bull' : `D${left / 2}`)
+
+const PART: Record<string, string> = { T: 'treble', S: 'single', D: 'double', B: 'bull', '2': 'single bull' }
+/** A checkout route by its shape: "one-dart finish" for one dart (D16, Bull), else its darts' beds
+ *  in order: "single to double" (S16 · D16), "treble to double" (T20 · D8), "treble to single to
+ *  bull" (T20 · S10 · Bull); the 25 is a "single bull". */
+export const routeShape = (route: readonly string[]): string =>
+  route.length === 1 ? 'one-dart finish' : route.map(d => PART[d[0]]).join(' to ')
+/** "100 left is a treble to double (T20 · D20)."; null without a route */
+const routeText = (left: number, route: readonly string[] | null) =>
+  route ? `${left} left is a ${routeShape(route)} (${route.join(' · ')}).` : null
 const TREBLES = ['', '', 'Two trebles.', 'Three trebles.']
 
 export function tagOf(f: VisitFacts): VisitTag {
@@ -201,7 +211,7 @@ function finishing(f: VisitFacts): Graded {
   if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f))
   if (out) return g(grade, `Checked out on ${doubleName(out.left)}.`)
   const route = checkoutHint(f.then, 'double', 3)
-  const leave = route ? `${f.then} left is a ${route.length}-dart finish (${route.join(' · ')}).` : `${f.then} left: no 3-dart finish.`
+  const leave = routeText(f.then, route) ?? `${f.then} left: no checkout in three darts.`
   const worst = f.throws.reduce((a, _, i) => (f.deltas[i] < f.deltas[a] ? i : a), 0)
   const cost = Math.round(-f.deltas[worst])
   if (total >= 0 || cost < 1) return g(grade, leave)
@@ -218,7 +228,9 @@ function perfectText(f: VisitFacts): string {
   if (out) return `Checked out in the fewest darts (${doubleName(out.left)}).`
   const k = minDarts(f.then)
   if (f.first && f.start === 501 && k === 6) return 'Nine-darter still on.'
-  return `Scored ${f.scored}: ${f.then} left is still a ${k}-dart finish, the fewest possible.`
+  const route = checkoutHint(f.then, 'double', 3)
+  const leave = route?.length === k ? `is still a ${routeShape(route)} (${route.join(' · ')})` : `is still ${k} darts from a checkout`
+  return `Scored ${f.scored}: ${f.then} left ${leave}, the fewest possible.`
 }
 
 export function classifyVisit(f: VisitFacts): VisitGrading {
