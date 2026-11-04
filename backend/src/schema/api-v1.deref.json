@@ -17009,6 +17009,7 @@
                           "createdAt",
                           "lastLoginAt",
                           "avatar",
+                          "bridges",
                           "ban"
                         ],
                         "additionalProperties": false,
@@ -17110,6 +17111,23 @@
                                 }
                               }
                             ]
+                          },
+                          "bridges": {
+                            "type": "object",
+                            "required": [
+                              "connected",
+                              "total"
+                            ],
+                            "additionalProperties": false,
+                            "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                            "properties": {
+                              "connected": {
+                                "type": "integer"
+                              },
+                              "total": {
+                                "type": "integer"
+                              }
+                            }
                           },
                           "ban": {
                             "description": "The ban in force, with the admin-only note; null if none",
@@ -17334,6 +17352,7 @@
                     "createdAt",
                     "lastLoginAt",
                     "avatar",
+                    "bridges",
                     "ban"
                   ],
                   "additionalProperties": false,
@@ -17435,6 +17454,23 @@
                           }
                         }
                       ]
+                    },
+                    "bridges": {
+                      "type": "object",
+                      "required": [
+                        "connected",
+                        "total"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                      "properties": {
+                        "connected": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
                     },
                     "ban": {
                       "description": "The ban in force, with the admin-only note; null if none",
@@ -17770,6 +17806,7 @@
                     "createdAt",
                     "lastLoginAt",
                     "avatar",
+                    "bridges",
                     "ban"
                   ],
                   "additionalProperties": false,
@@ -17871,6 +17908,23 @@
                           }
                         }
                       ]
+                    },
+                    "bridges": {
+                      "type": "object",
+                      "required": [
+                        "connected",
+                        "total"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                      "properties": {
+                        "connected": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
                     },
                     "ban": {
                       "description": "The ban in force, with the admin-only note; null if none",
@@ -18590,6 +18644,389 @@
         }
       }
     },
+    "/api/admin/users/{id}/activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getUserActivity",
+        "summary": "What an account has done lately and which bridges it has connected (admin)",
+        "description": "Aggregated on request, for the expanded row of the users table. Games and darts leave out invalidated games.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The activity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "bridges",
+                    "account",
+                    "games",
+                    "darts"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "bridges": {
+                      "type": "array",
+                      "description": "The connected bridges, one per board they front",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "boardId",
+                          "boardName",
+                          "version",
+                          "connectedAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "boardId": {
+                            "type": "string"
+                          },
+                          "boardName": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "connectedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "account": {
+                      "type": "object",
+                      "required": [
+                        "friends",
+                        "country",
+                        "xp",
+                        "boards"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "friends": {
+                          "type": "integer"
+                        },
+                        "xp": {
+                          "type": "integer",
+                          "description": "Total XP earned"
+                        },
+                        "country": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "boards": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "games": {
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "last30Days",
+                        "lastAt",
+                        "byMode",
+                        "ranked"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "last30Days": {
+                          "type": "integer"
+                        },
+                        "lastAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "byMode": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "mode",
+                              "count"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mode": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "ranked": {
+                          "type": "object",
+                          "required": [
+                            "games",
+                            "ratings"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "games": {
+                              "type": "integer"
+                            },
+                            "ratings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "mode",
+                                  "rating",
+                                  "rankIndex",
+                                  "matches"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "mode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "1v1",
+                                      "2v2"
+                                    ]
+                                  },
+                                  "rating": {
+                                    "type": "integer"
+                                  },
+                                  "rankIndex": {
+                                    "type": "integer",
+                                    "nullable": true
+                                  },
+                                  "matches": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "darts": {
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "manual",
+                        "last30Days",
+                        "manualLast30Days"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Game darts (bull-off left out); manual ones were typed in, the rest the board saw",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "manual": {
+                          "type": "integer"
+                        },
+                        "last30Days": {
+                          "type": "integer"
+                        },
+                        "manualLast30Days": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/users/{id}/ban": {
       "parameters": [
         {
@@ -18666,6 +19103,7 @@
                     "createdAt",
                     "lastLoginAt",
                     "avatar",
+                    "bridges",
                     "ban"
                   ],
                   "additionalProperties": false,
@@ -18767,6 +19205,23 @@
                           }
                         }
                       ]
+                    },
+                    "bridges": {
+                      "type": "object",
+                      "required": [
+                        "connected",
+                        "total"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                      "properties": {
+                        "connected": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
                     },
                     "ban": {
                       "description": "The ban in force, with the admin-only note; null if none",
@@ -19066,6 +19521,7 @@
                     "createdAt",
                     "lastLoginAt",
                     "avatar",
+                    "bridges",
                     "ban"
                   ],
                   "additionalProperties": false,
@@ -19167,6 +19623,23 @@
                           }
                         }
                       ]
+                    },
+                    "bridges": {
+                      "type": "object",
+                      "required": [
+                        "connected",
+                        "total"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                      "properties": {
+                        "connected": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
                     },
                     "ban": {
                       "description": "The ban in force, with the admin-only note; null if none",
@@ -57944,6 +58417,7 @@
           "createdAt",
           "lastLoginAt",
           "avatar",
+          "bridges",
           "ban"
         ],
         "additionalProperties": false,
@@ -58045,6 +58519,23 @@
                 }
               }
             ]
+          },
+          "bridges": {
+            "type": "object",
+            "required": [
+              "connected",
+              "total"
+            ],
+            "additionalProperties": false,
+            "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+            "properties": {
+              "connected": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
           },
           "ban": {
             "description": "The ban in force, with the admin-only note; null if none",
@@ -58186,6 +58677,7 @@
                 "createdAt",
                 "lastLoginAt",
                 "avatar",
+                "bridges",
                 "ban"
               ],
               "additionalProperties": false,
@@ -58287,6 +58779,23 @@
                       }
                     }
                   ]
+                },
+                "bridges": {
+                  "type": "object",
+                  "required": [
+                    "connected",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "description": "The bridges of the boards they own, connected right now (live) out of all paired",
+                  "properties": {
+                    "connected": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
                 },
                 "ban": {
                   "description": "The ban in force, with the admin-only note; null if none",
@@ -58397,6 +58906,203 @@
               "type": "string"
             },
             "description": "Perk ids this grant unlocked"
+          }
+        }
+      },
+      "AdminUserActivity": {
+        "type": "object",
+        "required": [
+          "bridges",
+          "account",
+          "games",
+          "darts"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "bridges": {
+            "type": "array",
+            "description": "The connected bridges, one per board they front",
+            "items": {
+              "type": "object",
+              "required": [
+                "boardId",
+                "boardName",
+                "version",
+                "connectedAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "boardId": {
+                  "type": "string"
+                },
+                "boardName": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "connectedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "account": {
+            "type": "object",
+            "required": [
+              "friends",
+              "country",
+              "xp",
+              "boards"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "friends": {
+                "type": "integer"
+              },
+              "xp": {
+                "type": "integer",
+                "description": "Total XP earned"
+              },
+              "country": {
+                "type": "string",
+                "nullable": true
+              },
+              "boards": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "games": {
+            "type": "object",
+            "required": [
+              "total",
+              "last30Days",
+              "lastAt",
+              "byMode",
+              "ranked"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "last30Days": {
+                "type": "integer"
+              },
+              "lastAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "byMode": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "mode",
+                    "count"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mode": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "ranked": {
+                "type": "object",
+                "required": [
+                  "games",
+                  "ratings"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "games": {
+                    "type": "integer"
+                  },
+                  "ratings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "mode",
+                        "rating",
+                        "rankIndex",
+                        "matches"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "1v1",
+                            "2v2"
+                          ]
+                        },
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "rankIndex": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "matches": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "darts": {
+            "type": "object",
+            "required": [
+              "total",
+              "manual",
+              "last30Days",
+              "manualLast30Days"
+            ],
+            "additionalProperties": false,
+            "description": "Game darts (bull-off left out); manual ones were typed in, the rest the board saw",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "manual": {
+                "type": "integer"
+              },
+              "last30Days": {
+                "type": "integer"
+              },
+              "manualLast30Days": {
+                "type": "integer"
+              }
+            }
           }
         }
       },

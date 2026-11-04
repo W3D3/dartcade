@@ -2,8 +2,9 @@
 <script lang="ts">
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
+  import { SvelteSet } from 'svelte/reactivity'
   import { push } from 'svelte-spa-router'
-  import { Check } from '@lucide/svelte'
+  import { Check, ChevronDown, ChevronRight } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type SortingState, type ColumnVisibilityState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -12,6 +13,7 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
+  import UserActivity from '$lib/components/admin/UserActivity.svelte'
   import UserAuditModal from '$lib/components/admin/UserAuditModal.svelte'
   import BanUserModal from '$lib/components/admin/BanUserModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -29,9 +31,9 @@
     joinedDate,
     lastLoginText,
     compareLastLogin,
+    bridgesText,
     loadColumnVisibility,
     saveColumnVisibility,
-    roleActions,
     roleChange,
     setUserRole,
     setVerified,
@@ -154,10 +156,11 @@
     users = users.map(u => (u.id === user.id ? result.user : u))
   }
 
-  // Newest first by default; the columns menu can hide any of these but user and actions
+  // Newest first by default; the columns menu can hide any of these but user
   const COLUMN_TOGGLES = [
     { id: 'joined', label: 'Joined' },
     { id: 'lastLogin', label: 'Last login' },
+    { id: 'bridges', label: 'Bridges' },
     { id: 'email', label: 'Email' },
     { id: 'verified', label: 'Verified' },
     { id: 'role', label: 'Role' },
@@ -169,6 +172,14 @@
   // Verified is visible by default; a stored choice (including hiding it) wins over that
   let columnVisibility = $state<ColumnVisibilityState>(loadColumnVisibility(storage))
   $effect(() => saveColumnVisibility(storage, columnVisibility))
+
+  // Rows opened for their activity; the detail loads when a row opens and is dropped when it closes
+  // Bumped after giving XP: the open rows remount and fetch their numbers again
+  let activityReload = $state(0)
+  const expanded = new SvelteSet<string>()
+  function toggleRow(id: string): void {
+    if (!expanded.delete(id)) expanded.add(id)
+  }
 
   const helper = createColumnHelper<Features, AdminUser>()
   const columns = helper.columns([
@@ -204,21 +215,49 @@
       sortFn: (rowA, rowB) => compareLastLogin(rowA.original.lastLoginAt, rowB.original.lastLoginAt),
       cell: info => lastLoginText(info.getValue()),
     }),
-    helper.display({
-      id: 'actions',
-      header: 'Actions',
-      enableSorting: false,
-      enableHiding: false,
-      cell: info => renderSnippet(actionsCell, info.row.original),
+    helper.accessor(row => row.bridges.connected, {
+      id: 'bridges',
+      header: 'Bridges',
+      cell: info => bridgesText(info.row.original.bridges),
     }),
   ])
 </script>
 
 {#snippet userCell(user: AdminUser)}
-  <a href="#/profile/{user.id}" class="flex min-w-0 items-center gap-3 no-underline hover:underline">
-    <Avatar name={user.name} face={{ avatar: user.avatar, userId: user.id }} size={32} />
-    <span class="truncate text-[14px] font-semibold text-text">{user.name}</span>
-  </a>
+  <div class="flex min-w-0 items-center gap-2">
+    <button
+      type="button"
+      class="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted outline-none hover:text-text focus-visible:[outline:2px_solid_var(--color-accent)]"
+      aria-expanded={expanded.has(user.id)}
+      aria-label="Activity of {user.name}"
+      onclick={() => toggleRow(user.id)}
+    >
+      {#if expanded.has(user.id)}<ChevronDown size={16} aria-hidden="true" />{:else}<ChevronRight size={16} aria-hidden="true" />{/if}
+    </button>
+    <a href="#/profile/{user.id}" class="flex min-w-0 items-center gap-3 no-underline hover:underline">
+      <Avatar name={user.name} face={{ avatar: user.avatar, userId: user.id }} size={32} />
+      <span class="truncate text-[14px] font-semibold text-text">{user.name}</span>
+    </a>
+  </div>
+{/snippet}
+
+{#snippet rowDetail(user: AdminUser)}
+  <div class="sticky left-0 box-border w-[min(960px,calc(100vw-2rem))] px-4 pt-4">{@render actionsCell(user)}</div>
+  {#key activityReload}
+    <UserActivity
+      {user}
+      busy={busyId === user.id}
+      canBan={user.role !== 'admin' && user.id !== $currentUser?.id}
+      onrole={(role: Role) => askRole(user, role)}
+      onverified={() => askVerified(user)}
+      onxp={() => ((rowError = null), (xpUser = user))}
+      onban={() => askBan(user)}
+      onunban={() => {
+        rowError = null
+        confirmAction = { kind: 'unban', user }
+      }}
+    />
+  {/key}
 {/snippet}
 
 {#snippet verifiedCell(verified: boolean)}
@@ -244,42 +283,12 @@
 {/snippet}
 
 {#snippet actionsCell(user: AdminUser)}
-  <div class="flex w-[360px] max-w-full flex-col items-start gap-2">
+  <div class="flex flex-col items-start gap-2">
     <div class="flex flex-wrap gap-2" role="group" aria-label="Actions for {user.name}">
-      {#each roleActions(user.role) as action (action.role ?? 'none')}
-        <Button
-          variant={action.role === null ? 'danger' : 'outline'}
-          size="sm"
-          disabled={busyId === user.id}
-          onclick={() => askRole(user, action.role)}
-        >
-          {action.label}
-        </Button>
-      {/each}
-      <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => askVerified(user)}>
-        {user.emailVerified ? 'Mark unverified' : 'Mark verified'}
-      </Button>
-      <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => ((rowError = null), (xpUser = user))}>
-        Give XP
-      </Button>
+      <Button variant="outline" size="sm" onclick={() => void push(`/profile/${user.id}`)}>Profile</Button>
       <Button variant="outline" size="sm" onclick={() => (auditUser = user)}>Audit log</Button>
       {#if canViewAs(user)}
         <Button variant="outline" size="sm" disabled={busyId === user.id} onclick={() => void pickViewAs(user)}>View as</Button>
-      {/if}
-      {#if user.ban}
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busyId === user.id}
-          onclick={() => {
-            rowError = null
-            confirmAction = { kind: 'unban', user }
-          }}
-        >
-          Unban
-        </Button>
-      {:else if user.role !== 'admin' && user.id !== $currentUser?.id}
-        <Button variant="danger" size="sm" disabled={busyId === user.id} onclick={() => askBan(user)}>Ban…</Button>
       {/if}
     </div>
     {#if rowError?.id === user.id}<ErrorText>{rowError.text}</ErrorText>{/if}
@@ -298,7 +307,7 @@
 
       {#if listError}<ErrorText>{listError}</ErrorText>{/if}
 
-      <DataTable data={users} {columns} bind:sorting bind:columnVisibility>
+      <DataTable data={users} {columns} bind:sorting bind:columnVisibility {rowDetail} isExpanded={(u: AdminUser) => expanded.has(u.id)}>
         {#snippet emptyState()}
           {#if !loading && !listError}
             {q ? `No accounts match "${q}".` : 'No accounts yet.'}
@@ -344,6 +353,7 @@
         user={xpUser}
         onclose={() => (xpUser = null)}
         ongranted={() => {
+          activityReload++
           // Your own XP: the progress bar and your card show it at once
           if (xpUser?.id === $currentUser.id) {
             reloadProgress()

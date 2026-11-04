@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { adminUsersApiPlugin } from './adminUsers.js'
 import { usersApiPlugin } from './users.js'
+import { BridgeConnections, type BridgeConn } from '../bridge-gw/connections.js'
+import { insertGameSession, finishGameSession, insertGameDarts } from '../db/queries.js'
 
 // Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
 vi.mock('../auth/middleware.js', () => ({
@@ -421,6 +423,109 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
       expect(targets).not.toContain('g3')
       expect(targets).toContain('cheat')
       expect(entries[0].admin).toEqual({ id: 'admin', name: expect.any(String) })
+    })
+  })
+
+  describe('bridges and activity', () => {
+    const bridges = new BridgeConnections()
+    const bapp = () => {
+      const a = createFastify()
+      a.register(adminUsersApiPlugin, { db, bridges })
+      return a
+    }
+    const dart = (visit: number, i: number, source: 'camera' | 'manual', thrownAt: Date) => ({
+      session_id: 'act1',
+      visit,
+      dart_index: i,
+      seat: 0,
+      leg: 0,
+      phase: 'game' as const,
+      segment: { number: 20, multiplier: 1 },
+      coords: null,
+      source,
+      corrected: false,
+      thrown_at: thrownAt,
+    })
+
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values({ id: 'owner', name: 'Owner', email: 'owner@example.com', emailVerified: true, image: null, role: null })
+        .execute()
+      await db
+        .insertInto('boards')
+        .values([
+          { id: 'b1', owner_user_id: 'owner', name: 'Garage', token_hash: 'h1', hardware_id: null },
+          { id: 'b2', owner_user_id: 'owner', name: 'Cellar', token_hash: 'h2', hardware_id: null },
+        ])
+        .execute()
+      const conn = { boardDbId: null, bridgeVersion: 'v0.5.0', connectedAt: new Date('2026-11-01T10:00:00Z') } as BridgeConn
+      bridges.register(conn, 'b1')
+      await insertGameSession(db, {
+        id: 'act1',
+        owner_user_id: 'owner',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 0,
+        config: {},
+        players: [{ name: 'Owner', user_id: 'owner', controller_user_id: 'owner', board_db_id: null, bot_level: null }],
+      })
+      await finishGameSession(db, 'act1', new Date(), [{ placement: 1, stats: {}, throwPosition: 0, forfeited: false }])
+      const old = new Date(Date.now() - 90 * 86_400_000)
+      await insertGameDarts(db, [dart(0, 0, 'camera', new Date()), dart(0, 1, 'manual', new Date()), dart(1, 0, 'camera', old)])
+      // One ranked game that counts and one a moderator invalidated
+      for (const id of ['rk1', 'rk2']) {
+        await insertGameSession(db, {
+          id,
+          owner_user_id: 'owner',
+          board_db_id: null,
+          game_id: 'x01',
+          game_version: 1,
+          rng_seed: 0,
+          config: {},
+          players: [{ name: 'Owner', user_id: 'owner', controller_user_id: 'owner', board_db_id: null, bot_level: null }],
+        })
+        await db
+          .insertInto('ranked_results')
+          .values({
+            session_id: id,
+            user_id: 'owner',
+            mode: '1v1',
+            won: true,
+            placement: false,
+            rating_before: 1000,
+            rating_after: 1010,
+            average: null,
+          })
+          .execute()
+      }
+      await sql`UPDATE game_sessions SET invalidated_at = now() WHERE id = 'rk2'`.execute(db)
+      await db.insertInto('friendships').values({ id: 'f1', requester_id: 'owner', addressee_id: 'player', status: 'accepted' }).execute()
+    })
+
+    it('counts connected bridges against paired ones in the list', async () => {
+      const { users } = JSON.parse((await bapp().inject({ method: 'GET', url: '/api/admin/users?q=Owner', headers: asAdmin })).body)
+      expect(users[0].bridges).toEqual({ connected: 1, total: 2 })
+    })
+
+    it('summarises games, darts split by source, friends and live bridges', async () => {
+      const res = await bapp().inject({ method: 'GET', url: '/api/admin/users/owner/activity', headers: asAdmin })
+      expect(res.statusCode).toBe(200)
+      const a = JSON.parse(res.body)
+      expect(a.bridges).toEqual([{ boardId: 'b1', boardName: 'Garage', version: 'v0.5.0', connectedAt: '2026-11-01T10:00:00.000Z' }])
+      expect(a.account).toMatchObject({ friends: 1, xp: 0, boards: [{ id: 'b1' }, { id: 'b2' }] })
+      expect(a.games.ranked.games).toBe(1)
+      expect(a.games).toMatchObject({ total: 1, last30Days: 1, byMode: [{ mode: 'x01', count: 1 }] })
+      expect(a.darts).toEqual({ total: 3, manual: 1, last30Days: 2, manualLast30Days: 1 })
+    })
+
+    it('404s an unknown id', async () => {
+      expect((await bapp().inject({ method: 'GET', url: '/api/admin/users/nobody/activity', headers: asAdmin })).statusCode).toBe(404)
+    })
+
+    it('403s a non-admin', async () => {
+      expect((await bapp().inject({ method: 'GET', url: '/api/admin/users/owner/activity', headers: asPlayer })).statusCode).toBe(403)
     })
   })
 })

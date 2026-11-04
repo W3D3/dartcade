@@ -1041,6 +1041,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * What an account has done lately and which bridges it has connected (admin)
+         * @description Aggregated on request, for the expanded row of the users table. Games and darts leave out invalidated games.
+         */
+        get: operations["getUserActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{id}/ban": {
         parameters: {
             query?: never;
@@ -3489,6 +3511,11 @@ export interface components {
              */
             lastLoginAt: string | null;
             avatar: components["schemas"]["Avatar"];
+            /** @description The bridges of the boards they own, connected right now (live) out of all paired */
+            bridges: {
+                connected: number;
+                total: number;
+            };
             /** @description The ban in force, with the admin-only note; null if none */
             ban: {
                 category: components["schemas"]["BanCategory"];
@@ -3551,6 +3578,53 @@ export interface components {
             level: number;
             /** @description Perk ids this grant unlocked */
             unlocked: string[];
+        };
+        AdminUserActivity: {
+            /** @description The connected bridges, one per board they front */
+            bridges: {
+                boardId: string;
+                boardName: string;
+                version: string | null;
+                /** Format: date-time */
+                connectedAt: string;
+            }[];
+            account: {
+                friends: number;
+                /** @description Total XP earned */
+                xp: number;
+                country: string | null;
+                boards: {
+                    id: string;
+                    name: string;
+                }[];
+            };
+            games: {
+                total: number;
+                last30Days: number;
+                /** Format: date-time */
+                lastAt: string | null;
+                byMode: {
+                    mode: string;
+                    count: number;
+                }[];
+                ranked: {
+                    games: number;
+                    ratings: {
+                        /** @enum {string} */
+                        mode: "1v1" | "2v2";
+                        rating: number;
+                        rankIndex: number | null;
+                        matches: number;
+                    }[];
+                };
+            };
+            /** @description Game darts (bull-off left out); manual ones were typed in, the rest the board saw */
+            darts: {
+                total: number;
+                manual: number;
+                last30Days: number;
+                manualLast30Days: number;
+            };
         };
         UserAuditResponse: {
             entries: components["schemas"]["UserAuditEntry"][];
@@ -6204,6 +6278,32 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getUserActivity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The activity */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

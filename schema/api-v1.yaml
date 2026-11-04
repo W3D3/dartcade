@@ -1319,6 +1319,25 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/admin/users/{id}/activity:
+    parameters:
+      - $ref: '#/components/parameters/AdminUserId'
+    get:
+      operationId: getUserActivity
+      summary: What an account has done lately and which bridges it has connected (admin)
+      description: Aggregated on request, for the expanded row of the users table. Games and darts leave out invalidated games.
+      tags: [admin]
+      responses:
+        '200':
+          description: The activity
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserActivity' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/admin/users/{id}/ban:
     parameters:
       - $ref: '#/components/parameters/AdminUserId'
@@ -4494,7 +4513,7 @@ components:
           items: { $ref: '#/components/schemas/UserSummary' }
     AdminUser:
       type: object
-      required: [id, name, email, emailVerified, role, createdAt, lastLoginAt, avatar, ban]
+      required: [id, name, email, emailVerified, role, createdAt, lastLoginAt, avatar, bridges, ban]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -4505,6 +4524,14 @@ components:
         createdAt: { type: string, format: date-time, description: When the account was made }
         lastLoginAt: { type: string, format: date-time, nullable: true, description: Last sign-in; null if never }
         avatar: { $ref: '#/components/schemas/Avatar' }
+        bridges:
+          type: object
+          required: [connected, total]
+          additionalProperties: false
+          description: The bridges of the boards they own, connected right now (live) out of all paired
+          properties:
+            connected: { type: integer }
+            total: { type: integer }
         ban:
           description: The ban in force, with the admin-only note; null if none
           type: object
@@ -4579,6 +4606,84 @@ components:
         xp: { type: integer, description: The account's XP total now }
         level: { type: integer }
         unlocked: { type: array, items: { type: string }, description: Perk ids this grant unlocked }
+    AdminUserActivity:
+      type: object
+      required: [bridges, account, games, darts]
+      additionalProperties: false
+      properties:
+        bridges:
+          type: array
+          description: The connected bridges, one per board they front
+          items:
+            type: object
+            required: [boardId, boardName, version, connectedAt]
+            additionalProperties: false
+            properties:
+              boardId: { type: string }
+              boardName: { type: string }
+              version: { type: string, nullable: true }
+              connectedAt: { type: string, format: date-time }
+        account:
+          type: object
+          required: [friends, country, xp, boards]
+          additionalProperties: false
+          properties:
+            friends: { type: integer }
+            xp: { type: integer, description: Total XP earned }
+            country: { type: string, nullable: true }
+            boards:
+              type: array
+              items:
+                type: object
+                required: [id, name]
+                additionalProperties: false
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+        games:
+          type: object
+          required: [total, last30Days, lastAt, byMode, ranked]
+          additionalProperties: false
+          properties:
+            total: { type: integer }
+            last30Days: { type: integer }
+            lastAt: { type: string, format: date-time, nullable: true }
+            byMode:
+              type: array
+              items:
+                type: object
+                required: [mode, count]
+                additionalProperties: false
+                properties:
+                  mode: { type: string }
+                  count: { type: integer }
+            ranked:
+              type: object
+              required: [games, ratings]
+              additionalProperties: false
+              properties:
+                games: { type: integer }
+                ratings:
+                  type: array
+                  items:
+                    type: object
+                    required: [mode, rating, rankIndex, matches]
+                    additionalProperties: false
+                    properties:
+                      mode: { type: string, enum: ['1v1', '2v2'] }
+                      rating: { type: integer }
+                      rankIndex: { type: integer, nullable: true }
+                      matches: { type: integer }
+        darts:
+          type: object
+          required: [total, manual, last30Days, manualLast30Days]
+          additionalProperties: false
+          description: Game darts (bull-off left out); manual ones were typed in, the rest the board saw
+          properties:
+            total: { type: integer }
+            manual: { type: integer }
+            last30Days: { type: integer }
+            manualLast30Days: { type: integer }
     UserAuditResponse:
       type: object
       required: [entries]
