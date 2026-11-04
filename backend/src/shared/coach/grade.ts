@@ -1,14 +1,12 @@
-// Every visit's tag (Scoring, Setup, Doubling), grade (Brilliant to Bad, eight classes) and one line
-// saying why. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
+// Every visit's tag (Scoring, Setup, Doubling) and grade (Brilliant to Bad, eight classes); the line
+// saying why is visitText.ts. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
 // finish is Brilliant when that was hard for the fixed reference level (model.ts DEFAULT_COACH_LEVEL,
 // an 81 average — not the player's own coaching level), else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
 // or Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of
 // the darts that missed their target. The bands were set on real legs (the spec's calibration table).
-import { checkoutHint } from '../checkout.js'
 import { oneDartFinish } from './aims.js'
 import type { DartClass } from './dartClass.js'
-import { minDarts } from './minDarts.js'
-import { closenessBonus, groupingBonus, groupingWhy, type Grouping } from './grouping.js'
+import { closenessBonus, groupingBonus, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
 import { landedNumber, type Throw } from './walk.js'
 
@@ -92,8 +90,8 @@ export type ScoringValue = { scored: number; grouping: number; closeness: number
  *  visit's Σ (dart Δ + closeness), a Scoring visit's rating − average; `scoring` its parts there;
  *  `fewestChance` (%) the fewest-darts path's chance on a visit that kept it, else null. */
 export type VisitValue = { points: number; scoring: ScoringValue | null; rule: GradeRule; fewestChance: number | null }
-/** `tip`: the text is a tip's (a note that leaves the grade alone) */
-export type VisitGrading = { tag: VisitTag; grade: VisitGrade; text: string; tip: boolean; value: VisitValue }
+/** A visit's tag and grade, and how the grade was worked out */
+export type Grading = { tag: VisitTag; grade: VisitGrade; value: VisitValue }
 
 /** A scale's lower bounds, best first: the first class whose bound `points` reaches, else Bad */
 export type GradeBands = readonly { grade: ValueGrade; from: number }[]
@@ -115,8 +113,9 @@ export const SCORING_BANDS: GradeBands = [
 ]
 /** The band `points` falls in */
 export const bandOf = (points: number, bands: GradeBands): ValueGrade => bands.find(b => points >= b.from)?.grade ?? 'bad'
-/** The worse of two grades */
+/** The worse of two grades, and the better */
 const worse = (a: VisitGrade, b: VisitGrade): VisitGrade => (VISIT_GRADES.indexOf(a) > VISIT_GRADES.indexOf(b) ? a : b)
+const better = (a: VisitGrade, b: VisitGrade): VisitGrade => (worse(a, b) === a ? b : a)
 
 /** The note a visit's text (and the leg review's rail) explains: the costliest that isn't a tip,
  *  else the costliest tip; null without notes. */
@@ -159,201 +158,65 @@ export function dartBand(delta: number, close: number | null, hit: boolean, bust
   return g > DART_PLAIN_ABOVE ? 'plain' : 'weak'
 }
 
-const doubleName = (left: number) => (left === 50 ? 'the bull' : `D${left / 2}`)
-
-const PART: Record<string, string> = { T: 'treble', S: 'single', D: 'double', B: 'bull', '2': 'single bull' }
-/** A checkout route by its shape: "one-dart finish" for one dart (D16, Bull), else its darts' beds
- *  in order: "single to double" (S16 · D16), "treble to double" (T20 · D8), "treble to single to
- *  bull" (T20 · S10 · Bull); the 25 is a "single bull". */
-export const routeShape = (route: readonly string[]): string =>
-  route.length === 1 ? 'one-dart finish' : route.map(d => PART[d[0]]).join(' to ')
-/** "100 left is a treble to double (T20 · D20)."; null without a route */
-const routeText = (left: number, route: readonly string[] | null) =>
-  route ? `${left} left is a ${routeShape(route)} (${route.join(' · ')}).` : null
-const TREBLES = ['', '', 'Two trebles.', 'Three trebles.']
-
 export function tagOf(f: VisitFacts): VisitTag {
   if (f.start > 170) return 'scoring'
   return f.throws.some(t => oneDartFinish(t.left)) ? 'doubling' : 'setup'
 }
 
-const noteText = (n: CoachNote) =>
-  `${n.tip ? 'Tip: ' : ''}On ${n.left}, ${n.thrown}: better ${n.better}${n.reason === null ? '' : ` — ${n.reason}`}.`
-/** Busted on purpose to stay on the start: the busting dart was a Bust-back */
-const bustBack = (f: VisitFacts) => f.bust && f.classes.at(-1)?.kind === 'bustBack'
-const ORDINAL = ['first', 'second', 'third']
-const dartName = (t: Throw) => (t.d.segment.multiplier === 0 ? 'Miss' : t.d.segment.name)
-/** "Busted on the first dart (S10 on 8)."; after darts thrown before it, what they did (a
- *  Doubling visit's, `after`) and " Back on 40." */
-function bustText(f: VisitFacts, after: readonly string[] = []): string {
-  const t = f.throws[f.throws.length - 1]
-  const before = after.length ? `, after ${after.join(', ')}` : ''
-  return `Busted on the ${ORDINAL[t.dart]} dart (${dartName(t)} on ${t.left})${before}.${t.dart === 0 ? '' : ` Back on ${f.start}.`}`
-}
-const bustBackText = (f: VisitFacts) =>
-  `Busted on purpose with the ${ORDINAL[f.throws[f.throws.length - 1].dart]} dart to stay on ${f.start}${oneDartFinish(f.start) ? ` (${doubleName(f.start)})` : ''}.`
+/** A Scoring visit's darts aimed at the T20 that drifted into the 1 or 5 */
+export const spilled = (f: VisitFacts) =>
+  f.throws.filter((t, i) => f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
 
-type Graded = { grade: VisitGrade; text: string; value: VisitValue }
+/** A rule over the value's band: `set` the grade, `cap` it (at best) or `floor` it (at least) */
+type Override = { rule: NonNullable<GradeRule>; applies: (f: VisitFacts) => boolean } & (
+  | { set: VisitGrade }
+  | { cap: VisitGrade }
+  | { floor: VisitGrade }
+)
+const scoringVisit = (f: VisitFacts) => f.start > 170
+/** Best first: the first that applies decides; a tip leaves the grade alone. Excellent is the best
+ *  a value gives, so the fewest darts' floor is the grade. */
+const OVERRIDES: readonly Override[] = [
+  { rule: 'note', set: 'bad', applies: f => explainedNote(f.notes)?.tip === false },
+  { rule: 'brilliant', set: 'brilliant', applies: f => f.fewest !== null && f.fewest < BRILLIANT_CHANCE },
+  { rule: 'fewest', floor: 'excellent', applies: f => f.fewest !== null },
+  // On the raw score: a tight group doesn't rescue a 25
+  { rule: 'veryLow', cap: 'weak', applies: f => scoringVisit(f) && f.scored < VERY_LOW },
+  { rule: 'spill', cap: 'inaccuracy', applies: f => scoringVisit(f) && spilled(f) >= 2 },
+]
+const overridden = (o: Override, band: VisitGrade): VisitGrade =>
+  'set' in o ? o.set : 'cap' in o ? worse(band, o.cap) : better(band, o.floor)
 
-function scoring(f: VisitFacts): Graded {
-  const sv: ScoringValue = {
+/** Scoring: the rating against the average, and its parts */
+function scoringValue(f: VisitFacts): { points: number; scoring: ScoringValue } {
+  const scoring: ScoringValue = {
     scored: f.scored,
     grouping: f.grouping ? groupingBonus(f.grouping.spreadMm) : 0,
     closeness: f.grouping ? closenessBonus(f.grouping.edgeMm) : 0,
     rating: f.grouping?.rating ?? f.scored,
     average: f.average,
   }
-  const points = sv.rating - f.average
-  const g = (grade: VisitGrade, text: string, rule: GradeRule = null): Graded => ({
-    grade,
-    text,
-    value: { points, scoring: sv, rule, fewestChance: null },
-  })
-  const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
-  const grade = bandOf(points, SCORING_BANDS)
-  const capped = (cap: VisitGrade, rule: GradeRule) => (worse(grade, cap) === grade ? null : rule)
-  if (f.scored < VERY_LOW) return g(worse(grade, 'weak'), low, capped('weak', 'veryLow'))
-  const spilled = f.throws.filter((t, i) => f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
-  // Below Inaccuracy the score says more than the spill
-  if (spilled >= 2 && points >= SCORING_INACCURACY_FROM)
-    return g(worse(grade, 'inaccuracy'), `${spilled} darts drifted into 1 or 5.`, capped('inaccuracy', 'spill'))
-  if (points < SCORING_OK_FROM) return g(grade, low)
-  // The grouping lifted the grade above the score's: say why
-  if (f.grouping && grade !== bandOf(f.scored - f.average, SCORING_BANDS))
-    return g(grade, `Scored ${f.scored}, ${groupingWhy(f.grouping) || 'well placed'}.`)
-  const trebles = f.throws.filter(t => t.d.segment.multiplier === 3).length
-  return g(grade, ((grade === 'great' || grade === 'excellent') && TREBLES[trebles]) || `Scored ${f.scored}.`)
+  return { points: scoring.rating - f.average, scoring }
 }
 
-const COUNT = ['no', 'one', 'two', 'three']
-/** Where a dart at the double missed it; a bull's detail is sb (in the 25) or none */
-const WHERE: Record<string, string> = { inside: 'inside', outside: 'outside', wide: 'wide', sb: 'in the 25' }
-const whereOf = (c: DartClass) => WHERE[('detail' in c && c.detail) || 'wide']
-const targetName = (c: DartClass) => (c.target?.aimId === 'Bull' ? 'the bull' : (c.target?.label ?? 'the double'))
-/** A dart at the double on a one-dart finish (the bull on 50) */
-const atTheDouble = (t: Throw, c: DartClass) => oneDartFinish(t.left) && (c.kind === 'double' || (c.kind === 'bull' && t.left === 50))
+/** Setup and Doubling: how much the darts changed the checkout chance (value.ts), plus the
+ *  closeness credit of each missed dart, less a bust's penalty. A bust ends on the start's next
+ *  visit (value.ts): graded like any other end. */
+const finishPoints = (f: VisitFacts) =>
+  f.throws.reduce((s, t, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i]), t.bust ? bustPenalty(t.dart) : 0), 0)
 
-/** Missed darts at one double: "3 darts at D4, all just outside (5 mm on average)", "2 darts at
- *  D16 missed (one inside, one wide)"; as `misses`, the bust's after: "one miss outside D4",
- *  "two misses at D4 (one inside, one wide)". The mm (edgeMm) from the placed darts only. */
-function doubleMisses(cs: readonly DartClass[], misses: boolean): string {
-  const n = cs.length
-  const target = targetName(cs[0])
-  const placed = cs.flatMap(c => (c.miss && !c.estimated ? [c.miss.edgeMm] : []))
-  const mmAvg = placed.length ? Math.round(placed.reduce((a, b) => a + b, 0) / placed.length) : null
-  const mm = mmAvg === null ? '' : `${mmAvg} mm${n > 1 ? ' on average' : ''}`
-  const wheres = cs.map(whereOf)
-  const same = wheres.every(w => w === wheres[0])
-  if (same) {
-    const where = `${mmAvg !== null && mmAvg <= NEAR_MISS_MM ? 'just ' : ''}${wheres[0]}`
-    const paren = mm ? ` (${mm})` : ''
-    const place = wheres[0] === 'in the 25' ? where : `${where}${wheres[0] === 'wide' ? ' of' : ''} ${target}`
-    if (misses) return `${COUNT[n]} ${n === 1 ? 'miss' : 'misses'} ${place}${paren}`
-    return `${n} ${n === 1 ? 'dart' : 'darts'} at ${target}, ${n === 1 ? '' : 'all '}${where}${paren}`
-  }
-  const counts = [...new Set(wheres)].map(w => `${COUNT[wheres.filter(x => x === w).length]} ${w}`).join(', ')
-  const paren = ` (${counts}${mm ? `, ${mm}` : ''})`
-  return misses ? `${COUNT[n]} misses at ${target}${paren}` : `${n} darts at ${target} missed${paren}`
-}
-
-/** A dart on a finish that wasn't at the double: "the third split to D8", "the second missed the
- *  split to D2 (S1)", "the first was S7", "the third missed" */
-function otherDart(t: Throw, c: DartClass): string {
-  const ord = `the ${ORDINAL[t.dart]}`
-  if (c.kind === 'split' && c.plannedLeave !== null)
-    return c.hit
-      ? `${ord} split to ${doubleName(c.plannedLeave)}`
-      : `${ord} missed the split to ${doubleName(c.plannedLeave)} (${dartName(t)})`
-  return t.after === t.left ? `${ord} missed` : `${ord} was ${dartName(t)}`
-}
-
-/** What the darts from the first one on a one-dart finish up to `end` did: a run of darts at one
- *  double as one phrase, any other dart on its own. */
-function doublingStory(f: VisitFacts, end: number, misses: boolean): string[] {
-  const phrases: string[] = []
-  let i = f.throws.findIndex(t => oneDartFinish(t.left))
-  while (i >= 0 && i < end) {
-    const c = f.classes[i]
-    if (!atTheDouble(f.throws[i], c)) {
-      phrases.push(otherDart(f.throws[i], c))
-      i++
-      continue
-    }
-    let j = i + 1
-    while (j < end && atTheDouble(f.throws[j], f.classes[j]) && f.classes[j].target?.aimId === c.target?.aimId) j++
-    phrases.push(doubleMisses(f.classes.slice(i, j), misses))
-    i = j
-  }
-  return phrases
-}
-
-/** A Doubling visit that didn't check out: what happened to the double, then where you stand.
- *  "3 darts at D4, all just outside (5 mm on average). Still on 8."; a new score with its route */
-function doublingText(f: VisitFacts): string {
-  const story = doublingStory(f, f.throws.length, false).join(', ')
-  const stand = f.then === f.start ? `Still on ${f.start}.` : (routeText(f.then, checkoutHint(f.then, 'double', 3)) ?? `${f.then} left.`)
-  return `${story[0].toUpperCase()}${story.slice(1)}. ${stand}`
-}
-
-/** Setup and Doubling: graded by how much the darts changed the checkout chance (value.ts), plus
- *  the closeness credit of each missed dart. */
-function finishing(f: VisitFacts): Graded {
-  const out = f.throws.find(t => t.checkout)
-  const total = f.throws.reduce((s, t, i) => s + dartGrade(f.deltas[i], closeness(f.classes[i]), t.bust ? bustPenalty(t.dart) : 0), 0)
-  const grade = bandOf(total, FINISH_BANDS)
-  const g = (grade: VisitGrade, text: string): Graded => ({
-    grade,
-    text,
-    value: { points: total, scoring: null, rule: null, fewestChance: null },
-  })
-  // A bust ends on the start's next visit (value.ts): graded like any other end, told as a bust
-  const doubling = tagOf(f) === 'doubling'
-  if (f.bust) return g(grade, bustBack(f) ? bustBackText(f) : bustText(f, doubling ? doublingStory(f, f.throws.length - 1, true) : []))
-  if (out) return g(grade, `Checked out on ${doubleName(out.left)}.`)
-  if (doubling) return g(grade, doublingText(f))
-  const route = checkoutHint(f.then, 'double', 3)
-  const leave = routeText(f.then, route) ?? `${f.then} left: no checkout in three darts.`
-  const worst = f.throws.reduce((a, _, i) => (f.deltas[i] < f.deltas[a] ? i : a), 0)
-  const cost = Math.round(-f.deltas[worst])
-  if (total >= 0 || cost < 1) return g(grade, leave)
-  const t = f.throws[worst]
-  return g(grade, `${dartName(t)} on ${t.left} cost ${cost}% checkout chance: ${leave}`)
-}
-
-function fewestText(f: VisitFacts): string {
-  const out = f.throws.find(t => t.checkout)
-  if (out) return `Checked out in the fewest darts (${doubleName(out.left)}).`
-  const k = minDarts(f.then)
-  if (f.first && f.start === 501 && k === 6) return 'Nine-darter still on.'
-  const route = checkoutHint(f.then, 'double', 3)
-  const leave = route?.length === k ? `is still a ${routeShape(route)} (${route.join(' · ')})` : `is still ${k} darts from a checkout`
-  return `Scored ${f.scored}: ${f.then} left ${leave}, the fewest possible.`
-}
-
-export function classifyVisit(f: VisitFacts): VisitGrading {
+/** The visit's grade: its value's band, then the first override that applies; the rule is
+ *  recorded only when it moved the band. */
+export function gradeVisit(f: VisitFacts): Grading {
   const tag = tagOf(f)
-  const note = explainedNote(f.notes)
-  const out = f.throws.some(t => t.checkout)
-  const matchDart = f.lastVisitOfLostLeg && !out && f.throws.some((t, i) => atTheDouble(t, f.classes[i]))
-  const graded = tag === 'scoring' ? scoring(f) : finishing(f)
-  const g = (grade: VisitGrade, text: string, rule: GradeRule, tip = false, fewestChance: number | null = null): VisitGrading => ({
+  const { points, scoring } = tag === 'scoring' ? scoringValue(f) : { points: finishPoints(f), scoring: null }
+  const band = bandOf(points, tag === 'scoring' ? SCORING_BANDS : FINISH_BANDS)
+  const o = OVERRIDES.find(x => x.applies(f))
+  const grade = o ? overridden(o, band) : band
+  const fewest = o?.rule === 'brilliant' || o?.rule === 'fewest' ? f.fewest : null
+  return {
     tag,
     grade,
-    text: matchDart ? `Missed the match dart. ${text}` : text,
-    tip,
-    value: { ...graded.value, rule, fewestChance },
-  })
-  // A note says another aim was better: Bad on any visit
-  if (note && !note.tip) return g('bad', noteText(note), 'note')
-  // A tip leaves the grade alone, and the fewest darts keep their own line
-  if (f.fewest !== null) {
-    const chance = f.fewest * 100
-    if (f.fewest < BRILLIANT_CHANCE) return g('brilliant', fewestText(f), 'brilliant', false, chance)
-    // Excellent is the best a value gives, so the floor is the grade; the rule only when it lifted it
-    return g('excellent', fewestText(f), graded.grade === 'excellent' ? graded.value.rule : 'fewest', false, chance)
+    value: { points, scoring, rule: o && grade !== band ? o.rule : null, fewestChance: fewest === null ? null : fewest * 100 },
   }
-  // A tip's line, unless the visit ended on a bust or a checkout, which say so
-  return note && !f.bust && !out
-    ? g(graded.grade, noteText(note), graded.value.rule, true)
-    : g(graded.grade, graded.text, graded.value.rule)
 }

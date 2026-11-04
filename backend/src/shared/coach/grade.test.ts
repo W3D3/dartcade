@@ -3,7 +3,6 @@ import { SEGS, segAngle, segmentAt } from '../board.js'
 import {
   BRILLIANT_CHANCE,
   BUST_DART_LOST,
-  classifyVisit,
   closeness,
   bandOf,
   bustPenalty,
@@ -15,13 +14,13 @@ import {
   MISS_CLOSE_MAX,
   MISS_CLOSE_ZERO_MM,
   OK_FROM,
-  routeShape,
   SCORING_BANDS,
   tagOf,
   WEAK_FROM,
   type VisitFacts,
 } from './grade.js'
 import { classifyDart } from './dartClass.js'
+import { classifyVisit, routeShape } from './visitText.js'
 import { fewestPath } from './minDarts.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
 import { leg, seg, visit, REF } from './testLegs.js'
@@ -551,5 +550,12 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
     const note = { ...explainedNote(facts(24, ['S14', 'D5']).notes)!, tip: false }
     expect(classifyVisit({ ...f, notes: [note] }).grade).toBe('bad')
     expect(classifyVisit({ ...f, notes: [{ ...note, tip: true as const }] }).grade).toBe('brilliant')
+  })
+
+  it('records an override only when it moved the band: a note on a visit already Bad', () => {
+    const note = { ...explainedNote(facts(24, ['S14', 'D5']).notes)!, tip: false }
+    const busted = classifyVisit({ ...facts(40, ['S20', 'S20']), notes: [note] })
+    expect(busted).toMatchObject({ grade: 'bad', value: { rule: null } })
+    expect(classifyVisit({ ...facts(98, ['T20', 'D19']), notes: [note] }).value.rule).toBe('note')
   })
 })

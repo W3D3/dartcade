@@ -2,7 +2,8 @@
 // three A–D skills and the coach's take.
 import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
-import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
+import { closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
+import { classifyVisit } from './visitText.js'
 import { grouping, type Grouping } from './grouping.js'
 import { fewestPath } from './minDarts.js'
 import type { CoachModels } from './model.js'
