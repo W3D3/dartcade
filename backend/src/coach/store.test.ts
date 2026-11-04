@@ -371,6 +371,43 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
+  it('grades each player for their own target, and regrades their legs, only theirs, when they pick another', async () => {
+    const setTarget = (id: string, target: string) =>
+      db
+        .updateTable('user')
+        .set({ preferences: sql`jsonb_build_object('coachTarget', ${target}::text)` })
+        .where('id', '=', id)
+        .execute()
+    await setTarget('bob', 'beginner')
+    const game = await play()
+    await buildCoachLegs(db, game, fail)
+    expect((await rows()).map(r => [r.target, r.review.coachTier])).toEqual([
+      ['auto', expect.any(String)],
+      ['beginner', 'beginner'],
+    ])
+    expect(await pendingCoachGames(db, 'ann')).toBe(0)
+
+    await setTarget('ann', 'worldclass')
+    // Ann's legs are stale until the game is rebuilt: hidden, waiting, rebuilt on request
+    expect((await coachLegsPage(db, 'ann', 'all', null)).rows).toEqual([])
+    expect(await getCoachLeg(db, 'ann', game.id, 0)).toBeNull()
+    expect(await pendingCoachGames(db, 'ann')).toBe(1)
+    expect(await pendingCoachGames(db, 'bob')).toBe(0)
+    expect((await coachLegsPage(db, 'bob', 'all', null)).rows).toHaveLength(1)
+    await ensureCoachGame(db, 'ann', game.id, fail)
+    expect((await rows()).map(r => [r.target, r.review.coachTier])).toEqual([
+      ['worldclass', 'worldclass'],
+      ['beginner', 'beginner'],
+    ])
+    expect((await getCoachLeg(db, 'ann', game.id, 0))?.review.coachTier).toBe('worldclass')
+
+    // Back to auto: the list's build picks it up
+    await setTarget('ann', 'auto')
+    expect(await ensureCoachLegs(db, 'ann', fail)).toBe(1)
+    expect((await rows())[0].target).toBe('auto')
+    expect(await ensureCoachLegs(db, 'ann', fail)).toBe(0)
+  })
+
   it("grades against the average when the game finished, not today's", async () => {
     const game = await play()
     await buildCoachLegs(db, game, fail)

@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { LegReview } from '../shared/coach/review.js'
 import { type CoachCursor } from './cursor.js'
-import { COACH_VERSION } from './store.js'
+import { COACH_VERSION, currentTarget } from './store.js'
 
 export type CoachLegFilter = 'all' | 'lost' | 'ranked' | 'missedDoubles' | 'badSetups' | 'lowVisits'
 export type CoachLegRow = {
@@ -33,9 +33,11 @@ function base(db: Kysely<Database>, userId: string) {
     db
       .selectFrom('coach_legs as cl')
       .innerJoin('game_sessions as gs', 'gs.id', 'cl.game_id')
-      // A stale row (its game built by another COACH_VERSION) is missing until the game is rebuilt, in every read
+      // A stale row (its game built by another COACH_VERSION, or graded for a coach target the player
+      // no longer has) is missing until the game is rebuilt, in every read
       .innerJoin('coach_games as cg', join => join.onRef('cg.game_id', '=', 'cl.game_id').on('cg.version', '=', COACH_VERSION))
       .where('cl.user_id', '=', userId)
+      .where('cl.target', '=', currentTarget)
       .where('gs.invalidated_at', 'is', null)
   )
 }
