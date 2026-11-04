@@ -3869,6 +3869,8 @@ export interface components {
                 id: string;
                 slot: number;
                 title: string;
+                /** @description What the row lists under the title, e.g. the doubles hit so far; empty for most */
+                chips: string[];
                 /** @enum {string} */
                 difficulty: "easy" | "medium" | "hard";
                 target: number;

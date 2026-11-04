@@ -5013,12 +5013,18 @@ components:
           type: array
           items:
             type: object
-            required: [id, slot, title, difficulty, target, progress, xp, completed, claimed, canReroll]
+            required: [id, slot, title, chips, difficulty, target, progress, xp, completed, claimed, canReroll]
             additionalProperties: false
             properties:
               id: { type: string }
               slot: { type: integer, minimum: 1, maximum: 3 }
               title: { type: string }
+              chips:
+                {
+                  type: array,
+                  items: { type: string },
+                  description: 'What the row lists under the title, e.g. the doubles hit so far; empty for most',
+                }
               difficulty: { type: string, enum: [easy, medium, hard] }
               target: { type: integer, minimum: 1 }
               progress: { type: integer, minimum: 0, description: At most the target }
