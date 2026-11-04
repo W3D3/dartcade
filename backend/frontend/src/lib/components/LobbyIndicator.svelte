@@ -13,9 +13,13 @@
   import { createLobby } from '$lib/lobby/create'
   import { me } from '$lib/lobby/sockets'
   import { indicatorView } from '$lib/lobby/format'
+  import QueueCard from './ranked/QueueCard.svelte'
+  import { queueView, tick } from '$lib/ranked/queueCard'
+  import { currentUser } from '$lib/auth'
 
   const summary = $derived($me?.lobby ?? null)
   const view = $derived(summary ? indicatorView(summary) : null)
+  const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
 
   // The Create lobby button is left off the Play page, which has its own
   const onPlay = $derived($location === '/play')
@@ -31,8 +35,10 @@
 </script>
 
 <!-- No overflow-hidden: the account menu opens upwards out of this box -->
-<div class="flex flex-col rounded-[12px] border bg-surface-1 {view ? 'border-accent-line' : 'border-line'}">
-  {#if view}
+<div class="flex flex-col rounded-[12px] border bg-surface-1 {view || queue ? 'border-accent-line' : 'border-line'}">
+  {#if queue}
+    <QueueCard view={queue} />
+  {:else if view}
     <div class="flex flex-col gap-2 p-3 rounded-t-[11px] border-b border-line-2 bg-surface-active">
       <a
         href="#/lobby"

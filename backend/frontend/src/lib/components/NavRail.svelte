@@ -4,12 +4,14 @@
   // SideNav instead.
   import { progress } from '$lib/progress/store'
   import { location, push } from 'svelte-spa-router'
-  import { Plus, House } from '@lucide/svelte'
+  import { Plus, House, Swords } from '@lucide/svelte'
   import { railTabs, isActiveRoute, railLobby } from '$lib/nav'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { createLobby } from '$lib/lobby/create'
+  import { acceptMatch } from '$lib/ranked/queue'
+  import { queueView, tick } from '$lib/ranked/queueCard'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
   import AlphaBadge from './feedback/AlphaBadge.svelte'
@@ -31,6 +33,7 @@
       $coach,
     ),
   )
+  const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)
   let error = $state('')
@@ -68,7 +71,29 @@
   </div>
 
   <div class="mt-auto shrink-0 flex flex-col items-center gap-[10px]">
-    {#if lobby?.kind === 'create'}
+    {#if queue}
+      <!-- Searching shows the timer; a found match turns the tile into the Accept button -->
+      {#if queue.kind === 'found' && queue.matchId}
+        {@const id = queue.matchId}
+        <button
+          type="button"
+          onclick={() => void acceptMatch(id)}
+          aria-label="Match found: accept, {queue.clock} left"
+          class="flex h-16 w-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-0 bg-accent font-display text-[16px] font-bold uppercase text-accent-fg"
+          >Accept<span class="font-mono text-[12px] font-medium">{queue.clock}</span></button
+        >
+      {:else}
+        <a
+          href="#/matchmaking"
+          aria-label="{queue.tag}, {queue.name}. {queue.clock}"
+          class="relative box-border flex h-16 w-[72px] flex-col items-center justify-center gap-1 rounded-[10px] border border-accent-line-strong bg-surface-active text-accent no-underline"
+        >
+          <span class="absolute top-2 right-[10px] h-2 w-2 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>
+          <Swords size={22} strokeWidth={1.8} />
+          <span class="font-mono text-[12px] text-text">{queue.clock}</span>
+        </a>
+      {/if}
+    {:else if lobby?.kind === 'create'}
       <button
         type="button"
         aria-label={lobby.aria}
