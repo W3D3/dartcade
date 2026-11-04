@@ -8,7 +8,8 @@ import type { Snapshot } from './api/game-ws'
  */
 export function endControl(snapshot: Snapshot | null, userId: string | null): 'end' | 'leave' | null {
   if (!snapshot) return null
-  if (userId !== null && userId === snapshot.ownerUserId) return 'end'
+  // A ranked game has no one who ends it for everyone: its players only leave (forfeit)
+  if (userId !== null && userId === snapshot.ownerUserId && !snapshot.rankedGame) return 'end'
   return snapshot.mySeats.length > 0 ? 'leave' : null
 }
 

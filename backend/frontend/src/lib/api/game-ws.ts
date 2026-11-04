@@ -784,6 +784,10 @@ export interface SnapshotBase {
    */
   mySeats: number[]
   /**
+   * Started by the ranked queue: it cannot be ended for the other side, leaving forfeits.
+   */
+  rankedGame: boolean
+  /**
    * A ranked game's rules and clock; null or missing for a game that is not ranked.
    */
   ranked?: RankedState | null

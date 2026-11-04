@@ -370,6 +370,12 @@ export async function insertRankedMatch(
     .execute()
 }
 
+/** Whether the queue started this game. */
+export async function isRankedMatch(db: Kysely<Database>, sessionId: string): Promise<boolean> {
+  const row = await db.selectFrom('ranked_matches').select('session_id').where('session_id', '=', sessionId).executeTakeFirst()
+  return row !== undefined
+}
+
 /**
  * Moves the ratings for a ranked game once it's finished: the side whose players placed first
  * won; each player's average is their 3-dart average in the game. Returns false when the game

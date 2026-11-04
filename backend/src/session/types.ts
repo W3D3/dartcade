@@ -244,6 +244,8 @@ export interface Session {
   nextSeq: number
   totalDarts: number[]
   totalVisits: number[]
+  /** Started by the ranked queue: no player aborts it (leaving forfeits) and either side starts its bull off. */
+  ranked: boolean
   /** Seat indices that have forfeited, ascending. */
   forfeited: number[]
   /** The game's committed visits since the bull off, newest last, as they were before each was

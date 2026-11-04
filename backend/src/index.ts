@@ -159,7 +159,11 @@ const engine: SessionEngine = new SessionEngine(
       warn('storing a finished game detail failed', { sessionId: ended.sessionId, error: String(err) })
     })
     bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
-    return lobbies.onGameEnded(ended).then(() => matchmaking.onGameEnded(ended))
+    // Independent: a lobby that fails to reset must not keep the ratings from moving
+    return Promise.allSettled([lobbies.onGameEnded(ended), matchmaking.onGameEnded(ended)]).then(results => {
+      for (const r of results)
+        if (r.status === 'rejected') warn('game-end hook failed', { sessionId: ended.sessionId, error: String(r.reason) })
+    })
   },
   started => lobbies.onGameStarted(started),
   {
@@ -213,6 +217,13 @@ await lobbies.settleAll()
 // …and a ranked one never moved its ratings
 await matchmaking.settleAll()
 matchmaking.start()
+// A rating write that failed is tried again every minute, not only at the next start
+const settleRanked = setInterval(() => {
+  matchmaking.settleAll().catch((err: unknown) => {
+    warn('ranked settle failed', { error: String(err) })
+  })
+}, 60_000)
+settleRanked.unref()
 // Lobbies with no game running close after hours without activity: 6 h with one account,
 // 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS). Pairing codes go
 // an hour after they expired, friend activity after a month.
@@ -259,6 +270,7 @@ backfillCoachLegs(db, warn).catch((err: unknown) => {
 // Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
+  clearInterval(settleRanked)
   matchmaking.close()
   bigScreen.close()
   await friends.close()
