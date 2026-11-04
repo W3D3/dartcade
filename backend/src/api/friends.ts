@@ -13,6 +13,10 @@ export function friendsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
 
   app.get<Route<'listFriends'>>('/api/friends', { ...auth, schema: fromSpec('listFriends') }, async req => friends.list(req.userId))
 
+  app.get<Route<'getPlayerFriends'>>('/api/users/:id/friends', { ...auth, schema: fromSpec('getPlayerFriends') }, async req =>
+    friends.playerFriends(req.userId, req.params.id),
+  )
+
   app.post<Route<'sendFriendRequest'>>('/api/friends/requests', { ...auth, schema: fromSpec('sendFriendRequest') }, async (req, reply) => {
     const r = await friends.request(req.userId, req.body.name)
     return reply.code(r.status === 'accepted' ? 200 : 201).send(r)

@@ -1761,6 +1761,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** A player's friends section: their friends (if you may see the list), the mutual count, when they were last online (friends only) */
+        get: operations["getPlayerFriends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/challenges": {
         parameters: {
             query?: never;
@@ -3626,6 +3645,10 @@ export interface components {
             suggestedName: string | null;
             /** @description Friends see you as offline */
             invisible: boolean;
+            showLastOnline: components["schemas"]["ShowLastOnline"];
+            friendsVisibility: components["schemas"]["FriendsVisibility"];
+            /** @description Friend search finds you by partial name or email; exact-name requests work either way */
+            discoverable: boolean;
             /** @description May open admin pages (the minigolf test bench) */
             isAdmin: boolean;
             /** @description May look at any game and invalidate it (admins and moderators) */
@@ -3640,11 +3663,42 @@ export interface components {
             avatar: components["schemas"]["Avatar"];
             country: components["schemas"]["Country"];
         };
+        /**
+         * @description Who sees when you were last online (coarse steps; never while Invisible)
+         * @enum {string}
+         */
+        ShowLastOnline: "friends" | "nobody";
+        /**
+         * @description Who sees your friends list: your friends, or only you. Everyone who sees your profile sees the mutual friend count.
+         * @enum {string}
+         */
+        FriendsVisibility: "friends" | "me";
+        PlayerFriends: {
+            lastSeen?: components["schemas"]["LastSeen"];
+            /** @description Friends you both have; 0 on your own profile */
+            mutualCount: number;
+            /** @description Their friends, mutual ones first; null when you may not see the list (only the count) */
+            friends: {
+                id: string;
+                name: string;
+                avatar: components["schemas"]["Avatar"];
+                /** @description Also your friend */
+                mutual: boolean;
+                /**
+                 * @description To you: yourself, your friend, a request you sent (requested), a request they sent you (incoming), or nothing
+                 * @enum {string}
+                 */
+                relation: "self" | "friend" | "requested" | "incoming" | "none";
+            }[] | null;
+        };
         /** @description ISO 3166-1 alpha-2 code of the country shown next to the name; null for none. Public: every player who sees the profile sees it. */
         Country: string | null;
         UpdateMeRequest: {
             name?: string;
             invisible?: boolean;
+            showLastOnline?: components["schemas"]["ShowLastOnline"];
+            friendsVisibility?: components["schemas"]["FriendsVisibility"];
+            discoverable?: boolean;
             avatar?: components["schemas"]["AvatarChoice"];
             country?: components["schemas"]["Country"];
         };
@@ -4230,6 +4284,12 @@ export interface components {
             r: number;
             theta_deg: number;
         };
+        /**
+         * LastSeen
+         * @description When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).
+         * @enum {string}
+         */
+        LastSeen: "now" | "today" | "yesterday" | "week" | "older";
         /** FriendPlaying */
         FriendPlaying: {
             /** @enum {string} */
@@ -4275,6 +4335,7 @@ export interface components {
             /** @description They have a pending invite to your lobby */
             invited: boolean;
             avatar: components["schemas"]["Avatar"];
+            lastSeen?: components["schemas"]["LastSeen"];
         };
         /** UserRef */
         UserRef: {
@@ -7395,6 +7456,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPlayerFriends: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The section */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerFriends"];
                 };
             };
             401: components["responses"]["Unauthorized"];

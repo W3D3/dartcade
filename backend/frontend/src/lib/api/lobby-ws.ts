@@ -75,6 +75,10 @@ export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
  */
 export type FriendStatus = FriendPlaying | FriendInLobby | FriendOnline | FriendOffline
 /**
+ * When an offline friend was last online, in coarse steps (never an exact time): within the hour, within a day, yesterday, within a week, longer ago. Left out when not shown (online, Invisible, never seen, or they chose Nobody).
+ */
+export type LastSeen = 'now' | 'today' | 'yesterday' | 'week' | 'older'
+/**
  * Everything /ws/me pushes.
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
@@ -429,6 +433,7 @@ export interface Friend {
    */
   invited: boolean
   avatar: Avatar1
+  lastSeen?: LastSeen
 }
 export interface FriendPlaying {
   kind: 'playing'

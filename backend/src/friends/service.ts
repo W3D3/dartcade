@@ -12,9 +12,12 @@ import { FriendError } from './errors.js'
 import { KeyedDebounce, PUSH_DEBOUNCE_MS } from './debounce.js'
 import { OFFLINE_GRACE_MS, Presence } from './presence.js'
 import { friendStatus } from './status.js'
+import { lastSeenBucket } from './lastSeen.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 
 type FriendList = components['schemas']['FriendList']
+type LastSeen = components['schemas']['LastSeen']
+type PlayerFriends = components['schemas']['PlayerFriends']
 export type RequestOutcome = { id: string; status: 'pending' | 'accepted' }
 
 const REQUEST_ATTEMPTS = 3
@@ -45,7 +48,8 @@ export class FriendsService {
 
   constructor(private readonly deps: FriendsDeps) {
     this.presence = new Presence(userId => {
-      this.touch([userId])
+      if (this.presence.isOnline(userId)) this.touch([userId])
+      else void this.track(this.wentOffline(userId))
     }, deps.graceMs ?? OFFLINE_GRACE_MS)
     this.pushes = new KeyedDebounce(deps.debounceMs ?? PUSH_DEBOUNCE_MS, userId => {
       this.push(userId)
@@ -85,6 +89,15 @@ export class FriendsService {
   }
   isOnline(userId: string): boolean {
     return this.presence.isOnline(userId)
+  }
+
+  // Remembers when they left before friends hear of it, so the push already says "last online"
+  private async wentOffline(userId: string): Promise<void> {
+    try {
+      await q.touchLastSeen(this.db, userId, new Date())
+    } finally {
+      this.touch([userId])
+    }
   }
 
   /** These users' status changed (presence, lobby, game, Invisible, name): they and their friends get fresh lists. */
@@ -134,11 +147,16 @@ export class FriendsService {
     }
   }
 
-  /** The server stops: no more pushes, and no grace or debounce timers left running. */
-  close(): void {
+  /**
+   * The server stops: no more pushes, and no grace or debounce timers left running. Everyone who was
+   * online (or leaving) is last seen now: their grace timer will never fire, so nobody else writes it.
+   */
+  async close(): Promise<void> {
     this.closed = true
-    this.presence.close()
+    const online = this.presence.close()
     this.pushes.cancel()
+    await Promise.allSettled([...this.inflight])
+    await q.setLastSeen(this.db, online, new Date())
   }
 
   async message(userId: string): Promise<FriendsMessage> {
@@ -160,6 +178,7 @@ export class FriendsService {
     const lobbies = await q.openLobbiesOf(this.db, [userId, ...friendIds])
     const myLobby = lobbies.get(userId) ?? null
     const invited = myLobby ? await q.pendingInviteesOf(this.db, myLobby.id) : new Set<string>()
+    const now = new Date()
     const mutual = await q.mutualFriendCounts(
       this.db,
       userId,
@@ -179,6 +198,7 @@ export class FriendsService {
           inYourLobby: myLobby !== null && lobby?.id === myLobby.id,
           invited: invited.has(r.otherId),
           avatar: r.otherAvatar,
+          ...this.lastSeen(r.otherId, r.otherInvisible, r.otherLastSeenAt, now),
         }
       }),
       incoming: incoming.map(r => ({
@@ -193,6 +213,46 @@ export class FriendsService {
         createdAt: r.createdAt.toISOString(),
       })),
     }
+  }
+
+  // Only for an offline friend who is not Invisible (their choice of Nobody arrives as null)
+  private lastSeen(userId: string, invisible: boolean, at: Date | null, now: Date): { lastSeen?: LastSeen } {
+    if (invisible || at === null || this.isOnline(userId)) return {}
+    return { lastSeen: lastSeenBucket(at, now) }
+  }
+
+  /**
+   * A profile's Friends section as the viewer may see it. Last online: friends only. The list: yourself,
+   * or a friend while the owner shares it with friends. Everyone gets the mutual count (not on yourself).
+   */
+  async playerFriends(viewerId: string, targetId: string): Promise<PlayerFriends> {
+    const privacy = await q.privacyOf(this.db, targetId)
+    if (!privacy) throw FriendError.notFound('player not found')
+    const self = viewerId === targetId
+    const friend = !self && (await q.areFriends(this.db, viewerId, targetId))
+    const mutualCount = self ? 0 : ((await q.mutualFriendCounts(this.db, viewerId, [targetId])).get(targetId) ?? 0)
+    const lastSeenAt = friend && privacy.showLastOnline === 'friends' ? privacy.lastSeenAt : null
+    const lastSeen = this.lastSeen(targetId, privacy.invisible, lastSeenAt, new Date())
+    if (!self && !(friend && privacy.friendsVisibility === 'friends')) return { ...lastSeen, mutualCount, friends: null }
+    const [theirs, mine] = await Promise.all([q.friendshipsOf(this.db, targetId), q.friendshipsOf(this.db, viewerId)])
+    const relations = new Map(
+      mine.map(r => [
+        r.otherId,
+        r.status === 'accepted' ? ('friend' as const) : r.requesterId === viewerId ? ('requested' as const) : ('incoming' as const),
+      ]),
+    )
+    const friends = theirs
+      .filter(r => r.status === 'accepted')
+      .map(r => ({
+        id: r.otherId,
+        name: r.otherName,
+        avatar: r.otherAvatar,
+        mutual: !self && relations.get(r.otherId) === 'friend',
+        relation: r.otherId === viewerId ? ('self' as const) : (relations.get(r.otherId) ?? ('none' as const)),
+      }))
+      // Mutual friends first; the rest keep the by-name order of the query
+      .sort((a, b) => Number(b.mutual) - Number(a.mutual))
+    return { ...lastSeen, mutualCount, friends }
   }
 
   /** Asks someone by exact name. A request to someone who already asked you accepts theirs. */

@@ -40,7 +40,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     await db.deleteFrom('lobby_invites').execute()
     await db.deleteFrom('lobby_people').execute()
     await db.deleteFrom('lobbies').execute()
-    await db.updateTable('user').set({ invisible: false }).execute()
+    await db
+      .updateTable('user')
+      .set({ invisible: false, show_last_online: 'friends', friends_visibility: 'friends', last_seen_at: null })
+      .execute()
     onChange.mockReset()
     games.clear()
     hub = new LobbyHub()
@@ -48,7 +51,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   })
   afterEach(async () => {
     await friends.flush()
-    friends.close()
+    await friends.close()
   })
 
   it('sends a request by exact name, any case, with spaces or an @ around', async () => {
@@ -253,7 +256,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     })
 
     it('a reload inside the grace: a change between building its list and the socket opening still reaches it', async () => {
-      friends.close()
+      await friends.close()
       friends = new FriendsService({ db, hub, gameOf: u => games.get(u) ?? null, debounceMs: 5, graceMs: 10_000 })
       await befriend('chris', 'lena')
       await open('lena')
@@ -311,11 +314,133 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       const sent = chris.send.mock.calls.length
       friends.disconnected('lena')
       friends.refresh(['chris'])
-      friends.close()
+      await friends.close()
       friends.disconnected('chris')
       await new Promise(r => setTimeout(r, 40))
       await friends.flush()
       expect(chris.send).toHaveBeenCalledTimes(sent)
+    })
+  })
+
+  describe('last online and friends of friends', () => {
+    const befriend = async (a: string, b: string) => {
+      const names: Record<string, string> = { chris: 'Christoph', lena: 'Lena', max: 'Max', sam: 'sam.180' }
+      const r = await friends.request(a, names[b] ?? b)
+      await friends.accept(b, r.id)
+    }
+    const seen = (id: string, ago: number) =>
+      db
+        .updateTable('user')
+        .set({ last_seen_at: new Date(Date.now() - ago) })
+        .where('id', '=', id)
+        .execute()
+    const H = 3_600_000
+    const lastSeenOf = async (viewer: string, id: string) => (await friends.list(viewer)).friends.find(f => f.id === id)?.lastSeen
+
+    it('shows an offline friend a coarse bucket, never to non-friends', async () => {
+      await befriend('chris', 'lena')
+      await seen('lena', 3 * H)
+      expect(await lastSeenOf('chris', 'lena')).toBe('today')
+      await seen('lena', 30 * H)
+      expect(await lastSeenOf('chris', 'lena')).toBe('yesterday')
+      await seen('lena', 100 * H)
+      expect(await lastSeenOf('chris', 'lena')).toBe('week')
+      await seen('lena', 400 * H)
+      expect(await lastSeenOf('chris', 'lena')).toBe('older')
+      expect((await friends.playerFriends('max', 'lena')).lastSeen).toBeUndefined()
+      expect((await friends.playerFriends('chris', 'lena')).lastSeen).toBe('older')
+    })
+
+    it('hides it while Invisible, online, never seen or set to Nobody', async () => {
+      await befriend('chris', 'lena')
+      await seen('lena', 3 * H)
+      await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
+      expect(await lastSeenOf('chris', 'lena')).toBeUndefined()
+      expect((await friends.playerFriends('chris', 'lena')).lastSeen).toBeUndefined()
+      await db.updateTable('user').set({ invisible: false, show_last_online: 'nobody' }).where('id', '=', 'lena').execute()
+      expect(await lastSeenOf('chris', 'lena')).toBeUndefined()
+      expect((await friends.playerFriends('chris', 'lena')).lastSeen).toBeUndefined()
+      await db.updateTable('user').set({ show_last_online: 'friends', last_seen_at: null }).where('id', '=', 'lena').execute()
+      expect(await lastSeenOf('chris', 'lena')).toBeUndefined()
+      await seen('lena', 3 * H)
+      friends.connected('lena')
+      expect(await lastSeenOf('chris', 'lena')).toBeUndefined()
+    })
+
+    it('records when the last socket closes after the grace, at most every few minutes', async () => {
+      friends.connected('lena')
+      friends.disconnected('lena')
+      await new Promise(r => setTimeout(r, 60))
+      await friends.flush()
+      const first = (await db.selectFrom('user').select('last_seen_at').where('id', '=', 'lena').executeTakeFirstOrThrow()).last_seen_at
+      expect(first).toBeInstanceOf(Date)
+      friends.connected('lena')
+      friends.disconnected('lena')
+      await new Promise(r => setTimeout(r, 60))
+      await friends.flush()
+      const second = (await db.selectFrom('user').select('last_seen_at').where('id', '=', 'lena').executeTakeFirstOrThrow()).last_seen_at
+      expect(second).toEqual(first)
+    })
+
+    it('writes last seen for everyone online or leaving when the service closes, past the throttle', async () => {
+      friends.connected('lena')
+      friends.connected('max')
+      friends.disconnected('max') // inside its grace
+      await seen('lena', 1000) // written a moment ago: the throttle would skip it
+      await friends.close()
+      const at = async (id: string) =>
+        (await db.selectFrom('user').select('last_seen_at').where('id', '=', id).executeTakeFirstOrThrow()).last_seen_at
+      for (const id of ['lena', 'max']) expect(Date.now() - (await at(id))!.getTime()).toBeLessThan(5000)
+      expect((await at('lena'))!.getTime()).toBeGreaterThan(Date.now() - 900)
+      expect(await at('chris')).toBeNull()
+    })
+
+    it("lists a friend's friends with mutual ones first, to a friend", async () => {
+      await befriend('chris', 'lena')
+      await befriend('lena', 'max')
+      await befriend('lena', 'sam')
+      await befriend('chris', 'sam')
+      await friends.request('chris', 'Max') // you asked them
+      const p = await friends.playerFriends('chris', 'lena')
+      expect(p.mutualCount).toBe(1)
+      expect(p.friends?.map(f => [f.id, f.mutual, f.relation])).toEqual([
+        ['sam', true, 'friend'],
+        ['chris', false, 'self'],
+        ['max', false, 'requested'],
+      ])
+      // The other way round: Max asks you, so you may answer rather than ask again
+      await friends.cancel('chris', (await friends.list('chris')).outgoing[0].id)
+      await friends.request('max', 'Christoph')
+      expect((await friends.playerFriends('chris', 'lena')).friends?.find(f => f.id === 'max')?.relation).toBe('incoming')
+    })
+
+    it('gives a stranger the mutual count only, and a friend nothing when the list is Only me', async () => {
+      await befriend('chris', 'lena')
+      await befriend('lena', 'max')
+      await befriend('chris', 'max')
+      const stranger = await friends.playerFriends('sam', 'lena')
+      expect(stranger).toEqual({ mutualCount: 0, friends: null })
+      await befriend('sam', 'max')
+      expect((await friends.playerFriends('sam', 'lena')).friends).toBeNull()
+      expect((await friends.playerFriends('sam', 'lena')).mutualCount).toBe(1)
+      await db.updateTable('user').set({ friends_visibility: 'me' }).where('id', '=', 'lena').execute()
+      const friend = await friends.playerFriends('chris', 'lena')
+      expect(friend.friends).toBeNull()
+      expect(friend.mutualCount).toBe(1)
+    })
+
+    it('always shows you your own list, even set to Only me; a pending request is not a friend', async () => {
+      await befriend('chris', 'lena')
+      await friends.request('max', 'Lena')
+      await db.updateTable('user').set({ friends_visibility: 'me' }).where('id', '=', 'lena').execute()
+      const own = await friends.playerFriends('lena', 'lena')
+      expect(own.mutualCount).toBe(0)
+      expect(own.friends?.map(f => [f.id, f.relation])).toEqual([['chris', 'friend']])
+      expect((await friends.playerFriends('max', 'lena')).friends).toBeNull()
+    })
+
+    it('404s for an unknown player', async () => {
+      await expect(friends.playerFriends('chris', 'nobody')).rejects.toMatchObject({ statusCode: 404 })
     })
   })
 })

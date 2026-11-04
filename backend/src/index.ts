@@ -261,7 +261,7 @@ app.addHook('onClose', async () => {
   clearInterval(idleSweep)
   matchmaking.close()
   bigScreen.close()
-  friends.close()
+  await friends.close()
   await closePool()
 })
 await app.listen({ port: PORT, host: '0.0.0.0' })

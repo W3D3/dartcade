@@ -211,7 +211,7 @@ export async function seedSample(db: Kysely<Database>, log: (line: string) => vo
       log(`friends: ${from} -> ${to}${accepted ? '' : ' (pending)'}`)
     }
   } finally {
-    friends.close()
+    await friends.close()
   }
 
   const host = users[LOBBY.host].id

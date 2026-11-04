@@ -36,6 +36,10 @@ describe('statusLine', () => {
     ).toEqual({ text: 'In your lobby · Friday darts', tone: 'ink' })
     expect(statusLine(friend({ status: { kind: 'playing', gameId: 'x01' } }))).toEqual({ text: 'Playing X01', tone: 'playing' })
     expect(statusLine(friend({ status: { kind: 'offline' } }))).toEqual({ text: 'Offline', tone: 'muted' })
+    expect(statusLine(friend({ status: { kind: 'offline' }, lastSeen: 'yesterday' }))).toEqual({
+      text: 'Last online yesterday',
+      tone: 'muted',
+    })
   })
 })
 

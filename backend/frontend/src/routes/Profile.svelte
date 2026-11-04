@@ -11,6 +11,7 @@
   import AvgBadge from '$lib/components/AvgBadge.svelte'
   import Flag from '$lib/components/Flag.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
+  import ProfileFriends from '$lib/components/progress/ProfileFriends.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import { currentUser } from '$lib/auth'
@@ -37,8 +38,11 @@
   import BanNotice from '$lib/components/BanNotice.svelte'
   import { fetchBan, type Ban } from '$lib/bans'
 
+  import { lastSeenText, type LastSeen } from '$lib/friends/view'
+
   let { params = {} }: { params?: { id?: string } } = $props()
 
+  let lastSeen = $state<LastSeen>()
   const progression = flag('progression.enabled')
   const userId = $derived(params.id ?? $currentUser?.id ?? null)
   // One store per player shown; read again when the page opens
@@ -135,7 +139,8 @@
                     ><Flame size={14} aria-hidden="true" />{p.streak} day streak</span
                   >
                 {/if}
-                {#if dot}<span class="text-text-muted">{STATUS_TEXT[dot]}</span>{/if}
+                {#if dot}<span class="text-text-muted">{dot === 'offline' && lastSeen ? lastSeenText(lastSeen) : STATUS_TEXT[dot]}</span
+                  >{/if}
               </div>
               <div class="text-[13px] text-text-muted">{self ? 'You · m' : 'M'}ember since {since(p.memberSince)}</div>
               {#if p.ban}<BanNotice ban={p.ban} class="self-start" />{/if}
@@ -246,6 +251,8 @@
               <span class="pb-1 text-[12px] label-caps text-text-dim">Level</span>
             </section>
           {/if}
+
+          <ProfileFriends userId={p.id} {self} bind:lastSeen />
 
           {#if p.headToHead}
             <section aria-label="Head-to-head" class="card box-border flex flex-col gap-2 p-[18px] md:p-[22px]">
