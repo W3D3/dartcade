@@ -9217,10 +9217,16 @@
             "required": [
               "points",
               "scoring",
-              "rule"
+              "rule",
+              "startChance"
             ],
             "additionalProperties": false,
             "properties": {
+              "startChance": {
+                "type": "number",
+                "nullable": true,
+                "description": "The checkout chance (%) before the first dart; null on Scoring"
+              },
               "points": {
                 "type": "number",
                 "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"

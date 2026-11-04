@@ -7,7 +7,7 @@ import { grouping, type Grouping } from './grouping.js'
 import type { CoachModel } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
 import { executionStats } from './stats.js'
-import { dartDeltas } from './value.js'
+import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
 import { throwsOf, type CoachLeg } from './walk.js'
 
@@ -45,8 +45,9 @@ export type ReviewVisit = {
   explained: CoachNote | null
   /** How its placed darts sat together, and its rating; null with fewer than 2 (grouping.ts) */
   grouping: Grouping | null
-  /** How the grade was worked out (grade.ts VisitValue) */
-  value: VisitValue
+  /** How the grade was worked out (grade.ts VisitValue); `startChance`: the checkout chance (%,
+   *  value.ts) before the first dart, null on a Scoring visit */
+  value: VisitValue & { startChance: number | null }
 }
 export type SkillGrade = { grade: 'A' | 'B' | 'C' | 'D' | null; line: string }
 export type LegCounts = { lowVisits: number; badSetups: number; missedDoubles: number; clean: boolean }
@@ -113,7 +114,8 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   const visits = mine.map(({ v, i }, k): ReviewVisit => {
     const start = visitStart(v)
     const vThrows = throws.filter(t => t.visit === i)
-    const deltas = start > 170 ? [] : dartDeltas(vThrows, evaluate, model)
+    const values = start > 170 ? [] : visitValues(vThrows, evaluate, model)
+    const deltas = deltasOf(values)
     const reviewDarts = v.darts.map((d, j): ReviewDart => {
       // Undefined for a dart after the bust
       const t = vThrows.at(j)
@@ -161,6 +163,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       notes: vNotes,
       explained: explainedNote(vNotes),
       grouping: g,
+      value: { ...grading.value, startChance: values.length ? values[0] * 100 : null },
     }
   })
 

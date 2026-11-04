@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { bedAim } from '$shared/coach/aims'
 import { NOT_COUNTED } from '$shared/coach/dartClass'
-import { groupingLine, signedPoints, valueLine, whatHappened } from './numbers'
+import { gradeWorking, groupingLine, signedPoints, whatHappened } from './numbers'
 
 describe('visit numbers', () => {
   const dart = (name: string, left: number, bust = false) => ({
@@ -21,13 +21,9 @@ describe('visit numbers', () => {
     expect(whatHappened({ darts: [dart('S4', 4), dart('D2', 0)] })).toBe('S4 (4 left), D2 out.')
   })
 
-  it("lists each dart's change in checkout chance and the near-miss credit", () => {
-    const valued = (name: string, delta: number, closeness: number | null = null) => ({ ...dart(name, 0), delta, closeness })
-    expect(valueLine({ darts: [valued('S20', -4.4), valued('T17', 10.8), valued('S18', 1.5)] })).toBe('S20 −4 · T17 +11 · S18 +2')
-    expect(valueLine({ darts: [valued('M16', -3.9, 4.5), valued('M16', -6, 4.5), dart('D8', 32)] })).toBe(
-      'M16 −4 · M16 −6 · near misses +9',
-    )
-    expect(valueLine({ darts: [dart('T20', 441)] })).toBeNull()
+  it('signs whole points', () => {
+    expect(signedPoints(-4.4)).toBe('−4')
+    expect(signedPoints(10.8)).toBe('+11')
     expect(signedPoints(0.4)).toBe('0')
   })
 
@@ -54,5 +50,71 @@ describe('groupingLine', () => {
   it('leaves the spread out without a shared target, and is null without a grouping', () => {
     expect(groupingLine({ darts, tag: 'scoring', grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
     expect(groupingLine({ darts, tag: 'scoring', grouping: null })).toBeNull()
+  })
+})
+
+describe('gradeWorking', () => {
+  const dart = (name: string, delta: number | null, closeness: number | null = null) => ({
+    name,
+    bedAimId: bedAim(name)?.id ?? null,
+    coords: null,
+    left: 0,
+    bust: false,
+    class: NOT_COUNTED,
+    delta,
+    closeness,
+  })
+  const finish = {
+    tag: 'setup' as const,
+    left: 121,
+    bust: false,
+    darts: [dart('S20', -4.4), dart('M17', 10.8, 2.25), dart('S18', 1.5)],
+    value: { points: 10.15, scoring: null, rule: null, startChance: 34.04 },
+  }
+
+  it("adds a finish visit's darts from its start chance and places the sum in its band", () => {
+    const w = gradeWorking(finish)
+    expect(w.parts).toEqual(['Start: 121 left, 34.0% to check out', 'S20: Δ −4.4', 'M17: Δ +10.8, closeness +2.3', 'S18: Δ +1.5'])
+    expect(w.result).toBe('Σ +10.2 → Good (+2 to +20)')
+    expect(w.rule).toBeNull()
+    // Bad below the lowest bound, then each class up to the next, Excellent to the end
+    expect(w.scale.bands.map(b => [b.grade, b.from, b.to])).toEqual([
+      ['bad', -40, -20],
+      ['weak', -20, -15],
+      ['inaccuracy', -15, -2],
+      ['ok', -2, 2],
+      ['good', 2, 20],
+      ['great', 20, 60],
+      ['excellent', 60, 80],
+    ])
+    expect(w.scale.ticks).toEqual([-20, -15, -2, 2, 20, 60])
+    expect(w.scale.marker).toBe(10.15)
+  })
+
+  it('keeps the marker on the bar, names a bust and the rule that overrode the value', () => {
+    expect(gradeWorking({ ...finish, value: { ...finish.value, points: 95 } }).scale.marker).toBe(80)
+    expect(gradeWorking({ ...finish, bust: true, value: { ...finish.value, points: -16 } }).result).toBe(
+      'Σ −16.0 → Weak (−20 to −15) (a bust: valued back on the start)',
+    )
+    expect(gradeWorking({ ...finish, value: { ...finish.value, rule: 'perfect' } }).rule).toBe('Perfect: fewest darts — value ignored')
+  })
+
+  it("adds a scoring visit's rating and compares it with the average", () => {
+    const w = gradeWorking({
+      tag: 'scoring',
+      left: 501,
+      bust: false,
+      darts: [],
+      value: {
+        points: 11.5,
+        scoring: { scored: 60, grouping: 7.5, closeness: 4, rating: 71.5, average: 60 },
+        rule: 'spill',
+        startChance: null,
+      },
+    })
+    expect(w.parts).toEqual(['Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5', 'Your average: 60.0'])
+    expect(w.result).toBe('Rating − average = +11.5 → Good (+10 to +25)')
+    expect(w.rule).toBe('Two or more darts spilled into 1 or 5: capped at Inaccuracy')
+    expect(w.scale.ticks).toEqual([-30, -15, -5, 10, 25, 50])
   })
 })

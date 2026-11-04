@@ -91,6 +91,7 @@ describe('reviewLeg', () => {
           explained: null,
           grouping: null,
           value: {
+            startChance: null,
             points: expect.closeTo(51.6, 1),
             rule: null,
             scoring: { scored: 140, grouping: 0, closeness: 0, rating: 140, average: (501 / 17) * 3 },
@@ -229,7 +230,7 @@ describe('reviewLeg', () => {
           notes: [expect.objectContaining({ leg: 0, visit: 8, dart: 1, left: 47, thrown: 'S1', better: 'S15', tip: false })],
           explained: expect.objectContaining({ visit: 8, dart: 1, better: 'S15' }),
           grouping: null,
-          value: { points: expect.closeTo(-2.1, 1), rule: 'note', scoring: null },
+          value: { startChance: expect.any(Number), points: expect.closeTo(-2.1, 1), rule: 'note', scoring: null },
         },
         {
           n: 6,
@@ -266,7 +267,7 @@ describe('reviewLeg', () => {
           notes: [],
           explained: null,
           grouping: null,
-          value: { points: expect.closeTo(9.1, 1), rule: null, scoring: null },
+          value: { startChance: expect.any(Number), points: expect.closeTo(9.1, 1), rule: null, scoring: null },
         },
       ],
       skills: {
@@ -280,6 +281,12 @@ describe('reviewLeg', () => {
       grouping: { spreadMm: null, edgeMm: null },
     }
     expect(reviewLeg([wonLeg()], 0, 0, ctx(501))).toEqual(expected)
+  })
+
+  it("a finish visit's start chance and its darts' changes add up to its end: the checkout's 100", () => {
+    const last = reviewLeg([wonLeg()], 0, 0, ctx(501))!.visits.at(-1)!
+    expect(last.then).toBe(0)
+    expect(last.value.startChance! + last.darts.reduce((s, d) => s + d.delta!, 0)).toBeCloseTo(100, 9)
   })
 
   it('grades scoring against the 30-day average when there is one', () => {

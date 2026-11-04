@@ -28,6 +28,8 @@ export function visitValues(throws: readonly Throw[], evaluate: (t: Throw) => Ev
 /** Each walked dart's change in value, in percentage points (+ better than a player of the
  *  model's level expects from there). */
 export function dartDeltas(throws: readonly Throw[], evaluate: (t: Throw) => Evaluation | null, model: CoachModel): number[] {
-  const v = visitValues(throws, evaluate, model)
-  return throws.map((_, i) => (v[i + 1] - v[i]) * 100)
+  return deltasOf(visitValues(throws, evaluate, model))
 }
+
+/** visitValues' changes, in percentage points */
+export const deltasOf = (v: readonly number[]): number[] => v.slice(1).map((x, i) => (x - v[i]) * 100)

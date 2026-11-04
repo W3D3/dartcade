@@ -1,6 +1,9 @@
 // The numbers behind a visit's grade (VisitNumbers: the sandbox, and Coach-Leg with
-// coach.debug.enabled): what each dart left, its change in checkout chance, the grouping.
-import type { ReviewVisit } from '$shared/coach'
+// coach.debug.enabled): what each dart left, how the grade was worked out, the grouping.
+import type { GradeRule, ReviewVisit, VisitGrade } from '$shared/coach'
+import { bandOf, FINISH_BANDS, SCORING_BANDS, VERY_LOW, type GradeBands } from '$shared/coach/grade'
+import { bandText } from './checks'
+import { GRADE_PILL } from './tone'
 
 /** "S19 (76 left), T20 (16 left), S1 (15 left)."; the busting dart "T8 bust", a dart the game kept
  *  after it "S5 (not counted)", a checkout "D4 out" */
@@ -24,13 +27,63 @@ export function signedPoints(v: number): string {
   return n === 0 ? '0' : `${n > 0 ? '+' : '−'}${Math.abs(n)}`
 }
 
-/** "S20 −4 · T17 +11 · S18 +2 · near misses +3": each dart's change in checkout chance, then the
- *  near-miss credit when there is any; null on a Scoring visit */
-export function valueLine(v: Pick<ReviewVisit, 'darts'>): string | null {
-  const darts = v.darts.flatMap(d => (d.delta === null ? [] : [{ ...d, delta: d.delta }]))
-  if (!darts.length) return null
-  const close = Math.round(darts.reduce((s, d) => s + (d.closeness ?? 0), 0))
-  return [...darts.map(d => `${d.name} ${signedPoints(d.delta)}`), ...(close > 0 ? [`near misses +${close}`] : [])].join(' · ')
+/** One class's stretch of a grade scale, in points */
+export type ScaleBand = { grade: VisitGrade; from: number; to: number }
+/** A grade scale drawn as a bar: its bands from `min` to `max`, the bounds between them
+ *  (`ticks`) and where the visit's points fall (`marker`, kept on the bar) */
+export type GradeScale = { min: number; max: number; bands: ScaleBand[]; ticks: number[]; marker: number }
+/** How a visit's grade was worked out (VisitNumbers): the sum's parts, the result and its band,
+ *  the scale, and the rule that overrode or capped the value */
+export type GradeWorking = { parts: string[]; result: string; scale: GradeScale; rule: string | null }
+
+/** How far the bar runs past the outermost bounds, in points */
+const SCALE_MARGIN = 20
+const one = (v: number) => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1)
+const signedOne = (v: number) => (Math.abs(v) < 0.05 ? '0.0' : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`)
+
+function scaleOf(bands: GradeBands, points: number): GradeScale {
+  const ticks = bands.map(b => b.from).reverse()
+  const min = ticks[0] - SCALE_MARGIN
+  const max = ticks[ticks.length - 1] + SCALE_MARGIN
+  const rows: ScaleBand[] = [{ grade: 'bad', from: min, to: ticks[0] }]
+  for (const [i, b] of [...bands].reverse().entries()) rows.push({ grade: b.grade, from: b.from, to: ticks[i + 1] ?? max })
+  return { min, max, bands: rows, ticks, marker: Math.min(max, Math.max(min, points)) }
+}
+
+const RULE_TEXT: Record<NonNullable<GradeRule>, string> = {
+  perfect: 'Perfect: fewest darts — value ignored',
+  note: 'Bad: a strategy note — value ignored',
+  veryLow: `Under ${VERY_LOW} scored: capped at Weak`,
+  spill: 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',
+}
+
+/** The working behind a visit's grade. Setup and Doubling: the start's checkout chance, each
+ *  walked dart's Δ and closeness, their sum on the checkout-chance scale. Scoring: scored + grouping
+ *  + closeness = rating, against the average. */
+export function gradeWorking(v: Pick<ReviewVisit, 'tag' | 'left' | 'bust' | 'darts' | 'value'>): GradeWorking {
+  const { points, scoring, rule } = v.value
+  const finish = scoring === null
+  const bands = finish ? FINISH_BANDS : SCORING_BANDS
+  const band = bandOf(points, bands)
+  const parts = finish
+    ? [
+        `Start: ${v.left} left, ${one(v.value.startChance ?? 0)}% to check out`,
+        ...v.darts.flatMap(d =>
+          d.delta === null ? [] : [`${d.name}: Δ ${signedOne(d.delta)}${d.closeness === null ? '' : `, closeness +${one(d.closeness)}`}`],
+        ),
+      ]
+    : [
+        `Scored ${scoring.scored} + grouping ${one(scoring.grouping)} + closeness ${one(scoring.closeness)} = rating ${one(scoring.rating)}`,
+        `Your average: ${one(scoring.average)}`,
+      ]
+  const sum = finish ? `Σ ${signedOne(points)}` : `Rating − average = ${signedOne(points)}`
+  const bust = v.bust && rule === null ? ' (a bust: valued back on the start)' : ''
+  return {
+    parts,
+    result: `${sum} → ${GRADE_PILL[band].label} (${bandText(bands, band)})${bust}`,
+    scale: scaleOf(bands, points),
+    rule: rule === null ? null : RULE_TEXT[rule],
+  }
 }
 
 /** "Grouping 6 mm (yours: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed

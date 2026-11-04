@@ -3859,9 +3859,10 @@ components:
         value:
           type: object
           description: 'How the grade was worked out (shared/coach/grade.ts VisitValue)'
-          required: [points, scoring, rule]
+          required: [points, scoring, rule, startChance]
           additionalProperties: false
           properties:
+            startChance: { type: number, nullable: true, description: 'The checkout chance (%) before the first dart; null on Scoring' }
             points:
               {
                 type: number,

@@ -3032,6 +3032,8 @@ export interface components {
             } | null;
             /** @description How the grade was worked out (shared/coach/grade.ts VisitValue) */
             value: {
+                /** @description The checkout chance (%) before the first dart; null on Scoring */
+                startChance: number | null;
                 /** @description On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average */
                 points: number;
                 /** @description A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling */
