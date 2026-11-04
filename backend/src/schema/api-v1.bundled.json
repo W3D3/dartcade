@@ -11359,7 +11359,8 @@
               "game_running",
               "already_member",
               "already_invited",
-              "game_unavailable"
+              "game_unavailable",
+              "searching"
             ]
           },
           "lobbyId": {

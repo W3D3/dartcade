@@ -28,10 +28,13 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 }
 
 // Actions on the turn in progress: only whoever controls the seat that's up
+const MANUAL_ACTIONS = new Set(['add_dart', 'correct_dart'])
 const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip', 'p121_give_up'])
 
 /** The action as it may be applied (forfeit gets its seats), or null when the user may not send it. */
 export function authorizeAction(session: Session, userId: string, action: UserAction): UserAction | null {
+  // Ranked without hand entry (flag matchmaking.manualEntry): hand-entered darts are refused
+  if (session.ranked && !session.ranked.rules.manualEntry && MANUAL_ACTIONS.has(action.type)) return null
   if (SEAT_ACTIONS.has(action.type)) {
     return session.seats[currentSeat(session)].controllerUserId === userId ? action : null
   }

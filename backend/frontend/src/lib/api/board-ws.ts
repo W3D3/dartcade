@@ -517,6 +517,10 @@ export interface SnapshotBase {
    * Seats the viewer controls.
    */
   mySeats: number[]
+  /**
+   * The ranked rules of the game and the clock; null for a game that is not ranked.
+   */
+  ranked: RankedState | null
 }
 export interface Player {
   name: string
@@ -567,6 +571,56 @@ export interface SeatInfo {
   bot: {
     level: number
   } | null
+}
+/**
+ * A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.
+ */
+export interface RankedState {
+  now: string
+  /**
+   * Time each visit gets before the reserve is used.
+   */
+  visitSeconds: number
+  /**
+   * The reserve each seat (each team in a team game) starts with.
+   */
+  reserveSeconds: number
+  /**
+   * Darts may be entered by hand; when false the server rejects them.
+   */
+  manualEntry: boolean
+  /**
+   * When the visit of the seat that is up runs over and its reserve starts to run.
+   */
+  visitDeadline: string
+  /**
+   * When the seat that is up has used its whole reserve and forfeits the match.
+   */
+  forfeitAt: string
+  /**
+   * Same order as players.
+   */
+  seats: {
+    /**
+     * Reserve left at `now`, whole seconds, counting the open visit.
+     */
+    reserveSeconds: number
+    /**
+     * The seat is up and its visit has run over, so its reserve is running.
+     */
+    inReserve: boolean
+    /**
+     * Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected.
+     */
+    disconnectForfeitAt: string | null
+    /**
+     * RP the seat's side gains for a win and loses for a loss; null while placing.
+     */
+    stakes: {
+      win: number
+      loss: number
+    } | null
+  }[]
 }
 /**
  * What the session engine adds to every game's view: the open visit's darts and each seat's darts and visits so far.

@@ -443,6 +443,11 @@ export interface RankedMatchesTable {
   mode: '1v1' | '2v2'
   /** The user ids of each side's players (written as JSON). */
   sides: ColumnType<[string[], string[]], string, never>
+  visit_seconds: ColumnType<number, number | undefined, never>
+  reserve_seconds: ColumnType<number, number | undefined, never>
+  manual_entry: ColumnType<boolean, boolean | undefined, never>
+  /** Per seat: what its side wins and loses; null while placing (written as JSON). */
+  stakes: ColumnType<({ win: number; loss: number } | null)[], string | undefined, never>
   created_at: ColumnType<Date, Date | undefined, never>
 }
 

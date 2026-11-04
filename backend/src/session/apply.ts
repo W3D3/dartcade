@@ -1,4 +1,5 @@
 import { refoldVisit } from './refold.js'
+import { chargeVisit, teamsOfSeats } from './rankedClock.js'
 import { manualDart } from './manualDart.js'
 import type { BoardEvent, CommittedVisit, HistoryDart, Session, UserAction } from './types.js'
 
@@ -79,7 +80,9 @@ function markCorrected(session: Session, dartPos: number): void {
  * the input happened (now, or the log entry's time). No I/O.
  */
 export function applyInput(session: Session, input: GameInput, at: Date): ApplyOutcome {
+  const up = session.module.getCurrentPlayer(session.currentState)
   const outcome = input.source === 'board' ? applyBoardEvent(session, input.event, at) : applyUserAction(session, input.action, at)
+  if (session.ranked && outcome.committed) chargeVisit(session.ranked, teamsOfSeats(session)[up], at)
   session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
   return outcome
 }

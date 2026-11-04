@@ -102,6 +102,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Lets players upload a photo as their avatar through the API. There is no UI for it for now.',
     defaultRule: 'admins',
   },
+  'matchmaking.manualEntry': {
+    kind: 'boolean',
+    description: 'Lets ranked players enter darts by hand. Off: the server rejects hand-entered darts in ranked games.',
+    defaultRule: 'everyone',
+  },
   'matchmaking.visitSeconds': {
     kind: 'number',
     description: 'How long a ranked player has for each visit, in seconds.',
@@ -224,6 +229,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('avatar.upload.enabled', isAdmin),
+    },
+    'matchmaking.manualEntry': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('matchmaking.manualEntry', () => true),
     },
     'matchmaking.visitSeconds': number('matchmaking.visitSeconds', VISIT_SECONDS),
     'matchmaking.reserveSeconds': number('matchmaking.reserveSeconds', RESERVE_SECONDS),

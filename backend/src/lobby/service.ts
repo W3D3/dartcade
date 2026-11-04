@@ -58,6 +58,8 @@ export type LobbyDeps = {
   autoStartBoards?: (boardIds: string[]) => Promise<void>
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
   gameAvailable?: (userId: string, gameId: string) => Promise<boolean>
+  /** Whether any of these users is in a duo's ranked search: that lobby takes no changes until it ends. */
+  searchingDuo?: (userIds: string[]) => boolean
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
@@ -204,7 +206,14 @@ export class LobbyService {
       lobby = this.cache.get(lobbyId)
     }
     if (!lobby || lobby.closedAt !== null || !rules.isMember(lobby, userId)) throw LobbyError.notFound('lobby not found')
+    this.assertNotSearching(lobby)
     return lobby
+  }
+
+  // A duo searching for a ranked match keeps its line-up: no changes until it's cancelled or found
+  private assertNotSearching(lobby: LobbyState): void {
+    if (this.deps.searchingDuo?.(lobby.people.flatMap(p => (p.userId === null ? [] : [p.userId]))))
+      throw LobbyError.conflict({ error: 'Cancel the ranked search first', code: 'searching' })
   }
 
   private async openAsHost(lobbyId: string, userId: string): Promise<LobbyState> {
@@ -413,6 +422,7 @@ export class LobbyService {
   private async mayJoin(lobby: LobbyState | undefined, userId: string, code: string | undefined): Promise<LobbyState> {
     if (!lobby || lobby.closedAt !== null)
       throw LobbyError.notFound(code === undefined ? 'lobby not found' : 'no open lobby with this code')
+    this.assertNotSearching(lobby)
     if (code !== undefined) {
       if (lobby.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
       return lobby

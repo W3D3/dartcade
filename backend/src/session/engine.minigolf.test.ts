@@ -24,6 +24,7 @@ const store = () =>
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
     getAvatars: vi.fn().mockResolvedValue(new Map()),
+    getRankedRules: vi.fn().mockResolvedValue(undefined),
   }) satisfies EngineStore
 const config = { ...M.defaultConfig, course: 'test' }
 const dart = (x: number, y: number) => ({

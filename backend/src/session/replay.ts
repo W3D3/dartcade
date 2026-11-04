@@ -8,6 +8,7 @@ import { teamForfeitPlacements } from '../games/teams.js'
 import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
 import { simulateInPool } from '../games/minigolfPool.js'
 import type { ShotResult } from '../shared/minigolf/types.js'
+import { newRankedClock, type RankedRules, type Stakes } from './rankedClock.js'
 import type { NewGameDart } from '../db/queries.js'
 import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, Seat, Session } from './types.js'
 
@@ -48,6 +49,8 @@ export function newSession(a: {
   version?: number
   /** The seated accounts' profile pictures (a replay for history needs none). */
   avatars?: Map<string, Avatar>
+  /** A ranked game's rules and what each seat's side stands to win or lose. */
+  ranked?: { rules: RankedRules; stakes: (Stakes | null)[] }
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
@@ -74,6 +77,7 @@ export function newSession(a: {
     totalVisits: Array<number>(players.length).fill(0),
     boardStatus: new Map(),
     forfeited: [],
+    ranked: a.ranked ? newRankedClock(a.ranked.rules, a.ranked.stakes, players.length, a.createdAt) : null,
     undoable: [],
     dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,

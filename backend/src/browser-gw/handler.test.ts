@@ -210,6 +210,7 @@ describe('WS auth', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.createWithSeats({
@@ -269,6 +270,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     // The host's seat is up: Lena may watch, not take out
@@ -322,6 +324,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -373,6 +376,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -429,6 +433,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -483,6 +488,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -540,6 +546,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -579,6 +586,7 @@ describe('WS client messages', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn(), undefined, undefined, undefined, undefined, { forgotten: forgetSession })
     const opened = async (sessionId: string) => {
@@ -637,6 +645,7 @@ describe('WS camera stills', () => {
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
       getAvatars: vi.fn().mockResolvedValue(new Map()),
+      getRankedRules: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.createWithSeats({

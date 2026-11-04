@@ -8,7 +8,7 @@ import { pruneActivity } from './db/activity.js'
 import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
-import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
+import { browserConnections, forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { bootstrapAdmin } from './auth/bootstrap.js'
 import { mailConfig } from './auth/index.js'
@@ -151,6 +151,7 @@ const engine: SessionEngine = new SessionEngine(
   },
   started => lobbies.onGameStarted(started),
   {
+    connectedUsers: id => browserConnections.connectedUsers(id),
     forgotten: id => {
       forgetSession(id)
       lights.onForgotten(id)
@@ -172,6 +173,7 @@ const lobbies: LobbyService = new LobbyService({
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
   autoStartBoards: boardIds => autoStartBoards(db, boardIds, warn),
   gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
+  searchingDuo: userIds => matchmaking.searchingDuo(userIds),
   warn: (message, details) => {
     warn(message, details)
   },
@@ -201,6 +203,13 @@ await lobbies.settleAll()
 // …and a ranked one never moved its ratings
 await matchmaking.settleAll()
 matchmaking.start()
+// The ranked clocks and disconnect timers (SessionEngine.tickRanked)
+const rankedTick = setInterval(() => {
+  engine.tickRanked().catch((err: unknown) => {
+    warn('ranked tick failed', { error: String(err) })
+  })
+}, 1_000)
+rankedTick.unref()
 // Lobbies with no game running close after hours without activity: 6 h with one account,
 // 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS). Pairing codes go
 // an hour after they expired, friend activity after a month.
@@ -242,6 +251,7 @@ warn = (message, details) => {
 // Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
+  clearInterval(rankedTick)
   matchmaking.close()
   bigScreen.close()
   friends.close()

@@ -4790,6 +4790,7 @@ components:
                 already_member,
                 already_invited,
                 game_unavailable,
+                searching,
               ],
           }
         lobbyId: { type: string, description: 'in_lobby: the lobby you are in; leave it first' }

@@ -13,6 +13,7 @@ import type { UserAction } from '../schema/game-ws.js'
 import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
 import type { components } from '../schema/api.js'
+import type { RankedClock } from './rankedClock.js'
 
 // Aliases for shorter names throughout the backend
 export type Dart = ADetectedDart
@@ -244,6 +245,8 @@ export interface Session {
   nextSeq: number
   totalDarts: number[]
   totalVisits: number[]
+  /** A ranked game's rules and clock (session/rankedClock.ts); null for any other game. */
+  ranked: RankedClock | null
   /** Seat indices that have forfeited, ascending. */
   forfeited: number[]
   /** The game's committed visits since the bull off, newest last, as they were before each was

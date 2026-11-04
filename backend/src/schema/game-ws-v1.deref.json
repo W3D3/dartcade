@@ -1970,7 +1970,8 @@
         "ownerUserId",
         "seats",
         "mySeats",
-        "results"
+        "results",
+        "ranked"
       ],
       "properties": {
         "type": {
@@ -2261,6 +2262,230 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
+        },
+        "ranked": {
+          "anyOf": [
+            {
+              "title": "RankedState",
+              "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+              "type": "object",
+              "required": [
+                "now",
+                "visitSeconds",
+                "reserveSeconds",
+                "manualEntry",
+                "visitDeadline",
+                "forfeitAt",
+                "seats"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "now": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "visitSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Time each visit gets before the reserve is used."
+                },
+                "reserveSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The reserve each seat (each team in a team game) starts with."
+                },
+                "manualEntry": {
+                  "type": "boolean",
+                  "description": "Darts may be entered by hand; when false the server rejects them."
+                },
+                "visitDeadline": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                },
+                "forfeitAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                },
+                "seats": {
+                  "type": "array",
+                  "description": "Same order as players.",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "reserveSeconds",
+                      "inReserve",
+                      "disconnectForfeitAt",
+                      "stakes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "reserveSeconds": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                      },
+                      "inReserve": {
+                        "type": "boolean",
+                        "description": "The seat is up and its visit has run over, so its reserve is running."
+                      },
+                      "disconnectForfeitAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                      },
+                      "stakes": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "win",
+                              "loss"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "win": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "loss": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
+        }
+      }
+    },
+    "RankedState": {
+      "title": "RankedState",
+      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+      "type": "object",
+      "required": [
+        "now",
+        "visitSeconds",
+        "reserveSeconds",
+        "manualEntry",
+        "visitDeadline",
+        "forfeitAt",
+        "seats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "now": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "visitSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time each visit gets before the reserve is used."
+        },
+        "reserveSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The reserve each seat (each team in a team game) starts with."
+        },
+        "manualEntry": {
+          "type": "boolean",
+          "description": "Darts may be entered by hand; when false the server rejects them."
+        },
+        "visitDeadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+        },
+        "forfeitAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+        },
+        "seats": {
+          "type": "array",
+          "description": "Same order as players.",
+          "items": {
+            "type": "object",
+            "required": [
+              "reserveSeconds",
+              "inReserve",
+              "disconnectForfeitAt",
+              "stakes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "reserveSeconds": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+              },
+              "inReserve": {
+                "type": "boolean",
+                "description": "The seat is up and its visit has run over, so its reserve is running."
+              },
+              "disconnectForfeitAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+              },
+              "stakes": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "win",
+                      "loss"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "win": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "loss": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+              }
+            }
+          }
         }
       }
     },
@@ -2286,7 +2511,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -2577,6 +2803,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -3157,7 +3499,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -3448,6 +3791,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -3713,7 +4172,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -4004,6 +4464,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -5076,7 +5652,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -5367,6 +5944,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -6398,7 +7091,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -6689,6 +7383,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -8839,7 +9649,8 @@
             "ownerUserId",
             "seats",
             "mySeats",
-            "results"
+            "results",
+            "ranked"
           ],
           "properties": {
             "type": {
@@ -9130,6 +9941,122 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                    },
+                    "forfeitAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
             }
           }
         },
@@ -10475,7 +11402,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -10766,6 +11694,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },
@@ -11346,7 +12390,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -11637,6 +12682,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },
@@ -11902,7 +13063,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -12193,6 +13355,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },
@@ -12720,7 +13998,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -13011,6 +14290,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },
@@ -14352,7 +15747,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -14643,6 +16039,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },
@@ -15156,7 +16668,8 @@
                 "ownerUserId",
                 "seats",
                 "mySeats",
-                "results"
+                "results",
+                "ranked"
               ],
               "properties": {
                 "type": {
@@ -15447,6 +16960,122 @@
                     "minimum": 0
                   },
                   "description": "Seats the viewer controls."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run."
+                        },
+                        "forfeitAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The ranked rules of the game and the clock; null for a game that is not ranked."
                 }
               }
             },

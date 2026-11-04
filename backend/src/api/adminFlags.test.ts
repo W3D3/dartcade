@@ -101,9 +101,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     expect(findFlag(body, 'matchmaking.visitSeconds')).toMatchObject({
       kind: 'number',
       range: [10, 300],
-      default: { value: 60 },
+      default: { value: 120 },
       override: null,
-      value: 60,
+      value: 120,
     })
     expect(body.stale).toEqual([])
   })
@@ -211,7 +211,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     const del = await app().inject({ method: 'DELETE', url: '/api/admin/flags/matchmaking.visitSeconds', headers: asAdmin })
     expect(del.statusCode).toBe(204)
     const after = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: asPlayer, payload: {} })
-    expect(findFlag(after.json(), 'matchmaking.visitSeconds')).toMatchObject({ value: 60 })
+    expect(findFlag(after.json(), 'matchmaking.visitSeconds')).toMatchObject({ value: 120 })
   })
 
   it("400s userIds on a mode other than 'users'", async () => {

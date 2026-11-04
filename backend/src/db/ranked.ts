@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { groupBy } from '../util/groupBy.js'
+import type { RankedRules, Stakes } from '../session/rankedClock.js'
 import { toAvatar, type Avatar } from './users.js'
 import { insertActivity, type ActivityInsert } from './activity.js'
 import { rankUpEvent } from '../activity/events.js'
@@ -360,12 +361,33 @@ export async function matchRatings(
 /** Remembers a game the queue started, so its ratings move when it ends. */
 export async function insertRankedMatch(
   db: Kysely<Database>,
-  m: { sessionId: string; mode: RankedMode; sides: [string[], string[]] },
+  m: { sessionId: string; mode: RankedMode; sides: [string[], string[]]; rules: RankedRules; stakes: (Stakes | null)[] },
 ): Promise<void> {
   await db
     .insertInto('ranked_matches')
-    .values({ session_id: m.sessionId, mode: m.mode, sides: JSON.stringify(m.sides) })
+    .values({
+      session_id: m.sessionId,
+      mode: m.mode,
+      sides: JSON.stringify(m.sides),
+      visit_seconds: m.rules.visitSeconds,
+      reserve_seconds: m.rules.reserveSeconds,
+      manual_entry: m.rules.manualEntry,
+      stakes: JSON.stringify(m.stakes),
+    })
     .execute()
+}
+
+/** The in-game rules of a ranked game, or undefined when the game isn't a ranked one. */
+export async function getRankedRules(
+  db: Kysely<Database>,
+  sessionId: string,
+): Promise<{ rules: RankedRules; stakes: (Stakes | null)[] } | undefined> {
+  const r = await db
+    .selectFrom('ranked_matches')
+    .select(['visit_seconds', 'reserve_seconds', 'manual_entry', 'stakes'])
+    .where('session_id', '=', sessionId)
+    .executeTakeFirst()
+  return r && { rules: { visitSeconds: r.visit_seconds, reserveSeconds: r.reserve_seconds, manualEntry: r.manual_entry }, stakes: r.stakes }
 }
 
 /**

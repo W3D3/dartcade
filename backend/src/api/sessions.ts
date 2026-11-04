@@ -82,6 +82,11 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     async (req, reply) => {
       const session = engine.getSession(req.params.id)
       if (!session) return reply.code(404).send({ error: 'not found' })
+      // Leaving a ranked game is a forfeit, for whoever has a seat in it; it's never aborted
+      if (session.ranked && session.status === 'active') {
+        const res = await engine.onUserAction(session.id, req.userId, { type: 'forfeit' })
+        return reply.code(res.ok ? 204 : 403).send(res.ok ? undefined : { error: 'forbidden' })
+      }
       // Only the host ends the game for everyone
       if (!isHost(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
       await engine.deleteSession(session.id, req.userId)

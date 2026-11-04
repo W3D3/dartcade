@@ -33,6 +33,7 @@ function engine() {
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
     getAvatars: vi.fn().mockResolvedValue(new Map()),
+    getRankedRules: vi.fn().mockResolvedValue(undefined),
   }
   return new SessionEngine(store, vi.fn())
 }

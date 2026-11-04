@@ -67,6 +67,7 @@ function memoryStore() {
       return Promise.resolve()
     },
     getAvatars: () => Promise.resolve(new Map()),
+    getRankedRules: () => Promise.resolve(undefined),
   }
   return { store, sessions, events, darts, finished, aborted }
 }

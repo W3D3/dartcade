@@ -16,6 +16,7 @@ const base = {
   lobbyId: null,
   lobbyName: null,
   mySeats: [0],
+  ranked: null,
   seats: [
     {
       controllerUserId: 'u1',

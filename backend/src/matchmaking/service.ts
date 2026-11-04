@@ -9,7 +9,9 @@ import { ActiveSessionError } from '../session/errors.js'
 import type { Seat } from '../session/types.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
-import { ACCEPT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
+import { flagEnabled, flagNumber, loadFlagUser } from '../flags/index.js'
+import type { RankedRules, Stakes } from '../session/rankedClock.js'
+import { ACCEPT_SECONDS, RESERVE_SECONDS, VISIT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { findMatches, matchFirstTo, rangeOf, type Entry, type FirstTo } from './matcher.js'
 
@@ -246,6 +248,12 @@ export class MatchmakingService {
     if (this.deps.engine.getSessionByUser(userId)) throw MatchmakingError.conflict('active_session', `${who} in a game`)
   }
 
+  /** Whether one of these users is in a duo's search, or a found match of one (their lobby is locked). */
+  searchingDuo(userIds: string[]): boolean {
+    const duo = (s: Search) => s.players.length > 1 && userIdsOf(s).some(u => userIds.includes(u))
+    return [...this.searches.values()].some(duo) || [...this.found.values()].some(f => f.sides.some(duo))
+  }
+
   private searchersOf(mode: RankedMode): string[] {
     return [...this.searches.values()].filter(s => s.mode === mode).flatMap(userIdsOf)
   }
@@ -348,6 +356,7 @@ export class MatchmakingService {
     const [a, b] = found.sides
     const mode = a.mode
     const seats = await this.seatsOf([...a.players, ...b.players])
+    const ranked = await this.rankedRules(found)
     let sessionId: string
     try {
       ;({ sessionId } = await this.deps.engine.createWithSeats({
@@ -355,6 +364,7 @@ export class MatchmakingService {
         gameId: 'x01',
         config: rankedConfig(mode, found.firstTo),
         seats,
+        ranked,
         lobbyName: `Ranked ${mode}`,
       }))
     } catch (err) {
@@ -365,11 +375,24 @@ export class MatchmakingService {
       return
     }
     try {
-      await insertRankedMatch(this.deps.db, { sessionId, mode, sides: [a.userIds, b.userIds] })
+      await insertRankedMatch(this.deps.db, { sessionId, mode, sides: [a.userIds, b.userIds], ...ranked })
     } catch (err) {
       this.warn('ranked match not stored: its ratings will not move', { sessionId, error: String(err) })
     }
     this.push([...a.userIds, ...b.userIds, ...this.searchersOf(mode)])
+  }
+
+  // The in-game rules from the flags (as the host sees them), and each seat's stakes (seat order: side a, then b)
+  private async rankedRules(found: Found): Promise<{ rules: RankedRules; stakes: (Stakes | null)[] }> {
+    const [a, b] = found.sides
+    const host = await loadFlagUser(this.deps.db, a.userIds[0])
+    const rules = {
+      visitSeconds: await flagNumber('matchmaking.visitSeconds', VISIT_SECONDS, host),
+      reserveSeconds: await flagNumber('matchmaking.reserveSeconds', RESERVE_SECONDS, host),
+      manualEntry: await flagEnabled('matchmaking.manualEntry', host),
+    }
+    const stakesOf = (own: Search, other: Search) => own.players.map(p => (p.placing ? null : stakes(own.rating, other.rating)))
+    return { rules, stakes: [...stakesOf(a, b), ...stakesOf(b, a)] }
   }
 
   private async seatsOf(players: Player[]): Promise<Seat[]> {

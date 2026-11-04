@@ -32,14 +32,20 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Ranks:** 6 tiers (Wood, Bronze, Silver, Gold, Diamond, Elite) × 5 stages (I to V). Wood I starts
   at 0, every stage after it is 50 RP up: Wood II 600 … Gold I 1 300 … Elite V 2 000. You promote
   the moment you reach a stage and drop only 25 RP below the stage you hold. No rank while placing.
-- **Time limit:** 60 s per visit, starting once the board is clear, plus a 3 min reserve per player
-  (per team in 2v2) used only once a visit runs over. An empty reserve forfeits the match. Both are
-  number flags (`matchmaking.visitSeconds`, `matchmaking.reserveSeconds`) a deployment can change
-  with `FLAG_VALUES`. (The canvas note's 8-minute chess clock was dropped in favour of the screens;
-  the screens' 30 s and 2 min were raised to give more room.)
-- **Manual entry** is allowed in ranked (trust-based); a board is not required.
-- **Leaving** a ranked game is a forfeit. **Disconnects** get 2 minutes to come back; then the other
-  side wins.
+- **Time limit:** 120 s per visit (it starts when the last visit is committed), plus a 300 s reserve
+  per player (per team in 2v2) used only once a visit runs over. An empty reserve forfeits the match.
+  The clock simply runs, with no pausing: timers are lenient, the goal is only to stop stalling. Both
+  are number flags (`matchmaking.visitSeconds`, `matchmaking.reserveSeconds`) a deployment can
+  change with `FLAG_VALUES`. The rules a game starts with are kept in `ranked_matches`, so a restart
+  brings them back (and gives the visit in progress a fresh start). The reserve is charged when a
+  visit is committed, from the logged time, so a replay ends with the same reserves; running out is
+  a `forfeit` input in the log, written by the server (`SessionEngine.tickRanked`).
+- **Manual entry** in ranked is controlled by the flag `matchmaking.manualEntry` (on for everyone).
+  When off, the server refuses hand-entered darts (`add_dart`, `correct_dart`) in ranked games and the
+  UI hides manual entry.
+- **Leaving** a ranked game is a forfeit, and a ranked game cannot be aborted. **Disconnects** get
+  2 minutes to come back; then that side forfeits and the other wins. A forfeit scores as a loss in
+  the rating update, which is recorded once.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
   gives everyone 10 s to accept; opponents stay hidden until all accept. Declining or timing out
   pauses your queue for 2 min; everyone else keeps their place. No bots in the queue.
@@ -69,7 +75,9 @@ The rank maths (`backend/src/shared/ranked.ts`) is shared with the frontend.
    duo (a duo searches from a lobby of exactly two; its host starts and cancels). The queue lives in
    memory, so a restart drops the searches. Moved on: the ranked result screen, locking the duo's
    lobby while it searches, and stopping a ranked game from being aborted.
-3. **Ranked rules in game:** the visit timer and reserve as input events (so replay stays
-   deterministic), the disconnect forfeit, the ranked header with stakes.
+3. **Ranked rules in game:** the visit timer and reserve (server-timestamped, so replay stays
+   deterministic), the forfeits, the manual-entry flag, the duo lobby locked while it searches, and
+   the snapshot's `ranked` object (`RankedState` in `schema/game-ws-v1.json`) the screens build on.
+   The ranked header with stakes is the UI's (#171, #172).
 4. **Everywhere else:** the searching / match-found states in the lobby card, tablet rail and phone
    strip, Matchmaking on tablet and phone, ranks on profiles.

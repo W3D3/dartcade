@@ -12,8 +12,10 @@ import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameErro
 import type { Database } from '../db/schema.js'
 import { getAvatars, type Avatar } from '../db/users.js'
 import * as queries from '../db/queries.js'
+import { getRankedRules } from '../db/ranked.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
+import { DISCONNECT_MS, deadlines, reserveLeft, teamsOfSeats, type RankedRules, type Stakes } from './rankedClock.js'
 
 type PushFn = (sessionId: string) => void
 
@@ -53,6 +55,8 @@ export type EngineOptions = {
   keepFinishedMs?: number
   /** A game is gone from the engine (aborted, or a won game's keepFinishedMs passed). */
   forgotten?: (sessionId: string) => void
+  /** Who has the game open right now (the ranked disconnect timer, see tickRanked). */
+  connectedUsers?: (sessionId: string) => ReadonlySet<string>
 }
 
 /** A game started: who to push /ws/me to (see LobbyService.onGameStarted). */
@@ -88,6 +92,8 @@ export interface EngineStore {
   abortSession(id: string, finishedAt: Date, abortedByUserId: string | null): Promise<void>
   /** The profile pictures of these accounts, for the seats of the snapshot. */
   getAvatars(userIds: string[]): Promise<Map<string, Avatar>>
+  /** The ranked rules of a stored game; undefined when it isn't a ranked one. */
+  getRankedRules(sessionId: string): Promise<{ rules: RankedRules; stakes: (Stakes | null)[] } | undefined>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
@@ -101,6 +107,7 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
     abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
     getAvatars: ids => getAvatars(db, ids),
+    getRankedRules: id => getRankedRules(db, id),
   }
 }
 
@@ -114,6 +121,8 @@ export type NewSessionSpec = {
   lobbyName?: string | null
   /** Random throw order: the seats are shuffled with the game's seed before they're stored. */
   shuffleSeats?: boolean
+  /** A ranked game: the time limit and hand-entry rules, and each seat's stakes (seat order, before any shuffle). */
+  ranked?: { rules: RankedRules; stakes: (Stakes | null)[] }
 }
 
 const distinct = <T>(xs: (T | null)[]): T[] => [...new Set(xs.filter((x): x is T => x !== null))]
@@ -141,6 +150,34 @@ const storedAborted = (row: StoredGameSession): GameEnded => ({
   userIds: storedSeatedUserIds(row),
   boardIds: [],
 })
+
+/** The clock, timers and stakes of a ranked game as the snapshot carries them (RankedState in schema/game-ws-v1.json). */
+function rankedState(session: Session, view: SnapshotView, now: number) {
+  const clock = session.ranked
+  if (!clock) return null
+  const teamOf = teamsOfSeats(session)
+  const up = currentSeat(session)
+  const { visitDeadline, forfeitAt } = deadlines(clock, teamOf[up])
+  const iso = (ms: number) => new Date(ms).toISOString()
+  return {
+    now: iso(now),
+    visitSeconds: clock.rules.visitSeconds,
+    reserveSeconds: clock.rules.reserveSeconds,
+    manualEntry: clock.rules.manualEntry,
+    visitDeadline: iso(visitDeadline),
+    forfeitAt: iso(forfeitAt),
+    seats: session.seats.map((s, i) => {
+      const isUp = teamOf[i] === teamOf[up]
+      const connected = s.bot !== null || view.connectedUserIds.has(s.controllerUserId)
+      return {
+        reserveSeconds: Math.floor(reserveLeft(clock, teamOf[i], isUp, now) / 1000),
+        inReserve: isUp && now > visitDeadline,
+        disconnectForfeitAt: connected ? null : iso((clock.absentSince.get(s.controllerUserId) ?? now) + DISCONNECT_MS),
+        stakes: clock.stakes[i] ?? null,
+      }
+    }),
+  }
+}
 
 /** The seats as one viewer sees them: boards online, controllers connected or since when not. */
 function seatViews(session: Session, view: SnapshotView) {
@@ -267,6 +304,7 @@ export class SessionEngine {
       lobbyId,
       lobbyName: spec.lobbyName ?? null,
       avatars,
+      ranked: spec.ranked,
     })
     // Claim the players and boards before the next await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
@@ -367,6 +405,48 @@ export class SessionEngine {
     // A refused or dropped action changes nothing: no snapshot for everyone
     if (changed) this.push(session.id)
     return result
+  }
+
+  /**
+   * The ranked rules, once a second: a team whose visit and reserve have run out forfeits, and so
+   * does a controller who has been away from the game for DISCONNECT_SECONDS. The forfeit goes
+   * through the log like a player's own, so a replay ends the game the same way.
+   */
+  async tickRanked(now: number = Date.now()): Promise<void> {
+    for (const session of this.byId.values()) {
+      const clock = session.ranked
+      if (!clock || session.status !== 'active') continue
+      const teamOf = teamsOfSeats(session)
+      const connected = this.opts.connectedUsers?.(session.id) ?? new Set<string>()
+      const away = new Set<string>()
+      for (const s of session.seats) {
+        if (s.bot !== null || connected.has(s.controllerUserId)) clock.absentSince.delete(s.controllerUserId)
+        else {
+          const since = clock.absentSince.get(s.controllerUserId) ?? now
+          clock.absentSince.set(s.controllerUserId, since)
+          if (now - since >= DISCONNECT_MS) away.add(s.controllerUserId)
+        }
+      }
+      const up = currentSeat(session)
+      const timedOut = deadlines(clock, teamOf[up]).forfeitAt <= now
+      const seats = session.seats.flatMap((s, i) =>
+        session.forfeited.includes(i) ? [] : (timedOut && teamOf[i] === teamOf[up]) || away.has(s.controllerUserId) ? [i] : [],
+      )
+      // Everyone out at once (both players gone): only the first team loses, so the other wins
+      const liveTeams = new Set(session.seats.flatMap((_, i) => (session.forfeited.includes(i) ? [] : [teamOf[i]])))
+      const losing = new Set(seats.map(i => teamOf[i]))
+      const only = losing.size >= liveTeams.size ? seats.filter(i => teamOf[i] === teamOf[seats[0]]) : seats
+      if (only.length > 0) await this.forfeitSeats(session, only)
+    }
+  }
+
+  // A forfeit the server decides (the ranked timers): logged and applied like a player's own
+  private async forfeitSeats(session: Session, seats: number[]): Promise<void> {
+    const changed = await this.enqueue(session.id, () => {
+      const action = { type: 'forfeit' as const, seats }
+      return this.apply(session, { source: 'user', action }, { kind: 'forfeit', data: action }, { bridgeEventId: null, boardId: null })
+    })
+    if (changed) this.push(session.id)
   }
 
   private record(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<boolean> {
@@ -560,6 +640,7 @@ export class SessionEngine {
       lobbyName: row.lobby_name,
       version: row.game_version,
       avatars,
+      ranked: await this.store.getRankedRules(row.id),
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
@@ -573,6 +654,9 @@ export class SessionEngine {
       await this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
       return
     }
+    // The server being down isn't the players' time: their visit starts over (the one place the
+    // clock isn't derived from the log alone; timers are lenient)
+    if (session.ranked) session.ranked.visitStart = Date.now()
     this.index(session)
     // A bot seat up in a session rebuilt at startup would otherwise just sit there until a
     // human acts (the scheduler only ever runs from push) — an all-bot game would never
@@ -605,6 +689,7 @@ export class SessionEngine {
       seats: seatViews(session, view),
       mySeats: session.seats.flatMap((s, i) => (s.controllerUserId === view.viewerUserId ? [i] : [])),
       // The status pill follows the board of the seat that's up
+      ranked: rankedState(session, view, Date.now()),
       bmStatus: upBoard === null ? null : (session.boardStatus.get(upBoard) ?? null),
     }
     // The module's id tells which view (and snapshot shape) it produces. TypeScript can't pair a
@@ -642,6 +727,8 @@ export class SessionEngine {
   async deleteSession(sessionId: string, abortedByUserId: string | null = null): Promise<boolean> {
     const session = this.byId.get(sessionId)
     if (!session) return false
+    // Leaving a ranked game is a forfeit (onUserAction); it's never aborted
+    if (session.ranked && session.status === 'active') return false
     await this.enqueue(sessionId, async () => {
       const wasActive = session.status === 'active'
       if (wasActive) {

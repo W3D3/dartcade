@@ -26,6 +26,7 @@ const store = (): EngineStore => ({
   finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
   getAvatars: vi.fn().mockResolvedValue(new Map()),
+  getRankedRules: vi.fn().mockResolvedValue(undefined),
 })
 const person = (id: string, userId: string, name: string, boardId: string, position: number): LobbyPerson => ({
   id,
