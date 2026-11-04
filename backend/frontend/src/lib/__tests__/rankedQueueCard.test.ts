@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { queueView } from '../ranked/queueCard.js'
+import { queueView, stopRule } from '../ranked/queueCard.js'
 import type { Matchmaking } from '../lobby/sockets.js'
 
 const NOW = Date.parse('2026-11-04T12:00:00Z')
@@ -60,5 +60,14 @@ describe('queueView', () => {
   it('waits for the others once you accepted, counting who did', () => {
     const v = queueView(mm({ match: match([true, false], [true, false]) }), 'me', NOW)!
     expect(v).toMatchObject({ kind: 'accepted', tag: 'Accepted · waiting', line: 'Everyone has to accept · 2 of 4 so far' })
+  })
+})
+
+describe('stopRule', () => {
+  it('lets whoever started the search cancel it', () => {
+    expect(stopRule({ hostUserId: 'me' }, 'me')).toEqual({ allowed: true, label: 'Cancel search' })
+  })
+  it("keeps a duo's other member waiting until the server allows leaving", () => {
+    expect(stopRule({ hostUserId: 'me' }, 'lena')).toEqual({ allowed: false, label: 'Leave queue' })
   })
 })
