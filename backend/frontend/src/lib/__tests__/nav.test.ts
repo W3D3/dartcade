@@ -2,54 +2,53 @@ import { describe, it, expect } from 'vitest'
 import { friendsEntry, navTabs, isActiveRoute, railLobby, railTabs, sideLinks } from '../nav.js'
 
 describe('navTabs', () => {
-  it('follows the design: Play, Live, Tournaments, History (no Boards)', () => {
-    expect(navTabs('s1').map(t => t.label)).toEqual(['Play', 'Live', 'Tournaments', 'History'])
-  })
-  it('links Live to the running game', () => {
-    expect(navTabs('s1')[1]).toEqual({ href: '/session/s1', label: 'Live', icon: 'live' })
-  })
-  it('keeps Live in place but disabled without a running game', () => {
-    expect(navTabs(null)[1]).toMatchObject({ label: 'Live', disabled: true, aria: 'Live: no game running' })
+  it('follows the design: Play, Tournaments, History (no Boards, no Live)', () => {
+    expect(navTabs().map(t => t.label)).toEqual(['Play', 'Tournaments', 'History'])
   })
   it('shows Tournaments as not there yet', () => {
-    expect(navTabs('s1')[2]).toMatchObject({ label: 'Tournaments', disabled: true })
+    expect(navTabs()[1]).toMatchObject({ label: 'Tournaments', disabled: true })
   })
 
   it('puts Ranked after Play while matchmaking is on', () => {
-    expect(navTabs('s1', 0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Tournaments', 'History'])
-    expect(navTabs(null, 0, true)[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
+    expect(navTabs(0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Tournaments', 'History'])
+    expect(navTabs(0, true)[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
+  })
+
+  it('puts Coach after Ranked while the coach is on', () => {
+    expect(navTabs(0, true, 0, true, true).map(t => t.label)).toEqual(['Home', 'Play', 'Ranked', 'Coach', 'Progress', 'History'])
+    expect(navTabs(0, false, null, false, true)[1]).toEqual({ href: '/coach', label: 'Coach', icon: 'coach' })
+    expect(navTabs(0, true, 0, true, false).map(t => t.label)).not.toContain('Coach')
   })
 
   it('puts the pending invites on the Play tab', () => {
-    expect(navTabs(null, 2)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
-    expect(navTabs(null, 0)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play' })
+    expect(navTabs(2)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
+    expect(navTabs(0)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play' })
   })
 })
 
 describe('Home in the nav', () => {
   it('puts Home first, before Play, while Home is on', () => {
-    expect(navTabs('s1', 0, false, null, true).map(t => [t.label, t.href])).toEqual([
+    expect(navTabs(0, false, null, true).map(t => [t.label, t.href])).toEqual([
       ['Home', '/'],
       ['Play', '/play'],
-      ['Live', '/session/s1'],
       ['Tournaments', '/tournaments'],
       ['History', '/history'],
     ])
-    expect(navTabs(null, 0, false, null, true)[0]).toEqual({ href: '/', label: 'Home', icon: 'home' })
+    expect(navTabs(0, false, null, true)[0]).toEqual({ href: '/', label: 'Home', icon: 'home' })
   })
 
   it('keeps the invites badge on Play', () => {
-    expect(navTabs(null, 2, false, null, true)[1]).toMatchObject({ label: 'Play', href: '/play', badge: 2 })
-    expect(navTabs(null, 2, false, null, true)[0]).not.toHaveProperty('badge')
+    expect(navTabs(2, false, null, true)[1]).toMatchObject({ label: 'Play', href: '/play', badge: 2 })
+    expect(navTabs(2, false, null, true)[0]).not.toHaveProperty('badge')
   })
 
   it('is the old nav without it: no Home, Play first (always at /play)', () => {
-    expect(navTabs('s1').map(t => [t.label, t.href])[0]).toEqual(['Play', '/play'])
+    expect(navTabs().map(t => [t.label, t.href])[0]).toEqual(['Play', '/play'])
   })
 
   it('shows in the tablet rail and the desktop side nav too', () => {
     expect(
-      railTabs('s1', 0, false, null, false, true)
+      railTabs(0, false, null, false, true)
         .map(t => t.label)
         .slice(0, 2),
     ).toEqual(['Home', 'Play'])
@@ -72,11 +71,22 @@ describe('Home in the nav', () => {
 
 describe('Progress in the nav', () => {
   it('takes the Tournaments tab while progression is on', () => {
-    expect(navTabs('s1', 0, true, 0).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Progress', 'History'])
-    expect(navTabs('s1', 0, false, 0)[2]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
+    expect(navTabs(0, true, 0).map(t => t.label)).toEqual(['Play', 'Ranked', 'Progress', 'History'])
+    expect(navTabs(0, false, 0)[1]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
   })
   it('counts the challenges to claim', () => {
-    expect(navTabs('s1', 0, false, 2)[2]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
+    expect(navTabs(0, false, 2)[1]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
+    expect(
+      sideLinks('s1', true, false, null, false, true)
+        .map(l => l.label)
+        .slice(0, 3),
+    ).toEqual(['Play', 'Matchmaking', 'Coach'])
+    expect(sideLinks('s1', true, false, null, false, true).find(l => l.label === 'Coach')).toEqual({
+      href: '/coach',
+      label: 'Coach',
+      icon: 'coach',
+    })
+    expect(sideLinks('s1').some(l => l.label === 'Coach')).toBe(false)
     expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('sits before Settings in the side nav', () => {
@@ -166,8 +176,8 @@ describe('friendsEntry', () => {
 
 describe('railTabs', () => {
   it("adds Settings, and Admin for admins, after the phone's tabs", () => {
-    expect(railTabs('s1').map(t => t.label)).toEqual(['Play', 'Live', 'Tournaments', 'History', 'Settings'])
-    expect(railTabs('s1', 0, false, null, true).slice(-2)).toEqual([
+    expect(railTabs().map(t => t.label)).toEqual(['Play', 'Tournaments', 'History', 'Settings'])
+    expect(railTabs(0, false, null, true).slice(-2)).toEqual([
       { href: '/settings', label: 'Settings', icon: 'settings' },
       { href: '/admin', label: 'Admin', icon: 'admin' },
     ])

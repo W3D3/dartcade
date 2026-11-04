@@ -81,6 +81,23 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
     defaultRule: 'admins',
   },
+  'coach.enabled': {
+    kind: 'boolean',
+    description:
+      "Shows the Coach: a review of a finished X01 game's darts on its details page, and the Coach page listing the games it can review.",
+    defaultRule: 'admins',
+  },
+  'coach.live.enabled': {
+    kind: 'boolean',
+    description:
+      'Shows the live coach beside a solo X01 game (double out): the best aims for the next dart, how each dart of the visit is classed, and the grade of the last visit.',
+    defaultRule: 'nobody',
+  },
+  'coach.debug.enabled': {
+    kind: 'boolean',
+    description: "Shows the coach's probabilities and model numbers on the leg review and live panel, for checking the model.",
+    defaultRule: 'nobody',
+  },
   'bigscreen.enabled': {
     kind: 'boolean',
     description: "Big screen: a view-only game display that follows a board, optionally on the bridge machine's screen",
@@ -200,6 +217,24 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('lights.enabled', isAdmin),
+    },
+    'coach.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('coach.enabled', isAdmin),
+    },
+    'coach.live.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('coach.live.enabled', () => false),
+    },
+    'coach.debug.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('coach.debug.enabled', () => false),
     },
     'bigscreen.enabled': {
       variants: { on: true, off: false },

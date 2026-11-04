@@ -4,17 +4,12 @@
   // apart — they all read the same toBoardPx/clampToView helpers.
   import { onMount } from 'svelte'
   import simpleheat from 'simpleheat'
-  import { R } from '$shared/board.js'
   import { BOARD_VIEW_HALF, boardLabel, clampToView, toBoardPx, type HeatDart } from '../../details/heatmap.js'
-  import { boardNumbers, boardSegments } from '../../details/boardGeometry.js'
+  import MutedBoard from './MutedBoard.svelte'
   import { dartLabel } from '../../details/x01.js'
 
   let { darts, name }: { darts: HeatDart[]; name: string } = $props()
 
-  const segments = boardSegments()
-  const numbers = boardNumbers()
-  const BULL25_PX = R.bull25 * 170
-  const BULL50_PX = R.bull50 * 170
   const VIEW = BOARD_VIEW_HALF
   const viewBox = `-${VIEW} -${VIEW} ${VIEW * 2} ${VIEW * 2}`
 
@@ -62,13 +57,6 @@
           : 'No dart positions'
         : null,
   )
-
-  /** A ring's fill, one surface tone lighter for the treble/double rings than that segment's
-   *  own single-ring tone (odd segments one step up the ramp, even segments the next). */
-  function ringFillClass(ring: 'single' | 'treble' | 'double', odd: boolean): string {
-    if (ring === 'single') return odd ? 'fill-surface-chip' : 'fill-surface-active'
-    return odd ? 'fill-surface-key' : 'fill-surface-chip'
-  }
 
   // Which dot (by index into `dots`) is hovered or tapped: grows it a little and shows its label
   // in a small tooltip. Indexing by position rather than by dart identity means switching the
@@ -175,35 +163,7 @@
 
 <div class="flex flex-col items-center gap-3">
   <div bind:this={wrapEl} role="presentation" class="relative w-full max-w-[500px] aspect-square" onpointerdown={() => (hovered = null)}>
-    <svg {viewBox} role="img" aria-label={label} class="absolute inset-0 w-full h-full">
-      <circle cx="0" cy="0" r="199" class="fill-bg-deep" />
-      {#each segments as s, i (i)}
-        <path
-          d={s.d}
-          class={ringFillClass(s.ring, s.odd)}
-          stroke="var(--color-bg-deep)"
-          stroke-width="1"
-          stroke-opacity="0.5"
-          vector-effect="non-scaling-stroke"
-        />
-      {/each}
-      <circle cx="0" cy="0" r={BULL25_PX} class="fill-surface-chip" />
-      <circle cx="0" cy="0" r={BULL50_PX} class="fill-surface-key" />
-      {#each numbers as n (n.n)}
-        <text
-          x={n.x}
-          y={n.y}
-          text-anchor="middle"
-          dy="0.35em"
-          class="fill-text-dim"
-          font-size="18"
-          font-family="Barlow Condensed, sans-serif"
-          font-weight="600"
-        >
-          {n.n}
-        </text>
-      {/each}
-    </svg>
+    <MutedBoard {label} class="absolute inset-0 w-full h-full" />
 
     <canvas bind:this={canvasEl} aria-hidden="true" class="absolute inset-0 w-full h-full"></canvas>
 

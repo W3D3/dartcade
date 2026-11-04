@@ -193,6 +193,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/coach/legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's coachable X01 legs, newest first
+         * @description Builds reviews for any of the user's recent games that are missing one, then returns a filtered, paged list. `counts` covers the user's last 50 stored legs and ignores the filter. 404 while coach.enabled is off for the user.
+         */
+        get: operations["listCoachLegs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/coach/average": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's 30-day X01 average, the one the coach grades with
+         * @description The average a stored review grades with (x01AverageSince over the last 30 days), so the live coach picks the same level and grades against the same number. 404 while coach.live.enabled is off for the user.
+         */
+        get: operations["getCoachAverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/coach/legs/{gameId}/{leg}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                leg: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * The coach's review of one of the signed-in user's own legs
+         * @description 404 while coach.enabled is off for the user, or when the leg isn't a stored review of the requesting user's own (another player's leg, or none).
+         */
+        get: operations["getCoachLeg"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards": {
         parameters: {
             query?: never;
@@ -2812,6 +2875,265 @@ export interface components {
                 finishedAt: string;
             } | null;
         };
+        CoachLegRow: {
+            gameId: string;
+            leg: number;
+            /** Format: date-time */
+            finishedAt: string;
+            opponents: string[];
+            context: string;
+            won: boolean;
+            darts: number;
+            average: number | null;
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            clean: boolean;
+        };
+        CoachLegCounts: {
+            legs: number;
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            cleanLegs: number;
+        };
+        CoachLegPage: {
+            counts: components["schemas"]["CoachLegCounts"];
+            legs: components["schemas"]["CoachLegRow"][];
+            nextCursor: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        ReviewDart: {
+            name: string;
+            /** @description The AIMS id of the bed it landed in (a single's outer bed); null off the board */
+            bedAimId: string | null;
+            coords: {
+                x: number;
+                y: number;
+            } | null;
+            /** @description The score after the dart; the visit's start after a bust */
+            left: number;
+            /** @description This dart busted (the darts the game keeps after it are false) */
+            bust: boolean;
+            class: components["schemas"]["DartClass"];
+            /** @description The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust */
+            delta: number | null;
+            /** @description The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart */
+            closeness: number | null;
+        };
+        /** @description What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double, route and bull carry a detail */
+        DartClass: {
+            /** @enum {string} */
+            kind: "scoringHit" | "scoringSingle" | "scoringMiss" | "route" | "split" | "double" | "bull" | "bustBack" | "bust" | "wild" | "notCounted";
+            hit: boolean;
+            target: {
+                aimId: string;
+                label: string;
+            } | null;
+            /** @description How far it missed its target, in millimetres; null without a position or a target */
+            miss: {
+                /** @description From the target's point */
+                mm: number;
+                /** @description + outside (away from the bull), − inside */
+                radialMm: number;
+                /** @description + clockwise, − anticlockwise */
+                tangentialMm: number;
+                /** @description From the nearest point of the target's bed, 0 inside it; a wire's is mm */
+                edgeMm: number;
+                /** @description That vector, + outside; 0 when not off that way */
+                edgeRadialMm: number;
+                /** @description That vector, + clockwise; 0 when not off that way */
+                edgeTangentialMm: number;
+                /** @description The landed number from the target, + clockwise; null around the bull */
+                wedgesOff: number | null;
+            } | null;
+            /** @description No camera coords: placed at the centre of the bed it landed in */
+            estimated: boolean;
+            plannedLeave: number | null;
+            actualLeave: number | null;
+        } & ({
+            /** @enum {string} */
+            kind: "scoringSingle";
+            /** @enum {string|null} */
+            detail: "inner" | "outer" | null;
+        } | {
+            /** @enum {string} */
+            kind: "double";
+            /**
+             * @description Where a miss at the double went
+             * @enum {string|null}
+             */
+            detail: "inside" | "outside" | "wide" | null;
+        } | {
+            /** @enum {string} */
+            kind: "route";
+            /**
+             * @description Only at a setup double (double to double): hit, or where the miss went; else null
+             * @enum {string|null}
+             */
+            detail: "hit" | "inside" | "outside" | "wide" | null;
+        } | {
+            /** @enum {string} */
+            kind: "bull";
+            /**
+             * @description sb: the 25 for the Bull; db: the Bull for the 25
+             * @enum {string|null}
+             */
+            detail: "sb" | "db" | null;
+        } | {
+            /** @enum {string} */
+            kind: "scoringHit" | "scoringMiss" | "split" | "bustBack" | "bust" | "wild" | "notCounted";
+        });
+        CoachNote: {
+            leg: number;
+            visit: number;
+            dart: number;
+            left: number;
+            darts: number;
+            /** @description The dart's segment name, Miss off the board */
+            thrown: string;
+            /** @description The better aim's label: S17, 20/1, Bull */
+            better: string;
+            /** @description The better aim's id in AIMS: SO17 or SI17, W20-1, Bull */
+            betterAimId: string;
+            /** @description Checkout chance lost, 0-1 */
+            cost: number;
+            reason: string | null;
+            book: string[] | null;
+            tip: boolean;
+        };
+        ReviewVisit: {
+            /** @description 1-based among the seat's visits in the leg */
+            n: number;
+            left: number;
+            darts: components["schemas"]["ReviewDart"][];
+            scored: number;
+            then: number;
+            bust: boolean;
+            /** @enum {string} */
+            tag: "scoring" | "setup" | "doubling";
+            /** @enum {string} */
+            grade: "brilliant" | "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+            text: string;
+            /** @description The text is a tip's (a note that leaves the grade alone) */
+            tip: boolean;
+            notes: components["schemas"]["CoachNote"][];
+            /** @description The note the visit explains (shared/coach/grade.ts explainedNote); null without notes */
+            explained: components["schemas"]["CoachNote"] | (null);
+            /** @description How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2 */
+            grouping: {
+                darts: number;
+                /** @description Mean distance from their centroid; null unless they share a target */
+                spreadMm: number | null;
+                /** @description The centroid's distance from the shared target's point */
+                offsetMm: number | null;
+                /** @description Mean distance from their targets' beds */
+                edgeMm: number;
+                /** @description The score plus the grouping and closeness bonuses */
+                rating: number;
+                /** @description The spread a player of the seat's average groups this many darts in */
+                expectedSpreadMm: number;
+                /** @description The spread against the expected one; null without a spread or when unremarkable */
+                comment: {
+                    /** @enum {string} */
+                    level: "great" | "good" | "scattered";
+                    text: string;
+                } | null;
+            } | null;
+            /** @description How the grade was worked out (shared/coach/grade.ts VisitValue) */
+            value: {
+                /** @description The checkout chance (%) before the first dart; null on Scoring */
+                startChance: number | null;
+                /** @description On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
+                fewestChance: number | null;
+                /** @description On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average */
+                points: number;
+                /** @description Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring */
+                terms: {
+                    /** @description The dart's change in checkout chance, in percentage points */
+                    delta: number;
+                    /** @description The credit for missing its target by little; null for a hit or a typed dart */
+                    closeness: number | null;
+                    /** @description A bust's cost for the darts it kept from being thrown; 0 without one */
+                    penalty: number;
+                }[];
+                /**
+                 * @description The points' band on bands, before rule
+                 * @enum {string}
+                 */
+                band: "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+                /** @description The tag's scale, best first and complete: Bad's from is null (everything below the last bound) */
+                bands: {
+                    /** @enum {string} */
+                    grade: "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
+                    from: number | null;
+                }[];
+                /** @description A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling */
+                scoring: {
+                    scored: number;
+                    grouping: number;
+                    closeness: number;
+                    rating: number;
+                    average: number;
+                } | null;
+                /**
+                 * @description What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5
+                 * @enum {string|null}
+                 */
+                rule: "brilliant" | "fewest" | "note" | "veryLow" | "spill" | null;
+            };
+        };
+        SkillGrade: {
+            /** @enum {string|null} */
+            grade: "A" | "B" | "C" | "D" | null;
+            line: string;
+        };
+        LegCounts: {
+            lowVisits: number;
+            badSetups: number;
+            missedDoubles: number;
+            clean: boolean;
+        };
+        LegReview: {
+            /** @description The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played */
+            coachLevel: number;
+            leg: number;
+            seat: number;
+            won: boolean;
+            darts: number;
+            average: number | null;
+            visits: components["schemas"]["ReviewVisit"][];
+            skills: {
+                scoring: components["schemas"]["SkillGrade"];
+                setup: components["schemas"]["SkillGrade"];
+                doubling: components["schemas"]["SkillGrade"];
+            };
+            take: string;
+            counts: components["schemas"]["LegCounts"];
+            /** @description The scoring visits' mean grouping spread and edge distance; null without any */
+            grouping: {
+                spreadMm: number | null;
+                edgeMm: number | null;
+            };
+        };
+        CoachLegTitle: {
+            opponents: string[];
+            context: string;
+            /** Format: date-time */
+            finishedAt: string;
+            won: boolean;
+            /** @description null when the round limit cut the leg short (no winner) */
+            winnerName: string | null;
+            winnerDarts: number | null;
+        };
+        CoachAverage: {
+            average: number | null;
+        };
+        CoachLegDetail: {
+            review: components["schemas"]["LegReview"];
+            title: components["schemas"]["CoachLegTitle"];
+        };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
             detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"];
@@ -4437,6 +4759,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listCoachLegs: {
+        parameters: {
+            query?: {
+                filter?: "all" | "lost" | "ranked" | "missedDoubles" | "badSetups" | "lowVisits";
+                /** @description nextCursor of the previous page */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of legs, with counts over the user's last 50 stored legs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachLegPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCoachAverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The average; null without an X01 game in the last 30 days */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAverage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCoachLeg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+                leg: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review and its title */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachLegDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];

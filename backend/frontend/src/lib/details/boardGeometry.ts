@@ -2,7 +2,10 @@
 // double wire at 170): 20 segments × 4 rings and the numbers around it.
 import { HALF, R, SEGS, segAngle } from '$shared/board.js'
 
-const MM = 170
+/** Millimetres per board unit: the double wire sits at r = 1 */
+export const MM = 170
+export const BULL25_PX = R.bull25 * MM
+export const BULL50_PX = R.bull50 * MM
 const pt = (r: number, a: number) => `${(MM * r * Math.cos(a)).toFixed(2)} ${(-MM * r * Math.sin(a)).toFixed(2)}`
 
 function sector(r0: number, r1: number, a0: number, a1: number): string {
@@ -28,6 +31,17 @@ export function boardSegments(): { d: string; ring: 'single' | 'treble' | 'doubl
   return SEGS.flatMap((_, i) =>
     RINGS.map(r => ({ d: sector(r.r0, r.r1, segAngle(i) - HALF, segAngle(i) + HALF), ring: r.ring, odd: i % 2 === 1 })),
   )
+}
+
+/** A bed to fill: the ring from r0 to r1 between board angles `from` and `to` (y up, as segAngle);
+ *  a span of a full turn is a whole ring round the centre. */
+export type BedRing = { r0: number; r1: number; from: number; to: number }
+
+/** A bed's outline; a whole ring is two circles, so fill it with fill-rule evenodd. */
+export function bedPath({ r0, r1, from, to }: BedRing): string {
+  if (to - from < 2 * Math.PI) return sector(r0, r1, from, to)
+  const circle = (r: number) => (r ? `M${MM * r} 0 A${MM * r} ${MM * r} 0 1 0 ${-MM * r} 0 A${MM * r} ${MM * r} 0 1 0 ${MM * r} 0 Z` : '')
+  return circle(r1) + circle(r0)
 }
 
 export function boardNumbers(): { n: number; x: number; y: number }[] {

@@ -44,6 +44,8 @@ tags:
     description: Ranked matchmaking (ratings and ranks per mode)
   - name: progress
     description: XP, levels, day streaks, challenges and cosmetics (progression.enabled)
+  - name: coach
+    description: Reviews of the signed-in user's coachable X01 legs (coach.enabled)
   - name: admin
     description: Admin-only account management (list users, promote or demote admins) and feature flag overrides
   - name: minigolf
@@ -241,6 +243,72 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GameDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/coach/legs:
+    get:
+      operationId: listCoachLegs
+      summary: The signed-in user's coachable X01 legs, newest first
+      description: >-
+        Builds reviews for any of the user's recent games that are missing one, then returns a
+        filtered, paged list. `counts` covers the user's last 50 stored legs and ignores the
+        filter. 404 while coach.enabled is off for the user.
+      tags: [coach]
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          schema: { type: string, enum: [all, lost, ranked, missedDoubles, badSetups, lowVisits], default: all }
+        - { name: cursor, in: query, required: false, schema: { type: string, minLength: 1 }, description: nextCursor of the previous page }
+      responses:
+        '200':
+          description: A page of legs, with counts over the user's last 50 stored legs
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CoachLegPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/coach/average:
+    get:
+      operationId: getCoachAverage
+      summary: The signed-in user's 30-day X01 average, the one the coach grades with
+      description: >-
+        The average a stored review grades with (x01AverageSince over the last 30 days), so the
+        live coach picks the same level and grades against the same number. 404 while
+        coach.live.enabled is off for the user.
+      tags: [coach]
+      responses:
+        '200':
+          description: The average; null without an X01 game in the last 30 days
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CoachAverage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/coach/legs/{gameId}/{leg}:
+    parameters:
+      - { name: gameId, in: path, required: true, schema: { type: string, minLength: 1 } }
+      - { name: leg, in: path, required: true, schema: { type: integer, minimum: 0 } }
+    get:
+      operationId: getCoachLeg
+      summary: The coach's review of one of the signed-in user's own legs
+      description: >-
+        404 while coach.enabled is off for the user, or when the leg isn't a stored review of
+        the requesting user's own (another player's leg, or none).
+      tags: [coach]
+      responses:
+        '200':
+          description: The review and its title
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CoachLegDetail' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
@@ -3612,6 +3680,330 @@ components:
           properties:
             value: { type: number }
             finishedAt: { type: string, format: date-time }
+    CoachLegRow:
+      type: object
+      required: [gameId, leg, finishedAt, opponents, context, won, darts, average, lowVisits, badSetups, missedDoubles, clean]
+      additionalProperties: false
+      properties:
+        gameId: { type: string }
+        leg: { type: integer, minimum: 0 }
+        finishedAt: { type: string, format: date-time }
+        opponents: { type: array, items: { type: string } }
+        context: { type: string }
+        won: { type: boolean }
+        darts: { type: integer, minimum: 0 }
+        average: { type: number, nullable: true }
+        lowVisits: { type: integer, minimum: 0 }
+        badSetups: { type: integer, minimum: 0 }
+        missedDoubles: { type: integer, minimum: 0 }
+        clean: { type: boolean }
+    CoachLegCounts:
+      type: object
+      required: [legs, lowVisits, badSetups, missedDoubles, cleanLegs]
+      additionalProperties: false
+      properties:
+        legs: { type: integer, minimum: 0 }
+        lowVisits: { type: integer, minimum: 0 }
+        badSetups: { type: integer, minimum: 0 }
+        missedDoubles: { type: integer, minimum: 0 }
+        cleanLegs: { type: integer, minimum: 0 }
+    CoachLegPage:
+      type: object
+      required: [counts, legs, nextCursor, updatedAt]
+      additionalProperties: false
+      properties:
+        counts: { $ref: '#/components/schemas/CoachLegCounts' }
+        legs: { type: array, items: { $ref: '#/components/schemas/CoachLegRow' } }
+        nextCursor: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+    ReviewDart:
+      type: object
+      required: [name, bedAimId, coords, left, bust, class, delta, closeness]
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        bedAimId:
+          { type: string, nullable: true, description: "The AIMS id of the bed it landed in (a single's outer bed); null off the board" }
+        coords:
+          type: object
+          nullable: true
+          required: [x, y]
+          additionalProperties: false
+          properties:
+            x: { type: number }
+            y: { type: number }
+        left: { type: integer, minimum: 0, description: "The score after the dart; the visit's start after a bust" }
+        bust: { type: boolean, description: 'This dart busted (the darts the game keeps after it are false)' }
+        class: { $ref: '#/components/schemas/DartClass' }
+        delta:
+          type: number
+          nullable: true
+          description: "The dart's change in checkout chance, in percentage points (shared/coach/value.ts); null on a Scoring visit and after a bust"
+        closeness:
+          type: number
+          nullable: true
+          description: 'The credit for missing its target by little (shared/coach/grade.ts); null when delta is, for a hit or a typed dart'
+    DartClass:
+      type: object
+      description: "What the dart most likely was (shared/coach/dartClass.ts); notCounted after the visit's bust. scoringSingle, double, route and bull carry a detail"
+      required: [kind, hit, target, miss, estimated, plannedLeave, actualLeave]
+      properties:
+        kind:
+          type: string
+          enum: [scoringHit, scoringSingle, scoringMiss, route, split, double, bull, bustBack, bust, wild, notCounted]
+        hit: { type: boolean }
+        target:
+          type: object
+          nullable: true
+          required: [aimId, label]
+          additionalProperties: false
+          properties:
+            aimId: { type: string }
+            label: { type: string }
+        miss:
+          type: object
+          nullable: true
+          description: 'How far it missed its target, in millimetres; null without a position or a target'
+          required: [mm, radialMm, tangentialMm, edgeMm, edgeRadialMm, edgeTangentialMm, wedgesOff]
+          additionalProperties: false
+          properties:
+            mm: { type: number, description: "From the target's point" }
+            radialMm: { type: number, description: '+ outside (away from the bull), − inside' }
+            tangentialMm: { type: number, description: '+ clockwise, − anticlockwise' }
+            edgeMm: { type: number, description: "From the nearest point of the target's bed, 0 inside it; a wire's is mm" }
+            edgeRadialMm: { type: number, description: 'That vector, + outside; 0 when not off that way' }
+            edgeTangentialMm: { type: number, description: 'That vector, + clockwise; 0 when not off that way' }
+            wedgesOff:
+              { type: integer, nullable: true, description: 'The landed number from the target, + clockwise; null around the bull' }
+        estimated: { type: boolean, description: 'No camera coords: placed at the centre of the bed it landed in' }
+        plannedLeave: { type: integer, nullable: true, minimum: 0 }
+        actualLeave: { type: integer, nullable: true, minimum: 0 }
+      oneOf:
+        - type: object
+          required: [kind, detail]
+          properties:
+            kind: { type: string, enum: [scoringSingle] }
+            detail: { type: string, nullable: true, enum: [inner, outer, null] }
+        - type: object
+          required: [kind, detail]
+          properties:
+            kind: { type: string, enum: [double] }
+            detail: { type: string, nullable: true, enum: [inside, outside, wide, null], description: 'Where a miss at the double went' }
+        - type: object
+          required: [kind, detail]
+          properties:
+            kind: { type: string, enum: [route] }
+            detail:
+              type: string
+              nullable: true
+              enum: [hit, inside, outside, wide, null]
+              description: 'Only at a setup double (double to double): hit, or where the miss went; else null'
+        - type: object
+          required: [kind, detail]
+          properties:
+            kind: { type: string, enum: [bull] }
+            detail: { type: string, nullable: true, enum: [sb, db, null], description: 'sb: the 25 for the Bull; db: the Bull for the 25' }
+        - type: object
+          required: [kind]
+          properties:
+            kind: { type: string, enum: [scoringHit, scoringMiss, split, bustBack, bust, wild, notCounted] }
+    CoachNote:
+      type: object
+      required: [leg, visit, dart, left, darts, thrown, better, betterAimId, cost, reason, book, tip]
+      additionalProperties: false
+      properties:
+        leg: { type: integer, minimum: 0 }
+        visit: { type: integer, minimum: 0 }
+        dart: { type: integer, minimum: 0 }
+        left: { type: integer, minimum: 0 }
+        darts: { type: integer, minimum: 0 }
+        thrown: { type: string, description: "The dart's segment name, Miss off the board" }
+        better: { type: string, description: "The better aim's label: S17, 20/1, Bull" }
+        betterAimId: { type: string, description: "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull" }
+        cost: { type: number, description: 'Checkout chance lost, 0-1' }
+        reason: { type: string, nullable: true }
+        book: { type: array, nullable: true, items: { type: string } }
+        tip: { type: boolean }
+    ReviewVisit:
+      type: object
+      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, explained, grouping, value]
+      additionalProperties: false
+      properties:
+        n: { type: integer, minimum: 1, description: 1-based among the seat's visits in the leg }
+        left: { type: integer, minimum: 0 }
+        darts: { type: array, items: { $ref: '#/components/schemas/ReviewDart' } }
+        scored: { type: integer, minimum: 0 }
+        then: { type: integer, minimum: 0 }
+        bust: { type: boolean }
+        tag: { type: string, enum: [scoring, setup, doubling] }
+        grade: { type: string, enum: [brilliant, excellent, great, good, ok, inaccuracy, weak, bad] }
+        text: { type: string }
+        tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }
+        notes: { type: array, items: { $ref: '#/components/schemas/CoachNote' } }
+        explained:
+          description: 'The note the visit explains (shared/coach/grade.ts explainedNote); null without notes'
+          anyOf: [{ $ref: '#/components/schemas/CoachNote' }, { type: string, nullable: true, enum: [null] }]
+        grouping:
+          type: object
+          nullable: true
+          description: "How the visit's camera-placed darts sat together (shared/coach/grouping.ts); null with fewer than 2"
+          required: [darts, spreadMm, offsetMm, edgeMm, rating, expectedSpreadMm, comment]
+          additionalProperties: false
+          properties:
+            darts: { type: integer, minimum: 2 }
+            spreadMm: { type: number, nullable: true, description: 'Mean distance from their centroid; null unless they share a target' }
+            offsetMm: { type: number, nullable: true, description: "The centroid's distance from the shared target's point" }
+            edgeMm: { type: number, description: "Mean distance from their targets' beds" }
+            rating: { type: number, description: 'The score plus the grouping and closeness bonuses' }
+            expectedSpreadMm: { type: number, description: "The spread a player of the seat's average groups this many darts in" }
+            comment:
+              type: object
+              nullable: true
+              description: 'The spread against the expected one; null without a spread or when unremarkable'
+              required: [level, text]
+              additionalProperties: false
+              properties:
+                level: { type: string, enum: [great, good, scattered] }
+                text: { type: string }
+        value:
+          type: object
+          description: 'How the grade was worked out (shared/coach/grade.ts VisitValue)'
+          required: [points, scoring, terms, band, bands, rule, startChance, fewestChance]
+          additionalProperties: false
+          properties:
+            startChance: { type: number, nullable: true, description: 'The checkout chance (%) before the first dart; null on Scoring' }
+            fewestChance:
+              {
+                type: number,
+                nullable: true,
+                description: "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null",
+              }
+            points:
+              {
+                type: number,
+                description: "On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average",
+              }
+            terms:
+              type: array
+              description: "Setup and Doubling: each walked dart's part of points (shared/coach/grade.ts DartTerm); empty on Scoring"
+              items:
+                type: object
+                required: [delta, closeness, penalty]
+                additionalProperties: false
+                properties:
+                  delta: { type: number, description: "The dart's change in checkout chance, in percentage points" }
+                  closeness:
+                    {
+                      type: number,
+                      nullable: true,
+                      description: 'The credit for missing its target by little; null for a hit or a typed dart',
+                    }
+                  penalty: { type: number, description: "A bust's cost for the darts it kept from being thrown; 0 without one" }
+            band:
+              type: string
+              enum: [excellent, great, good, ok, inaccuracy, weak, bad]
+              description: "The points' band on bands, before rule"
+            bands:
+              type: array
+              description: "The tag's scale, best first and complete: Bad's from is null (everything below the last bound)"
+              items:
+                type: object
+                required: [grade, from]
+                additionalProperties: false
+                properties:
+                  grade: { type: string, enum: [excellent, great, good, ok, inaccuracy, weak, bad] }
+                  from: { type: number, nullable: true }
+            scoring:
+              type: object
+              nullable: true
+              description: "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling"
+              required: [scored, grouping, closeness, rating, average]
+              additionalProperties: false
+              properties:
+                scored: { type: number }
+                grouping: { type: number }
+                closeness: { type: number }
+                rating: { type: number }
+                average: { type: number }
+            rule:
+              type: string
+              nullable: true
+              enum: [brilliant, fewest, note, veryLow, spill, null]
+              description: 'What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5'
+    SkillGrade:
+      type: object
+      required: [grade, line]
+      additionalProperties: false
+      properties:
+        grade: { type: string, nullable: true, enum: [A, B, C, D, null] }
+        line: { type: string }
+    LegCounts:
+      type: object
+      required: [lowVisits, badSetups, missedDoubles, clean]
+      additionalProperties: false
+      properties:
+        lowVisits: { type: integer, minimum: 0 }
+        badSetups: { type: integer, minimum: 0 }
+        missedDoubles: { type: integer, minimum: 0 }
+        clean: { type: boolean }
+    LegReview:
+      type: object
+      required: [coachLevel, leg, seat, won, darts, average, visits, skills, take, counts, grouping]
+      additionalProperties: false
+      properties:
+        coachLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
+        leg: { type: integer, minimum: 0 }
+        seat: { type: integer, minimum: 0 }
+        won: { type: boolean }
+        darts: { type: integer, minimum: 0 }
+        average: { type: number, nullable: true }
+        visits: { type: array, items: { $ref: '#/components/schemas/ReviewVisit' } }
+        skills:
+          type: object
+          required: [scoring, setup, doubling]
+          additionalProperties: false
+          properties:
+            scoring: { $ref: '#/components/schemas/SkillGrade' }
+            setup: { $ref: '#/components/schemas/SkillGrade' }
+            doubling: { $ref: '#/components/schemas/SkillGrade' }
+        take: { type: string }
+        counts: { $ref: '#/components/schemas/LegCounts' }
+        grouping:
+          type: object
+          description: "The scoring visits' mean grouping spread and edge distance; null without any"
+          required: [spreadMm, edgeMm]
+          additionalProperties: false
+          properties:
+            spreadMm: { type: number, nullable: true }
+            edgeMm: { type: number, nullable: true }
+    CoachLegTitle:
+      type: object
+      required: [opponents, context, finishedAt, won, winnerName, winnerDarts]
+      additionalProperties: false
+      properties:
+        opponents: { type: array, items: { type: string } }
+        context: { type: string }
+        finishedAt: { type: string, format: date-time }
+        won: { type: boolean }
+        winnerName: { type: string, nullable: true, description: 'null when the round limit cut the leg short (no winner)' }
+        winnerDarts: { type: integer, nullable: true, minimum: 0 }
+    CoachAverage:
+      type: object
+      required: [average]
+      additionalProperties: false
+      properties:
+        average: { type: number, nullable: true }
+    CoachLegDetail:
+      type: object
+      required: [review, title]
+      additionalProperties: false
+      properties:
+        review: { $ref: '#/components/schemas/LegReview' }
+        title: { $ref: '#/components/schemas/CoachLegTitle' }
     GameDetail:
       type: object
       required: [game, detail, stats]

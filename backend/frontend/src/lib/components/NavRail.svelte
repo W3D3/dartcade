@@ -7,7 +7,6 @@
   import { Plus, House } from '@lucide/svelte'
   import { railTabs, isActiveRoute, railLobby } from '$lib/nav'
   import { currentUser } from '$lib/auth'
-  import { activeSessionId } from '$lib/activeSession'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { createLobby } from '$lib/lobby/create'
@@ -21,14 +20,15 @@
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
+  const coach = flag('coach.enabled')
   const tabs = $derived(
     railTabs(
-      $activeSessionId,
       $me?.invites.length ?? 0,
       $matchmaking,
       $progression ? ($progress?.challengesToClaim ?? 0) : null,
       $currentUser?.isModerator ?? false,
       $home,
+      $coach,
     ),
   )
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))

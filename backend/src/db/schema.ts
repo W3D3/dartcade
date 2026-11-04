@@ -1,6 +1,7 @@
 import type { ColumnType, Generated, RawBuilder } from 'kysely'
 import type { components } from '../schema/api.js'
 import type { SegmentMode } from '../shared/lights/types.js'
+import type { LegReview } from '../shared/coach/review.js'
 
 type BigScreenMode = components['schemas']['BigScreenMode']
 
@@ -271,6 +272,40 @@ export interface FriendActivityTable {
   created_at: Date
 }
 
+/** The coach's review of one seat's leg in a coachable X01 game (migration 047, coach/store.ts). */
+export interface CoachLegsTable {
+  user_id: string
+  game_id: string
+  leg: number
+  seat: number
+  finished_at: Date
+  won: boolean
+  ranked: boolean
+  darts: number
+  average: number | null
+  low_visits: number
+  bad_setups: number
+  missed_doubles: number
+  clean: boolean
+  /** The other seats' names (written as JSON). */
+  opponents: ColumnType<string[], string, string>
+  /** The list's subtitle, e.g. "501 · Friday darts · leg 3". */
+  context: string
+  review: ColumnType<LegReview, string, string>
+  /** Who won the leg; null when the round limit cut it short (no winner). */
+  winner_name: string | null
+  /** The winner's darts in this leg; null along with winner_name. */
+  winner_darts: number | null
+}
+
+/** A game the coach has built, rows or none (migration 048, coach/store.ts). */
+export interface CoachGamesTable {
+  game_id: string
+  /** COACH_VERSION of the code that built it. */
+  version: number
+  built_at: ColumnType<Date, Date | undefined, Date>
+}
+
 /** A player's rating in one ranked mode (migration 020). */
 export interface RankedRatingsTable {
   user_id: string
@@ -480,4 +515,6 @@ export interface Database {
   user_challenges: UserChallengesTable
   user_unlocks: UserUnlocksTable
   ranked_matches: RankedMatchesTable
+  coach_legs: CoachLegsTable
+  coach_games: CoachGamesTable
 }

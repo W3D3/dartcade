@@ -74,6 +74,20 @@
       loading: RouteLoading,
     }),
   })
+  // The coach pages load on demand: they're behind a flag and bring the coach's own code
+  const loadCoach = Object.assign(() => import('./routes/Coach.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
+  const loadCoachChecks = Object.assign(() => import('./routes/CoachChecks.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
+  const loadCoachLeg = Object.assign(() => import('./routes/CoachLeg.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
+  // The admin sandbox runs the coach's checkout model in the browser
+  const loadAdminCoach = Object.assign(() => import('./routes/AdminCoach.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
     { loading: RouteLoading },
@@ -95,6 +109,9 @@
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),
     '/history': History,
+    '/coach': wrap({ asyncComponent: loadCoach }),
+    '/coach/checks': wrap({ asyncComponent: loadCoachChecks }),
+    '/coach/leg/:gameId/:leg': wrap({ asyncComponent: loadCoachLeg }),
     '/lobby': Lobby,
     '/join': Join,
     '/join/:code': Join,
@@ -121,6 +138,7 @@
     '/admin/flags': AdminFlags,
     '/admin/system': AdminSystem,
     '/admin/cosmetics': AdminCosmetics,
+    '/admin/coach': wrap({ asyncComponent: loadAdminCoach }),
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
