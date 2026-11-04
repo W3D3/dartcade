@@ -359,23 +359,6 @@ export async function matchRatings(
   return out
 }
 
-/** Remembers a game the queue started, so its ratings move when it ends. */
-export async function insertRankedMatch(
-  db: Kysely<Database>,
-  m: { sessionId: string; mode: RankedMode; sides: [string[], string[]] },
-): Promise<void> {
-  await db
-    .insertInto('ranked_matches')
-    .values({ session_id: m.sessionId, mode: m.mode, sides: JSON.stringify(m.sides) })
-    .execute()
-}
-
-/** Whether the queue started this game. */
-export async function isRankedMatch(db: Kysely<Database>, sessionId: string): Promise<boolean> {
-  const row = await db.selectFrom('ranked_matches').select('session_id').where('session_id', '=', sessionId).executeTakeFirst()
-  return row !== undefined
-}
-
 /**
  * Moves the ratings for a ranked game once it's finished: the side whose players placed first
  * won; each player's average is their 3-dart average in the game. Returns false when the game

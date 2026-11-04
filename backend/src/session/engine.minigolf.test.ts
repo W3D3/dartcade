@@ -24,7 +24,6 @@ const store = () =>
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
     getAvatars: vi.fn().mockResolvedValue(new Map()),
-    isRanked: vi.fn().mockResolvedValue(false),
   }) satisfies EngineStore
 const config = { ...M.defaultConfig, course: 'test' }
 const dart = (x: number, y: number) => ({
@@ -69,6 +68,7 @@ it('rebuilds a logged game inline, without the pool', async () => {
     ],
     lobby_id: null,
     lobby_name: null,
+    ranked: null,
   }
   s.getActiveSessions.mockResolvedValue([row])
   s.getSessionEvents.mockResolvedValue([

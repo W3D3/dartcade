@@ -9,7 +9,7 @@ import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
 import { simulateInPool } from '../games/minigolfPool.js'
 import type { ShotResult } from '../shared/minigolf/types.js'
 import type { NewGameDart } from '../db/queries.js'
-import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, Seat, Session } from './types.js'
+import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, RankedGame, Seat, Session } from './types.js'
 
 /** Reports data the engine had to skip (message, details). */
 export type WarnFn = (message: string, details: unknown) => void
@@ -48,7 +48,7 @@ export function newSession(a: {
   version?: number
   /** The seated accounts' profile pictures (a replay for history needs none). */
   avatars?: Map<string, Avatar>
-  ranked?: boolean
+  ranked?: RankedGame
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
@@ -75,7 +75,7 @@ export function newSession(a: {
     totalVisits: Array<number>(players.length).fill(0),
     boardStatus: new Map(),
     forfeited: [],
-    ranked: a.ranked ?? false,
+    ranked: a.ranked ?? null,
     undoable: [],
     dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,

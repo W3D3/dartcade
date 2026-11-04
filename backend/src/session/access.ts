@@ -10,9 +10,9 @@ export function canAccessSession(userId: string, session: Session): boolean {
   return isHost(userId, session) || session.seats.some(s => s.controllerUserId === userId)
 }
 
-/** The host started the game: starts the bull off, aborts. */
+/** The host started the game: starts the bull off, aborts. A ranked game has none. */
 export function isHost(userId: string, session: Session): boolean {
-  return session.ownerUserId === userId
+  return !session.ranked && session.ownerUserId === userId
 }
 
 /** Whether the user is a member of the lobby (LobbyService.isMember). */

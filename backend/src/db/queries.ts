@@ -6,6 +6,7 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
+import type { RankedGame } from '../session/types.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 import { groupBy } from '../util/groupBy.js'
@@ -97,6 +98,8 @@ export type NewGameSession = {
   players: SeatRow[]
   /** The lobby the game is started from; absent or null for a local game. */
   lobby_id?: string | null
+  /** Set for a game the ranked queue started: stored with the session, in the same transaction. */
+  ranked?: RankedGame
 }
 /** A seat as read back: the controller can be gone (account deleted), the board's name comes along. */
 export type StoredSeatRow = {
@@ -120,6 +123,8 @@ export type StoredGameSession = {
   /** The lobby of a lobby game, with its current name (null for local games). */
   lobby_id: string | null
   lobby_name: string | null
+  /** Set for a game the ranked queue started. */
+  ranked: RankedGame | null
 }
 export type NewSessionEvent = {
   session_id: string
@@ -177,6 +182,11 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
         })),
       )
       .execute()
+    if (s.ranked)
+      await trx
+        .insertInto('ranked_matches')
+        .values({ session_id: s.id, mode: s.ranked.mode, sides: JSON.stringify(s.ranked.sides) })
+        .execute()
   })
 }
 
@@ -184,6 +194,7 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
   const rows = await db
     .selectFrom('game_sessions as gs')
     .leftJoin('lobbies as l', 'l.id', 'gs.lobby_id')
+    .leftJoin('ranked_matches as rm', 'rm.session_id', 'gs.id')
     .select([
       'gs.id',
       'gs.owner_user_id',
@@ -195,6 +206,8 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
       'gs.created_at',
       'gs.lobby_id',
       'l.name as lobby_name',
+      'rm.mode as ranked_mode',
+      'rm.sides as ranked_sides',
     ])
     .where('gs.status', '=', 'active')
     .execute()
@@ -212,8 +225,9 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
     .orderBy('gp.seat')
     .execute()
   const seatsBySession = groupBy(seats, s => s.session_id)
-  return rows.map(r => ({
+  return rows.map(({ ranked_mode, ranked_sides, ...r }) => ({
     ...r,
+    ranked: ranked_mode !== null && ranked_sides !== null ? { mode: ranked_mode, sides: ranked_sides } : null,
     players: (seatsBySession.get(r.id) ?? []).map(s => ({
       name: s.name,
       user_id: s.user_id,

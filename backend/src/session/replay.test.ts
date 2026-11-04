@@ -31,6 +31,7 @@ function memoryStore() {
             created_at: s.created_at,
             lobby_id: null,
             lobby_name: null,
+            ranked: null,
             players: s.players.map(p => ({ ...p, board_name: null })),
           })),
       ),
@@ -67,7 +68,6 @@ function memoryStore() {
       return Promise.resolve()
     },
     getAvatars: () => Promise.resolve(new Map()),
-    isRanked: () => Promise.resolve(false),
   }
   return { store, sessions, events, darts, finished, aborted }
 }

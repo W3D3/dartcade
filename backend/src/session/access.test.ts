@@ -40,7 +40,7 @@ describe('authorizeAction in a ranked game', () => {
       seed: 1,
       createdAt: new Date(),
     }),
-    ranked: true,
+    ranked: { mode: '1v1' as const, sides: [['ann'], ['bob']] as [string[], string[]] },
   })
   const bull = { name: '50', number: 50, bed: 'Double', multiplier: 1 } as const
   const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
@@ -54,6 +54,11 @@ describe('authorizeAction in a ranked game', () => {
     }
     return s
   }
+
+  it('has no host: the owner is a player like the other', () => {
+    const s = newGame()
+    expect(isHost('ann', s)).toBe(false)
+  })
 
   it('lets either seat start the bull off, and nobody else', () => {
     const s = newGame()
