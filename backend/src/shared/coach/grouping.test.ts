@@ -134,7 +134,7 @@ describe('a visit rated on its score, grouping and closeness', () => {
     const outer = review(cluster(R.so - mm(7)))
     expect(hugging.grouping!.rating).toBeGreaterThan(outer.grouping!.rating + 5)
     expect(hugging).toMatchObject({ grade: 'good', text: 'Scored 60, great grouping (6 mm), close to the target (7 mm).' })
-    expect(outer).toMatchObject({ grade: 'ok', text: 'Scored 60.' })
+    expect(outer).toMatchObject({ grade: 'good', text: 'Scored 60, great grouping (6 mm).' })
   })
 
   it('a typed visit has no grouping: the rating is the score', () => {

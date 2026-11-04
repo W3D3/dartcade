@@ -7,7 +7,7 @@
 
   const cards = $derived([
     { label: 'Low visits', value: counts.lowVisits, cls: TONE_TEXT.weak, sub: 'below your level, not on a finish' },
-    { label: 'Bad setups', value: counts.badSetups, cls: TONE_TEXT.weak, sub: 'setup visits graded Bad' },
+    { label: 'Bad setups', value: counts.badSetups, cls: TONE_TEXT.bad, sub: 'setup visits graded Bad' },
     { label: 'Missed doubles', value: counts.missedDoubles, cls: TONE_TEXT.bad, sub: 'darts at a double that missed' },
     { label: 'Clean legs', value: counts.cleanLegs, cls: TONE_TEXT.lime, sub: 'nothing flagged' },
   ])

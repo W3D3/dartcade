@@ -2,7 +2,7 @@
 // three A–D skills and the coach's take.
 import { bedAim } from './aims.js'
 import { classifyDart, NOT_COUNTED, type DartClass } from './dartClass.js'
-import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag } from './grade.js'
+import { classifyVisit, closeness, explainedNote, type VisitGrade, type VisitTag, type VisitValue } from './grade.js'
 import { grouping, type Grouping } from './grouping.js'
 import type { CoachModel } from './model.js'
 import { strategyNotes, throwEvaluations, type CoachNote } from './notes.js'
@@ -45,6 +45,8 @@ export type ReviewVisit = {
   explained: CoachNote | null
   /** How its placed darts sat together, and its rating; null with fewer than 2 (grouping.ts) */
   grouping: Grouping | null
+  /** How the grade was worked out (grade.ts VisitValue) */
+  value: VisitValue
 }
 export type SkillGrade = { grade: 'A' | 'B' | 'C' | 'D' | null; line: string }
 export type LegCounts = { lowVisits: number; badSetups: number; missedDoubles: number; clean: boolean }
@@ -162,14 +164,14 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     }
   })
 
-  const low = (v: ReviewVisit) => v.grade === 'weak' || v.grade === 'mistake'
+  const low = (v: ReviewVisit) => v.grade === 'weak' || v.grade === 'bad'
   const scoringVisits = visits.filter(v => v.tag === 'scoring')
   const setups = visits.filter(v => v.tag === 'setup')
   const stats = executionStats(throws)
   const counts: LegCounts = {
     lowVisits: scoringVisits.filter(low).length,
     // The setup visits graded Bad, as the Setup skill's line counts them
-    badSetups: setups.filter(v => v.grade === 'mistake').length,
+    badSetups: setups.filter(v => v.grade === 'bad').length,
     missedDoubles: stats.dartsAtDouble - stats.checkouts,
     clean: !visits.some(low),
   }
@@ -217,7 +219,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   })
   const weakest = graded.reduce<(typeof graded)[number] | null>((w, s) => (w === null || s.rank > w.rank ? s : w), null)
   const faults = [
-    [visits.filter(v => v.grade === 'mistake').length, 'bad visit'],
+    [visits.filter(v => v.grade === 'bad').length, 'bad visit'],
     [visits.filter(v => v.grade === 'weak').length, 'weak visit'],
   ] as const
   const faultWords = faults

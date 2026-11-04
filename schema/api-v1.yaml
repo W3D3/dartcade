@@ -3817,7 +3817,7 @@ components:
         tip: { type: boolean }
     ReviewVisit:
       type: object
-      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, explained, grouping]
+      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, explained, grouping, value]
       additionalProperties: false
       properties:
         n: { type: integer, minimum: 1, description: 1-based among the seat's visits in the leg }
@@ -3827,7 +3827,7 @@ components:
         then: { type: integer, minimum: 0 }
         bust: { type: boolean }
         tag: { type: string, enum: [scoring, setup, doubling] }
-        grade: { type: string, enum: [perfect, great, good, ok, weak, mistake] }
+        grade: { type: string, enum: [perfect, excellent, great, good, ok, inaccuracy, weak, bad] }
         text: { type: string }
         tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }
         notes: { type: array, items: { $ref: '#/components/schemas/CoachNote' } }
@@ -3856,6 +3856,34 @@ components:
               properties:
                 level: { type: string, enum: [great, good, scattered] }
                 text: { type: string }
+        value:
+          type: object
+          description: 'How the grade was worked out (shared/coach/grade.ts VisitValue)'
+          required: [points, scoring, rule]
+          additionalProperties: false
+          properties:
+            points:
+              {
+                type: number,
+                description: "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average",
+              }
+            scoring:
+              type: object
+              nullable: true
+              description: "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling"
+              required: [scored, grouping, closeness, rating, average]
+              additionalProperties: false
+              properties:
+                scored: { type: number }
+                grouping: { type: number }
+                closeness: { type: number }
+                rating: { type: number }
+                average: { type: number }
+            rule:
+              type: string
+              nullable: true
+              enum: [perfect, note, veryLow, spill, null]
+              description: 'What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5'
     SkillGrade:
       type: object
       required: [grade, line]

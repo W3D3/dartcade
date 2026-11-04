@@ -133,8 +133,8 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
   }
 })
 
-test('coach: the review list, a leg with a mistake, and the admin sandbox', async ({ browser }) => {
-  // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts) has two Mistake visits;
+test('coach: the review list, a leg with a bad visit, and the admin sandbox', async ({ browser }) => {
+  // The seed's scripted admin vs Phil leg (backend/src/seed/coachGames.ts) has two Bad visits;
   // the leg review opens on the first one by default (defaultVisit in lib/coach/view.ts)
   for (const [view, suffix] of [
     [VIEW.wide, 'desktop'],
@@ -171,7 +171,7 @@ test('coach: the review list, a leg with a mistake, and the admin sandbox', asyn
   }
 
   // Admin sandbox: 501 left, three darts clicked tight round T20 (T20 T20 S20, all aimed at T20) at
-  // the default 60 average: a Great Scoring visit whose ~4 mm group shows the Great grouping pill
+  // the default 60 average: an Excellent Scoring visit whose ~4 mm group shows the Great grouping pill
   // (judged against the ~14 mm a 60 average groups in) and the grouping line with its rating
   const admin = await open(browser, 'admin', VIEW.wide)
   await admin.page.goto('/#/admin/coach')

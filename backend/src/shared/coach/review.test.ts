@@ -84,12 +84,17 @@ describe('reviewLeg', () => {
           then: 361,
           bust: false,
           tag: 'scoring',
-          grade: 'great',
+          grade: 'excellent',
           text: 'Two trebles.',
           tip: false,
           notes: [],
           explained: null,
           grouping: null,
+          value: {
+            points: expect.closeTo(51.6, 1),
+            rule: null,
+            scoring: { scored: 140, grouping: 0, closeness: 0, rating: 140, average: (501 / 17) * 3 },
+          },
         },
         {
           n: 2,
@@ -112,12 +117,13 @@ describe('reviewLeg', () => {
           then: 335,
           bust: false,
           tag: 'scoring',
-          grade: 'weak',
+          grade: 'bad',
           text: 'Scored 26; your usual visit is 88.',
           tip: false,
           notes: [],
           explained: null,
           grouping: null,
+          value: expect.objectContaining({ points: expect.closeTo(-62.4, 1), rule: null }),
         },
         {
           n: 3,
@@ -149,12 +155,13 @@ describe('reviewLeg', () => {
           then: 235,
           bust: false,
           tag: 'scoring',
-          grade: 'ok',
+          grade: 'good',
           text: 'Scored 100.',
           tip: false,
           notes: [],
           explained: null,
           grouping: null,
+          value: expect.objectContaining({ points: expect.closeTo(11.6, 1), rule: null }),
         },
         {
           n: 4,
@@ -175,6 +182,7 @@ describe('reviewLeg', () => {
           notes: [],
           explained: null,
           grouping: null,
+          value: expect.objectContaining({ rule: 'perfect' }),
         },
         {
           n: 5,
@@ -215,12 +223,13 @@ describe('reviewLeg', () => {
           then: 40,
           bust: false,
           tag: 'setup',
-          grade: 'mistake',
+          grade: 'bad',
           text: "On 47, S1: better S15 — S1 leaves 46, which one dart can't finish.",
           tip: false,
           notes: [expect.objectContaining({ leg: 0, visit: 8, dart: 1, left: 47, thrown: 'S1', better: 'S15', tip: false })],
           explained: expect.objectContaining({ visit: 8, dart: 1, better: 'S15' }),
           grouping: null,
+          value: { points: expect.closeTo(-2.1, 1), rule: 'note', scoring: null },
         },
         {
           n: 6,
@@ -257,6 +266,7 @@ describe('reviewLeg', () => {
           notes: [],
           explained: null,
           grouping: null,
+          value: { points: expect.closeTo(9.1, 1), rule: null, scoring: null },
         },
       ],
       skills: {
@@ -274,40 +284,22 @@ describe('reviewLeg', () => {
 
   it('grades scoring against the 30-day average when there is one', () => {
     const r = reviewLeg([wonLeg()], 0, 0, ctx(501, 60))
-    expect(r?.visits[1]).toMatchObject({ grade: 'weak', text: 'Scored 26; your usual visit is 60.' })
+    expect(r?.visits[1]).toMatchObject({ grade: 'bad', text: 'Scored 26; your usual visit is 60.' })
     expect(r?.skills.scoring).toEqual({ grade: 'A', line: 'Leg average 104.5 · one low visit' })
   })
 
   it('says the opponent checked out first', () => {
     const r = reviewLeg([wonLeg()], 0, 1, ctx(501))
-    // Five visits of 3: Mistakes, though the scoring (against its own average) and nothing else is graded
-    expect(r).toMatchObject({ won: false, darts: 15, take: 'Lost: Admin checked out first. 5 bad visits.' })
+    // Five visits of 3: on their own average, but very low, so Weak at best
+    expect(r).toMatchObject({ won: false, darts: 15, take: 'Lost: Admin checked out first. 5 weak visits.' })
   })
 
   it('names the weak visits of a leg whose skills are fine', () => {
     let left = 501
     const visits = [
       ['T20', 'T20', 'T20'],
-      ['S20', 'S1', 'S5'],
-      ['T20', 'T20', 'T20'],
-      ['T20', 'S15', 'D20'],
-    ].map(names0 => {
-      const v = visit(0, left, names0)
-      left = v.remaining
-      return v
-    })
-    const r = reviewLeg([{ ...leg(visits), winner: 0 }], 0, 0, ctx(501))
-    expect(r?.skills.scoring.grade).toBe('B')
-    expect(r?.take).toBe('Won in 12 darts. One weak visit.')
-  })
-
-  it('names bad visits and weak visits separately, bad ones first', () => {
-    let left = 501
-    // 180, 26 (Weak), 15 (Mistake), 180, then T20 D20 from 100
-    const visits = [
-      ['T20', 'T20', 'T20'],
-      ['S20', 'S1', 'S5'],
-      ['S5', 'S5', 'S5'],
+      // 41 on a 60 average: Weak
+      ['S20', 'S20', 'S1'],
       ['T20', 'T20', 'T20'],
       ['T20', 'D20'],
     ].map(names0 => {
@@ -315,9 +307,28 @@ describe('reviewLeg', () => {
       left = v.remaining
       return v
     })
+    const r = reviewLeg([{ ...leg(visits), winner: 0 }], 0, 0, ctx(501, 60))
+    expect(r?.skills.scoring.grade).toBe('A')
+    expect(r?.take).toBe('Won in 11 darts. One weak visit.')
+  })
+
+  it('names bad visits and weak visits separately, bad ones first', () => {
+    let left = 501
+    // 180, 70 (Weak on a 90 average), 15 (Bad), 180, then S16 D20 from 56
+    const visits = [
+      ['T20', 'T20', 'T20'],
+      ['S20', 'S20', 'T10'],
+      ['S5', 'S5', 'S5'],
+      ['T20', 'T20', 'T20'],
+      ['S16', 'D20'],
+    ].map(names0 => {
+      const v = visit(0, left, names0)
+      left = v.remaining
+      return v
+    })
     const r = reviewLeg([{ ...leg(visits), winner: 0 }], 0, 0, ctx(501, 90))
     expect(left).toBe(0)
-    expect(r?.skills.scoring.grade).toBe('B')
+    expect(r?.skills.scoring.grade).toBe('A')
     expect(r?.take).toBe('Won in 14 darts. One bad visit and one weak visit.')
   })
 
@@ -358,10 +369,10 @@ describe('reviewLeg', () => {
     }
   })
 
-  it('a bust from a bad spot stays a Mistake: on 40, S20 then S19 with D10 to throw at', () => {
+  it('a bust from a bad spot stays Bad: on 40, S20 then S19 with D10 to throw at', () => {
     const r = reviewLeg([leg([visit(0, 40, ['S20', 'S19'])])], 0, 0, ctx(501))
     expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'bust'])
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'mistake', text: 'On 20, S19: better D10 — S19 busts.' })
+    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'bad', text: 'On 20, S19: better D10 — S19 busts.' })
   })
 
   it('counts as bad setups only the setup visits the Setup line counts', () => {
@@ -376,7 +387,7 @@ describe('reviewLeg', () => {
   it('counts a setup visit graded Bad by its value as a bad setup, with no note', () => {
     // 100: S20 then S1 and a miss give away the 2-dart finish
     const r = reviewLeg([leg([visit(0, 100, ['S20', 'S1', 'Miss'])])], 0, 0, ctx(100))
-    expect(r?.visits[0]).toMatchObject({ tag: 'setup', grade: 'mistake', notes: [] })
+    expect(r?.visits[0]).toMatchObject({ tag: 'setup', grade: 'bad', notes: [] })
     expect(r?.counts.badSetups).toBe(1)
     expect(r?.skills.setup).toEqual({ grade: 'D', line: '1 of 1 setup visit graded Bad' })
   })
@@ -384,7 +395,7 @@ describe('reviewLeg', () => {
   it("marks a visit whose text is a tip's", () => {
     // Solo on 24: S14 instead of the direct D12 is a tip, then two misses at D5
     const r = reviewLeg([leg([visit(0, 24, ['S14', 'Miss', 'Miss'])])], 0, 0, ctx(24))
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'mistake', tip: true })
+    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'bad', tip: true })
     expect(r?.visits[0].text).toMatch(/^Tip: /)
   })
 
@@ -463,11 +474,11 @@ describe('the coaching level', () => {
     // Level 7 grades it as before the levels
     const ref = await graded(80, 100, ['S20', 'S20', 'S20'])
     expect(ref.delta).toBeCloseTo(-2.7, 1)
-    expect(ref.grade).toBe('ok')
+    expect(ref.grade).toBe('inaccuracy')
   })
 
-  it('still calls a wasted 59 a mistake, and a good 121 setup good, at both ends', async () => {
-    for (const average of [40, 80, 81]) expect((await graded(average, 59, ['Miss', 'S3', 'S19'])).grade).toBe('mistake')
+  it('still calls a wasted 59 bad, and a good 121 setup good, at both ends', async () => {
+    for (const average of [40, 80, 81]) expect((await graded(average, 59, ['Miss', 'S3', 'S19'])).grade).toBe('bad')
     for (const average of [40, 80]) expect(['good', 'great']).toContain((await graded(average, 121, ['S20', 'T17', 'S18'])).grade)
   })
 })

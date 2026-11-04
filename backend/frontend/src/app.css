@@ -21,8 +21,24 @@
   --color-accent-fg: #0f100e;
   --color-live: #ff5a4f;
   --color-live-text: #ff8a80;
-  /* The coach's Good grade */
-  --color-good: #7fd18f;
+  /* The coach's eight visit grades (lib/coach/tone.ts), after chess.com's move classes: each base
+     colour fills or tints a pill, its -text variant is the text on that tint or on a card (≥ 4.5:1) */
+  --color-grade-perfect: #1baca6;
+  --color-grade-perfect-text: #4fd6cf;
+  --color-grade-excellent: #81b64c;
+  --color-grade-excellent-text: #a3d670;
+  --color-grade-great: #5c8bb0;
+  --color-grade-great-text: #9cc3e6;
+  --color-grade-good: #95b776;
+  --color-grade-good-text: #b5d49a;
+  --color-grade-ok: #8f9085;
+  --color-grade-ok-text: #bdbeb2;
+  --color-grade-inaccuracy: #f7c631;
+  --color-grade-inaccuracy-text: #f7c631;
+  --color-grade-weak: #e58f2a;
+  --color-grade-weak-text: #f2a650;
+  --color-grade-bad: #ca3431;
+  --color-grade-bad-text: #ff8077;
 
   /* Design system (Dartcade Platform Design tokens.json) */
   --color-bg-deep: #0a0b09;

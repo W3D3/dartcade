@@ -18,7 +18,7 @@
   import { coachedAs, defaultVisit, legHeading, legSubtitle, legSubtitleShort } from '$lib/coach/leg'
   import { GRADE_PILL } from '$lib/coach/tone'
   import { createRequestGuard } from '$lib/requestGuard'
-  import type { LegReview, ReviewVisit, VisitGrade, VisitTag } from '$shared/coach'
+  import { VISIT_GRADES, type LegReview, type ReviewVisit, type VisitTag } from '$shared/coach'
 
   let { params }: { params: { gameId: string; leg: string } } = $props()
 
@@ -68,7 +68,6 @@
     { id: 'setup', label: 'Setup' },
     { id: 'doubling', label: 'Doubling' },
   ]
-  const GRADES: VisitGrade[] = ['perfect', 'great', 'good', 'ok', 'weak', 'mistake']
 
   const visits = $derived(review?.visits ?? [])
   const shown = $derived(filter === 'all' ? visits : visits.filter(v => v.tag === filter))
@@ -150,7 +149,7 @@
             <div class="hidden flex-wrap items-center gap-3.5 xl:flex">
               <h2 class="m-0 font-display text-[24px] font-bold uppercase">Every visit</h2>
               <ul class="m-0 ml-auto flex list-none flex-wrap gap-3.5 p-0" aria-label="Visits per grade">
-                {#each GRADES as g (g)}
+                {#each VISIT_GRADES as g (g)}
                   <li class="inline-flex items-center gap-1.5">
                     <GradePill grade={g} /><span class="text-[13px] text-text-muted"
                       ><span class="sr-only">{GRADE_PILL[g].label}: </span>{visits.filter(v => v.grade === g).length}</span

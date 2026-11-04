@@ -41,9 +41,9 @@ export function legSubtitleShort(title: CoachLegTitle, darts: number, average: n
 /** "Coached as a 46 average": the level whose model judged the leg (model.ts coachLevel) */
 export const coachedAs = (level: number): string => `Coached as a ${averageForLevel(level)} average`
 
-/** The visit the page opens on (an index): the first Mistake, else the first with a note, else the first. */
+/** The visit the page opens on (an index): the first Bad, else the first with a note, else the first. */
 export function defaultVisit(visits: readonly Pick<ReviewVisit, 'grade' | 'notes'>[]): number {
-  const i = visits.findIndex(v => v.grade === 'mistake')
+  const i = visits.findIndex(v => v.grade === 'bad')
   return Math.max(i >= 0 ? i : visits.findIndex(v => v.notes.length > 0), 0)
 }
 

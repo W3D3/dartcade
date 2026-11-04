@@ -4120,7 +4120,8 @@
                               "tip",
                               "notes",
                               "explained",
-                              "grouping"
+                              "grouping",
+                              "value"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -4427,11 +4428,13 @@
                                 "type": "string",
                                 "enum": [
                                   "perfect",
+                                  "excellent",
                                   "great",
                                   "good",
                                   "ok",
+                                  "inaccuracy",
                                   "weak",
-                                  "mistake"
+                                  "bad"
                                 ]
                               },
                               "text": {
@@ -4659,6 +4662,64 @@
                                         "type": "string"
                                       }
                                     }
+                                  }
+                                }
+                              },
+                              "value": {
+                                "type": "object",
+                                "description": "How the grade was worked out (shared/coach/grade.ts VisitValue)",
+                                "required": [
+                                  "points",
+                                  "scoring",
+                                  "rule"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "points": {
+                                    "type": "number",
+                                    "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                                  },
+                                  "scoring": {
+                                    "type": "object",
+                                    "nullable": true,
+                                    "description": "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling",
+                                    "required": [
+                                      "scored",
+                                      "grouping",
+                                      "closeness",
+                                      "rating",
+                                      "average"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "scored": {
+                                        "type": "number"
+                                      },
+                                      "grouping": {
+                                        "type": "number"
+                                      },
+                                      "closeness": {
+                                        "type": "number"
+                                      },
+                                      "rating": {
+                                        "type": "number"
+                                      },
+                                      "average": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  },
+                                  "rule": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      "perfect",
+                                      "note",
+                                      "veryLow",
+                                      "spill",
+                                      null
+                                    ],
+                                    "description": "What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5"
                                   }
                                 }
                               }
@@ -49150,7 +49211,8 @@
           "tip",
           "notes",
           "explained",
-          "grouping"
+          "grouping",
+          "value"
         ],
         "additionalProperties": false,
         "properties": {
@@ -49457,11 +49519,13 @@
             "type": "string",
             "enum": [
               "perfect",
+              "excellent",
               "great",
               "good",
               "ok",
+              "inaccuracy",
               "weak",
-              "mistake"
+              "bad"
             ]
           },
           "text": {
@@ -49691,6 +49755,64 @@
                 }
               }
             }
+          },
+          "value": {
+            "type": "object",
+            "description": "How the grade was worked out (shared/coach/grade.ts VisitValue)",
+            "required": [
+              "points",
+              "scoring",
+              "rule"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "points": {
+                "type": "number",
+                "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+              },
+              "scoring": {
+                "type": "object",
+                "nullable": true,
+                "description": "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling",
+                "required": [
+                  "scored",
+                  "grouping",
+                  "closeness",
+                  "rating",
+                  "average"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "scored": {
+                    "type": "number"
+                  },
+                  "grouping": {
+                    "type": "number"
+                  },
+                  "closeness": {
+                    "type": "number"
+                  },
+                  "rating": {
+                    "type": "number"
+                  },
+                  "average": {
+                    "type": "number"
+                  }
+                }
+              },
+              "rule": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "perfect",
+                  "note",
+                  "veryLow",
+                  "spill",
+                  null
+                ],
+                "description": "What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5"
+              }
+            }
           }
         }
       },
@@ -49804,7 +49926,8 @@
                 "tip",
                 "notes",
                 "explained",
-                "grouping"
+                "grouping",
+                "value"
               ],
               "additionalProperties": false,
               "properties": {
@@ -50111,11 +50234,13 @@
                   "type": "string",
                   "enum": [
                     "perfect",
+                    "excellent",
                     "great",
                     "good",
                     "ok",
+                    "inaccuracy",
                     "weak",
-                    "mistake"
+                    "bad"
                   ]
                 },
                 "text": {
@@ -50343,6 +50468,64 @@
                           "type": "string"
                         }
                       }
+                    }
+                  }
+                },
+                "value": {
+                  "type": "object",
+                  "description": "How the grade was worked out (shared/coach/grade.ts VisitValue)",
+                  "required": [
+                    "points",
+                    "scoring",
+                    "rule"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "points": {
+                      "type": "number",
+                      "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                    },
+                    "scoring": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling",
+                      "required": [
+                        "scored",
+                        "grouping",
+                        "closeness",
+                        "rating",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "scored": {
+                          "type": "number"
+                        },
+                        "grouping": {
+                          "type": "number"
+                        },
+                        "closeness": {
+                          "type": "number"
+                        },
+                        "rating": {
+                          "type": "number"
+                        },
+                        "average": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "rule": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "perfect",
+                        "note",
+                        "veryLow",
+                        "spill",
+                        null
+                      ],
+                      "description": "What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5"
                     }
                   }
                 }
@@ -50603,7 +50786,8 @@
                     "tip",
                     "notes",
                     "explained",
-                    "grouping"
+                    "grouping",
+                    "value"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -50910,11 +51094,13 @@
                       "type": "string",
                       "enum": [
                         "perfect",
+                        "excellent",
                         "great",
                         "good",
                         "ok",
+                        "inaccuracy",
                         "weak",
-                        "mistake"
+                        "bad"
                       ]
                     },
                     "text": {
@@ -51142,6 +51328,64 @@
                               "type": "string"
                             }
                           }
+                        }
+                      }
+                    },
+                    "value": {
+                      "type": "object",
+                      "description": "How the grade was worked out (shared/coach/grade.ts VisitValue)",
+                      "required": [
+                        "points",
+                        "scoring",
+                        "rule"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "points": {
+                          "type": "number",
+                          "description": "On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average"
+                        },
+                        "scoring": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling",
+                          "required": [
+                            "scored",
+                            "grouping",
+                            "closeness",
+                            "rating",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "scored": {
+                              "type": "number"
+                            },
+                            "grouping": {
+                              "type": "number"
+                            },
+                            "closeness": {
+                              "type": "number"
+                            },
+                            "rating": {
+                              "type": "number"
+                            },
+                            "average": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "rule": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "perfect",
+                            "note",
+                            "veryLow",
+                            "spill",
+                            null
+                          ],
+                          "description": "What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5"
                         }
                       }
                     }

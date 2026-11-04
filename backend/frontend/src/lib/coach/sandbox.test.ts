@@ -48,11 +48,11 @@ describe('coachOpenVisit', () => {
     expect(r.next).toHaveLength(5)
   })
 
-  it('grades S20 on 57 with one dart a Mistake (97: S20, S20, S20)', () => {
+  it('grades S20 on 57 with one dart Bad (97: S20, S20, S20)', () => {
     const r = coachOpenVisit(solo(97), darts('S20', 'S20', 'S20'), REF, 5)
     expect(r.done).toBe(true)
     expect(r.next).toEqual([])
-    expect(r.visit).toMatchObject({ grade: 'mistake', tip: false })
+    expect(r.visit).toMatchObject({ grade: 'bad', tip: false })
     expect(r.visit!.text).toContain('S20 leaves 37')
     expect(r.visit!.notes.find(n => n.dart === 2)?.reason).toBe('S20 leaves 37, with no one-dart finish')
   })
@@ -69,7 +69,7 @@ describe('coachOpenVisit', () => {
   it('drops the tip when the opponent is on 32', () => {
     const r = coachOpenVisit({ start: 24, opponent: 32, average: 60 }, darts('S14'), REF, 5)
     expect(r.visit!.notes[0]).toMatchObject({ thrown: 'S14', better: 'D12', tip: false })
-    expect(r.visit).toMatchObject({ grade: 'mistake', tip: false })
+    expect(r.visit).toMatchObject({ grade: 'bad', tip: false })
   })
 
   it('stops after a checkout', () => {

@@ -32,9 +32,9 @@ describe('visitTiles', () => {
   it('a miss 10 mm outside D10 is a slight loss, not costly', () => {
     expect(tile(dartAt({ x: 1.008, y: -0.3276 }))).toMatchObject({ name: 'M10', tone: 'weak', offBoard: true, word: 'slight loss' })
   })
-  it('S15 leaving 5 and a D15 bust are costly; D10 is good', () => {
+  it('S15 leaving 5 is costly, a D15 bust its own red; D10 is good', () => {
     expect(tile(dartFromLabel('S15')!)).toMatchObject({ tone: 'costly', word: 'costly' })
-    expect(tile(dartFromLabel('D15')!)).toMatchObject({ tone: 'costly', word: 'costly' })
+    expect(tile(dartFromLabel('D15')!)).toMatchObject({ tone: 'bust', word: 'bust' })
     expect(tile(dartFromLabel('D10')!)).toMatchObject({ tone: 'good', word: 'good' })
   })
   it('grades by the thresholds', () => {

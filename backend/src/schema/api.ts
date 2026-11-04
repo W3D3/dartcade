@@ -3003,7 +3003,7 @@ export interface components {
             /** @enum {string} */
             tag: "scoring" | "setup" | "doubling";
             /** @enum {string} */
-            grade: "perfect" | "great" | "good" | "ok" | "weak" | "mistake";
+            grade: "perfect" | "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
             text: string;
             /** @description The text is a tip's (a note that leaves the grade alone) */
             tip: boolean;
@@ -3030,6 +3030,24 @@ export interface components {
                     text: string;
                 } | null;
             } | null;
+            /** @description How the grade was worked out (shared/coach/grade.ts VisitValue) */
+            value: {
+                /** @description On the tag's scale: Setup and Doubling the darts' Σ (Δ + closeness), Scoring the rating − the average */
+                points: number;
+                /** @description A Scoring visit's rating: scored + grouping + closeness; null on Setup and Doubling */
+                scoring: {
+                    scored: number;
+                    grouping: number;
+                    closeness: number;
+                    rating: number;
+                    average: number;
+                } | null;
+                /**
+                 * @description What overrode or capped the value: fewest darts, a strategy note, a very low score, darts spilled into 1 or 5
+                 * @enum {string|null}
+                 */
+                rule: "perfect" | "note" | "veryLow" | "spill" | null;
+            };
         };
         SkillGrade: {
             /** @enum {string|null} */

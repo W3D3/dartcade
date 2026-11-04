@@ -43,9 +43,9 @@ describe('leg review text', () => {
     )
   })
 
-  it('opens on the first Mistake, else the first noted visit, else the first', () => {
+  it('opens on the first Bad visit, else the first noted visit, else the first', () => {
     const v = (grade: ReviewVisit['grade'], notes: CoachNote[] = []) => ({ grade, notes })
-    expect(defaultVisit([v('great'), v('weak', [note({})]), v('mistake')])).toBe(2)
+    expect(defaultVisit([v('great'), v('weak', [note({})]), v('bad')])).toBe(2)
     expect(defaultVisit([v('great'), v('weak', [note({})])])).toBe(1)
     expect(defaultVisit([v('great'), v('ok')])).toBe(0)
   })

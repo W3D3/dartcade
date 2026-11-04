@@ -7,21 +7,28 @@ import type { DartClass } from '$shared/coach/dartClass'
 import { dartBand, NEAR_MISS_MM, type DartBand } from '$shared/coach/grade'
 
 /** How a dart tile looks (Coach-Leg). A graded dart (finish and setup visits) by its band
- *  (grade.ts dartBand): green good, plain, gold a slight loss, red costly. Without a grade (Scoring, after a bust) a
- *  treble, double or bull green, a single plain, a miss red-lettered. Off the board is dashed in
- *  every tone. */
-export type DartTone = DartBand | 'miss'
+ *  (grade.ts dartBand): green good, plain, yellow a slight loss, orange costly, red the busting
+ *  dart. Without a grade (Scoring, after a bust) a treble, double or bull green, a single plain, a
+ *  miss red-lettered. Off the board is dashed in every tone. */
+export type DartTone = DartBand | 'bust' | 'miss'
 /** `word`: the grade for screen readers, so colour isn't the only signal; null without a grade */
 export type DartTileView = { name: string; tone: DartTone; offBoard: boolean; word: string | null; label: string }
 
-const TONE_WORD: Record<DartTone, string> = { good: 'good', plain: 'even', weak: 'slight loss', costly: 'costly', miss: 'miss' }
+const TONE_WORD: Record<DartTone, string> = {
+  good: 'good',
+  plain: 'even',
+  weak: 'slight loss',
+  costly: 'costly',
+  bust: 'bust',
+  miss: 'miss',
+}
 
 /** Tone without a grade: a treble, double or bull good */
 const GOOD_BEDS = new Set(['T', 'D', 'Bull'])
 
 export function dartTone(d: Pick<ReviewDart, 'bedAimId' | 'bust' | 'class' | 'delta' | 'closeness'>): DartTone {
   if (d.delta === null) return d.bedAimId === null ? 'miss' : GOOD_BEDS.has(aimKind(d.bedAimId)) ? 'good' : 'plain'
-  return dartBand(d.delta, d.closeness, d.class.hit, d.bust)
+  return d.bust ? 'bust' : dartBand(d.delta, d.closeness, d.class.hit, d.bust)
 }
 
 /** A visit's darts with their tones and class labels. */

@@ -23,7 +23,7 @@ export const COACH_FILTER_IDS: readonly CoachFilter[] = COACH_FILTERS.map(f => f
 
 const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** A leg row's "Coach found" pills: missed doubles red, bad setups and low visits yellow; a clean leg only its green pill */
+/** A leg row's "Coach found" pills: missed doubles red (Bad), bad setups and low visits orange (Weak); a clean leg only its lime pill */
 export function coachFound(row: Pick<CoachLegRow, 'missedDoubles' | 'badSetups' | 'lowVisits' | 'clean'>): PillView[] {
   if (row.clean) return [{ label: 'Clean leg', tone: 'lime' }]
   const pills: PillView[] = []

@@ -34,6 +34,10 @@ type Placed = { coords: { x: number; y: number } | null; class: Pick<DartClass, 
 
 /** A bonus of `max` at 0 mm, falling linearly to 0 at `zero` mm; 0 without a value */
 const bonus = (mm: number | null, max: number, zero: number) => (mm === null ? 0 : max * Math.max(0, 1 - mm / zero))
+/** The rating's bonus for the group's spread; 0 without a shared target */
+export const groupingBonus = (spreadMm: number | null) => bonus(spreadMm, GROUPING_MAX, GROUPING_ZERO_MM)
+/** The rating's bonus for the darts' mean distance from their targets' beds */
+export const closenessBonus = (edgeMm: number) => bonus(edgeMm, CLOSENESS_MAX, CLOSENESS_ZERO_MM)
 
 /** The visit's grouping from its walked darts (those after a bust left out), its score and the
  *  player's 3-dart average; null with fewer than 2 placed darts, the rating then being the score. */
@@ -48,7 +52,7 @@ export function grouping(darts: readonly Placed[], scored: number, average: numb
   const spreadMm = aim ? mean(placed.map(p => Math.hypot(p.x - c.x, p.y - c.y))) * MM_PER_UNIT : null
   const offsetMm = aim ? Math.hypot(c.x - aim.x, c.y - aim.y) * MM_PER_UNIT : null
   const edgeMm = mean(placed.map(p => p.edgeMm))
-  const rating = scored + bonus(spreadMm, GROUPING_MAX, GROUPING_ZERO_MM) + bonus(edgeMm, CLOSENESS_MAX, CLOSENESS_ZERO_MM)
+  const rating = scored + groupingBonus(spreadMm) + closenessBonus(edgeMm)
   const expected = expectedSpreadMm(average, placed.length)
   return {
     darts: placed.length,

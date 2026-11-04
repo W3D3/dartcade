@@ -2,7 +2,7 @@
   // "What the coach detects" (Coach-Mistakes): every check this version runs, from lib/coach/checks.ts.
   import Layout from '$lib/components/Layout.svelte'
   import { flag } from '$lib/flags'
-  import { CHECK_GROUPS, LABELS, SOURCES, type CheckSource } from '$lib/coach/checks'
+  import { CHECK_GROUPS, GRADE_LEGEND, SOURCES, type CheckSource } from '$lib/coach/checks'
   import GradePill from '$lib/components/coach/GradePill.svelte'
   import { TONE_TEXT, type PillTone } from '$lib/coach/tone'
 
@@ -34,12 +34,33 @@
       <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
     {:else}
       <div class="flex flex-wrap items-start gap-7">
-        <div class="flex flex-col gap-2">
-          <span class="text-[12px] font-semibold label-caps text-text-dim">Labels on a visit</span>
-          <div class="flex flex-wrap items-center gap-2.5">
-            {#each LABELS as l (l.label)}
-              <GradePill grade={l.label} /><span class="text-[13px] text-text-muted">{l.text}</span>
-            {/each}
+        <div class="flex min-w-0 max-w-full flex-col gap-2">
+          <span id="checks-grades" class="text-[12px] font-semibold label-caps text-text-dim">Labels on a visit</span>
+          <div class="max-w-full overflow-x-auto">
+            <table aria-labelledby="checks-grades" class="border-collapse text-[13px] tabular-nums">
+              <thead>
+                <tr class="text-left text-[11px] uppercase tracking-[0.08em] text-text-dim">
+                  <th scope="col" class="py-1 pr-3 font-semibold">Grade</th>
+                  <th scope="col" class="py-1 pr-3 font-semibold">Means</th>
+                  <th scope="col" class="py-1 pr-3 font-semibold">Setup, doubling</th>
+                  <th scope="col" class="py-1 font-semibold">Scoring</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each GRADE_LEGEND as l (l.label)}
+                  <tr class="border-t border-surface-paused">
+                    <th scope="row" class="py-1.5 pr-3 text-left font-normal"><GradePill grade={l.label} /></th>
+                    <td class="py-1.5 pr-3 text-text-muted">{l.text}</td>
+                    <td class="py-1.5 pr-3 whitespace-nowrap text-ink-2">{l.finish ?? 'fewest darts'}</td>
+                    <td class="py-1.5 whitespace-nowrap text-ink-2">{l.scoring === null ? 'fewest darts' : `${l.scoring} vs average`}</td>
+                  </tr>
+                {/each}
+                <tr class="border-t border-surface-paused">
+                  <th scope="row" class="py-1.5 pr-3 text-left font-normal"><GradePill grade="tip" /></th>
+                  <td colspan="3" class="py-1.5 text-text-muted">worth knowing, not graded</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <div class="flex flex-col gap-2">

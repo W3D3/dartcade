@@ -4,19 +4,18 @@ import {
   DART_COSTLY_AT,
   DART_GOOD_FROM,
   DART_PLAIN_ABOVE,
-  GOOD_FROM,
-  GREAT_FROM,
-  LOW_BELOW,
+  FINISH_BANDS,
   MISS_CLOSE_MAX,
   MISS_CLOSE_ZERO_MM,
   NEAR_MISS_MM,
-  OK_FROM,
+  SCORING_BANDS,
   VERY_LOW,
-  WEAK_FROM,
+  type GradeBands,
 } from '$shared/coach/grade'
 import { NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
-import type { VisitGrade } from '$shared/coach'
+import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
+import { GRADE_PILL } from './tone'
 
 /** A check's label: a visit grade, or tip (Info: worth knowing, not graded) */
 export type CheckLabel = VisitGrade | 'tip'
@@ -30,16 +29,40 @@ export const SOURCES: Record<CheckSource, { label: string; text: string }> = {
   model: { label: 'Model', text: "From the checkout model: each aim's chance to finish" },
 }
 
-/** What each label means, in the legend's order */
-export const LABELS: { label: CheckLabel; text: string }[] = [
-  { label: 'mistake', text: 'clearly cost points or the leg' },
-  { label: 'weak', text: 'below your level' },
-  { label: 'ok', text: 'fine, nothing stood out' },
-  { label: 'good', text: 'did the job' },
-  { label: 'great', text: 'a strong outcome' },
-  { label: 'perfect', text: 'the fewest darts possible' },
-  { label: 'tip', text: 'worth knowing, not graded' },
-]
+/** Points with their sign: "+20", "−15", "0" */
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
+
+/** A grade's band on a scale: "+20 to +60", "+60 or more", "below −20" */
+export function bandText(bands: GradeBands, grade: VisitGrade): string {
+  const i = bands.findIndex(b => b.grade === grade)
+  if (i < 0) return `below ${signed(bands[bands.length - 1].from)}`
+  return i === 0 ? `${signed(bands[0].from)} or more` : `${signed(bands[i].from)} to ${signed(bands[i - 1].from)}`
+}
+
+/** "Excellent +60 or more, Great +20 to +60, …, Bad below −20": every class of a scale */
+const scaleText = (bands: GradeBands) =>
+  [...bands.map(b => b.grade), 'bad' as const].map(g => `${GRADE_PILL[g].label} ${bandText(bands, g)}`).join(', ')
+
+const MEANING: Record<VisitGrade, string> = {
+  perfect: 'the fewest darts possible',
+  excellent: 'a big gain',
+  great: 'a strong outcome',
+  good: 'did the job',
+  ok: 'about what was expected',
+  inaccuracy: 'a small slip',
+  weak: 'cost you',
+  bad: 'clearly cost points or the leg',
+}
+
+/** One legend entry per class, best first, with its bands: `finish` in checkout-chance points
+ *  (Setup and Doubling), `scoring` against your average; null for Perfect, which a rule gives */
+export type GradeLegend = { label: VisitGrade; text: string; finish: string | null; scoring: string | null }
+export const GRADE_LEGEND: GradeLegend[] = VISIT_GRADES.map(g => ({
+  label: g,
+  text: MEANING[g],
+  finish: g === 'perfect' ? null : bandText(FINISH_BANDS, g),
+  scoring: g === 'perfect' ? null : bandText(SCORING_BANDS, g),
+}))
 
 const notePoints = Math.round(NOTE_THRESHOLD * 100)
 
@@ -58,25 +81,25 @@ export const CHECK_GROUPS: CheckGroup[] = [
       },
       {
         name: 'Very low visit',
-        labels: ['mistake'],
+        labels: ['weak', 'bad'],
         source: 'scores',
-        when: `The visit scores under ${VERY_LOW}.`,
+        when: `The visit scores under ${VERY_LOW}: Weak at best, whatever the grouping.`,
         example: 'S5 S1 S19 = 25',
         says: 'Your usual visit next to the score, so you see how far off it was.',
       },
       {
-        name: 'Low visit',
-        labels: ['weak'],
+        name: 'Rating against your average',
+        labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'scores',
-        when: `The visit scores ${LOW_BELOW} or more below your average (your 30-day X01 average, or this game's without one).`,
-        example: 'S20 S1 S5 = 26 · your average 60',
+        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_BANDS)}.`,
+        example: 'S20 S20 S1 = 41 · your average 60: −19, Weak',
         says: 'One loose visit happens; a few in a row mean the rhythm went.',
       },
       {
         name: 'Spill into 1 / 5',
-        labels: ['weak'],
+        labels: ['inaccuracy'],
         source: 'scores',
-        when: 'Two or three darts of a visit at the 20 land in 1 or 5.',
+        when: 'Two or three darts of a visit at the 20 land in 1 or 5: Inaccuracy at best.',
         example: 'S1 S20 S5',
         says: 'The darts drift sideways off the 20: keep the release and follow-through straight.',
       },
@@ -88,7 +111,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
     checks: [
       {
         name: 'Strategy note',
-        labels: ['mistake'],
+        labels: ['bad'],
         source: 'model',
         when: `A dart on a finish went at a number that gives at least ${notePoints} points less chance to check out than the best aim. The dart gets the benefit of the doubt: it was aimed at the best spot on the number it hit or on either number next to it, since a dart drifting into the next wedge is the commonest miss; a single near the middle (or one without a position) may also have been thrown at the bull or 25. Marks any visit Bad; the Bad setups card counts the setup visits graded Bad, for a note or by their checkout chance.`,
         example: '57 left · S20 → 37 · better S17 → 40',
@@ -96,9 +119,9 @@ export const CHECK_GROUPS: CheckGroup[] = [
       },
       {
         name: 'Checkout chance',
-        labels: ['great', 'good', 'ok', 'weak', 'mistake'],
+        labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'model',
-        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). Great from +${GREAT_FROM}, Good from +${GOOD_FROM}, OK from ${OK_FROM}, Weak from ${WEAK_FROM}, Bad below. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), gold at ${DART_PLAIN_ABOVE} or below, red at ${DART_COSTLY_AT} or below or a bust. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
+        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player one level above your 30-day average (the coaching level shown on each leg) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_BANDS)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
         example: '121 left · S20 T17 S18 → 32 (D16): +8, Good',
         says: 'When the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route. On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
       },
@@ -118,7 +141,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
       },
       {
         name: 'Bust',
-        labels: ['weak', 'mistake'],
+        labels: ['inaccuracy', 'weak', 'bad'],
         source: 'model',
         when: "The visit goes below zero, leaves 1, or reaches zero without a double. It scores nothing and you're back on the visit's start: graded by checkout chance like any visit, so busting back to 32 beats leaving 2.",
         example: '40 left · S20 T20 → bust',
@@ -126,7 +149,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
       },
       {
         name: 'Bust-back',
-        labels: ['ok', 'weak'],
+        labels: ['ok', 'inaccuracy', 'weak'],
         source: 'model',
         when: "The busting dart was best thrown to bust: from a score that's hard to finish, back on the visit's start is worth more. Graded by checkout chance like any visit.",
         example: '20 left · S10 S7 S5 → back on 20',
@@ -134,9 +157,9 @@ export const CHECK_GROUPS: CheckGroup[] = [
       },
       {
         name: 'Checked out',
-        labels: ['great', 'good'],
+        labels: ['excellent', 'great', 'good'],
         source: 'model',
-        when: 'A dart at a double finishes the leg. Graded by checkout chance: Good from a finish you would likely have taken anyway, Great from a harder one.',
+        when: 'A dart at a double finishes the leg. Graded by checkout chance: Good from a finish you would likely have taken anyway, Great or Excellent from a harder one.',
         example: '81 left · T19 S12 D6',
         says: 'Which double took the leg.',
       },
