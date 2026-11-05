@@ -176,7 +176,7 @@ cd e2e && npm ci && npm run screenshots
 It starts its own stack (`docker-compose.e2e.yaml` plus `e2e/docker-compose.screenshots.yaml`: project
 `dartcade-shots` on ports 3021/5181, so it runs beside the dev and e2e stacks) with the dev accounts, the
 preview seed (`backend/src/seed`) and every flagged feature on, writes the shots straight into `docs/`, and
-tears the stack down. `SCREENSHOTS_REUSE=1` keeps the stack between runs; add a spec name (`npm run
+tears the stack down. Another session running it at once sets `COMPOSE_PROJECT_NAME`, `SHOTS_BACKEND_PORT` and `SHOTS_FRONTEND_PORT` for its own containers and ports. `SCREENSHOTS_REUSE=1` keeps the stack between runs; add a spec name (`npm run
 screenshots -- 04`) to retake one file's shots. Scenes live in `e2e/screenshots/`. The camera stills
 (`docs/camera`) and the score animations (`docs/score-fx`) need a real board and are taken by hand.
 
