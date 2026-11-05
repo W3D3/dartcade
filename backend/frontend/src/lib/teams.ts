@@ -54,6 +54,8 @@ export type X01TeamView = {
   /** Darts at a finish that hit, over the team's players. */
   checkout: string
   checkoutDarts: string
+  last: string
+  bestLeg: string
   darts: number
   legsWon: number
   firstTo: number
@@ -114,6 +116,8 @@ export function x01Teams(
       teamAvg: avgOf(sum(mine.map(v => v.scored)), sum(mine.map(v => v.darts))),
       matchAvg: avgOf(of(game.pointsScored), of(game.dartsThrown)),
       ...checkoutRate(of(game.checkoutHits), of(game.checkoutAttempts)),
+      last: p.last,
+      bestLeg: p.bestLeg,
       darts: legDarts(game, team.seats, active),
       legsWon: team.legs,
       firstTo: game.firstTo,

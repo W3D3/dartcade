@@ -6,7 +6,8 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll, x01Darts } from '$lib/playerStats'
+  import PagedStats from './PagedStats.svelte'
+  import { x01Pages, x01Roll, x01Darts } from '$lib/playerStats'
   import PlayerPill from './PlayerPill.svelte'
   import TeamMemberRow from './TeamMemberRow.svelte'
   import type { X01TeamView } from '$lib/teams'
@@ -36,20 +37,11 @@
 
   const up = $derived(team.members.find(m => m.role === 'throwing') ?? team.members.find(m => m.role === 'up-next') ?? null)
   const status = $derived(up ? `${up.name} ${up.role === 'throwing' ? 'throwing' : 'up next'}` : team.won ? 'winner' : 'waiting')
-  // Compact (phones, side by side): just the team avg and darts thrown, not the match-wide stats
-  const stats = $derived(
-    compact
-      ? [
-          { label: 'Team avg', value: team.teamAvg, dim: false },
-          { ...x01Darts(team), dim: false },
-        ]
-      : [
-          { label: 'Team avg', value: team.teamAvg, dim: false },
-          { label: 'Match avg', value: team.matchAvg, dim: true },
-          { label: 'Checkout', value: team.checkout, dim: true },
-          { ...x01Darts(team), dim: false },
-        ],
-  )
+  // Compact (phones, side by side): just the team avg and darts thrown, in a row too narrow for pages
+  const stats = $derived([
+    { label: 'Team avg', value: team.teamAvg, dim: false },
+    { ...x01Darts(team), dim: false },
+  ])
 </script>
 
 <section
@@ -91,19 +83,28 @@
       </span>
     {/if}
 
-    <div class="flex flex-wrap {compact ? 'gap-x-[14px] gap-y-1' : 'gap-x-7 gap-y-2'}">
-      {#each stats as s (s.label)}
-        <span class="flex flex-col {compact ? 'gap-[1px]' : 'gap-1'}">
-          <span class="uppercase {compact ? 'text-[10px] tracking-[0.08em]' : 'text-[13px] tracking-[0.1em]'} text-text-muted"
-            >{s.label}</span
-          >
-          <span
-            class="font-display font-bold leading-none tabular-nums {compact ? 'text-[22px]' : 'text-[44px]'}
-                       {s.dim ? 'text-text-muted' : team.active ? 'text-text' : 'text-ink-2'}">{s.value}</span
-          >
-        </span>
-      {/each}
-    </div>
+    {#if compact}
+      <div class="flex flex-wrap gap-x-[14px] gap-y-1">
+        {#each stats as s (s.label)}
+          <span class="flex flex-col gap-[1px]">
+            <span class="uppercase text-[10px] tracking-[0.08em] text-text-muted">{s.label}</span>
+            <span
+              class="font-display font-bold leading-none tabular-nums text-[22px] {s.dim
+                ? 'text-text-muted'
+                : team.active
+                  ? 'text-text'
+                  : 'text-ink-2'}">{s.value}</span
+            >
+          </span>
+        {/each}
+      </div>
+    {:else}
+      <PagedStats
+        pages={x01Pages({ ...team, legAvg: team.teamAvg, avg: team.matchAvg })}
+        active={team.active}
+        class="[--stat-label:clamp(9px,3.3cqi,13px)] [--stat-value:clamp(26px,8cqi,44px)]"
+      />
+    {/if}
 
     {#if chalkboard}
       <Chalkboard

@@ -4,7 +4,8 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Averages, x01Roll, x01Darts } from '$lib/playerStats'
+  import PagedStats from './PagedStats.svelte'
+  import { x01Pages, x01Roll } from '$lib/playerStats'
   import PhoneCardShell from './PhoneCardShell.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
@@ -27,34 +28,28 @@
     chalkboard: boolean
   } = $props()
   const name = $derived(who.name)
-
-  const stats = $derived([...x01Averages(p), { label: 'Checkout', value: p.checkout, dim: true }, { ...x01Darts(p), dim: false }])
 </script>
 
 <PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} {rank} class="gap-2">
   {#snippet aside()}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}
   {/snippet}
-  <!-- Short screens (≤ 740 px tall) drop the chalkboard and shrink the score so the board keeps its room -->
-  <div class="grid gap-3 items-end grid-cols-1 {chalkboard ? '[@media(min-height:741px)]:grid-cols-[minmax(0,1fr)_150px]' : ''}">
-    <div class="flex flex-col gap-[10px] min-w-0">
+  <!-- Short screens (≤ 740 px tall) drop the chalkboard and shrink the score so the board keeps its room;
+       the stat strip spans the card under both -->
+  <div
+    class="grid gap-x-3 gap-y-[6px] items-end grid-cols-1 {chalkboard ? '[@media(min-height:741px)]:grid-cols-[minmax(0,1fr)_150px]' : ''}"
+  >
+    <div class="flex flex-col gap-[6px] min-w-0">
       <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-[-0.02em] tabular-nums"
         ><RollingNumber {...x01Roll(p)} /></span
       >
       {#if !p.opened}<span class="text-[12px] label-caps text-text-muted">Needs to open</span>{/if}
-      <div class="hidden [@media(min-height:600px)]:flex flex-wrap gap-x-[14px] gap-y-1">
-        {#each stats as s (s.label)}
-          <span class="flex flex-col gap-[1px]">
-            <span class="text-[10px] uppercase tracking-[0.08em] text-text-muted whitespace-nowrap">{s.label}</span>
-            <span class="font-display font-bold text-[22px] leading-none tabular-nums {s.dim ? 'text-text-muted' : 'text-text'}"
-              >{s.value}</span
-            >
-          </span>
-        {/each}
-      </div>
     </div>
-    {#if chalkboard}<div class="hidden [@media(min-height:741px)]:flex h-[132px] flex-col overflow-hidden">
+    {#if chalkboard}<div class="hidden [@media(min-height:741px)]:flex h-[124px] flex-col overflow-hidden">
         <Chalkboard visits={p.visits} current={p.current} active />
       </div>{/if}
+    <div class="hidden [@media(min-height:600px)]:block col-span-full">
+      <PagedStats pages={x01Pages(p)} active class="[--stat-label:min(10px,2.9vw)] [--stat-value:22px]" />
+    </div>
   </div>
 </PhoneCardShell>

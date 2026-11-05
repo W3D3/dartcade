@@ -4,6 +4,7 @@ import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import type { Visit } from './visitHistory.js'
 import { shownScore, type ScoreUpdates } from './heldScore.js'
 import type { RollOptions } from './rollingNumber.js'
+import type { Stat } from './statPages.js'
 
 import type { AtcGame, X01Game } from './api/game-ws'
 
@@ -28,7 +29,10 @@ export type X01PlayerView = {
   canFinish: string | null
   avg: string
   legAvg: string
+  /** The score of the last finished visit (a bust is 0) by the player's team; a dash before the first. */
   last: string
+  /** The fewest darts the player's team needed to win a leg of this match; a dash until one is won. */
+  bestLeg: string
   /** Darts at a finish that hit: "40%", or a dash before the first. */
   checkout: string
   /** The same as "hits/darts". */
@@ -68,6 +72,7 @@ export function x01Player(
       : null
   const leg: Visit[] = game.legVisits.filter(v => v.seat === i)
   const last = game.lastVisit.at(i) ?? null
+  const bestLeg = game.bestLeg.at(i) ?? null
   return {
     remaining,
     opened,
@@ -86,6 +91,7 @@ export function x01Player(
       leg.reduce((a, v) => a + v.darts, 0),
     ),
     last: last ? String(last.scored) : '—',
+    bestLeg: bestLeg === null ? '—' : String(bestLeg),
     ...checkoutRate(game.checkoutHits.at(i) ?? 0, game.checkoutAttempts.at(i) ?? 0),
     darts: legDarts(game, [i], o.active),
     legsWon: game.legs.at(i) ?? 0,
@@ -97,8 +103,7 @@ export function x01Player(
   }
 }
 
-/** The averages a player's panel, row or card shows: this leg's beside the match's (dimmed), or
- *  one "Avg" in a single-leg game, where the two are the same. */
+/** The averages a stacked row shows: this leg's beside the match's (dimmed), or one "Avg" in a single-leg game. */
 export function x01Averages(p: Pick<X01PlayerView, 'avg' | 'legAvg' | 'firstTo'>): { label: string; value: string; dim: boolean }[] {
   if (p.firstTo <= 1) return [{ label: 'Avg', value: p.avg, dim: false }]
   return [
@@ -107,9 +112,26 @@ export function x01Averages(p: Pick<X01PlayerView, 'avg' | 'legAvg' | 'firstTo'>
   ]
 }
 
-/** The darts cell of a player's or team's card: the darts thrown this leg. */
+/** The darts cell of a row or card: the darts thrown this leg. Labelled "Darts", not "Darts thrown", so the label stays on one line (#495). */
 export function x01Darts(p: { darts: number }): { label: string; value: string } {
-  return { label: 'Darts thrown', value: String(p.darts) }
+  return { label: 'Darts', value: String(p.darts) }
+}
+
+/** The two pages of a card's stat strip: leg avg, last score and darts; then match avg,
+ *  checkout % and best leg. One "Avg" on the first page in a single-leg game, where the two averages
+ *  are the same and the match avg is left out. */
+export function x01Pages(
+  p: Pick<X01PlayerView, 'avg' | 'legAvg' | 'firstTo' | 'last' | 'bestLeg' | 'darts' | 'checkout' | 'checkoutDarts'>,
+): Stat[][] {
+  const single = p.firstTo <= 1
+  return [
+    [{ label: single ? 'Avg' : 'Leg avg', value: single ? p.avg : p.legAvg }, { label: 'Last score', value: p.last }, x01Darts(p)],
+    [
+      ...(single ? [] : [{ label: 'Match avg', value: p.avg, dim: true }]),
+      { label: 'Checkout %', value: p.checkout, title: `${p.checkoutDarts} darts at a finish`, dim: true },
+      { label: 'Best leg', value: p.bestLeg, dim: true },
+    ],
+  ]
 }
 
 /** How the big X01 score (a player's or a team's) rolls: the shown score, a new leg starts it
