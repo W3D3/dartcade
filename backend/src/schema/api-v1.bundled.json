@@ -5660,6 +5660,45 @@
         }
       }
     },
+    "/api/friends/suggestions": {
+      "get": {
+        "operationId": "friendSuggestions",
+        "summary": "People you may know, friends of your friends first",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 5 accounts you share friends with, the most in common first; not you, your friends or anyone you have an open request with",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "users"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FriendSearchResult"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/friends/requests": {
       "post": {
         "operationId": "sendFriendRequest",

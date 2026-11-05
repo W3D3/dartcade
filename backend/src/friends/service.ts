@@ -24,6 +24,7 @@ export type RequestOutcome = { id: string; status: 'pending' | 'accepted' }
 const REQUEST_ATTEMPTS = 3
 const SEARCH_MIN = 3
 const SEARCH_LIMIT = 10
+const SUGGESTION_LIMIT = 5
 
 export type FriendsDeps = {
   db: Kysely<Database>
@@ -262,7 +263,15 @@ export class FriendsService {
   async search(userId: string, rawTerm: string): Promise<FriendSearchResult[]> {
     const term = normalizeName(rawTerm).replace(/^@/, '')
     if (Array.from(term).length < SEARCH_MIN) return []
-    const hits = await q.searchUsersForFriends(this.db, term, userId, SEARCH_LIMIT)
+    return this.withMutual(userId, await q.searchUsersForFriends(this.db, term, userId, SEARCH_LIMIT))
+  }
+
+  /** People you may know: friends of your friends, the most in common first. */
+  async suggestions(userId: string): Promise<FriendSearchResult[]> {
+    return this.withMutual(userId, await q.suggestionsFor(this.db, userId, SUGGESTION_LIMIT))
+  }
+
+  private async withMutual(userId: string, hits: q.FriendSearchHit[]): Promise<FriendSearchResult[]> {
     const mutual = await q.mutualFriendCounts(
       this.db,
       userId,

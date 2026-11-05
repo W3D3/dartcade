@@ -2174,6 +2174,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/friends/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People you may know, friends of your friends first */
+        get: operations["friendSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends/requests": {
         parameters: {
             query?: never;
@@ -8724,6 +8741,30 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Up to 10 accounts, names starting with q first; not you */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        users: components["schemas"]["FriendSearchResult"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    friendSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 5 accounts you share friends with, the most in common first; not you, your friends or anyone you have an open request with */
             200: {
                 headers: {
                     [name: string]: unknown;

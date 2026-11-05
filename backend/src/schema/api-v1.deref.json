@@ -39000,6 +39000,213 @@
         }
       }
     },
+    "/api/friends/suggestions": {
+      "get": {
+        "operationId": "friendSuggestions",
+        "summary": "People you may know, friends of your friends first",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 5 accounts you share friends with, the most in common first; not you, your friends or anyone you have an open request with",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "users"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar",
+                          "mutualFriends",
+                          "request"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "mutualFriends": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "request": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "sent",
+                              "received",
+                              "friends"
+                            ],
+                            "description": "friends; or an open request sent by you or received from them; or none"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/friends/requests": {
       "post": {
         "operationId": "sendFriendRequest",

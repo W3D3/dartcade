@@ -66,6 +66,37 @@ export async function searchUsersForFriends(db: Kysely<Database>, term: string, 
   return rows.map(r => ({ id: r.id, name: r.name, request: r.request, avatar: toAvatar(r) }))
 }
 
+/** Discoverable people who share friends with the user and have no friendship or request with them, most in common first. */
+export async function suggestionsFor(db: Kysely<Database>, userId: string, limit: number): Promise<FriendSearchHit[]> {
+  const { rows } = await sql<{
+    id: string
+    name: string
+    avatar_kind: 'none' | 'preset' | 'upload'
+    avatar_preset: string | null
+    avatar_background: string | null
+    avatar_version: number
+  }>`
+    WITH edges AS (
+      SELECT requester_id AS a, addressee_id AS b FROM friendships WHERE status = 'accepted'
+      UNION ALL
+      SELECT addressee_id AS a, requester_id AS b FROM friendships WHERE status = 'accepted'
+    )
+    SELECT u.id, u.name, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version
+    FROM edges mine
+    JOIN edges o ON o.b = mine.b AND o.a <> ${userId}
+    JOIN "user" u ON u.id = o.a
+    WHERE mine.a = ${userId}
+      AND u.discoverable AND NOT u.name_needs_change
+      AND NOT EXISTS (
+        SELECT 1 FROM friendships f
+        WHERE (f.requester_id = ${userId} AND f.addressee_id = u.id) OR (f.addressee_id = ${userId} AND f.requester_id = u.id)
+      )
+    GROUP BY u.id
+    ORDER BY count(*) DESC, lower(u.name), u.id
+    LIMIT ${limit}`.execute(db)
+  return rows.map(r => ({ id: r.id, name: r.name, request: 'none', avatar: toAvatar(r) }))
+}
+
 export async function friendshipBetween(db: Kysely<Database>, a: string, b: string) {
   return db
     .selectFrom('friendships')

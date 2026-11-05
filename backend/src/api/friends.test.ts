@@ -16,6 +16,7 @@ function makeApp() {
   const friends = {
     list: vi.fn().mockResolvedValue(empty),
     search: vi.fn().mockResolvedValue([]),
+    suggestions: vi.fn().mockResolvedValue([]),
     request: vi.fn().mockResolvedValue({ id: 'f1', status: 'pending' }),
     accept: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
@@ -48,6 +49,14 @@ describe('friends API', () => {
     expect(friends.search).toHaveBeenCalledWith('chris', 'len')
     for (let i = 1; i < 30; i++) expect((await search()).statusCode).toBe(200)
     expect((await search()).statusCode).toBe(429)
+  })
+
+  it('suggests people for the signed-in user', async () => {
+    const { app, friends } = makeApp()
+    const res = await app.inject({ method: 'GET', url: '/api/friends/suggestions' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body)).toEqual({ users: [] })
+    expect(friends.suggestions).toHaveBeenCalledWith('chris')
   })
 
   it('answers a new request 201 and a crossing one 200', async () => {
