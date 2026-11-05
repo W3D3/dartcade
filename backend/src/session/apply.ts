@@ -1,9 +1,14 @@
 import { refoldVisit } from './refold.js'
 import { manualDart } from './manualDart.js'
+import { chargeVisit, restartVisit } from './rankedClock.js'
+import type { SystemAction } from './systemInput.js'
 import type { BoardEvent, CommittedVisit, HistoryDart, Session, UserAction } from './types.js'
 
 /** One input to a game: a board event or a user action. */
-export type GameInput = { source: 'board'; event: BoardEvent } | { source: 'user'; action: UserAction }
+export type GameInput =
+  | { source: 'board'; event: BoardEvent }
+  | { source: 'user'; action: UserAction }
+  | { source: 'system'; action: SystemAction }
 
 export type ApplyOutcome = {
   /** The visit this input committed, if any. */
@@ -79,7 +84,19 @@ function markCorrected(session: Session, dartPos: number): void {
  * the input happened (now, or the log entry's time). No I/O.
  */
 export function applyInput(session: Session, input: GameInput, at: Date): ApplyOutcome {
-  const outcome = input.source === 'board' ? applyBoardEvent(session, input.event, at) : applyUserAction(session, input.action, at)
+  const up = session.module.getCurrentPlayer(session.currentState)
+  const outcome =
+    input.source === 'board'
+      ? applyBoardEvent(session, input.event, at)
+      : input.source === 'user'
+        ? applyUserAction(session, input.action, at)
+        : forfeit(session, input.action.seats)
+  // A game visit spends the time it ran over on its team's reserve. A bull off visit doesn't: the
+  // wait for the board and the opponent isn't theirs to pay for, it only starts the next window.
+  if (session.clock && outcome.committed) {
+    if (outcome.committed.phase === 'game') chargeVisit(session.clock, teamOf(session)[up], at)
+    else restartVisit(session.clock, at)
+  }
   session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
   return outcome
 }
@@ -219,18 +236,9 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
       return NONE
     }
 
-    case 'forfeit': {
+    case 'forfeit':
       // The engine fills in the seats (see authorizeAction); a forfeit without any changes nothing
-      const seats = action.seats ?? []
-      if (seats.length === 0) return NONE
-      session.forfeited = [...new Set([...session.forfeited, ...seats])].sort((a, b) => a - b)
-      session.undoable = []
-      // The visit in progress doesn't count (mirrors board.resync)
-      countDarts(session, session.currentState, -dartEvents(session).length)
-      session.openVisitEvents = []
-      session.openDarts = []
-      return { committed: null, won: true }
-    }
+      return forfeit(session, action.seats ?? [])
 
     default: {
       // The game module's own actions (e.g. the bull off's skip/rethrow/start) end the
@@ -244,6 +252,21 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
       return { committed: null, won: hasWinner(session, next) }
     }
   }
+}
+
+/** The team of every seat (a seat's own index in singles). */
+export const teamOf = (session: Session): number[] => session.module.teamsOf?.(session.committedState) ?? session.seats.map((_, i) => i)
+
+// The seats give up: the game ends and they place last. The visit in progress doesn't count
+// (mirrors board.resync).
+function forfeit(session: Session, seats: number[]): ApplyOutcome {
+  if (seats.length === 0) return NONE
+  session.forfeited = [...new Set([...session.forfeited, ...seats])].sort((a, b) => a - b)
+  session.undoable = []
+  countDarts(session, session.currentState, -dartEvents(session).length)
+  session.openVisitEvents = []
+  session.openDarts = []
+  return { committed: null, won: true }
 }
 
 // Ends the open visit with `closing` (takeout.finished or visit.cleared) and describes it

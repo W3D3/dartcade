@@ -12,7 +12,7 @@ const seat = (name: string, user: string): Seat => ({
   boardName: null,
   bot: null,
 })
-const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']], ratings: { ann: 1200, bob: 1200 } }
+const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']], ratings: { ann: 1200, bob: 1200 }, rules: null }
 
 function makeStore() {
   return {

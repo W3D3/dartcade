@@ -10,7 +10,9 @@ import type { Seat } from '../session/types.js'
 import type { X01Config } from '../games/x01.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
-import { ACCEPT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
+import { ACCEPT_SECONDS, RESERVE_SECONDS, VISIT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
+import { flagEnabled, flagNumber, loadFlagUser } from '../flags/index.js'
+import type { RankedRules } from '../session/rankedClock.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { findMatches, matchFirstTo, rangeOf, type Entry, type FirstTo } from './matcher.js'
 
@@ -359,6 +361,7 @@ export class MatchmakingService {
           mode,
           sides: [a.userIds, b.userIds],
           ratings: Object.fromEntries([...a.players, ...b.players].map(p => [p.userId, p.rating])),
+          rules: await this.rankedRules(a.userIds[0]),
         },
         lobbyName: `Ranked ${mode}`,
       })
@@ -370,6 +373,18 @@ export class MatchmakingService {
       return
     }
     this.push([...a.userIds, ...b.userIds, ...this.searchersOf(mode)])
+  }
+
+  // The time limit and hand-entry rules the flags give this game, as the host sees them; kept with
+  // the game, so changing a flag later never alters a running one
+  private async rankedRules(hostUserId: string): Promise<RankedRules> {
+    const host = await loadFlagUser(this.deps.db, hostUserId)
+    const [visitSeconds, reserveSeconds, manualEntry] = await Promise.all([
+      flagNumber('matchmaking.visitSeconds', VISIT_SECONDS, host),
+      flagNumber('matchmaking.reserveSeconds', RESERVE_SECONDS, host),
+      flagEnabled('matchmaking.manualEntry', host),
+    ])
+    return { visitSeconds, reserveSeconds, manualEntry }
   }
 
   private async seatsOf(players: Player[]): Promise<Seat[]> {

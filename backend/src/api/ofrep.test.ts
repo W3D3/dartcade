@@ -41,7 +41,7 @@ describe('OFREP', () => {
 
   it('sends number flags as numbers', async () => {
     const flags = JSON.parse((await bulk()).body).flags
-    expect(flags.find((f: { key: string }) => f.key === 'matchmaking.visitSeconds')).toMatchObject({ value: 60 })
+    expect(flags.find((f: { key: string }) => f.key === 'matchmaking.visitSeconds')).toMatchObject({ value: 120 })
   })
 
   it('evaluates one flag, and 404s an unknown one', async () => {

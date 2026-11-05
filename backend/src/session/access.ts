@@ -33,11 +33,14 @@ function bullOffNeedsRethrow(session: Session): boolean {
   return 'bullOff' in view && view.bullOff?.result?.rethrow === true
 }
 
+const MANUAL_ACTIONS = new Set(['add_dart', 'correct_dart'])
 const BULL_OFF_ACTIONS = new Set(['bulloff_start', 'bulloff_rethrow'])
 const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip', 'p121_give_up'])
 
 /** The action as it may be applied (forfeit gets its seats), or null when the user may not send it. */
 export function authorizeAction(session: Session, userId: string, action: UserAction): UserAction | null {
+  // Ranked without hand entry (flag matchmaking.manualEntry): hand-entered darts are refused
+  if (session.clock && !session.clock.rules.manualEntry && MANUAL_ACTIONS.has(action.type)) return null
   if (SEAT_ACTIONS.has(action.type)) {
     return session.seats[currentSeat(session)].controllerUserId === userId ? action : null
   }

@@ -14,6 +14,8 @@ import { getAvatars, type Avatar } from '../db/users.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
+import { restartVisit } from './rankedClock.js'
+import type { SystemAction } from './systemInput.js'
 
 type PushFn = (sessionId: string) => void
 
@@ -348,6 +350,20 @@ export class SessionEngine {
     if (changed) this.push(session.id)
   }
 
+  /**
+   * The server's own input (a ranked clock running out, a player away too long): logged with source
+   * 'system' and applied through the session's queue like any other. The only way in; no gateway or
+   * route passes one on, and the log reads 'system' rows with their own schema (systemInput.ts).
+   */
+  async systemInput(sessionId: string, action: SystemAction): Promise<void> {
+    const session = this.byId.get(sessionId)
+    if (!session) return
+    const changed = await this.enqueue(session.id, () =>
+      this.apply(session, { source: 'system', action }, { kind: action.type, data: action }, { bridgeEventId: null, boardId: null }),
+    )
+    if (changed) this.push(session.id)
+  }
+
   /** A board's bridge connected or dropped: its game shows the new board state. */
   onBoardPresence(boardId: string): void {
     const session = this.byBoard.get(boardId)
@@ -590,6 +606,9 @@ export class SessionEngine {
       await this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
       return
     }
+    // The server being away is not the players' time: the visit in progress starts over, the
+    // reserves stay as they were. (The one place the clock isn't derived from the log alone.)
+    if (session.clock) restartVisit(session.clock, new Date())
     this.index(session)
     // A bot seat up in a session rebuilt at startup would otherwise just sit there until a
     // human acts (the scheduler only ever runs from push) — an all-bot game would never

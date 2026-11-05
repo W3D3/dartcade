@@ -51,12 +51,12 @@ describe('flags', () => {
     delete process.env.FLAGS_ON
   })
 
-  it('gives the ranked time limit 60 s a visit and a 3 min reserve, unless FLAG_VALUES sets them', async () => {
-    expect(await flagNumber('matchmaking.visitSeconds', 0, player)).toBe(60)
-    expect(await flagNumber('matchmaking.reserveSeconds', 0, null)).toBe(180)
+  it('gives the ranked time limit 120 s a visit and a 5 min reserve, unless FLAG_VALUES sets them', async () => {
+    expect(await flagNumber('matchmaking.visitSeconds', 0, player)).toBe(120)
+    expect(await flagNumber('matchmaking.reserveSeconds', 0, null)).toBe(300)
     await setupFlags(new Set(), new Map([['matchmaking.visitSeconds', 45]]))
     expect(await flagNumber('matchmaking.visitSeconds', 0, player)).toBe(45)
-    expect(await flagNumber('matchmaking.reserveSeconds', 0, player)).toBe(180)
+    expect(await flagNumber('matchmaking.reserveSeconds', 0, player)).toBe(300)
     await setupFlags(new Set())
   })
 
@@ -103,8 +103,9 @@ describe('flags', () => {
       { key: 'caller.autodartsImport', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.packDetails', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'avatar.upload.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
-      { key: 'matchmaking.visitSeconds', value: 60, reason: 'STATIC', variant: 'default' },
-      { key: 'matchmaking.reserveSeconds', value: 180, reason: 'STATIC', variant: 'default' },
+      { key: 'matchmaking.manualEntry', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'matchmaking.visitSeconds', value: 120, reason: 'STATIC', variant: 'default' },
+      { key: 'matchmaking.reserveSeconds', value: 300, reason: 'STATIC', variant: 'default' },
     ])
   })
 
