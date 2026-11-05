@@ -77,8 +77,10 @@ export type X01State = {
   visitDarts: number
   /** This leg's committed visits, in throwing order. */
   legVisits: X01VisitRecord[]
-  /** Each player's last committed visit, kept across legs; null before their first. */
+  /** Per team: its last committed visit by any of its players, kept across legs; null before the first. */
   lastVisit: (X01VisitRecord | null)[]
+  /** Per team: the fewest darts it needed to win a leg of this match; null until it wins one. */
+  bestLeg: (number | null)[]
   /** Darts in each player's committed visits: with pointsScored, the match average. */
   dartsThrown: number[]
   /** Darts each player threw on a one-dart finish, wherever they landed (opened players only). */
@@ -112,7 +114,7 @@ function committedVisit(
     pointsScored: withVisitScored(s),
     dartsThrown: s.dartsThrown.map((d, i) => (i === cp ? d + s.visitDarts : d)),
     legVisits: [...s.legVisits, record],
-    lastVisit: s.lastVisit.map((v, i) => (i === cp ? record : v)),
+    lastVisit: s.lastVisit.map((v, i) => (i === t ? record : v)),
     count180: s.count180.map((c, i) => (i === cp && !record.bust && record.scored === 180 ? c + 1 : c)),
     visitDarts: 0,
   }
@@ -298,7 +300,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       tonOuts: Array<number>(n).fill(0),
       visitDarts: 0,
       legVisits: [],
-      lastVisit: Array<X01VisitRecord | null>(n).fill(null),
+      lastVisit: Array<X01VisitRecord | null>(teams).fill(null),
+      bestLeg: Array<number | null>(teams).fill(null),
       dartsThrown: Array<number>(n).fill(0),
       checkoutAttempts: Array<number>(n).fill(0),
       checkoutHits: Array<number>(n).fill(0),
@@ -372,10 +375,12 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           const legs = s.legs.map((l, i) => (i === t ? l + 1 : l))
           const bestCheckout = s.bestCheckout.map((b, i) => (i === cp ? Math.max(b, s.visitOpenedScores[t]) : b))
           const tonOuts = s.tonOuts.map((n, i) => (i === cp && s.visitOpenedScores[t] >= 100 ? n + 1 : n))
+          const legDarts = done.legVisits.reduce((a, v) => a + (s.teamOf[v.seat] === t ? v.darts : 0), 0)
+          const bestLeg = s.bestLeg.map((b, i) => (i === t ? Math.min(b ?? legDarts, legDarts) : b))
           if (legs[t] >= s.cfg.firstTo) {
-            return { state: { ...s, ...done, legs, winner: t, phase: 'finished', bestCheckout, tonOuts } }
+            return { state: { ...s, ...done, legs, winner: t, phase: 'finished', bestCheckout, tonOuts, bestLeg } }
           }
-          return { state: { ...s, ...done, legs, bestCheckout, tonOuts, ...freshLeg(s, legs) } }
+          return { state: { ...s, ...done, legs, bestCheckout, tonOuts, bestLeg, ...freshLeg(s, legs) } }
         }
 
         const { nextPlayer, turn, round } = nextTurn(s)
@@ -419,7 +424,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       pointsScored: s.pointsScored,
       dartsThrown: s.dartsThrown,
       legVisits: s.legVisits,
-      lastVisit: s.lastVisit,
+      lastVisit: s.teamOf.map(t => s.lastVisit[t]),
+      bestLeg: s.teamOf.map(t => s.bestLeg[t]),
       checkoutAttempts: s.checkoutAttempts,
       checkoutHits: s.checkoutHits,
       visitStartScores: s.teamOf.map(t => s.visitOpenedScores[t]),

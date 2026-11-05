@@ -100,9 +100,13 @@ export type X01Game = EngineGameFields & {
    */
   legVisits: X01Visit[]
   /**
-   * Per seat: their last committed visit, kept across legs; null before their first.
+   * Per seat: the last committed visit of the seat's team (any of its players), kept across legs; null before the first.
    */
   lastVisit: (X01Visit | null)[]
+  /**
+   * Per seat: the fewest darts the seat's team needed to win a leg of this match; null until it wins one.
+   */
+  bestLeg: (number | null)[]
   /**
    * Per seat: darts thrown on a one-dart finish, wherever they landed.
    */
