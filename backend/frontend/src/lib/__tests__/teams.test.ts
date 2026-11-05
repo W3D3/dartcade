@@ -43,12 +43,19 @@ const game = (o: Record<string, unknown> = {}): X01Game =>
     dartsThrown: [9, 6, 6, 6],
     legVisits,
     lastVisit: [lv(0, 45, 271), lv(1, 100, 220), lv(2, 130, 141), lv(3, 133, 87)],
+    bestLeg: [null, null, null, null],
     checkoutAttempts: [0, 0, 0, 0],
     checkoutHits: [0, 0, 0, 0],
     visitStartScores: [141, 87, 141, 87],
     ...o,
   }) as unknown as X01Game
-const none = { pointsScored: [0, 0, 0, 0], dartsThrown: [0, 0, 0, 0], legVisits: [], lastVisit: [null, null, null, null] }
+const none = {
+  pointsScored: [0, 0, 0, 0],
+  dartsThrown: [0, 0, 0, 0],
+  legVisits: [],
+  lastVisit: [null, null, null, null],
+  bestLeg: [null, null, null, null],
+}
 const opts = { suggest: true }
 
 describe('teamsLabel', () => {

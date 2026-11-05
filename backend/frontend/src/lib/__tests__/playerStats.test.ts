@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { x01Player, atcPlayer, x01Averages, x01Roll } from '../playerStats.js'
+import { x01Player, atcPlayer, x01Averages, x01Darts, x01Pages, x01Roll } from '../playerStats.js'
 import type { AtcGame, X01Game } from '../api/game-ws'
 
 const visit = (seat: number, scored: number, left: number, darts = 3) => ({ seat, scored, left, darts, bust: false })
@@ -17,12 +17,19 @@ const game = (o: Record<string, unknown> = {}): X01Game =>
     dartsThrown: [6, 3],
     legVisits: [visit(0, 100, 401), visit(0, 60, 341)],
     lastVisit: [visit(0, 60, 341), null],
+    bestLeg: [null, null],
     checkoutAttempts: [0, 0],
     checkoutHits: [0, 0],
     visitStartScores: [141, 87],
     ...o,
   }) as unknown as X01Game
-const none = { pointsScored: [0, 0], dartsThrown: [0, 0], legVisits: [], lastVisit: [null, null] }
+const none = {
+  pointsScored: [0, 0],
+  dartsThrown: [0, 0],
+  legVisits: [],
+  lastVisit: [null, null],
+  bestLeg: [null, null],
+}
 
 describe('x01Player darts', () => {
   const darts = (g: X01Game, i: number, active: boolean) => x01Player(g, i, { active, suggest: false }).darts
@@ -169,5 +176,46 @@ describe('atcPlayer', () => {
 
   it('hit rate is 0% before the first dart', () => {
     expect(atcPlayer({ sequence: [1, 2], targets: [1], hitCounts: [0], totalDarts: [0] } as unknown as AtcGame, 0).hitRate).toBe('0%')
+  })
+})
+
+describe('last score and best leg', () => {
+  const p = (g: X01Game, i = 0) => x01Player(g, i, { active: false, suggest: false })
+  it('are dashes before the first visit and the first won leg', () => {
+    const v = p(game({ ...none }))
+    expect([v.last, v.bestLeg]).toEqual(['—', '—'])
+  })
+  it('last score is the last finished visit; a bust is 0; the visit in progress does not count', () => {
+    expect(p(game()).last).toBe('60')
+    expect(p(game({ lastVisit: [{ ...visit(0, 0, 341), bust: true }, null] })).last).toBe('0')
+  })
+  it("a team's seats share the team's last visit and best leg", () => {
+    const g = game({ lastVisit: [visit(1, 45, 456), visit(1, 45, 456)], bestLeg: [14, 14] })
+    expect([p(g, 0).last, p(g, 1).last, p(g, 1).bestLeg]).toEqual(['45', '45', '14'])
+  })
+})
+
+describe('x01Pages', () => {
+  it('labels the darts "Darts" in the strip and on the rows, short enough for one line', () => {
+    expect(x01Darts({ darts: 7 })).toEqual({ label: 'Darts', value: '7' })
+  })
+  const base = { avg: '90.0', legAvg: '80.0', firstTo: 3, last: '60', bestLeg: '14', darts: 7, checkout: '40%', checkoutDarts: '2/5' }
+  it('three stats a page: leg avg, last score, darts thrown; then match avg, checkout %, best leg', () => {
+    const [a, b] = x01Pages(base)
+    expect(a.map(s => [s.label, s.value])).toEqual([
+      ['Leg avg', '80.0'],
+      ['Last score', '60'],
+      ['Darts', '7'],
+    ])
+    expect(b.map(s => [s.label, s.value])).toEqual([
+      ['Match avg', '90.0'],
+      ['Checkout %', '40%'],
+      ['Best leg', '14'],
+    ])
+  })
+  it('a single-leg game has one Avg and no match avg', () => {
+    const [a, b] = x01Pages({ ...base, firstTo: 1 })
+    expect(a[0]).toMatchObject({ label: 'Avg', value: '90.0' })
+    expect(b.map(s => s.label)).toEqual(['Checkout %', 'Best leg'])
   })
 })

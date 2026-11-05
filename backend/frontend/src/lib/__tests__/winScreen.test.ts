@@ -593,6 +593,7 @@ function cricket(players: string[], o: CricketFixture = {}): Snapshot & { game: 
     marksScored: o.marksScored ?? zeros(),
     dartsThrown: o.dartsThrown ?? zeros(),
     lastVisit: players.map(() => null),
+    bestLeg: players.map(() => null),
     bullOff: null,
     currentVisitDarts: [],
     totalDarts: zeros(),

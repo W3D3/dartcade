@@ -62,6 +62,7 @@
     "dartsThrown": [0, 0],
     "legVisits": [],
     "lastVisit": [null, null],
+    "bestLeg": [null, null],
     "checkoutAttempts": [0, 0],
     "checkoutHits": [0, 0],
     "visitStartScores": [501, 501]

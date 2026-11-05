@@ -52,6 +52,7 @@ function x01(darts = [dart('T20', 60, 20), dart('T20', 60, 20)], scores = [40, 8
       dartsThrown: scores.map(() => 12),
       legVisits: [],
       lastVisit: scores.map(() => null),
+      bestLeg: scores.map(() => null),
       checkoutAttempts: scores.map(() => 0),
       checkoutHits: scores.map(() => 0),
       visitStartScores: [160, 87].slice(0, n),
