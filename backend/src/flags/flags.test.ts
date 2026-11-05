@@ -109,6 +109,8 @@ describe('flags', () => {
       { key: 'matchmaking.visitSeconds', value: 120, reason: 'STATIC', variant: 'default' },
       { key: 'matchmaking.acceptSeconds', value: 60, reason: 'STATIC', variant: 'default' },
       { key: 'matchmaking.reserveSeconds', value: 300, reason: 'STATIC', variant: 'default' },
+      { key: 'lobby.idleMinutes.solo', value: 10, reason: 'STATIC', variant: 'default' },
+      { key: 'lobby.idleMinutes.shared', value: 20, reason: 'STATIC', variant: 'default' },
     ])
   })
 
