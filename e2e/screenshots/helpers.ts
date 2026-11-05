@@ -38,6 +38,8 @@ export const VIEW = {
   dialog: { width: 800, height: 1000, scale: 2 },
   /** 780×1688 */
   phone: { width: 390, height: 844, scale: 2 },
+  /** 640×1280 */
+  narrowPhone: { width: 320, height: 640, scale: 2 },
   /** 720×1280 */
   smallPhone: { width: 360, height: 640, scale: 2 },
 } as const

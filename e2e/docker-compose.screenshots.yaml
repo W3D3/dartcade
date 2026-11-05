@@ -10,7 +10,7 @@ services:
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5181
       FLAGS_ON: gamemode.minigolf.enabled,gamemode.p121.enabled,gamemode.cricket.enabled,matchmaking.enabled,caller.autodartsImport,progression.enabled,lights.enabled,coach.enabled,coach.live.enabled
     ports: !override
-      - '3021:3000'
+      - '${SHOTS_BACKEND_PORT:-3021}:3000'
 
   frontend:
     ports: !override
