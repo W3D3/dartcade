@@ -9,6 +9,7 @@
   import FriendsDrawer from './friends/FriendsDrawer.svelte'
   import InviteToast from './lobby/InviteToast.svelte'
   import UpdateNotice from './UpdateNotice.svelte'
+  import LobbyIdleNotice from './LobbyIdleNotice.svelte'
   import FeedbackDialog from './feedback/FeedbackDialog.svelte'
   import { friendsDrawerOpen } from '$lib/friends/drawer'
 
@@ -30,4 +31,5 @@
 {#if $friendsDrawerOpen}<FriendsDrawer />{/if}
 <InviteToast />
 <UpdateNotice />
+<LobbyIdleNotice />
 <FeedbackDialog />

@@ -228,9 +228,9 @@ const settleRanked = setInterval(() => {
   })
 }, 60_000)
 settleRanked.unref()
-// Lobbies with no game running close after hours without activity: 6 h with one account,
-// 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS). Pairing codes go
-// an hour after they expired, friend activity after a month.
+// Lobbies with no game running close after minutes without activity (10 with one real user, 20
+// with several: the lobby.idleMinutes.* flags, swept every minute). Pairing codes go an hour
+// after they expired, friend activity after a month.
 const HOUR_MS = 60 * 60 * 1000
 const sweeps: [what: string, run: () => Promise<unknown>][] = [
   ['idle lobby', () => lobbies.closeIdleLobbies()],
@@ -238,16 +238,13 @@ const sweeps: [what: string, run: () => Promise<unknown>][] = [
   // Home shows a week of friend activity; a month is kept
   ['friend activity', () => pruneActivity(db, new Date(Date.now() - 30 * 24 * HOUR_MS))],
 ]
-const idleSweep = setInterval(
-  () => {
-    for (const [what, run] of sweeps) {
-      run().catch((err: unknown) => {
-        warn(`${what} sweep failed`, { error: String(err) })
-      })
-    }
-  },
-  5 * 60 * 1000,
-)
+const idleSweep = setInterval(() => {
+  for (const [what, run] of sweeps) {
+    run().catch((err: unknown) => {
+      warn(`${what} sweep failed`, { error: String(err) })
+    })
+  }
+}, 60 * 1000)
 idleSweep.unref()
 
 const app = await buildApp({

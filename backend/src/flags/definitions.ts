@@ -6,6 +6,10 @@ import type { EvaluationContext } from '@openfeature/server-sdk'
 import { ACCEPT_SECONDS, RESERVE_SECONDS, VISIT_SECONDS } from '../shared/ranked.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
 
+/** The defaults of the lobby.idleMinutes.* flags: minutes of inactivity before a lobby closes. */
+export const LOBBY_IDLE_SOLO_MINUTES = 10
+export const LOBBY_IDLE_SHARED_MINUTES = 20
+
 const isAdmin = (ctx: EvaluationContext) => ctx.admin === true
 
 /** What an override's mode means for who the flag is on for. */
@@ -141,6 +145,20 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Extra time each ranked player can use up across a match when visits run over, in seconds.',
     range: [0, 900],
     defaultNumber: RESERVE_SECONDS,
+  },
+  'lobby.idleMinutes.solo': {
+    kind: 'number',
+    description:
+      'Minutes without activity after which a lobby with one real player (guests and bots do not count) closes by itself. A lobby with a game running never does.',
+    range: [1, 1440],
+    defaultNumber: LOBBY_IDLE_SOLO_MINUTES,
+  },
+  'lobby.idleMinutes.shared': {
+    kind: 'number',
+    description:
+      'Minutes without activity after which a lobby with more than one real player (guests and bots do not count) closes by itself. A lobby with a game running never does.',
+    range: [1, 1440],
+    defaultNumber: LOBBY_IDLE_SHARED_MINUTES,
   },
 }
 
@@ -280,5 +298,7 @@ export function flagDefinitions(
     'matchmaking.visitSeconds': number('matchmaking.visitSeconds', VISIT_SECONDS),
     'matchmaking.acceptSeconds': number('matchmaking.acceptSeconds', ACCEPT_SECONDS),
     'matchmaking.reserveSeconds': number('matchmaking.reserveSeconds', RESERVE_SECONDS),
+    'lobby.idleMinutes.solo': number('lobby.idleMinutes.solo', LOBBY_IDLE_SOLO_MINUTES),
+    'lobby.idleMinutes.shared': number('lobby.idleMinutes.shared', LOBBY_IDLE_SHARED_MINUTES),
   } as const
 }
