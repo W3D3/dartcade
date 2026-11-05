@@ -40,9 +40,12 @@
   const scoreSize = $derived(
     solo ? 'text-[min(220px,24vh)]' : portrait ? 'text-[min(52cqi,15vh)]' : 'text-[min(150px,24vh,56cqi)] xl:text-[min(220px,24vh)]',
   )
-  const statGap = $derived(solo ? 'gap-5' : portrait ? 'gap-5 lg:gap-9' : 'gap-[18px] xl:gap-9')
-  const labelSize = $derived(solo ? 'text-[13px]' : portrait ? 'text-[11px] lg:text-[13px]' : 'text-[11px] xl:text-[13px]')
-  const valueSize = $derived(solo ? 'text-[44px]' : portrait ? 'text-[30px] lg:text-[40px]' : 'text-[30px] xl:text-[44px]')
+  // Sized by the card (cqi), not the viewport, so a narrow card shrinks its numbers before the row wraps
+  const statGap = $derived(solo ? 'gap-x-3' : portrait ? 'gap-x-5 lg:gap-x-9' : 'gap-x-[18px] xl:gap-x-9')
+  const labelSize = $derived(solo ? 'text-[12px]' : portrait ? 'text-[11px] lg:text-[13px]' : 'text-[11px] xl:text-[13px]')
+  const valueSize = $derived(
+    solo ? 'text-[clamp(26px,9cqi,44px)]' : portrait ? 'text-[clamp(20px,6.5cqi,40px)]' : 'text-[clamp(20px,6.5cqi,30px)] xl:text-[clamp(26px,9cqi,44px)]',
+  )
 </script>
 
 <PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} {rank} pillInRow={solo}>
@@ -70,9 +73,9 @@
     </span>
   {/if}
 
-  <div class="flex {statGap}">
+  <div class="flex flex-wrap gap-y-3 {statGap}" data-stat-row>
     {#each [...x01Averages(p), { label: 'Darts', value: String(p.darts) }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
-      <span class="flex flex-col {solo ? 'justify-between' : ''} gap-1" title={'title' in s ? s.title : undefined}>
+      <span class="flex flex-col {solo ? 'justify-between' : ''} gap-1 min-w-0" data-stat title={'title' in s ? s.title : undefined}>
         <span class="{labelSize} label-caps {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span class="font-display font-bold {valueSize} leading-none tabular-nums {active ? 'text-text' : 'text-ink-2'}">{s.value}</span>
       </span>

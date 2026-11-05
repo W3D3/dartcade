@@ -58,7 +58,7 @@
          {compact ? 'px-[14px] py-3 gap-2' : 'px-[26px] py-6 gap-[14px]'}
          {playerCard(team.active)}"
 >
-  <div class="flex items-center justify-between gap-3">
+  <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
     <span
       class="inline-flex items-center h-[30px] px-3 box-border rounded-[8px] font-display font-bold text-[18px] tracking-[0.06em] uppercase whitespace-nowrap
                  {team.active ? 'bg-accent text-accent-fg' : 'border-2 border-text text-text'}">{team.name}</span
@@ -94,8 +94,7 @@
     <div class="flex flex-wrap {compact ? 'gap-x-[14px] gap-y-1' : 'gap-x-7 gap-y-2'}">
       {#each stats as s (s.label)}
         <span class="flex flex-col {compact ? 'gap-[1px]' : 'gap-1'}">
-          <span
-            class="uppercase whitespace-nowrap {compact ? 'text-[10px] tracking-[0.08em]' : 'text-[13px] tracking-[0.1em]'} text-text-muted"
+          <span class="uppercase {compact ? 'text-[10px] tracking-[0.08em]' : 'text-[13px] tracking-[0.1em]'} text-text-muted"
             >{s.label}</span
           >
           <span
