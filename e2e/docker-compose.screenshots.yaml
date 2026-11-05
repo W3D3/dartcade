@@ -1,6 +1,8 @@
 # Layered on docker-compose.e2e.yaml for the docs screenshots (screenshots.config.ts): its own
 # project name (COMPOSE_PROJECT_NAME overrides it) and ports (SHOTS_FRONTEND_PORT, SHOTS_BACKEND_PORT), so it runs beside the dev and e2e stacks, and the dev accounts
 # (NODE_ENV=development seeds Admin, Luke, Phil, Michael, Gerwyn) with every flagged feature on.
+# Several sessions can run it at once: COMPOSE_PROJECT_NAME, SHOTS_BACKEND_PORT and SHOTS_FRONTEND_PORT
+# (default 3021 and 5181) give each its own containers and ports.
 name: dartcade-shots
 
 services:
