@@ -19,8 +19,8 @@ import { COACH_GAMES, scriptedPoint, type DartScript, type Who } from './coachGa
 
 // Sample data for PR previews: the accounts seedDev() creates (auth/seed.ts), playing and befriending each other
 
-/** How well each account throws: like a bot of that level (1-10, bots/levels.ts). */
-const LEVEL: Record<Who, number> = { admin: 4, luke: 9, phil: 8, michael: 7, gerwyn: 6 }
+/** How well each account throws: like a bot of that level (1-20, bots/levels.ts). */
+const LEVEL: Record<Who, number> = { admin: 8, luke: 17, phil: 15, michael: 13, gerwyn: 11 }
 
 /**
  * A finished game: its mode, the options it changes from the mode's defaults, players in throw order.

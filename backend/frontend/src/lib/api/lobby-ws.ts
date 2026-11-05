@@ -155,7 +155,7 @@ export interface LobbyPerson {
    */
   presence: ('online' | 'away') | null
   /**
-   * A bot's difficulty 1-10; null for a member or guest.
+   * A bot's difficulty 1-20; null for a member or guest.
    */
   bot: {
     level: number
@@ -322,7 +322,7 @@ export interface Face {
   name: string
   guest: boolean
   /**
-   * A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest.
+   * A bot's difficulty 1-20, which its avatar is drawn from; null for a member or guest.
    */
   bot?: {
     level: number

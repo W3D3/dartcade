@@ -124,7 +124,7 @@ export interface GamePlayersTable {
   /** Where the seat's darts come from; null = entered by hand. */
   board_db_id: string | null
   forfeited: ColumnType<boolean, boolean | undefined, boolean>
-  /** The seat is a bot thrown by the server, at this difficulty 1-10; null for a human or guest (migration 017). */
+  /** The seat is a bot thrown by the server, at this difficulty 1-20; null for a human or guest (migration 017). */
   bot_level: number | null
 }
 
@@ -211,7 +211,7 @@ export interface LobbyPeopleTable {
   joined_at: ColumnType<Date, Date | undefined, never>
   /** Team A, Team B or none (migration 011); used when the next game is played in teams. */
   team: ColumnType<'A' | 'B' | null, 'A' | 'B' | null | undefined, 'A' | 'B' | null>
-  /** The person is a bot the server throws itself, at this difficulty 1-10; null for a member or guest (migration 017). */
+  /** The person is a bot the server throws itself, at this difficulty 1-20; null for a member or guest (migration 017). */
   bot_level: number | null
 }
 

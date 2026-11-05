@@ -70,15 +70,15 @@ describe('grouping', () => {
   })
 
   it('expects the spread a bot of the same average throws: 81 → ~10.5 mm over 3 darts (jitter included), wider lower down', () => {
-    expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.51, 1)
+    expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.68, 1)
     // 2 darts sit closer to their own centroid than 3
     expect(expectedSpreadMm(81, 2)).toBeLessThan(expectedSpreadMm(81, 3))
     const avgs = [10, 30, 40, 60, 81, 100, 105, 130]
     for (let i = 1; i < avgs.length; i++) expect(expectedSpreadMm(avgs[i], 3)).toBeLessThanOrEqual(expectedSpreadMm(avgs[i - 1], 3))
     expect(expectedSpreadMm(60, 3)).toBeGreaterThan(expectedSpreadMm(81, 3))
-    // Clamped outside the calibrated levels (30–105)
-    expect(expectedSpreadMm(10, 3)).toBe(expectedSpreadMm(30, 3))
-    expect(expectedSpreadMm(130, 3)).toBe(expectedSpreadMm(105, 3))
+    // Clamped outside the calibrated levels (20–115)
+    expect(expectedSpreadMm(10, 3)).toBe(expectedSpreadMm(20, 3))
+    expect(expectedSpreadMm(130, 3)).toBe(expectedSpreadMm(115, 3))
   })
 
   it('comments on the spread against the expected one: great, good, nothing, scattered', () => {
@@ -91,14 +91,14 @@ describe('grouping', () => {
     expect(groupingComment(10 * SCATTERED_RATIO, 10)).toEqual({ level: 'scattered', text: 'Scattered' })
   })
 
-  it('judges the same group by the player: 13 mm is good for a 60 average, unremarkable for an 81', () => {
-    // Three darts on a 13 mm circle round T20's point (0, 0.6055): each 12 mm from the centroid
+  it('judges the same group by the player: 14 mm is good for a 60 average, unremarkable for an 81', () => {
+    // Three darts on a 14 mm circle round T20's point (0, 0.6055): each 13 mm from the centroid
     const ring = [0, 120, 240].map(deg =>
-      placed(mm(13) * Math.cos((deg * Math.PI) / 180), 0.6055 + mm(13) * Math.sin((deg * Math.PI) / 180), 0),
+      placed(mm(14) * Math.cos((deg * Math.PI) / 180), 0.6055 + mm(14) * Math.sin((deg * Math.PI) / 180), 0),
     )
     const at60 = grouping(ring, 60, 60)
     const at81 = grouping(ring, 60, 81)
-    expect(at60?.spreadMm).toBeCloseTo(13, 9)
+    expect(at60?.spreadMm).toBeCloseTo(14, 9)
     expect(at60?.comment).toEqual({ level: 'good', text: 'Good grouping' })
     expect(at81?.comment).toBeNull()
     expect(at81?.expectedSpreadMm).toBe(expectedSpreadMm(81, 3))

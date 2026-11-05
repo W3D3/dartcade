@@ -674,7 +674,7 @@ export interface SeatInfo {
   disconnectedAt: string | null
   forfeited: boolean
   /**
-   * The server throws for this seat itself, at this difficulty 1-10; null for a human or guest.
+   * The server throws for this seat itself, at this difficulty 1-20; null for a human or guest.
    */
   bot: {
     level: number

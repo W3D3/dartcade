@@ -46,7 +46,7 @@ function wonLeg(): CoachLeg {
 describe('reviewLeg', () => {
   it('grades every visit, the three skills, the take and the counts', () => {
     const expected: LegReview = {
-      coachLevel: 7,
+      coachLevel: 13,
       leg: 0,
       seat: 0,
       won: true,
@@ -180,15 +180,15 @@ describe('reviewLeg', () => {
           then: 98,
           bust: false,
           tag: 'scoring',
-          // 235 is a 5-dart finish, 98 a 2-dart one: level 7 keeps that path 25% of the time, just
-          // too often for Brilliant
-          grade: 'excellent',
+          // 235 is a 5-dart finish, 98 a 2-dart one: level 13 keeps that path 24% of the time,
+          // under BRILLIANT_CHANCE
+          grade: 'brilliant',
           text: 'Scored 137: 98 left is still a treble to double (T20 · D19), the fewest possible.',
           tip: false,
           notes: [],
           explained: null,
           grouping: null,
-          value: expect.objectContaining({ rule: 'fewest', fewestChance: expect.closeTo(25.2, 1) }),
+          value: expect.objectContaining({ rule: 'brilliant', fewestChance: expect.closeTo(23.5, 1) }),
         },
         {
           n: 5,
@@ -237,11 +237,11 @@ describe('reviewLeg', () => {
           grouping: null,
           value: {
             startChance: expect.any(Number),
-            points: expect.closeTo(-2.1, 1),
+            points: expect.closeTo(-1.7, 1),
             rule: 'note',
             scoring: null,
             terms: expect.any(Array),
-            band: 'inaccuracy',
+            band: 'ok',
             bands: expect.any(Array),
             fewestChance: null,
           },
@@ -283,7 +283,7 @@ describe('reviewLeg', () => {
           grouping: null,
           value: {
             startChance: expect.any(Number),
-            points: expect.closeTo(9.1, 1),
+            points: expect.closeTo(10.2, 1),
             rule: null,
             scoring: null,
             terms: expect.any(Array),
@@ -503,17 +503,17 @@ describe('the coaching level', () => {
   }
 
   it('stores the level it coached with', async () => {
-    expect((await graded(40, 100, ['S20', 'S20', 'S20'])).level).toBe(3)
-    expect((await graded(80, 100, ['S20', 'S20', 'S20'])).level).toBe(7)
+    expect((await graded(40, 100, ['S20', 'S20', 'S20'])).level).toBe(6)
+    expect((await graded(79, 100, ['S20', 'S20', 'S20'])).level).toBe(13)
   })
 
   it("is happy with a 40 average's 60 on 100, which the 81-average model calls a small loss", async () => {
     const low = await graded(40, 100, ['S20', 'S20', 'S20'])
-    expect(low.delta).toBeCloseTo(9.3, 1)
+    expect(low.delta).toBeCloseTo(9.85, 1)
     expect(low.grade).toBe('good')
-    // Level 7 grades it as before the levels
-    const ref = await graded(80, 100, ['S20', 'S20', 'S20'])
-    expect(ref.delta).toBeCloseTo(-2.7, 1)
+    // Level 13 grades it as before the levels
+    const ref = await graded(79, 100, ['S20', 'S20', 'S20'])
+    expect(ref.delta).toBeCloseTo(-2.3, 1)
     expect(ref.grade).toBe('inaccuracy')
   })
 

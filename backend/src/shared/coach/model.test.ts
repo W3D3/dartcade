@@ -67,18 +67,18 @@ describe('the evaluator', () => {
 })
 
 describe('the coaching level', () => {
-  it('is the level one above the average, level 10 above it all, level 7 without one', () => {
-    expect([30, 39.9, 40, 46, 80, 81, 104, 105, 140].map(coachLevel)).toEqual([2, 3, 3, 4, 7, 8, 10, 10, 10])
+  it('is the level one above the average, level 20 above it all, level 13 without one', () => {
+    expect([30, 39.9, 40, 46, 80, 81, 104, 105, 140].map(coachLevel)).toEqual([4, 5, 6, 7, 14, 14, 18, 19, 20])
     expect([0, 12].map(coachLevel)).toEqual([1, 1])
-    expect([null, undefined, NaN].map(coachLevel)).toEqual([7, 7, 7])
+    expect([null, undefined, NaN].map(coachLevel)).toEqual([13, 13, 13])
   })
 
-  it('loads each level once, and level 7 is the tests’ reference', async () => {
-    const m = await loadModel(7)
-    expect(await loadModel(7)).toBe(m)
-    expect(m.level).toBe(7)
+  it('loads each level once, and level 13 is the tests’ reference', async () => {
+    const m = await loadModel(13)
+    expect(await loadModel(13)).toBe(m)
+    expect(m.level).toBe(13)
     expect(m.fin).toEqual(REF.fin)
-    await expect(loadModel(11)).rejects.toThrow()
+    await expect(loadModel(21)).rejects.toThrow()
   })
 
   it('gives a better player a better chance from every finish', async () => {
