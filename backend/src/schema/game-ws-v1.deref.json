@@ -489,6 +489,7 @@
             "dartsThrown",
             "legVisits",
             "lastVisit",
+            "bestLeg",
             "checkoutAttempts",
             "checkoutHits",
             "visitStartScores"
@@ -806,7 +807,22 @@
                   }
                 ]
               },
-              "description": "Per seat: their last committed visit, kept across legs; null before their first."
+              "description": "Per seat: the last committed visit of the seat's team (any of its players), kept across legs; null before the first."
+            },
+            "bestLeg": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": "Per seat: the fewest darts the seat's team needed to win a leg of this match; null until it wins one."
             },
             "checkoutAttempts": {
               "type": "array",
@@ -3492,6 +3508,7 @@
                     "dartsThrown",
                     "legVisits",
                     "lastVisit",
+                    "bestLeg",
                     "checkoutAttempts",
                     "checkoutHits",
                     "visitStartScores"
@@ -3809,7 +3826,22 @@
                           }
                         ]
                       },
-                      "description": "Per seat: their last committed visit, kept across legs; null before their first."
+                      "description": "Per seat: the last committed visit of the seat's team (any of its players), kept across legs; null before the first."
+                    },
+                    "bestLeg": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": "Per seat: the fewest darts the seat's team needed to win a leg of this match; null until it wins one."
                     },
                     "checkoutAttempts": {
                       "type": "array",
@@ -13211,6 +13243,7 @@
                         "dartsThrown",
                         "legVisits",
                         "lastVisit",
+                        "bestLeg",
                         "checkoutAttempts",
                         "checkoutHits",
                         "visitStartScores"
@@ -13528,7 +13561,22 @@
                               }
                             ]
                           },
-                          "description": "Per seat: their last committed visit, kept across legs; null before their first."
+                          "description": "Per seat: the last committed visit of the seat's team (any of its players), kept across legs; null before the first."
+                        },
+                        "bestLeg": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": "Per seat: the fewest darts the seat's team needed to win a leg of this match; null until it wins one."
                         },
                         "checkoutAttempts": {
                           "type": "array",

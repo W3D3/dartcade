@@ -42,6 +42,7 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     visitDarts: 0,
     legVisits: [],
     lastVisit: Array<null>(n).fill(null),
+    bestLeg: Array<null>(n).fill(null),
     dartsThrown: Array<number>(n).fill(0),
     checkoutAttempts: Array<number>(n).fill(0),
     checkoutHits: Array<number>(n).fill(0),
@@ -941,6 +942,51 @@ describe('committed visits', () => {
   it('init starts every list and count empty', () => {
     const s = x01Game.init(defaultCfg, players)
     expect(s).toMatchObject({ visitDarts: 0, legVisits: [], lastVisit: [null, null], dartsThrown: [0, 0] })
+  })
+})
+
+describe('best leg and last team visit', () => {
+  const near = (o: Partial<X01State> = {}) => makeState({ scores: [40, 40], visitOpenedScores: [40, 40], ...o })
+
+  it('is null until a leg is won, and a bust is a last visit of 0', () => {
+    const s = playVisit(makeState({ scores: [40, 501], visitOpenedScores: [40, 501] }), [T20])
+    expect(x01Game.view(s, players).bestLeg).toEqual([null, null])
+    expect(x01Game.view(s, players).lastVisit).toEqual([{ seat: 0, scored: 0, left: 40, bust: true, darts: 1 }, null])
+  })
+
+  it('keeps the fewest darts of the legs won, per team', () => {
+    // Alice wins a leg in 4 darts (3 earlier + 1), then another in 1: the best is 1
+    let s = playVisit(near({ legVisits: [{ seat: 0, scored: 60, left: 40, bust: false, darts: 3 }] }), [D20])
+    expect(s.bestLeg).toEqual([4, null])
+    s = playVisit({ ...s, scores: [40, 40], visitOpenedScores: [40, 40], currentPlayer: 0, turn: 0 }, [D20])
+    expect(s.bestLeg).toEqual([1, null])
+    s = playVisit({ ...s, scores: [40, 40], visitOpenedScores: [40, 40], currentPlayer: 0, turn: 0, legVisits: [] }, [S1, S1, S1])
+    expect(s.legs).toEqual([2, 0])
+    expect(s.bestLeg).toEqual([1, null])
+  })
+
+  it("a team counts the darts of all its players, and its last visit is any member's", () => {
+    const four: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }, { name: 'B2' }]
+    let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0, 1], startScore: 61 }, four)
+    const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
+    const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
+    const visit = (st: X01State, ...d: BoardEvent[]) => [opened, ...d, takeout].reduce((a, e) => x01Game.onBoardEvent(a, e).state, st)
+    s = visit(s, S20) // A1: 41
+    s = visit(s, dartEvent(0, 'Outside', 0)) // B1
+    expect(x01Game.view(s, four).lastVisit.map(v => v?.seat ?? null)).toEqual([0, 1, 0, 1])
+    s = visit(s, dartEvent(1, 'SingleInner', 1), D20) // A2 checks out with 2 darts
+    const v = x01Game.view(s, four)
+    expect(v.bestLeg).toEqual([3, null, 3, null])
+    expect(v.lastVisit.map(x => x?.seat ?? null)).toEqual([2, 1, 2, 1])
+  })
+
+  it('a corrected checkout replays to the corrected leg', () => {
+    const committed = near()
+    const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v1' } }
+    const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
+    // Corrected from S20 to D20: the leg is won with that dart
+    const refolded = refoldVisit(x01Game, committed, [opened, D20])
+    expect(x01Game.onBoardEvent(refolded, takeout).state.bestLeg).toEqual([1, null])
   })
 })
 
