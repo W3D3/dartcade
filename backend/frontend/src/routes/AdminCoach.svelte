@@ -15,6 +15,7 @@
   import VisitNumbers from '$lib/components/coach/VisitNumbers.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
+  import { Select } from '$lib/components/ui/select/index.js'
   import { currentUser } from '$lib/auth'
   import { coachTrail } from '$lib/admin/breadcrumbs'
   import { visitTiles } from '$lib/coach/dart'
@@ -22,7 +23,7 @@
   import { coachOpenVisit } from '$shared/coach/openVisit'
   import type { CoachDart } from '$shared/coach/walk'
   import type { CoachNote } from '$shared/coach'
-  import { suggestedTier, tierOf } from '$shared/coach/tiers'
+  import { COACH_TIERS, DEFAULT_TIER, tierOf, type CoachTierId } from '$shared/coach/tiers'
   import { coachModels } from '$lib/coach/model.svelte'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -32,36 +33,38 @@
 
   let startText = $state('57')
   let opponentText = $state('')
-  let averageText = $state('60')
+  let tierId = $state<CoachTierId>(DEFAULT_TIER)
   let typed = $state('')
   let typedError = $state('')
   let darts = $state<CoachDart[]>([])
 
   /** How many of the best aims to show for the next dart */
   const TOP = 5
+  const tierOptions = COACH_TIERS.map(t => ({ value: t.id, label: `${t.name} · ${t.average} avg` }))
+  function pickTier(v: string): void {
+    const found = tierOptions.find(o => o.value === v)?.value
+    if (found) tierId = found
+  }
   const whole = (s: string, lo: number, hi: number): number | null => {
     const n = Number(s.trim())
     return s.trim() !== '' && Number.isInteger(n) && n >= lo && n <= hi ? n : null
   }
   const start = $derived(whole(startText, 2, 501))
   const opponent = $derived(opponentText.trim() === '' ? null : whole(opponentText, 2, 501))
-  const average = $derived(whole(averageText, 1, 180))
   const inputError = $derived(
     start === null
       ? 'The score left is a whole number from 2 to 501.'
       : opponentText.trim() !== '' && opponent === null
         ? "The opponent's score is a whole number from 2 to 501, or empty."
-        : average === null
-          ? 'Your average is a whole number from 1 to 180.'
-          : '',
+        : '',
   )
-  // The tier the average suggests, as the coach picks it on auto; fetched per tier
-  const tier = $derived(tierOf(suggestedTier(average)))
+  // The picked tier drives the model, the table and the grading, exactly as a player's target does
+  const tier = $derived(tierOf(tierId))
   const tierAverage = $derived(tier.average)
   const loaded = coachModels(() => tier.id)
   const result = $derived(
-    start !== null && average !== null && !inputError && loaded.models
-      ? coachOpenVisit({ start, opponent, average }, darts, loaded.models, TOP)
+    start !== null && !inputError && loaded.models
+      ? coachOpenVisit({ start, opponent, average: tierAverage }, darts, loaded.models, TOP)
       : null,
   )
   const visit = $derived(result?.visit ?? null)
@@ -108,13 +111,11 @@
               <Input id="sandbox-opponent" inputmode="numeric" placeholder="Solo" bind:value={opponentText} />
             </div>
             <div class="flex flex-col gap-2">
-              <label for="sandbox-average" class="field-label">Your average</label>
-              <Input id="sandbox-average" inputmode="numeric" bind:value={averageText} />
+              <span class="field-label">Coach me as</span>
+              <Select label="Coach me as" options={tierOptions} value={tierId} onchange={pickTier} />
             </div>
           </div>
-          {#if average !== null}
-            <p class="m-0 text-[13px] text-text-muted">Graded as: {tier.name} ({tierAverage} average)</p>
-          {/if}
+          <p class="m-0 text-[13px] text-text-muted">Graded as: {tier.name} ({tierAverage} average)</p>
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
           {#if loaded.failed}<ErrorText>The {tier.name} model couldn't load. Reload to try again.</ErrorText>{/if}
 
