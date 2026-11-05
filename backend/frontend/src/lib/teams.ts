@@ -1,6 +1,6 @@
 // Team games (X01): the "Teams 2v2" label, the winning team, and what each team panel shows,
 // computed from the snapshot. The teams themselves come from the server.
-import { avgOf, checkoutRate, x01Player } from './playerStats.js'
+import { avgOf, checkoutRate, legDarts, x01Player } from './playerStats.js'
 import type { Visit } from './visitHistory.js'
 import type { ScoreUpdates } from './heldScore.js'
 import type { CheckoutPrefs } from '$shared/checkout.js'
@@ -114,7 +114,7 @@ export function x01Teams(
       teamAvg: avgOf(sum(mine.map(v => v.scored)), sum(mine.map(v => v.darts))),
       matchAvg: avgOf(of(game.pointsScored), of(game.dartsThrown)),
       ...checkoutRate(of(game.checkoutHits), of(game.checkoutAttempts)),
-      darts: team.seats.reduce((a, s) => a + (game.totalDarts.at(s) ?? 0), 0),
+      darts: legDarts(game, team.seats, active),
       legsWon: team.legs,
       firstTo: game.firstTo,
       leg: teams.reduce((a, t) => a + t.legs, 0),

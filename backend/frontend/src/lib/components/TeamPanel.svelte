@@ -6,7 +6,7 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll } from '$lib/playerStats'
+  import { x01Roll, x01Darts } from '$lib/playerStats'
   import PlayerPill from './PlayerPill.svelte'
   import TeamMemberRow from './TeamMemberRow.svelte'
   import type { X01TeamView } from '$lib/teams'
@@ -41,13 +41,13 @@
     compact
       ? [
           { label: 'Team avg', value: team.teamAvg, dim: false },
-          { label: 'Darts', value: String(team.darts), dim: false },
+          { ...x01Darts(team), dim: false },
         ]
       : [
           { label: 'Team avg', value: team.teamAvg, dim: false },
           { label: 'Match avg', value: team.matchAvg, dim: true },
           { label: 'Checkout', value: team.checkout, dim: true },
-          { label: 'Darts', value: String(team.darts), dim: false },
+          { ...x01Darts(team), dim: false },
         ],
   )
 </script>

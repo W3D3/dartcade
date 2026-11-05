@@ -5,7 +5,7 @@
   import PanelShell from './PanelShell.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll } from '$lib/playerStats'
+  import { x01Roll, x01Darts } from '$lib/playerStats'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
@@ -27,10 +27,7 @@
     rank?: SeatRank | null
   } = $props()
 
-  const stats = $derived([
-    { label: 'Avg', value: p.avg },
-    { label: 'Darts', value: String(p.darts) },
-  ])
+  const stats = $derived([{ label: 'Avg', value: p.avg }, x01Darts(p)])
 </script>
 
 <PanelShell {who} {active} portrait {pill} {seat} {rank} pillInRow>

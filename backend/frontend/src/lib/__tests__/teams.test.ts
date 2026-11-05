@@ -70,6 +70,15 @@ describe('teamOf / winnerName', () => {
   })
 })
 
+describe('x01Teams darts', () => {
+  it("a team's darts are its seats' this leg, the running visit only for the throwing team", () => {
+    const g = game({ legVisits: [lv(0, 100, 401), lv(1, 45, 456), lv(2, 60, 341)] })
+    const [a, b] = x01Teams(g, players, opts)
+    expect([a.darts, b.darts]).toEqual([7, 3])
+    expect(x01Teams(game({ legVisits: [], currentVisitDarts: [] }), players, opts).map(t => t.darts)).toEqual([0, 0])
+  })
+})
+
 describe('x01Teams', () => {
   it('the throwing team: shared score, running visit, team and match averages, darts', () => {
     const [a] = x01Teams(game(), players, opts)
