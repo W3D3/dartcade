@@ -313,4 +313,36 @@ describe('botTarget', () => {
     expect(s.phase, `expected a winner within 300 visits, got ${visits}`).toBe('finished')
     expect(s.winner).not.toBeNull()
   })
+  // Cricket reuses X01's calibrated sigma, so its feel across the 20 levels is only checked here:
+  // a leg between two bots of one level ends in fewer rounds the higher the level. Not a retune.
+  it('a bot-vs-bot leg takes fewer rounds at higher levels (levels 1, 10, 20)', () => {
+    const roundsAt = (level: number) => {
+      const rng = seededRng(7)
+      const sigma = sigmaForLevel(level)
+      let total = 0
+      const legs = 10
+      for (let g = 0; g < legs; g++) {
+        let s = duo({ firstTo: 1 })
+        let visits = 0
+        while (s.phase !== 'finished' && visits < 400) {
+          s = cricketGame.onBoardEvent(s, opened).state
+          for (let dartsThrown = 0; dartsThrown < 3; dartsThrown++) {
+            const target = cricketGame.botTarget!(s, s.currentPlayer, dartsThrown)
+            if (target === 'takeout' || target === null) break
+            const { segment } = throwAt(target, sigma, rng)
+            s = cricketGame.onBoardEvent(s, dart(segment.number, segment.multiplier)).state
+            if (s.legWonBy !== null) break
+          }
+          s = cricketGame.onBoardEvent(s, takeout).state
+          visits++
+        }
+        total += visits / 2
+      }
+      return total / legs
+    }
+    const [low, mid, high] = [1, 10, 20].map(roundsAt)
+    console.info(`cricket rounds per leg: level 1 ${low}, level 10 ${mid}, level 20 ${high}`)
+    expect(low).toBeGreaterThan(mid)
+    expect(mid).toBeGreaterThan(high)
+  })
 })
