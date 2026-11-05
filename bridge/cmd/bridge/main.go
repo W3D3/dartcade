@@ -194,7 +194,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 		default:
 			cfg.Token = tok
 			if cfgPath != "" {
-				if err := persistToken(cfgPath, cfg.Token); err != nil {
+				if err := persistToken(cfgPath, cfg.Token, cfg.BackendURL); err != nil {
 					log.Warn("could not persist token — the bridge will need a new install token on restart", "path", cfgPath, "err", err)
 				}
 			}
@@ -212,7 +212,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 		}
 		cfg.Token = pairedToken
 		if cfgPath != "" {
-			if err := persistToken(cfgPath, cfg.Token); err != nil {
+			if err := persistToken(cfgPath, cfg.Token, cfg.BackendURL); err != nil {
 				log.Warn("could not persist token — the bridge will re-pair on restart",
 					"path", cfgPath, "err", err)
 			}
