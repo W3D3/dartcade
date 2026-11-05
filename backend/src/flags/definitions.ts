@@ -149,14 +149,14 @@ export const FLAG_META: Record<string, FlagMeta> = {
   'lobby.idleMinutes.solo': {
     kind: 'number',
     description:
-      'Minutes without activity after which a lobby with one real player (guests and bots do not count) closes by itself. A lobby with a game running never does.',
+      'Minutes without activity after which a lobby with one real player (guests and bots do not count) closes by itself. A running game counts as idle only once it has had no dart, correction or bull-off step for this long (the game is then aborted); ranked games are never closed this way.',
     range: [1, 1440],
     defaultNumber: LOBBY_IDLE_SOLO_MINUTES,
   },
   'lobby.idleMinutes.shared': {
     kind: 'number',
     description:
-      'Minutes without activity after which a lobby with more than one real player (guests and bots do not count) closes by itself. A lobby with a game running never does.',
+      'Minutes without activity after which a lobby with more than one real player (guests and bots do not count) closes by itself. A running game counts as idle only once it has had no dart, correction or bull-off step for this long (the game is then aborted); ranked games are never closed this way.',
     range: [1, 1440],
     defaultNumber: LOBBY_IDLE_SHARED_MINUTES,
   },

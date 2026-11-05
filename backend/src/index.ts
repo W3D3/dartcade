@@ -228,9 +228,10 @@ const settleRanked = setInterval(() => {
   })
 }, 60_000)
 settleRanked.unref()
-// Lobbies with no game running close after minutes without activity (10 with one real user, 20
-// with several: the lobby.idleMinutes.* flags, swept every minute). Pairing codes go an hour
-// after they expired, friend activity after a month.
+// Lobbies close after minutes without activity (10 with one real user, 20 with several: the
+// lobby.idleMinutes.* flags, swept every minute); one whose unranked game had no event for that
+// long is closed too, its game aborted. Pairing codes go an hour after they expired, friend
+// activity after a month.
 const HOUR_MS = 60 * 60 * 1000
 const sweeps: [what: string, run: () => Promise<unknown>][] = [
   ['idle lobby', () => lobbies.closeIdleLobbies()],

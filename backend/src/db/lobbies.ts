@@ -135,6 +135,16 @@ export async function idleLobbyIds(db: Kysely<Database>, soloBefore: Date, share
   return (await query.execute()).map(r => r.id)
 }
 
+/** When the game last had an event (a dart, a correction, a bull off step); null before its first. */
+export async function lastGameEventAt(db: Kysely<Database>, sessionId: string): Promise<Date | null> {
+  const row = await db
+    .selectFrom('game_session_events')
+    .select(sql<Date | null>`max(created_at)`.as('at'))
+    .where('session_id', '=', sessionId)
+    .executeTakeFirst()
+  return row?.at ?? null
+}
+
 /**
  * Each user's usual board: the own board of their latest game that had one, else the
  * first board they paired. A joiner starts on it; the lobby shows it as "usually X".

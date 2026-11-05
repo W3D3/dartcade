@@ -372,13 +372,48 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(idle).not.toHaveBeenCalled()
     })
 
-    it('never closes a lobby whose game is running, solo or shared', async () => {
-      const solo = await lobbies.create('max')
-      await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
-      await lobbies.start('max', solo.id, false)
-      expect(await lobbies.closeIdleLobbies(later(11))).toEqual([])
-      expect(await lobbies.closeIdleLobbies(later(1000))).toEqual([])
-      expect(await lobbies.view(solo.id)).not.toBeNull()
+    describe('a running game', () => {
+      let lobbyId: string
+      let sessionId: string
+      beforeEach(async () => {
+        lobbyId = (await lobbies.create('max')).id
+        await lobbies.update('max', lobbyId, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+        sessionId = (await lobbies.start('max', lobbyId, false)).sessionId
+      })
+
+      it('stays open while it had an event within the limit, wherever the lobby page is', async () => {
+        vi.spyOn(hub, 'online').mockReturnValue(new Set())
+        expect(await lobbies.closeIdleLobbies(later(9))).toEqual([])
+        expect(engine.getLobbySession(lobbyId)).toBeDefined()
+        await sql`INSERT INTO game_sessions (id, game_id, config, status) VALUES (${sessionId}, 'x01', '{}', 'active')`.execute(db)
+        await sql`INSERT INTO game_session_events (session_id, seq, source, kind, data, created_at)
+          VALUES (${sessionId}, 9999, 'user', 'dart', '{}', ${later(8)})`.execute(db)
+        expect(await lobbies.closeIdleLobbies(later(17))).toEqual([])
+      })
+
+      it('is aborted and its lobby closed once nothing happened for the limit', async () => {
+        vi.spyOn(hub, 'online').mockReturnValue(new Set(['max']))
+        expect(await lobbies.closeIdleLobbies(later(11))).toEqual([lobbyId])
+        expect(engine.getLobbySession(lobbyId)).toBeUndefined()
+        expect(await lobbies.view(lobbyId)).toBeNull()
+      })
+
+      it('uses the 20 minutes of a lobby with several users', async () => {
+        await db
+          .insertInto('lobby_people')
+          .values({
+            id: 'lena-row',
+            lobby_id: lobbyId,
+            user_id: 'lena',
+            added_by_user_id: 'lena',
+            name: 'Lena',
+            board_id: null,
+            position: 1,
+          })
+          .execute()
+        expect(await lobbies.closeIdleLobbies(later(15))).toEqual([])
+        expect(await lobbies.closeIdleLobbies(later(21))).toEqual([lobbyId])
+      })
     })
 
     it('re-checks inside the queue: a lobby someone joined meanwhile stays open', async () => {
