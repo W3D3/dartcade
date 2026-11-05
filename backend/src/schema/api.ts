@@ -2798,7 +2798,7 @@ export interface components {
             /** @description The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in */
             userId: string | null;
             avatar: components["schemas"]["Avatar"];
-            /** @description A bot's difficulty 1-10; null for a member or guest. */
+            /** @description A bot's difficulty 1-20; null for a member or guest. */
             bot: {
                 level: number;
             } | null;
@@ -3107,7 +3107,7 @@ export interface components {
             value: {
                 /** @description The checkout chance (%) before the first dart; null on Scoring */
                 startChance: number | null;
-                /** @description On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
+                /** @description On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null */
                 fewestChance: number | null;
                 /** @description On the tag's scale: Setup and Doubling the Σ of terms (Δ + closeness − penalty), Scoring the rating − the average */
                 points: number;

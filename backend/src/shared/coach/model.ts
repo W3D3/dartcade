@@ -21,7 +21,7 @@ export type Evaluation = {
 export type Evaluator = (left: number, darts: number) => Evaluation
 
 export type CoachModel = {
-  /** The bot level (1–10) whose throws the landing table is from */
+  /** The bot level (1–20) whose throws the landing table is from */
   level: number
   landing: Landing
   /** fin[r][k]: the chance to check out r (0–170) with at most k darts (0–3) this visit; a bust is a no. */
@@ -33,16 +33,16 @@ export type CoachModel = {
   evaluator: (start: number, w: number) => Evaluator
 }
 
-/** Without an average the coach uses level 7 (81 average): the one reference model it had before levels */
-export const DEFAULT_COACH_LEVEL = 7
+/** Without an average the coach uses level 13 (80 average): the one reference model it had before levels */
+export const DEFAULT_COACH_LEVEL = 13
 /** The reference level's average: what the fewest-darts path's chance is measured against */
 export const REFERENCE_AVERAGE = averageForLevel(DEFAULT_COACH_LEVEL)
 
 /**
  * The level the coach judges a player against: one level above their average, the smallest
- * LEVEL_AVERAGE strictly above it (a 40 average is coached as level 3, 46). The aims, values and
+ * LEVEL_AVERAGE strictly above it (a 42 average is coached as level 5, 45). The aims, values and
  * grades are what a slightly better player would expect, so the coach asks for a step up and not
- * a pro's game. Above level 10's average: level 10. No average: DEFAULT_COACH_LEVEL.
+ * a pro's game. Above level 20's average: level 20. No average: DEFAULT_COACH_LEVEL.
  */
 export function coachLevel(average: number | null | undefined): number {
   if (average == null || !Number.isFinite(average)) return DEFAULT_COACH_LEVEL
@@ -106,6 +106,16 @@ const TABLES: Partial<Record<number, () => Promise<{ LANDING: Landing }>>> = {
   8: () => import('./landing/level-8.gen.js'),
   9: () => import('./landing/level-9.gen.js'),
   10: () => import('./landing/level-10.gen.js'),
+  11: () => import('./landing/level-11.gen.js'),
+  12: () => import('./landing/level-12.gen.js'),
+  13: () => import('./landing/level-13.gen.js'),
+  14: () => import('./landing/level-14.gen.js'),
+  15: () => import('./landing/level-15.gen.js'),
+  16: () => import('./landing/level-16.gen.js'),
+  17: () => import('./landing/level-17.gen.js'),
+  18: () => import('./landing/level-18.gen.js'),
+  19: () => import('./landing/level-19.gen.js'),
+  20: () => import('./landing/level-20.gen.js'),
 }
 const models = new Map<number, Promise<CoachModel>>()
 
@@ -120,7 +130,7 @@ export async function loadCoachModels(level: number): Promise<CoachModels> {
   return { model, reference: reference.landing }
 }
 
-/** The model for a bot level (1–10), loaded and built once per level. */
+/** The model for a bot level (1–20), loaded and built once per level. */
 export function loadModel(level: number): Promise<CoachModel> {
   const load = TABLES[level]
   if (!load) return Promise.reject(new Error(`coach level out of range: ${level}`))

@@ -28,7 +28,7 @@ export type NewPerson = {
   boardId: string | null
   ready: boolean
   joinedAt?: Date
-  /** A bot's difficulty 1-10; omit or null for a member/guest. */
+  /** A bot's difficulty 1-20; omit or null for a member/guest. */
   botLevel?: number | null
 }
 export type LobbyUpdate = {

@@ -8244,10 +8244,10 @@
               "level": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 10
+                "maximum": 20
               }
             },
-            "description": "A bot's difficulty 1-10; null for a member or guest."
+            "description": "A bot's difficulty 1-20; null for a member or guest."
           },
           "placement": {
             "type": "integer",
@@ -9402,7 +9402,7 @@
               "fewestChance": {
                 "type": "number",
                 "nullable": true,
-                "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 7, an 81 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
+                "description": "On a visit that kept the fewest-darts path: the fixed reference level's chance (%, level 13, an 80 average) to keep it from the start (shared/coach/minDarts.ts fewestPath); else null"
               },
               "points": {
                 "type": "number",
@@ -9597,7 +9597,7 @@
           "coachLevel": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10,
+            "maximum": 20,
             "description": "The bot level whose checkout model judged the leg: one above the player's 30-day average when it was played"
           },
           "leg": {
@@ -12911,7 +12911,7 @@
               "level": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 10
+                "maximum": 20
               }
             },
             "description": "Add a bot instead of a guest: the server throws for this seat, at this difficulty."

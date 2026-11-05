@@ -86,11 +86,11 @@
               "type": "object",
               "required": ["level"],
               "additionalProperties": false,
-              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 10 } }
+              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 20 } }
             },
             { "type": "null" }
           ],
-          "description": "A bot's difficulty 1-10; null for a member or guest."
+          "description": "A bot's difficulty 1-20; null for a member or guest."
         }
       }
     },
@@ -266,11 +266,11 @@
               "type": "object",
               "required": ["level"],
               "additionalProperties": false,
-              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 10 } }
+              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 20 } }
             },
             { "type": "null" }
           ],
-          "description": "A bot's difficulty 1-10, which its avatar is drawn from; null for a member or guest."
+          "description": "A bot's difficulty 1-20, which its avatar is drawn from; null for a member or guest."
         },
         "avatar": { "$ref": "common-v1.json#/$defs/Avatar" }
       }

@@ -7,7 +7,7 @@ rather than a hand-tuned score table.
 ## Goal
 
 A host can fill an empty seat (or practice alone) against a bot instead of a human: "Add bot",
-pick Level 1–10, play. The bot throws for itself — paced like a real visit, not an instant
+pick Level 1–20, play. The bot throws for itself — paced like a real visit, not an instant
 resolve — using the exact same event path a human's manual entry or a real board uses, so nothing
 downstream (history, undo, replay, remote spectators) needs to know a bot was involved.
 
@@ -15,7 +15,7 @@ downstream (history, undo, replay, remote spectators) needs to know a bot was in
 
 - **X01 only, for now.** Around the Clock bots are a natural follow-up but need a different skill
   framing (hit rate on a single target, not an average) — not in this change.
-- **Ad hoc per lobby, not a persistent roster.** A bot is `Level 1`–`Level 10`, added to a lobby
+- **Ad hoc per lobby, not a persistent roster.** A bot is `Level 1`–`Level 20`, added to a lobby
   the way a guest is, with no account and no stats that outlive the lobby. A roster of named
   bots (and eventually bots trained on real players) is a plausible future direction, but this
   change doesn't build toward a specific shape for it beyond not painting it into a corner.
@@ -26,7 +26,7 @@ downstream (history, undo, replay, remote spectators) needs to know a bot was in
   busts, missed doubles under pressure, and the occasional total miss at low levels, without any
   bot-specific scoring logic.
 - **The 3-dart average is a calibration target, not a tunable itself.** A one-time offline
-  simulation picks the σ for each of the 10 levels so its long-run average lands on a fixed
+  simulation picks the σ for each of the 20 levels so its long-run average lands on a fixed
   curve (see Calibration). The result is a constant table checked into source, not computed live.
 - **Paced, not instant.** Darts land a couple of seconds apart (randomized within a band), then a
   short pause before takeout, so the match screen, visit animations and remote spectators see an
@@ -54,7 +54,7 @@ downstream (history, undo, replay, remote spectators) needs to know a bot was in
   least one bot seat — the same conditional-field pattern `GameSettings` already uses for the
   Format field (`{#if teams && meta.format}`).
 - **Not in this change:** ATC bots, a persistent bot roster or bot stats, bots modeled on real
-  players, a free-form average slider (fixed Level 1–10 only), and any restriction on an
+  players, a free-form average slider (fixed Level 1–20 only), and any restriction on an
   all-bot/no-human game (allowed, just not a focus).
 
 ## Seats and lobby
@@ -70,7 +70,7 @@ A bot slots into the existing guest shape rather than needing a new kind of pers
   like a guest's. The bot scheduler acts as that controller internally, calling the engine
   directly rather than through the browser websocket, so `authorizeAction`'s existing
   `controllerUserId === userId` check already covers it.
-- The lobby UI gets an "Add bot" control next to "Add guest": pick Level 1–10, done. Naming,
+- The lobby UI gets an "Add bot" control next to "Add guest": pick Level 1–20, done. Naming,
   removal and the rest of guest-row behavior (per `lobby/rules.ts`) apply unchanged.
 
 ## The bot scheduler
@@ -116,7 +116,7 @@ uses them changes.
 
 A one-time offline script Monte-Carlo-simulates full legs at a range of σ values, records the
 resulting long-run 3-dart average, and picks σ per level to land on a target curve (roughly
-Level 1 ≈ 30 through Level 10 ≈ 100+, spaced so consecutive levels feel meaningfully different).
+Level 1 ≈ 20 through Level 20 ≈ 115 (level n averages 15 + 5n, `LEVEL_AVERAGE` in `shared/botLevels.ts`)).
 The output is a small constant table (`backend/src/bots/levels.ts` or similar) checked into
 source — not computed at runtime, and not re-derived from a live average target.
 

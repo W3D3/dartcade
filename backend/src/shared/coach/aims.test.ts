@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { segmentAt } from '../board.js'
 import { AIMS, aimById, aimPoints, aimsOn, bedAim, neighbours } from './aims.js'
-import { LANDING } from './landing/level-7.gen.js'
+import { LANDING } from './landing/level-13.gen.js'
 import { loadModel } from './model.js'
 
 describe('the aim points', () => {
@@ -31,7 +31,7 @@ describe('the aim points', () => {
 
 describe('the landing table', () => {
   it("has one row per aim at every level, each aim's chances summing to 1 give or take the dropped tail", async () => {
-    for (let level = 1; level <= 10; level++) {
+    for (let level = 1; level <= 20; level++) {
       const { landing } = await loadModel(level)
       expect(landing).toHaveLength(AIMS.length)
       for (const outs of landing) {
@@ -41,9 +41,9 @@ describe('the landing table', () => {
         expect(sum).toBeLessThanOrEqual(1.001)
       }
     }
-  })
+  }, 30_000)
 
-  it('hits T20 about a third of the time, as an 81-average player does', () => {
+  it('hits T20 about a third of the time, as an 80-average player does', () => {
     const t20 = LANDING[AIMS.findIndex(a => a.id === 'T20')]
     const hit = t20.find(o => o[0] === 'T20')![3]
     expect(hit).toBeGreaterThan(0.28)

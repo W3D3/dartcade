@@ -738,7 +738,7 @@
                 "level": {
                   "type": "integer",
                   "minimum": 1,
-                  "maximum": 10
+                  "maximum": 20
                 }
               }
             },
@@ -746,7 +746,7 @@
               "type": "null"
             }
           ],
-          "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
+          "description": "The server throws for this seat itself, at this difficulty 1-20; null for a human or guest."
         }
       }
     },

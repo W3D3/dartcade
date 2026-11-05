@@ -1,7 +1,7 @@
 // Every visit's tag (Scoring, Setup, Doubling) and grade (Brilliant to Bad, eight classes); the line
 // saying why is visitText.ts. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
 // finish is Brilliant when that was hard for the fixed reference level (model.ts DEFAULT_COACH_LEVEL,
-// an 81 average — not the player's own coaching level), else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
+// an 80 average — not the player's own coaching level), else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
 // or Doubling one (a bust too) on its darts' value change (value.ts) plus the closeness credit of
 // the darts that missed their target. The bands were set on real legs (the spec's calibration table).
 import { oneDartFinish } from './aims.js'
@@ -41,7 +41,7 @@ export const MISS_CLOSE_MAX = 5
 /** …falling to none this far (mm) from the target's bed */
 export const MISS_CLOSE_ZERO_MM = 20
 /** A fewest-darts visit is Brilliant when the fixed reference level (model.ts DEFAULT_COACH_LEVEL,
- *  an 81 average) keeps that path from its start less often than this (minDarts.ts fewestChance),
+ *  an 80 average) keeps that path from its start less often than this (minDarts.ts fewestChance),
  *  else Excellent at least */
 export const BRILLIANT_CHANCE = 0.25
 /** A bust costs this many points for each dart of the visit it kept from being thrown */
@@ -76,7 +76,7 @@ export type VisitFacts = {
   /** The seat's last visit in a leg the opponent won */
   lastVisitOfLostLeg: boolean
   /** On a visit that kept the fewest-darts path: the chance (0–1) the fixed reference level
-   *  (model.ts DEFAULT_COACH_LEVEL, an 81 average) keeps it (minDarts.ts fewestPath), how hard it
+   *  (model.ts DEFAULT_COACH_LEVEL, an 80 average) keeps it (minDarts.ts fewestPath), how hard it
    *  was, the same for every player; else null */
   fewest: number | null
 }

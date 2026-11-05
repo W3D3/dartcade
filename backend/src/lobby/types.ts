@@ -37,7 +37,7 @@ export type LobbyPerson = {
   usualBoardName: string | null
   /** Their team, kept from game to game (and while the next game is singles); null: none yet. */
   team: TeamId | null
-  /** A bot's difficulty 1-10; null for a member or guest. */
+  /** A bot's difficulty 1-20; null for a member or guest. */
   bot: { level: number } | null
   /** {kind: 'none'} for a guest or bot (no account to carry one). */
   avatar: components['schemas']['Avatar']

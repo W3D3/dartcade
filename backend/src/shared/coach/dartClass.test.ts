@@ -479,7 +479,7 @@ describe('classifyDart: setup doubles (double to double)', () => {
 
   it("84 → S20, then a dart 4 mm inside the D16 bed's outer edge is a hit of D16 at every level", async () => {
     const d = polar(16, 1 - 4 / 170)
-    for (let level = 1; level <= 10; level++) {
+    for (let level = 1; level <= 20; level++) {
       const m = await loadModel(level)
       const t: Throw = {
         leg: 0,
@@ -502,7 +502,7 @@ describe('classifyDart: setup doubles (double to double)', () => {
         plannedLeave: 32,
       })
     }
-  })
+  }, 30_000)
 
   it('a near miss of it is its miss: just inside D16 on 64', () => {
     expect(classify(polar(16, R.so - 2 / 170), 64, 2)).toMatchObject({
