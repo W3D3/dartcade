@@ -25,6 +25,12 @@ export function friendsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
     }),
   )
 
+  app.get<Route<'friendSuggestions'>>(
+    '/api/friends/suggestions',
+    { ...auth, schema: fromSpec('friendSuggestions'), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async req => ({ users: await friends.suggestions(req.userId) }),
+  )
+
   app.post<Route<'sendFriendRequest'>>('/api/friends/requests', { ...auth, schema: fromSpec('sendFriendRequest') }, async (req, reply) => {
     const r = await friends.request(req.userId, req.body.name)
     return reply.code(r.status === 'accepted' ? 200 : 201).send(r)

@@ -93,6 +93,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       }
     })
 
+    it('suggests friends of friends, the most in common first, never friends, requests or the undiscoverable', async () => {
+      const ask = async (from: string, to: string) => friends.accept(to, (await friends.request(from, await names2(to))).id)
+      const names2 = async (id: string) => (await db.selectFrom('user').select('name').where('id', '=', id).executeTakeFirstOrThrow()).name
+      await ask('chris', 'lena')
+      await ask('chris', 'max')
+      await ask('lena', 'sam')
+      await ask('max', 'sam')
+      expect(await friends.suggestions('chris')).toMatchObject([{ id: 'sam', request: 'none', mutualFriends: 2 }])
+      await db.updateTable('user').set({ discoverable: false }).where('id', '=', 'sam').execute()
+      expect(await friends.suggestions('chris')).toEqual([])
+      await db.updateTable('user').set({ discoverable: true }).where('id', '=', 'sam').execute()
+      await friends.request('chris', 'sam.180')
+      expect(await friends.suggestions('chris')).toEqual([])
+    })
+
     it('marks friends', async () => {
       const r = await friends.request('chris', 'Max')
       await friends.accept('max', r.id)
