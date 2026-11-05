@@ -12,7 +12,7 @@ import { executionStats } from './stats.js'
 import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
 import { tierOf, type CoachTierId } from './tiers.js'
-import { throwsOf, type CoachLeg } from './walk.js'
+import { throwsOf, type CoachLeg, type CoachVisit } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
@@ -83,6 +83,11 @@ export type ReviewContext = {
   models: CoachModels
   opponentName: (seat: number) => string
 }
+
+/** Still being thrown: fewer than 3 darts, no checkout or bust yet. The fewest-darts floor/Brilliant
+ *  rule (grade.ts OVERRIDES) must wait for the visit to be over, or a visit on pace reads as a made
+ *  finish before the last dart is thrown (the live panel, the admin sandbox). */
+const isOpenVisit = (v: CoachVisit): boolean => !v.bust && v.remaining !== 0 && v.darts.length < 3
 
 const NONE: SkillGrade = { grade: null, line: '–' }
 const RANK = { A: 0, B: 1, C: 2, D: 3 }
@@ -158,7 +163,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       average,
       first: k === 0,
       lastVisitOfLostLeg: lost && k === mine.length - 1,
-      fewest: fewestPath(reference, start, vThrows.length, v.remaining, v.bust),
+      fewest: isOpenVisit(v) ? null : fewestPath(reference, start, vThrows.length, v.remaining, v.bust),
     })
     return {
       n: k + 1,

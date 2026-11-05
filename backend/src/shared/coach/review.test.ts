@@ -489,6 +489,26 @@ describe('reviewLeg', () => {
   })
 })
 
+describe('an open visit', () => {
+  // 132 → 25, T19 leaves 50 with a dart to go: on the fewest-darts path (3 from 132, 1 already kept
+  // by reaching 50 in 2), but the visit isn't over yet
+  const open: CoachVisit = { seat: 0, darts: [dart('25'), dart('T19')], scored: 82, remaining: 50, bust: false }
+
+  it("doesn't call it Brilliant before the last dart", () => {
+    const r = reviewLeg([leg([open])], 0, 0, ctx(132))
+    expect(r?.visits[0].grade).not.toBe('brilliant')
+    expect(r?.visits[0].value.rule).toBeNull()
+    expect(r?.visits[0].value.fewestChance).toBeNull()
+  })
+
+  it('still calls it Brilliant once the visit is over, same path', () => {
+    const r = reviewLeg([leg([visit(0, 132, ['25', 'T19', 'Bull'])])], 0, 0, ctx(132))
+    expect(r?.visits[0].grade).toBe('brilliant')
+    expect(r?.visits[0].value.rule).toBe('brilliant')
+    expect(r?.visits[0].value.fewestChance).not.toBeNull()
+  })
+})
+
 describe('the coaching tier', () => {
   /** One solo visit reviewed for a player with `average`, by the tier that average suggests */
   async function graded(average: number, start: number, names: string[]) {
