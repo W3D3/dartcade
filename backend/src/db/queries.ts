@@ -185,7 +185,12 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
     if (s.ranked)
       await trx
         .insertInto('ranked_matches')
-        .values({ session_id: s.id, mode: s.ranked.mode, sides: JSON.stringify(s.ranked.sides) })
+        .values({
+          session_id: s.id,
+          mode: s.ranked.mode,
+          sides: JSON.stringify(s.ranked.sides),
+          ratings: JSON.stringify(s.ranked.ratings),
+        })
         .execute()
   })
 }
@@ -208,6 +213,7 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
       'l.name as lobby_name',
       'rm.mode as ranked_mode',
       'rm.sides as ranked_sides',
+      'rm.ratings as ranked_ratings',
     ])
     .where('gs.status', '=', 'active')
     .execute()
@@ -225,9 +231,12 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
     .orderBy('gp.seat')
     .execute()
   const seatsBySession = groupBy(seats, s => s.session_id)
-  return rows.map(({ ranked_mode, ranked_sides, ...r }) => ({
+  return rows.map(({ ranked_mode, ranked_sides, ranked_ratings, ...r }) => ({
     ...r,
-    ranked: ranked_mode !== null && ranked_sides !== null ? { mode: ranked_mode, sides: ranked_sides } : null,
+    ranked:
+      ranked_mode !== null && ranked_sides !== null && ranked_ratings !== null
+        ? { mode: ranked_mode, sides: ranked_sides, ratings: ranked_ratings }
+        : null,
     players: (seatsBySession.get(r.id) ?? []).map(s => ({
       name: s.name,
       user_id: s.user_id,

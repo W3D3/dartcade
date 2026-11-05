@@ -9,7 +9,9 @@ import {
   ratingChangeSince,
   recentRanked,
   recalculateRatings,
+  recordRankedGame,
   recordRankedResult,
+  unrecordedRankedGames,
   x01Average,
   x01AverageSince,
 } from './ranked.js'
@@ -361,6 +363,130 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
       await db.deleteFrom('user').where('id', '=', 'liv').execute()
       await recalculateRatings(db, '1v1')
       expect((await getRatings(db, 'eli'))['1v1']).toEqual(recorded)
+    })
+  })
+
+  describe('recording a finished ranked game', () => {
+    const users = ['rex', 'sue', 'tia', 'uma', 'vic', 'wes', 'xan', 'yul']
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values(users.map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
+        .execute()
+    })
+
+    // A finished ranked 1v1: seat 0 is `a`, seat 1 is `b`; `placements` and `forfeits` are what the engine saved
+    async function ranked(
+      a: string,
+      b: string,
+      o: { placements: [number, number]; forfeits?: [boolean, boolean]; ratings?: Record<string, number> },
+    ) {
+      const id = await game()
+      await db
+        .insertInto('game_players')
+        .values(
+          [a, b].map((user, seat) => ({
+            session_id: id,
+            seat,
+            name: user,
+            user_id: user,
+            placement: o.placements[seat],
+            forfeited: o.forfeits?.[seat] ?? false,
+            stats: JSON.stringify({ average: seat === 0 ? 60 : 50, dartsThrown: 30 }),
+            throw_position: seat,
+            controller_user_id: user,
+            board_db_id: null,
+            bot_level: null,
+          })),
+        )
+        .execute()
+      await db
+        .insertInto('ranked_matches')
+        .values({ session_id: id, mode: '1v1', sides: JSON.stringify([[a], [b]]), ratings: JSON.stringify(o.ratings ?? {}) })
+        .execute()
+      return id
+    }
+    const voidReason = async (id: string) =>
+      (await db.selectFrom('ranked_matches').select('void_reason').where('session_id', '=', id).executeTakeFirstOrThrow()).void_reason
+
+    it('seeds a newcomer from the rating they were matched on, not from an X01 average that now includes this game', async () => {
+      const id = await ranked('rex', 'sue', { placements: [1, 2], ratings: { rex: 1000, sue: 1000 } })
+      await db
+        .updateTable('game_players')
+        .set({ stats: JSON.stringify({ average: 99, dartsThrown: 300 }) })
+        .where('session_id', '=', id)
+        .execute()
+      expect(await recordRankedGame(db, id, at(20))).toBe(true)
+      const [rex, sue] = await Promise.all([getRatings(db, 'rex'), getRatings(db, 'sue')])
+      // Both started at 1 000: the winner went up and the loser down from there (a 99 average would seed ~ 1 800)
+      expect(rex['1v1'].rating).toBeGreaterThan(1000)
+      expect(rex['1v1'].rating).toBeLessThan(1100)
+      expect(sue['1v1'].rating).toBeLessThan(1000)
+    })
+
+    it('rates a game with a forfeit on the result alone and records who forfeited and the ranks', async () => {
+      const id = await ranked('tia', 'uma', { placements: [1, 2], forfeits: [false, true] })
+      await db
+        .insertInto('ranked_ratings')
+        .values(['tia', 'uma'].map(user_id => ({ user_id, mode: '1v1' as const, rating: 1200 })))
+        .execute()
+      expect(await recordRankedGame(db, id, at(21))).toBe(true)
+      const rows = await db.selectFrom('ranked_results').selectAll().where('session_id', '=', id).orderBy('user_id').execute()
+      // Placing, scored on the result alone (the averages 60 v 50 would have given ±27)
+      expect(rows.map(r => [r.user_id, r.forfeited, r.rating_after - r.rating_before])).toEqual([
+        ['tia', false, 32],
+        ['uma', true, -32],
+      ])
+      expect(rows.every(r => r.rank_before === null && r.rank_after === null)).toBe(true)
+    })
+
+    it('marks a game with no winner void, once, and does not retry it', async () => {
+      const id = await ranked('vic', 'wes', { placements: [1, 1] })
+      expect(await unrecordedRankedGames(db)).toContain(id)
+      expect(await recordRankedGame(db, id)).toBe(false)
+      expect(await voidReason(id)).toBe('no_winner')
+      expect(await unrecordedRankedGames(db)).not.toContain(id)
+      expect(await db.selectFrom('ranked_results').select('user_id').where('session_id', '=', id).execute()).toEqual([])
+    })
+
+    it('finds the winner by seat when their account is gone, and voids a side with nobody left', async () => {
+      const id = await ranked('xan', 'yul', { placements: [1, 2] })
+      await db.deleteFrom('user').where('id', '=', 'xan').execute()
+      expect(await recordRankedGame(db, id)).toBe(false)
+      expect(await voidReason(id)).toBe('player_deleted')
+    })
+
+    it('leaves out a game invalidated before it was recorded', async () => {
+      await db
+        .insertInto('user')
+        .values(['ann2', 'bob2'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
+        .execute()
+      await db
+        .insertInto('ranked_ratings')
+        .values(['ann2', 'bob2'].map(user_id => ({ user_id, mode: '1v1' as const, rating: 1200 })))
+        .execute()
+      const id = await ranked('ann2', 'bob2', { placements: [1, 2] })
+      await db.updateTable('game_sessions').set({ invalidated_at: new Date() }).where('id', '=', id).execute()
+      expect(await recordRankedGame(db, id, at(22))).toBe(true)
+      expect((await getRatings(db, 'ann2'))['1v1']).toMatchObject({ rating: 1200, matches: 0 })
+    })
+
+    it('tells the friends nothing of a climb in a game invalidated before it was recorded', async () => {
+      await db
+        .insertInto('user')
+        .values(['cal2', 'dee2'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
+        .execute()
+      // One win from the next stage: counted, cal2 would climb and friends would hear of it
+      const edge = { mode: '1v1' as const, rating: rankThreshold(5) - 1, rank_index: 4, matches: 10, wins: 5 }
+      await db
+        .insertInto('ranked_ratings')
+        .values(['cal2', 'dee2'].map(user_id => ({ user_id, ...edge })))
+        .execute()
+      const id = await ranked('cal2', 'dee2', { placements: [1, 2] })
+      await db.updateTable('game_sessions').set({ invalidated_at: new Date() }).where('id', '=', id).execute()
+      expect(await recordRankedGame(db, id, at(23))).toBe(true)
+      expect(await db.selectFrom('ranked_results').select('user_id').where('session_id', '=', id).execute()).toHaveLength(2)
+      expect(await db.selectFrom('friend_activity').select('user_id').where('game_id', '=', id).execute()).toEqual([])
     })
   })
 })

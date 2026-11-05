@@ -54,6 +54,13 @@ so seat control, remote boards, forfeits and history work as they do today.
   and after, the game's 3-dart average. Feeds the 30-day trend, the online average and Recent ranked matches.
 - `ranked_matches (session_id)`: which games came from the queue, their mode and sides. When a
   ranked game finishes, its result is recorded from this row; an aborted game records nothing.
+- `ranked_matches` also keeps the rating each player was matched on (`ratings`: a newcomer is seeded from
+  it, not from an X01 average that by now includes the game) and `void_reason` for a finished game
+  that is deliberately not rated (`no_winner`, `player_deleted`), so it is not retried at every start.
+  The winning side is read off the engine's placements by seat. `ranked_results` also keeps
+  `forfeited` (a game with a forfeit is rated on the result alone) and `rank_before`/`rank_after`.
+  A ranked game is recorded before its final snapshot is pushed, so the result screen reads the change.
+  A game invalidated before it was recorded is recorded and left out again at once.
 - `recordRankedResult` moves the ratings for a finished game in one transaction and is idempotent
   per game.
 

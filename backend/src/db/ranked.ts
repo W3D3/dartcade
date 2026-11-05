@@ -172,7 +172,8 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
   }))
 }
 
-export type RankedSide = RatedSide
+/** A side as a game records it: who played, their average, and whose seat forfeited. */
+export type RankedSide = { won: boolean; players: { userId: string; average: number | null; forfeited?: boolean }[] }
 
 /** Held by a mode's game recording and recalculation alike, so neither reads ratings the other is rewriting. */
 async function lockMode(trx: Kysely<Database>, mode: RankedMode): Promise<void> {
@@ -181,15 +182,24 @@ async function lockMode(trx: Kysely<Database>, mode: RankedMode): Promise<void> 
 
 /**
  * Moves the ratings for a finished ranked game (`rateGame`, shared/ranked.ts).
- * Someone's first game in a mode starts them from their X01 average. Writes one ranked_results row
- * per player. Recording the same game twice changes nothing.
+ * Someone's first game in a mode starts them from `seeds` (the rating they were matched on), else
+ * from their X01 average. A game with a forfeit is rated on the result alone. Writes one
+ * ranked_results row per player. Recording the same game twice changes nothing. Runs inside `db`'s
+ * transaction when it is one.
  */
 export async function recordRankedResult(
   db: Kysely<Database>,
-  game: { sessionId: string; mode: RankedMode; sides: [RankedSide, RankedSide]; at?: Date },
+  game: {
+    sessionId: string
+    mode: RankedMode
+    sides: [RankedSide, RankedSide]
+    seeds?: Record<string, number>
+    at?: Date
+    quiet?: boolean
+  },
 ): Promise<void> {
   const at = game.at ?? new Date()
-  await db.transaction().execute(async trx => {
+  const write = async (trx: Kysely<Database>) => {
     // A second call for the same game waits here, then finds it done
     await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.ranked.' || ${game.sessionId}))`.execute(trx)
     await lockMode(trx, game.mode)
@@ -204,7 +214,11 @@ export async function recordRankedResult(
     const newcomers = userIds.filter(id => !known.has(id))
     if (newcomers.length > 0) {
       const seeds = await Promise.all(
-        newcomers.map(async user_id => ({ user_id, mode: game.mode, rating: seedRating(await x01Average(trx, user_id)) })),
+        newcomers.map(async user_id => ({
+          user_id,
+          mode: game.mode,
+          rating: game.seeds?.[user_id] ?? seedRating(await x01Average(trx, user_id)),
+        })),
       )
       await trx
         .insertInto('ranked_ratings')
@@ -222,8 +236,15 @@ export async function recordRankedResult(
     const states = new Map<string, RatingState>(
       rows.map(r => [r.user_id, { rating: r.rating, rankIndex: r.rank_index, matches: r.matches, wins: r.wins, streak: r.streak }]),
     )
+    const forfeited = new Set(game.sides.flatMap(s => s.players.filter(p => p.forfeited).map(p => p.userId)))
+    const averages = new Map(game.sides.flatMap(s => s.players.map(p => [p.userId, p.average] as const)))
+    // A forfeit says nothing about how they threw: the result alone rates the game
+    const sides = game.sides.map(s => ({
+      won: s.won,
+      players: s.players.map(p => ({ userId: p.userId, average: forfeited.size > 0 ? null : p.average })),
+    }))
     const climbs: ActivityInsert[] = []
-    for (const p of rateGame(states, game.sides)) {
+    for (const p of rateGame(states, [sides[0], sides[1]])) {
       const climb = rankUpEvent(game.sessionId, game.mode, p.userId, p.before.rankIndex, p.after.rankIndex, at)
       if (climb) climbs.push(climb)
       await trx
@@ -242,13 +263,20 @@ export async function recordRankedResult(
           placement: p.placement,
           rating_before: p.before.rating,
           rating_after: p.after.rating,
-          average: p.average,
+          forfeited: forfeited.has(p.userId),
+          rank_before: p.before.rankIndex,
+          rank_after: p.after.rankIndex,
+          average: averages.get(p.userId) ?? null,
           created_at: at,
         })
         .execute()
     }
-    await insertActivity(trx, climbs)
-  })
+    // `quiet`: the game doesn't count (a moderator invalidated it), so friends hear nothing of it
+    if (!game.quiet) await insertActivity(trx, climbs)
+  }
+  // Inside the caller's transaction when it is one
+  if (db.isTransaction) await write(db)
+  else await db.transaction().execute(write)
 }
 
 function ratingColumns(s: RatingState) {
@@ -274,7 +302,17 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
   const rows = await trx
     .selectFrom('ranked_results as r')
     .innerJoin('game_sessions as gs', 'gs.id', 'r.session_id')
-    .select(['r.session_id', 'r.user_id', 'r.won', 'r.average', 'r.rating_before', 'r.rating_after', 'r.created_at', 'gs.invalidated_at'])
+    .select([
+      'r.session_id',
+      'r.user_id',
+      'r.won',
+      'r.average',
+      'r.forfeited',
+      'r.rating_before',
+      'r.rating_after',
+      'r.created_at',
+      'gs.invalidated_at',
+    ])
     .where('r.mode', '=', mode)
     .orderBy('r.created_at')
     .orderBy('r.session_id')
@@ -289,9 +327,10 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     r => r.session_id,
   )
   for (const [sessionId, players] of games) {
+    const forfeit = players.some(p => p.forfeited)
     const side = (won: boolean): RatedSide => ({
       won,
-      players: players.filter(p => p.won === won).map(p => ({ userId: p.user_id, average: p.average })),
+      players: players.filter(p => p.won === won).map(p => ({ userId: p.user_id, average: forfeit ? null : p.average })),
     })
     const [winners, losers] = [side(true), side(false)]
     // A side's accounts can be gone (their rows cascade away): nothing to rate against, so a
@@ -309,7 +348,13 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
       lastGame.set(p.userId, players[0]?.created_at ?? new Date())
       await trx
         .updateTable('ranked_results')
-        .set({ rating_before: p.before.rating, rating_after: p.after.rating, placement: p.placement })
+        .set({
+          rating_before: p.before.rating,
+          rating_after: p.after.rating,
+          rank_before: p.before.rankIndex,
+          rank_after: p.after.rankIndex,
+          placement: p.placement,
+        })
         .where('session_id', '=', sessionId)
         .where('user_id', '=', p.userId)
         .execute()
@@ -360,36 +405,56 @@ export async function matchRatings(
 }
 
 /**
- * Moves the ratings for a ranked game once it's finished: the side whose players placed first
- * won; each player's average is their 3-dart average in the game. Returns false when the game
- * isn't a ranked one, or didn't finish (aborted, still running). Safe to call more than once.
+ * Moves the ratings for a ranked game once it's finished. The winning side is the one whose seat
+ * the engine placed first (seats are the two sides in order, so a deleted account does not hide
+ * it); each player's average is their 3-dart average in the game, and a seat that forfeited says so.
+ * A game that can't be rated (no unique winner, a side whose accounts are all gone) is marked void
+ * with the reason, not retried. A game a moderator invalidated before it was recorded is recorded
+ * and left out again at once. Returns false when nothing was rated: not a ranked game, still
+ * running or aborted, or void. Safe to call more than once.
  */
 export async function recordRankedGame(db: Kysely<Database>, sessionId: string, at?: Date): Promise<boolean> {
   const match = await db
     .selectFrom('ranked_matches as m')
     .innerJoin('game_sessions as g', 'g.id', 'm.session_id')
-    .select(['m.mode', 'm.sides', 'g.status', 'g.finished_at'])
+    .select(['m.mode', 'm.sides', 'm.ratings', 'm.void_reason', 'g.status', 'g.finished_at', 'g.invalidated_at'])
     .where('m.session_id', '=', sessionId)
     .executeTakeFirst()
-  if (!match || match.status !== 'finished') return false
-  const players = await db
+  if (!match || match.status !== 'finished' || match.void_reason !== null) return false
+  const seats = await db
     .selectFrom('game_players')
-    .select(['user_id', 'placement', sql<number | null>`(stats->>'average')::float8`.as('average')])
+    .select(['seat', 'placement', 'forfeited', sql<number | null>`(stats->>'average')::float8`.as('average')])
     .where('session_id', '=', sessionId)
     .execute()
-  const seat = new Map(players.flatMap(p => (p.user_id === null ? [] : [[p.user_id, p] as const])))
-  const sides = match.sides.map(userIds => ({
-    won: userIds.some(id => seat.get(id)?.placement === 1),
-    players: userIds.map(userId => ({ userId, average: seat.get(userId)?.average ?? null })),
-  }))
-  // A finished game has exactly one winning side
-  if (sides.filter(s => s.won).length !== 1) return false
-  await recordRankedResult(db, {
-    sessionId,
-    mode: match.mode,
-    sides: [sides[0], sides[1]],
-    at: at ?? match.finished_at ?? undefined,
-  })
+  const alive = new Set((await db.selectFrom('user').select('id').where('id', 'in', match.sides.flat()).execute()).map(u => u.id))
+  // Seats are the first side's players, then the second's
+  const split = match.sides[0].length
+  const sideOf = (seat: number) => (seat < split ? 0 : 1)
+  const won = [0, 1].map(i => seats.some(s => sideOf(s.seat) === i && s.placement === 1))
+  const players = (i: 0 | 1) =>
+    match.sides[i].flatMap((userId, k) => {
+      const s = seats.find(x => x.seat === (i === 0 ? k : split + k))
+      return alive.has(userId) ? [{ userId, average: s?.average ?? null, forfeited: s?.forfeited ?? false }] : []
+    })
+  const sides: [RankedSide, RankedSide] = [
+    { won: won[0], players: players(0) },
+    { won: won[1], players: players(1) },
+  ]
+  const reason = won[0] === won[1] ? 'no_winner' : sides[0].players.length === 0 || sides[1].players.length === 0 ? 'player_deleted' : null
+  if (reason !== null) {
+    await db.updateTable('ranked_matches').set({ void_reason: reason }).where('session_id', '=', sessionId).execute()
+    return false
+  }
+  const game = { sessionId, mode: match.mode, sides, seeds: match.ratings, at: at ?? match.finished_at ?? undefined }
+  if (match.invalidated_at === null) await recordRankedResult(db, game)
+  else {
+    // It doesn't count: written, left out of the ratings again and kept out of the friends' feed,
+    // all or nothing (ratings depend on the order of the games, so it's a replay)
+    await db.transaction().execute(async trx => {
+      await recordRankedResult(trx, { ...game, quiet: true })
+      await recalculateRatings(trx, match.mode)
+    })
+  }
   return true
 }
 
@@ -400,6 +465,7 @@ export async function unrecordedRankedGames(db: Kysely<Database>): Promise<strin
     .innerJoin('game_sessions as g', 'g.id', 'm.session_id')
     .select('m.session_id')
     .where('g.status', '=', 'finished')
+    .where('m.void_reason', 'is', null)
     .where(eb => eb.not(eb.exists(eb.selectFrom('ranked_results as r').select('r.user_id').whereRef('r.session_id', '=', 'm.session_id'))))
     .execute()
   return rows.map(r => r.session_id)

@@ -339,6 +339,11 @@ export interface RankedResultsTable {
   placement: boolean
   rating_before: number
   rating_after: number
+  /** The player's seat forfeited. */
+  forfeited: ColumnType<boolean, boolean | undefined, never>
+  /** The rank held going into the game and coming out of it (0 Wood I … 29 Elite V); null while placing. */
+  rank_before: number | null
+  rank_after: number | null
   /** The player's 3-dart average in the game. */
   average: number | null
   created_at: ColumnType<Date, Date | undefined, never>
@@ -487,6 +492,10 @@ export interface RankedMatchesTable {
   mode: '1v1' | '2v2'
   /** The user ids of each side's players (written as JSON). */
   sides: ColumnType<[string[], string[]], string, never>
+  /** The rating each player was matched on, by user id (written as JSON). */
+  ratings: ColumnType<Record<string, number>, string | undefined, never>
+  /** Why a finished game was deliberately not rated; null while it still is to be. */
+  void_reason: string | null
   created_at: ColumnType<Date, Date | undefined, never>
 }
 

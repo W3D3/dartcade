@@ -12,7 +12,7 @@ const seat = (name: string, user: string): Seat => ({
   boardName: null,
   bot: null,
 })
-const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']] }
+const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']], ratings: { ann: 1200, bob: 1200 } }
 
 function makeStore() {
   return {
@@ -72,5 +72,34 @@ describe('a ranked session', () => {
     const engine = new SessionEngine(store, vi.fn())
     await engine.rebuild()
     expect(engine.getSession('s1')?.ranked).toEqual(ranked)
+  })
+
+  it('is recorded before the final snapshot goes out, unlike any other game', async () => {
+    const order: string[] = []
+    const run = async (rankedGame: RankedGame | undefined) => {
+      order.length = 0
+      const engine = new SessionEngine(
+        makeStore(),
+        id => {
+          if (engine.getSession(id)?.status === 'finished') order.push('push')
+        },
+        undefined,
+        undefined,
+        () => {
+          order.push('ended')
+        },
+      )
+      const { sessionId } = await engine.createWithSeats({
+        ownerUserId: 'ann',
+        gameId: 'x01',
+        config,
+        seats: [seat('Ann', 'ann'), seat('Bob', 'bob')],
+        ranked: rankedGame,
+      })
+      await engine.onUserAction(sessionId, 'bob', { type: 'forfeit' })
+      return [...order]
+    }
+    expect(await run(ranked)).toEqual(['ended', 'push'])
+    expect(await run(undefined)).toEqual(['push', 'ended'])
   })
 })
