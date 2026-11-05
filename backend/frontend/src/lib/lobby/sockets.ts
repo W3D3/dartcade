@@ -19,6 +19,7 @@ import type {
   MeServerMessage,
   PendingInvite,
   XpGainedMessage,
+  LobbyIdleClosedMessage,
 } from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
@@ -105,6 +106,7 @@ export function createMeStore(open?: OpenSocket) {
   const xp = writable<XpGainedMessage | null>(null)
   const boardStatus = writable<BoardStatusMessage | null>(null)
   const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
+  const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
@@ -116,6 +118,8 @@ export function createMeStore(open?: OpenSocket) {
     boardStatus: { subscribe: boardStatus.subscribe } satisfies Readable<BoardStatusMessage | null>,
     /** The last time your ranked search or found match ended, and why (matchmaking.ended), as it arrives. */
     matchmakingEnded: { subscribe: matchmakingEnded.subscribe } satisfies Readable<MatchmakingEndedMessage | null>,
+    /** Your lobby was last closed for being idle (lobby.idleClosed), as it arrives. */
+    idleClosed: { subscribe: idleClosed.subscribe } satisfies Readable<LobbyIdleClosedMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -136,6 +140,8 @@ export function createMeStore(open?: OpenSocket) {
               boardStatus.set(msg)
             } else if (msg?.type === 'matchmaking.ended') {
               matchmakingEnded.set(msg)
+            } else if (msg?.type === 'lobby.idleClosed') {
+              idleClosed.set(msg)
             } else if (msg?.type === 'matchmaking') {
               const { type: _type, ...matchmaking } = msg
               state.update(s => ({ ...(s ?? EMPTY), matchmaking }))
@@ -158,6 +164,7 @@ export function createMeStore(open?: OpenSocket) {
       xp.set(null)
       boardStatus.set(null)
       matchmakingEnded.set(null)
+      idleClosed.set(null)
     },
   }
 }

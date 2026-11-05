@@ -235,12 +235,9 @@ const settleRanked = setInterval(() => {
   })
 }, 60_000)
 settleRanked.unref()
-// Lobbies with no game running close after hours without activity: 6 h with one account,
-// 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS). Pairing codes go
-// an hour after they expired, friend activity after a month.
+// Pairing codes go an hour after they expired, friend activity after a month.
 const HOUR_MS = 60 * 60 * 1000
 const sweeps: [what: string, run: () => Promise<unknown>][] = [
-  ['idle lobby', () => lobbies.closeIdleLobbies()],
   ['pairing code', () => deletePairingCodesExpiredBefore(db, new Date(Date.now() - HOUR_MS))],
   // Home shows a week of friend activity; a month is kept
   ['friend activity', () => pruneActivity(db, new Date(Date.now() - 30 * 24 * HOUR_MS))],
@@ -266,6 +263,14 @@ const samples =
       })
     : undefined
 if (samples) sweeps.push(['dart sample', () => pruneSamples(db, sampleBytes)])
+// Lobbies with no game running close after minutes without activity (10 with one real user, 20
+// with several: the lobby.idleMinutes.* flags), so they are swept every minute, apart from the rest
+const idleLobbySweep = setInterval(() => {
+  lobbies.closeIdleLobbies().catch((err: unknown) => {
+    warn('idle lobby sweep failed', { error: String(err) })
+  })
+}, 60 * 1000)
+idleLobbySweep.unref()
 const idleSweep = setInterval(
   () => {
     for (const [what, run] of sweeps) {
@@ -303,6 +308,7 @@ backfillCoachLegs(db, warn).catch((err: unknown) => {
 // Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
+  clearInterval(idleLobbySweep)
   clearInterval(settleRanked)
   matchmaking.close()
   bigScreen.close()

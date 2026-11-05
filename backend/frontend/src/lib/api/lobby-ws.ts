@@ -85,7 +85,13 @@ export type LastSeen = 'now' | 'today' | 'yesterday' | 'week' | 'older'
  * via the `definition` "MeServerMessage".
  */
 export type MeServerMessage =
-  MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage | MatchmakingMessage | MatchmakingEndedMessage
+  | MeMessage
+  | FriendsMessage
+  | XpGainedMessage
+  | BoardStatusMessage
+  | LobbyIdleClosedMessage
+  | MatchmakingMessage
+  | MatchmakingEndedMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -555,6 +561,19 @@ export interface BoardStatusMessage {
   type: 'board.status'
   boardId: string
   online: boolean
+}
+/**
+ * Pushed on /ws/me to each member of a lobby the server closed for idleness (nobody had it open), so the app can say why it is gone.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "LobbyIdleClosedMessage".
+ */
+export interface LobbyIdleClosedMessage {
+  type: 'lobby.idleClosed'
+  /**
+   * How many minutes without activity it took.
+   */
+  minutes: number
 }
 /**
  * Your ranked search: yours alone (1v1), or your duo's (2v2), which its host started and only they cancel.
