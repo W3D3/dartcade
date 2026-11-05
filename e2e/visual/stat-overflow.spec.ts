@@ -22,7 +22,26 @@ const SIZES = [
   [1366, 768],
   [1920, 1080],
 ] as const
-const PLAY = ['Treble 20', 'Treble 20', 'Treble 20', 'next', 'Single 20', 'Single 5', 'Single 1', 'next']
+// Four visits: the Darts thrown cell reaches two digits (13 with the running visit's dart), the averages 3 digits
+const PLAY = [
+  'Treble 20',
+  'Treble 20',
+  'Treble 20',
+  'next',
+  'Single 20',
+  'Single 5',
+  'Single 1',
+  'next',
+  'Single 20',
+  'Single 5',
+  'Single 1',
+  'next',
+  'Single 20',
+  'Single 5',
+  'Single 1',
+  'next',
+  'Single 20',
+]
 
 // 5 is a 2v2 team game
 for (const players of [1, 2, 4, 5]) {

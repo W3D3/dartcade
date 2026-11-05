@@ -4,7 +4,7 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Averages, x01Roll } from '$lib/playerStats'
+  import { x01Averages, x01Roll, x01Darts } from '$lib/playerStats'
   import PhoneCardShell from './PhoneCardShell.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
@@ -28,11 +28,7 @@
   } = $props()
   const name = $derived(who.name)
 
-  const stats = $derived([
-    ...x01Averages(p),
-    { label: 'Checkout', value: p.checkout, dim: true },
-    { label: 'Darts', value: String(p.darts), dim: false },
-  ])
+  const stats = $derived([...x01Averages(p), { label: 'Checkout', value: p.checkout, dim: true }, { ...x01Darts(p), dim: false }])
 </script>
 
 <PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} {rank} class="gap-2">

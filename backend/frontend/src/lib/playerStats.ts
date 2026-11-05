@@ -47,6 +47,12 @@ export type X01PlayerView = {
   current: { scored: number; left: number; bust: boolean } | null
 }
 
+/** Darts thrown this leg by these seats (a seat, or a team's), the running visit included for the thrower. */
+export function legDarts(game: Pick<X01Game, 'legVisits' | 'currentVisitDarts'>, seats: number[], active: boolean): number {
+  const thrown = game.legVisits.reduce((a, v) => a + (seats.includes(v.seat) ? v.darts : 0), 0)
+  return thrown + (active ? game.currentVisitDarts.length : 0)
+}
+
 export function x01Player(
   game: X01Game,
   i: number,
@@ -81,7 +87,7 @@ export function x01Player(
     ),
     last: last ? String(last.scored) : '—',
     ...checkoutRate(game.checkoutHits.at(i) ?? 0, game.checkoutAttempts.at(i) ?? 0),
-    darts: game.totalDarts.at(i) ?? 0,
+    darts: legDarts(game, [i], o.active),
     legsWon: game.legs.at(i) ?? 0,
     firstTo: game.firstTo,
     leg: game.legs.reduce((a, l) => a + l, 0),
@@ -99,6 +105,11 @@ export function x01Averages(p: Pick<X01PlayerView, 'avg' | 'legAvg' | 'firstTo'>
     { label: 'Leg avg', value: p.legAvg, dim: false },
     { label: 'Match avg', value: p.avg, dim: true },
   ]
+}
+
+/** The darts cell of a player's or team's card: the darts thrown this leg. */
+export function x01Darts(p: { darts: number }): { label: string; value: string } {
+  return { label: 'Darts thrown', value: String(p.darts) }
 }
 
 /** How the big X01 score (a player's or a team's) rolls: the shown score, a new leg starts it

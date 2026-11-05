@@ -24,6 +24,29 @@ const game = (o: Record<string, unknown> = {}): X01Game =>
   }) as unknown as X01Game
 const none = { pointsScored: [0, 0], dartsThrown: [0, 0], legVisits: [], lastVisit: [null, null] }
 
+describe('x01Player darts', () => {
+  const darts = (g: X01Game, i: number, active: boolean) => x01Player(g, i, { active, suggest: false }).darts
+  it('first leg: the finished visits plus the running one for the thrower', () => {
+    expect(darts(game(), 0, true)).toBe(7)
+    expect(darts(game(), 0, false)).toBe(6)
+  })
+  it('a new leg starts at 0 whatever was thrown before', () => {
+    expect(darts(game({ legVisits: [], currentVisitDarts: [], totalDarts: [30, 24] }), 0, true)).toBe(0)
+  })
+  it('a bust still counts its darts', () => {
+    const g = game({ legVisits: [visit(0, 100, 401), { ...visit(0, 0, 341), bust: true }], currentVisitDarts: [] })
+    expect(darts(g, 0, true)).toBe(6)
+  })
+  it('a corrected dart is not counted twice: the count follows the running visit', () => {
+    const d = (score: number) => ({ segment: { name: 'S' }, score })
+    expect(darts(game({ currentVisitDarts: [d(20), d(5)] }), 0, true)).toBe(8)
+    expect(darts(game({ currentVisitDarts: [d(20)] }), 0, true)).toBe(7)
+  })
+  it("another seat's darts are not counted", () => {
+    expect(darts(game({ legVisits: [visit(0, 100, 401), visit(1, 45, 456)] }), 1, false)).toBe(3)
+  })
+})
+
 describe('x01Player', () => {
   it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
     const p = x01Player(game(), 0, { active: true, suggest: true })
@@ -33,7 +56,7 @@ describe('x01Player', () => {
       avg: '80.0',
       legAvg: '80.0',
       last: '60',
-      darts: 16,
+      darts: 7,
       legsWon: 1,
       firstTo: 3,
       visits: [visit(0, 100, 401), visit(0, 60, 341)],
