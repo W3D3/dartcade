@@ -586,8 +586,10 @@ export class LobbyService {
   }
 
   /**
-   * The idle sweep (every minute, from index.ts): closes lobbies with no game running and no
-   * activity for lobby.idleMinutes.solo (one real user) or lobby.idleMinutes.shared (several).
+   * The idle sweep (every minute, from index.ts): closes lobbies with no activity for
+   * lobby.idleMinutes.solo (one real user) or lobby.idleMinutes.shared (several). A lobby with a game
+   * running is closed (the game aborted) once the game has had no event for that long; open
+   * pages and lobby changes don't keep a stalled game alive.
    * Guests and bots are people without an account, so they never count as a user.
    * Activity is a row in the lobby's feed (joins, leaves, boards, games, host changes), any
    * change made through this service (ready, settings, teams, invites: `touch`), and a member
@@ -605,13 +607,23 @@ export class LobbyService {
     for (const id of await q.idleLobbyIds(this.db, soloBefore, sharedBefore)) {
       // Not this.enqueue: the sweep itself is no activity
       const done = await this.queues.run(id, async () => {
-        if (this.deps.engine.getLobbySession(id)) return false
-        if (this.deps.hub.online(id).size > 0) return false
         const lobby = await q.loadLobby(this.db, id)
         if (!lobby || lobby.closedAt !== null) return false
         const minutes = memberIds(lobby).length > 1 ? sharedMinutes : soloMinutes
-        if (now.getTime() - (this.touched.get(id) ?? 0) < minutes * MINUTE_MS) return false
-        if ((await q.idleLobbyIds(this.db, soloBefore, sharedBefore, id)).length === 0) return false
+        const limitMs = minutes * MINUTE_MS
+        const running = this.deps.engine.getLobbySession(id)
+        if (running) {
+          // A game with no event (dart, correction, bull off) for the limit is abandoned. Ranked
+          // games end by their own clock and forfeit, never by a lobby sweep.
+          if (running.ranked) return false
+          const lastEvent = (await q.lastGameEventAt(this.db, running.id)) ?? running.createdAt
+          if (now.getTime() - lastEvent.getTime() < limitMs) return false
+          await this.deps.engine.deleteSession(running.id, null)
+        } else {
+          if (this.deps.hub.online(id).size > 0) return false
+          if (now.getTime() - (this.touched.get(id) ?? 0) < limitMs) return false
+          if ((await q.idleLobbyIds(this.db, soloBefore, sharedBefore, id)).length === 0) return false
+        }
         await this.closeNow(lobby, minutes)
         return true
       })

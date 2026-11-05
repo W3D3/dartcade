@@ -263,8 +263,9 @@ const samples =
       })
     : undefined
 if (samples) sweeps.push(['dart sample', () => pruneSamples(db, sampleBytes)])
-// Lobbies with no game running close after minutes without activity (10 with one real user, 20
-// with several: the lobby.idleMinutes.* flags), so they are swept every minute, apart from the rest
+// Lobbies close after minutes without activity (10 with one real user, 20 with several: the
+// lobby.idleMinutes.* flags); one whose unranked game had no event for that long is closed too, its
+// game aborted. So they are swept every minute, apart from the rest
 const idleLobbySweep = setInterval(() => {
   lobbies.closeIdleLobbies().catch((err: unknown) => {
     warn('idle lobby sweep failed', { error: String(err) })
