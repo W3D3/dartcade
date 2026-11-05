@@ -13,6 +13,7 @@ import type { UserAction } from '../schema/game-ws.js'
 import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
 import type { RankedMode } from '../shared/ranked.js'
+import type { RankedClock, RankedRules } from './rankedClock.js'
 import type { components } from '../schema/api.js'
 
 // Aliases for shorter names throughout the backend
@@ -36,6 +37,8 @@ export type RankedGame = {
   sides: [string[], string[]]
   /** The rating each player was matched on, by user id. */
   ratings: Record<string, number>
+  /** The rules the flags gave it at the start; null for a game from before them (no clock). */
+  rules: RankedRules | null
 }
 
 /** A point in board units (see backend/src/shared/board.ts) — what botTarget aims a dart at. */
@@ -255,6 +258,8 @@ export interface Session {
   totalVisits: number[]
   /** Started by the ranked queue; null for any other game. No player owns it: nobody aborts it (leaving forfeits) and either side starts its bull off. */
   ranked: RankedGame | null
+  /** The ranked time limit (session/rankedClock.ts); null without rules. */
+  clock: RankedClock | null
   /** Seat indices that have forfeited, ascending. */
   forfeited: number[]
   /** The game's committed visits since the bull off, newest last, as they were before each was

@@ -2,6 +2,7 @@ import type { ColumnType, Generated, RawBuilder } from 'kysely'
 import type { components } from '../schema/api.js'
 import type { SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
+import type { RankedRules } from '../session/rankedClock.js'
 
 type BigScreenMode = components['schemas']['BigScreenMode']
 
@@ -496,6 +497,8 @@ export interface RankedMatchesTable {
   ratings: ColumnType<Record<string, number>, string | undefined, never>
   /** Why a finished game was deliberately not rated; null while it still is to be. */
   void_reason: string | null
+  /** The ranked rules the game started with (written as JSON); null for a game from before them. */
+  rules: ColumnType<RankedRules | null, string | null | undefined, never>
   created_at: ColumnType<Date, Date | undefined, never>
 }
 

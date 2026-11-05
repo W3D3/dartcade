@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { ClientMessageSchema } from '../schema/zod.js'
 import { parseBoardEvent } from './boardEvent.js'
 import { applyInput, type GameInput } from './apply.js'
+import { newRankedClock } from './rankedClock.js'
+import { SystemActionSchema } from './systemInput.js'
 import { seededRng } from './rng.js'
 import { teamForfeitPlacements } from '../games/teams.js'
 import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
@@ -28,6 +30,12 @@ function parseLoggedInput(row: LoggedInput): GameInput | null {
     const event = parseBoardEvent(row.kind, row.data)
     return event ? { source: 'board', event } : null
   }
+  // Each source has its own schema: a user row can't pass for a system input, nor the other way
+  if (row.source === 'system') {
+    const action = SystemActionSchema.safeParse(row.data)
+    return action.success ? { source: 'system', action: action.data } : null
+  }
+  if (row.source !== 'user') return null
   const action = UserActionSchema.safeParse(row.data)
   return action.success ? { source: 'user', action: action.data } : null
 }
@@ -76,6 +84,7 @@ export function newSession(a: {
     boardStatus: new Map(),
     forfeited: [],
     ranked: a.ranked ?? null,
+    clock: a.ranked?.rules ? newRankedClock(a.ranked.rules, players.length, a.createdAt) : null,
     undoable: [],
     dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,

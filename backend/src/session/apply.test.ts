@@ -35,6 +35,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     boardStatus: new Map(),
     forfeited: [],
     ranked: null,
+    clock: null,
     undoable: [],
     dartsLeftOnBoard: false,
   }

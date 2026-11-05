@@ -20,8 +20,8 @@ export const PLACEMENT_RESULT_WEIGHT = 0.7
  * a visit running over eats into; an empty reserve forfeits. These are the defaults of the flags
  * matchmaking.visitSeconds and matchmaking.reserveSeconds, which a deployment can change.
  */
-export const VISIT_SECONDS = 60
-export const RESERVE_SECONDS = 180
+export const VISIT_SECONDS = 120
+export const RESERVE_SECONDS = 300
 /** Seconds everyone has to accept a found match. */
 export const ACCEPT_SECONDS = 10
 /** RP below a stage you have to fall before you drop out of it. */

@@ -123,6 +123,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     })
   })
 
+  describe('a ranked game', () => {
+    it('is stored with its rules, in one go with the session, and read back with them', async () => {
+      const ranked = {
+        mode: '1v1' as const,
+        sides: [['u-test-1'], ['u-test-2']] as [string[], string[]],
+        ratings: { 'u-test-1': 1200, 'u-test-2': 1300 },
+        rules: { visitSeconds: 120, reserveSeconds: 300, manualEntry: false },
+      }
+      await insertGameSession(db, {
+        id: '01JTEST00000000000000000RK',
+        owner_user_id: 'u-test-1',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 0,
+        config: {},
+        ranked,
+        players: [
+          { name: 'A', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
+          { name: 'B', user_id: 'u-test-2', controller_user_id: 'u-test-2', board_db_id: null, bot_level: null },
+        ],
+      })
+      const row = (await getActiveGameSessions(db)).find(s => s.id === '01JTEST00000000000000000RK')
+      expect(row?.ranked).toEqual(ranked)
+    })
+
+    it('logs a system input, which the event table now accepts', async () => {
+      await db
+        .insertInto('game_session_events')
+        .values({
+          session_id: '01JTEST00000000000000000RK',
+          seq: 0,
+          source: 'system',
+          kind: 'clock.forfeit',
+          data: '{}',
+          created_at: new Date(),
+        })
+        .execute()
+    })
+  })
+
   describe('insertBridgeEvent', () => {
     it('inserts and returns inserted=true', async () => {
       const ev = {

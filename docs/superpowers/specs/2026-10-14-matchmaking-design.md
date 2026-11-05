@@ -32,12 +32,20 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Ranks:** 6 tiers (Wood, Bronze, Silver, Gold, Diamond, Elite) × 5 stages (I to V). Wood I starts
   at 0, every stage after it is 50 RP up: Wood II 600 … Gold I 1 300 … Elite V 2 000. You promote
   the moment you reach a stage and drop only 25 RP below the stage you hold. No rank while placing.
-- **Time limit:** 60 s per visit, starting once the board is clear, plus a 3 min reserve per player
-  (per team in 2v2) used only once a visit runs over. An empty reserve forfeits the match. Both are
-  number flags (`matchmaking.visitSeconds`, `matchmaking.reserveSeconds`) a deployment can change
-  with `FLAG_VALUES`. (The canvas note's 8-minute chess clock was dropped in favour of the screens;
-  the screens' 30 s and 2 min were raised to give more room.)
-- **Manual entry** is allowed in ranked (trust-based); a board is not required.
+- **Time limit:** 120 s per visit (it starts when the last visit is committed), plus a 300 s reserve
+  per player (per team in 2v2) used only once a visit runs over. An empty reserve forfeits the match.
+  The clock simply runs, with no pausing: timers are lenient, the goal is only to stop stalling. Both
+  are number flags (`matchmaking.visitSeconds`, `matchmaking.reserveSeconds`) a deployment can
+  change with `FLAG_VALUES`; their values (with `matchmaking.manualEntry`) are kept with the game
+  when it starts (`ranked_matches.rules`), so a later flag change never alters a running game. The
+  clock is a pure reducer (`session/rankedClock.ts`): the reserve is charged when a visit is
+  committed, from the logged time, so a replay ends with the same reserves. Running out is a logged
+  input from a source only the server has (`source: 'system'`, `session/systemInput.ts`, parsed by
+  its own schema, `SessionEngine.systemInput`): no client message can be one. After a restart a
+  running visit starts over and the reserves stay: the outage is not the players' time.
+- **Manual entry** is allowed in ranked (trust-based; a board is not required), controlled by the flag
+  `matchmaking.manualEntry` (on for everyone). When off, the server refuses hand-entered darts
+  (`add_dart`, `correct_dart`) in ranked games.
 - **Leaving** a ranked game is a forfeit. **Disconnects** get 2 minutes to come back; then the other
   side wins.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
