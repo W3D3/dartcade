@@ -355,7 +355,11 @@ export class MatchmakingService {
         gameId: 'x01',
         config: rankedConfig(mode, found.firstTo),
         seats,
-        ranked: { mode, sides: [a.userIds, b.userIds] },
+        ranked: {
+          mode,
+          sides: [a.userIds, b.userIds],
+          ratings: Object.fromEntries([...a.players, ...b.players].map(p => [p.userId, p.rating])),
+        },
         lobbyName: `Ranked ${mode}`,
       })
     } catch (err) {

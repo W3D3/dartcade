@@ -181,7 +181,12 @@ describe('DELETE /api/sessions/:id', () => {
 describe('DELETE /api/sessions/:id of a ranked game', () => {
   it('refuses with 409 for its owner, and leaves the game running', async () => {
     const { app, engine } = makeApp()
-    engine.getSession.mockReturnValue({ id: 's1', ownerUserId: 'user-1', status: 'active', ranked: { mode: '1v1', sides: [['a'], ['b']] } })
+    engine.getSession.mockReturnValue({
+      id: 's1',
+      ownerUserId: 'user-1',
+      status: 'active',
+      ranked: { mode: '1v1', sides: [['a'], ['b']], ratings: {} },
+    })
     const res = await app.inject({ method: 'DELETE', url: '/api/sessions/s1' })
     expect(res.statusCode).toBe(409)
     expect(engine.deleteSession).not.toHaveBeenCalled()

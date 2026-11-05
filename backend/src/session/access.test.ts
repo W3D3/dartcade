@@ -40,7 +40,7 @@ describe('authorizeAction in a ranked game', () => {
       seed: 1,
       createdAt: new Date(),
     }),
-    ranked: { mode: '1v1' as const, sides: [['ann'], ['bob']] as [string[], string[]] },
+    ranked: { mode: '1v1' as const, sides: [['ann'], ['bob']] as [string[], string[]], ratings: {} },
   })
   const bull = { name: '50', number: 50, bed: 'Double', multiplier: 1 } as const
   const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const

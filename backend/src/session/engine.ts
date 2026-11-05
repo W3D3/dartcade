@@ -505,10 +505,17 @@ export class SessionEngine {
       this.release(session)
       this.scheduleEviction(session)
     }
+    const ended = this.endedOf(session, 'finished', null, seatResults)
     // Everyone still watching sees the game end before the game-end listeners run (the
-    // lobby reset, the /ws/me pushes) — same as deleteSession, below
+    // lobby reset, the /ws/me pushes) — same as deleteSession, below. A ranked game is
+    // recorded first: its result screen reads the rating change in the final snapshot.
+    if (session.ranked) {
+      await this.notifyEnded(ended)
+      this.push(session.id)
+      return
+    }
     this.push(session.id)
-    await this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
+    await this.notifyEnded(ended)
   }
 
   async rebuild(): Promise<void> {

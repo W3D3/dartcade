@@ -31,7 +31,12 @@ export type {
 export type Player = { name: string }
 
 /** What makes a game ranked: the queue it came from and the accounts of each side. */
-export type RankedGame = { mode: RankedMode; sides: [string[], string[]] }
+export type RankedGame = {
+  mode: RankedMode
+  sides: [string[], string[]]
+  /** The rating each player was matched on, by user id. */
+  ratings: Record<string, number>
+}
 
 /** A point in board units (see backend/src/shared/board.ts) — what botTarget aims a dart at. */
 export type Point = { x: number; y: number }
