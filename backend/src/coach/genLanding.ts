@@ -1,4 +1,4 @@
-// Writes shared/coach/landing/level-N.gen.ts for every bot level 1–10: where a dart aimed at each of
+// Writes shared/coach/landing/level-N.gen.ts for every bot level 1–20: where a dart aimed at each of
 // the coach's aims lands for a player of that level, from 40,000 darts per aim thrown with the bots'
 // own model (bots/accuracy.ts throwAt, jitter included). One file per level, so the browser loads
 // only the one it coaches with. Seeded per level, so a rerun gives the same files.
