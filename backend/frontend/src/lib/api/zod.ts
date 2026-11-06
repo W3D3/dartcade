@@ -28,7 +28,7 @@ export const DartCorrectedDataSchema = z.object({ "visit_id": z.string(), "index
 
 export const BaseEnvelopeSchema = z.object({ "v": z.literal(1), "schema": z.literal("adbridge/1.0"), "bridge_id": z.string(), "boot_id": z.string(), "seq": z.number().int().gte(1), "board_id": z.string(), "bm_version": z.string(), "recv_wall": z.string().datetime({ offset: true }), "recv_mono_ns": z.number().int(), "kind": z.string(), "data": z.record(z.string(), z.unknown()) })
 
-export const CameraStillMessageSchema = z.object({ "kind": z.literal("camera.still"), "data": z.object({ "cam": z.number().int().gte(0).lte(3), "captured_at": z.string().datetime({ offset: true }), "content_type": z.literal("image/jpeg"), "data": z.string().base64() }) })
+export const CameraStillMessageSchema = z.object({ "kind": z.literal("camera.still"), "data": z.object({ "cam": z.number().int().gte(0).lte(3), "captured_at": z.string().datetime({ offset: true }), "source_seq": z.number().int().gte(1).optional(), "previous_seq": z.number().int().gte(1).optional(), "content_type": z.literal("image/jpeg"), "data": z.string().base64() }) })
 
 export const WledFoundMessageSchema = z.object({ "kind": z.literal("wled.found"), "data": z.object({ "devices": z.array(z.object({ "mac": z.string(), "host": z.string(), "name": z.string(), "leds": z.number().int().gte(0), "version": z.string(), "segments": z.number().int().gte(0) })), "scanned_at": z.string().datetime({ offset: true }), "probe_host": z.string().optional(), "probe_error": z.string().optional(), "scan_error": z.string().optional() }) })
 
