@@ -66,6 +66,8 @@ export interface BoardsTable {
   auto_start: ColumnType<boolean, boolean | undefined, boolean>
   /** Reset the board when a player presses Next player (migration 051). */
   reset_on_next: ColumnType<boolean, boolean | undefined, boolean>
+  /** Keep its camera darts as training data for the dart detection model (migration 057). */
+  share_training_images: ColumnType<boolean, boolean | undefined, boolean>
   /** When the big screen follows this board (migration 041). */
   big_screen_mode: ColumnType<BigScreenMode, BigScreenMode | undefined, BigScreenMode>
   /** SHA-256 of the token the bridge machine's big-screen window signs in with; null when none is out. */
@@ -162,6 +164,24 @@ export interface GameDartsTable {
   source: string
   corrected: boolean
   thrown_at: Date
+}
+
+/** A camera dart kept as training data (migration 057); its six stills are in dart_sample_stills. */
+export interface DartSamplesTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  board_id: string
+  bridge_event_id: string
+  bm_version: string | null
+  bytes: number
+  captured_at: ColumnType<Date, Date | undefined, never>
+}
+
+export interface DartSampleStillsTable {
+  sample_id: string
+  phase: 'before' | 'after'
+  cam: number
+  jpeg: Buffer
 }
 
 export interface BridgeEventsTable {
@@ -530,6 +550,8 @@ export interface Database {
   game_darts: GameDartsTable
   game_details: GameDetailsTable
   bridge_events: BridgeEventsTable
+  dart_samples: DartSamplesTable
+  dart_sample_stills: DartSampleStillsTable
   lobbies: LobbiesTable
   lobby_people: LobbyPeopleTable
   lobby_invites: LobbyInvitesTable

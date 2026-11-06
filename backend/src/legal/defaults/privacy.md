@@ -17,13 +17,24 @@ The controller for data processed by Dartcade is {{operator.name}}, {{address}},
 | Lobbies you're in, ranked ratings       | Running lobbies and matchmaking              | Art. 6(1)(b) — the contract        |
 | Preferences (caller voice, settings)    | Remembering your settings                    | Art. 6(1)(b) — the contract        |
 | Uploaded voice packs and courses        | Letting you and others use what you uploaded | Art. 6(1)(b) — the contract        |
+| Camera stills of each dart (see 3.)     | Training our own dart detection              | Art. 6(1)(f) — legitimate interest |
 | Server logs (IP address, request, time) | Keeping the service running and secure       | Art. 6(1)(f) — legitimate interest |
 
 ## 3. Camera stills
 
-If your board has a camera, the bridge sends still images to the backend so you can see your
-throw. These stills are held in memory only, for the current session, and are never written to
-disk or kept in the database.
+If your board has cameras, the bridge sends still images to the backend so you can see your
+throw. The latest one per camera is held in memory only.
+
+To train our own dart detection, which will later correct darts the board scores wrong, we also
+keep, for each dart a board's cameras pick up: the straightened top-down pictures of the board
+from each camera just before and just after the dart, where the board detected it, and where it
+ended up in the game (after any correction). The pictures show the dartboard and the area around
+it. Only the operator's admins can see them, and they are used for nothing else.
+
+This is on for every board by default. The board's owner can turn it off any time (Settings →
+Boards → Dart detection), which deletes everything kept from that board. Unpairing the board or
+deleting the account deletes it too. Otherwise, the oldest pictures are deleted once the storage
+for them is full.
 
 ## 4. Cookies
 
