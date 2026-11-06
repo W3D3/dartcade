@@ -8,7 +8,7 @@ import { pruneActivity } from './db/activity.js'
 import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
-import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
+import { browserConnections, forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { bootstrapAdmin } from './auth/bootstrap.js'
 import { mailConfig } from './auth/index.js'
@@ -168,6 +168,8 @@ const engine: SessionEngine = new SessionEngine(
   },
   started => lobbies.onGameStarted(started),
   {
+    connectedUsers: id => browserConnections.connectedUsers(id),
+    isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
     forgotten: id => {
       forgetSession(id)
       lights.onForgotten(id)

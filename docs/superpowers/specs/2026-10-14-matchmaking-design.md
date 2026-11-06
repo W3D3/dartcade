@@ -46,8 +46,14 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Manual entry** is allowed in ranked (trust-based; a board is not required), controlled by the flag
   `matchmaking.manualEntry` (on for everyone). When off, the server refuses hand-entered darts
   (`add_dart`, `correct_dart`) in ranked games.
-- **Leaving** a ranked game is a forfeit. **Disconnects** get 2 minutes to come back; then the other
-  side wins.
+- **Leaving** a ranked game is a forfeit, and a ranked game cannot be aborted. **Disconnects** get
+  2 minutes to come back; then that player's side forfeits and the other wins. A player is away when
+  they have no game screen open and none of their seats' boards is online (a board-only player counts as
+  present while the bridge is up); after a server restart everyone counts as just disconnected. The wall
+  clock is `session/rankedTimers.ts`: per running ranked game an unref'd timer for the clock (the seat
+  that is up forfeits when its visit and reserve are used up; not during the bull off) and a grace timer
+  per absent player. They only turn time passing into logged `system` inputs (`clock.forfeit`,
+  `presence.forfeit`); the log is what a replay reads.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
   gives everyone 60 s to accept (the flag `matchmaking.acceptSeconds`, 10 to 300); opponents stay hidden until all accept. Declining or timing out
   pauses your queue for 2 min; everyone else keeps their place. No bots in the queue.

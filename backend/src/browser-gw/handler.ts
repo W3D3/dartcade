@@ -55,6 +55,7 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!isOpen(socket)) return
 
       browserConnections.add(sessionId, socket, userId)
+      engine.onPresenceChange(sessionId)
       const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
       if (!snap) {
         browserConnections.remove(sessionId, socket)
@@ -105,6 +106,7 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
         browserConnections.remove(sessionId, socket)
         // A game that's gone has nobody to wait for (forgetSession ran before this socket closed)
         if (!engine.getSession(sessionId)) browserConnections.forget(sessionId)
+        engine.onPresenceChange(sessionId)
         pushSnapshot(sessionId, engine)
       })
     })

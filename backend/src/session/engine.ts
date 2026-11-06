@@ -15,6 +15,7 @@ import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
 import { restartVisit } from './rankedClock.js'
+import { RankedTimers } from './rankedTimers.js'
 import type { SystemAction } from './systemInput.js'
 
 type PushFn = (sessionId: string) => void
@@ -57,6 +58,10 @@ export type EngineOptions = {
   forgotten?: (sessionId: string) => void
   /** A seat's controller pressed Next player on this board: its darts are out, so it may be reset. */
   nextPlayer?: (boardId: string) => void
+  /** Who has the game open right now (a ranked game's disconnect timer). */
+  connectedUsers?: (sessionId: string) => ReadonlySet<string>
+  /** Whether the board's bridge is online (a board-only player is present with the browser closed). */
+  isBoardOnline?: (boardId: string) => boolean
 }
 
 /** A game started: who to push /ws/me to (see LobbyService.onGameStarted). */
@@ -187,6 +192,14 @@ export class SessionEngine {
 
   private bots: BotScheduler | undefined
 
+  // The ranked clock and disconnect timers; they turn time passing into logged system inputs
+  private readonly timers = new RankedTimers({
+    fire: (id, action) => this.systemInput(id, action),
+    connected: id => this.opts.connectedUsers?.(id) ?? new Set(),
+    boardOnline: id => this.opts.isBoardOnline?.(id) ?? false,
+    warn: (message, details) => this.warn(message, details),
+  })
+
   /** The account changed their picture: the game they play shows the new one. */
   async avatarChanged(userId: string): Promise<void> {
     const session = this.byUser.get(userId)
@@ -302,6 +315,7 @@ export class SessionEngine {
       this.forget(session)
       throw err
     }
+    this.timers.sync(session)
     await this.notifyStarted({ sessionId, userIds: seatedUserIds(session) })
     // No watcher is subscribed yet (pushRaw is then a no-op), but a bot seated first needs
     // this to get its first turn scheduled — the scheduler only ever runs from push.
@@ -367,7 +381,15 @@ export class SessionEngine {
   /** A board's bridge connected or dropped: its game shows the new board state. */
   onBoardPresence(boardId: string): void {
     const session = this.byBoard.get(boardId)
-    if (session) this.push(session.id)
+    if (!session) return
+    this.timers.sync(session)
+    this.push(session.id)
+  }
+
+  /** A player opened or left the game's screen: a ranked game starts or stops waiting for them. */
+  onPresenceChange(sessionId: string): void {
+    const session = this.byId.get(sessionId)
+    if (session) this.timers.sync(session)
   }
 
   async onUserAction(sessionId: string, userId: string, action: UserAction): Promise<ActionResult> {
@@ -440,6 +462,7 @@ export class SessionEngine {
       // itself (before notifying), so the caller doesn't push it a second time
       if (outcome.won) await this.finish(session, at)
     }
+    this.timers.sync(session)
     return !outcome.won
   }
 
@@ -610,6 +633,8 @@ export class SessionEngine {
     // reserves stay as they were. (The one place the clock isn't derived from the log alone.)
     if (session.clock) restartVisit(session.clock, new Date())
     this.index(session)
+    // Everyone counts as just disconnected: the grace period starts now
+    this.timers.sync(session)
     // A bot seat up in a session rebuilt at startup would otherwise just sit there until a
     // human acts (the scheduler only ever runs from push) — an all-bot game would never
     // resume at all. Safe even if the module doesn't define botTarget: onChange no-ops when a
@@ -697,6 +722,7 @@ export class SessionEngine {
   // A finished session no longer holds its boards, its players' one active slot or its lobby.
   // It stays in byId (until scheduleEviction's timer) so its final snapshot can still be shown.
   private release(session: Session): void {
+    this.timers.stop(session.id)
     for (const b of seatBoards(session)) if (this.byBoard.get(b) === session) this.byBoard.delete(b)
     for (const u of distinct([session.ownerUserId, ...controllers(session)])) if (this.byUser.get(u) === session) this.byUser.delete(u)
     if (session.lobbyId !== null && this.byLobby.get(session.lobbyId) === session) this.byLobby.delete(session.lobbyId)
@@ -718,6 +744,7 @@ export class SessionEngine {
     if (this.byId.get(session.id) !== session) return
     this.byId.delete(session.id)
     this.bots?.stop(session.id)
+    this.timers.stop(session.id)
     this.opts.forgotten?.(session.id)
   }
 }
