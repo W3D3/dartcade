@@ -36,6 +36,7 @@ import { adminGamesApiPlugin } from './api/adminGames.js'
 import { adminRankedApiPlugin } from './api/adminRanked.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
+import { adminDartSamplesApiPlugin } from './api/adminDartSamples.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
 import { boardsWithWledDevices, rehostWledDevices } from './db/lights.js'
@@ -60,7 +61,7 @@ import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { SampleCollector } from './detection/collector.js'
+import { maxSampleBytes, type SampleCollector } from './detection/collector.js'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -297,6 +298,7 @@ export async function buildApp({
       }
     : undefined
   await app.register(adminFlagsApiPlugin, { db, onFlagChanged })
+  await app.register(adminDartSamplesApiPlugin, { db, maxBytes: samples ? maxSampleBytes() : 0 })
   await app.register(systemApiPlugin, {
     db,
     live: async () => {

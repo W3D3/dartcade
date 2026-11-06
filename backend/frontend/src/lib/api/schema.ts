@@ -593,6 +593,28 @@ export interface paths {
         patch: operations["setBoardResetOnNext"];
         trace?: never;
     };
+    "/api/boards/{id}/share-training-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set whether the board's camera darts are kept as training data (owner only)
+         * @description Turning it off deletes the samples already kept from this board.
+         */
+        patch: operations["setBoardShareTrainingImages"];
+        trace?: never;
+    };
     "/api/boards/{id}/lights": {
         parameters: {
             query?: never;
@@ -886,6 +908,64 @@ export interface paths {
         };
         /** Build, runtime, database, live counts and non-secret config of this server (admin) */
         get: operations["getAdminSystem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/dart-samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Training data for the dart detection model, newest first, with totals (admin) */
+        get: operations["listAdminDartSamples"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/dart-samples/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download samples as a tar of stills and labels.jsonl (admin)
+         * @description Samples with an id above `after` and up to `upTo`, oldest first, only those settled (an hour old, so their visit can no longer be corrected): `<id>/{before,after}-{cam}.jpg` for each, and `labels.jsonl` with one line per sample at the end. A download that ends at `upTo` (from the list's `settledNewestId`) lets the next one start after it.
+         */
+        get: operations["exportAdminDartSamples"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/dart-samples/{id}/stills/{phase}/{cam}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                phase: "before" | "after";
+                cam: number;
+            };
+            cookie?: never;
+        };
+        /** One still of a sample, a warped top-down JPEG (admin) */
+        get: operations["getAdminDartSampleStill"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3604,12 +3684,75 @@ export interface components {
             autoStart: boolean;
             /** @description Next player also resets the board, as its Reset button does */
             resetOnNext: boolean;
+            /** @description The board's camera darts are kept as training data for the dart detection model */
+            shareTrainingImages: boolean;
         };
         BoardAutoStartRequest: {
             autoStart: boolean;
         };
         BoardResetOnNextRequest: {
             resetOnNext: boolean;
+        };
+        BoardShareTrainingImagesRequest: {
+            shareTrainingImages: boolean;
+        };
+        /**
+         * @description How far to trust a sample: autodarts (not corrected), corrected_spot (dragged to a spot on the board), corrected_segment (corrected to a segment, so no spot)
+         * @enum {string}
+         */
+        DartSampleLabel: "autodarts" | "corrected_spot" | "corrected_segment";
+        DartSampleSpot: {
+            /** @description Segment name, e.g. T20 */
+            segment: string;
+            /** @description Normalised board position (r = 1 at the outer double wire); null when there is none */
+            coords: {
+                x: number;
+                y: number;
+            } | null;
+        };
+        DartSampleFinal: {
+            /** @description Segment name, e.g. T20 */
+            segment: string;
+            /** @description Normalised board position (r = 1 at the outer double wire); null when there is none */
+            coords: {
+                x: number;
+                y: number;
+            } | null;
+            /** @description A player corrected it */
+            corrected: boolean;
+        };
+        DartSample: {
+            id: string;
+            boardId: string;
+            bmVersion: string | null;
+            /** Format: date-time */
+            capturedAt: string;
+            autodarts: components["schemas"]["DartSampleSpot"];
+            /** @description Where the dart ended up in its game; null outside a game or before its visit was committed */
+            final: components["schemas"]["DartSampleFinal"] | (null);
+            label: components["schemas"]["DartSampleLabel"];
+        };
+        AdminDartSamples: {
+            totals: {
+                byLabel: {
+                    autodarts: number;
+                    corrected_spot: number;
+                    corrected_segment: number;
+                };
+                /** @description Boards with samples */
+                boards: number;
+                /** @description Boards whose owner shares */
+                sharingBoards: number;
+                /** @description What the stills take */
+                bytes: number;
+                /** @description The cap (DART_SAMPLES_MAX_GB); 0: collection is off */
+                maxBytes: number;
+                /** Format: date-time */
+                newest: string | null;
+            };
+            /** @description The newest sample a download can include now (`upTo`); null when none is settled */
+            settledNewestId: string | null;
+            samples: components["schemas"]["DartSample"][];
         };
         BoardBigScreen: {
             mode: components["schemas"]["BigScreenMode"];
@@ -5867,6 +6010,37 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    setBoardShareTrainingImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardShareTrainingImagesRequest"];
+            };
+        };
+        responses: {
+            /** @description The new setting */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardShareTrainingImagesRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     getBoardLights: {
         parameters: {
             query?: never;
@@ -6395,6 +6569,91 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAdminDartSamples: {
+        parameters: {
+            query?: {
+                label?: components["schemas"]["DartSampleLabel"];
+                /** @description A page: samples older than this id */
+                before?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Totals and a page of samples */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDartSamples"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    exportAdminDartSamples: {
+        parameters: {
+            query: {
+                after?: string;
+                upTo: string;
+                label?: components["schemas"]["DartSampleLabel"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A tar archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-tar": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAdminDartSampleStill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                phase: "before" | "after";
+                cam: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description JPEG still */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };
