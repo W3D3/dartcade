@@ -16,6 +16,7 @@ const board = (over: Partial<Board> = {}): Board => ({
   bigScreen: { mode: 'off', running: false, helper: false },
   autoStart: true,
   resetOnNext: true,
+  shareTrainingImages: true,
   ...over,
 })
 

@@ -71,21 +71,28 @@ export async function setBoardShares(db: Kysely<Database>, boardId: string, shar
   })
 }
 
-// Samples with their game dart (none outside a game), of one label or all, leaving out invalidated games
-function labelledQuery(db: Kysely<Database>, label?: SampleLabel) {
-  let q = db
+// A sample's label, from its game dart's correction: the one place the rule is written
+const LABEL = sql<SampleLabel>`CASE WHEN gd.corrected IS NOT TRUE THEN 'autodarts' WHEN gd.coords IS NOT NULL THEN 'corrected_spot' ELSE 'corrected_segment' END`
+
+// Samples with their game dart (none outside a game): the join the label and the pruning order read
+function withGameDart(db: Kysely<Database>) {
+  return db
     .selectFrom('dart_samples as s')
-    .innerJoin('bridge_events as be', 'be.id', 's.bridge_event_id')
     .leftJoin('game_session_events as e', 'e.bridge_event_id', 's.bridge_event_id')
     .leftJoin('game_darts as gd', join =>
       join.onRef('gd.session_id', '=', 'e.session_id').onRef('gd.thrown_at', '=', 'e.created_at').on('gd.source', '=', 'camera'),
     )
+}
+
+// Labelled samples, of one label or all, leaving out invalidated games
+function labelledQuery(db: Kysely<Database>, label?: SampleLabel) {
+  let q = withGameDart(db)
+    .innerJoin('bridge_events as be', 'be.id', 's.bridge_event_id')
     .leftJoin('game_sessions as gs', 'gs.id', 'e.session_id')
     .where('gs.invalidated_at', 'is', null)
     .select(['s.id', 's.board_id', 's.bm_version', 's.captured_at', 'be.data as detected', 'gd.segment', 'gd.coords', 'gd.corrected'])
-  if (label === 'autodarts') q = q.where(eb => eb.or([eb('gd.corrected', 'is', null), eb('gd.corrected', '=', false)]))
-  if (label === 'corrected_spot') q = q.where('gd.corrected', '=', true).where('gd.coords', 'is not', null)
-  if (label === 'corrected_segment') q = q.where('gd.corrected', '=', true).where('gd.coords', 'is', null)
+    .select(LABEL.as('label'))
+  if (label) q = q.where(LABEL, '=', label)
   return q
 }
 
@@ -98,6 +105,7 @@ type LabelledRow = {
   segment: unknown
   coords: unknown
   corrected: boolean | null
+  label: SampleLabel
 }
 
 /** A row of the join above as the export and the admin page show it; null if its dart doesn't parse. */
@@ -109,8 +117,7 @@ export function toLabelled(r: LabelledRow): LabelledSample | null {
   const final = segment.success
     ? { segment: segment.data.name, coords: Coords.nullable().catch(null).parse(r.coords), corrected: r.corrected === true }
     : null
-  const label: SampleLabel = !final?.corrected ? 'autodarts' : final.coords ? 'corrected_spot' : 'corrected_segment'
-  return { id: r.id, boardId: r.board_id, bmVersion: r.bm_version, capturedAt: r.captured_at, autodarts, final, label }
+  return { id: r.id, boardId: r.board_id, bmVersion: r.bm_version, capturedAt: r.captured_at, autodarts, final, label: r.label }
 }
 
 /** Samples newest first, from before `beforeId` (a page's last id), optionally of one label. */
@@ -130,12 +137,23 @@ export async function listSamples(
  */
 export async function exportSamples(
   db: Kysely<Database>,
-  opts: { afterId?: string; label?: SampleLabel; limit: number; settledBefore: Date },
+  opts: { afterId?: string; upToId?: string; label?: SampleLabel; limit: number; settledBefore: Date },
 ): Promise<LabelledSample[]> {
   let q = labelledQuery(db, opts.label).where('s.captured_at', '<', opts.settledBefore).orderBy('s.id', 'asc')
   if (opts.afterId) q = q.where('s.id', '>', opts.afterId)
+  if (opts.upToId) q = q.where('s.id', '<=', opts.upToId)
   const rows = await q.limit(opts.limit).execute()
   return rows.map(toLabelled).filter(s => s !== null)
+}
+
+/** The newest sample a download may include now (see exportSamples); null when none is settled. */
+export async function newestSettledId(db: Kysely<Database>, settledBefore: Date): Promise<string | null> {
+  const row = await db
+    .selectFrom('dart_samples')
+    .select(eb => eb.fn.max('id').as('id'))
+    .where('captured_at', '<', settledBefore)
+    .executeTakeFirst()
+  return row?.id ?? null
 }
 
 /** The six stills of the samples, by sample id. */
@@ -177,21 +195,10 @@ export async function sampleTotals(db: Kysely<Database>): Promise<SampleTotals> 
   const [labels, size, sharing] = await Promise.all([
     labelledQuery(db)
       .clearSelect()
-      .select(eb => [
-        eb.fn
-          .countAll<string>()
-          .filterWhere(w => w.or([w('gd.corrected', 'is', null), w('gd.corrected', '=', false)]))
-          .as('autodarts'),
-        eb.fn
-          .countAll<string>()
-          .filterWhere(w => w.and([w('gd.corrected', '=', true), w('gd.coords', 'is not', null)]))
-          .as('corrected_spot'),
-        eb.fn
-          .countAll<string>()
-          .filterWhere(w => w.and([w('gd.corrected', '=', true), w('gd.coords', 'is', null)]))
-          .as('corrected_segment'),
-      ])
-      .executeTakeFirstOrThrow(),
+      .select(LABEL.as('label'))
+      .select(eb => eb.fn.countAll<string>().as('n'))
+      .groupBy(LABEL)
+      .execute(),
     db
       .selectFrom('dart_samples')
       .select(eb => [
@@ -206,11 +213,12 @@ export async function sampleTotals(db: Kysely<Database>): Promise<SampleTotals> 
       .where('share_training_images', '=', true)
       .executeTakeFirstOrThrow(),
   ])
+  const count = (label: SampleLabel) => Number(labels.find(l => l.label === label)?.n ?? 0)
   return {
     byLabel: {
-      autodarts: Number(labels.autodarts),
-      corrected_spot: Number(labels.corrected_spot),
-      corrected_segment: Number(labels.corrected_segment),
+      autodarts: count('autodarts'),
+      corrected_spot: count('corrected_spot'),
+      corrected_segment: count('corrected_segment'),
     },
     boards: Number(size.boards),
     sharingBoards: Number(sharing.n),
@@ -230,18 +238,20 @@ export async function pruneSamples(db: Kysely<Database>, maxBytes: number): Prom
     .select(eb => eb.fn.coalesce(eb.fn.sum<string>('bytes'), sql<string>`0`).as('bytes'))
     .executeTakeFirstOrThrow()
   if (Number(bytes) <= maxBytes) return 0
-  const result = await sql<{ id: string }>`
-    WITH total AS (SELECT coalesce(sum(bytes), 0) AS bytes FROM dart_samples),
-    ranked AS (
-      SELECT s.id, s.bytes,
-        sum(s.bytes) OVER (ORDER BY coalesce(gd.corrected, false), s.id) AS running
-      FROM dart_samples s
-      LEFT JOIN game_session_events e ON e.bridge_event_id = s.bridge_event_id
-      LEFT JOIN game_darts gd ON gd.session_id = e.session_id AND gd.thrown_at = e.created_at AND gd.source = 'camera'
+  const ranked = withGameDart(db)
+    .select(['s.id', 's.bytes'])
+    .select(sql<string>`sum(s.bytes) OVER (ORDER BY coalesce(gd.corrected, false), s.id)`.as('running'))
+  const excess = Number(bytes) - maxBytes
+  const result = await db
+    .with('ranked', () => ranked)
+    .deleteFrom('dart_samples')
+    .where('id', 'in', eb =>
+      eb
+        .selectFrom('ranked')
+        .select('ranked.id')
+        .where(sql<boolean>`ranked.running - ranked.bytes < ${excess}`),
     )
-    DELETE FROM dart_samples WHERE id IN (
-      SELECT r.id FROM ranked r, total t WHERE t.bytes > ${maxBytes} AND r.running - r.bytes < t.bytes - ${maxBytes}
-    )
-    RETURNING id`.execute(db)
-  return result.rows.length
+    .returning('id')
+    .execute()
+  return result.length
 }

@@ -17,6 +17,7 @@ const board = (id: string, online = true): Board => ({
   bigScreen: { mode: 'off', running: false, helper: false },
   autoStart: true,
   resetOnNext: true,
+  shareTrainingImages: true,
 })
 
 describe('LightsBoardPicker device counts', () => {
