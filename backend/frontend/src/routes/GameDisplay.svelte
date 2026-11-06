@@ -42,7 +42,7 @@
   import { canThrowNow, isMyTurn } from '$lib/turn'
   import type { NoticeMessage } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
-  import { centerState, picksView, isManualTurn, myBoard, myBoardsInUse, noticeLines, startsOnKeypad } from '$lib/remote'
+  import { centerState, turnStatus, picksView, isManualTurn, myBoard, myBoardsInUse, noticeLines, startsOnKeypad } from '$lib/remote'
   import NotTurnToast from '../lib/components/NotTurnToast.svelte'
   import { createToast } from '$lib/toast'
   import { Toast } from '$lib/components/ui/toast/index.js'
@@ -302,6 +302,8 @@
   const canThrow = $derived(connected && isActive && canThrowNow(snapshot))
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
+  // Someone else is up: their status stands in for Undo and Next (only that seat's controller may use them)
+  const turn = $derived(turnStatus(remote))
   const who = $derived(snapshot ? whoOf(snapshot) : [])
   // The keypad: picked with Enter on your turn (also while your board is offline: the drawn board
   // takes manual darts too). Someone else's turn always shows the board, live.
@@ -539,9 +541,10 @@
           secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         />
       {:else if bullOff}
-        <BullOffPanel {players} {who} {bullOff} manual={boardId === null} {send} />
+        <BullOffPanel {players} {who} {bullOff} manual={boardId === null} canThrow={myTurn} {send} />
       {:else if minigolf}
         <MinigolfMatch
+          {turn}
           game={minigolf}
           {players}
           {darts}
@@ -560,6 +563,7 @@
         />
       {:else if p121}
         <P121Match
+          {turn}
           game={p121}
           {players}
           {who}
@@ -581,6 +585,7 @@
         />
       {:else if hilo}
         <HiloMatch
+          {turn}
           game={hilo}
           {who}
           {darts}
@@ -598,6 +603,7 @@
         />
       {:else if cricket}
         <CricketMatch
+          {turn}
           game={cricket}
           {players}
           {who}

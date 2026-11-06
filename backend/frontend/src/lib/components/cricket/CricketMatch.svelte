@@ -11,6 +11,8 @@
   import type { Segment } from '$lib/api'
   import type { CricketGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
+  import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
+  import type { TurnStatus } from '$lib/remote'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
@@ -38,6 +40,7 @@
     onCorrect,
     keypad = false,
     onDart = () => {},
+    turn = null,
   }: {
     game: CricketGame
     players: { name: string }[]
@@ -57,6 +60,8 @@
     /** The header's Enter view: the keypad takes the board's place. */
     keypad?: boolean
     onDart?: (segment: Segment) => void
+    /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
+    turn?: TurnStatus | null
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -120,7 +125,11 @@
 
 {#snippet controls(compact: boolean)}
   {#if !keypad}
-    <ControlBar {compact} {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    {#if turn}
+      <TurnStatusBar status={turn} {compact} />
+    {:else}
+      <ControlBar {compact} {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    {/if}
   {/if}
 {/snippet}
 

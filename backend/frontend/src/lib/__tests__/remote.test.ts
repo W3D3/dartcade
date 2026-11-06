@@ -238,6 +238,26 @@ describe('turnStatus and boardCaption', () => {
   })
 })
 
+describe('who gets Undo and Next (turnStatus stands in for them)', () => {
+  const status = (snap: Snapshot, user: string | null) => turnStatus(centerState(snap, user))
+  it("only the controller of the seat that's up keeps them", () => {
+    expect(status(remote({ currentPlayer: 0, mySeats: [0] }), 'host')).toBeNull()
+    expect(status(remote({ currentPlayer: 1, mySeats: [1] }), 'lena')).toBeNull()
+  })
+  it('the other player sees who is up instead', () => {
+    expect(status(remote({ currentPlayer: 1, mySeats: [0] }), 'host')).toMatchObject({ name: 'Lena', tone: 'watch' })
+    expect(status(remote({ currentPlayer: 0, mySeats: [1] }), 'lena')).toMatchObject({ name: 'Christoph', tone: 'watch' })
+  })
+  it('a spectator has no seat, so never Next', () => {
+    expect(status(remote({ currentPlayer: 0, mySeats: [] }), 'max')).toMatchObject({ name: 'Christoph' })
+    expect(status(remote({ currentPlayer: 1, mySeats: [] }), null)).toMatchObject({ name: 'Lena' })
+  })
+  it('a local game, including hand entry, keeps Next on every turn', () => {
+    expect(status(local({ boardId: null, boardOnline: false, currentPlayer: 1 }), 'u1')).toBeNull()
+    expect(status(local({ currentPlayer: 0 }), 'u1')).toBeNull()
+  })
+})
+
 describe('picksView', () => {
   it('lets you pick board or keypad on your turn, also while your board is offline', () => {
     expect(picksView({ kind: 'play' })).toBe(true)

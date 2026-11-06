@@ -12,6 +12,8 @@
   import { Tween } from 'svelte/motion'
   import type { MinigolfGame, Segment } from '$lib/api'
   import ControlBar from '$lib/components/ControlBar.svelte'
+  import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
+  import type { TurnStatus } from '$lib/remote'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
@@ -55,6 +57,7 @@
     onNextHole,
     onrolled,
     settings,
+    turn = null,
   }: {
     game: MinigolfGame
     players: { name: string }[]
@@ -77,6 +80,8 @@
     onrolled?: (key: string) => void
     /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
     settings: GameSettings
+    /** Someone else is up (remote game): their status stands in for Undo and Shoot, which only that seat's controller may use. */
+    turn?: TurnStatus | null
   } = $props()
 
   // 3D where the device can draw it; else the flat view
@@ -300,15 +305,19 @@
 {#snippet controls()}
   <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll.
        Without: the stroke counts as a miss (one stroke more, the ball stays) -->
-  <ControlBar
-    canUndo={canUndo && !playing}
-    label={darts.length > 0 ? 'Shoot' : 'Skip stroke'}
-    prominent={next.prominent}
-    primary={darts.length > 0}
-    enabled={next.enabled && !playing}
-    {onUndo}
-    {onNext}
-  />
+  {#if turn}
+    <TurnStatusBar status={turn} />
+  {:else}
+    <ControlBar
+      canUndo={canUndo && !playing}
+      label={darts.length > 0 ? 'Shoot' : 'Skip stroke'}
+      prominent={next.prominent}
+      primary={darts.length > 0}
+      enabled={next.enabled && !playing}
+      {onUndo}
+      {onNext}
+    />
+  {/if}
 {/snippet}
 
 <main class="relative flex-grow min-h-0 overflow-hidden">
