@@ -32,6 +32,14 @@ export function deadlines(clock: RankedClock, team: number): { visitDeadline: nu
   return { visitDeadline, forfeitAt: visitDeadline + clock.reserve[team] }
 }
 
+/**
+ * When the seat that has to throw in the bull off forfeits for not throwing (ms): each throw has a
+ * visit's time and spends no reserve, so a connected player can't hold the game back by staying silent.
+ */
+export function bullOffDeadline(clock: RankedClock): number {
+  return clock.visitStart + clock.rules.visitSeconds * 1000
+}
+
 /** Reserve left for `team` at `now` (ms), counting the open visit if it is the team that is up. */
 export function reserveLeft(clock: RankedClock, team: number, up: boolean, now: number): number {
   if (!up) return clock.reserve[team]

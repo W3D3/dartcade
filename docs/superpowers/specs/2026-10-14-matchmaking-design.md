@@ -51,7 +51,9 @@ so seat control, remote boards, forfeits and history work as they do today.
   they have no game screen open and none of their seats' boards is online (a board-only player counts as
   present while the bridge is up); after a server restart everyone counts as just disconnected. The wall
   clock is `session/rankedTimers.ts`: per running ranked game an unref'd timer for the clock (the seat
-  that is up forfeits when its visit and reserve are used up; not during the bull off) and a grace timer
+  that is up forfeits when its visit and reserve are used up; in the bull off each throw has a visit's
+  time and spends no reserve, and the seat that has to throw forfeits if it doesn't, a no-show limit that
+  waits for nobody once the result is in) and a grace timer
   per absent player. They only turn time passing into logged `system` inputs (`clock.forfeit`,
   `presence.forfeit`); the log is what a replay reads.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found

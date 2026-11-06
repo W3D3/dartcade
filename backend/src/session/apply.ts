@@ -31,6 +31,12 @@ export function inBullOff(session: Session, state: unknown): boolean {
   return 'phase' in view && view.phase === 'bulloff'
 }
 
+/** The bull off has its result and waits for a seat to start the game or throw again. */
+export function bullOffDecided(session: Session, state: unknown): boolean {
+  const view = session.module.view(state, session.players)
+  return 'bullOff' in view && view.bullOff?.result != null
+}
+
 function hasWinner(session: Session, state: unknown): boolean {
   return session.module.view(state, session.players).winner !== null
 }
@@ -86,6 +92,7 @@ function markCorrected(session: Session, dartPos: number): void {
 export function applyInput(session: Session, input: GameInput, at: Date): ApplyOutcome {
   const up = session.module.getCurrentPlayer(session.currentState)
   const bullOffBefore = session.clock !== null && inBullOff(session, session.currentState)
+  const decidedBefore = bullOffBefore && bullOffDecided(session, session.currentState)
   const outcome =
     input.source === 'board'
       ? applyBoardEvent(session, input.event, at)
@@ -101,6 +108,8 @@ export function applyInput(session: Session, input: GameInput, at: Date): ApplyO
   session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
   // The bull off ended: the first game visit's window starts now, not at the last throw
   if (session.clock && bullOffBefore && !inBullOff(session, session.currentState)) restartVisit(session.clock, at)
+  // A throw again after a tie: the next thrower's window starts when it's called for
+  else if (session.clock && decidedBefore && !bullOffDecided(session, session.currentState)) restartVisit(session.clock, at)
   return outcome
 }
 
