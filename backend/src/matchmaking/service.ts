@@ -16,8 +16,6 @@ import type { RankedRules } from '../session/rankedClock.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { findMatches, matchFirstTo, rangeOf, type Entry, type FirstTo } from './matcher.js'
 
-/** How long everyone has to accept a found match. */
-export const ACCEPT_MS = ACCEPT_SECONDS * 1000
 /** How long declining (or letting the time run out) keeps you from searching again. */
 export const PAUSE_MS = 2 * 60_000
 /** How often the queue looks for matches and drops the ones nobody accepted in time. */
@@ -49,6 +47,8 @@ type Found = {
   /** The narrower of the two sides' ranges when they were paired: the other side is within it. */
   range: number
   accepted: Set<string>
+  /** How long the sides had to accept (the flag matchmaking.acceptSeconds, read when they were paired). */
+  acceptSeconds: number
   expiresAt: number
 }
 
@@ -178,6 +178,7 @@ export class MatchmakingService {
         mode: own.mode,
         firstTo: found.firstTo,
         expiresAt: new Date(found.expiresAt).toISOString(),
+        acceptSeconds: found.acceptSeconds,
         range: found.range,
         stakes: me === undefined || me.placing ? null : stakes(own.rating, other.rating),
         yours: own.players.map(p => ({
@@ -307,7 +308,7 @@ export class MatchmakingService {
 
   /** Drops matches nobody accepted in time, then pairs the searches it can. */
   async tick(): Promise<void> {
-    await this.run(() => {
+    await this.run(async () => {
       const now = this.now()
       for (const f of [...this.found.values()]) {
         if (f.expiresAt <= now)
@@ -324,6 +325,8 @@ export class MatchmakingService {
         }
       }
       for (const [a, b] of findMatches([...this.searches.values()], now)) {
+        // Read before taking the searches out, so a failed lookup doesn't lose them
+        const acceptSeconds = await flagNumber('matchmaking.acceptSeconds', ACCEPT_SECONDS, await loadFlagUser(this.deps.db, a.userIds[0]))
         this.searches.delete(a.id)
         this.searches.delete(b.id)
         const found: Found = {
@@ -332,7 +335,8 @@ export class MatchmakingService {
           firstTo: matchFirstTo(a, b),
           range: Math.min(rangeOf(a, now), rangeOf(b, now)),
           accepted: new Set(),
-          expiresAt: now + ACCEPT_MS,
+          acceptSeconds,
+          expiresAt: now + acceptSeconds * 1000,
         }
         this.found.set(found.id, found)
         this.push([...userIdsOf(a), ...userIdsOf(b), ...this.searchersOf(a.mode)])

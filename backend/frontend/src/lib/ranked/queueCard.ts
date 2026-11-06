@@ -32,8 +32,9 @@ export type QueueView = {
   cancelLabel: string
   /** The found match, for Accept and Decline; null while searching. */
   matchId: string | null
-  /** Found: the seconds left to accept, for the drain bar. */
+  /** Found: the seconds left to accept, and of how many in all, for the drain bar. */
   secondsLeft: number
+  acceptSeconds: number
 }
 
 /** Null when nothing is searching or found (a paused queue shows nothing here). */
@@ -48,12 +49,13 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
       tag: accepted ? 'Accepted · waiting' : 'Match found',
       name,
       line: acceptedLine(match) ?? (match.mode === '2v2' ? 'Revealed once all accept' : 'Revealed once you both accept'),
-      clock: `0:${String(left).padStart(2, '0')}`,
+      clock: clock(left),
       strip: accepted ? `Waiting · ${name}` : 'Match found',
       canCancel: false,
       cancelLabel: '',
       matchId: match.id,
       secondsLeft: left,
+      acceptSeconds: match.acceptSeconds,
     }
   }
   if (!search) return null
@@ -71,5 +73,6 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
     cancelLabel: stop.label,
     matchId: null,
     secondsLeft: 0,
+    acceptSeconds: 0,
   }
 }

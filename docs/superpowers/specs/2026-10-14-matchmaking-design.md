@@ -49,7 +49,7 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Leaving** a ranked game is a forfeit. **Disconnects** get 2 minutes to come back; then the other
   side wins.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
-  gives everyone 10 s to accept; opponents stay hidden until all accept. Declining or timing out
+  gives everyone 60 s to accept (the flag `matchmaking.acceptSeconds`, 10 to 300); opponents stay hidden until all accept. Declining or timing out
   pauses your queue for 2 min; everyone else keeps their place. No bots in the queue.
 - **Online average:** 3-dart average over the last 20 ranked games.
 - **Flag:** `matchmaking.enabled`, on for admins until it ships.

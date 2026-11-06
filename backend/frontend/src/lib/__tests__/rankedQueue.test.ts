@@ -25,6 +25,7 @@ const match = (m: Partial<MatchmakingMatch>): MatchmakingMatch => ({
   mode: '1v1',
   firstTo: 2,
   expiresAt: new Date(T0 + 10_000).toISOString(),
+  acceptSeconds: 10,
   range: 75,
   stakes: null,
   yours: [seat(false, true)],

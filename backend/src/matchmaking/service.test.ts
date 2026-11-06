@@ -8,7 +8,9 @@ import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { LobbyService } from '../lobby/service.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
-import { ACCEPT_MS, MatchmakingService, PAUSE_MS } from './service.js'
+import { MatchmakingService, PAUSE_MS } from './service.js'
+import { setupFlags } from '../flags/index.js'
+import { ACCEPT_SECONDS } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
@@ -146,11 +148,37 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await mm.search('anna', { mode: '1v1', firstTo: 2 })
     await mm.tick()
     await mm.accept('chris', matchId('chris'))
-    now += ACCEPT_MS
+    now += ACCEPT_SECONDS * 1000
     await mm.tick()
     expect(last('chris').search).not.toBeNull()
     expect(last('anna').pausedUntil).not.toBeNull()
     expect(engine.getSessionByUser('chris')).toBeUndefined()
+  })
+
+  it('gives a found match the 60 s of the flag matchmaking.acceptSeconds, and says so in the message', async () => {
+    await mm.search('chris', { mode: '1v1', firstTo: 2 })
+    await mm.search('anna', { mode: '1v1', firstTo: 2 })
+    await mm.tick()
+    expect(ACCEPT_SECONDS).toBe(60)
+    expect(last('chris').match).toMatchObject({ acceptSeconds: 60, expiresAt: new Date(now + 60_000).toISOString() })
+  })
+
+  it('takes the window from the flag, per match', async () => {
+    await setupFlags(new Set(), new Map([['matchmaking.acceptSeconds', 20]]))
+    try {
+      await mm.search('chris', { mode: '1v1', firstTo: 2 })
+      await mm.search('anna', { mode: '1v1', firstTo: 2 })
+      await mm.tick()
+      expect(last('anna').match).toMatchObject({ acceptSeconds: 20, expiresAt: new Date(now + 20_000).toISOString() })
+      now += 19_000
+      await mm.tick()
+      expect(last('anna').match).not.toBeNull()
+      now += 1_000
+      await mm.tick()
+      expect(last('anna').match).toBeNull()
+    } finally {
+      await setupFlags(new Set())
+    }
   })
 
   it("refuses a second search, and a search while you're in a game", async () => {

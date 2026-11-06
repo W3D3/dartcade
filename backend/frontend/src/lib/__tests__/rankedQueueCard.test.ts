@@ -20,6 +20,7 @@ const match = (yours: boolean[], theirs: boolean[], expiresAt = '2026-11-04T12:0
   mode: yours.length > 1 ? '2v2' : '1v1',
   firstTo: 2,
   expiresAt,
+  acceptSeconds: 10,
   range: 75,
   stakes: { win: 16, loss: 14 },
   yours: yours.map((a, i) => seat(a, i === 0)),
@@ -55,6 +56,12 @@ describe('queueView', () => {
   it('shows the match with the seconds left to accept', () => {
     const v = queueView(mm({ search: search(), match: match([false, false], [false, false]) }), 'me', NOW)!
     expect(v).toMatchObject({ kind: 'found', tag: 'Match found', name: 'Ranked 2v2', clock: '0:09', secondsLeft: 9, canCancel: false })
+  })
+
+  it('reads a full 60 s window as 1:00 and keeps the length for the bar', () => {
+    const m = { ...match([false], [false], '2026-11-04T12:01:00Z'), acceptSeconds: 60 }
+    const v = queueView(mm({ search: search(), match: m }), 'me', NOW)!
+    expect(v).toMatchObject({ clock: '1:00', secondsLeft: 60, acceptSeconds: 60 })
   })
 
   it('waits for the others once you accepted, counting who did', () => {

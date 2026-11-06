@@ -105,6 +105,7 @@ describe('flags', () => {
       { key: 'avatar.upload.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.manualEntry', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.visitSeconds', value: 120, reason: 'STATIC', variant: 'default' },
+      { key: 'matchmaking.acceptSeconds', value: 60, reason: 'STATIC', variant: 'default' },
       { key: 'matchmaking.reserveSeconds', value: 300, reason: 'STATIC', variant: 'default' },
     ])
   })

@@ -496,13 +496,17 @@
       "title": "MatchmakingMatch",
       "description": "A match the queue found: everyone has until expiresAt to accept. Declining, or letting the time run out, pauses your search.",
       "type": "object",
-      "required": ["id", "mode", "firstTo", "expiresAt", "range", "stakes", "yours", "theirs"],
+      "required": ["id", "mode", "firstTo", "expiresAt", "acceptSeconds", "range", "stakes", "yours", "theirs"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
         "mode": { "type": "string", "enum": ["1v1", "2v2"] },
         "firstTo": { "type": "integer", "enum": [2, 3] },
         "expiresAt": { "type": "string", "format": "date-time" },
+        "acceptSeconds": {
+          "type": "integer",
+          "description": "How long everyone had to accept in all (the flag matchmaking.acceptSeconds), for the countdown bar."
+        },
         "range": { "type": "integer", "description": "The opponent is within this many RP of your side." },
         "stakes": {
           "anyOf": [
