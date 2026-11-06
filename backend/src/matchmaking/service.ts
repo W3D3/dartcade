@@ -222,6 +222,7 @@ export class MatchmakingService {
         mode: req.mode,
         userIds,
         rating: sideRating(players.map(p => p.rating)),
+        placing: players.every(p => p.placing),
         firstTo: req.firstTo,
         since: this.now(),
         players,

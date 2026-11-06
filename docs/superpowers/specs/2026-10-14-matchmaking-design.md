@@ -51,6 +51,9 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
   gives everyone 60 s to accept (the flag `matchmaking.acceptSeconds`, 10 to 300); opponents stay hidden until all accept. Declining or timing out
   pauses your queue for 2 min; everyone else keeps their place. No bots in the queue.
+- **Placing:** two sides that are both still placing match at once, whatever the gap between their
+  hidden ratings (the closest one first, then whoever searched longer). A placing side and a ranked
+  one keep the widening range. The hidden rating is never sent to clients.
 - **Online average:** 3-dart average over the last 20 ranked games.
 - **Flag:** `matchmaking.enabled`, on for admins until it ships.
 
