@@ -615,6 +615,10 @@ export interface MatchmakingMatch {
   firstTo: 2 | 3
   expiresAt: string
   /**
+   * How long everyone had to accept in all (the flag matchmaking.acceptSeconds), for the countdown bar.
+   */
+  acceptSeconds: number
+  /**
    * The opponent is within this many RP of your side.
    */
   range: number

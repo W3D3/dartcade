@@ -7,7 +7,6 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { acceptMatch, cancelSearch, declineMatch } from '$lib/ranked/queue'
   import type { QueueView } from '$lib/ranked/queueCard'
-  import { ACCEPT_SECONDS } from '$shared/ranked.js'
 
   let { view }: { view: QueueView } = $props()
   let busy = $state(false)
@@ -57,7 +56,7 @@
         >{view.clock}</span
       >
       <span aria-hidden="true" class="absolute right-0 bottom-0 left-0 h-[4px] bg-accent-fg/25"
-        ><span class="block h-full origin-left bg-accent-fg" style:transform="scaleX({Math.min(1, view.secondsLeft / ACCEPT_SECONDS)})"
+        ><span class="block h-full origin-left bg-accent-fg" style:transform="scaleX({Math.min(1, view.secondsLeft / view.acceptSeconds)})"
         ></span></span
       >
     </Button>

@@ -9,9 +9,8 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { me } from '$lib/lobby/sockets'
-  import { acceptMatch, acceptedLine, declineMatch, formatLine, secondsLeft, youAccepted } from '$lib/ranked/queue'
+  import { acceptMatch, acceptedLine, declineMatch, clock, formatLine, secondsLeft, youAccepted } from '$lib/ranked/queue'
   import { signedRp } from '$lib/ranked/view'
-  import { ACCEPT_SECONDS } from '$shared/ranked.js'
 
   let tick = $state(Date.now())
   const ticker = setInterval(() => (tick = Date.now()), 250)
@@ -143,7 +142,7 @@
             role="status"
             class="flex h-[60px] items-center justify-center gap-2 rounded-[14px] border border-accent-line-strong bg-surface-paused text-[15px] font-semibold text-text"
             ><Check size={18} class="text-accent" />Waiting<span class="hidden md:inline">&nbsp;for the others</span> ·
-            <span class="font-mono">0:{String(left).padStart(2, '0')}</span></span
+            <span class="font-mono">{clock(left)}</span></span
           >
         {:else}
           <button
@@ -153,12 +152,12 @@
             class="relative flex h-[60px] cursor-pointer items-center justify-center gap-3 overflow-hidden rounded-[14px] border-0 bg-accent font-display text-[26px] font-bold uppercase tracking-[0.06em] text-accent-fg"
           >
             Accept<span role="timer" aria-label="Seconds left to accept" class="font-mono text-[16px] font-medium tracking-normal"
-              >0:{String(left).padStart(2, '0')}</span
+              >{clock(left)}</span
             >
             <span aria-hidden="true" class="absolute right-0 bottom-0 left-0 h-[5px] bg-accent-fg/25"
               ><span
                 class="block h-full origin-left bg-accent-fg transition-transform duration-300 ease-linear"
-                style:transform="scaleX({Math.min(1, left / ACCEPT_SECONDS)})"
+                style:transform="scaleX({Math.min(1, left / match.acceptSeconds)})"
               ></span></span
             >
           </button>

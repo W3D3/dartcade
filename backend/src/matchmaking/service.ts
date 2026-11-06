@@ -49,6 +49,8 @@ type Found = {
   /** The narrower of the two sides' ranges when they were paired: the other side is within it. */
   range: number
   accepted: Set<string>
+  /** How long the sides had to accept (the flag matchmaking.acceptSeconds, read when they were paired). */
+  acceptSeconds: number
   expiresAt: number
 }
 
@@ -178,6 +180,7 @@ export class MatchmakingService {
         mode: own.mode,
         firstTo: found.firstTo,
         expiresAt: new Date(found.expiresAt).toISOString(),
+        acceptSeconds: found.acceptSeconds,
         range: found.range,
         stakes: me === undefined || me.placing ? null : stakes(own.rating, other.rating),
         yours: own.players.map(p => ({
@@ -307,7 +310,7 @@ export class MatchmakingService {
 
   /** Drops matches nobody accepted in time, then pairs the searches it can. */
   async tick(): Promise<void> {
-    await this.run(() => {
+    await this.run(async () => {
       const now = this.now()
       for (const f of [...this.found.values()]) {
         if (f.expiresAt <= now)
@@ -326,13 +329,15 @@ export class MatchmakingService {
       for (const [a, b] of findMatches([...this.searches.values()], now)) {
         this.searches.delete(a.id)
         this.searches.delete(b.id)
+        const acceptSeconds = await flagNumber('matchmaking.acceptSeconds', ACCEPT_SECONDS, await loadFlagUser(this.deps.db, a.userIds[0]))
         const found: Found = {
           id: ulid(),
           sides: [a, b],
           firstTo: matchFirstTo(a, b),
           range: Math.min(rangeOf(a, now), rangeOf(b, now)),
           accepted: new Set(),
-          expiresAt: now + ACCEPT_MS,
+          acceptSeconds,
+          expiresAt: now + acceptSeconds * 1000,
         }
         this.found.set(found.id, found)
         this.push([...userIdsOf(a), ...userIdsOf(b), ...this.searchersOf(a.mode)])

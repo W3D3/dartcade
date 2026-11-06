@@ -22,8 +22,8 @@ export const PLACEMENT_RESULT_WEIGHT = 0.7
  */
 export const VISIT_SECONDS = 120
 export const RESERVE_SECONDS = 300
-/** Seconds everyone has to accept a found match. */
-export const ACCEPT_SECONDS = 10
+/** Seconds everyone has to accept a found match: the default of the flag matchmaking.acceptSeconds. */
+export const ACCEPT_SECONDS = 60
 /** RP below a stage you have to fall before you drop out of it. */
 export const DEMOTION_BUFFER = 25
 
