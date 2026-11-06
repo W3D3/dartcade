@@ -173,8 +173,13 @@ const detail = (): GameDetail =>
   }) as unknown as GameDetail
 
 describe('winView', () => {
-  it('is null before anyone has won', () => {
-    expect(winView(x01({ game: { winner: null } }), null)).toBeNull()
+  it('shows a forfeit, which ends the game without a winner, with the server places', () => {
+    const v = winView(x01({ game: { winner: null }, places: [2, 1] }), null)
+    expect(v?.competitors[0].placement).toBe(1)
+    expect(v?.competitors[0].seats).toEqual([1])
+  })
+
+  it('is null before the game has ended', () => {
     // A winning visit waiting for Finish game: the match screen stays
     expect(winView({ ...x01(), status: 'active' }, null)).toBeNull()
     expect(winView(null, null)).toBeNull()

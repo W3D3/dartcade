@@ -386,8 +386,7 @@
   // The fetch failed: 121's summary falls back to the standings alone
   let savedFailed = $state(false)
   $effect(() => {
-    // A forfeit finishes 121 without a winner, so it doesn't wait for one
-    if (snapshot?.status !== 'finished' || (winner === null && !p121) || !(isX01 || p121) || snapshot.mySeats.length === 0) return
+    if (snapshot?.status !== 'finished' || !(isX01 || p121) || snapshot.mySeats.length === 0) return
     const id = snapshot.sessionId
     if (savedFor === id) return
     savedFor = id
