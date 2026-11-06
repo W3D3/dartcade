@@ -18,6 +18,8 @@ export type Entry = {
   userIds: string[]
   /** The side's rating: its players' average (shared/ranked.ts sideRating). */
   rating: number
+  /** Every player on the side is still in placement, so nothing ranked is at stake and its rating is only a hidden seed. */
+  placing: boolean
   /** First to 3 is played only when both sides picked it. */
   firstTo: FirstTo
   /** When the search started, in ms; kept when a match falls through, so it keeps its place. */
@@ -31,9 +33,10 @@ export function rangeOf(entry: Pick<Entry, 'since'>, now: number): number {
 }
 
 /**
- * Pairs searches of the same mode whose ratings are within both of their ranges. The longest
- * search goes first and takes the closest rating it accepts; ties go to whoever searched longer.
- * Every search is in at most one pair.
+ * Pairs searches of the same mode whose ratings are within both of their ranges, except that two
+ * sides still placing always fit (their seeds say little, and nobody on them has a rank or RP to protect). The
+ * longest search goes first and takes the closest rating it accepts; ties go to whoever searched
+ * longer. Every search is in at most one pair.
  */
 export function findMatches<E extends Entry>(entries: readonly E[], now: number): [E, E][] {
   const waiting = [...entries].sort((a, b) => a.since - b.since || a.id.localeCompare(b.id))
@@ -46,7 +49,7 @@ export function findMatches<E extends Entry>(entries: readonly E[], now: number)
       if (b === a || taken.has(b.id) || b.mode !== a.mode) continue
       if (b.userIds.some(u => a.userIds.includes(u))) continue
       const gap = Math.abs(a.rating - b.rating)
-      if (gap > Math.min(rangeOf(a, now), rangeOf(b, now))) continue
+      if (!(a.placing && b.placing) && gap > Math.min(rangeOf(a, now), rangeOf(b, now))) continue
       if (!best || gap < Math.abs(a.rating - best.rating)) best = b
     }
     if (best) {

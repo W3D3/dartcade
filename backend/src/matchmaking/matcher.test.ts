@@ -6,6 +6,7 @@ const entry = (id: string, rating: number, since = 0, more: Partial<Entry> = {})
   mode: '1v1',
   userIds: [id],
   rating,
+  placing: false,
   firstTo: 2,
   since,
   ...more,
@@ -53,6 +54,37 @@ describe('findMatches', () => {
     const pairs = findMatches([entry('a', 1200), entry('b', 1200), entry('c', 1200), entry('d', 1200)], 0)
     expect(pairs).toHaveLength(2)
     expect(new Set(pairs.flat().map(e => e.id)).size).toBe(4)
+  })
+})
+
+describe('findMatches while placing', () => {
+  const placing = { placing: true }
+
+  it('matches two placing players at once, however far their seeds are apart', () => {
+    expect(ids(findMatches([entry('a', 886, 0, placing), entry('b', 1200, 0, placing)], 0))).toEqual([['a', 'b']])
+    expect(ids(findMatches([entry('a', 600, 0, placing), entry('b', 1500, 0, placing)], 0))).toEqual([['a', 'b']])
+  })
+
+  it('still widens the range between a placing and a ranked player', () => {
+    const pair = [entry('a', 886, 0, placing), entry('b', 1200)]
+    expect(findMatches(pair, 0)).toEqual([])
+    expect(findMatches(pair, 90_000)).toEqual([])
+    expect(ids(findMatches([entry('a', 886, 0, placing), entry('b', 1200, 0)], 120_000))).toEqual([['a', 'b']])
+  })
+
+  it('keeps the range for a duo with a ranked player, against a placing duo far away', () => {
+    const duo = { mode: '2v2' as const }
+    const mixed = entry('m', 1800, 0, { ...duo, userIds: ['m', 'm2'], placing: false })
+    const fresh = entry('f', 600, 0, { ...duo, userIds: ['f', 'f2'], placing: true })
+    expect(findMatches([mixed, fresh], 0)).toEqual([])
+    expect(findMatches([mixed, fresh], 300_000)).toEqual([])
+  })
+
+  it('takes the closest seed among placing players, then whoever searched longer', () => {
+    const near = findMatches([entry('a', 900, 0, placing), entry('far', 1500, 1, placing), entry('near', 1000, 2, placing)], 2)
+    expect(ids(near)).toEqual([['a', 'near']])
+    const tie = findMatches([entry('x', 1000, 0, placing), entry('z', 900, 2, placing), entry('y', 1100, 1, placing)], 5)
+    expect(ids(tie)).toEqual([['x', 'y']])
   })
 })
 
