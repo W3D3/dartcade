@@ -459,22 +459,21 @@ export function cricketWin(snapshot: Snapshot & { game: CricketGame }): WinView 
   }
 }
 
-/** The win screen once a won game has ended (not while its winning visit waits for Finish); null before, or when nobody won. */
+/** The win screen once a game has ended (not while its winning visit waits for Finish); null before, or for 121, which has its own summary. */
 export function winView(snapshot: Snapshot | null, detail: GameDetail | null): WinView | null {
   if (!snapshot || snapshot.status !== 'finished') return null
-  // Higher Lower's own engine always names a winner once it finishes a game by play; a forfeit
-  // ends the session without the module ever running, so its winner stays null. Status
-  // 'finished' with no winner is therefore always a forfeit here, and the win screen still
-  // shows, with the server's places (the forfeited seat last).
+  // A forfeit ends the session without the module naming a winner. Status 'finished' with no
+  // winner is therefore always a forfeit, and the win screen still shows, with the server's
+  // places (the forfeited seat last).
   switch (snapshot.gameId) {
     case 'hilo':
       return hiloWin(snapshot)
     case 'x01':
-      return snapshot.game.winner === null ? null : x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
+      return x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
     case 'minigolf':
-      return snapshot.game.winner === null ? null : minigolfWin(snapshot)
+      return minigolfWin(snapshot)
     case 'atc':
-      return snapshot.game.winner === null ? null : atcWin(snapshot)
+      return atcWin(snapshot)
     // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
     case 'p121':
       return null

@@ -30,7 +30,7 @@ export function seatLines(snap: Snapshot | null): (SeatLine | null)[] {
       board: boardLabel(s),
       byHand: s.boardId === null || offline,
       offline,
-      disconnected: !s.controllerConnected,
+      disconnected: snap.status === 'active' && !s.controllerConnected,
       // The host controls a bot's seat but doesn't throw for it: its row isn't "you"
       you: snap.mySeats.includes(i) && s.bot == null,
     }

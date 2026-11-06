@@ -233,3 +233,59 @@ describe('inputs only the server may issue', () => {
     expect(warn).toHaveBeenCalledTimes(3)
   })
 })
+
+describe('forfeiting a ranked game', () => {
+  const view = (user: string) => ({
+    viewerUserId: user,
+    connectedUserIds: new Set(['bob']),
+    disconnectedAt: () => null,
+    isBoardOnline: () => false,
+  })
+  for (const bullOff of ['off', 'pdc'] as const) {
+    it(`ends it at once for the opponent (bull off ${bullOff})`, async () => {
+      const store = makeStore()
+      const pushed = vi.fn()
+      const engine = new SessionEngine(store, pushed)
+      const { sessionId } = await engine.createWithSeats({
+        ownerUserId: 'ann',
+        gameId: 'x01',
+        config: { ...config, bullOff },
+        seats,
+        ranked: ranked(),
+      })
+      expect(await engine.onUserAction(sessionId, 'ann', { type: 'forfeit' })).toEqual({ ok: true })
+      expect(engine.getSession(sessionId)?.status).toBe('finished')
+      const snap = engine.getSnapshot(sessionId, view('bob'))
+      expect(snap?.status).toBe('finished')
+      expect(snap?.results?.map(r => r.placement)).toEqual([2, 1])
+      expect(pushed).toHaveBeenCalledWith(sessionId)
+    })
+  }
+
+  it('ends a 2v2 for the other team when one player forfeits, their whole team placed last', async () => {
+    const four = [seat('Ann', 'ann'), seat('Bob', 'bob'), seat('Cy', 'cy'), seat('Di', 'di')]
+    const store = makeStore()
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'ann',
+      gameId: 'x01',
+      config: { ...config, format: 'teams' as const, teams: [0, 1, 0, 1] },
+      seats: four,
+      ranked: {
+        mode: '2v2',
+        sides: [
+          ['ann', 'cy'],
+          ['bob', 'di'],
+        ],
+        ratings: {},
+        rules: rules,
+      },
+    })
+    expect(await engine.onUserAction(sessionId, 'cy', { type: 'forfeit' })).toEqual({ ok: true })
+    expect(engine.getSession(sessionId)?.status).toBe('finished')
+    const snap = engine.getSnapshot(sessionId, view('bob'))
+    expect(snap?.status).toBe('finished')
+    expect(snap?.results?.map(r => r.placement)).toEqual([2, 1, 2, 1])
+    expect(store.finishSession).toHaveBeenCalledTimes(1)
+  })
+})
