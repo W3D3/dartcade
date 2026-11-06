@@ -77,11 +77,12 @@ bench (`#/admin/minigolf`) still play the code course directly, unseeded.
 
 `.env` (copied from `.env.example`):
 
-| Variable                 | Required | Description                                                                         |
-| ------------------------ | -------- | ----------------------------------------------------------------------------------- |
-| `DARTCADE_BOARD_URL`     | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`                                   |
-| `BRIDGE_SECRET`          | No       | Shared secret for bridge auth (default: `devsecret`)                                |
-| `VOICE_STORAGE_LIMIT_MB` | No       | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off) |
+| Variable                 | Required | Description                                                                                                                                  |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DARTCADE_BOARD_URL`     | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`                                                                                            |
+| `BRIDGE_SECRET`          | No       | Shared secret for bridge auth (default: `devsecret`)                                                                                         |
+| `VOICE_STORAGE_LIMIT_MB` | No       | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off)                                                          |
+| `DART_SAMPLES_MAX_GB`    | No       | How much the dart detection training stills may take in the database, in GB (default `20`; `0` turns collection off); `#/admin/dart-samples` |
 
 Voice clips are stored once per file and shared between users' packs. Deleting a pack removes
 the files no pack uses any more; deleting a user (there's no such path in the app yet) cascades

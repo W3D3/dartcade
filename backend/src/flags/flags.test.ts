@@ -96,6 +96,7 @@ describe('flags', () => {
       { key: 'progression.manualDarts', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'sounds.anyPack', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'lights.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'detection.collect.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'coach.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'coach.live.enabled', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'coach.debug.enabled', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
