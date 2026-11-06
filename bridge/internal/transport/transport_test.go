@@ -528,6 +528,29 @@ func TestStillMessageMatchesTheSchemaShape(t *testing.T) {
 	}
 }
 
+func TestStillMessageCarriesItsSeqsOnlyWhenSet(t *testing.T) {
+	data := func(st camera.Still) map[string]any {
+		b, err := json.Marshal(transport.StillMessage(st))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var m struct{ Data map[string]any }
+		json.Unmarshal(b, &m)
+		return m.Data
+	}
+	d := data(camera.Still{Cam: 1, SourceSeq: 12, PreviousSeq: 7, CapturedAt: time.Now(), JPEG: []byte("x")})
+	if d["source_seq"] != float64(12) || d["previous_seq"] != float64(7) {
+		t.Errorf("seqs: %v %v, want 12 and 7", d["source_seq"], d["previous_seq"])
+	}
+	d = data(camera.Still{Cam: 1, CapturedAt: time.Now(), JPEG: []byte("x")})
+	if _, ok := d["source_seq"]; ok {
+		t.Errorf("source_seq present for a still fetched after no event: %v", d)
+	}
+	if _, ok := d["previous_seq"]; ok {
+		t.Errorf("previous_seq present without a previous round: %v", d)
+	}
+}
+
 // Each (re)connect runs the OnConnect hook once the connection is up, so the bridge can send
 // fresh stills right away.
 func TestOnConnectRunsOnEveryConnect(t *testing.T) {
