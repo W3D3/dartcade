@@ -3,7 +3,7 @@
 // On/off flags are turned on per deployment by FLAGS_ON, number flags set by FLAG_VALUES; both are
 // overridden by a stored FlagOverride (db/flagOverrides.ts, applied by flags/index.ts's setOverrides).
 import type { EvaluationContext } from '@openfeature/server-sdk'
-import { RESERVE_SECONDS, VISIT_SECONDS } from '../shared/ranked.js'
+import { ACCEPT_SECONDS, RESERVE_SECONDS, VISIT_SECONDS } from '../shared/ranked.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
 
 const isAdmin = (ctx: EvaluationContext) => ctx.admin === true
@@ -129,6 +129,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'How long a ranked player has for each visit, in seconds.',
     range: [10, 300],
     defaultNumber: VISIT_SECONDS,
+  },
+  'matchmaking.acceptSeconds': {
+    kind: 'number',
+    description: 'How long both sides of a found ranked match have to accept it, in seconds.',
+    range: [10, 300],
+    defaultNumber: ACCEPT_SECONDS,
   },
   'matchmaking.reserveSeconds': {
     kind: 'number',
@@ -272,6 +278,7 @@ export function flagDefinitions(
       contextEvaluator: on('matchmaking.manualEntry', () => true),
     },
     'matchmaking.visitSeconds': number('matchmaking.visitSeconds', VISIT_SECONDS),
+    'matchmaking.acceptSeconds': number('matchmaking.acceptSeconds', ACCEPT_SECONDS),
     'matchmaking.reserveSeconds': number('matchmaking.reserveSeconds', RESERVE_SECONDS),
   } as const
 }

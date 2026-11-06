@@ -4642,6 +4642,7 @@
         "mode",
         "firstTo",
         "expiresAt",
+        "acceptSeconds",
         "range",
         "stakes",
         "yours",
@@ -4669,6 +4670,10 @@
         "expiresAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "acceptSeconds": {
+          "type": "integer",
+          "description": "How long everyone had to accept in all (the flag matchmaking.acceptSeconds), for the countdown bar."
         },
         "range": {
           "type": "integer",
@@ -5086,6 +5091,7 @@
                 "mode",
                 "firstTo",
                 "expiresAt",
+                "acceptSeconds",
                 "range",
                 "stakes",
                 "yours",
@@ -5113,6 +5119,10 @@
                 "expiresAt": {
                   "type": "string",
                   "format": "date-time"
+                },
+                "acceptSeconds": {
+                  "type": "integer",
+                  "description": "How long everyone had to accept in all (the flag matchmaking.acceptSeconds), for the countdown bar."
                 },
                 "range": {
                   "type": "integer",
@@ -6898,6 +6908,7 @@
                     "mode",
                     "firstTo",
                     "expiresAt",
+                    "acceptSeconds",
                     "range",
                     "stakes",
                     "yours",
@@ -6925,6 +6936,10 @@
                     "expiresAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "acceptSeconds": {
+                      "type": "integer",
+                      "description": "How long everyone had to accept in all (the flag matchmaking.acceptSeconds), for the countdown bar."
                     },
                     "range": {
                       "type": "integer",

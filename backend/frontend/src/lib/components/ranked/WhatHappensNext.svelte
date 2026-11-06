@@ -1,12 +1,14 @@
 <script lang="ts">
   // The list under a duo's search in its lobby (MM-Lobby-Host board).
   import { ACCEPT_SECONDS } from '$shared/ranked.js'
+  import { numberFlag } from '$lib/flags'
 
-  const steps = [
-    { title: 'Match found', text: `You both get ${ACCEPT_SECONDS} s to accept, on whatever screen you're on.` },
+  const acceptSeconds = numberFlag('matchmaking.acceptSeconds', ACCEPT_SECONDS)
+  const steps = $derived([
+    { title: 'Match found', text: `You both get ${$acceptSeconds} s to accept, on whatever screen you're on.` },
     { title: 'All four accept', text: 'Bull-off on your own boards, then the game starts.' },
     { title: 'Someone declines', text: 'The match is dropped. You go back to the queue and keep your place.' },
-  ]
+  ])
 </script>
 
 <section class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-5 py-4" aria-label="What happens next">
