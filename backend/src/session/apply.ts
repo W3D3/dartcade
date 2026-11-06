@@ -26,7 +26,7 @@ const isDart = (e: BoardEvent): e is DartEvent => e.kind === 'dart.detected'
 const dartEvents = (session: Session): DartEvent[] => session.openVisitEvents.filter(isDart)
 
 /** Darts and visits of a bull off (see withBullOff) don't count towards game stats. */
-function inBullOff(session: Session, state: unknown): boolean {
+export function inBullOff(session: Session, state: unknown): boolean {
   const view = session.module.view(state, session.players)
   return 'phase' in view && view.phase === 'bulloff'
 }
@@ -85,6 +85,7 @@ function markCorrected(session: Session, dartPos: number): void {
  */
 export function applyInput(session: Session, input: GameInput, at: Date): ApplyOutcome {
   const up = session.module.getCurrentPlayer(session.currentState)
+  const bullOffBefore = session.clock !== null && inBullOff(session, session.currentState)
   const outcome =
     input.source === 'board'
       ? applyBoardEvent(session, input.event, at)
@@ -98,6 +99,8 @@ export function applyInput(session: Session, input: GameInput, at: Date): ApplyO
     else restartVisit(session.clock, at)
   }
   session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+  // The bull off ended: the first game visit's window starts now, not at the last throw
+  if (session.clock && bullOffBefore && !inBullOff(session, session.currentState)) restartVisit(session.clock, at)
   return outcome
 }
 
