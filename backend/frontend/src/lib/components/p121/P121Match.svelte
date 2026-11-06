@@ -10,6 +10,8 @@
   import type { P121Game } from '$lib/api/game-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import ControlBar from '$lib/components/ControlBar.svelte'
+  import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
+  import type { TurnStatus } from '$lib/remote'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
@@ -43,6 +45,7 @@
     keypad = false,
     onDart = () => {},
     viewOnly = false,
+    turn = null,
   }: {
     game: P121Game
     players: { name: string }[]
@@ -67,6 +70,8 @@
     onDart?: (segment: Segment) => void
     /** The big screen: no Undo, Next or Give up, nothing to tap. */
     viewOnly?: boolean
+    /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
+    turn?: TurnStatus | null
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -138,7 +143,9 @@
   {#if !viewOnly}
     <div class="flex items-center gap-3">
       <div class="flex-1 min-w-0">
-        {#if !keypad}
+        {#if turn}
+          <TurnStatusBar status={turn} {compact} />
+        {:else if !keypad}
           <ControlBar
             {compact}
             {canUndo}

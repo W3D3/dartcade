@@ -18,6 +18,7 @@
     bullOff,
     manual,
     viewOnly = false,
+    canThrow = true,
     send,
   }: {
     players: { name: string }[]
@@ -28,6 +29,8 @@
     manual: boolean
     /** The big screen: the status only, no buttons. */
     viewOnly?: boolean
+    /** Undo, Next, Skip and the board click are the thrower's seat actions: only its controller gets them. */
+    canThrow?: boolean
     send: (action: UserAction) => void
   } = $props()
 
@@ -204,7 +207,7 @@
        status and buttons sit below it at the bottom -->
   <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
     <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
-      <DartBoard {zoom} overlay={marks} onBoardClick={manual && !result && !currentThrow ? onBoardClick : undefined} />
+      <DartBoard {zoom} overlay={marks} onBoardClick={manual && canThrow && !result && !currentThrow ? onBoardClick : undefined} />
       {#if canZoom && !viewOnly}
         <Button variant="outline" class="absolute top-0 right-0 bg-surface-2" onclick={() => (zoomOverride = !zoomedIn)}>
           {zoomedIn ? 'Zoom out' : 'Zoom in'}
@@ -253,18 +256,20 @@
     </div>
 
     <div class="flex items-center gap-3">
-      {#if !viewOnly}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'undo_dart' })}>Undo</Button>{/if}
+      {#if !viewOnly && canThrow}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'undo_dart' })}>Undo</Button
+        >{/if}
       {#if manual}
         <span class="flex-grow text-center text-[14px] text-text-muted">
           {currentThrow ? `${name(current)} has thrown` : `Click where ${name(current)}'s dart landed`}
         </span>
-        {#if !viewOnly}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'takeout' })}>Next</Button>{/if}
+        {#if !viewOnly && canThrow}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'takeout' })}>Next</Button
+          >{/if}
       {:else}
         <span class="flex-grow text-center text-[14px] text-text-muted">
           {currentThrow ? 'Pull the dart to continue' : `${name(current)}: one dart at the bull`}
         </span>
       {/if}
-      {#if !viewOnly}<Button variant="ghost" onclick={() => send({ type: 'bulloff_skip' })}>Skip</Button>{/if}
+      {#if !viewOnly && canThrow}<Button variant="ghost" onclick={() => send({ type: 'bulloff_skip' })}>Skip</Button>{/if}
     </div>
   {/if}
 {/snippet}

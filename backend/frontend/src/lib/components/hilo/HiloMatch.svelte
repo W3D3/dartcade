@@ -11,6 +11,8 @@
   import type { Segment } from '$lib/api'
   import type { HiloGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
+  import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
+  import type { TurnStatus } from '$lib/remote'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
@@ -38,6 +40,7 @@
     keypad = false,
     onDart = () => {},
     viewOnly = false,
+    turn = null,
   }: {
     game: HiloGame
     /** Per seat: its name, bot and picture. */
@@ -58,6 +61,8 @@
     onDart?: (segment: Segment) => void
     /** The big screen: no Undo or Next, nothing to tap. */
     viewOnly?: boolean
+    /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
+    turn?: TurnStatus | null
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -137,7 +142,11 @@
 
 {#snippet controls(compact: boolean)}
   {#if !keypad && !viewOnly}
-    <ControlBar {compact} {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    {#if turn}
+      <TurnStatusBar status={turn} {compact} />
+    {:else}
+      <ControlBar {compact} {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    {/if}
   {/if}
 {/snippet}
 
