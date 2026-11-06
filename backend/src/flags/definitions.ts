@@ -81,6 +81,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
     defaultRule: 'admins',
   },
+  'detection.collect.enabled': {
+    kind: 'boolean',
+    description:
+      "Keeps each camera dart's before and after stills as training data for the dart detection model, on boards whose owner has it on; shows that setting on their Boards page. Off stops collecting at once.",
+    defaultRule: 'everyone',
+  },
   'coach.enabled': {
     kind: 'boolean',
     description:
@@ -228,6 +234,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('lights.enabled', isAdmin),
+    },
+    'detection.collect.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('detection.collect.enabled', () => true),
     },
     'coach.enabled': {
       variants: { on: true, off: false },

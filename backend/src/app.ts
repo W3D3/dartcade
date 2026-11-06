@@ -58,6 +58,7 @@ import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { SampleCollector } from './detection/collector.js'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -72,6 +73,8 @@ export type AppDeps = {
   lights?: LightsService
   /** The big screen's follow service (see bigscreen/service.ts). */
   bigScreen: BigScreenService
+  /** Keeps camera darts as training data (see detection/collector.ts); omitted when collection is off. */
+  samples?: SampleCollector
   /** The ranked queue (see matchmaking/service.ts). */
   matchmaking: MatchmakingService
   /** Built frontend to serve; omitted in tests. */
@@ -122,6 +125,7 @@ export async function buildApp({
   friends,
   lights,
   bigScreen,
+  samples,
   matchmaking,
   frontendDist,
   onRoute,
@@ -187,6 +191,7 @@ export async function buildApp({
   await app.register(bridgeGwPlugin, {
     engine,
     db,
+    samples,
     onBoardPresence: boardId => {
       lobbies.onBoardPresence(boardId)
       bigScreen.onBoardPresence(boardId)

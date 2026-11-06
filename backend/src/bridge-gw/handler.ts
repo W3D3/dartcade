@@ -22,6 +22,7 @@ import { onceGone } from '../util/socket.js'
 import { hashBoardToken } from '../boards/token.js'
 import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
 import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
+import type { SampleCollector } from '../detection/collector.js'
 
 export { bridgeConnections }
 
@@ -34,6 +35,8 @@ type Opts = FastifyPluginOptions & {
   onBoardStatus?: (ownerUserId: string, boardId: string, online: boolean) => void
   /** A board has a new camera still (its games' pages fetch it). */
   onCameraStill?: OnCameraStill
+  /** Keeps camera darts as training data; omitted when collection is off. */
+  samples?: SampleCollector
   /** Where wled devices found on a board's network are kept (tests pass their own). */
   lights?: LightsStore
   /** The bridge said hello: its board id (the lights service probes it once it can). A rejection is
@@ -115,19 +118,21 @@ const TELEMETRY_KINDS = new Set(['bm.frame', 'motion'])
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 
 /** A camera.still message: like bridge.hello, not an event (no seq, never acked or stored). */
-function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCameraStill?: OnCameraStill): void {
+function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCameraStill?: OnCameraStill, samples?: SampleCollector): void {
   const r = CameraStillMessageSchema.safeParse(msg)
   if (!r.success) {
     console.warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) })
     return
   }
   const { cam, captured_at: capturedAt, content_type: contentType, data } = r.data.data
-  const version = stills.put(boardId, cam, { bytes: Buffer.from(data, 'base64'), contentType, capturedAt })
+  const bytes = Buffer.from(data, 'base64')
+  const version = stills.put(boardId, cam, { bytes, contentType, capturedAt })
   if (version === null) {
     console.warn('Ignoring a camera still over 1 MiB', { boardId, cam })
     return
   }
   onCameraStill?.(boardId, cam, version)
+  samples?.still(boardId, r.data.data, bytes)
 }
 // A hook the lights service (or lobbies, via onBoardPresence et al.) plugs in: a thrown error or a
 // rejected promise is logged and swallowed, so a bad hook can't close the bridge socket, get
@@ -165,6 +170,8 @@ export function handleBridgeConnection(
     onBoardPresence?: (boardId: string) => void
     onBoardStatus?: (ownerUserId: string, boardId: string, online: boolean) => void
     onCameraStill?: OnCameraStill
+    /** Keeps camera darts as training data; omitted when collection is off. */
+    samples?: SampleCollector
     /** Where camera stills are kept (tests pass their own). */
     stills?: CameraStills
     /** Where wled devices found on the board's network are kept (tests pass their own). */
@@ -282,7 +289,7 @@ export function handleBridgeConnection(
 
         const earlyKind = MessageKindSchema.safeParse(parsed).data?.kind
         if (earlyKind === 'camera.still') {
-          takeStill(boardDbId, parsed, stills, opts.onCameraStill)
+          takeStill(boardDbId, parsed, stills, opts.onCameraStill, opts.samples)
           return
         }
         if (earlyKind === 'bm.response') {
@@ -365,6 +372,7 @@ export function handleBridgeConnection(
         if (!inserted) return
 
         bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
+        if (id !== null) opts.samples?.event(boardDbId, kind, data, id, conn.bmVersion)
 
         // Already acked: a failure here (e.g. the game's log write) drops this input, so
         // name the board and event to keep the dropped dart traceable
@@ -391,6 +399,7 @@ export function handleBridgeConnection(
     // Its stills and devices would be old by the time it's back (a replaced connection leaves its successor's)
     if (!bridgeConnections.isOnline(boardDbId)) {
       stills.clear(boardDbId)
+      opts.samples?.clear(boardDbId)
       lights.clear(boardDbId)
       bigScreenState.clear(boardDbId)
     }
@@ -413,6 +422,7 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
         onBoardPresence: opts.onBoardPresence,
         onBoardStatus: opts.onBoardStatus,
         onCameraStill: opts.onCameraStill,
+        samples: opts.samples,
         lights: opts.lights,
         onBridgeHello: opts.onBridgeHello,
         onBoardEvent: opts.onBoardEvent,
