@@ -187,6 +187,7 @@ for (const [view, name] of [
     const found = {
       id: 'm1',
       expiresAt: '',
+      acceptSeconds: 60,
       mode: '1v1',
       firstTo: 2,
       range: 75,
@@ -198,7 +199,7 @@ for (const [view, name] of [
       ['searching', { search, match: null }],
       ['found', { search, match: found }],
     ] as const) {
-      state = file === 'found' ? { ...s, match: { ...found, expiresAt: new Date(Date.now() + 14 * SECOND).toISOString() } } : s
+      state = file === 'found' ? { ...s, match: { ...found, expiresAt: new Date(Date.now() + 44 * SECOND).toISOString() } } : s
       await page.goto('/#/play')
       await page.reload()
       await page.waitForTimeout(1500)
