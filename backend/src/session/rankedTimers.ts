@@ -1,5 +1,5 @@
-import { deadlines } from './rankedClock.js'
-import { inBullOff, teamOf } from './apply.js'
+import { bullOffDeadline, deadlines } from './rankedClock.js'
+import { bullOffDecided, inBullOff, teamOf } from './apply.js'
 import { currentSeat } from './access.js'
 import { DISCONNECT_SECONDS } from '../shared/ranked.js'
 import type { SystemAction } from './systemInput.js'
@@ -55,25 +55,33 @@ export class RankedTimers {
     }
   }
 
+  // The seat that forfeits if it doesn't act by `at`, or null when nobody is being waited for: the
+  // bull off with its result in waits for a seat to start the game or throw again, and the screens
+  // do that on their own
+  private due(session: Session, clock: NonNullable<Session['clock']>): { seat: number; at: number } | null {
+    const seat = currentSeat(session)
+    if (!inBullOff(session, session.currentState)) return { seat, at: deadlines(clock, teamOf(session)[seat]).forfeitAt }
+    return bullOffDecided(session, session.currentState) ? null : { seat, at: bullOffDeadline(clock) }
+  }
+
   private armClock(session: Session): void {
     clearTimeout(this.clocks.get(session.id))
     this.clocks.delete(session.id)
-    // No clock during the bull off: it spends no reserve, and the players being there is the presence timer's concern
-    if (!session.clock || inBullOff(session, session.currentState)) return
-    const team = teamOf(session)[currentSeat(session)]
-    const { forfeitAt } = deadlines(session.clock, team)
+    const due = session.clock ? this.due(session, session.clock) : null
+    if (!due) return
+    const team = teamOf(session)[due.seat]
     const timer = setTimeout(
       () => {
         this.clocks.delete(session.id)
         // The turn may have moved on since this was armed: only a deadline that has really passed forfeits
-        if (Date.now() < forfeitAt) {
+        if (Date.now() < due.at) {
           this.sync(session)
           return
         }
         const seats = session.seats.flatMap((_, i) => (teamOf(session)[i] === team && !session.forfeited.includes(i) ? [i] : []))
         if (seats.length > 0) this.fire(session, { type: 'clock.forfeit', seats })
       },
-      Math.max(0, forfeitAt - Date.now()),
+      Math.max(0, due.at - Date.now()),
     )
     timer.unref()
     this.clocks.set(session.id, timer)

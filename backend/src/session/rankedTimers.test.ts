@@ -99,11 +99,11 @@ describe('the ranked clock timer', () => {
     expect(g.session()).toMatchObject({ status: 'finished', forfeited: [0] })
   })
 
-  it('does not run during the bull off, and the first game visit counts from its end', async () => {
-    const g = await start({ r: long, cfg: { bullOff: 'pdc' } })
-    await vi.advanceTimersByTimeAsync(sec(3 * 3600))
+  it('spends no reserve on the bull off', async () => {
+    const g = await start({ r: { ...rules, visitSeconds: 600 }, cfg: { bullOff: 'pdc' } })
+    await vi.advanceTimersByTimeAsync(sec(500))
     expect(g.session()?.status).toBe('active')
-    expect(g.session()?.clock?.reserve.slice(0, 2)).toEqual([sec(3600), sec(3600)])
+    expect(g.session()?.clock?.reserve.slice(0, 2)).toEqual([sec(20), sec(20)])
   })
 
   it('shares one reserve between the players of a team', async () => {
@@ -177,6 +177,96 @@ describe('the ranked clock timer', () => {
     expect(engine.getSession(first.sessionId)?.status).toBe('active')
     await vi.advanceTimersByTimeAsync(sec(1))
     expect(engine.getSession(first.sessionId)).toMatchObject({ status: 'finished', forfeited: [1] })
+  })
+})
+
+describe('the bull off no-show limit', () => {
+  const bull = { name: '50', number: 50, bed: 'Double' as const, multiplier: 1 as const }
+  const miss = { name: 'Miss', number: 0, bed: 'Outside' as const, multiplier: 0 as const }
+  const thrower = (g: Awaited<ReturnType<typeof start>>) => g.session()?.module.getCurrentPlayer(g.session()?.currentState) ?? -1
+  const userOf = (i: number) => duel[i].controllerUserId
+  const throwDart = async (g: Awaited<ReturnType<typeof start>>, segment: typeof bull | typeof miss) => {
+    const user = userOf(thrower(g))
+    await g.engine.onUserAction(g.sessionId, user, { type: 'add_dart', segment })
+    await g.takeout(user)
+  }
+
+  it('forfeits the seat that has to throw once a visit’s time has passed without a throw', async () => {
+    const g = await start({ cfg: { bullOff: 'pdc' } })
+    const first = thrower(g)
+    await vi.advanceTimersByTimeAsync(sec(9))
+    expect(g.session()?.status).toBe('active')
+    await vi.advanceTimersByTimeAsync(sec(1))
+    expect(g.session()).toMatchObject({ status: 'finished', forfeited: [first] })
+    expect(g.store.appendEvent).toHaveBeenCalledWith(expect.objectContaining({ source: 'system', kind: 'clock.forfeit' }))
+  })
+
+  it('opens a fresh window for the next thrower when a throw comes in time', async () => {
+    const g = await start({ cfg: { bullOff: 'pdc' } })
+    const first = thrower(g)
+    await vi.advanceTimersByTimeAsync(sec(8))
+    await throwDart(g, bull)
+    const second = thrower(g)
+    expect(second).not.toBe(first)
+    await vi.advanceTimersByTimeAsync(sec(9))
+    expect(g.session()?.status).toBe('active')
+    await vi.advanceTimersByTimeAsync(sec(1))
+    expect(g.session()).toMatchObject({ status: 'finished', forfeited: [second] })
+    expect(g.session()?.clock?.reserve.slice(0, 2)).toEqual([sec(20), sec(20)])
+  })
+
+  it('waits for nobody once the result is in, and opens a fresh window when a tie is thrown again', async () => {
+    const g = await start({ cfg: { bullOff: 'pdc' } })
+    await throwDart(g, miss)
+    await throwDart(g, miss) // nobody hit the bull: to be thrown again
+    await vi.advanceTimersByTimeAsync(sec(600))
+    expect(g.session()?.status).toBe('active')
+    await g.engine.onUserAction(g.sessionId, 'ann', { type: 'bulloff_rethrow' })
+    const again = thrower(g)
+    await vi.advanceTimersByTimeAsync(sec(9))
+    expect(g.session()?.status).toBe('active')
+    await vi.advanceTimersByTimeAsync(sec(1))
+    expect(g.session()).toMatchObject({ status: 'finished', forfeited: [again] })
+  })
+
+  it('starts the window over after a restart', async () => {
+    const first = await start({ cfg: { bullOff: 'pdc' } })
+    const live = first.session()
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([
+      {
+        id: first.sessionId,
+        owner_user_id: 'ann',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: x01Module.version,
+        rng_seed: live?.seed,
+        config: { ...config, bullOff: 'pdc' },
+        created_at: live?.createdAt,
+        lobby_id: null,
+        lobby_name: null,
+        ranked: game('1v1', rules),
+        players: duel.map(s => ({
+          name: s.name,
+          user_id: s.userId,
+          controller_user_id: s.userId,
+          board_db_id: null,
+          board_name: null,
+          bot_level: null,
+        })),
+      },
+    ])
+    first.engine.getAllSessions().forEach(s => void first.engine.deleteSession(s.id))
+    await vi.advanceTimersByTimeAsync(sec(600))
+    const engine = new SessionEngine(store, vi.fn(), undefined, undefined, undefined, undefined, {
+      connectedUsers: () => new Set(['ann', 'bob']),
+    })
+    await engine.rebuild()
+    expect(engine.getSession(first.sessionId)?.status).toBe('active')
+    await vi.advanceTimersByTimeAsync(sec(9))
+    expect(engine.getSession(first.sessionId)?.status).toBe('active')
+    await vi.advanceTimersByTimeAsync(sec(1))
+    expect(engine.getSession(first.sessionId)?.status).toBe('finished')
   })
 })
 
