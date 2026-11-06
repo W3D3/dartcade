@@ -60,3 +60,26 @@ func TestTelemetryCollapseKeepsSeqOrder(t *testing.T) {
 		t.Errorf("last entry %s seq %d, want the newest bm.frame (seq %d)", last.Kind, last.Seq, tr.seq)
 	}
 }
+
+// Send returns the batch's bm.frame seq, which its stills carry so the backend can tell which
+// dart they show.
+func TestSendReturnsTheBatchFrameSeq(t *testing.T) {
+	tr := New(Config{BridgeID: "br", BootID: "bt"})
+	tr.Send([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}}})
+	seq := tr.Send([]differ.Event{
+		{Kind: "bm.frame", Data: &schema.BmFrameData{Source: schema.BmFrameDataSourceWs}},
+		{Kind: "dart.detected", Data: &schema.DartDetectedData{VisitId: "v"}},
+	})
+	var d struct {
+		SourceSeq uint64 `json:"source_seq"`
+	}
+	if err := json.Unmarshal(tr.outbox[len(tr.outbox)-1].env.Data, &d); err != nil {
+		t.Fatal(err)
+	}
+	if seq != 2 || d.SourceSeq != seq {
+		t.Errorf("Send returned %d, dart source_seq %d; want 2 for both", seq, d.SourceSeq)
+	}
+	if seq := tr.Send([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}}}); seq != 0 {
+		t.Errorf("a batch without a frame returned %d, want 0", seq)
+	}
+}

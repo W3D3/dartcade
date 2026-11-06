@@ -735,6 +735,16 @@ type CameraStillData struct {
 
 	// The image, base64-encoded.
 	Data string `json:"data" yaml:"data" mapstructure:"data"`
+
+	// source_seq of the batch that triggered stills before this one: that round's
+	// still of the same camera shows the board just before. Absent when there was
+	// none.
+	PreviousSeq *int `json:"previous_seq,omitempty,omitzero" yaml:"previous_seq,omitempty" mapstructure:"previous_seq,omitempty"`
+
+	// The bm.frame seq of the event batch this still was fetched after (the
+	// source_seq of its dart.detected, …). Absent when it was not fetched after an
+	// event (a reconnect).
+	SourceSeq *int `json:"source_seq,omitempty,omitzero" yaml:"source_seq,omitempty" mapstructure:"source_seq,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -768,6 +778,12 @@ func (j *CameraStillData) UnmarshalJSON(value []byte) error {
 	}
 	if plain.ContentType != "image/jpeg" {
 		return fmt.Errorf("field %s: must be equal to %s", "content_type", "image/jpeg")
+	}
+	if plain.PreviousSeq != nil && 1 > *plain.PreviousSeq {
+		return fmt.Errorf("field %s: must be >= %v", "previous_seq", 1)
+	}
+	if plain.SourceSeq != nil && 1 > *plain.SourceSeq {
+		return fmt.Errorf("field %s: must be >= %v", "source_seq", 1)
 	}
 	*j = CameraStillData(plain)
 	return nil

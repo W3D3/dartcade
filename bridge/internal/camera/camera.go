@@ -34,9 +34,12 @@ const (
 type Still struct {
 	Cam int
 	// Round is the Trigger the still was fetched for: stills of one round show the same darts
-	Round      uint64
-	CapturedAt time.Time
-	JPEG       []byte
+	Round uint64
+	// SourceSeq is the bm.frame seq of the event batch that round followed (0: none, a reconnect);
+	// PreviousSeq the one of the round before, whose still of this camera shows the board just before
+	SourceSeq, PreviousSeq uint64
+	CapturedAt             time.Time
+	JPEG                   []byte
 }
 
 // Triggers reports whether a bridge event changes what the cameras see enough to send new stills.
@@ -62,6 +65,8 @@ type Fetcher struct {
 	mu    sync.Mutex
 	cams  [MaxCameras]state
 	round uint64
+	// seq and prevSeq: the SourceSeq of the latest round and of the one before it
+	seq, prevSeq uint64
 }
 
 type state struct{ running, pending bool }
@@ -78,10 +83,12 @@ func New(baseURL string, count func() int, sink func(Still)) *Fetcher {
 	}
 }
 
-// Trigger fetches a new still from every camera, in the background.
-func (f *Fetcher) Trigger(ctx context.Context) {
+// Trigger fetches a new still from every camera, in the background. seq is the bm.frame seq
+// of the event batch that triggered it, 0 when no event did.
+func (f *Fetcher) Trigger(ctx context.Context, seq uint64) {
 	f.mu.Lock()
 	f.round++
+	f.prevSeq, f.seq = f.seq, seq
 	f.mu.Unlock()
 	n := min(f.count(), MaxCameras)
 	for i := 0; i < n; i++ {
@@ -104,11 +111,12 @@ func (f *Fetcher) run(ctx context.Context, cam int) {
 	for {
 		// A fetch that starts now shows the newest trigger's board
 		f.mu.Lock()
-		round := f.round
+		round, seq, prevSeq := f.round, f.seq, f.prevSeq
 		f.mu.Unlock()
 		if st, err := f.fetch(ctx, cam, round); err != nil {
 			log.Debug("camera still not fetched", "cam", cam, "err", err)
 		} else {
+			st.SourceSeq, st.PreviousSeq = seq, prevSeq
 			f.sink(st)
 		}
 		f.mu.Lock()
