@@ -130,12 +130,23 @@ export async function listSamples(
  */
 export async function exportSamples(
   db: Kysely<Database>,
-  opts: { afterId?: string; label?: SampleLabel; limit: number; settledBefore: Date },
+  opts: { afterId?: string; upToId?: string; label?: SampleLabel; limit: number; settledBefore: Date },
 ): Promise<LabelledSample[]> {
   let q = labelledQuery(db, opts.label).where('s.captured_at', '<', opts.settledBefore).orderBy('s.id', 'asc')
   if (opts.afterId) q = q.where('s.id', '>', opts.afterId)
+  if (opts.upToId) q = q.where('s.id', '<=', opts.upToId)
   const rows = await q.limit(opts.limit).execute()
   return rows.map(toLabelled).filter(s => s !== null)
+}
+
+/** The newest sample a download may include now (see exportSamples); null when none is settled. */
+export async function newestSettledId(db: Kysely<Database>, settledBefore: Date): Promise<string | null> {
+  const row = await db
+    .selectFrom('dart_samples')
+    .select(eb => eb.fn.max('id').as('id'))
+    .where('captured_at', '<', settledBefore)
+    .executeTakeFirst()
+  return row?.id ?? null
 }
 
 /** The six stills of the samples, by sample id. */

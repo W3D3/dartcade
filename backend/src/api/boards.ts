@@ -5,6 +5,7 @@ import type { Database } from '../db/schema.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { BigScreenService } from '../bigscreen/service.js'
 import { requireAuth } from '../auth/middleware.js'
+import { setBoardShares } from '../db/dartSamples.js'
 import { bridgeConnections, type BmRequest } from '../bridge-gw/connections.js'
 import { askBoard, BM_TIMEOUT_MS, stateOf } from '../boards/bmState.js'
 import {
@@ -130,6 +131,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           bmUrl: bm?.origin ?? null,
           autoStart: b.auto_start,
           resetOnNext: b.reset_on_next,
+          shareTrainingImages: b.share_training_images,
           bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
           bridgeUpdate: {
             available: bridgeUpdateFor(conn?.bridgeVersion, offered),
@@ -220,6 +222,18 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await setResetOnNext(db, id, resetOnNext)
       return reply.send({ resetOnNext })
+    },
+  )
+
+  app.patch<Route<'setBoardShareTrainingImages'>>(
+    '/api/boards/:id/share-training-images',
+    { preValidation: requireAuth, schema: fromSpec('setBoardShareTrainingImages') },
+    async (req, reply) => {
+      const { id } = req.params
+      const { shareTrainingImages } = req.body
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      await setBoardShares(db, id, shareTrainingImages)
+      return reply.send({ shareTrainingImages })
     },
   )
 
