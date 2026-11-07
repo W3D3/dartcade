@@ -33,7 +33,7 @@
           {#if auditDetail(e.action, e.detail)}<span class="text-[13px] text-text">{auditDetail(e.action, e.detail)}</span>{/if}
           <span class="text-[13px] text-text-muted">
             {e.admin?.name ?? 'A removed admin'} · {new Date(e.createdAt).toLocaleString()}
-            {#if !e.action.startsWith('user.')}· game {e.target}{/if}
+            {#if e.action.startsWith('game.')}· game {e.target}{/if}
           </span>
         </li>
       {/each}
