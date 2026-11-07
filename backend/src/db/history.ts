@@ -250,9 +250,13 @@ export async function getFinishedGame(db: Kysely<Database>, id: string): Promise
   return toGame(row, seats, null)
 }
 
-/** A finished game's stored detail and match stats, and the version that built them. */
-export async function getGameDetail(db: Kysely<Database>, id: string) {
-  return db.selectFrom('game_details').select(['version', 'detail', 'stats']).where('session_id', '=', id).executeTakeFirst()
+/** These finished games' stored details and match stats, and the version that built each, by game id. */
+export async function getGameDetails(db: Kysely<Database>, ids: string[]) {
+  const rows =
+    ids.length === 0
+      ? []
+      : await db.selectFrom('game_details').select(['session_id', 'version', 'detail', 'stats']).where('session_id', 'in', ids).execute()
+  return new Map(rows.map(r => [r.session_id, r]))
 }
 
 /** Stores a finished game's detail and match stats, over any built by another version. */
@@ -268,4 +272,97 @@ export async function saveGameDetail(
     .values({ session_id: id, ...values })
     .onConflict(oc => oc.column('session_id').doUpdateSet(values))
     .execute()
+}
+
+export type X01StatKind = 'all' | 'ranked' | 'casual' | 'bots' | 'solo'
+/** Which of a player's X01 games the Stats page counts: its start score, out rule and kind of match. */
+export type X01StatFilter = { start: number; out: string; kind: X01StatKind }
+
+// A game's rules from its stored config, with X01's defaults (games/x01.ts) for a config without them
+const startOf = sql<number>`coalesce((gs.config->>'startScore')::int, 501)`
+const outOf = sql<string>`coalesce(gs.config->>'outMode', 'double')`
+const ranked = sql<boolean>`EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id)`
+const alone = sql<boolean>`(SELECT count(*) FROM game_players p WHERE p.session_id = gs.id) = 1`
+const withBot = sql<boolean>`EXISTS (SELECT 1 FROM game_players p WHERE p.session_id = gs.id AND p.bot_level IS NOT NULL)`
+/** The games of a kind: ranked ones are only ranked; the others are solo, against a bot or against people. */
+const KIND: Record<Exclude<X01StatKind, 'all'>, ReturnType<typeof sql<boolean>>> = {
+  ranked,
+  solo: sql<boolean>`NOT ${ranked} AND ${alone}`,
+  bots: sql<boolean>`NOT ${ranked} AND ${withBot}`,
+  casual: sql<boolean>`NOT ${ranked} AND NOT ${alone} AND NOT ${withBot}`,
+}
+
+/** The user's X01 games that count for stats (finished, placed, not invalidated). */
+function myX01Games(db: Kysely<Database>, userId: string) {
+  return finishedGames(db)
+    .innerJoin('game_players as me', 'me.session_id', 'gs.id')
+    .where('me.user_id', '=', userId)
+    .where('me.placement', 'is not', null)
+    .where('gs.game_id', '=', 'x01')
+}
+
+function filtered(db: Kysely<Database>, userId: string, f: X01StatFilter) {
+  const q = myX01Games(db, userId).where(startOf, '=', f.start).where(outOf, '=', f.out)
+  return f.kind === 'all' ? q : q.where(KIND[f.kind])
+}
+
+/** The start scores and out rules the user has X01 games with, the most played first. */
+export async function x01StatOptions(db: Kysely<Database>, userId: string): Promise<{ starts: number[]; outs: string[] }> {
+  // Grouped over the games as a subquery: finishedGames already picks its columns
+  const games = myX01Games(db, userId)
+    .select([startOf.as('start'), outOf.as('out')])
+    .as('g')
+  const [starts, outs] = await Promise.all([
+    db
+      .selectFrom(games)
+      .select('g.start as v')
+      .groupBy('g.start')
+      .orderBy(sql`count(*)`, 'desc')
+      .orderBy('g.start')
+      .execute(),
+    db
+      .selectFrom(games)
+      .select('g.out as v')
+      .groupBy('g.out')
+      .orderBy(sql`count(*)`, 'desc')
+      .orderBy('g.out')
+      .execute(),
+  ])
+  return { starts: starts.map(r => r.v), outs: outs.map(r => r.v) }
+}
+
+/** The user's X01 games under the filter, newest first, with whether the ranked queue started each:
+ *  only those finished since `since`, at most `limit` of them. */
+export async function listX01StatGames(
+  db: Kysely<Database>,
+  userId: string,
+  f: X01StatFilter,
+  window: { since?: Date; limit?: number },
+): Promise<(HistoryGame & { ranked: boolean })[]> {
+  let q = filtered(db, userId, f)
+    .select(['me.seat as my_seat', ranked.as('ranked')])
+    .orderBy('gs.finished_at', 'desc')
+    .orderBy('gs.id', 'desc')
+  if (window.since) q = q.where('gs.finished_at', '>=', window.since)
+  if (window.limit !== undefined) q = q.limit(window.limit)
+  const rows = await q.execute()
+  const seats = await placedSeats(
+    db,
+    rows.map(r => r.id),
+  )
+  return rows.map(r => ({ ...toGame(r, seats.get(r.id) ?? [], r.my_seat), ranked: r.ranked }))
+}
+
+/** How many legs the user's X01 games under the filter had, all time; a game whose detail isn't
+ *  stored yet (it is stored on its first load) doesn't count. */
+export async function countX01StatLegs(db: Kysely<Database>, userId: string, f: X01StatFilter): Promise<number> {
+  const games = filtered(db, userId, f)
+    .leftJoin('game_details as gd', 'gd.session_id', 'gs.id')
+    .select(sql<number | null>`jsonb_array_length(gd.detail->'legs')`.as('legs'))
+    .as('g')
+  const row = await db
+    .selectFrom(games)
+    .select(sql<number>`coalesce(sum(g.legs), 0)::int`.as('legs'))
+    .executeTakeFirstOrThrow()
+  return row.legs
 }

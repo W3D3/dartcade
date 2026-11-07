@@ -171,6 +171,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats/x01": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's X01 stats over a range of legs or days, compared with the same range before
+         * @description Read from the stored details of the user's finished X01 games (invalidated ones left out). A filter left out is the one the user played most (start score, out rule); kind defaults to all matches. 404 while stats.enabled is off for the user.
+         */
+        get: operations["getX01Stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/games/{id}": {
         parameters: {
             query?: never;
@@ -3193,6 +3213,169 @@ export interface components {
             winnerName: string | null;
             winnerDarts: number | null;
         };
+        /**
+         * @default legs50
+         * @enum {string}
+         */
+        StatsRange: "legs20" | "legs50" | "legs100" | "days30" | "days90" | "all";
+        /** @enum {string} */
+        StatsOutMode: "straight" | "double" | "master";
+        /**
+         * @description ranked: from the queue; casual: against people; bots: against a bot; solo: alone
+         * @enum {string}
+         */
+        StatsKind: "all" | "ranked" | "casual" | "bots" | "solo";
+        StatsSpan: {
+            legs: number;
+            /**
+             * Format: date-time
+             * @description The oldest leg's game; null without legs
+             */
+            from: string | null;
+            /** Format: date-time */
+            to: string | null;
+        };
+        StatMetric: {
+            /** @description null without anything to count */
+            value: number | null;
+            /** @description The same over the range before; null without one */
+            before: number | null;
+            /** @description The 10-leg trend, oldest first, at most 50 points */
+            spark: number[];
+        };
+        StatCount: {
+            value: number;
+            before: number | null;
+        };
+        /** @description Where something happened, to name and open its game */
+        StatRef: {
+            gameId: string;
+            /** Format: date-time */
+            finishedAt: string;
+            /** @description null for the whole match */
+            leg: number | null;
+            /** @description The player's visit in the leg, from 1 */
+            visit: number | null;
+            startScore: number;
+            kind: components["schemas"]["StatsKind"];
+            opponents: string[];
+        };
+        StatBest: {
+            value: number;
+            ref: components["schemas"]["StatRef"];
+            /** @description A checkout's darts ("T20", "D8") */
+            darts?: string[];
+        };
+        X01Stats: {
+            /** @description The start scores and out rules the user has legs in (all time), for the filters */
+            options: {
+                starts: number[];
+                outModes: components["schemas"]["StatsOutMode"][];
+            };
+            applied: {
+                range: components["schemas"]["StatsRange"];
+                /** @description null without any X01 leg */
+                start: number | null;
+                out: components["schemas"]["StatsOutMode"] | (null);
+                kind: components["schemas"]["StatsKind"];
+            };
+            /** @description Every leg with these filters, all time (of the games whose detail is stored, as nearly all are) */
+            totalLegs: number;
+            window: components["schemas"]["StatsSpan"];
+            /** @description The range the arrows compare with; null for all time */
+            before: components["schemas"]["StatsSpan"] | (null);
+            overview: {
+                average: components["schemas"]["StatMetric"];
+                first9: components["schemas"]["StatMetric"];
+                dartsPerLeg: components["schemas"]["StatMetric"];
+                /** @description Darts that finished over darts thrown at a one-dart finish, 0–1 */
+                checkout: components["schemas"]["StatMetric"];
+                /** @description The share of legs won, 0–1 */
+                legsWon: components["schemas"]["StatMetric"];
+                /** @description The most legs won in a row */
+                bestStreak: number;
+                /** @description The last 100 legs of the range, oldest first */
+                perLeg: {
+                    average: number | null;
+                    /** @description The 10-leg average up to this leg */
+                    trend: number | null;
+                    won: boolean;
+                    darts: number;
+                }[];
+                bests: {
+                    /** @description Fewest darts in a leg won */
+                    bestLeg: components["schemas"]["StatBest"] | (null);
+                    /** @description In a leg won */
+                    bestLegAverage: components["schemas"]["StatBest"] | (null);
+                    bestMatchAverage: components["schemas"]["StatBest"] | (null);
+                    highestCheckout: components["schemas"]["StatBest"] | (null);
+                    most180s: components["schemas"]["StatBest"] | (null);
+                };
+            };
+            scoring: {
+                /** @description Every visit thrown */
+                visits: number;
+                /** @description The 3-dart average of visits started above 170 */
+                until170: components["schemas"]["StatMetric"];
+                count180: components["schemas"]["StatCount"];
+                /** @description Visits of 140–179 */
+                count140: components["schemas"]["StatCount"];
+                /** @description Visits of 100 or more */
+                count100: components["schemas"]["StatCount"];
+                /** @description Their share of visits, 0–1 */
+                share100: components["schemas"]["StatCount"];
+                /** @description The share of visits under 40, not on a finish, 0–1 */
+                under40: components["schemas"]["StatCount"];
+                buckets: {
+                    label: string;
+                    /** @description Share of visits, 0–1 */
+                    now: number;
+                    before: number | null;
+                }[];
+                /** @description The average of each visit of a leg, from the first to the seventh */
+                byVisit: {
+                    visit: number;
+                    now: number | null;
+                    before: number | null;
+                }[];
+                /** @description The eight most common visit scores */
+                common: {
+                    score: number;
+                    visits: number;
+                }[];
+                /** @description Where the darts in the 20, 1 and 5 land while scoring (more than 170 left) */
+                twenties: {
+                    darts: number;
+                    beds: {
+                        name: string;
+                        share: number;
+                    }[];
+                };
+                /** @description Every 180, newest first */
+                list180: components["schemas"]["StatRef"][];
+            };
+            checkout: {
+                /** @description Checkouts of 100 or more */
+                tonPlus: components["schemas"]["StatCount"];
+                /** @description Darts at a finish per leg won */
+                dartsAtDouble: components["schemas"]["StatMetric"];
+                busts: components["schemas"]["StatCount"];
+                /** @description Each finishing dart thrown at, most thrown at first */
+                doubles: {
+                    target: string;
+                    hits: number;
+                    attempts: number;
+                }[];
+                /** @description The share of visits started in each range that checked out */
+                ranges: {
+                    label: string;
+                    rate: number | null;
+                    visits: number;
+                }[];
+                /** @description The five highest checkouts */
+                top: components["schemas"]["StatBest"][];
+            };
+        };
         CoachAverage: {
             average: number | null;
         };
@@ -4910,6 +5093,35 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getX01Stats: {
+        parameters: {
+            query?: {
+                range?: components["schemas"]["StatsRange"];
+                start?: number;
+                out?: components["schemas"]["StatsOutMode"];
+                kind?: components["schemas"]["StatsKind"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The stats; every count zero and every value null without legs in the range */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["X01Stats"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };
