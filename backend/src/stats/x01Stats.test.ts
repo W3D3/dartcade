@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { HistoryGame, HistorySeat } from '../db/history.js'
+import type { HistorySeat } from '../db/history.js'
 import type { X01Detail } from '../session/types.js'
-import { x01Legs, type StatLeg } from './x01Legs.js'
+import { x01Legs, type StatGameRow, type StatLeg } from './x01Legs.js'
 import { gamesFor, pickWindow, x01Report } from './x01Stats.js'
 
 type Leg = X01Detail['legs'][number]
@@ -60,7 +60,13 @@ const seat = (n: number, name: string, extra: Partial<HistorySeat> = {}): Histor
   ...extra,
 })
 
-const game = (id: string, finished: string, config: Record<string, unknown>, seats: HistorySeat[]): HistoryGame => ({
+const game = (
+  id: string,
+  finished: string,
+  config: Record<string, unknown>,
+  seats: HistorySeat[],
+  kind: StatGameRow['kind'] = 'casual',
+): StatGameRow => ({
   id,
   game_id: 'x01',
   config,
@@ -72,6 +78,7 @@ const game = (id: string, finished: string, config: Record<string, unknown>, sea
   mySeat: 0,
   invalidated: false,
   seats,
+  kind,
 })
 
 const DUO = [seat(0, 'Me'), seat(1, 'Lena')]
@@ -83,7 +90,7 @@ const LOST = [['T20'], ['T20'], ['S1', 'D10', 'S5'], ['S1', 'D20']]
 
 describe('x01Legs', () => {
   it('gives each dart the score left and the one-dart finish it was thrown at', () => {
-    const [l] = x01Legs(game('g', DAY, { startScore: 101 }, DUO), { mode: 'x01', legs: [leg(101, WON)] }, 0, false)
+    const [l] = x01Legs(game('g', DAY, { startScore: 101 }, DUO), { mode: 'x01', legs: [leg(101, WON)] }, 0)
     expect(l.won).toBe(true)
     expect(l.visits.map(v => v.start)).toEqual([101, 41])
     expect(l.visits[1]).toMatchObject({
@@ -98,10 +105,9 @@ describe('x01Legs', () => {
 
   it('stops the targets at a bust', () => {
     const [l] = x01Legs(
-      game('g', DAY, { startScore: 32 }, [seat(0, 'Me')]),
+      game('g', DAY, { startScore: 32 }, [seat(0, 'Me')], 'solo'),
       { mode: 'x01', legs: [leg(32, [['T20', 'D16']], 1)] },
       0,
-      false,
     )
     expect(l.visits[0].bust).toBe(true)
     expect(l.visits[0].darts.map(d => d.target)).toEqual(['D16', null])
@@ -111,7 +117,7 @@ describe('x01Legs', () => {
   it('gives darts before a double in opens the leg no target', () => {
     // The helper scores S20 too: what matters is how x01Legs walks the darts it is given
     const legs = [{ ...leg(40, [['S20', 'D10', 'D5']], 1), winner: null }]
-    const [l] = x01Legs(game('g', DAY, { startScore: 40, inMode: 'double' }, [seat(0, 'Me')]), { mode: 'x01', legs }, 0, false)
+    const [l] = x01Legs(game('g', DAY, { startScore: 40, inMode: 'double' }, [seat(0, 'Me')]), { mode: 'x01', legs }, 0)
     // S20 doesn't open; D10 opens and leaves 20; D5 leaves 10
     expect(l.visits[0].darts.map(d => [d.left, d.target])).toEqual([
       [40, null],
@@ -120,23 +126,20 @@ describe('x01Legs', () => {
     ])
   })
 
-  it('counts a leg the team won as won, and tells bots and ranked games apart', () => {
+  it('counts a leg the team won as won, and keeps the kind of match the query gave the game', () => {
     const won = leg(101, WON)
     const teams = [{ id: 'A', name: 'Team A', seats: [1, 2] }] as X01Detail['teams']
     const g = game('g', DAY, { startScore: 101 }, [...DUO, seat(2, 'Max')])
-    expect(x01Legs(g, { mode: 'x01', legs: [won] }, 1, false)[0].won).toBe(false)
-    expect(x01Legs(g, { mode: 'x01', legs: [{ ...won, winner: 2 }], teams }, 1, false)[0].won).toBe(true)
+    expect(x01Legs(g, { mode: 'x01', legs: [won] }, 1)[0].won).toBe(false)
+    expect(x01Legs(g, { mode: 'x01', legs: [{ ...won, winner: 2 }], teams }, 1)[0].won).toBe(true)
     const bots = [seat(0, 'Me'), seat(1, 'Bot', { bot_level: 3 })]
-    expect(x01Legs(game('g', DAY, {}, bots), { mode: 'x01', legs: [won] }, 0, false)[0].game.kind).toBe('bots')
-    expect(x01Legs(game('g', DAY, {}, bots), { mode: 'x01', legs: [won] }, 0, true)[0].game.kind).toBe('ranked')
+    expect(x01Legs(game('g', DAY, {}, bots, 'ranked'), { mode: 'x01', legs: [won] }, 0)[0].game.kind).toBe('ranked')
   })
 })
 
 /** One leg per finished date, newest first like the API reads them. */
 function legsOn(dates: string[], visits: string[][], startScore = 101): StatLeg[] {
-  return dates.flatMap((d, i) =>
-    x01Legs(game(`g${i}-${d}`, d, { startScore }, DUO), { mode: 'x01', legs: [leg(startScore, visits)] }, 0, false),
-  )
+  return dates.flatMap((d, i) => x01Legs(game(`g${i}-${d}`, d, { startScore }, DUO), { mode: 'x01', legs: [leg(startScore, visits)] }, 0))
 }
 
 const NOW = new Date('2026-11-06T00:00:00Z')
