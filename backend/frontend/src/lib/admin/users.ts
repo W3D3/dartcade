@@ -115,6 +115,8 @@ const AUDIT_LABELS: Record<string, string> = {
   'user.unban': 'Unbanned',
   'user.grantXp': 'Gave XP',
   'user.impersonate': 'Viewed as them',
+  'ranked.void': 'Voided a ranked game',
+  'ranked.dequeue': 'Removed from the ranked queue',
   'game.invalidate': 'Invalidated a game',
   'game.restore': 'Restored a game',
   'game.delete': 'Deleted a game',
@@ -146,6 +148,9 @@ export function auditDetail(action: string, detail: unknown): string | null {
       return d.was ? `Was: ${banDetail(rec(d.was)) ?? 'banned'}` : null
     case 'user.grantXp':
       return typeof d.amount === 'number' ? `+${d.amount.toLocaleString('en-US')} XP` : null
+    case 'ranked.void':
+    case 'ranked.dequeue':
+      return str(d.reason) && `Reason: ${str(d.reason)}`
     case 'game.invalidate':
       return str(d.reason) && `Reason: ${str(d.reason)}`
     case 'game.restore':

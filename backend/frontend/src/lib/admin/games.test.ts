@@ -7,7 +7,11 @@ import {
   invalidateGame,
   invalidationText,
   outcome,
+  loadQueue,
+  removeFromQueue,
   restoreGame,
+  voidGame,
+  waitText,
   type AdminGameSummary,
 } from './games'
 import { api } from '$lib/api'
@@ -22,6 +26,7 @@ const game = (o: Partial<AdminGameSummary> = {}): AdminGameSummary => ({
   createdAt: '2026-10-01T09:00:00Z',
   finishedAt: '2026-10-01T09:30:00Z',
   board: null,
+  voided: false,
   ranked: false,
   invalidated: null,
   players: [
@@ -133,5 +138,43 @@ describe('invalidationText', () => {
 
   it('leaves out the reason when there is none, and the moderator once their account is gone', () => {
     expect(invalidationText({ at, by: null, reason: null })).toBe('Invalidated on 2 Oct 2026')
+  })
+})
+
+describe('voiding and the ranked queue', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('calls a voided game voided, not aborted', () => {
+    expect(outcome(game({ status: 'aborted', voided: true }))).toBe('Voided')
+    expect(outcome(game({ status: 'aborted' }))).toBe('Aborted')
+  })
+
+  it('voids with the trimmed reason; a refusal gives its message', async () => {
+    vi.mocked(api.POST).mockResolvedValueOnce({ response: new Response(null, { status: 204 }) })
+    expect(await voidGame('g1', ' board fault ')).toEqual({ ok: true })
+    expect(api.POST).toHaveBeenCalledWith('/api/admin/games/{id}/void', { params: { path: { id: 'g1' } }, body: { reason: 'board fault' } })
+    vi.mocked(api.POST).mockResolvedValueOnce({ error: { error: 'Only a running ranked game can be voided' }, response: new Response() })
+    expect(await voidGame('g1', '')).toEqual({ error: 'Only a running ranked game can be voided' })
+  })
+
+  it('loads the queue, null when the request fails', async () => {
+    vi.mocked(api.GET).mockResolvedValueOnce({ data: { searches: [] }, response: new Response() } as never)
+    expect(await loadQueue()).toEqual([])
+    vi.mocked(api.GET).mockResolvedValueOnce({ error: { error: 'x' }, response: new Response() })
+    expect(await loadQueue()).toBeNull()
+  })
+
+  it('removes a user from the queue', async () => {
+    vi.mocked(api.POST).mockResolvedValueOnce({ error: { error: 'not in the queue' }, response: new Response() })
+    expect(await removeFromQueue('u1', '')).toEqual({ error: 'not in the queue' })
+    expect(api.POST).toHaveBeenCalledWith('/api/admin/ranked/queue/{userId}/remove', {
+      params: { path: { userId: 'u1' } },
+      body: { reason: '' },
+    })
+  })
+
+  it('shows a wait as minutes and seconds', () => {
+    expect(waitText(65)).toBe('1:05')
+    expect(waitText(9)).toBe('0:09')
   })
 })

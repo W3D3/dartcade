@@ -1,5 +1,5 @@
 // Admin game list: every game on the platform, for admins and moderators to investigate and invalidate (schema/api-v1.yaml, tag admin).
-import { api, type AdminGameSummary } from '$lib/api'
+import { api, type AdminGameSummary, type QueuedSearch } from '$lib/api'
 
 export type { AdminGameSummary }
 
@@ -62,6 +62,7 @@ export async function loadGames(f: GameFilters, cursor: string | null): Promise<
 
 /** Who won: the first placed seat's name (a team game lists every seat in that place); a game without a result says why. */
 export function outcome(g: AdminGameSummary): string {
+  if (g.voided) return 'Voided'
   if (g.status === 'aborted') return 'Aborted'
   if (g.status === 'active') return 'In progress'
   const winners = g.players.filter(p => p.placement === 1)
@@ -107,4 +108,33 @@ export function invalidationText(i: NonNullable<Invalidation>): string {
   const when = new Date(i.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   const who = i.by ? ` by ${i.by.name}` : ''
   return `Invalidated${who} on ${when}${i.reason ? `: ${i.reason}` : ''}`
+}
+
+/** What voiding a running ranked game warns about. */
+export const VOID_WARNING =
+  'The game ends now with no result and nobody’s rating moves. It is not a forfeit and is never rated. Its players are told a moderator voided it.'
+
+/** Voids a running ranked game, with an optional reason. On a refusal (not running, not ranked), the message to show. */
+export async function voidGame(id: string, reason: string): Promise<{ ok: true } | { error: string }> {
+  const res = await api.POST('/api/admin/games/{id}/void', { params: { path: { id } }, body: { reason: reason.trim() } })
+  return res.error ? { error: res.error.error } : { ok: true }
+}
+
+export type { QueuedSearch }
+
+/** The searches waiting in the ranked queue, longest first. Null: the request failed. */
+export async function loadQueue(): Promise<QueuedSearch[] | null> {
+  const res = await api.GET('/api/admin/ranked/queue')
+  return res.data?.searches ?? null
+}
+
+/** Takes a user out of the queue (their duo too), with an optional reason. On a refusal (not queued), the message to show. */
+export async function removeFromQueue(userId: string, reason: string): Promise<{ ok: true } | { error: string }> {
+  const res = await api.POST('/api/admin/ranked/queue/{userId}/remove', { params: { path: { userId } }, body: { reason: reason.trim() } })
+  return res.error ? { error: res.error.error } : { ok: true }
+}
+
+/** "1:05" for a wait of 65 seconds. */
+export function waitText(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }

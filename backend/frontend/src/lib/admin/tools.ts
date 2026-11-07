@@ -1,5 +1,5 @@
 import type { Component } from 'svelte'
-import { Flag, GraduationCap, Gamepad2, Map as MapIcon, Palette, Server, ToggleRight, Users } from '@lucide/svelte'
+import { Flag, GraduationCap, Gamepad2, Map as MapIcon, Palette, Server, Swords, ToggleRight, Users } from '@lucide/svelte'
 
 export type AdminTool = {
   href: string
@@ -19,6 +19,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     title: 'Games',
     desc: 'Every game on the platform, to investigate and invalidate',
     icon: Gamepad2,
+    moderator: true,
+  },
+  {
+    href: '/admin/ranked',
+    title: 'Ranked queue',
+    desc: 'Who is searching for a ranked match, and take someone out',
+    icon: Swords,
     moderator: true,
   },
   { href: '/admin/coach', title: 'Coach sandbox', desc: 'Throw a made-up visit and see what the coach says', icon: GraduationCap },

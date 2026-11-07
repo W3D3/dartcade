@@ -4,11 +4,12 @@
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { Ban, ChevronRight, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
+  import { Ban, ChevronRight, CircleSlash, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import ReasonModal from '$lib/components/admin/ReasonModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -23,6 +24,8 @@
     deleteGame,
     DELETE_WARNING,
     invalidateGame,
+    voidGame,
+    VOID_WARNING,
     invalidationText,
     restoreGame,
     RESTORE_WARNING,
@@ -113,6 +116,19 @@
           }
         : g,
     )
+  }
+
+  // A running ranked game asking to be voided
+  let voiding = $state<AdminGameSummary | null>(null)
+
+  async function confirmVoid(reason: string): Promise<void> {
+    const game = voiding
+    if (!game) return
+    voiding = null
+    invalidateError = ''
+    const result = await voidGame(game.id, reason)
+    if ('error' in result) invalidateError = result.error
+    else games = games.map(g => (g.id === game.id ? { ...g, status: 'aborted', voided: true } : g))
   }
 
   // Admins only: the game asking to be deleted for good
@@ -237,7 +253,7 @@
                     >
                     <span class="flex shrink-0 items-center gap-2 text-[13px] text-text-muted">
                       {outcome(g)}
-                      {#if g.status !== 'finished'}<Badge variant="guest">{g.status}</Badge>{/if}
+                      {#if g.status !== 'finished' && !g.voided}<Badge variant="guest">{g.status}</Badge>{/if}
                       {#if g.ranked}<Badge variant="ready">ranked</Badge>{/if}
                       {#if g.invalidated}<Badge variant="guest">invalidated</Badge>{/if}
                     </span>
@@ -258,6 +274,16 @@
                   {:else if g.status === 'finished'}
                     <Button variant="quiet" size="icon-sm" aria-label="Restore this game" title="Restore" onclick={() => (restoring = g)}
                       ><Undo2 size={16} /></Button
+                    >
+                  {/if}
+                  {#if g.status === 'active' && g.ranked}
+                    <Button
+                      variant="quiet"
+                      size="icon-sm"
+                      aria-label="Void this ranked game"
+                      title="Void"
+                      onclick={() => (voiding = g)}
+                      class="hover:text-live"><CircleSlash size={16} /></Button
                     >
                   {/if}
                   {#if g.status !== 'active' && $currentUser.isAdmin}
@@ -301,6 +327,16 @@
     </PageMain>
     {#if confirming}
       <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirming = null)} />
+    {/if}
+    {#if voiding}
+      <ReasonModal
+        title="Void this ranked game?"
+        subtitle={VOID_WARNING}
+        confirmLabel="Void game"
+        cancelLabel="Keep playing"
+        onconfirm={(reason: string) => void confirmVoid(reason)}
+        oncancel={() => (voiding = null)}
+      />
     {/if}
     {#if deleting}
       <ConfirmModal

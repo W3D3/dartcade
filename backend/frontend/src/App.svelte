@@ -39,6 +39,7 @@
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
   import FinishSprite from '$lib/components/FinishSprite.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
+  import AdminRanked from './routes/AdminRanked.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
   import MatchFound from '$lib/components/ranked/MatchFound.svelte'
@@ -155,6 +156,7 @@
     '/admin/games': AdminGames,
     '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
+    '/admin/ranked': AdminRanked,
     '/admin/system': AdminSystem,
     '/admin/cosmetics': AdminCosmetics,
     '/admin/coach': wrap({ asyncComponent: loadAdminCoach }),
