@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { MatchmakingMatch, MatchmakingSearch } from '$lib/api/lobby-ws'
-import { acceptedLine, clock, pausedFor, startedLine, searchView, secondsLeft, youAccepted } from '../ranked/queue'
+import { acceptedLine, clock, duoLobbyReady, pausedFor, startedLine, searchView, secondsLeft, youAccepted } from '../ranked/queue'
 import { fmtRp } from '../ranked/view'
 
 const T0 = Date.UTC(2026, 9, 15, 20)
@@ -83,5 +83,15 @@ describe('startedLine', () => {
   it('tells the partner who started it, and the host that they did', () => {
     expect(startedLine(duo, 'u2')).toBe("Christoph started the search. You'll get the match to accept here too.")
     expect(startedLine(duo, 'u1')).toBe("You started the search. You'll get the match to accept here too.")
+  })
+})
+
+describe('duoLobbyReady', () => {
+  it('needs your own lobby of exactly two', () => {
+    expect(duoLobbyReady({ peopleCount: 2, youHost: true })).toBe(true)
+    expect(duoLobbyReady({ peopleCount: 3, youHost: true })).toBe(false)
+    expect(duoLobbyReady({ peopleCount: 1, youHost: true })).toBe(false)
+    expect(duoLobbyReady({ peopleCount: 2, youHost: false })).toBe(false)
+    expect(duoLobbyReady(null)).toBe(false)
   })
 })

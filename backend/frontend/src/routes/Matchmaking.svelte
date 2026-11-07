@@ -5,27 +5,29 @@
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
   import { fmtAvg } from '$lib/playerStats'
   import { onDestroy, onMount } from 'svelte'
-  import { Clock, Hourglass, Search, User, Users } from '@lucide/svelte'
+  import { Check, Clock, Hourglass, MonitorSmartphone, Search, User, Users } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import SearchPanel from '$lib/components/ranked/SearchPanel.svelte'
   import StatCard from '$lib/components/ranked/StatCard.svelte'
   import { api } from '$lib/api'
   import type { components } from '$lib/api/schema'
-  import { TIER_COLOR, fmtSeconds, ratingCard, record, recentRow } from '$lib/ranked/view'
+  import { TIER_TEXT, fmtSeconds, playingOn, ratingCard, record, recentRow } from '$lib/ranked/view'
   import { numberFlag } from '$lib/flags'
   import { RESERVE_SECONDS, VISIT_SECONDS } from '$shared/ranked.js'
   import { me } from '$lib/lobby/sockets'
-  import { pausedFor, startSearch } from '$lib/ranked/queue'
+  import { duoLobbyReady, pausedFor, startSearch } from '$lib/ranked/queue'
 
   type Profile = components['schemas']['RankedProfile']
 
   let profile = $state<Profile | null>(null)
   let error = $state('')
+  let boards = $state<{ name: string; online: boolean }[]>([])
   let queue = $state<'1v1' | '2v2'>('1v1')
   let firstTo = $state<2 | 3>(2)
 
@@ -39,10 +41,13 @@
   const reserve = $derived(`${fmtSeconds($reserveSeconds)} reserve each`)
 
   onMount(async () => {
-    const { data, error: err } = await api.GET('/api/ranked/me')
-    if (data) profile = data
-    else error = err.error
+    const [ranked, owned] = await Promise.all([api.GET('/api/ranked/me'), api.GET('/api/boards')])
+    if (ranked.data) profile = ranked.data
+    else error = ranked.error.error
+    boards = owned.data?.boards ?? []
   })
+  const board = $derived(playingOn(boards))
+  const duoReady = $derived(duoLobbyReady($me?.lobby ?? null))
 
   // The search runs on the server; its clock and range tick here
   let tick = $state(Date.now())
@@ -64,14 +69,13 @@
   }
 
   const queues = [
-    { id: '1v1', title: 'Solo · 1v1', line: 'Matched by your 1v1 rating', short: 'By your 1v1 rating', hint: '', hintShort: '' },
+    { id: '1v1', title: 'Solo · 1v1', line: 'Matched by your 1v1 rating', short: 'By your 1v1 rating', hint: '' },
     {
       id: '2v2',
       title: 'Duo · 2v2',
       line: 'You and one lobby mate vs another duo',
       short: 'With one lobby mate',
       hint: 'Needs a lobby of exactly 2',
-      hintShort: 'Needs a lobby of 2',
     },
   ] as const
   const formats = [
@@ -80,18 +84,31 @@
   ] as const
 </script>
 
-<Layout title="Matchmaking">
+{#snippet boardChip()}
+  {#if board}
+    <span
+      class="inline-flex h-[30px] items-center gap-[7px] whitespace-nowrap rounded-full border border-line-chip px-3 text-[13px] font-medium text-ink-2"
+      title={board.online ? 'Board connected' : 'Board offline'}
+      ><span class="h-2 w-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
+    >
+  {/if}
+{/snippet}
+
+<Layout title="Ranked" headerAction={boardChip}>
   <main
     class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
-    <header class="flex flex-col gap-[6px]">
-      <h1 class="m-0 hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
-        Matchmaking
-      </h1>
-      <p class="m-0 text-[15px] text-text-muted">
-        Ranked X01 against players near your level. Wins and losses move your rating and rank.
-        <a href="#/matchmaking/ranks" class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
-      </p>
+    <header class="flex items-end justify-between gap-6">
+      <div class="flex flex-col gap-[6px]">
+        <h1 class="m-0 hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
+          Matchmaking
+        </h1>
+        <p class="m-0 text-[15px] text-text-muted">
+          Ranked X01 against players near your level. Wins and losses move your rating and rank.
+          <a href="#/matchmaking/ranks" class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
+        </p>
+      </div>
+      <span class="hidden shrink-0 md:block">{@render boardChip()}</span>
     </header>
 
     {#if error}<ErrorText>{error}</ErrorText>{/if}
@@ -106,7 +123,7 @@
           <StatCard label={card.label} value={card.rating} unit={card.unit} aria="{card.label}: {card.rating} {card.unit}">
             <span
               class="text-[12px] font-semibold md:text-[14px] md:whitespace-nowrap"
-              style:color={card.rank ? TIER_COLOR[card.rank.tier] : undefined}
+              style:color={card.rank ? TIER_TEXT[card.rank.tier] : undefined}
               >{card.title}<span class="font-normal text-text-dim {card.rank ? '' : 'hidden md:inline'}">&nbsp;{card.progress}</span></span
             >
             <span class="text-[11px] md:text-[13px] md:whitespace-nowrap {card.trendUp ? 'text-accent' : 'text-text-muted'}"
@@ -158,22 +175,31 @@
             >
               {#each queues as opt (opt.id)}
                 {@const on = queue === opt.id}
-                <RadioGroupItem value={opt.id} variant="card">
-                  <span class="flex items-center gap-[10px]">
-                    <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
-                      {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
+                {@const needsLobby = opt.id === '2v2' && !duoReady}
+                <!-- The hint's link can't sit inside the option (a button), so it floats over the card's foot -->
+                <div class="relative flex min-w-0 flex-col">
+                  <RadioGroupItem value={opt.id} variant="card" class={needsLobby ? 'flex-grow pb-9' : 'flex-grow'}>
+                    <span class="flex items-center gap-[10px]">
+                      <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
+                        {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
+                      </span>
+                      <span class="whitespace-nowrap font-display text-[19px] font-bold uppercase tracking-[0.03em] md:text-[22px]"
+                        >{opt.title}</span
+                      >
+                      {#if on}<Check size={18} class="ml-auto hidden text-accent md:block" aria-hidden="true" />{/if}
                     </span>
-                    <span class="whitespace-nowrap font-display text-[19px] font-bold uppercase tracking-[0.03em] md:text-[22px]"
-                      >{opt.title}</span
+                    <span class="text-[12px] text-text-muted md:text-[13px]"
+                      ><span class="md:hidden">{opt.short}</span><span class="hidden md:inline">{opt.line}</span></span
                     >
-                  </span>
-                  <span class="text-[12px] text-text-muted md:text-[13px]"
-                    ><span class="md:hidden">{opt.short}</span><span class="hidden md:inline">{opt.line}</span></span
-                  >
-                  {#if opt.hint}<span class="text-[11px] text-warn md:text-[12px]"
-                      ><span class="md:hidden">{opt.hintShort}</span><span class="hidden md:inline">{opt.hint}</span></span
-                    >{/if}
-                </RadioGroupItem>
+                  </RadioGroupItem>
+                  {#if needsLobby}
+                    <span class="absolute bottom-2 left-3 text-[11px] text-warn md:bottom-3 md:left-[14px] md:text-[12px]">
+                      <span class="hidden md:inline">{opt.hint} · </span><a href="#/lobby" class="font-semibold text-warn underline"
+                        ><span class="md:hidden">Create a lobby of 2</span><span class="hidden md:inline">create one</span></a
+                      >
+                    </span>
+                  {/if}
+                </div>
               {/each}
             </RadioGroup>
 
@@ -182,7 +208,7 @@
               onValueChange={(v: string) => (firstTo = v === '3' ? 3 : 2)}
               orientation="horizontal"
               aria-label="Format"
-              class="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center"
+              class="hidden md:flex md:flex-wrap md:items-center gap-2"
             >
               <span class="mr-1 hidden text-[13px] text-text-muted md:inline">Format</span>
               {#each formats as f (f.value)}
@@ -191,6 +217,13 @@
                 </RadioGroupItem>
               {/each}
             </RadioGroup>
+            <SegmentedControl
+              label="Format"
+              class="md:hidden"
+              options={formats.map(f => ({ value: f.value, label: f.label }))}
+              value={firstTo}
+              onchange={v => (firstTo = v === 3 ? 3 : 2)}
+            />
 
             <span class="flex items-center justify-center gap-2 text-[12px] text-ink-2 md:hidden"
               ><Clock size={14} class="flex-shrink-0" />{visit} · {reserve}</span
@@ -218,9 +251,23 @@
               >
             </div>
 
+            <div class="hidden items-center gap-[10px] text-[14px] text-ink-2 md:flex">
+              <MonitorSmartphone size={16} class="flex-shrink-0" />
+              {#if board}
+                Playing on
+                <span class="inline-flex items-center gap-[6px] font-semibold text-text"
+                  ><span class="h-2 w-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
+                >
+                <span class="text-text-dim">· {board.online ? 'auto-scoring' : 'offline, darts by hand'}</span>
+              {:else}
+                No board paired <span class="text-text-dim">· darts by hand</span>
+              {/if}
+              <a href="#/settings/boards" class="ml-auto font-semibold text-accent no-underline">{board ? 'Change' : 'Add a board'}</a>
+            </div>
+
             <button
               type="button"
-              disabled={busy || paused !== null}
+              disabled={busy || paused !== null || (queue === '2v2' && !duoReady)}
               onclick={find}
               class="mt-auto flex h-14 cursor-pointer items-center justify-center gap-3 rounded-[14px] border-0 bg-accent font-display text-[22px] font-bold md:h-16 md:text-[26px] uppercase tracking-[0.06em] text-accent-fg disabled:cursor-default disabled:opacity-40"
             >
@@ -257,15 +304,22 @@
                       ? 'bg-accent-tint text-accent'
                       : 'bg-live-soft text-live-text'}">{r.won ? 'W' : 'L'}</span
                   >
-                  <Avatar name={r.name} face={r.opponent} size={30} />
+                  <span class="hidden md:block"><Avatar name={r.name} face={r.opponent} size={30} /></span>
                   <span class="flex min-w-0 flex-grow flex-col gap-px">
-                    <a href="#/history/{r.key}" class="truncate text-[15px] font-semibold text-text no-underline">{r.name}</a>
-                    <span class="truncate text-[12px] text-text-dim">{r.meta}</span>
+                    <a href="#/history/{r.key}" class="truncate text-[14px] font-semibold text-text no-underline md:text-[15px]">{r.name}</a
+                    >
+                    <span class="flex items-center gap-1 truncate text-[11px] text-text-dim md:text-[12px]">
+                      <span class="truncate md:hidden">{r.day}</span>
+                      <span class="hidden truncate md:inline">{r.meta}</span>
+                      {#if r.opponentRank}<span class="hidden md:flex"><RankBadge rank={r.opponentRank} size={16} /></span>{/if}
+                    </span>
                   </span>
+                  {#if r.score}<span class="whitespace-nowrap font-display text-[19px] font-bold text-ink-2 md:text-[22px]">{r.score}</span
+                    >{/if}
                   <span
-                    class="min-w-11 flex-shrink-0 whitespace-nowrap text-right {r.placement
+                    class="min-w-9 flex-shrink-0 whitespace-nowrap text-right md:min-w-11 {r.placement
                       ? 'text-[12px] text-text-dim'
-                      : `font-mono text-[14px] font-medium ${r.won ? 'text-accent' : 'text-live-text'}`}">{r.change}</span
+                      : `font-mono text-[13px] font-medium md:text-[14px] ${r.won ? 'text-accent' : 'text-live-text'}`}">{r.change}</span
                   >
                 </li>
               {/each}

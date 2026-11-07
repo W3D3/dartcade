@@ -7,7 +7,7 @@
   import { api } from '$lib/api'
   import { Loader } from '$lib/home/loader.svelte'
   import { lastFive, rankProgress } from '$lib/home/view'
-  import { TIER_COLOR, ratingCard } from '$lib/ranked/view'
+  import { TIER_TEXT, ratingCard } from '$lib/ranked/view'
 
   const profile = new Loader(() => api.GET('/api/ranked/me'))
 
@@ -23,7 +23,7 @@
     <div class="flex items-center gap-3">
       <RankBadge rank={card.rank} size={56} />
       <span class="flex min-w-0 flex-col">
-        <span class="font-display text-[26px] font-bold leading-none" style:color={card.rank ? TIER_COLOR[card.rank.tier] : undefined}
+        <span class="font-display text-[26px] font-bold leading-none" style:color={card.rank ? TIER_TEXT[card.rank.tier] : undefined}
           >{card.title}</span
         >
         <span class="whitespace-nowrap text-[14px] text-text-muted"
