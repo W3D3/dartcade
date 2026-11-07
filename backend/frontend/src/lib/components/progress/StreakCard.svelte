@@ -1,9 +1,10 @@
 <script lang="ts">
   // The Progress page's day streak (Progress board): the streak, the last 7 days (played, frozen,
   // missed, today), today's first-game bonus, banked freezes and the next milestone.
-  import { Check, Flame, Snowflake } from '@lucide/svelte'
+  import { Check, Flame, Info, Snowflake } from '@lucide/svelte'
+  import Tooltip from '$lib/components/Tooltip.svelte'
   import type { components } from '$lib/api/schema'
-  import { milestoneLine, weekday } from '$lib/progress/view'
+  import { freezeHelp, milestoneLine, weekday } from '$lib/progress/view'
   import XpBadge from './XpBadge.svelte'
 
   let { streak }: { streak: components['schemas']['DayStreak'] } = $props()
@@ -56,7 +57,13 @@
     >
   </div>
   <div class="flex justify-between gap-3 text-[13px] text-text-muted">
-    <span>{streak.freezes} {streak.freezes === 1 ? 'freeze' : 'freezes'}</span>
+    <Tooltip
+      label="How freezes work"
+      lines={freezeHelp(streak.freezes, streak.current)}
+      class="inline-flex items-center gap-1 border-0 bg-transparent p-0 text-[13px] text-text-muted cursor-help underline decoration-dotted underline-offset-4"
+    >
+      {#snippet trigger()}{streak.freezes} {streak.freezes === 1 ? 'freeze' : 'freezes'}<Info size={13} aria-hidden="true" />{/snippet}
+    </Tooltip>
     {#if streak.nextMilestone}<span>{milestoneLine(streak.nextMilestone)}</span>{/if}
   </div>
 </section>

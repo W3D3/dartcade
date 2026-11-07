@@ -1,5 +1,5 @@
 // What the progression screens show: levels, bars and the XP breakdown, from the shared rules.
-import { PERKS, levelOf, type Perk } from '$shared/progression.js'
+import { FREEZE_EVERY, MAX_FREEZES, PERKS, levelOf, type Perk } from '$shared/progression.js'
 import { ordinal } from '$lib/fmt'
 import type { XpGainedMessage, XpLine } from '$lib/api/lobby-ws'
 
@@ -72,9 +72,31 @@ export function milestoneLine(m: { days: number; xp: number }): string {
   return `Day ${m.days}: ${MILESTONE_REWARDS[m.days] ?? `+${fmtXp(m.xp)} XP`}`
 }
 
+/** The next streak day that earns a freeze: the next multiple of FREEZE_EVERY above the streak. */
+export function nextFreezeDay(streak: number): number {
+  return (Math.floor(streak / FREEZE_EVERY) + 1) * FREEZE_EVERY
+}
+
+/** The freeze rules in plain words, numbers from the shared constants, with the player's own count first. */
+export function freezeHelp(freezes: number, streak: number): string[] {
+  return [
+    `You have ${freezes} of ${MAX_FREEZES} freezes.`,
+    `A freeze is used on its own when you miss exactly one day. It covers that day and your streak goes on.`,
+    `Miss two days in a row, or a day with no freeze, and the streak restarts at 1. You keep the freezes you have.`,
+    freezes >= MAX_FREEZES
+      ? `You hold the most you can. Once you use one, you earn the next at a streak day divisible by ${FREEZE_EVERY}.`
+      : `You earn one every ${FREEZE_EVERY} streak days (day ${nextFreezeDay(streak)} is next), up to ${MAX_FREEZES}.`,
+  ]
+}
+
+/** The freeze toast's line: what is left and when the next one comes (nothing comes while you hold the most). */
+export function freezeLeftLine(left: number, streak: number): string {
+  return left >= MAX_FREEZES ? `${left} left, the most you can hold` : `${left} left, next at day ${nextFreezeDay(streak)}`
+}
+
 /** A toast for progress that lands outside the win screen's chip (Streak-Notifications board). */
 export type ProgressToast =
-  | { kind: 'freeze'; left: number }
+  | { kind: 'freeze'; left: number; days: number }
   | { kind: 'streak'; days: number; bonus: number }
   | { kind: 'milestone'; days: number; xp: number; perks: Perk[] }
   | { kind: 'challenge'; title: string; xp: number }
@@ -83,7 +105,7 @@ export type ProgressToast =
 export function toastsFor(m: XpGainedMessage): ProgressToast[] {
   const out: ProgressToast[] = []
   const s = m.streak
-  if (s?.frozeDay) out.push({ kind: 'freeze', left: s.freezes })
+  if (s?.frozeDay) out.push({ kind: 'freeze', left: s.freezes, days: s.current })
   if (s?.milestone) {
     const days = s.milestone
     const xp = m.lines.find(l => l.kind === 'milestone')?.amount ?? 0
