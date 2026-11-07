@@ -6,6 +6,7 @@
   import type { AnyScale, ChartState } from 'layerchart'
   import { createChartNav } from '$lib/details/chartNav.svelte'
   import { scaled } from '$lib/stats/chart'
+  import { chartGrid } from '$lib/charts/grid'
   import { TONE_FILL, TONE_VAR, type Tone } from '$lib/stats/tones'
 
   export type LineSeries = { key: string; label: string; tone: Tone; values: (number | null)[] }
@@ -77,7 +78,7 @@
     yDomain={[lo - (hi - lo) * 0.15, hi + (hi - lo) * 0.2]}
     padding={{ left: 32, right: 14, top: 18, bottom: 22 }}
     axis
-    grid={{ x: false, y: { class: 'stroke-surface-paused', strokeWidth: 1 } }}
+    grid={chartGrid(steps, { class: 'stroke-surface-paused', strokeWidth: 1 })}
     rule={false}
     highlight={{ points: { r: 4, class: 'stroke-bg', strokeWidth: 2 }, lines: false }}
     tooltipContext={{ mode: 'quadtree' }}

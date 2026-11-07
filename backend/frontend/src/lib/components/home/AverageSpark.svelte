@@ -4,6 +4,7 @@
   // Low-level `Chart` + `Area` + `Spline`, like the other charts (the presets recurse under SSR).
   import { Area, Chart, Spline } from 'layerchart/svg'
   import type { ChartState, AnyScale } from 'layerchart'
+  import { chartGrid } from '$lib/charts/grid'
 
   type Point = { day: number; avg: number }
   type PointChartState = ChartState<Point, AnyScale<number, number>, AnyScale<number, number>>
@@ -33,7 +34,10 @@
         yDomain={[low - (high - low) * 0.15, high + (high - low) * 0.15]}
         yNice={false}
         axis={false}
-        grid={false}
+        grid={chartGrid(
+          points.map(p => p.day),
+          false,
+        )}
         rule={false}
         padding={{ left: 6, right: 6, top: 6, bottom: 4 }}
       >
