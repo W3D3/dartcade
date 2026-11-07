@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import type { MatchmakingMatch, MatchmakingSearch } from '$lib/api/lobby-ws'
-import { acceptedLine, clock, endedNotice, pausedFor, startedLine, searchView, secondsLeft, youAccepted } from '../ranked/queue'
+import {
+  acceptedLine,
+  clock,
+  duoLobbyReady,
+  endedNotice,
+  pausedFor,
+  startedLine,
+  searchView,
+  secondsLeft,
+  youAccepted,
+} from '../ranked/queue'
 import { fmtRp } from '../ranked/view'
 
 const T0 = Date.UTC(2026, 9, 15, 20)
@@ -99,5 +109,15 @@ describe('endedNotice', () => {
     expect(endedNotice({ reason: 'timeout', by: null })).toMatch(/ran out of time/)
     expect(endedNotice({ reason: 'failed', by: null })).toMatch(/could not be started/)
     expect(endedNotice({ reason: 'left', by: lena })).toBe('Lena left the queue, so your search ended.')
+  })
+})
+
+describe('duoLobbyReady', () => {
+  it('needs your own lobby of exactly two', () => {
+    expect(duoLobbyReady({ peopleCount: 2, youHost: true })).toBe(true)
+    expect(duoLobbyReady({ peopleCount: 3, youHost: true })).toBe(false)
+    expect(duoLobbyReady({ peopleCount: 1, youHost: true })).toBe(false)
+    expect(duoLobbyReady({ peopleCount: 2, youHost: false })).toBe(false)
+    expect(duoLobbyReady(null)).toBe(false)
   })
 })
