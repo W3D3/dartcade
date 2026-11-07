@@ -1,6 +1,7 @@
 import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
+import type { components } from '../schema/api.js'
 import type { Cursor } from '../history/cursor.js'
 import type { StatRow } from '../history/stats.js'
 import { groupBy } from '../util/groupBy.js'
@@ -274,23 +275,21 @@ export async function saveGameDetail(
     .execute()
 }
 
-export type X01StatKind = 'all' | 'ranked' | 'casual' | 'bots' | 'solo'
+/** A kind of match (the API's StatsKind), or all of them. */
+export type StatsKind = components['schemas']['StatsKind']
 /** Which of a player's X01 games the Stats page counts: its start score, out rule and kind of match. */
-export type X01StatFilter = { start: number; out: string; kind: X01StatKind }
+export type X01StatFilter = { start: number; out: string; kind: StatsKind }
 
 // A game's rules from its stored config, with X01's defaults (games/x01.ts) for a config without them
 const startOf = sql<number>`coalesce((gs.config->>'startScore')::int, 501)`
 const outOf = sql<string>`coalesce(gs.config->>'outMode', 'double')`
-const ranked = sql<boolean>`EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id)`
-const alone = sql<boolean>`(SELECT count(*) FROM game_players p WHERE p.session_id = gs.id) = 1`
-const withBot = sql<boolean>`EXISTS (SELECT 1 FROM game_players p WHERE p.session_id = gs.id AND p.bot_level IS NOT NULL)`
-/** The games of a kind: ranked ones are only ranked; the others are solo, against a bot or against people. */
-const KIND: Record<Exclude<X01StatKind, 'all'>, ReturnType<typeof sql<boolean>>> = {
-  ranked,
-  solo: sql<boolean>`NOT ${ranked} AND ${alone}`,
-  bots: sql<boolean>`NOT ${ranked} AND ${withBot}`,
-  casual: sql<boolean>`NOT ${ranked} AND NOT ${alone} AND NOT ${withBot}`,
-}
+/** The game's kind of match, the one rule the filter and each game's label use: a game from the
+ *  ranked queue is ranked; any other is solo, against a bot, or against people. */
+const kindOf = sql<Exclude<StatsKind, 'all'>>`CASE
+  WHEN EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id) THEN 'ranked'
+  WHEN (SELECT count(*) FROM game_players p WHERE p.session_id = gs.id) = 1 THEN 'solo'
+  WHEN EXISTS (SELECT 1 FROM game_players p WHERE p.session_id = gs.id AND p.bot_level IS NOT NULL) THEN 'bots'
+  ELSE 'casual' END`
 
 /** The user's X01 games that count for stats (finished, placed, not invalidated). */
 function myX01Games(db: Kysely<Database>, userId: string) {
@@ -303,7 +302,7 @@ function myX01Games(db: Kysely<Database>, userId: string) {
 
 function filtered(db: Kysely<Database>, userId: string, f: X01StatFilter) {
   const q = myX01Games(db, userId).where(startOf, '=', f.start).where(outOf, '=', f.out)
-  return f.kind === 'all' ? q : q.where(KIND[f.kind])
+  return f.kind === 'all' ? q : q.where(kindOf, '=', f.kind)
 }
 
 /** The start scores and out rules the user has X01 games with, the most played first. */
@@ -331,16 +330,16 @@ export async function x01StatOptions(db: Kysely<Database>, userId: string): Prom
   return { starts: starts.map(r => r.v), outs: outs.map(r => r.v) }
 }
 
-/** The user's X01 games under the filter, newest first, with whether the ranked queue started each:
+/** The user's X01 games under the filter, newest first, each with its kind of match:
  *  only those finished since `since`, at most `limit` of them. */
 export async function listX01StatGames(
   db: Kysely<Database>,
   userId: string,
   f: X01StatFilter,
   window: { since?: Date; limit?: number },
-): Promise<(HistoryGame & { ranked: boolean })[]> {
+): Promise<(HistoryGame & { kind: Exclude<StatsKind, 'all'> })[]> {
   let q = filtered(db, userId, f)
-    .select(['me.seat as my_seat', ranked.as('ranked')])
+    .select(['me.seat as my_seat', kindOf.as('kind')])
     .orderBy('gs.finished_at', 'desc')
     .orderBy('gs.id', 'desc')
   if (window.since) q = q.where('gs.finished_at', '>=', window.since)
@@ -350,7 +349,7 @@ export async function listX01StatGames(
     db,
     rows.map(r => r.id),
   )
-  return rows.map(r => ({ ...toGame(r, seats.get(r.id) ?? [], r.my_seat), ranked: r.ranked }))
+  return rows.map(r => ({ ...toGame(r, seats.get(r.id) ?? [], r.my_seat), kind: r.kind }))
 }
 
 /** How many legs the user's X01 games under the filter had, all time; a game whose detail isn't

@@ -2,18 +2,16 @@
 // (games/x01.ts detail()): their visits only, each dart with the score left before it and the
 // one-dart finish it was thrown at, walked with the game's own in and out rules.
 import { meetsMode, scoreDart, type BullValue, type OutMode } from '../games/outRules.js'
-import type { HistoryGame } from '../db/history.js'
+import type { listX01StatGames } from '../db/history.js'
 import type { X01Detail } from '../session/types.js'
 import { checkoutHint } from '../shared/checkout.js'
-
-export type MatchKind = 'ranked' | 'casual' | 'bots' | 'solo'
 
 export type StatGame = {
   id: string
   finishedAt: Date
   startScore: number
   outMode: OutMode
-  kind: MatchKind
+  kind: StatGameRow['kind']
   /** The other seats' names, in seat order. */
   opponents: string[]
 }
@@ -71,17 +69,19 @@ function walk(start: number, opened: boolean, darts: X01Detail['legs'][number]['
   })
 }
 
+/** A game as the Stats page's query returns it, with its kind of match. */
+export type StatGameRow = Awaited<ReturnType<typeof listX01StatGames>>[number]
+
 /** The seat's legs of a finished X01 game; a team game counts a leg its team won as won. */
-export function x01Legs(game: HistoryGame, detail: X01Detail, seat: number, ranked: boolean): StatLeg[] {
+export function x01Legs(game: StatGameRow, detail: X01Detail, seat: number): StatLeg[] {
   const rules = rulesOf(game.config)
   const others = game.seats.filter(s => s.seat !== seat)
-  const kind: MatchKind = ranked ? 'ranked' : others.length === 0 ? 'solo' : others.some(s => s.bot_level !== null) ? 'bots' : 'casual'
   const statGame: StatGame = {
     id: game.id,
     finishedAt: game.finished_at,
     startScore: rules.startScore,
     outMode: rules.outMode,
-    kind,
+    kind: game.kind,
     opponents: others.map(s => s.name),
   }
   const team = detail.teams?.find(t => t.seats.includes(seat))?.seats ?? [seat]
