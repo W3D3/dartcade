@@ -3,6 +3,7 @@
   // your own rows (read-only status for others), and the ⋯ menu with what you may do.
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import LockedStatus from './LockedStatus.svelte'
   import PersonStatus from './PersonStatus.svelte'
   import RowMenu from './RowMenu.svelte'
   import ToggleChip from './ToggleChip.svelte'
@@ -15,6 +16,7 @@
     viewerId,
     onupdate,
     onremove,
+    locked = false,
   }: {
     lobby: Lobby
     person: LobbyPerson
@@ -22,6 +24,8 @@
     viewerId: string | null
     onupdate: (personId: string, patch: PersonPatch) => Promise<boolean>
     onremove: (personId: string) => Promise<boolean>
+    /** The duo's ranked search runs: nothing here can change. */
+    locked?: boolean
   } = $props()
 
   // Your own rows only: the host sits others out with the who-plays chips on the next-game card
@@ -36,7 +40,21 @@
   let removing = $state(false)
 </script>
 
-{#if mine}
+{#snippet readyChip()}
+  <ToggleChip
+    tone="solid"
+    on={person.ready}
+    onclick={() => void onupdate(person.id, { ready: !person.ready })}
+    label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}
+  >
+    {person.ready ? 'Ready' : 'Ready?'}
+  </ToggleChip>
+{/snippet}
+
+{#if locked}
+  <!-- Your own Ready stays: going not-ready is how a partner who can't cancel leaves the queue -->
+  {#if mine && person.plays && showReady && readyControl}{@render readyChip()}{:else}<LockedStatus {person} />{/if}
+{:else if mine}
   <ToggleChip
     on={person.plays}
     onclick={() => void onupdate(person.id, { plays: !person.plays })}
@@ -46,14 +64,7 @@
   </ToggleChip>
   {#if person.plays && showReady}
     {#if readyControl}
-      <ToggleChip
-        tone="solid"
-        on={person.ready}
-        onclick={() => void onupdate(person.id, { ready: !person.ready })}
-        label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}
-      >
-        {person.ready ? 'Ready' : 'Ready?'}
-      </ToggleChip>
+      {@render readyChip()}
     {:else}
       <PersonStatus {person} />
     {/if}
@@ -61,16 +72,16 @@
 {:else}
   <PersonStatus {person} {showReady} />
 {/if}
-<RowMenu
-  name={person.name}
-  onup={mover && index > 0 ? () => void onupdate(person.id, { position: index - 1 }) : undefined}
-  ondown={mover && index < last ? () => void onupdate(person.id, { position: index + 1 }) : undefined}
-  onremove={canRemove(lobby, person, viewerId)
-    ? () => {
-        removing = true
-      }
-    : undefined}
-/>
+{#if !locked}<RowMenu
+    name={person.name}
+    onup={mover && index > 0 ? () => void onupdate(person.id, { position: index - 1 }) : undefined}
+    ondown={mover && index < last ? () => void onupdate(person.id, { position: index + 1 }) : undefined}
+    onremove={canRemove(lobby, person, viewerId)
+      ? () => {
+          removing = true
+        }
+      : undefined}
+  />{/if}
 
 {#if removing}
   <ConfirmModal

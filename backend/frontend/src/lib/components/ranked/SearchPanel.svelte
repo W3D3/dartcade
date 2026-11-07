@@ -6,12 +6,17 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { me } from '$lib/lobby/sockets'
   import { currentUser } from '$lib/auth'
-  import { cancelSearch, searchView } from '$lib/ranked/queue'
+  import { cancelSearch, searchView, startedLine } from '$lib/ranked/queue'
+  import { fmtRp } from '$lib/ranked/view'
   import { stopRule } from '$lib/ranked/queueCard'
   import { tick } from '$lib/ranked/tick'
+  import { numberFlag } from '$lib/flags'
+  import { ACCEPT_SECONDS } from '$shared/ranked.js'
 
   const search = $derived($me?.matchmaking?.search ?? null)
   const view = $derived(search ? searchView(search, $tick) : null)
+  const acceptSeconds = numberFlag('matchmaking.acceptSeconds', ACCEPT_SECONDS)
+  const duo = $derived(search?.mode === '2v2')
   const stop = $derived(search ? stopRule(search, $currentUser?.id ?? null) : null)
   let busy = $state(false)
   let error = $state('')
@@ -56,10 +61,14 @@
         </span>
       </div>
       <div class="flex min-w-0 flex-grow flex-col gap-[14px]">
-        {#if search.mode === '2v2'}
-          <span class="truncate text-[14px] font-semibold">{view.players}</span>
+        {#if duo}
+          <!-- Phones: who started it, as in MM-Lobby-Phone; the tiles below replace the range and the bar -->
+          <span class="text-[13px] leading-[1.35] text-ink-2 md:hidden">{startedLine(search, $currentUser?.id ?? null)}</span>
         {/if}
-        <div class="flex flex-col gap-1">
+        {#if search.mode === '2v2'}
+          <span class="truncate text-[14px] font-semibold max-md:hidden">{view.players}</span>
+        {/if}
+        <div class="flex flex-col gap-1 {duo ? 'max-md:hidden' : ''}">
           <span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Rating range</span>
           <span class="text-[15px]"
             ><strong class="font-mono font-medium">{view.range}</strong>
@@ -67,7 +76,7 @@
           >
         </div>
         {#if view.bar}
-          <div class="flex w-full flex-col gap-2">
+          <div class="flex w-full flex-col gap-2 {duo ? 'max-md:hidden' : ''}">
             <div class="relative h-[10px] rounded-[5px] bg-surface-chip">
               <span
                 class="absolute top-0 bottom-0 rounded-[5px] border border-accent-line-strong bg-accent-line transition-[left,right] duration-700"
@@ -81,15 +90,25 @@
             </div>
           </div>
         {/if}
-        <span class="text-[13px] text-text-muted">{view.searching}</span>
+        <span class="text-[13px] text-text-muted {duo ? 'max-md:hidden' : ''}">{view.searching}</span>
       </div>
     </div>
+    {#if duo}
+      <dl class="m-0 grid grid-cols-2 gap-[6px] text-center md:hidden">
+        {#each [{ label: 'Team', value: search.rating === null ? '–' : fmtRp(search.rating) }, { label: 'Range', value: view.range.replace(' RP', '') }] as tile (tile.label)}
+          <div class="rounded-[10px] bg-surface-active px-1 py-2">
+            <dt class="text-[10px] uppercase tracking-[0.08em] text-text-dim">{tile.label}</dt>
+            <dd class="m-0 font-display text-[20px] font-bold">{tile.value}</dd>
+          </div>
+        {/each}
+      </dl>
+    {/if}
     <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-4">
       <span class="flex-grow text-[13px] leading-[1.45] text-text-muted">
         {#if search.mode === '2v2' && !stop?.allowed}
-          Only your duo's host can stop the search. When a match is found, you get 10 seconds to accept on any screen.
+          Only your duo's host can stop the search. When a match is found, you get {$acceptSeconds} seconds to accept on any screen.
         {:else}
-          Keep browsing. When a match is found, you get 10 seconds to accept on any screen.
+          Keep browsing. When a match is found, you get {$acceptSeconds} seconds to accept on any screen.
         {/if}
       </span>
       {#if stop?.allowed}
