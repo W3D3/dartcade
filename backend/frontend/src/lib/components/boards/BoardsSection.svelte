@@ -24,6 +24,7 @@
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
   import GameCard from './GameCard.svelte'
+  import DetectionCard from './DetectionCard.svelte'
   import BigScreenSetup from './BigScreenSetup.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import BoardChips from './BoardChips.svelte'
@@ -49,6 +50,7 @@
   // WLED device count per board, for the card chip and the selected board's detail row
   const lightsOn = flag('lights.enabled')
   const bigScreenOn = flag('bigscreen.enabled')
+  const detectionOn = flag('detection.collect.enabled')
   let lightsCounts = $state<Partial<Record<string, number>>>({})
   // Guards against a slower, superseded fetch overwriting a fresher one (same idea as
   // LightsSection's lightsReq)
@@ -638,6 +640,9 @@
           <GameCard board={selected} onchanged={refetchBoards} />
           {#if $bigScreenOn}
             <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
+          {/if}
+          {#if $detectionOn}
+            <DetectionCard board={selected} onchanged={refetchBoards} />
           {/if}
           <SectionCard title="Pairing" icon={Link2}>
             <div class="flex flex-wrap items-center gap-4">
