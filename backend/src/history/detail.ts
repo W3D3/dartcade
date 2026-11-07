@@ -2,7 +2,7 @@ import { games } from '../games/index.js'
 import { noStats } from '../games/matchStats.js'
 import { newSession, replayPooled, StoredConfigSchema, type LoggedInput, type WarnFn } from '../session/replay.js'
 import type { AtcDetail, CricketDetail, HiloDetail, MatchStats, MinigolfDetail, P121Detail, X01Detail } from '../session/types.js'
-import { getGameDetail, saveGameDetail, type HistoryGame } from '../db/history.js'
+import { getGameDetails, saveGameDetail, type HistoryGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -23,11 +23,31 @@ const building = new Map<string, Promise<Built | null>>()
  * invalidated mark) comes from the game row on each load.
  */
 export async function storedDetail(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<Built | null> {
-  const mod = games[game.game_id]
-  if (!mod) return null
-  const version = `${mod.version}.${DETAIL_VERSION}`
-  const row = await getGameDetail(db, game.id)
-  if (row?.version === version) return { detail: row.detail, stats: row.stats }
+  return (await storedDetails(db, [game], warn))[0]
+}
+
+/** storedDetail for each game, in order: the stored ones read in one query, the rest replayed one by one. */
+export async function storedDetails(db: Kysely<Database>, list: HistoryGame[], warn: WarnFn): Promise<(Built | null)[]> {
+  const rows = await getGameDetails(
+    db,
+    list.map(g => g.id),
+  )
+  const out: (Built | null)[] = []
+  for (const game of list) {
+    const mod = games[game.game_id]
+    if (!mod) {
+      out.push(null)
+      continue
+    }
+    const version = `${mod.version}.${DETAIL_VERSION}`
+    const row = rows.get(game.id)
+    out.push(row?.version === version ? { detail: row.detail, stats: row.stats } : await rebuild(db, game, version, warn))
+  }
+  return out
+}
+
+/** Replays the game and stores the result; two first loads of a game share one replay. */
+function rebuild(db: Kysely<Database>, game: HistoryGame, version: string, warn: WarnFn): Promise<Built | null> {
   let pending = building.get(game.id)
   if (!pending) {
     pending = (async () => {
