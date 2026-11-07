@@ -83,7 +83,15 @@
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
           <label for="login-email" class="field-label">Email</label>
-          <Input id="login-email" type="email" bind:value={email} autocomplete="username" placeholder="you@example.com" required />
+          <Input
+            id="login-email"
+            name="email"
+            type="email"
+            bind:value={email}
+            autocomplete="username"
+            placeholder="you@example.com"
+            required
+          />
         </div>
 
         <div class="flex flex-col gap-2">
@@ -95,6 +103,7 @@
           </div>
           <Input
             id="login-password"
+            name="password"
             type="password"
             bind:value={password}
             autocomplete="current-password"

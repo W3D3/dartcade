@@ -52,6 +52,7 @@
     {/if}
     <Input
       {id}
+      name="nickname"
       bind:value
       aria-describedby={statusId}
       autocomplete="nickname"
