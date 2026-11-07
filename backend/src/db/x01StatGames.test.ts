@@ -71,7 +71,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('X01 stat games', () => {
     expect(await ids({ ...DOUBLE_501, start: 301 })).toEqual(['c'])
     expect((await listX01StatGames(db, 'ann', DOUBLE_501, {}))[1]).toMatchObject({
       mySeat: 0,
-      ranked: false,
+      kind: 'casual',
       seats: [{ name: 'Ann' }, { name: 'Bob' }],
     })
   })
@@ -94,7 +94,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('X01 stat games', () => {
     expect(await ids({ ...DOUBLE_501, kind: 'bots' })).toEqual(['bot'])
     expect(await ids({ ...DOUBLE_501, kind: 'casual' })).toEqual(['casual'])
     expect(await ids({ ...DOUBLE_501, kind: 'ranked' })).toEqual(['ranked'])
-    expect((await listX01StatGames(db, 'ann', { ...DOUBLE_501, kind: 'ranked' }, {}))[0].ranked).toBe(true)
+    // Each game carries the kind the filter picks it by
+    const kinds = (await listX01StatGames(db, 'ann', DOUBLE_501, {})).map(g => [g.id, g.kind])
+    expect(kinds).toEqual([
+      ['ranked', 'ranked'],
+      ['casual', 'casual'],
+      ['bot', 'bots'],
+      ['solo', 'solo'],
+    ])
   })
 
   it('reads only what the range needs', async () => {

@@ -39,7 +39,7 @@ export function statsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     // Games come newest first; so do their legs
     const legs = list.flatMap((game, i) => {
       const detail = built[i]?.detail
-      return detail?.mode === 'x01' && game.mySeat !== null ? x01Legs(game, detail, game.mySeat, game.ranked).reverse() : []
+      return detail?.mode === 'x01' && game.mySeat !== null ? x01Legs(game, detail, game.mySeat).reverse() : []
     })
     return reply.send({ options, applied: { range, start, out, kind }, totalLegs, ...x01Report(legs, range, now) })
   })
