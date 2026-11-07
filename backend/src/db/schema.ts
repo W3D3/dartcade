@@ -333,6 +333,19 @@ export interface RankedRatingsTable {
   updated_at: ColumnType<Date, Date | undefined, Date>
 }
 
+/** An admin's change to a player's rating, replayed in order with the games (migration 056). */
+export interface RankedAdjustmentsTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  user_id: string
+  mode: '1v1' | '2v2'
+  kind: 'set' | 'reset'
+  rating: number | null
+  reason: string
+  admin_user_id: string | null
+  created_at: ColumnType<Date, Date | undefined, never>
+}
+
 /** What one ranked game did to one player's rating (migration 020). */
 export interface RankedResultsTable {
   session_id: string
@@ -528,6 +541,7 @@ export interface Database {
   friend_activity: FriendActivityTable
   ranked_ratings: RankedRatingsTable
   ranked_results: RankedResultsTable
+  ranked_adjustments: RankedAdjustmentsTable
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
   feature_flag_overrides: FeatureFlagOverridesTable
