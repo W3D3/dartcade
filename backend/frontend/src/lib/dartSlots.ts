@@ -16,7 +16,7 @@ function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slo
     label,
     points,
     foot: '',
-    aria: `Dart ${i + 1}: ${label}, ${hit ? `${points} points` : 'no hit'}. Correct this dart`,
+    aria: `Dart ${i + 1}: ${label}, ${hit ? `${points} points` : 'no hit'}`,
   }
 }
 
@@ -138,7 +138,7 @@ export function cricketSlots(o: { darts: ThrownDart[]; targets: readonly number[
   const done = o.darts.slice(0, 3).map((d, i): Slot => {
     const m = dartMarks(d.segment ?? {}, o.targets)
     const marks = m ? plural(m, 'mark') : 'no mark'
-    return { ...thrownSlot(d, i, m > 0, m ? marks : '0'), aria: `Dart ${i + 1}: ${d.segment?.name || 'Miss'}, ${marks}. Correct this dart` }
+    return { ...thrownSlot(d, i, m > 0, m ? marks : '0'), aria: `Dart ${i + 1}: ${d.segment?.name || 'Miss'}, ${marks}` }
   })
   return [...done, ...(o.locked ? notThrown(done.length) : openSlots(done.length, []))]
 }

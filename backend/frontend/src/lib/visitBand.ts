@@ -30,6 +30,10 @@ export function x01Band(o: { darts: ThrownDart[]; bust: boolean; scored?: number
   }
 }
 
+/** Someone else's open visit: the plain "This visit" names its thrower; a bust or a celebration keeps its own words. */
+export const ownedBand = (band: BandData, name: string): BandData =>
+  band.bust || band.fx !== 'none' ? band : { ...band, eyebrow: `${name}'s visit` }
+
 export function atcBand(o: { advanced: number }): BandData {
   return {
     eyebrow: 'This visit',

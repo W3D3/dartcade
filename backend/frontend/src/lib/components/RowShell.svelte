@@ -6,6 +6,8 @@
   import Avatar from './Avatar.svelte'
   import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import RankChip from './ranked/RankChip.svelte'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { PillKind } from './pills.js'
   import type { SeatLine } from '$lib/remote'
   import { nameTone, playerCard, type CardTone } from '$lib/playerCard'
@@ -15,6 +17,7 @@
     active,
     pill,
     seat = null,
+    rank = null,
     class: className,
     children,
     tone = null,
@@ -25,6 +28,8 @@
     active: boolean
     pill: PillKind | null
     seat?: SeatLine | null
+    /** A ranked game: the seat's rank chip under the name. */
+    rank?: SeatRank | null
     /** The row's grid columns and vertical padding. */
     class: string
     children: Snippet
@@ -54,6 +59,7 @@
         />
         <PlayerName {name} {seat} nameClass="text-[18px] xl:text-[21px] {nameTone(active, tone)}" youClass="text-[13px]" gap="gap-[2px]" />
       </span>
+      {#if rank}<RankChip rank={rank.rank} rating={rank.rating} />{/if}
       {#if pill}<PlayerPill kind={pill} small label={pillLabel} />{/if}
     </div>
     {@render children()}

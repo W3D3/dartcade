@@ -3,7 +3,7 @@
 // The clock is the server's: every timestamp is compared with the snapshot's `now`, so a screen
 // whose own clock is off still counts down right.
 import type { Snapshot } from '$lib/api'
-import { clockView, type ClockView } from './clock'
+import { clockView, type ClockInput, type ClockView } from './clock'
 import { rank, type Rank } from '$shared/ranked.js'
 import { signedRp } from './view'
 
@@ -17,15 +17,18 @@ export function stakesLabel(stakes: RankedState['seats'][number]['stakes']): str
 /** The server's clock minus this one at the moment the snapshot arrived. */
 export const clockSkew = (ranked: RankedState): number => Date.parse(ranked.now) - Date.now()
 
-/** The up seat's visit and reserve at `now` (this screen's clock), hidden until close to the limit. */
-export function upClock(ranked: RankedState, skew: number, now: number): ClockView {
-  // No deadline: no visit clock is running (the bull off, a finished game)
-  if (ranked.visitDeadline === null || ranked.forfeitAt === null) return { phase: 'hidden' }
+/** The up seat's visit and reserve left at `now` (this screen's clock); null while no visit clock runs (the bull off, a finished game). */
+export function upLeft(ranked: RankedState, skew: number, now: number): ClockInput | null {
+  const { visitDeadline, forfeitAt } = ranked
+  if (visitDeadline === null || forfeitAt === null) return null
   const server = now + skew
-  return clockView({
-    visitLeft: (Date.parse(ranked.visitDeadline) - server) / 1000,
-    reserveLeft: (Date.parse(ranked.forfeitAt) - server) / 1000,
-  })
+  return { visitLeft: (Date.parse(visitDeadline) - server) / 1000, reserveLeft: (Date.parse(forfeitAt) - server) / 1000 }
+}
+
+/** The up seat's visit and reserve at `now`, hidden until close to the limit. */
+export function upClock(ranked: RankedState, skew: number, now: number): ClockView {
+  const left = upLeft(ranked, skew, now)
+  return left ? clockView(left) : { phase: 'hidden' }
 }
 
 /** The first seat the viewer does not control whose connection is gone: who, and when they forfeit (this screen's clock). */

@@ -7,6 +7,7 @@
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
+  import type { SeatRank } from '$lib/ranked/inGame'
 
   let {
     who,
@@ -14,12 +15,15 @@
     active,
     pill,
     seat = null,
+    rank = null,
   }: {
     who: Who
     p: X01PlayerView
     active: boolean
     pill: PillKind | null
     seat?: SeatLine | null
+    /** A ranked game: the player's rank chip under the name. */
+    rank?: SeatRank | null
   } = $props()
   // Stacked rows (narrow landscape windows; upright screens get the portrait layout): only the thrower's stats, the others keep their leg pips
   const stacked = $derived(active ? '' : '@max-lg:hidden')
@@ -39,6 +43,7 @@
   {active}
   {pill}
   {seat}
+  {rank}
   class="{active
     ? 'grid-cols-[190px_150px_minmax(0,1fr)]'
     : 'grid-cols-[190px_120px_minmax(0,1fr)]'} @5xl:grid-cols-[200px_170px_minmax(0,1fr)]

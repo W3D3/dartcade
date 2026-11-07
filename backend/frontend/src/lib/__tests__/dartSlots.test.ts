@@ -12,7 +12,7 @@ describe('x01Slots', () => {
       ['suggested-next', 'T19', '', 'leaves 24'],
       ['suggested-later', 'D12', '', 'to win the leg'],
     ])
-    expect(s[0].aria).toBe('Dart 1: T20, 60 points. Correct this dart')
+    expect(s[0].aria).toBe('Dart 1: T20, 60 points')
     expect(s[1].aria).toBe('Dart 2: suggested T19, leaves 24')
   })
 
@@ -27,7 +27,7 @@ describe('x01Slots', () => {
 
   it('a zero-point dart is a miss', () => {
     const s = x01Slots({ ...base, darts: [d('Miss', 0)], remaining: 301 })
-    expect(s[0]).toMatchObject({ kind: 'miss', label: 'Miss', points: '0', aria: 'Dart 1: Miss, no hit. Correct this dart' })
+    expect(s[0]).toMatchObject({ kind: 'miss', label: 'Miss', points: '0', aria: 'Dart 1: Miss, no hit' })
   })
 
   it('no suggestion above 170: next and empty slots', () => {
@@ -72,7 +72,7 @@ describe('atcSlots', () => {
       ['miss', 'S11', '0', ''],
       ['suggested-next', '14', '', 'your target'],
     ])
-    expect(s[1].aria).toBe('Dart 2: S11, no hit. Correct this dart')
+    expect(s[1].aria).toBe('Dart 2: S11, no hit')
   })
 
   it('no suggestion without a target', () => {

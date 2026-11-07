@@ -10,6 +10,9 @@
   import { x01Pages, x01Roll, x01Darts } from '$lib/playerStats'
   import PlayerPill from './PlayerPill.svelte'
   import TeamMemberRow from './TeamMemberRow.svelte'
+  import TeamRatingChip from './ranked/TeamRatingChip.svelte'
+  import TeamClockChips from './ranked/TeamClockChips.svelte'
+  import type { TeamRanked } from '$lib/ranked/teams'
   import type { X01TeamView } from '$lib/teams'
   import type { SeatLine } from '$lib/remote'
   import { playerCard } from '$lib/playerCard'
@@ -20,6 +23,7 @@
     who,
     chalkboard,
     compact = false,
+    ranked = null,
     overlay,
   }: {
     team: X01TeamView
@@ -31,6 +35,8 @@
     /** Phones (side by side) and narrow screens (stacked): smaller score that shrinks to fit the
      * panel's width, no chalkboard, and only the team avg and darts, not the match-wide stats. */
     compact?: boolean
+    /** A ranked game: the team's rating, its players' ranks and its clocks. */
+    ranked?: TeamRanked | null
     /** Covers the score and stats, below the players (the waiting card while a player of this team is away). */
     overlay?: Snippet
   } = $props()
@@ -53,9 +59,10 @@
   <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
     <span
       class="inline-flex items-center h-[30px] px-3 box-border rounded-[8px] font-display font-bold text-[18px] tracking-[0.06em] uppercase whitespace-nowrap
-                 {team.active ? 'bg-accent text-accent-fg' : 'border-2 border-text text-text'}">{team.name}</span
+                 {team.active ? 'bg-accent text-accent-fg' : 'border-2 border-text text-text'}">{ranked?.label ?? team.name}</span
     >
-    <span class="flex items-center gap-3">
+    {#if ranked?.rating != null}<TeamRatingChip rating={ranked.rating} />{/if}
+    <span class="ml-auto flex items-center gap-3">
       {#if team.won}<PlayerPill kind="winner" small />{/if}
       {#if team.firstTo > 1 || !compact}<LegPips total={team.firstTo} won={team.legsWon} active={team.active} />{/if}
     </span>
@@ -63,9 +70,11 @@
 
   <div class="flex flex-col gap-[6px]">
     {#each team.members as m (m.seat)}
-      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} who={who[m.seat]} {compact} />
+      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} who={who[m.seat]} rank={ranked?.ranks[m.seat] ?? null} {compact} />
     {/each}
   </div>
+
+  {#if ranked && !compact}<TeamClockChips team={ranked} seat={team.members[0]?.seat ?? 0} up={team.active} />{/if}
 
   <div class="relative flex-1 min-h-0 flex flex-col {compact ? 'gap-2' : 'gap-[14px]'}">
     <span

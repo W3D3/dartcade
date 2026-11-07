@@ -6,6 +6,8 @@
   import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import RollingNumber from './RollingNumber.svelte'
+  import RankBadge from './ranked/RankBadge.svelte'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { RollOptions } from '$lib/rollingNumber'
   import type { PillKind } from './pills.js'
   import { playerCard } from '$lib/playerCard'
@@ -20,6 +22,7 @@
     active = false,
     you = false,
     roll = {},
+    rank = null,
   }: {
     who: Who
     pill: PillKind | null
@@ -33,6 +36,8 @@
     you?: boolean
     /** How the value rolls when it changes. */
     roll?: RollOptions
+    /** A ranked game: the player's rank badge before the line. */
+    rank?: SeatRank | null
   } = $props()
   const name = $derived(who.name)
 </script>
@@ -43,7 +48,11 @@
 >
   <Avatar name={who.name} face={who.face} tone={active ? 'accent' : 'default'} size={32} />
   <PlayerName {name} {you} nameClass="text-[15px] {active ? 'text-text' : 'text-ink-2'}" youClass="text-[12px]" gap="gap-[2px]" leading="">
-    {#snippet below()}<span class="text-[12px] text-text-dim truncate">{sub}</span>{/snippet}
+    {#snippet below()}
+      <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
+        {#if rank}<RankBadge rank={rank.rank} size={14} />{/if}<span class="truncate">{sub}</span>
+      </span>
+    {/snippet}
   </PlayerName>
   {#if pill === 'winner' || pill === 'leading' || (active && pill)}<PlayerPill kind={pill} small />{/if}
   {#if legs && legs.total > 1}<LegPips total={legs.total} won={legs.won} active={false} />{/if}
