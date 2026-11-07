@@ -14,7 +14,7 @@
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { KIND_LABEL } from '$lib/progress/look'
-  import { fmtXp, toastsFor, type ProgressToast } from '$lib/progress/view'
+  import { fmtXp, freezeLeftLine, toastsFor, type ProgressToast } from '$lib/progress/view'
 
   const SHOW_MS = 5000
   const progression = flag('progression.enabled')
@@ -179,8 +179,7 @@
           </div>
           {#if t.kind === 'streak' && t.bonus > 0}{@render xpPill(t.bonus, false)}{/if}
           {#if t.kind === 'milestone' && t.xp > 0}{@render xpPill(t.xp, true)}{/if}
-          {#if t.kind === 'freeze'}<span class="shrink-0 text-right text-[13px] text-text-muted"
-              >{t.left} {t.left === 1 ? 'freeze' : 'freezes'}<br />left</span
+          {#if t.kind === 'freeze'}<span class="shrink-0 text-right text-[13px] text-text-muted">{freezeLeftLine(t.left, t.days)}</span
             >{/if}
         </div>
         {#if t.kind === 'streak'}
