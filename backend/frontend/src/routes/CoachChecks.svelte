@@ -26,7 +26,9 @@
       <h1 class="m-0 font-display text-[34px] font-bold uppercase leading-none md:text-[48px]">What the coach can detect</h1>
       <p class="m-0 max-w-[900px] text-[15px] leading-normal text-text-muted md:text-[16px]">
         {total} checks run on every X01 leg with double out. Visit checks put a label and a note on the visit; leg patterns go into the coach's
-        take. Scoring compares with your own average, so a 45 means more at 40 average than at 90.
+        take. Each dart is judged on the score left before it, not on the score the visit started on, so one visit can run from scoring into a
+        setup, or from a setup into a finish: it carries a tag for each phase it went through, Scoring, Setup, Doubling, never more than two.
+        Scoring compares with your own average, so a 45 means more at 40 average than at 90.
       </p>
     </header>
 
