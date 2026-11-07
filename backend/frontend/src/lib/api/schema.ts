@@ -940,6 +940,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/games/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void a running ranked game, with no rating change for anyone (admin or moderator)
+         * @description Ends the game aborted, not as a forfeit; nobody's rating moves, it is marked void in the ranked match record and never rated or replayed. Its players see that a moderator voided it. Writes a ranked.void audit entry. Only a running ranked game can be.
+         */
+        post: operations["voidAdminGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ranked/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The searches waiting in the ranked queue, longest wait first (admin or moderator)
+         * @description Searches live in memory; a restart empties the list. A duo is one search.
+         */
+        get: operations["listRankedQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ranked/queue/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a user out of the ranked queue (admin or moderator)
+         * @description Ends their whole search (their duo's too), or the found match they are in, which falls through for the other side without a pause. They see their search end. Writes a ranked.dequeue audit entry.
+         */
+        post: operations["removeFromRankedQueue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/games/{id}/invalidate": {
         parameters: {
             query?: never;
@@ -2893,14 +2957,36 @@ export interface components {
                 id: string;
                 name: string;
             } | null;
-            /** @description The game moved ranked ratings */
+            /** @description The game was a ranked match (running games too) */
             ranked: boolean;
+            /** @description A moderator voided this running ranked game */
+            voided: boolean;
             invalidated: components["schemas"]["AdminGameInvalidation"];
             players: components["schemas"]["AdminGameSeat"][];
         };
         InvalidateGameRequest: {
             /** @description Why the game is invalidated; optional, blank counts as none */
             reason?: string;
+        };
+        RankedQueueList: {
+            searches: {
+                id: string;
+                /** @enum {string} */
+                mode: "1v1" | "2v2";
+                firstTo: number;
+                /** Format: date-time */
+                since: string;
+                waitSeconds: number;
+                /** @description RP either way the search matches now */
+                range: number;
+                /** @description The side's rating (hidden from the players while they place) */
+                rating: number;
+                placing: boolean;
+                players: {
+                    userId: string;
+                    name: string;
+                }[];
+            }[];
         };
         AdminGameRecalculated: {
             /** @description The ranked modes whose ratings were replayed (without the game when it was invalidated, with it when restored) */
@@ -6336,6 +6422,96 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    voidAdminGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvalidateGameRequest"];
+            };
+        };
+        responses: {
+            /** @description Voided */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The game is not a running ranked game */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listRankedQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The waiting searches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankedQueueList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeFromRankedQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvalidateGameRequest"];
+            };
+        };
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

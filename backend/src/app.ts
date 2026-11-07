@@ -33,6 +33,7 @@ import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
 import { applyBan } from './auth/ban.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
+import { adminRankedApiPlugin } from './api/adminRanked.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
@@ -280,6 +281,7 @@ export async function buildApp({
       ),
   })
   await app.register(adminGamesApiPlugin, { db })
+  await app.register(adminRankedApiPlugin, { db, engine, matchmaking })
   // The lights flag changed: boards with strips are darkened (off) or get their devices back (on)
   const onFlagChanged = lights
     ? (key: string) => {

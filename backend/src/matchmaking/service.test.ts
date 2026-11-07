@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertBoard } from '../db/queries.js'
 import { getRatings } from '../db/ranked.js'
+import { recordVoid } from '../db/adminGames.js'
 import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { LobbyService } from '../lobby/service.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
-import { MatchmakingService, PAUSE_MS } from './service.js'
+import { MatchmakingService, PAUSE_MS, rankedConfig } from './service.js'
 import { setupFlags } from '../flags/index.js'
 import { ACCEPT_SECONDS } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
@@ -24,6 +25,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
   let mm: MatchmakingService
   let now: number
   let sent: Map<string, MatchmakingMessage>
+  // The last snapshot the engine pushed for each session (a voided one is gone from the engine afterwards)
+  let pushed: Map<string, unknown>
 
   const last = (userId: string): MatchmakingMessage => {
     const msg = sent.get(userId)
@@ -67,10 +70,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await db.deleteFrom('lobbies').execute()
     now = Date.UTC(2026, 9, 15, 20)
     sent = new Map()
+    pushed = new Map()
     const hub = new LobbyHub()
     engine = new SessionEngine(
       createEngineStore(db),
-      vi.fn(),
+      id => pushed.set(id, engine.getSnapshot(id)),
       () => {},
       undefined,
       e => mm.onGameEnded(e),
@@ -245,5 +249,72 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await mm.accept('anna', matchId('anna'))
     await engine.deleteSession(engine.getSessionByUser('chris')?.id ?? '', 'chris')
     expect((await getRatings(db, 'anna'))['1v1'].matches).toBe(1)
+  })
+
+  it('lists the waiting searches with their real rating, and a moderator takes a duo out of the queue', async () => {
+    await db.insertInto('ranked_ratings').values({ user_id: 'ben', mode: '1v1', rating: 1900, matches: 3 }).execute()
+    await mm.search('ben', { mode: '1v1', firstTo: 3 })
+    now += 20_000
+    const { id, code } = await lobbies.create('chris')
+    await lobbies.join('lena', id, code)
+    await mm.search('chris', { mode: '2v2', firstTo: 2 })
+    expect(mm.searchList()).toEqual([
+      expect.objectContaining({ mode: '1v1', waitSeconds: 20, rating: 1900, placing: true, players: [{ userId: 'ben', name: 'Ben' }] }),
+      expect.objectContaining({
+        mode: '2v2',
+        waitSeconds: 0,
+        players: [expect.objectContaining({ userId: 'chris' }), expect.objectContaining({ userId: 'lena' })],
+      }),
+    ])
+    // Either duo player: the whole duo's search ends, and they see it
+    expect(await mm.dequeue('lena')).toEqual({ mode: '2v2', userIds: ['chris', 'lena'] })
+    expect(last('chris').search).toBeNull()
+    expect(last('lena').search).toBeNull()
+    expect(mm.searchList().map(s => s.mode)).toEqual(['1v1'])
+    expect(await mm.dequeue('lena')).toBeNull()
+  })
+
+  it('takes a user out of a found match: their side leaves, the other keeps its place and nobody is paused', async () => {
+    await mm.search('chris', { mode: '1v1', firstTo: 2 })
+    await mm.search('anna', { mode: '1v1', firstTo: 2 })
+    await mm.tick()
+    expect(await mm.dequeue('anna')).toEqual({ mode: '1v1', userIds: ['anna'] })
+    expect(last('anna')).toMatchObject({ search: null, match: null, pausedUntil: null })
+    expect(last('chris').search).not.toBeNull()
+  })
+
+  it('cannot void a ranked game that already finished, nor a casual one', async () => {
+    await mm.search('chris', { mode: '1v1', firstTo: 2 })
+    await mm.search('anna', { mode: '1v1', firstTo: 2 })
+    await mm.tick()
+    await mm.accept('chris', matchId('chris'))
+    await mm.accept('anna', matchId('anna'))
+    const sessionId = engine.getSessionByUser('chris')?.id ?? ''
+    await engine.onUserAction(sessionId, 'chris', { type: 'forfeit' })
+    // Finished, but still in the engine for its final snapshot: the void finds nothing to abort
+    expect(await engine.voidSession(sessionId)).toBe(false)
+    expect((await getRatings(db, 'anna'))['1v1'].matches).toBe(1)
+    const { sessionId: casual } = await engine.create('ben', null, 'x01', rankedConfig('1v1', 2), [{ name: 'Ben' }, { name: 'Guest' }])
+    expect(await engine.voidSession(casual)).toBe(false)
+    expect(engine.getSession(casual)?.status).toBe('active')
+  })
+
+  it('a voided running game ends aborted, says so, and is never rated', async () => {
+    await mm.search('chris', { mode: '1v1', firstTo: 2 })
+    await mm.search('anna', { mode: '1v1', firstTo: 2 })
+    await mm.tick()
+    await mm.accept('chris', matchId('chris'))
+    await mm.accept('anna', matchId('anna'))
+    const sessionId = engine.getSessionByUser('chris')?.id ?? ''
+    await engine.voidSession(sessionId)
+    await recordVoid(db, 'chris', sessionId, 'cheating suspected')
+    expect(pushed.get(sessionId)).toMatchObject({ status: 'aborted', voided: true, results: null })
+    expect(engine.getSessionByUser('anna')).toBeUndefined()
+    expect(await db.selectFrom('ranked_matches').select('void_reason').where('session_id', '=', sessionId).executeTakeFirst()).toEqual({
+      void_reason: 'moderator_void',
+    })
+    expect(await db.selectFrom('ranked_results').select('user_id').execute()).toEqual([])
+    const audit = await db.selectFrom('admin_audit').selectAll().where('action', '=', 'ranked.void').executeTakeFirstOrThrow()
+    expect(audit).toMatchObject({ target: sessionId, detail: { mode: '1v1', reason: 'cheating suspected' } })
   })
 })

@@ -660,6 +660,7 @@ export class SessionEngine {
       results: session.status === 'finished' ? results(session).map(r => ({ placement: r.placement, forfeited: r.forfeited })) : null,
       finishPending: session.status === 'active' && ((session.takeoutHeld === true && takeoutWins(session)) || awaitsFinish(session)),
       rankedGame: session.ranked !== null,
+      voided: session.voided === true,
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
@@ -702,13 +703,30 @@ export class SessionEngine {
   }
 
   async deleteSession(sessionId: string, abortedByUserId: string | null = null): Promise<boolean> {
+    return (await this.abort(sessionId, abortedByUserId, false)) !== 'none'
+  }
+
+  /**
+   * A moderator voids a running ranked game: it ends aborted by nobody and says so in its last
+   * snapshot. True only when this call aborted it; a game that finished or was aborted first (the
+   * check runs in the session's queue, behind the input that ended it) is left as it is.
+   */
+  async voidSession(sessionId: string): Promise<boolean> {
+    return (await this.abort(sessionId, null, true)) === 'aborted'
+  }
+
+  private async abort(sessionId: string, abortedByUserId: string | null, voided: boolean): Promise<'none' | 'unchanged' | 'aborted'> {
     const session = this.byId.get(sessionId)
-    if (!session) return false
+    if (!session) return 'none'
+    let outcome: 'unchanged' | 'aborted' = 'unchanged'
     await this.enqueue(sessionId, async () => {
       const wasActive = session.status === 'active'
+      if (voided && !(wasActive && session.ranked)) return
       if (wasActive) {
         await this.store.abortSession(sessionId, new Date(), abortedByUserId)
         session.status = 'aborted'
+        session.voided = voided
+        outcome = 'aborted'
       }
       this.release(session)
       // Everyone still watching sees the game end before it goes away
@@ -716,7 +734,7 @@ export class SessionEngine {
       this.forget(session)
       if (wasActive) await this.notifyEnded(this.endedOf(session, 'aborted', abortedByUserId, []))
     })
-    return true
+    return outcome
   }
 
   // A finished session no longer holds its boards, its players' one active slot or its lobby.
