@@ -32,11 +32,15 @@ export type {
 export type Player = { name: string }
 
 /** What makes a game ranked: the queue it came from and the accounts of each side. */
+/** A ranked player at the start: the rating they were matched on, their rank (null while placing),
+ *  the placement matches they had played and what the game stood to win or lose them (null while placing). */
+export type RankedEntry = { rating: number; rankIndex: number | null; matches: number; stakes: { win: number; loss: number } | null }
+
 export type RankedGame = {
   mode: RankedMode
   sides: [string[], string[]]
-  /** The rating each player was matched on, by user id. */
-  ratings: Record<string, number>
+  /** What each player went into the game with, by user id. */
+  entries: Record<string, RankedEntry>
   /** The rules the flags gave it at the start; null for a game from before them (no clock). */
   rules: RankedRules | null
 }

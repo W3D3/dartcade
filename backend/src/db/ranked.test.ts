@@ -10,6 +10,7 @@ import {
   recentRanked,
   recalculateRatings,
   recordRankedGame,
+  rankedOutcomes,
   recordRankedResult,
   unrecordedRankedGames,
   x01Average,
@@ -180,6 +181,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     await recordRankedResult(db, { sessionId: g, mode: '1v1', at: at(11), sides })
     await recordRankedResult(db, { sessionId: g, mode: '1v1', at: at(11), sides })
     expect((await getRatings(db, 'cal'))['1v1'].rankIndex).toBe(5)
+    // What the match screen shows afterwards: the RP and the stage going in and coming out
+    const outcomes = await rankedOutcomes(db, g)
+    expect(outcomes.find(o => o.userId === 'cal')).toMatchObject({ rankIndexBefore: 4, rankIndexAfter: 5 })
+    expect(outcomes.find(o => o.userId === 'cal')?.change).toBeGreaterThan(0)
+    expect(outcomes.find(o => o.userId === 'dee')).toMatchObject({ rankIndexBefore: 4, rankIndexAfter: 4 })
     expect((await getRatings(db, 'dee'))['1v1'].rankIndex).toBe(4)
     expect(await db.selectFrom('friend_activity').select(['user_id', 'kind', 'payload']).where('game_id', '=', g).execute()).toEqual([
       { user_id: 'cal', kind: 'rank_up', payload: { mode: '1v1', rankIndex: 5 } },
@@ -402,7 +408,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
         .execute()
       await db
         .insertInto('ranked_matches')
-        .values({ session_id: id, mode: '1v1', sides: JSON.stringify([[a], [b]]), ratings: JSON.stringify(o.ratings ?? {}) })
+        .values({
+          session_id: id,
+          mode: '1v1',
+          sides: JSON.stringify([[a], [b]]),
+          entries: JSON.stringify(
+            Object.fromEntries(
+              Object.entries(o.ratings ?? {}).map(([id, rating]) => [id, { rating, rankIndex: null, matches: 0, stakes: null }]),
+            ),
+          ),
+        })
         .execute()
       return id
     }
@@ -438,6 +453,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
         ['uma', true, -32],
       ])
       expect(rows.every(r => r.rank_before === null && r.rank_after === null)).toBe(true)
+      // A placement match hides the RP
+      expect((await rankedOutcomes(db, id)).map(o => o.change)).toEqual([null, null])
     })
 
     it('marks a game with no winner void, once, and does not retry it', async () => {

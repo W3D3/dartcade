@@ -3,10 +3,10 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { getAccountsByIds, type Avatar } from '../db/users.js'
 import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
-import { matchRatings, recordRankedGame, unrecordedRankedGames } from '../db/ranked.js'
+import { matchRatings, rankedOutcomes, recordRankedGame, unrecordedRankedGames, type MatchRating } from '../db/ranked.js'
 import type { GameEnded, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError } from '../session/errors.js'
-import type { Seat } from '../session/types.js'
+import type { RankedEntry, Seat } from '../session/types.js'
 import type { X01Config } from '../games/x01.js'
 import type { MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
@@ -36,7 +36,7 @@ export class MatchmakingError extends ApiError {
   }
 }
 
-type Player = { userId: string; name: string; avatar: Avatar; rating: number; placing: boolean }
+type Player = MatchRating & { userId: string; name: string; avatar: Avatar }
 /** A search: the matcher's entry, with who is in it. */
 type Search = Entry & { players: Player[] }
 /** A match the queue found, waiting for everyone to accept. */
@@ -54,7 +54,7 @@ type Found = {
 
 export type MatchmakingDeps = {
   db: Kysely<Database>
-  engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats'>
+  engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats' | 'setRankedOutcomes'>
   /** Sends a user's /ws/me their search (LobbyHub.sendMatchmaking). */
   send: (userId: string, msg: MatchmakingMessage) => void
   now?: () => number
@@ -62,6 +62,15 @@ export type MatchmakingDeps = {
 }
 
 const userIdsOf = (s: Search): string[] => s.players.map(p => p.userId)
+
+/** What each player of `own` goes into a game against `other` with: their rating and rank and what it's worth to them. */
+const entriesOf = (own: Search, other: Search): Record<string, RankedEntry> =>
+  Object.fromEntries(
+    own.players.map(p => [
+      p.userId,
+      { rating: p.rating, rankIndex: p.rankIndex, matches: p.matches, stakes: p.placing ? null : stakes(own.rating, other.rating) },
+    ]),
+  )
 
 /** The game a match plays: X01 501, double out, first to 2 or 3 legs, a bull off decides who starts. */
 export function rankedConfig(mode: RankedMode, firstTo: FirstTo): X01Config {
@@ -365,7 +374,7 @@ export class MatchmakingService {
         ranked: {
           mode,
           sides: [a.userIds, b.userIds],
-          ratings: Object.fromEntries([...a.players, ...b.players].map(p => [p.userId, p.rating])),
+          entries: { ...entriesOf(a, b), ...entriesOf(b, a) },
           rules: await this.rankedRules(a.userIds[0]),
         },
         lobbyName: `Ranked ${mode}`,
@@ -427,6 +436,8 @@ export class MatchmakingService {
     if (e.status !== 'finished' || e.gameId !== 'x01') return
     try {
       await recordRankedGame(this.deps.db, e.sessionId)
+      // The final snapshot (pushed once the end hooks are done) carries what the game did to each player
+      this.deps.engine.setRankedOutcomes(e.sessionId, await rankedOutcomes(this.deps.db, e.sessionId))
     } catch (err) {
       this.warn('ranked result not recorded', { sessionId: e.sessionId, error: String(err) })
     }
