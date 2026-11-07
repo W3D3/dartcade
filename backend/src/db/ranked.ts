@@ -297,6 +297,40 @@ export async function recalculateRatings(db: Kysely<Database>, mode: RankedMode,
   await db.transaction().execute(trx => replay(trx, mode, exclude))
 }
 
+/** Rows per statement: well under Postgres' 65 535 bind parameters, and big enough that a replay is a handful of round trips. */
+const WRITE_CHUNK = 2000
+
+function* chunks<T>(items: readonly T[], size: number): Generator<T[]> {
+  for (let i = 0; i < items.length; i += size) yield items.slice(i, i + size)
+}
+
+type ResultRewrite = {
+  session_id: string
+  user_id: string
+  rating_before: number
+  rating_after: number
+  rank_before: number | null
+  rank_after: number | null
+  placement: boolean
+}
+
+/** Rewrites the rated columns of many ranked_results rows with one UPDATE ... FROM per chunk, not one per row. */
+async function rewriteResults(trx: Kysely<Database>, rows: readonly ResultRewrite[]): Promise<void> {
+  for (const c of chunks(rows, WRITE_CHUNK)) {
+    await sql`
+      UPDATE ranked_results r SET
+        rating_before = v.rating_before, rating_after = v.rating_after,
+        rank_before = v.rank_before, rank_after = v.rank_after, placement = v.placement
+      FROM unnest(
+        ${c.map(r => r.session_id)}::text[], ${c.map(r => r.user_id)}::text[],
+        ${c.map(r => r.rating_before)}::int[], ${c.map(r => r.rating_after)}::int[],
+        ${c.map(r => r.rank_before)}::int[], ${c.map(r => r.rank_after)}::int[],
+        ${c.map(r => r.placement)}::boolean[]
+      ) AS v(session_id, user_id, rating_before, rating_after, rank_before, rank_after, placement)
+      WHERE r.session_id = v.session_id AND r.user_id = v.user_id`.execute(trx)
+  }
+}
+
 async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: ReadonlySet<string>): Promise<void> {
   await lockMode(trx, mode)
   const rows = await trx
@@ -317,6 +351,7 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     .orderBy('r.created_at')
     .orderBy('r.session_id')
     .execute()
+  const rewrites: ResultRewrite[] = []
   const states = new Map<string, RatingState>()
   const lastGame = new Map<string, Date>()
   for (const r of rows) {
@@ -346,37 +381,46 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     for (const p of outcomes) {
       states.set(p.userId, p.after)
       lastGame.set(p.userId, players[0]?.created_at ?? new Date())
-      await trx
-        .updateTable('ranked_results')
-        .set({
-          rating_before: p.before.rating,
-          rating_after: p.after.rating,
-          rank_before: p.before.rankIndex,
-          rank_after: p.after.rankIndex,
-          placement: p.placement,
-        })
-        .where('session_id', '=', sessionId)
-        .where('user_id', '=', p.userId)
-        .execute()
+      rewrites.push({
+        session_id: sessionId,
+        user_id: p.userId,
+        rating_before: p.before.rating,
+        rating_after: p.after.rating,
+        rank_before: p.before.rankIndex,
+        rank_after: p.after.rankIndex,
+        placement: p.placement,
+      })
     }
   }
-  for (const [userId, state] of states) {
+  await rewriteResults(trx, rewrites)
+  // An upsert: a player whose rating row went away while their games were invalidated gets it back
+  const ratings = [...states].flatMap(([userId, state]) => {
     const at = lastGame.get(userId)
-    if (at !== undefined) {
-      // An upsert: a player whose rating row went away while their games were invalidated gets it back
-      const columns = { ...ratingColumns(state), updated_at: at }
-      await trx
-        .insertInto('ranked_ratings')
-        .values({ user_id: userId, mode, ...columns })
-        .onConflict(oc => oc.columns(['user_id', 'mode']).doUpdateSet(columns))
-        .execute()
-    }
+    return at === undefined ? [] : [{ user_id: userId, mode, ...ratingColumns(state), updated_at: at }]
+  })
+  for (const chunk of chunks(ratings, WRITE_CHUNK)) {
+    await trx
+      .insertInto('ranked_ratings')
+      .values(chunk)
+      .onConflict(oc =>
+        oc.columns(['user_id', 'mode']).doUpdateSet(eb => ({
+          rating: eb.ref('excluded.rating'),
+          rank_index: eb.ref('excluded.rank_index'),
+          matches: eb.ref('excluded.matches'),
+          wins: eb.ref('excluded.wins'),
+          streak: eb.ref('excluded.streak'),
+          updated_at: eb.ref('excluded.updated_at'),
+        })),
+      )
+      .execute()
   }
   // Nobody is left with a game they were rated on: seeded afresh by their next one
   const rated = [...lastGame.keys()]
-  let gone = trx.deleteFrom('ranked_ratings').where('mode', '=', mode)
-  if (rated.length > 0) gone = gone.where('user_id', 'not in', rated)
-  await gone.execute()
+  await trx
+    .deleteFrom('ranked_ratings')
+    .where('mode', '=', mode)
+    .where(sql<boolean>`NOT (user_id = ANY(${rated}::text[]))`)
+    .execute()
 }
 
 /**
