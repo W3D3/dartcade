@@ -1,7 +1,7 @@
 <script lang="ts">
   // The account badge and its menu (User-Badge board): who you are (with progression, a compact
   // version of your profile card that opens your profile), your status (Online /
-  // Invisible), Friends, Progress, Admin (admins only), Settings, Sign out; Progress,
+  // Invisible), Friends, Progress, Stats, Admin (admins only), Settings, Sign out; Progress, Stats,
   // Admin and Settings only on phones, where no rail or side nav lists them. Phones: the avatar
   // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
@@ -9,7 +9,7 @@
   // typeahead move through the items, and Escape closes only the menu (the Friends drawer under
   // it is a lower layer and stays open).
   import { DropdownMenu } from 'bits-ui'
-  import { ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
+  import { ChartColumn, ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -28,11 +28,13 @@
   import NavBadge from './NavBadge.svelte'
   import StatusOption from './friends/StatusOption.svelte'
   import StatusRing from './friends/StatusRing.svelte'
+  import { flag } from '$lib/flags'
 
   let { placement = 'header' }: { placement?: 'header' | 'rail' | 'sidebar' } = $props()
 
   const name = $derived($currentUser?.name ?? '')
   const email = $derived($currentUser?.email ?? '')
+  const stats = flag('stats.enabled')
   const invisible = $derived($currentUser?.invisible ?? false)
   const friends = $derived(friendsEntry($me?.friends ?? null))
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
@@ -40,7 +42,7 @@
   const level = $derived($progressXp === null ? null : levelOf($progressXp).level)
   // Your card, once progression is on and it has loaded
   const profile = $derived($currentUser && level !== null ? profileOf($currentUser.id) : null)
-  // The rail and the side nav list Progress, Admin and Settings themselves
+  // The rail and the side nav list Progress, Stats, Admin and Settings themselves
   const inNav = $derived(placement !== 'header')
   let statusError = $state('')
   let menuEl = $state<HTMLElement | null>(null)
@@ -224,6 +226,13 @@
               {/snippet}
             </DropdownMenu.Item>
           {/if}
+        {/if}
+        {#if $stats && !inNav}
+          <DropdownMenu.Item textValue="Stats">
+            {#snippet child({ props })}
+              <a {...props} href="#/stats" class={ITEM}><ChartColumn size={18} strokeWidth={1.8} />Stats</a>
+            {/snippet}
+          </DropdownMenu.Item>
         {/if}
         {#if $currentUser?.isModerator && !inNav}
           <DropdownMenu.Item textValue="Admin">
