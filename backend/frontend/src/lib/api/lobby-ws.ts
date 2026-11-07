@@ -84,7 +84,8 @@ export type LastSeen = 'now' | 'today' | 'yesterday' | 'week' | 'older'
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "MeServerMessage".
  */
-export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage | MatchmakingMessage
+export type MeServerMessage =
+  MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage | MatchmakingMessage | MatchmakingEndedMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -646,4 +647,25 @@ export interface MatchmakingMessage {
    * You declined or missed a match: no new search until then.
    */
   pausedUntil: string | null
+}
+/**
+ * Pushed once when your ranked search or found match ends, and why, so the screens don't have to guess from what changed. started: everyone accepted and the game is on (sessionId). declined: someone declined the found match (by names them when they are on your side; the other side stays hidden). timeout: the time to accept ran out. failed: the game could not be started. left: a member of your duo left the queue, which cancelled the whole search.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MatchmakingEndedMessage".
+ */
+export interface MatchmakingEndedMessage {
+  type: 'matchmaking.ended'
+  reason: 'started' | 'declined' | 'timeout' | 'failed' | 'left'
+  /**
+   * Who declined or left, when it was someone on your side; null otherwise.
+   */
+  by: {
+    userId: string
+    name: string
+  } | null
+  /**
+   * started: the game that began.
+   */
+  sessionId: string | null
 }

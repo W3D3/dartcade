@@ -213,6 +213,9 @@ const matchmaking = new MatchmakingService({
   send: (userId, msg) => {
     hub.sendMatchmaking(userId, msg)
   },
+  ended: (userId, msg) => {
+    hub.sendMatchmakingEnded(userId, msg)
+  },
   warn: (message, details) => {
     warn(message, details)
   },

@@ -36049,7 +36049,7 @@
       },
       "delete": {
         "operationId": "cancelRankedSearch",
-        "summary": "Stop searching (a duo's search: only its host)",
+        "summary": "Stop searching (either member of a duo: it ends the search for both)",
         "tags": [
           "ranked"
         ],

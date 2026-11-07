@@ -1971,7 +1971,7 @@ export interface paths {
         put?: never;
         /** Search for a ranked match: alone (1v1), or as the host of a lobby of two (2v2) */
         post: operations["startRankedSearch"];
-        /** Stop searching (a duo's search: only its host) */
+        /** Stop searching (either member of a duo: it ends the search for both) */
         delete: operations["cancelRankedSearch"];
         options?: never;
         head?: never;

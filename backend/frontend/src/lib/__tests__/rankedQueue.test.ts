@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { MatchmakingMatch, MatchmakingSearch } from '$lib/api/lobby-ws'
-import { acceptedLine, clock, pausedFor, startedLine, searchView, secondsLeft, youAccepted } from '../ranked/queue'
+import { acceptedLine, clock, endedNotice, pausedFor, startedLine, searchView, secondsLeft, youAccepted } from '../ranked/queue'
 import { fmtRp } from '../ranked/view'
 
 const T0 = Date.UTC(2026, 9, 15, 20)
@@ -83,5 +83,21 @@ describe('startedLine', () => {
   it('tells the partner who started it, and the host that they did', () => {
     expect(startedLine(duo, 'u2')).toBe("Christoph started the search. You'll get the match to accept here too.")
     expect(startedLine(duo, 'u1')).toBe("You started the search. You'll get the match to accept here too.")
+  })
+})
+
+describe('endedNotice', () => {
+  const lena = { userId: 'lena', name: 'Lena' }
+  it('says nothing when the game started: you go to it', () => {
+    expect(endedNotice({ reason: 'started', by: null })).toBeNull()
+  })
+  it('names who declined when they were on your side, and not the hidden other side', () => {
+    expect(endedNotice({ reason: 'declined', by: lena })).toBe('Lena declined the match.')
+    expect(endedNotice({ reason: 'declined', by: null })).toBe('The other side declined the match.')
+  })
+  it('says the time ran out, the game could not start, and who left the queue', () => {
+    expect(endedNotice({ reason: 'timeout', by: null })).toMatch(/ran out of time/)
+    expect(endedNotice({ reason: 'failed', by: null })).toMatch(/could not be started/)
+    expect(endedNotice({ reason: 'left', by: lena })).toBe('Lena left the queue, so your search ended.')
   })
 })
