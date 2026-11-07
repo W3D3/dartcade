@@ -14,6 +14,8 @@ export const rankedTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Ranked queu
 
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
+export const dartSamplesTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Dart samples' }]
+
 export const coachTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Coach sandbox' }]
 
 export const cosmeticsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Cosmetics' }]

@@ -1,5 +1,5 @@
 import type { Component } from 'svelte'
-import { Flag, GraduationCap, Gamepad2, Map as MapIcon, Palette, Server, Swords, ToggleRight, Users } from '@lucide/svelte'
+import { Flag, GraduationCap, Gamepad2, Map as MapIcon, Palette, ScanEye, Server, Swords, ToggleRight, Users } from '@lucide/svelte'
 
 export type AdminTool = {
   href: string
@@ -30,6 +30,12 @@ export const ADMIN_TOOLS: AdminTool[] = [
   },
   { href: '/admin/coach', title: 'Coach sandbox', desc: 'Throw a made-up visit and see what the coach says', icon: GraduationCap },
   { href: '/admin/cosmetics', title: 'Cosmetics', desc: 'Every reward in the game and how it unlocks', icon: Palette },
+  {
+    href: '/admin/dart-samples',
+    title: 'Dart samples',
+    desc: 'Training data for the dart detection model, and its download',
+    icon: ScanEye,
+  },
   { href: '/admin/flags', title: 'Feature flags', desc: 'Turn flags on or off at runtime', icon: ToggleRight },
   { href: '/admin/system', title: 'System', desc: 'Version, runtime, database and live connections', icon: Server },
 ]

@@ -41,6 +41,7 @@
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminRanked from './routes/AdminRanked.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
+  import AdminDartSamples from './routes/AdminDartSamples.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
   import MatchFound from '$lib/components/ranked/MatchFound.svelte'
   import { get } from 'svelte/store'
@@ -158,6 +159,7 @@
     '/admin/flags': AdminFlags,
     '/admin/ranked': AdminRanked,
     '/admin/system': AdminSystem,
+    '/admin/dart-samples': AdminDartSamples,
     '/admin/cosmetics': AdminCosmetics,
     '/admin/coach': wrap({ asyncComponent: loadAdminCoach }),
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
