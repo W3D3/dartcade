@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronLeft, X } from '@lucide/svelte'
+  import { ChevronLeft, Lock, X } from '@lucide/svelte'
   // The three dart slots; tapping a thrown dart opens the correction popover below them.
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
   import type { Slot } from '$lib/dartSlots.js'
@@ -11,6 +11,7 @@
     openDart = $bindable(null),
     showPopover = true,
     popoverAbove = false,
+    lockedSlots = false,
   }: {
     slots: Slot[]
     /** Tapping a thrown dart corrects it; without it the slots are view-only. */
@@ -26,6 +27,8 @@
      * ancestor (phones: over the board, where there's room).
      */
     popoverAbove?: boolean
+    /** Someone else's visit in a ranked game: darts show as they land but cannot be corrected from here. */
+    lockedSlots?: boolean
   } = $props()
 
   let mode = $state<'quick' | 'full'>('quick')
@@ -80,13 +83,30 @@
 <div class="flex flex-col gap-2 min-w-0">
   <div bind:this={slotRow} class="grid grid-cols-3 gap-[10px]">
     {#each slots as slot, i (i)}
-      {#if slot.kind === 'thrown' || slot.kind === 'miss'}
+      {#if lockedSlots && (slot.kind === 'thrown' || slot.kind === 'miss')}
+        {@const latest = slots.findLastIndex(s => s.kind === 'thrown' || s.kind === 'miss') === i}
+        <div
+          role="img"
+          aria-label="{slot.aria}. Locked"
+          class="{slotBox} relative bg-surface-hover {latest ? 'border-2 border-accent' : 'border border-line-chip'}"
+        >
+          <Lock size={16} aria-hidden="true" class="absolute right-3 top-[10px] text-ink-faint max-md:hidden" />
+          <span class="{slotLabel} text-text">{slot.label}</span>
+          {#if latest}
+            <span class="text-[11px] md:text-[13px] font-bold uppercase tracking-[0.06em] text-accent whitespace-nowrap"
+              >{slot.points}<span class="max-md:hidden"> · just landed</span></span
+            >
+          {:else}
+            <span class="font-display font-bold text-[14px] md:text-[30px] leading-none text-text-muted">{slot.points}</span>
+          {/if}
+        </div>
+      {:else if slot.kind === 'thrown' || slot.kind === 'miss'}
         <button
           type="button"
           onclick={() => toggle(i)}
           aria-expanded={openDart === i}
           disabled={!onCorrect}
-          aria-label={slot.aria}
+          aria-label="{slot.aria}. Correct this dart"
           class="{slotBox} cursor-pointer disabled:cursor-default
                  {slot.kind === 'thrown' ? 'bg-accent text-accent-fg border-0' : 'bg-surface-chip text-text border border-line-key'}
                  {openDart === i ? '[box-shadow:0_0_0_3px_var(--color-bg),0_0_0_5px_var(--color-accent)]' : ''}"

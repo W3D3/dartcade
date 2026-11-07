@@ -6,6 +6,9 @@
   import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
+  import RankBadge from './ranked/RankBadge.svelte'
+  import { fmtRp } from '$lib/ranked/view'
+  import type { SeatRank } from '$lib/ranked/inGame'
   import type { TeamMember } from '$lib/teams'
   import type { SeatLine } from '$lib/remote'
 
@@ -13,6 +16,7 @@
     member,
     who,
     seat = null,
+    rank = null,
     compact = false,
   }: {
     member: TeamMember
@@ -20,6 +24,8 @@
     who: Who
     /** Remote games: the seat's board, and "· you". */
     seat?: SeatLine | null
+    /** A ranked game: the player's rank and rating after the board. */
+    rank?: SeatRank | null
     compact?: boolean
   } = $props()
 
@@ -51,7 +57,13 @@
       {#if !compact}
         <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
           {#if seat}<SeatBoardLine line={seat} size="sm" /><span class="shrink-0">·</span>{/if}
-          <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
+          {#if rank}
+            <RankBadge rank={rank.rank} size={14} />
+            <span class="shrink-0 whitespace-nowrap font-mono">{rank.rating === null ? 'Placement' : fmtRp(rank.rating)}</span>
+            {#if rank.rating !== null}<span class="shrink-0">RP</span>{/if}
+          {:else}
+            <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
+          {/if}
         </span>
       {/if}
     {/snippet}

@@ -17,6 +17,9 @@
   import OfflineNotice from './OfflineNotice.svelte'
   import RankedClock from './ranked/RankedClock.svelte'
   import { clockSkew, disconnected, seatRank } from '$lib/ranked/inGame'
+  import { teamRanked, throwOrder } from '$lib/ranked/teams'
+  import { ownedBand } from '$lib/visitBand'
+  import ThrowOrderStrip from './ranked/ThrowOrderStrip.svelte'
   import TurnStatusBar from './TurnStatusBar.svelte'
   import VisitBand from './VisitBand.svelte'
   import WaitingCard from './WaitingCard.svelte'
@@ -125,6 +128,11 @@
     legend,
     nextPlayer,
   } = $derived(mv)
+  // A ranked game watched from outside the visit: the opponent's darts are locked, and the sum is theirs
+  const lockedSlots = $derived(!!ranked && (remote.kind === 'watch' || remote.kind === 'watch-offline'))
+  const shownBand = $derived(lockedSlots ? ownedBand(band, players[currentPlayer]?.name ?? '') : band)
+  // A ranked team game says who throws after whom this leg
+  const order = $derived(isActive && teams.length ? throwOrder(teams) : null)
   // On the big screen the thrower's own card doesn't say "Can finish": the dart slots and the board already show the route
   const x01Players = $derived(viewOnly && isActive ? x01All.map((p, i) => (i === currentPlayer ? { ...p, canFinish: null } : p)) : x01All)
   const pillFor = (i: number, rows: boolean) => mv.pillFor(i, rows)
@@ -222,8 +230,8 @@
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
   {@render rankedClock()}
   <div class="shrink-0 grid gap-[10px] items-start {settings.visitSum ? 'grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)]' : 'grid-cols-1'}">
-    {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
-    <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
+    {#if settings.visitSum}<VisitBand band={shownBand} visit={visitKey} compact />{/if}
+    <DartSlots {slots} {lockedSlots} {popIndex} {onCorrect} bind:openDart={correcting} />
   </div>
   {@render coach?.(true)}
   {#if keypad}
@@ -253,8 +261,8 @@
   {/if}
   <!-- relative: the board view's correction picker opens above this row, over the board, full width -->
   <div class="relative shrink-0 grid gap-2 items-start {settings.visitSum ? 'grid-cols-[minmax(0,3fr)_minmax(0,1fr)]' : 'grid-cols-1'}">
-    <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} showPopover={!keypad} popoverAbove />
-    {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
+    <DartSlots {slots} {lockedSlots} {popIndex} {onCorrect} bind:openDart={correcting} showPopover={!keypad} popoverAbove />
+    {#if settings.visitSum}<VisitBand band={shownBand} visit={visitKey} compact />{/if}
   </div>
   {@render coach?.(true)}
   {#if keypad}
@@ -267,6 +275,7 @@
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
   {@render rankedClock()}
+  {#if ranked && order}<ThrowOrderStrip {order} {who} mine={snapshot.mySeats} />{/if}
   {#if keypad}
     {@render keypadView('min-h-0')}
   {:else if remote.kind === 'waiting' && variant === 'party'}
@@ -281,12 +290,12 @@
   {#if variant === 'solo'}
     {#if !$isWide}{@render coach?.(true)}{/if}
     <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-[10px] items-start">
-      <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
-      {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
+      <DartSlots {slots} {lockedSlots} {popIndex} {onCorrect} bind:openDart={correcting} />
+      {#if settings.visitSum}<VisitBand band={shownBand} visit={visitKey} compact />{/if}
     </div>
   {:else}
-    {#if settings.visitSum}<VisitBand {band} visit={visitKey} />{/if}
-    <DartSlots {slots} {popIndex} {onCorrect} bind:openDart={correcting} />
+    {#if settings.visitSum}<VisitBand band={shownBand} visit={visitKey} />{/if}
+    <DartSlots {slots} {lockedSlots} {popIndex} {onCorrect} bind:openDart={correcting} />
   {/if}
 
   {#if !keypad}
@@ -350,6 +359,7 @@
       {who}
       chalkboard={settings.chalkboard && !compact}
       {compact}
+      ranked={teamRanked(ranked ?? null, team.members, snapshot.mySeats, skew)}
       overlay={away && !compact ? teamWaiting : undefined}
     />
   {/if}
@@ -411,6 +421,7 @@
               value={String(x01Players[i]?.shown ?? '')}
               roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
               legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
+              rank={rankOf(i)}
             />
           {:else}
             <PhonePlayerRow
@@ -504,7 +515,14 @@
   <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
     {#each who as _, i (i)}
       {#if isX01}
-        <X01Row who={who[i]} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
+        <X01Row
+          who={who[i]}
+          p={x01Players[i]}
+          active={i === currentPlayer && isActive}
+          pill={pillFor(i, true)}
+          seat={lines[i] ?? null}
+          rank={rankOf(i)}
+        />
       {:else}
         <AtcRow who={who[i]} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
       {/if}

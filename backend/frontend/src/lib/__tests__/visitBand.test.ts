@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { visitFx, isBigDart, x01Band, atcBand, atcAdvanced, shouldReplay, bigDartIndex } from '../visitBand.js'
+import { visitFx, isBigDart, x01Band, atcBand, atcAdvanced, shouldReplay, bigDartIndex, ownedBand } from '../visitBand.js'
 
 const d = (score: number) => ({ segment: { name: 'x' }, score })
 
@@ -94,4 +94,17 @@ describe('bigDartIndex', () => {
     expect(bigDartIndex([d(60)], { opened: true, bust: true })).toBeNull()
   })
   it('none for a small last dart', () => expect(bigDartIndex([d(60), d(5)], { opened: true, bust: false })).toBeNull())
+})
+
+describe('ownedBand', () => {
+  const dart = (score: number) => ({ score })
+  it('names the thrower on a plain visit', () => {
+    expect(ownedBand(x01Band({ darts: [dart(20)], bust: false }), 'Marco').eyebrow).toBe("Marco's visit")
+  })
+  it('keeps a bust and a celebration as they are', () => {
+    const bust = x01Band({ darts: [dart(60)], bust: true })
+    const ton = x01Band({ darts: [dart(60), dart(60)], bust: false })
+    expect(ownedBand(bust, 'Marco')).toBe(bust)
+    expect(ownedBand(ton, 'Marco')).toBe(ton)
+  })
 })
