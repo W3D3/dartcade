@@ -89,6 +89,25 @@ describe('Progress in the nav', () => {
     expect(sideLinks('s1').some(l => l.label === 'Coach')).toBe(false)
     expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
+  it('lists Stats after History while it is on, and on the rail before Settings', () => {
+    expect(sideLinks('s1', false, false, 0, false, false, true).map(l => l.label)).toEqual([
+      'Play',
+      'Live match',
+      'Tournaments',
+      'History',
+      'Stats',
+      'Progress',
+      'Settings',
+    ])
+    expect(railTabs(0, false, null, false, false, false, true).map(t => t.label)).toEqual([
+      'Play',
+      'Tournaments',
+      'History',
+      'Stats',
+      'Settings',
+    ])
+    expect(sideLinks('s1').some(l => l.label === 'Stats')).toBe(false)
+  })
   it('sits before Settings in the side nav', () => {
     expect(sideLinks('s1', false, false, 0).map(l => l.label)).toEqual([
       'Play',

@@ -24,6 +24,7 @@
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
+  const stats = flag('stats.enabled')
   const tabs = $derived(
     railTabs(
       $me?.invites.length ?? 0,
@@ -32,6 +33,7 @@
       $currentUser?.isModerator ?? false,
       $home,
       $coach,
+      $stats,
     ),
   )
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))

@@ -1,6 +1,19 @@
 <script lang="ts">
   import Wordmark from './Wordmark.svelte'
-  import { Clock, GraduationCap, House, Mail, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
+  import {
+    ChartColumn,
+    Clock,
+    GraduationCap,
+    House,
+    Mail,
+    Radio,
+    Settings,
+    ShieldCheck,
+    Swords,
+    Target,
+    TrendingUp,
+    Trophy,
+  } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -21,6 +34,7 @@
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
+  const stats = flag('stats.enabled')
 
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const links = $derived(
@@ -31,6 +45,7 @@
       $progression ? ($progress?.challengesToClaim ?? 0) : null,
       $home,
       $coach,
+      $stats,
     ),
   )
 </script>
@@ -63,6 +78,8 @@
           <TrendingUp size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'history'}
           <Clock size={20} strokeWidth={1.8} />
+        {:else if link.icon === 'stats'}
+          <ChartColumn size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'settings'}
           <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'admin'}

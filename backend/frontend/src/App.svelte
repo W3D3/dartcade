@@ -94,6 +94,10 @@
     loading: CoachLoading,
     loadingParams: { page: 'sandbox' },
   })
+  // Stats loads on demand: it is behind a flag
+  const loadStats = Object.assign(() => import('./routes/Stats.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
     { loading: RouteLoading },
@@ -115,6 +119,7 @@
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),
     '/history': History,
+    '/stats': wrap({ asyncComponent: loadStats }),
     '/coach': wrap({ asyncComponent: loadCoach }),
     '/coach/checks': wrap({ asyncComponent: loadCoachChecks }),
     '/coach/leg/:gameId/:leg': wrap({ asyncComponent: loadCoachLeg }),

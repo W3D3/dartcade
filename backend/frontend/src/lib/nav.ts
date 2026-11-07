@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'home' | 'play' | 'ranked' | 'live' | 'coach' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
+  icon: 'home' | 'play' | 'ranked' | 'live' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -46,7 +46,7 @@ export function navTabs(invites = 0, ranked = false, progress: number | null = n
   ]
 }
 
-/** The tablet rail: the phone's tabs, then Settings and Admin (admins and moderators), which phones reach from the account menu. */
+/** The tablet rail: the phone's tabs, then Stats (while it is on), Settings and Admin (admins and moderators), which phones reach from the account menu. */
 export function railTabs(
   invites = 0,
   ranked = false,
@@ -54,9 +54,11 @@ export function railTabs(
   admin = false,
   home = false,
   coach = false,
+  stats = false,
 ): NavTab[] {
   return [
     ...navTabs(invites, ranked, progress, home, coach),
+    ...(stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
@@ -69,7 +71,7 @@ function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
   return toClaim > 0 ? { badge: toClaim, badgeLabel: `${toClaim} ${toClaim === 1 ? 'challenge' : 'challenges'} to claim` } : {}
 }
 
-/** The desktop side nav: the same pages under their long names (Coach while the coach is on), then Progress, Settings and Admin (admins and moderators). */
+/** The desktop side nav: the same pages under their long names (Coach while the coach is on), then Stats (while it is on), Progress, Settings and Admin (admins and moderators). */
 export function sideLinks(
   liveSessionId: string | null,
   ranked = false,
@@ -77,6 +79,7 @@ export function sideLinks(
   progress: number | null = null,
   home = false,
   coach = false,
+  stats = false,
 ): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
@@ -87,6 +90,7 @@ export function sideLinks(
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
     { href: '/history', label: 'History', icon: 'history' },
+    ...(stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),
     ...(progress !== null ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const, ...dailyBadge(progress) }] : []),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
