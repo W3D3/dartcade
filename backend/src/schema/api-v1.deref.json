@@ -31328,6 +31328,7 @@
                           "won",
                           "change",
                           "at",
+                          "score",
                           "opponents"
                         ],
                         "additionalProperties": false,
@@ -31354,6 +31355,26 @@
                             "type": "string",
                             "format": "date-time"
                           },
+                          "score": {
+                            "type": "object",
+                            "nullable": true,
+                            "required": [
+                              "mine",
+                              "theirs"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Legs won by your side and by theirs; null when the game did not record them",
+                            "properties": {
+                              "mine": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "theirs": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          },
                           "opponents": {
                             "type": "array",
                             "items": {
@@ -31362,6 +31383,7 @@
                                 "userId",
                                 "name",
                                 "rating",
+                                "rankIndex",
                                 "avatar"
                               ],
                               "additionalProperties": false,
@@ -31376,6 +31398,13 @@
                                   "type": "integer",
                                   "nullable": true,
                                   "description": "Their rating going into the game; null while they were placing"
+                                },
+                                "rankIndex": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 29,
+                                  "nullable": true,
+                                  "description": "The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing"
                                 },
                                 "avatar": {
                                   "title": "Avatar",
@@ -47783,6 +47812,7 @@
           "userId",
           "name",
           "rating",
+          "rankIndex",
           "avatar"
         ],
         "additionalProperties": false,
@@ -47797,6 +47827,13 @@
             "type": "integer",
             "nullable": true,
             "description": "Their rating going into the game; null while they were placing"
+          },
+          "rankIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 29,
+            "nullable": true,
+            "description": "The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing"
           },
           "avatar": {
             "title": "Avatar",
@@ -47874,6 +47911,7 @@
           "won",
           "change",
           "at",
+          "score",
           "opponents"
         ],
         "additionalProperties": false,
@@ -47900,6 +47938,26 @@
             "type": "string",
             "format": "date-time"
           },
+          "score": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "mine",
+              "theirs"
+            ],
+            "additionalProperties": false,
+            "description": "Legs won by your side and by theirs; null when the game did not record them",
+            "properties": {
+              "mine": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "theirs": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
           "opponents": {
             "type": "array",
             "items": {
@@ -47908,6 +47966,7 @@
                 "userId",
                 "name",
                 "rating",
+                "rankIndex",
                 "avatar"
               ],
               "additionalProperties": false,
@@ -47922,6 +47981,13 @@
                   "type": "integer",
                   "nullable": true,
                   "description": "Their rating going into the game; null while they were placing"
+                },
+                "rankIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 29,
+                  "nullable": true,
+                  "description": "The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing"
                 },
                 "avatar": {
                   "title": "Avatar",
@@ -48074,6 +48140,7 @@
                 "won",
                 "change",
                 "at",
+                "score",
                 "opponents"
               ],
               "additionalProperties": false,
@@ -48100,6 +48167,26 @@
                   "type": "string",
                   "format": "date-time"
                 },
+                "score": {
+                  "type": "object",
+                  "nullable": true,
+                  "required": [
+                    "mine",
+                    "theirs"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Legs won by your side and by theirs; null when the game did not record them",
+                  "properties": {
+                    "mine": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "theirs": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
                 "opponents": {
                   "type": "array",
                   "items": {
@@ -48108,6 +48195,7 @@
                       "userId",
                       "name",
                       "rating",
+                      "rankIndex",
                       "avatar"
                     ],
                     "additionalProperties": false,
@@ -48122,6 +48210,13 @@
                         "type": "integer",
                         "nullable": true,
                         "description": "Their rating going into the game; null while they were placing"
+                      },
+                      "rankIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 29,
+                        "nullable": true,
+                        "description": "The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing"
                       },
                       "avatar": {
                         "title": "Avatar",
