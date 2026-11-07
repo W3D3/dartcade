@@ -1,7 +1,7 @@
 <script lang="ts">
   // The match-found prompt (MM-Found, MM-Found-Duo, MM-Found-Phone boards), on whatever screen you
   // are: everyone has 10 s to accept, the other side stays hidden until all did. Once everyone
-  // accepted the game starts, and this takes you to it.
+  // accepted the game starts, and the server's matchmaking.ended takes you to it.
   import { onDestroy } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { Check, Lock, Swords } from '@lucide/svelte'
@@ -9,13 +9,17 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { me } from '$lib/lobby/sockets'
-  import { acceptMatch, acceptedLine, declineMatch, clock, formatLine, secondsLeft, youAccepted } from '$lib/ranked/queue'
+  import { acceptMatch, acceptedLine, declineMatch, clock, endedNotice, formatLine, secondsLeft, youAccepted } from '$lib/ranked/queue'
   import { signedRp } from '$lib/ranked/view'
+
+  /** How long the note about a match that fell through stays. */
+  const NOTICE_MS = 8_000
 
   let tick = $state(Date.now())
   const ticker = setInterval(() => (tick = Date.now()), 250)
   onDestroy(() => clearInterval(ticker))
 
+  const matchmakingEnded = me.matchmakingEnded
   const match = $derived($me?.matchmaking?.match ?? null)
   const left = $derived(match ? secondsLeft(match, tick) : 0)
   const accepted = $derived(match ? youAccepted(match) : false)
@@ -24,34 +28,30 @@
   let busy = $state(false)
   let error = $state('')
 
-  // You accepted: the game that starts right after the match is gone is this one, and opens. A
-  // match that fell through (someone declined, the time ran out) starts nothing, and is forgotten
-  // once you're searching again or a while has passed.
-  const START_WAIT_MS = 15_000
-  let acceptedMatch = $state<{ id: string; goneAt: number | null } | null>(null)
+  // The server says how a match ended (matchmaking.ended): the game started, which opens it, or it
+  // fell through, which says so for a few seconds
+  let notice = $state<string | null>(null)
+  let handled: unknown = null
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined
+  onDestroy(() => clearTimeout(noticeTimer))
   $effect(() => {
-    if (match && accepted && acceptedMatch?.id !== match.id) acceptedMatch = { id: match.id, goneAt: null }
-    else if (!match && acceptedMatch && acceptedMatch.goneAt === null) acceptedMatch = { ...acceptedMatch, goneAt: Date.now() }
-  })
-  $effect(() => {
-    const game = $me?.game
-    if (!acceptedMatch || acceptedMatch.goneAt === null) return
-    if (game && Date.now() - acceptedMatch.goneAt < START_WAIT_MS) {
-      acceptedMatch = null
-      void push(`/session/${game.sessionId}`)
-    } else if ($me?.matchmaking?.search || tick - acceptedMatch.goneAt >= START_WAIT_MS) {
-      acceptedMatch = null
+    const ended = $matchmakingEnded
+    if (!ended || ended === handled) return
+    handled = ended
+    if (ended.reason === 'started' && ended.sessionId) {
+      void push(`/session/${ended.sessionId}`)
+      return
     }
+    notice = endedNotice(ended)
+    clearTimeout(noticeTimer)
+    noticeTimer = setTimeout(() => (notice = null), NOTICE_MS)
   })
 
   async function accept() {
     if (!match) return
-    const id = match.id
     busy = true
-    error = (await acceptMatch(id)) ?? ''
+    error = (await acceptMatch(match.id)) ?? ''
     busy = false
-    // The last one to accept never sees themselves accepted: the game starts right away
-    if (!error && acceptedMatch?.id !== id) acceptedMatch = { id, goneAt: $me?.matchmaking?.match ? null : Date.now() }
   }
 
   async function decline() {
@@ -174,4 +174,14 @@
       </span>
     </div>
   </Modal>
+{/if}
+
+{#if notice}
+  <div
+    role="status"
+    aria-live="polite"
+    class="fixed top-20 left-1/2 z-[60] box-border w-[min(480px,calc(100vw-32px))] -translate-x-1/2 rounded-[14px] border border-line-popover bg-surface-inset px-[18px] py-[14px] text-[15px] font-medium text-text [box-shadow:0_24px_60px_rgba(0,0,0,0.6)]"
+  >
+    {notice}
+  </div>
 {/if}

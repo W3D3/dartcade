@@ -185,7 +185,7 @@ describe('DELETE /api/sessions/:id of a ranked game', () => {
       id: 's1',
       ownerUserId: 'user-1',
       status: 'active',
-      ranked: { mode: '1v1', sides: [['a'], ['b']], ratings: {} },
+      ranked: { mode: '1v1', sides: [['a'], ['b']], entries: {}, rules: null },
     })
     const res = await app.inject({ method: 'DELETE', url: '/api/sessions/s1' })
     expect(res.statusCode).toBe(409)

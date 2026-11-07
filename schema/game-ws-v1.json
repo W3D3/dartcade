@@ -863,8 +863,7 @@
         "ownerUserId",
         "seats",
         "mySeats",
-        "results",
-        "rankedGame"
+        "results"
       ],
       "properties": {
         "type": {
@@ -941,10 +940,6 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
-        },
-        "rankedGame": {
-          "type": "boolean",
-          "description": "Started by the ranked queue: it cannot be ended for the other side, leaving forfeits."
         },
         "ranked": {
           "anyOf": [{ "$ref": "#/$defs/RankedState" }, { "type": "null" }],

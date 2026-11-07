@@ -2296,7 +2296,7 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
     delete:
       operationId: cancelRankedSearch
-      summary: "Stop searching (a duo's search: only its host)"
+      summary: 'Stop searching (either member of a duo: it ends the search for both)'
       tags: [ranked]
       responses:
         '204': { description: Not searching any more }

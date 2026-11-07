@@ -8,7 +8,7 @@
   import { currentUser } from '$lib/auth'
   import { cancelSearch, searchView, startedLine } from '$lib/ranked/queue'
   import { fmtRp } from '$lib/ranked/view'
-  import { stopRule } from '$lib/ranked/queueCard'
+  import { stopLabel } from '$lib/ranked/queueCard'
   import { tick } from '$lib/ranked/tick'
   import { numberFlag } from '$lib/flags'
   import { ACCEPT_SECONDS } from '$shared/ranked.js'
@@ -17,7 +17,7 @@
   const view = $derived(search ? searchView(search, $tick) : null)
   const acceptSeconds = numberFlag('matchmaking.acceptSeconds', ACCEPT_SECONDS)
   const duo = $derived(search?.mode === '2v2')
-  const stop = $derived(search ? stopRule(search, $currentUser?.id ?? null) : null)
+  const stop = $derived(search ? stopLabel(search, $currentUser?.id ?? null) : null)
   let busy = $state(false)
   let error = $state('')
 
@@ -105,20 +105,17 @@
     {/if}
     <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-4">
       <span class="flex-grow text-[13px] leading-[1.45] text-text-muted">
-        {#if search.mode === '2v2' && !stop?.allowed}
-          Only your duo's host can stop the search. When a match is found, you get {$acceptSeconds} seconds to accept on any screen.
-        {:else}
-          Keep browsing. When a match is found, you get {$acceptSeconds} seconds to accept on any screen.
-        {/if}
+        Keep browsing. When a match is found, you get {$acceptSeconds} seconds to accept on any screen.{#if search.mode === '2v2'}
+          Leaving the queue ends the search for your partner too.{/if}
       </span>
-      {#if stop?.allowed}
+      {#if stop}
         <button
           type="button"
           disabled={busy}
           onclick={cancel}
           class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong bg-transparent px-[22px] font-[inherit] text-[15px] font-semibold text-text"
         >
-          <X size={18} />{stop.label}
+          <X size={18} />{stop}
         </button>
       {/if}
     </div>

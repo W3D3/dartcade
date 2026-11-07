@@ -2,7 +2,7 @@
 // (MM-Searching, MM-Duo, MM-Found, MM-Found-Duo boards), and the requests that change the search.
 // The search itself lives on the server and comes in on /ws/me.
 import { api } from '$lib/api'
-import type { MatchmakingMatch, MatchmakingSearch } from '$lib/api/lobby-ws'
+import type { MatchmakingEndedMessage, MatchmakingMatch, MatchmakingSearch } from '$lib/api/lobby-ws'
 import { fmtRp } from './view'
 
 export type RankedMode = MatchmakingSearch['mode']
@@ -61,6 +61,22 @@ export function searchView(s: MatchmakingSearch, now: number): SearchView {
 export function startedLine(s: Pick<MatchmakingSearch, 'hostUserId' | 'players'>, userId: string | null): string {
   const who = s.hostUserId === userId ? 'You started' : `${s.players[0] ?? 'Your partner'} started`
   return `${who} the search. You'll get the match to accept here too.`
+}
+
+/** What a search or match that ended says to you, or null when it needs no words (the game started: you go to it). */
+export function endedNotice(e: Pick<MatchmakingEndedMessage, 'reason' | 'by'>): string | null {
+  switch (e.reason) {
+    case 'started':
+      return null
+    case 'declined':
+      return e.by ? `${e.by.name} declined the match.` : 'The other side declined the match.'
+    case 'timeout':
+      return 'The match ran out of time: not everyone accepted.'
+    case 'failed':
+      return 'The match could not be started. Try searching again.'
+    case 'left':
+      return e.by ? `${e.by.name} left the queue, so your search ended.` : 'Your partner left the queue, so your search ended.'
+  }
 }
 
 /** Seconds left to accept a found match. */

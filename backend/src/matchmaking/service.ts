@@ -3,12 +3,12 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { getAccountsByIds, type Avatar } from '../db/users.js'
 import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
-import { matchRatings, recordRankedGame, unrecordedRankedGames } from '../db/ranked.js'
+import { matchRatings, rankedOutcomes, recordRankedGame, unrecordedRankedGames, type MatchRating } from '../db/ranked.js'
 import type { GameEnded, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError } from '../session/errors.js'
-import type { Seat } from '../session/types.js'
+import type { RankedEntry, Seat } from '../session/types.js'
 import type { X01Config } from '../games/x01.js'
-import type { MatchmakingMessage } from '../schema/lobby-ws.js'
+import type { MatchmakingEndedMessage, MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
 import { ACCEPT_SECONDS, RESERVE_SECONDS, VISIT_SECONDS, sideRating, stakes, type RankedMode } from '../shared/ranked.js'
 import { flagEnabled, flagNumber, loadFlagUser } from '../flags/index.js'
@@ -36,7 +36,7 @@ export class MatchmakingError extends ApiError {
   }
 }
 
-type Player = { userId: string; name: string; avatar: Avatar; rating: number; placing: boolean }
+type Player = MatchRating & { userId: string; name: string; avatar: Avatar }
 /** A search: the matcher's entry, with who is in it. */
 type Search = Entry & { players: Player[] }
 /** A match the queue found, waiting for everyone to accept. */
@@ -54,14 +54,25 @@ type Found = {
 
 export type MatchmakingDeps = {
   db: Kysely<Database>
-  engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats'>
+  engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats' | 'setRankedOutcomes'>
   /** Sends a user's /ws/me their search (LobbyHub.sendMatchmaking). */
   send: (userId: string, msg: MatchmakingMessage) => void
+  /** Tells a user their search or found match ended (LobbyHub.sendMatchmakingEnded). */
+  ended: (userId: string, msg: MatchmakingEndedMessage) => void
   now?: () => number
   warn?: (message: string, details: unknown) => void
 }
 
 const userIdsOf = (s: Search): string[] => s.players.map(p => p.userId)
+
+/** What each player of `own` goes into a game against `other` with: their rating and rank and what it's worth to them. */
+const entriesOf = (own: Search, other: Search): Record<string, RankedEntry> =>
+  Object.fromEntries(
+    own.players.map(p => [
+      p.userId,
+      { rating: p.rating, rankIndex: p.rankIndex, matches: p.matches, stakes: p.placing ? null : stakes(own.rating, other.rating) },
+    ]),
+  )
 
 /** The game a match plays: X01 501, double out, first to 2 or 3 legs, a bull off decides who starts. */
 export function rankedConfig(mode: RankedMode, firstTo: FirstTo): X01Config {
@@ -255,19 +266,24 @@ export class MatchmakingService {
     return [...this.searches.values()].filter(s => s.mode === mode).flatMap(userIdsOf)
   }
 
-  /** Stops the user's search; a duo's only by its host. In a found match it counts as declining. */
+  /** Stops the user's search; a duo's member leaving ends it for both. In a found match it counts as declining. */
   async cancel(userId: string): Promise<void> {
     await this.run(() => {
       const found = this.foundOf(userId)
       if (found) {
-        this.drop(found, [userId])
+        this.declined(found, userId)
         return
       }
       const search = this.searchOf(userId)
       if (!search) return
-      if (search.userIds[0] !== userId) throw MatchmakingError.forbidden("Only your duo's host can cancel the search")
+      // Any member of a duo may leave the queue: a side can't search with one player, so it ends for both
       this.searches.delete(search.id)
       this.push([...search.userIds, ...this.searchersOf(search.mode)])
+      this.end(
+        search.userIds.filter(u => u !== userId),
+        'left',
+        { by: this.person(search, userId) },
+      )
     })
   }
 
@@ -288,8 +304,36 @@ export class MatchmakingService {
     await this.run(() => {
       const found = this.found.get(matchId)
       if (!found || !found.sides.some(s => userIdsOf(s).includes(userId))) throw MatchmakingError.notFound('match not found')
-      this.drop(found, [userId])
+      this.declined(found, userId)
     })
+  }
+
+  // A player declined the found match: it falls through; their partner learns who declined, the other side only that someone did
+  private declined(found: Found, userId: string): void {
+    this.drop(found, [userId])
+    for (const side of found.sides) {
+      const mine = userIdsOf(side).includes(userId)
+      this.end(
+        userIdsOf(side).filter(u => u !== userId),
+        'declined',
+        { by: mine ? this.person(side, userId) : null },
+      )
+    }
+  }
+
+  private person(side: Search, userId: string): { userId: string; name: string } | null {
+    const p = side.players.find(x => x.userId === userId)
+    return p ? { userId, name: p.name } : null
+  }
+
+  /** Tells these users once that their search or match ended, and why. */
+  private end(
+    userIds: string[],
+    reason: MatchmakingEndedMessage['reason'],
+    extra: { by?: MatchmakingEndedMessage['by']; sessionId?: string } = {},
+  ): void {
+    for (const u of userIds)
+      this.deps.ended(u, { type: 'matchmaking.ended', reason, by: extra.by ?? null, sessionId: extra.sessionId ?? null })
   }
 
   /**
@@ -312,11 +356,13 @@ export class MatchmakingService {
     await this.run(async () => {
       const now = this.now()
       for (const f of [...this.found.values()]) {
-        if (f.expiresAt <= now)
+        if (f.expiresAt <= now) {
           this.drop(
             f,
             f.sides.flatMap(userIdsOf).filter(u => !f.accepted.has(u)),
           )
+          this.end(f.sides.flatMap(userIdsOf), 'timeout')
+        }
       }
       // A game started some other way (a lobby game) ends the search
       for (const s of [...this.searches.values()]) {
@@ -356,8 +402,9 @@ export class MatchmakingService {
     const [a, b] = found.sides
     const mode = a.mode
     const seats = await this.seatsOf([...a.players, ...b.players])
+    let sessionId: string
     try {
-      await this.deps.engine.createWithSeats({
+      ;({ sessionId } = await this.deps.engine.createWithSeats({
         ownerUserId: a.userIds[0],
         gameId: 'x01',
         config: rankedConfig(mode, found.firstTo),
@@ -365,19 +412,23 @@ export class MatchmakingService {
         ranked: {
           mode,
           sides: [a.userIds, b.userIds],
-          ratings: Object.fromEntries([...a.players, ...b.players].map(p => [p.userId, p.rating])),
+          entries: { ...entriesOf(a, b), ...entriesOf(b, a) },
           rules: await this.rankedRules(a.userIds[0]),
         },
         lobbyName: `Ranked ${mode}`,
-      })
+      }))
     } catch (err) {
-      // Someone started another game meanwhile: their side stops searching, the other goes back
-      const busy = err instanceof ActiveSessionError ? [err.userId] : []
-      if (busy.length === 0) this.warn('ranked game failed to start', { matchId: found.id, error: String(err) })
+      // Someone started another game meanwhile: their side stops searching, the other goes back.
+      // Any other failure would only come back at the next pairing, so both sides stop.
+      const busy = err instanceof ActiveSessionError ? [err.userId] : found.sides.flatMap(userIdsOf)
+      if (!(err instanceof ActiveSessionError)) this.warn('ranked game failed to start', { matchId: found.id, error: String(err) })
       this.drop(found, busy, false)
+      // Only whose search ended hears it: the side that goes back to the queue is still searching
+      this.end(busy, 'failed')
       return
     }
     this.push([...a.userIds, ...b.userIds, ...this.searchersOf(mode)])
+    this.end([...a.userIds, ...b.userIds], 'started', { sessionId })
   }
 
   // The time limit and hand-entry rules the flags give this game, as the host sees them; kept with
@@ -427,6 +478,8 @@ export class MatchmakingService {
     if (e.status !== 'finished' || e.gameId !== 'x01') return
     try {
       await recordRankedGame(this.deps.db, e.sessionId)
+      // The final snapshot (pushed once the end hooks are done) carries what the game did to each player
+      this.deps.engine.setRankedOutcomes(e.sessionId, await rankedOutcomes(this.deps.db, e.sessionId))
     } catch (err) {
       this.warn('ranked result not recorded', { sessionId: e.sessionId, error: String(err) })
     }

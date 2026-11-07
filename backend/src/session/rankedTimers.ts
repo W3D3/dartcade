@@ -33,6 +33,8 @@ const RETRY_MS = 5_000
 export class RankedTimers {
   private readonly clocks = new Map<string, ReturnType<typeof setTimeout>>()
   private readonly away = new Map<string, ReturnType<typeof setTimeout>>()
+  // When each away player's grace ends (ms), for the screens' countdown
+  private readonly awayAt = new Map<string, number>()
 
   constructor(private readonly deps: RankedTimerDeps) {}
 
@@ -52,7 +54,13 @@ export class RankedTimers {
       if (!key.startsWith(`${sessionId}|`)) continue
       clearTimeout(timer)
       this.away.delete(key)
+      this.awayAt.delete(key)
     }
+  }
+
+  /** When the player's grace ends if they stay away (ms); null while they are here. */
+  awayUntil(sessionId: string, userId: string): number | null {
+    return this.awayAt.get(`${sessionId}|${userId}`) ?? null
   }
 
   // The seat that forfeits if it doesn't act by `at`, or null when nobody is being waited for: the
@@ -108,9 +116,12 @@ export class RankedTimers {
       if (here) {
         clearTimeout(this.away.get(key))
         this.away.delete(key)
+        this.awayAt.delete(key)
       } else if (!this.away.has(key)) {
+        this.awayAt.set(key, Date.now() + DISCONNECT_MS)
         const timer = setTimeout(() => {
           this.away.delete(key)
+          this.awayAt.delete(key)
           const seats = session.seats.flatMap((s, i) => (s.controllerUserId === user && !session.forfeited.includes(i) ? [i] : []))
           if (seats.length > 0) this.fire(session, { type: 'presence.forfeit', seats })
         }, DISCONNECT_MS)
