@@ -66,31 +66,35 @@ geometry and would carry over badly between boards.
   it is on without asking, the legal basis is legitimate interest rather than consent; the stills
   show the board and its surround, not the room, which is what makes that defensible. Have it
   checked before launch.
-- **A kill switch, not a gate**: the flag `classifier.collect.enabled` (`defaultRule: 'everyone'`,
+- **A kill switch, not a gate**: the flag `detection.collect.enabled` (`defaultRule: 'everyone'`,
   evaluated for the board's owner) lets an admin stop collection at `#/admin/flags` without a
-  deploy. A self-hosted deployment collects too, but only onto its own disk: nothing is sent to us.
+  deploy, and hides the board setting. A self-hosted deployment collects too, but only into its own
+  database: nothing is sent to us.
 - **One sample per camera dart**: the before and after warped still of each of the three cameras,
-  plus a link to the dart. Manual darts have no images and are not kept.
-- **Before = that camera's previous still.** The bridge sends stills after every dart, correction,
-  takeout and resync, so the still after dart _n−1_ (or after the takeout, for dart 1) is the
-  "before" of dart _n_. The backend already holds it in `CameraStills`. A sample is kept only when
-  all six stills exist and each "before" belongs to the board event just before the dart. The
-  bridge coalesces fetches (a newer event replaces a pending one) and drops stills while the backend
-  is unreachable; samples with a gap are skipped, not repaired.
-- **Stills say which event they follow.** `camera.still` gets a `source_seq`: the seq of the event
-  that triggered it. Without it the backend can only guess which dart a still belongs to.
-- **Labels are not copied, they are joined at export.** The game already records each dart's final
-  segment, coords and `corrected` flag in `game_darts`. A sample stores the `bridge_events.id` of
-  its `dart.detected`, `game_darts` gets that id too (`bridge_event_id`, null for manual darts), and
-  the export joins them. A correction made later in the game, or an Undo, is then picked up without
-  any extra hook.
-- **Images on disk, index in Postgres.** JPEGs under `CLASSIFIER_DATA_DIR` (default
-  `/data/dart-samples`, a `VOLUME` in the image; `<board>/<sample>/{before,after}-{cam}.jpg`); one
-  row per sample in `dart_samples`. Images do not go in the DB.
-- **A size cap, because it is on for everyone.** `CLASSIFIER_MAX_GB` (default 20). Over it, the
-  oldest `autodarts` samples go first; corrected samples are kept until they alone exceed the cap.
-- **Deleting is real.** Turning the setting off, deleting the board or deleting the account deletes
-  that board's samples, rows and files (`cleanUpAccount` covers the account case).
+  plus a link to the dart. Manual darts have no images and are not kept. Boards with fewer than
+  three cameras give no samples for now.
+- **Stills say which round they belong to.** Every batch of bridge events starts with a `bm.frame`
+  whose seq is the `source_seq` of each event in it. `camera.still` carries the `source_seq` of the
+  batch that triggered its round and the `previous_seq` of the round before. The after stills of a
+  `dart.detected` are the three with its `source_seq`; each camera's before still is that camera's
+  still with the after still's `previous_seq` (after dart _n−1_, the takeout or a resync). The
+  bridge coalesces fetches (a newer trigger replaces a pending one) and drops stills while the
+  backend is unreachable; a dart missing any of the six is skipped, not repaired. Stills and events
+  travel on separate queues, so the pairing (`backend/src/detection/pairing.ts`) waits for whichever
+  comes last, keeping three rounds per board in memory (about 1 MB).
+- **Labels are not copied, they are joined when read.** The game records each dart's final
+  segment, coords and `corrected` flag in `game_darts`, and the engine gives a camera dart's
+  `thrown_at` the same timestamp as the `created_at` of the game input that logged it, which names
+  its `bridge_event_id`. So `dart_samples` → `game_session_events` (by `bridge_event_id`) →
+  `game_darts` (by session and `thrown_at`) finds the final dart with no engine change, and a
+  correction made later in the visit, or an Undo, is in it.
+- **Stills in Postgres**, as `BYTEA` in `dart_sample_stills`, like voice packs and avatar photos:
+  no volume for self-hosters to add, and deleting a board or account removes them by cascade.
+- **A size cap, because it is on for everyone.** `DART_SAMPLES_MAX_GB` (default 20; `0` turns
+  collection off). The 5-minute sweep deletes the oldest uncorrected samples first once over it;
+  corrected samples go only when they alone exceed the cap.
+- **Deleting is real.** Turning the setting off deletes the board's samples; deleting the board
+  (unpairing) or the account deletes them by cascade.
 - **Admins get the images from an admin page**, `#/admin/dart-samples` (see below). The same
   download endpoint serves the training scripts. Invalidated games are left out.
 
@@ -98,32 +102,41 @@ geometry and would carry over badly between boards.
 
 ```sql
 CREATE TABLE dart_samples (
-  id              TEXT PRIMARY KEY,
-  board_id        TEXT NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
-  bridge_event_id BIGINT NOT NULL REFERENCES bridge_events(id) ON DELETE CASCADE,
-  bm_version      TEXT NOT NULL,
-  still_px        INT  NOT NULL,          -- width of the stills (square)
-  captured_at     TIMESTAMPTZ NOT NULL
+  id              BIGSERIAL PRIMARY KEY,
+  board_id        TEXT   NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  bridge_event_id BIGINT NOT NULL UNIQUE REFERENCES bridge_events(id) ON DELETE CASCADE,
+  bm_version      TEXT,
+  bytes           INT    NOT NULL,          -- the six stills, for the cap
+  captured_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-ALTER TABLE boards     ADD COLUMN share_training_images BOOLEAN NOT NULL DEFAULT true;
-ALTER TABLE game_darts ADD COLUMN bridge_event_id BIGINT REFERENCES bridge_events(id) ON DELETE SET NULL;
+CREATE TABLE dart_sample_stills (
+  sample_id BIGINT REFERENCES dart_samples(id) ON DELETE CASCADE,
+  phase     TEXT CHECK (phase IN ('before', 'after')),
+  cam       SMALLINT CHECK (cam BETWEEN 0 AND 2),
+  jpeg      BYTEA NOT NULL,
+  PRIMARY KEY (sample_id, phase, cam)
+);
+ALTER TABLE boards ADD COLUMN share_training_images BOOLEAN NOT NULL DEFAULT true;
 ```
 
-`labels.jsonl`, one line per sample:
+The still size is not stored: training reads it from the JPEG (`px = W/2 + x·W/3`).
+
+`labels.jsonl`, one line per sample (the API's `DartSample`):
 
 ```json
 {
-  "sample": "…", "board": "…", "bm_version": "2.1.0", "still_px": 1000,
+  "id": "123", "boardId": "…", "bmVersion": "2.1.0", "capturedAt": "2026-11-07T10:00:00.000Z",
   "autodarts": { "segment": "D6", "coords": { "x": 0.986, "y": 0.048 } },
   "final":     { "segment": "D6", "coords": { "x": 0.986, "y": 0.048 }, "corrected": false },
   "label":     "autodarts"
 }
 ```
 
-`label` says how much to trust the sample:
+`final` is null for a dart outside a game, or one whose visit was never committed. `label` says how
+much to trust the sample:
 
-- **`autodarts`**: not corrected. A weak label: right most of the time, sometimes wrong and nobody
-  noticed.
+- **`autodarts`**: not corrected by a player. A weak label: right most of the time, sometimes wrong
+  and nobody noticed. (Board Manager's own re-scoring shows in `final`, not as a correction.)
 - **`corrected_spot`**: corrected by dragging the dart on the board, so `final.coords` is a position
   someone chose. Gold.
 - **`corrected_segment`**: corrected with a segment only, so we know the segment but not the spot
@@ -131,29 +144,30 @@ ALTER TABLE game_darts ADD COLUMN bridge_event_id BIGINT REFERENCES bridge_event
 
 ### Flow
 
-1. **Bridge**: sets `source_seq` on every `camera.still`. Nothing else changes.
-2. **Backend, on a still for a `dart.detected`** on a board that shares (setting on, flag on for its
-   owner): once all three cameras' stills for that seq are in, check that each camera's previous
-   still follows the board event before the dart, then write the six JPEGs and the `dart_samples`
-   row. Failures are logged and dropped; collection never delays or breaks a game.
-3. **Engine**: writes `bridge_event_id` into `game_darts` for camera darts.
-4. **Download**: joins `dart_samples` → `game_darts` (via `bridge_event_id`) → the original
-   `bridge_events` payload, and streams the archive.
+1. **Bridge**: `Transport.Send` returns the batch's frame seq, `Fetcher.Trigger` takes it, and each
+   still carries its round's seq and the previous round's.
+2. **Backend**: the bridge gateway hands every still and every stored `dart.detected` to the
+   `SampleCollector`. When a dart's six stills are in and its board shares (setting on, flag on for
+   its owner), it stores the sample. Failures are logged and dropped; collection never delays or
+   breaks a game.
+3. **Download**: joins the samples to their final darts and streams the archive.
 
 ### How admins get the images
 
 `#/admin/dart-samples`, an admin tool on the hub (admins only, not moderators):
 
-- **Totals**: samples by label (`autodarts`, `corrected_spot`, `corrected_segment`), boards that
-  share, disk used against the cap, the newest sample.
-- **Browse**: the latest samples, newest first, filterable by label. Each row shows the after still
-  of each camera with two markers, where Autodarts put the dart and where it ended up, so a wrong
-  label shows at a glance. Clicking a row opens all six stills. This page is where phase 2's tip
-  clicks will go.
-- **Download dataset**: `GET /api/admin/dart-samples/export?after=<sample id>&label=…` streams a
-  `.tar` (the images plus `labels.jsonl`; tar because the JPEGs are already compressed). Sample ids
-  sort by time (UUIDv7), and the archive's last id goes into its file name, so the next download
-  can ask for only what is new. The page remembers the last id per admin.
+- **Totals**: samples by label, boards with samples and boards that share, storage against the
+  cap, the newest sample.
+- **Browse**: the latest samples, newest first, filterable by label. Each shows the after still of
+  each camera with two markers, where Autodarts put the dart and where a player moved it, so a
+  wrong label shows at a glance; opening one shows the before stills too. Phase 2's tip clicks will
+  go here.
+- **Download dataset**: `GET /api/admin/dart-samples/export?upTo=<id>&after=<id>&label=…` streams a
+  `.tar` (`<id>/{before,after}-{cam}.jpg` and `labels.jsonl`; tar because the JPEGs are already
+  compressed), written as it is read. Only samples at least an hour old are included, so their
+  visit can no longer be corrected. The page asks for everything up to the newest such sample
+  (`settledNewestId`) and remembers that id in the browser, so the next download fetches only what
+  is new.
 - **For scripts**: the training scripts call the same endpoint with an admin's session cookie.
   Separate API tokens wait until a scheduled job needs them.
 
@@ -164,14 +178,16 @@ roughly 80–120 KB). Six stills per dart: about 0.3–0.7 MB per dart, so 10,00
 
 ### Testing
 
-- Backend: the sample decision (all six stills present, each "before" right after the previous
-  event, setting on, flag on) is a pure function with unit tests, including a coalesced still (gap →
-  skipped) and a dart right after a takeout (before = the takeout's still).
-- DB test: the export join returns `corrected_spot`, `corrected_segment` and `autodarts` rows for a
-  game with a dragged correction, a segment-only correction and an untouched dart, and leaves out an
-  invalidated game.
-- Deleting the board, turning the setting off and deleting the account each remove rows and files.
-- Bridge: `source_seq` matches the event that triggered the fetch.
+- `pairing.test.ts`: a dart pairs with its after stills and the previous round's, in either arrival
+  order; a coalesced camera or a first round after a reconnect gives no sample; each dart gives one.
+- `collector.test.ts`: only boards that share are stored, the combined still and untagged stills are
+  ignored, a failed save is logged.
+- `dartSamples.test.ts` (DB): the labels for an untouched, a dragged, a segment-only and a
+  no-game dart; label filter, paging and the hour's wait; invalidated games left out; turning
+  sharing off and deleting the board remove stills; the cap drops uncorrected samples first.
+- `adminDartSamples.test.ts`: admins only, the list and totals, a still, and a download unpacked and
+  checked, including one after a cursor.
+- Bridge: stills carry their round's seq and the previous one; `Send` returns the frame seq.
 
 ## Later phases (sketch)
 
