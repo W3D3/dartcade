@@ -7,7 +7,7 @@ import { finishGameSession, insertGameSession } from '../db/queries.js'
 import { getFinishedGame, getViewableGame } from '../db/history.js'
 import { deleteGame, invalidateGame } from '../db/adminGames.js'
 import { replayPooled } from '../session/replay.js'
-import { storedDetail } from './detail.js'
+import { storedDetail, storedDetails } from './detail.js'
 
 vi.mock('../session/replay.js', async orig => {
   const m = await orig<typeof import('../session/replay.js')>()
@@ -89,5 +89,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('storedDetail', () => {
     await load()
     await deleteGame(db, 'g1', 'ann')
     expect(await stored()).toBeUndefined()
+  })
+
+  it('reads many stored details in one go', async () => {
+    const game = (await getFinishedGame(db, 'g1'))!
+    await load()
+    vi.mocked(replayPooled).mockClear()
+    expect((await storedDetails(db, [game, game], vi.fn())).map(b => b?.detail.mode)).toEqual(['x01', 'x01'])
+    expect(replayPooled).not.toHaveBeenCalled()
   })
 })

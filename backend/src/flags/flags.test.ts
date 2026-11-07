@@ -99,6 +99,7 @@ describe('flags', () => {
       { key: 'coach.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'coach.live.enabled', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'coach.debug.enabled', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
+      { key: 'stats.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'bigscreen.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.autodartsImport', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.packDetails', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
