@@ -1,8 +1,8 @@
 <script lang="ts">
   // The Stats page (Stats.dc.html): your X01 numbers over a range of legs or days, each compared with
   // the same range before. The range and filters live in the querystring (#/stats?range=days30&kind=ranked)
-  // so Back, reload and a shared link keep them; the server picks the start score and out rule
-  // you played most when none is asked for.
+  // so Back, reload and a shared link keep them; the server opens on 501 (else the start score you
+  // played most) and the out rule you played most when none is asked for.
   import { querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Chip } from '$lib/components/ui/chip'

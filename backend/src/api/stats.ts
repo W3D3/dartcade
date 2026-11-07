@@ -13,6 +13,8 @@ import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
+const DEFAULT_START = 501
+
 /** The Stats page (stats.enabled): the signed-in user's own numbers. The database picks the games
  *  (the filters, and only as many as the range needs); their stored details give the darts. */
 export function statsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -24,8 +26,8 @@ export function statsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     const now = new Date()
     const played = await x01StatOptions(db, req.userId)
     const outModes = played.outs.filter(isOutMode)
-    // A filter left out is the one played most
-    const start = req.query.start ?? played.starts.at(0) ?? null
+    // A start score left out is 501, or the one played most when 501 was never played; an out rule left out is the one played most
+    const start = req.query.start ?? (played.starts.includes(DEFAULT_START) ? DEFAULT_START : played.starts.at(0)) ?? null
     const out = req.query.out ?? outModes.at(0) ?? null
     const options = { starts: [...played.starts].sort((a, b) => a - b), outModes }
     if (start === null || out === null) {

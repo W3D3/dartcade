@@ -121,7 +121,7 @@ describe('GET /api/stats/x01', () => {
     expect(listX01StatGames).not.toHaveBeenCalled()
   })
 
-  it('picks the start score and out rule played most when they are left out', async () => {
+  it('picks 501 and the out rule played most when they are left out', async () => {
     const res = await get('/api/stats/x01')
     expect(res.statusCode).toBe(200)
     expect(res.json()).toMatchObject({
@@ -132,6 +132,18 @@ describe('GET /api/stats/x01', () => {
     // Last 50 legs: at most 100 games
     expect(listX01StatGames).toHaveBeenCalledWith({}, 'user-1', { start: 501, out: 'straight', kind: 'all' }, { limit: 100 })
     expect(countX01StatLegs).toHaveBeenCalledWith({}, 'user-1', { start: 501, out: 'straight', kind: 'all' })
+  })
+
+  it('opens on 501 even when another start score is played more', async () => {
+    vi.mocked(x01StatOptions).mockResolvedValue({ starts: [301, 501], outs: ['double'] })
+    const res = await get('/api/stats/x01')
+    expect(res.json().applied.start).toBe(501)
+  })
+
+  it('opens on the start score played most when 501 was never played', async () => {
+    vi.mocked(x01StatOptions).mockResolvedValue({ starts: [301, 170], outs: ['double'] })
+    const res = await get('/api/stats/x01')
+    expect(res.json().applied.start).toBe(301)
   })
 
   it('passes the range and filters asked for through to the query', async () => {
