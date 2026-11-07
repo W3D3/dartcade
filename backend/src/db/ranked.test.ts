@@ -366,6 +366,63 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     })
   })
 
+  describe('recalculateRatings on generated histories', () => {
+    // mulberry32: the same history for the same seed
+    const rng = (seed: number) => () => {
+      seed = (seed + 0x6d2b79f5) | 0
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+    const results = (sessions: string[]) =>
+      db.selectFrom('ranked_results').selectAll().where('session_id', 'in', sessions).orderBy('session_id').orderBy('user_id').execute()
+
+    it.each([1, 2, 3, 4, 5])('replays a generated history to what recording it gave (seed %i)', async seed => {
+      const rand = rng(seed)
+      const players = Array.from({ length: 7 }, (_, i) => `gen${seed}_${i}`)
+      const twins = players.map(p => `${p}t`)
+      await db
+        .insertInto('user')
+        .values([...players, ...twins].map(id => ({ id, name: id, email: `${id}@gen`, emailVerified: false, image: null })))
+        .execute()
+      const sessions: string[] = []
+      const dropped = new Set<string>()
+      const twinSessions: string[] = []
+      for (let i = 0; i < 60; i++) {
+        const a = Math.floor(rand() * players.length)
+        const b = (a + 1 + Math.floor(rand() * (players.length - 1))) % players.length
+        const [wAvg, lAvg] = rand() < 0.2 ? [null, null] : [30 + Math.floor(rand() * 50), 30 + Math.floor(rand() * 50)]
+        const when = new Date(at(1).getTime() + i * 60_000)
+        const id = await game()
+        sessions.push(id)
+        await recordRankedResult(db, { sessionId: id, mode: '1v1', at: when, sides: duel(players[a] ?? '', players[b] ?? '', wAvg, lAvg) })
+        if (rand() < 0.25) dropped.add(id)
+        else {
+          const twin = await game()
+          twinSessions.push(twin)
+          await recordRankedResult(db, { sessionId: twin, mode: '1v1', at: when, sides: duel(twins[a] ?? '', twins[b] ?? '', wAvg, lAvg) })
+        }
+      }
+      const recorded = await results(sessions)
+      const ratings = await snapshotAll(players)
+      await recalculateRatings(db, '1v1')
+      expect(await results(sessions)).toEqual(recorded)
+      expect(await snapshotAll(players)).toEqual(ratings)
+      // Leaving a quarter of the games out rates the rest as a history that never had them
+      await recalculateRatings(db, '1v1', dropped)
+      const strip = (rows: Awaited<ReturnType<typeof results>>) =>
+        rows.map(r => ({ before: r.rating_before, after: r.rating_after, placement: r.placement, rank: r.rank_after, won: r.won }))
+      const kept = await results(sessions.filter(s => !dropped.has(s)))
+      const twinRows = await results(twinSessions)
+      expect(strip(kept).sort(byJson)).toEqual(strip(twinRows).sort(byJson))
+      expect((await snapshotAll(players)).map(({ rating, matches }) => ({ rating, matches }))).toEqual(
+        (await snapshotAll(twins)).map(({ rating, matches }) => ({ rating, matches })),
+      )
+    })
+    const byJson = (a: unknown, b: unknown) => JSON.stringify(a).localeCompare(JSON.stringify(b))
+    const snapshotAll = async (users: string[]) => Promise.all(users.map(async u => (await getRatings(db, u))['1v1']))
+  })
+
   describe('recording a finished ranked game', () => {
     const users = ['rex', 'sue', 'tia', 'uma', 'vic', 'wes', 'xan', 'yul']
     beforeAll(async () => {
