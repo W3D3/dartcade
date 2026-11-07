@@ -10,6 +10,8 @@ export const usersTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Users' }]
 export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
   gameTitle ? [ADMIN, { label: 'Games', href: '#/admin/games' }, { label: gameTitle }] : [ADMIN, { label: 'Games' }]
 
+export const rankedTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Ranked queue' }]
+
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
 export const coachTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Coach sandbox' }]

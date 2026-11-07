@@ -199,6 +199,11 @@ describe('grantSummary', () => {
 })
 
 describe('auditDetail', () => {
+  it('shows the reason of a void and of a queue removal', () => {
+    expect(auditDetail('ranked.void', { mode: '1v1', reason: 'board fault' })).toBe('Reason: board fault')
+    expect(auditDetail('ranked.dequeue', { mode: '1v1', reason: null })).toBeNull()
+  })
+
   it('says what each known action did', () => {
     expect(auditDetail('user.ban', { category: 'cheating', note: 'typed-in 180s', until: null })).toBe(
       'Closed for cheating · typed-in 180s',
