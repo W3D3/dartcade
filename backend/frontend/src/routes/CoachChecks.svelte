@@ -78,7 +78,8 @@
       </div>
 
       {#each CHECK_GROUPS as g (g.title)}
-        <section aria-labelledby="checks-{g.title}" class="card overflow-hidden">
+        <!-- shrink-0: overflow-hidden lets a flex child shrink below its content, which clipped the rows to the main's height -->
+        <section aria-labelledby="checks-{g.title}" class="card shrink-0 overflow-hidden">
           <div class="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 px-[18px] pt-[18px] pb-3">
             <h2 id="checks-{g.title}" class="m-0 font-display text-[28px] font-bold uppercase tracking-[0.02em]">{g.title}</h2>
             <span class="text-[14px] text-text-muted">{g.scope}</span>
