@@ -1,5 +1,6 @@
 // What the Friends screens show for the server's friends list (the friends message on /ws/me).
 // The server decides statuses, joinable, in-your-lobby and invited; this only words them.
+import type { FriendSearchHit } from '../api'
 import type { Friend, FriendStatus, IncomingFriendRequest, OutgoingFriendRequest } from '../api/lobby-ws'
 import type { FriendList } from '../lobby/sockets'
 import { gameName, inviteTime } from '../lobby/format.js'
@@ -50,6 +51,12 @@ export function rowAction(f: Friend, inALobby: boolean): RowAction {
   return f.invited ? 'invited' : 'invite'
 }
 
+/** The friends whose name contains `query`, any case; an empty query keeps everyone. */
+export function filterFriends(friends: Friend[], query: string): Friend[] {
+  const q = query.trim().toLowerCase()
+  return q === '' ? friends : friends.filter(f => f.name.toLowerCase().includes(q))
+}
+
 export function splitOnline(friends: Friend[]): { online: Friend[]; offline: Friend[] } {
   return { online: friends.filter(isOnline), offline: friends.filter(f => !isOnline(f)) }
 }
@@ -93,4 +100,24 @@ export function joinRefusal(status: number, body: Refusal): string {
   if (status === 403) return "You can't join that lobby without its code any more"
   if (status === 404) return 'That lobby has closed'
   return describeConflict(body)
+}
+
+/** The shortest search text the server answers; it finds nothing below this. */
+export const SEARCH_MIN = 3
+
+/** "3 friends in common", or nothing to say. */
+export const mutualMeta = (n: number): string => (n === 0 ? '' : `${n} ${n === 1 ? 'friend' : 'friends'} in common`)
+
+/** What a search result offers: the state it is in, and the button (none for friends and sent requests). */
+export function searchState(request: FriendSearchHit['request']): { text: string; action: 'Add' | 'Accept' | null } {
+  switch (request) {
+    case 'friends':
+      return { text: 'Friends', action: null }
+    case 'sent':
+      return { text: 'Request sent', action: null }
+    case 'received':
+      return { text: 'Wants to be your friend', action: 'Accept' }
+    case 'none':
+      return { text: '', action: 'Add' }
+  }
 }

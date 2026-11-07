@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import type { Friend } from '../api/lobby-ws'
 import {
+  filterFriends,
   incomingMeta,
   joinRefusal,
+  mutualMeta,
   outgoingMeta,
   parseFriendName,
   rowAction,
+  searchState,
   sendOutcome,
   splitOnline,
   statusLine,
@@ -99,5 +102,31 @@ describe('joinRefusal', () => {
     expect(joinRefusal(403, { error: 'x' })).toBe("You can't join that lobby without its code any more")
     expect(joinRefusal(404, { error: 'x' })).toBe('That lobby has closed')
     expect(joinRefusal(409, { error: 'x', code: 'active_session', sessionId: 's1' })).toBe('You already have a game running')
+  })
+})
+
+describe('filtering your friends', () => {
+  const all = [friend({ id: 'a', name: 'Lena' }), friend({ id: 'b', name: 'Max' }), friend({ id: 'c', name: 'sam.LEN' })]
+  it('keeps names containing the text, any case, and everyone for an empty one', () => {
+    expect(filterFriends(all, ' len ').map(f => f.id)).toEqual(['a', 'c'])
+    expect(filterFriends(all, 'zzz')).toEqual([])
+    expect(filterFriends(all, '  ')).toBe(all)
+  })
+})
+
+describe('mutualMeta', () => {
+  it('counts friends in common, and is silent for none', () => {
+    expect([0, 1, 3].map(mutualMeta)).toEqual(['', '1 friend in common', '3 friends in common'])
+  })
+})
+
+describe('searchState', () => {
+  it('says where each result stands and offers Add or Accept only when it can', () => {
+    expect((['none', 'sent', 'received', 'friends'] as const).map(searchState)).toEqual([
+      { text: '', action: 'Add' },
+      { text: 'Request sent', action: null },
+      { text: 'Wants to be your friend', action: 'Accept' },
+      { text: 'Friends', action: null },
+    ])
   })
 })

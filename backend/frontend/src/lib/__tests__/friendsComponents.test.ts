@@ -78,7 +78,7 @@ describe('RequestsPanel', () => {
 describe('AddFriendCard', () => {
   it('has the field, the button and the helper copy', () => {
     const out = render(AddFriendCard, { props: {} }).body
-    expect(out).toContain('placeholder="@username"')
+    expect(out).toContain('placeholder="Name or email"')
     expect(out).toContain('Send request')
     expect(out).toContain("They'll see it in Friends and on their badge. Once they accept, you see each other's status.")
   })

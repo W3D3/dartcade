@@ -1,6 +1,6 @@
 // The Friends page's requests to the server. Each resolves with what to show, never throws on a
 // refusal; the updated list comes back on /ws/me.
-import { api } from '$lib/api'
+import { api, type FriendSearchHit } from '$lib/api'
 import { describeConflict, type Refusal } from '$lib/lobby/input'
 import { joinRefusal, parseFriendName, sendOutcome } from './view'
 
@@ -9,6 +9,12 @@ export async function sendRequest(raw: string): Promise<{ ok: boolean; text: str
   if (name === '') return { ok: false, text: 'Type their name' }
   const res = await api.POST('/api/friends/requests', { body: { name } })
   return sendOutcome(res.response.status, res.error, name)
+}
+
+/** People matching part of a name or an exact email; empty when the search fails. */
+export async function searchPeople(q: string): Promise<FriendSearchHit[]> {
+  const res = await api.GET('/api/friends/search', { params: { query: { q } } })
+  return res.data?.users ?? []
 }
 
 export async function answerRequest(id: string, answer: 'accept' | 'decline'): Promise<string | null> {

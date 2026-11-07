@@ -10,6 +10,7 @@
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
   import AddFriendCard from '$lib/components/friends/AddFriendCard.svelte'
+  import FriendFilter from '$lib/components/friends/FriendFilter.svelte'
   import FriendsSection from '$lib/components/friends/FriendsSection.svelte'
   import { querystring } from 'svelte-spa-router'
   import { readParam, setParam } from '$lib/urlState'
@@ -22,13 +23,17 @@
   import { me } from '$lib/lobby/sockets'
   import { createFriendActions } from '$lib/friends/controller.svelte'
   import { setInvisible } from '$lib/presence'
-  import { FRIENDS_TABS, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
+  import { FRIENDS_TABS, filterFriends, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
 
   const invisible = $derived($currentUser?.invisible ?? false)
   const list = $derived($me?.friends ?? { friends: [], incoming: [], outgoing: [] })
   const loaded = $derived($me?.friends != null)
-  const groups = $derived(splitOnline(list.friends))
+  // The name filter is in the URL too (#/friends?q=len)
+  const query = $derived(new URLSearchParams($querystring ?? '').get('q') ?? '')
+  const setQuery = (v: string) => setParam('/friends', $querystring, 'q', v === '' ? null : v)
+  const shown = $derived(filterFriends(list.friends, query))
+  const groups = $derived(splitOnline(shown))
   const counts = $derived(tabCounts(list))
   const myLobbyId = $derived($me?.lobby?.id ?? null)
   const noRequests = $derived(list.incoming.length === 0 && list.outgoing.length === 0)
@@ -91,7 +96,10 @@
               </EmptyState>
             </div>
           {:else}
-            {#if tab === 'online' && groups.online.length === 0}
+            <FriendFilter value={query} onchange={setQuery} class={tab === 'requests' ? 'md:hidden' : ''} />
+            {#if query !== '' && shown.length === 0}
+              <p class="m-0 text-[15px] text-text-muted {tab === 'requests' ? 'md:hidden' : ''}">No friend matches “{query.trim()}”.</p>
+            {:else if tab === 'online' && groups.online.length === 0}
               <p class="hidden md:block m-0 text-[15px] text-text-muted">Nobody's online right now.</p>
             {/if}
             <FriendsSection
