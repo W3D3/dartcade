@@ -65,7 +65,7 @@ describe('streak copy', () => {
       }),
     )
     expect(t).toEqual([
-      { kind: 'freeze', left: 1 },
+      { kind: 'freeze', left: 1, days: 7 },
       { kind: 'milestone', days: 7, xp: 250, perks: [expect.objectContaining({ id: 'picture.hot-streak' })] },
     ])
   })
