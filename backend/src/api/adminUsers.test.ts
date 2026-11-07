@@ -73,6 +73,69 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   const asAdmin = { 'x-user': 'admin' }
   const asPlayer = { 'x-user': 'player' }
 
+  describe('ranked rating adjustments', () => {
+    const adjust = { mode: '1v1', rating: 1400, reason: 'seed fix' }
+    it('403s a player and a moderator, 401s a signed-out caller', async () => {
+      await db
+        .insertInto('user')
+        .values({ id: 'rankmod', name: 'RankMod', email: 'rankmod@example.com', emailVerified: true, image: null, role: 'moderator' })
+        .execute()
+      for (const headers of [asPlayer, { 'x-user': 'rankmod' }]) {
+        const res = await app().inject({ method: 'POST', url: '/api/admin/users/player/ranked/adjust', headers, payload: adjust })
+        expect(res.statusCode).toBe(403)
+        const reset = await app().inject({
+          method: 'POST',
+          url: '/api/admin/users/player/ranked/reset',
+          headers,
+          payload: { mode: '1v1', reason: 'x' },
+        })
+        expect(reset.statusCode).toBe(403)
+      }
+      expect((await app().inject({ method: 'POST', url: '/api/admin/users/player/ranked/adjust', payload: adjust })).statusCode).toBe(401)
+    })
+
+    it('requires a reason', async () => {
+      for (const reason of ['', '   ']) {
+        const res = await app().inject({
+          method: 'POST',
+          url: '/api/admin/users/player/ranked/adjust',
+          headers: asAdmin,
+          payload: { ...adjust, reason },
+        })
+        expect(res.statusCode).toBe(400)
+      }
+    })
+
+    it('sets, resets and shows both in the audit trail', async () => {
+      const set = await app().inject({ method: 'POST', url: '/api/admin/users/player/ranked/adjust', headers: asAdmin, payload: adjust })
+      expect(set.statusCode).toBe(200)
+      expect(set.json()).toMatchObject({ before: { rating: 1200 }, after: { rating: 1400, matches: 0 } })
+      const reset = await app().inject({
+        method: 'POST',
+        url: '/api/admin/users/player/ranked/reset',
+        headers: asAdmin,
+        payload: { mode: '1v1', reason: 'placement again' },
+      })
+      expect(reset.json().after).toMatchObject({ rating: 1400, rankIndex: null, matches: 0 })
+      // The admin row shows the new rating, rank and placement from the same data
+      const activity = await app().inject({ method: 'GET', url: '/api/admin/users/player/activity', headers: asAdmin })
+      expect(activity.json().games.ranked.ratings).toContainEqual({ mode: '1v1', rating: 1400, rankIndex: null, matches: 0 })
+      const trail = await app().inject({ method: 'GET', url: '/api/admin/users/player/audit', headers: asAdmin })
+      const actions = trail.json().entries.map((e: { action: string }) => e.action)
+      expect(actions).toEqual(expect.arrayContaining(['ranked.adjust', 'ranked.reset']))
+    })
+
+    it('404s an unknown account', async () => {
+      const res = await app().inject({
+        method: 'POST',
+        url: '/api/admin/users/ghost/ranked/reset',
+        headers: asAdmin,
+        payload: { mode: '2v2', reason: 'x' },
+      })
+      expect(res.statusCode).toBe(404)
+    })
+  })
+
   it('403s a non-admin on both routes', async () => {
     const list = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asPlayer })
     expect(list.statusCode).toBe(403)
