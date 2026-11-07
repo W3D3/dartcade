@@ -2477,6 +2477,8 @@ export interface components {
             name: string;
             /** @description Their rating going into the game; null while they were placing */
             rating: number | null;
+            /** @description The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing */
+            rankIndex: number | null;
             avatar: components["schemas"]["Avatar"];
         };
         RankedGame: {
@@ -2487,6 +2489,11 @@ export interface components {
             change: number | null;
             /** Format: date-time */
             at: string;
+            /** @description Legs won by your side and by theirs; null when the game did not record them */
+            score: {
+                mine: number;
+                theirs: number;
+            } | null;
             opponents: components["schemas"]["RankedOpponent"][];
         };
         RankedProfile: {

@@ -94,6 +94,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
           'cal',
           'dee',
           'mia',
+          'ola',
+          'pia',
         ].map(id => ({
           id,
           name: id[0].toUpperCase() + id.slice(1),
@@ -272,8 +274,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect(recent).toHaveLength(3)
     expect(recent[0]).toMatchObject({ mode: '2v2', won: false, change: null })
     expect(recent[0].opponents).toEqual([
-      { userId: 'anna', name: 'Anna', rating: null, avatar: defaultAvatar },
-      { userId: 'ben', name: 'Ben', rating: null, avatar: defaultAvatar },
+      { userId: 'anna', name: 'Anna', rating: null, rankIndex: null, avatar: defaultAvatar },
+      { userId: 'ben', name: 'Ben', rating: null, rankIndex: null, avatar: defaultAvatar },
     ])
     expect(recent[1]).toMatchObject({ mode: '1v1', won: true })
     expect(recent[1].change).toBeGreaterThan(0)
@@ -284,6 +286,45 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect(change['2v2']).toBe(0)
     expect(change['1v1']).toBe(recent[1].change)
   })
+  it('recent games carry the legs score, or null when the game recorded none', async () => {
+    const id = await game()
+    for (const [seat, userId, legs] of [
+      [0, 'ola', 2],
+      [1, 'pia', 1],
+    ] as const) {
+      await db
+        .insertInto('game_players')
+        .values({
+          session_id: id,
+          seat,
+          name: userId,
+          user_id: userId,
+          placement: seat + 1,
+          stats: JSON.stringify({ legsWon: legs }),
+          throw_position: seat,
+          controller_user_id: userId,
+          board_db_id: null,
+          bot_level: null,
+        })
+        .execute()
+    }
+    await recordRankedResult(db, { sessionId: id, mode: '1v1', at: at(25), sides: duel('ola', 'pia', null, null) })
+    const [mine] = await recentRanked(db, 'ola', 1)
+    expect(mine.score).toEqual({ mine: 2, theirs: 1 })
+    expect((await recentRanked(db, 'pia', 1))[0].score).toEqual({ mine: 1, theirs: 2 })
+    // The opponent's stage is the one they held, which the demotion buffer can keep above what their rating says
+    await db
+      .updateTable('ranked_results')
+      .set({ placement: false, rating_before: 1290, rank_before: rankIndexFor(1300) })
+      .where('session_id', '=', id)
+      .where('user_id', '=', 'pia')
+      .execute()
+    expect((await recentRanked(db, 'ola', 1))[0].opponents).toMatchObject([{ rating: 1290, rankIndex: rankIndexFor(1300) }])
+    const noLegs = await game()
+    await recordRankedResult(db, { sessionId: noLegs, mode: '1v1', at: at(26), sides: duel('ola', 'pia', null, null) })
+    expect((await recentRanked(db, 'ola', 1))[0].score).toBeNull()
+  })
+
   describe('recalculateRatings', () => {
     // Four games between three players, played in order; the same games again without the second one for a twin trio
     const script: [string, string, number][] = [
