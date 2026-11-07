@@ -24,7 +24,7 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
   use: {
-    baseURL: 'http://localhost:5174',
+    baseURL: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`,
     trace: 'on-first-retry',
     launchOptions: {
       executablePath: resolveExecutablePath(),
