@@ -1,7 +1,19 @@
 <script lang="ts">
   // One item of the phone tab bar and the tablet rail: icon over label, the Live dot, the invites badge.
   // A disabled tab (Live with no game running, Tournaments until it ships) is a dimmed span, not a link.
-  import { Clock, GraduationCap, House, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
+  import {
+    ChartColumn,
+    Clock,
+    GraduationCap,
+    House,
+    Radio,
+    Settings,
+    ShieldCheck,
+    Swords,
+    Target,
+    TrendingUp,
+    Trophy,
+  } from '@lucide/svelte'
   import type { NavTab } from '$lib/nav'
   import NavBadge from './NavBadge.svelte'
 
@@ -36,6 +48,7 @@
   {:else if tab.icon === 'coach'}<GraduationCap size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'tournaments'}<Trophy size={22} strokeWidth={1.8} />
   {:else if tab.icon === 'progress'}<TrendingUp size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
+  {:else if tab.icon === 'stats'}<ChartColumn size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'settings'}<Settings size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'admin'}<ShieldCheck size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else}<Clock size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />{/if}
