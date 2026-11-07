@@ -4155,7 +4155,12 @@ components:
             start: { type: integer, nullable: true, description: null without any X01 leg }
             out: { anyOf: [{ $ref: '#/components/schemas/StatsOutMode' }, { type: string, nullable: true, enum: [null] }] }
             kind: { $ref: '#/components/schemas/StatsKind' }
-        totalLegs: { type: integer, minimum: 0, description: 'Every leg with these filters, all time (of the games whose detail is stored, as nearly all are)' }
+        totalLegs:
+          {
+            type: integer,
+            minimum: 0,
+            description: 'Every leg with these filters, all time (of the games whose detail is stored, as nearly all are)',
+          }
         window: { $ref: '#/components/schemas/StatsSpan' }
         before:
           anyOf: [{ $ref: '#/components/schemas/StatsSpan' }, { type: string, nullable: true, enum: [null] }]
