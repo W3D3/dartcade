@@ -14,7 +14,7 @@ import {
   VERY_LOW,
 } from '$shared/coach/grade'
 import { GOOD_GROUP_MM, GOOD_GROUP_RATIO, GREAT_GROUP_MM, GREAT_GROUP_RATIO, SCATTERED_RATIO } from '$shared/coach/grouping'
-import { NOTE_THRESHOLD } from '$shared/coach/notes'
+import { BOGEY_THRESHOLD, NOTE_THRESHOLD } from '$shared/coach/notes'
 import { LATE_DROP, LATE_DROP_VISITS, LONG_FINISH } from '$shared/coach/review'
 import { VISIT_GRADES, type VisitGrade } from '$shared/coach'
 import { BRILLIANT_TIER, tierOf } from '$shared/coach/tiers'
@@ -54,11 +54,12 @@ export const GRADE_LEGEND: GradeLegend[] = VISIT_GRADES.map(g => ({
 }))
 
 const notePoints = Math.round(NOTE_THRESHOLD * 100)
+const leavePoints = Math.round(BOGEY_THRESHOLD * 100)
 
 export const CHECK_GROUPS: CheckGroup[] = [
   {
     title: 'Scoring',
-    scope: 'Visits with more than 170 left.',
+    scope: 'Darts with more than 170 left before them. A visit with no dart on 170 or less is graded on its score.',
     checks: [
       {
         name: 'Fewest darts',
@@ -72,7 +73,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Very low visit',
         labels: ['weak', 'bad'],
         source: 'scores',
-        when: `The visit scores under ${VERY_LOW}: Weak at best, whatever the grouping.`,
+        when: `The visit scores under ${VERY_LOW} and has no dart on 170 or less: Weak at best, whatever the grouping.`,
         example: 'S5 S1 S19 = 25',
         says: 'Your usual visit next to the score, so you see how far off it was.',
       },
@@ -80,7 +81,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Rating against your average',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'scores',
-        when: `The visit's rating (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_SCALE)}. The group itself is judged against the spread expected of the tier you're graded as: Great grouping at ${GREAT_GROUP_RATIO}× that or less (and at most ${GREAT_GROUP_MM} mm), Good at ${GOOD_GROUP_RATIO}× or less (and at most ${GOOD_GROUP_MM} mm), Scattered from ${SCATTERED_RATIO}×.`,
+        when: `The rating of a visit with no dart on 170 or less (its score plus a bonus for a tight group and for darts close to their target) against your average (your 30-day X01 average, or this game's without one): ${scaleText(SCORING_SCALE)}. The group itself is judged against the spread expected of the tier you're graded as: Great grouping at ${GREAT_GROUP_RATIO}× that or less (and at most ${GREAT_GROUP_MM} mm), Good at ${GOOD_GROUP_RATIO}× or less (and at most ${GOOD_GROUP_MM} mm), Scattered from ${SCATTERED_RATIO}×.`,
         example: 'S20 S20 S1 = 41 · your average 60: −19, Weak',
         says: 'One loose visit happens; a few in a row mean the rhythm went.',
       },
@@ -88,7 +89,7 @@ export const CHECK_GROUPS: CheckGroup[] = [
         name: 'Spill into 1 / 5',
         labels: ['inaccuracy'],
         source: 'scores',
-        when: 'Two or three darts of a visit at the 20 land in 1 or 5: Inaccuracy at best.',
+        when: 'Two or three darts at the 20, each with more than 170 left before it, land in 1 or 5: Inaccuracy at best.',
         example: 'S1 S20 S5',
         says: 'The darts drift sideways off the 20: keep the release and follow-through straight.',
       },
@@ -96,29 +97,37 @@ export const CHECK_GROUPS: CheckGroup[] = [
   },
   {
     title: 'Setup',
-    scope: 'Visits from 170 or less in which no dart is thrown on a one-dart finish.',
+    scope: 'Visits with a dart on 170 or less left that is not on a one-dart finish, or a last dart with 171 to 230 left.',
     checks: [
       {
         name: 'Strategy note',
         labels: ['bad'],
         source: 'model',
-        when: `A dart on a finish went at a number that gives at least ${notePoints} points less chance to check out than the best aim. The dart gets the benefit of the doubt: it was aimed at the best spot on the number it hit or on either number next to it, since a dart drifting into the next wedge is the commonest miss; a single near the middle (or one without a position) may also have been thrown at the bull or 25. Marks any visit Bad; the Bad setups card counts the setup visits graded Bad, for a note or by their checkout chance.`,
+        when: `A dart on 170 or less went at a number that gives at least ${notePoints} points less chance to check out than the best aim. The dart gets the benefit of the doubt: it was aimed at the best spot on the number it hit or on either number next to it, since a dart drifting into the next wedge is the commonest miss; a single near the middle (or one without a position) may also have been thrown at the bull or 25. Marks any visit Bad; the Bad setups card counts the setup visits graded Bad, for a note or by their checkout chance.`,
         example: '57 left · S20 → 37 · better S17 → 40',
         says: 'The better aim, and why: which leave its misses still give you.',
+      },
+      {
+        name: 'Bad setup on the last dart',
+        labels: ['bad'],
+        source: 'model',
+        when: `The visit's last dart has 171 to 230 left, so a treble 20 could still bring it to 170 or less, and its leave matters more than its score. The aim loses at least ${leavePoints} points of chance against the best aim: the likeliest misses leave a score no visit can finish (a bogey such as 159, 174 or 178, which needs more than three darts). The dart is judged by its aim when the camera placed it, else it gets the benefit of the doubt of any aim on the number it hit or either number next to it. The note makes the visit Bad. A visit with such a last dart carries the Setup tag after Scoring, whatever it started on, and is graded on its score unless the note decides; the coach's own aim list leaves such aims out.`,
+        example: '204 · S5 S20 S5 → 174 · 179 left: T19 leaves 122, 160, 176 or 172, the T20 leaves 119, 159, 178 or 174',
+        says: "The better aim, and which leave the miss gives: On 179, S5: better T19, S5 leaves 174, which one visit can't finish.",
       },
       {
         name: 'Checkout chance',
         labels: ['excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'],
         source: 'model',
-        when: `Setup and doubling visits are graded by how much their darts changed your chance to check out, this visit or the next, against a player of the tier you're graded as (shown on each leg: the one you pick under Coach me as…, or the one your 30-day average reached, else the next one up) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_SCALE)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
-        example: '121 left · S20 T17 S18 → 32 (D16): +8, Good',
+        when: `Setup and doubling visits are graded by how much their darts on 170 or less changed your chance to check out, this visit or the next, against a player of the tier you're graded as (shown on each leg: the one you pick under Coach me as…, or the one your 30-day average reached, else the next one up) aiming at the best spot each time. A dart that leaves you better placed than that player would expect adds points; one that leaves you worse placed takes them away. A dart that missed its target gets up to ${MISS_CLOSE_MAX} points back the closer it landed (none from ${MISS_CLOSE_ZERO_MM} mm off). ${scaleText(FINISH_SCALE)}. Each dart is coloured by its own share: green from +${DART_GOOD_FROM} (or a hit), yellow at ${DART_PLAIN_ABOVE} or below, orange at ${DART_COSTLY_AT} or below, red the busting dart. A dart that missed its target by ${NEAR_MISS_MM} mm or less is marked Near miss.`,
+        example: '121 left · S20 T17 S18 → 32 (D16): +8, Good. 204 · S20 S20 S20 is graded from the third dart, on 164',
         says: 'A setup: when the visit lost chance, the dart that cost the most and how much; otherwise what you left and its route (37 left is a single to double, S5 · D16). A doubling visit without a checkout: what happened to the double, then where you stand (3 darts at D4, all just outside, 5 mm on average. Still on 8.). On the last visit of a leg you lost, with a dart at a double, it starts with Missed the match dart.',
       },
     ],
   },
   {
     title: 'Doubling',
-    scope: 'Visits with at least one dart thrown on a one-dart finish.',
+    scope: 'Visits with at least one dart thrown on a one-dart finish: Doubling comes after Setup when the first darts hit it.',
     checks: [
       {
         name: 'Tip',
