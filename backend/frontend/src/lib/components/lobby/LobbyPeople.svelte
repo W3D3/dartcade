@@ -6,6 +6,7 @@
   import AddBot from './AddBot.svelte'
   import AddSomeone from './AddSomeone.svelte'
   import BoardChip from './BoardChip.svelte'
+  import BoardLabel from './BoardLabel.svelte'
   import PeopleList from './PeopleList.svelte'
   import PersonControls from './PersonControls.svelte'
   import { gameModes } from '$lib/gameModes'
@@ -21,6 +22,7 @@
     onbot,
     oninvite,
     onboardsopen,
+    locked = false,
   }: {
     lobby: Lobby
     viewerId: string | null
@@ -32,6 +34,8 @@
     oninvite: (userId: string) => Promise<boolean>
     /** A board menu opened: reload your boards' status. */
     onboardsopen?: () => void
+    /** The duo's ranked search runs: boards, ready and who is in cannot change. */
+    locked?: boolean
   } = $props()
 
   // Whether the next game's module can seat a bot at all (it defines botTarget server-side —
@@ -41,27 +45,37 @@
   const supportsBots = $derived($gameModes.find(g => g.id === lobby.nextGame?.gameId)?.supportsBots ?? false)
 </script>
 
-<PeopleList {lobby} {viewerId} onplace={canMove(lobby, viewerId) ? onupdate : undefined}>
+<PeopleList {lobby} {viewerId} {locked} onplace={!locked && canMove(lobby, viewerId) ? onupdate : undefined}>
   {#snippet boardOf(p: LobbyPerson)}
-    <BoardChip
-      person={p}
-      choices={boardChoices(lobby, p, viewerId, boards)}
-      gameId={lobby.nextGame?.gameId}
-      onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
-      onopen={onboardsopen}
-    />
+    {#if locked}
+      <BoardLabel person={p} gameId={lobby.nextGame?.gameId} />
+    {:else}
+      <BoardChip
+        person={p}
+        choices={boardChoices(lobby, p, viewerId, boards)}
+        gameId={lobby.nextGame?.gameId}
+        onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
+        onopen={onboardsopen}
+      />
+    {/if}
   {/snippet}
   {#snippet controlsOf(p: LobbyPerson, i: number)}
-    <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} />
+    <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} {locked} />
   {/snippet}
   {#snippet footer()}
-    <div class="flex flex-col gap-2 md:flex-row md:items-start">
-      <div class="flex-grow min-w-0">
-        <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
+    {#if locked}
+      <p class="m-0 text-[12px] leading-[1.45] text-text-dim">
+        Going not-ready or leaving stops the search for both of you. Boards and who is in are locked until it ends.
+      </p>
+    {:else}
+      <div class="flex flex-col gap-2 md:flex-row md:items-start">
+        <div class="flex-grow min-w-0">
+          <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
+        </div>
+        {#if supportsBots}
+          <AddBot gameId={lobby.nextGame?.gameId} {onbot} />
+        {/if}
       </div>
-      {#if supportsBots}
-        <AddBot gameId={lobby.nextGame?.gameId} {onbot} />
-      {/if}
-    </div>
+    {/if}
   {/snippet}
 </PeopleList>

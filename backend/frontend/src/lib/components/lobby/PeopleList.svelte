@@ -13,6 +13,7 @@
   import BoardLabel from './BoardLabel.svelte'
   import PersonStatus from './PersonStatus.svelte'
   import ReadyCount from './ReadyCount.svelte'
+  import { Lock } from '@lucide/svelte'
   import { counts, nextGameInTeams, type PersonPatch } from '$lib/lobby/rules'
   import { listKeyMove, listPlacement, type Direction, type Placement } from '$lib/lobby/dnd'
   import { createReorder } from '$lib/lobby/reorder.svelte'
@@ -25,6 +26,7 @@
     controlsOf,
     onplace,
     footer,
+    locked = false,
   }: {
     lobby: Lobby
     viewerId: string | null
@@ -35,6 +37,8 @@
     /** Moves someone in the order (the host); absent: no drag handles. */
     onplace?: (personId: string, patch: PersonPatch) => Promise<boolean>
     footer?: Snippet
+    /** The duo's ranked search runs: the list says so instead of the ready count, and the footer is the note about it. */
+    locked?: boolean
   } = $props()
   const c = $derived(counts(lobby))
   // Singles throw in list order; in a team game the teams take turns
@@ -55,7 +59,9 @@
 </script>
 
 <Panel title="People · {c.people}" label="People in this lobby" flat class="lg:flex-grow">
-  {#snippet note()}<ReadyCount {lobby} suffix={order} />{/snippet}
+  {#snippet note()}{#if locked}<span class="inline-flex items-center gap-[5px] text-text-dim"
+        ><Lock size={13} aria-hidden="true" />Locked while searching</span
+      >{:else}<ReadyCount {lobby} suffix={order} />{/if}{/snippet}
   {#if onplace}
     <ReorderStatus id={hintId} hint="Arrow up or down moves them one place." announcement={moves.announcement} />
   {/if}

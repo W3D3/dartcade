@@ -15,7 +15,6 @@
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import SearchPanel from '$lib/components/ranked/SearchPanel.svelte'
   import WhatHappensNext from '$lib/components/ranked/WhatHappensNext.svelte'
-  import { Lock } from '@lucide/svelte'
   import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
   import { api } from '$lib/api'
   import type { Lobby, LobbyAccess, TeamId } from '$lib/api/lobby-ws'
@@ -254,18 +253,11 @@
         class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0"
       >
         <div class="order-2 lg:order-none flex flex-col gap-3 min-w-0 lg:min-h-0">
-          {#if searchingDuo}
-            <p
-              class="m-0 flex items-start gap-2 rounded-[12px] border border-dashed border-line-dashed px-4 py-3 text-[13px] text-text-muted"
-            >
-              <Lock size={14} class="mt-[2px] shrink-0" aria-hidden="true" />Boards, ready state and who is in are locked while you search.
-              Changing a board, going not-ready or someone leaving cancels the search for both of you.
-            </p>
-          {/if}
           <LobbyPeople
             lobby={l}
             {viewerId}
             {ownBoards}
+            locked={searchingDuo}
             onupdate={updatePerson}
             onremove={removePerson}
             onguest={addGuest}

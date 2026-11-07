@@ -57,6 +57,12 @@ export function searchView(s: MatchmakingSearch, now: number): SearchView {
   }
 }
 
+/** Who started a duo's search, as the phone's panel says it to each of them. */
+export function startedLine(s: Pick<MatchmakingSearch, 'hostUserId' | 'players'>, userId: string | null): string {
+  const who = s.hostUserId === userId ? 'You started' : `${s.players[0] ?? 'Your partner'} started`
+  return `${who} the search. You'll get the match to accept here too.`
+}
+
 /** Seconds left to accept a found match. */
 export const secondsLeft = (m: Pick<MatchmakingMatch, 'expiresAt'>, now: number): number =>
   Math.max(0, Math.ceil((Date.parse(m.expiresAt) - now) / 1000))
