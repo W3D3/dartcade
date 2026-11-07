@@ -250,9 +250,13 @@ export async function getFinishedGame(db: Kysely<Database>, id: string): Promise
   return toGame(row, seats, null)
 }
 
-/** A finished game's stored detail and match stats, and the version that built them. */
-export async function getGameDetail(db: Kysely<Database>, id: string) {
-  return db.selectFrom('game_details').select(['version', 'detail', 'stats']).where('session_id', '=', id).executeTakeFirst()
+/** These finished games' stored details and match stats, and the version that built each, by game id. */
+export async function getGameDetails(db: Kysely<Database>, ids: string[]) {
+  const rows =
+    ids.length === 0
+      ? []
+      : await db.selectFrom('game_details').select(['session_id', 'version', 'detail', 'stats']).where('session_id', 'in', ids).execute()
+  return new Map(rows.map(r => [r.session_id, r]))
 }
 
 /** Stores a finished game's detail and match stats, over any built by another version. */
@@ -268,4 +272,24 @@ export async function saveGameDetail(
     .values({ session_id: id, ...values })
     .onConflict(oc => oc.column('session_id').doUpdateSet(values))
     .execute()
+}
+
+/** The user's finished, placed games of `mode` that count (invalidated ones left out), newest first,
+ *  with whether the ranked queue started each. */
+export async function listStatGames(db: Kysely<Database>, userId: string, mode: string): Promise<(HistoryGame & { ranked: boolean })[]> {
+  const rows = await finishedGames(db)
+    .innerJoin('game_players as me', 'me.session_id', 'gs.id')
+    .leftJoin('ranked_matches as rm', 'rm.session_id', 'gs.id')
+    .select(['me.seat as my_seat', 'rm.session_id as ranked_id'])
+    .where('me.user_id', '=', userId)
+    .where('me.placement', 'is not', null)
+    .where('gs.game_id', '=', mode)
+    .orderBy('gs.finished_at', 'desc')
+    .orderBy('gs.id', 'desc')
+    .execute()
+  const seats = await placedSeats(
+    db,
+    rows.map(r => r.id),
+  )
+  return rows.map(r => ({ ...toGame(r, seats.get(r.id) ?? [], r.my_seat), ranked: r.ranked_id !== null }))
 }

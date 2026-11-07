@@ -4,10 +4,10 @@ import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { finishGameSession, insertGameSession } from '../db/queries.js'
-import { getFinishedGame, getViewableGame } from '../db/history.js'
+import { getFinishedGame, getViewableGame, listStatGames } from '../db/history.js'
 import { deleteGame, invalidateGame } from '../db/adminGames.js'
 import { replayPooled } from '../session/replay.js'
-import { storedDetail } from './detail.js'
+import { storedDetail, storedDetails } from './detail.js'
 
 vi.mock('../session/replay.js', async orig => {
   const m = await orig<typeof import('../session/replay.js')>()
@@ -89,5 +89,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('storedDetail', () => {
     await load()
     await deleteGame(db, 'g1', 'ann')
     expect(await stored()).toBeUndefined()
+  })
+
+  it('reads many stored details in one go, and the Stats page leaves invalidated games out', async () => {
+    const [game] = await listStatGames(db, 'ann', 'x01')
+    expect(game).toMatchObject({ id: 'g1', mySeat: 0, ranked: false })
+    await load()
+    vi.mocked(replayPooled).mockClear()
+    expect((await storedDetails(db, [game, game], vi.fn())).map(b => b?.detail.mode)).toEqual(['x01', 'x01'])
+    expect(replayPooled).not.toHaveBeenCalled()
+    await invalidateGame(db, 'g1', 'ann', null)
+    expect(await listStatGames(db, 'ann', 'x01')).toEqual([])
   })
 })

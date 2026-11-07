@@ -89,6 +89,10 @@
       "description": "Reviews of the signed-in user's coachable X01 legs (coach.enabled)"
     },
     {
+      "name": "stats",
+      "description": "The signed-in user's stats per game mode (stats.enabled)"
+    },
+    {
       "name": "admin",
       "description": "Admin-only account management (list users, promote or demote admins) and feature flag overrides"
     },
@@ -1756,6 +1760,1601 @@
           },
           "401": {
             "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/x01": {
+      "get": {
+        "operationId": "getX01Stats",
+        "summary": "The signed-in user's X01 stats over a range of legs or days, compared with the same range before",
+        "description": "Read from the stored details of the user's finished X01 games (invalidated ones left out). A filter left out is the one the user played most (start score, out rule); kind defaults to all matches. 404 while stats.enabled is off for the user.",
+        "tags": [
+          "stats"
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "legs20",
+                "legs50",
+                "legs100",
+                "days30",
+                "days90",
+                "all"
+              ],
+              "default": "legs50"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "out",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "straight",
+                "double",
+                "master"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "ranked",
+                "casual",
+                "bots",
+                "solo"
+              ],
+              "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stats; every count zero and every value null without legs in the range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "options",
+                    "applied",
+                    "totalLegs",
+                    "window",
+                    "before",
+                    "overview",
+                    "scoring",
+                    "checkout"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "options": {
+                      "type": "object",
+                      "description": "The start scores and out rules the user has legs in (all time), for the filters",
+                      "required": [
+                        "starts",
+                        "outModes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "starts": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "outModes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "straight",
+                              "double",
+                              "master"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "applied": {
+                      "type": "object",
+                      "required": [
+                        "range",
+                        "start",
+                        "out",
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "range": {
+                          "type": "string",
+                          "enum": [
+                            "legs20",
+                            "legs50",
+                            "legs100",
+                            "days30",
+                            "days90",
+                            "all"
+                          ],
+                          "default": "legs50"
+                        },
+                        "start": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "null without any X01 leg"
+                        },
+                        "out": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "straight",
+                                "double",
+                                "master"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "all",
+                            "ranked",
+                            "casual",
+                            "bots",
+                            "solo"
+                          ],
+                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                        }
+                      }
+                    },
+                    "totalLegs": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Every leg with these filters, all time"
+                    },
+                    "window": {
+                      "type": "object",
+                      "required": [
+                        "legs",
+                        "from",
+                        "to"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "legs": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "from": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "The oldest leg's game; null without legs"
+                        },
+                        "to": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "before": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "legs",
+                            "from",
+                            "to"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "legs": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "from": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "The oldest leg's game; null without legs"
+                            },
+                            "to": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ],
+                      "description": "The range the arrows compare with; null for all time"
+                    },
+                    "overview": {
+                      "type": "object",
+                      "required": [
+                        "average",
+                        "first9",
+                        "dartsPerLeg",
+                        "checkout",
+                        "legsWon",
+                        "bestStreak",
+                        "perLeg",
+                        "bests"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "average": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "before",
+                            "spark"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "null without anything to count"
+                            },
+                            "before": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The same over the range before; null without one"
+                            },
+                            "spark": {
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              },
+                              "description": "The 10-leg trend, oldest first, at most 50 points"
+                            }
+                          }
+                        },
+                        "first9": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "before",
+                            "spark"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "null without anything to count"
+                            },
+                            "before": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The same over the range before; null without one"
+                            },
+                            "spark": {
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              },
+                              "description": "The 10-leg trend, oldest first, at most 50 points"
+                            }
+                          }
+                        },
+                        "dartsPerLeg": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "before",
+                            "spark"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "null without anything to count"
+                            },
+                            "before": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The same over the range before; null without one"
+                            },
+                            "spark": {
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              },
+                              "description": "The 10-leg trend, oldest first, at most 50 points"
+                            }
+                          }
+                        },
+                        "checkout": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before",
+                                "spark"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "null without anything to count"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "The same over the range before; null without one"
+                                },
+                                "spark": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "description": "The 10-leg trend, oldest first, at most 50 points"
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Darts that finished over darts thrown at a one-dart finish, 0–1"
+                        },
+                        "legsWon": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before",
+                                "spark"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "null without anything to count"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "The same over the range before; null without one"
+                                },
+                                "spark": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "description": "The 10-leg trend, oldest first, at most 50 points"
+                                }
+                              }
+                            }
+                          ],
+                          "description": "The share of legs won, 0–1"
+                        },
+                        "bestStreak": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The most legs won in a row"
+                        },
+                        "perLeg": {
+                          "type": "array",
+                          "description": "The last 100 legs of the range, oldest first",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "average",
+                              "trend",
+                              "won",
+                              "darts"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "average": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "trend": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "The 10-leg average up to this leg"
+                              },
+                              "won": {
+                                "type": "boolean"
+                              },
+                              "darts": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        },
+                        "bests": {
+                          "type": "object",
+                          "required": [
+                            "bestLeg",
+                            "bestLegAverage",
+                            "bestMatchAverage",
+                            "highestCheckout",
+                            "most180s"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "bestLeg": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "ref"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "ref": {
+                                      "type": "object",
+                                      "description": "Where something happened, to name and open its game",
+                                      "required": [
+                                        "gameId",
+                                        "finishedAt",
+                                        "leg",
+                                        "visit",
+                                        "startScore",
+                                        "kind",
+                                        "opponents"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "gameId": {
+                                          "type": "string"
+                                        },
+                                        "finishedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "leg": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "nullable": true,
+                                          "description": "null for the whole match"
+                                        },
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "nullable": true,
+                                          "description": "The player's visit in the leg, from 1"
+                                        },
+                                        "startScore": {
+                                          "type": "integer"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "all",
+                                            "ranked",
+                                            "casual",
+                                            "bots",
+                                            "solo"
+                                          ],
+                                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                        },
+                                        "opponents": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ],
+                              "description": "Fewest darts in a leg won"
+                            },
+                            "bestLegAverage": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "ref"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "ref": {
+                                      "type": "object",
+                                      "description": "Where something happened, to name and open its game",
+                                      "required": [
+                                        "gameId",
+                                        "finishedAt",
+                                        "leg",
+                                        "visit",
+                                        "startScore",
+                                        "kind",
+                                        "opponents"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "gameId": {
+                                          "type": "string"
+                                        },
+                                        "finishedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "leg": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "nullable": true,
+                                          "description": "null for the whole match"
+                                        },
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "nullable": true,
+                                          "description": "The player's visit in the leg, from 1"
+                                        },
+                                        "startScore": {
+                                          "type": "integer"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "all",
+                                            "ranked",
+                                            "casual",
+                                            "bots",
+                                            "solo"
+                                          ],
+                                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                        },
+                                        "opponents": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ],
+                              "description": "In a leg won"
+                            },
+                            "bestMatchAverage": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "ref"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "ref": {
+                                      "type": "object",
+                                      "description": "Where something happened, to name and open its game",
+                                      "required": [
+                                        "gameId",
+                                        "finishedAt",
+                                        "leg",
+                                        "visit",
+                                        "startScore",
+                                        "kind",
+                                        "opponents"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "gameId": {
+                                          "type": "string"
+                                        },
+                                        "finishedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "leg": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "nullable": true,
+                                          "description": "null for the whole match"
+                                        },
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "nullable": true,
+                                          "description": "The player's visit in the leg, from 1"
+                                        },
+                                        "startScore": {
+                                          "type": "integer"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "all",
+                                            "ranked",
+                                            "casual",
+                                            "bots",
+                                            "solo"
+                                          ],
+                                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                        },
+                                        "opponents": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ]
+                            },
+                            "highestCheckout": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "ref"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "ref": {
+                                      "type": "object",
+                                      "description": "Where something happened, to name and open its game",
+                                      "required": [
+                                        "gameId",
+                                        "finishedAt",
+                                        "leg",
+                                        "visit",
+                                        "startScore",
+                                        "kind",
+                                        "opponents"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "gameId": {
+                                          "type": "string"
+                                        },
+                                        "finishedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "leg": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "nullable": true,
+                                          "description": "null for the whole match"
+                                        },
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "nullable": true,
+                                          "description": "The player's visit in the leg, from 1"
+                                        },
+                                        "startScore": {
+                                          "type": "integer"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "all",
+                                            "ranked",
+                                            "casual",
+                                            "bots",
+                                            "solo"
+                                          ],
+                                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                        },
+                                        "opponents": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ]
+                            },
+                            "most180s": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "ref"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "ref": {
+                                      "type": "object",
+                                      "description": "Where something happened, to name and open its game",
+                                      "required": [
+                                        "gameId",
+                                        "finishedAt",
+                                        "leg",
+                                        "visit",
+                                        "startScore",
+                                        "kind",
+                                        "opponents"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "gameId": {
+                                          "type": "string"
+                                        },
+                                        "finishedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "leg": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "nullable": true,
+                                          "description": "null for the whole match"
+                                        },
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "nullable": true,
+                                          "description": "The player's visit in the leg, from 1"
+                                        },
+                                        "startScore": {
+                                          "type": "integer"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "all",
+                                            "ranked",
+                                            "casual",
+                                            "bots",
+                                            "solo"
+                                          ],
+                                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                        },
+                                        "opponents": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "scoring": {
+                      "type": "object",
+                      "required": [
+                        "visits",
+                        "until170",
+                        "count180",
+                        "count140",
+                        "count100",
+                        "share100",
+                        "under40",
+                        "buckets",
+                        "byVisit",
+                        "common",
+                        "twenties",
+                        "list180"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "visits": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Every visit thrown"
+                        },
+                        "until170": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before",
+                                "spark"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "null without anything to count"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "The same over the range before; null without one"
+                                },
+                                "spark": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "description": "The 10-leg trend, oldest first, at most 50 points"
+                                }
+                              }
+                            }
+                          ],
+                          "description": "The 3-dart average of visits started above 170"
+                        },
+                        "count180": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "before"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "number"
+                            },
+                            "before": {
+                              "type": "number",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "count140": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Visits of 140–179"
+                        },
+                        "count100": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Visits of 100 or more"
+                        },
+                        "share100": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Their share of visits, 0–1"
+                        },
+                        "under40": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ],
+                          "description": "The share of visits under 40, not on a finish, 0–1"
+                        },
+                        "buckets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "label",
+                              "now",
+                              "before"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "label": {
+                                "type": "string"
+                              },
+                              "now": {
+                                "type": "number",
+                                "description": "Share of visits, 0–1"
+                              },
+                              "before": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "byVisit": {
+                          "type": "array",
+                          "description": "The average of each visit of a leg, from the first to the seventh",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "visit",
+                              "now",
+                              "before"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "now": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "before": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "common": {
+                          "type": "array",
+                          "description": "The eight most common visit scores",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "score",
+                              "visits"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "score": {
+                                "type": "integer"
+                              },
+                              "visits": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "twenties": {
+                          "type": "object",
+                          "description": "Where the darts in the 20, 1 and 5 land while scoring (more than 170 left)",
+                          "required": [
+                            "darts",
+                            "beds"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "darts": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "beds": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "name",
+                                  "share"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "share": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "list180": {
+                          "type": "array",
+                          "description": "Every 180, newest first",
+                          "items": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "checkout": {
+                      "type": "object",
+                      "required": [
+                        "tonPlus",
+                        "dartsAtDouble",
+                        "busts",
+                        "doubles",
+                        "ranges",
+                        "top"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "tonPlus": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Checkouts of 100 or more"
+                        },
+                        "dartsAtDouble": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "value",
+                                "before",
+                                "spark"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "value": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "null without anything to count"
+                                },
+                                "before": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "The same over the range before; null without one"
+                                },
+                                "spark": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "description": "The 10-leg trend, oldest first, at most 50 points"
+                                }
+                              }
+                            }
+                          ],
+                          "description": "Darts at a finish per leg won"
+                        },
+                        "busts": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "before"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "number"
+                            },
+                            "before": {
+                              "type": "number",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "doubles": {
+                          "type": "array",
+                          "description": "Each finishing dart thrown at, most thrown at first",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "target",
+                              "hits",
+                              "attempts"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "target": {
+                                "type": "string"
+                              },
+                              "hits": {
+                                "type": "integer"
+                              },
+                              "attempts": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "ranges": {
+                          "type": "array",
+                          "description": "The share of visits started in each range that checked out",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "label",
+                              "rate",
+                              "visits"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "label": {
+                                "type": "string"
+                              },
+                              "rate": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "visits": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "top": {
+                          "type": "array",
+                          "description": "The five highest checkouts",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "value",
+                              "ref"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "value": {
+                                "type": "number"
+                              },
+                              "ref": {
+                                "type": "object",
+                                "description": "Where something happened, to name and open its game",
+                                "required": [
+                                  "gameId",
+                                  "finishedAt",
+                                  "leg",
+                                  "visit",
+                                  "startScore",
+                                  "kind",
+                                  "opponents"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "gameId": {
+                                    "type": "string"
+                                  },
+                                  "finishedAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "leg": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "nullable": true,
+                                    "description": "null for the whole match"
+                                  },
+                                  "visit": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "nullable": true,
+                                    "description": "The player's visit in the leg, from 1"
+                                  },
+                                  "startScore": {
+                                    "type": "integer"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "all",
+                                      "ranked",
+                                      "casual",
+                                      "bots",
+                                      "solo"
+                                    ],
+                                    "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                                  },
+                                  "opponents": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "darts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "A checkout's darts (\"T20\", \"D8\")"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -52385,6 +53984,1600 @@
             "type": "integer",
             "nullable": true,
             "minimum": 0
+          }
+        }
+      },
+      "StatsRange": {
+        "type": "string",
+        "enum": [
+          "legs20",
+          "legs50",
+          "legs100",
+          "days30",
+          "days90",
+          "all"
+        ],
+        "default": "legs50"
+      },
+      "StatsOutMode": {
+        "type": "string",
+        "enum": [
+          "straight",
+          "double",
+          "master"
+        ]
+      },
+      "StatsKind": {
+        "type": "string",
+        "enum": [
+          "all",
+          "ranked",
+          "casual",
+          "bots",
+          "solo"
+        ],
+        "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+      },
+      "StatsSpan": {
+        "type": "object",
+        "required": [
+          "legs",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "legs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "The oldest leg's game; null without legs"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "StatMetric": {
+        "type": "object",
+        "required": [
+          "value",
+          "before",
+          "spark"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "number",
+            "nullable": true,
+            "description": "null without anything to count"
+          },
+          "before": {
+            "type": "number",
+            "nullable": true,
+            "description": "The same over the range before; null without one"
+          },
+          "spark": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "The 10-leg trend, oldest first, at most 50 points"
+          }
+        }
+      },
+      "StatCount": {
+        "type": "object",
+        "required": [
+          "value",
+          "before"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "before": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "StatRef": {
+        "type": "object",
+        "description": "Where something happened, to name and open its game",
+        "required": [
+          "gameId",
+          "finishedAt",
+          "leg",
+          "visit",
+          "startScore",
+          "kind",
+          "opponents"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "leg": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "null for the whole match"
+          },
+          "visit": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true,
+            "description": "The player's visit in the leg, from 1"
+          },
+          "startScore": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "all",
+              "ranked",
+              "casual",
+              "bots",
+              "solo"
+            ],
+            "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+          },
+          "opponents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "StatBest": {
+        "type": "object",
+        "required": [
+          "value",
+          "ref"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "ref": {
+            "type": "object",
+            "description": "Where something happened, to name and open its game",
+            "required": [
+              "gameId",
+              "finishedAt",
+              "leg",
+              "visit",
+              "startScore",
+              "kind",
+              "opponents"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "gameId": {
+                "type": "string"
+              },
+              "finishedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "leg": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true,
+                "description": "null for the whole match"
+              },
+              "visit": {
+                "type": "integer",
+                "minimum": 1,
+                "nullable": true,
+                "description": "The player's visit in the leg, from 1"
+              },
+              "startScore": {
+                "type": "integer"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "ranked",
+                  "casual",
+                  "bots",
+                  "solo"
+                ],
+                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+              },
+              "opponents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "darts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A checkout's darts (\"T20\", \"D8\")"
+          }
+        }
+      },
+      "X01Stats": {
+        "type": "object",
+        "required": [
+          "options",
+          "applied",
+          "totalLegs",
+          "window",
+          "before",
+          "overview",
+          "scoring",
+          "checkout"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "type": "object",
+            "description": "The start scores and out rules the user has legs in (all time), for the filters",
+            "required": [
+              "starts",
+              "outModes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "starts": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "outModes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "straight",
+                    "double",
+                    "master"
+                  ]
+                }
+              }
+            }
+          },
+          "applied": {
+            "type": "object",
+            "required": [
+              "range",
+              "start",
+              "out",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "range": {
+                "type": "string",
+                "enum": [
+                  "legs20",
+                  "legs50",
+                  "legs100",
+                  "days30",
+                  "days90",
+                  "all"
+                ],
+                "default": "legs50"
+              },
+              "start": {
+                "type": "integer",
+                "nullable": true,
+                "description": "null without any X01 leg"
+              },
+              "out": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "straight",
+                      "double",
+                      "master"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      null
+                    ]
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "ranked",
+                  "casual",
+                  "bots",
+                  "solo"
+                ],
+                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+              }
+            }
+          },
+          "totalLegs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Every leg with these filters, all time"
+          },
+          "window": {
+            "type": "object",
+            "required": [
+              "legs",
+              "from",
+              "to"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "legs": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "from": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "The oldest leg's game; null without legs"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "legs",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "legs": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "from": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true,
+                    "description": "The oldest leg's game; null without legs"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                }
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ],
+            "description": "The range the arrows compare with; null for all time"
+          },
+          "overview": {
+            "type": "object",
+            "required": [
+              "average",
+              "first9",
+              "dartsPerLeg",
+              "checkout",
+              "legsWon",
+              "bestStreak",
+              "perLeg",
+              "bests"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "average": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "before",
+                  "spark"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "null without anything to count"
+                  },
+                  "before": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "The same over the range before; null without one"
+                  },
+                  "spark": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "The 10-leg trend, oldest first, at most 50 points"
+                  }
+                }
+              },
+              "first9": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "before",
+                  "spark"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "null without anything to count"
+                  },
+                  "before": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "The same over the range before; null without one"
+                  },
+                  "spark": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "The 10-leg trend, oldest first, at most 50 points"
+                  }
+                }
+              },
+              "dartsPerLeg": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "before",
+                  "spark"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "null without anything to count"
+                  },
+                  "before": {
+                    "type": "number",
+                    "nullable": true,
+                    "description": "The same over the range before; null without one"
+                  },
+                  "spark": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "The 10-leg trend, oldest first, at most 50 points"
+                  }
+                }
+              },
+              "checkout": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before",
+                      "spark"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "null without anything to count"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The same over the range before; null without one"
+                      },
+                      "spark": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "description": "The 10-leg trend, oldest first, at most 50 points"
+                      }
+                    }
+                  }
+                ],
+                "description": "Darts that finished over darts thrown at a one-dart finish, 0–1"
+              },
+              "legsWon": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before",
+                      "spark"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "null without anything to count"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The same over the range before; null without one"
+                      },
+                      "spark": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "description": "The 10-leg trend, oldest first, at most 50 points"
+                      }
+                    }
+                  }
+                ],
+                "description": "The share of legs won, 0–1"
+              },
+              "bestStreak": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The most legs won in a row"
+              },
+              "perLeg": {
+                "type": "array",
+                "description": "The last 100 legs of the range, oldest first",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "average",
+                    "trend",
+                    "won",
+                    "darts"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "average": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "trend": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "The 10-leg average up to this leg"
+                    },
+                    "won": {
+                      "type": "boolean"
+                    },
+                    "darts": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "bests": {
+                "type": "object",
+                "required": [
+                  "bestLeg",
+                  "bestLegAverage",
+                  "bestMatchAverage",
+                  "highestCheckout",
+                  "most180s"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "bestLeg": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "ref"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "A checkout's darts (\"T20\", \"D8\")"
+                          }
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      }
+                    ],
+                    "description": "Fewest darts in a leg won"
+                  },
+                  "bestLegAverage": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "ref"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "A checkout's darts (\"T20\", \"D8\")"
+                          }
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      }
+                    ],
+                    "description": "In a leg won"
+                  },
+                  "bestMatchAverage": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "ref"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "A checkout's darts (\"T20\", \"D8\")"
+                          }
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      }
+                    ]
+                  },
+                  "highestCheckout": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "ref"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "A checkout's darts (\"T20\", \"D8\")"
+                          }
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      }
+                    ]
+                  },
+                  "most180s": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "ref"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "description": "Where something happened, to name and open its game",
+                            "required": [
+                              "gameId",
+                              "finishedAt",
+                              "leg",
+                              "visit",
+                              "startScore",
+                              "kind",
+                              "opponents"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "finishedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true,
+                                "description": "null for the whole match"
+                              },
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "nullable": true,
+                                "description": "The player's visit in the leg, from 1"
+                              },
+                              "startScore": {
+                                "type": "integer"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "ranked",
+                                  "casual",
+                                  "bots",
+                                  "solo"
+                                ],
+                                "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                              },
+                              "opponents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "A checkout's darts (\"T20\", \"D8\")"
+                          }
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "scoring": {
+            "type": "object",
+            "required": [
+              "visits",
+              "until170",
+              "count180",
+              "count140",
+              "count100",
+              "share100",
+              "under40",
+              "buckets",
+              "byVisit",
+              "common",
+              "twenties",
+              "list180"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "visits": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Every visit thrown"
+              },
+              "until170": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before",
+                      "spark"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "null without anything to count"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The same over the range before; null without one"
+                      },
+                      "spark": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "description": "The 10-leg trend, oldest first, at most 50 points"
+                      }
+                    }
+                  }
+                ],
+                "description": "The 3-dart average of visits started above 170"
+              },
+              "count180": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "before"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "before": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              },
+              "count140": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  }
+                ],
+                "description": "Visits of 140–179"
+              },
+              "count100": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  }
+                ],
+                "description": "Visits of 100 or more"
+              },
+              "share100": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  }
+                ],
+                "description": "Their share of visits, 0–1"
+              },
+              "under40": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  }
+                ],
+                "description": "The share of visits under 40, not on a finish, 0–1"
+              },
+              "buckets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "label",
+                    "now",
+                    "before"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "now": {
+                      "type": "number",
+                      "description": "Share of visits, 0–1"
+                    },
+                    "before": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  }
+                }
+              },
+              "byVisit": {
+                "type": "array",
+                "description": "The average of each visit of a leg, from the first to the seventh",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "visit",
+                    "now",
+                    "before"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "visit": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "now": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "before": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  }
+                }
+              },
+              "common": {
+                "type": "array",
+                "description": "The eight most common visit scores",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "score",
+                    "visits"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "score": {
+                      "type": "integer"
+                    },
+                    "visits": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "twenties": {
+                "type": "object",
+                "description": "Where the darts in the 20, 1 and 5 land while scoring (more than 170 left)",
+                "required": [
+                  "darts",
+                  "beds"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "darts": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "beds": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "share"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "share": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "list180": {
+                "type": "array",
+                "description": "Every 180, newest first",
+                "items": {
+                  "type": "object",
+                  "description": "Where something happened, to name and open its game",
+                  "required": [
+                    "gameId",
+                    "finishedAt",
+                    "leg",
+                    "visit",
+                    "startScore",
+                    "kind",
+                    "opponents"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "leg": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "nullable": true,
+                      "description": "null for the whole match"
+                    },
+                    "visit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "nullable": true,
+                      "description": "The player's visit in the leg, from 1"
+                    },
+                    "startScore": {
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "all",
+                        "ranked",
+                        "casual",
+                        "bots",
+                        "solo"
+                      ],
+                      "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                    },
+                    "opponents": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "checkout": {
+            "type": "object",
+            "required": [
+              "tonPlus",
+              "dartsAtDouble",
+              "busts",
+              "doubles",
+              "ranges",
+              "top"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tonPlus": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  }
+                ],
+                "description": "Checkouts of 100 or more"
+              },
+              "dartsAtDouble": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "before",
+                      "spark"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "null without anything to count"
+                      },
+                      "before": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "The same over the range before; null without one"
+                      },
+                      "spark": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "description": "The 10-leg trend, oldest first, at most 50 points"
+                      }
+                    }
+                  }
+                ],
+                "description": "Darts at a finish per leg won"
+              },
+              "busts": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "before"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "before": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              },
+              "doubles": {
+                "type": "array",
+                "description": "Each finishing dart thrown at, most thrown at first",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "target",
+                    "hits",
+                    "attempts"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "hits": {
+                      "type": "integer"
+                    },
+                    "attempts": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "ranges": {
+                "type": "array",
+                "description": "The share of visits started in each range that checked out",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "label",
+                    "rate",
+                    "visits"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "rate": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "visits": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "top": {
+                "type": "array",
+                "description": "The five highest checkouts",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "ref"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "ref": {
+                      "type": "object",
+                      "description": "Where something happened, to name and open its game",
+                      "required": [
+                        "gameId",
+                        "finishedAt",
+                        "leg",
+                        "visit",
+                        "startScore",
+                        "kind",
+                        "opponents"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "gameId": {
+                          "type": "string"
+                        },
+                        "finishedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "leg": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true,
+                          "description": "null for the whole match"
+                        },
+                        "visit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "nullable": true,
+                          "description": "The player's visit in the leg, from 1"
+                        },
+                        "startScore": {
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "all",
+                            "ranked",
+                            "casual",
+                            "bots",
+                            "solo"
+                          ],
+                          "description": "ranked: from the queue; casual: against people; bots: against a bot; solo: alone"
+                        },
+                        "opponents": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "darts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "A checkout's darts (\"T20\", \"D8\")"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
