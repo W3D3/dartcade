@@ -864,7 +864,8 @@
         "seats",
         "mySeats",
         "results",
-        "rankedGame"
+        "rankedGame",
+        "voided"
       ],
       "properties": {
         "type": {
@@ -945,6 +946,10 @@
         "rankedGame": {
           "type": "boolean",
           "description": "Started by the ranked queue: it cannot be ended for the other side, leaving forfeits."
+        },
+        "voided": {
+          "type": "boolean",
+          "description": "A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating."
         },
         "ranked": {
           "anyOf": [{ "$ref": "#/$defs/RankedState" }, { "type": "null" }],

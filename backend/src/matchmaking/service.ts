@@ -52,6 +52,20 @@ type Found = {
   expiresAt: number
 }
 
+/** A waiting search as the admin Queue panel lists it. */
+export type QueuedSearch = {
+  id: string
+  mode: RankedMode
+  firstTo: FirstTo
+  since: string
+  waitSeconds: number
+  range: number
+  /** The side's rating, hidden from the players while they place. */
+  rating: number
+  placing: boolean
+  players: { userId: string; name: string }[]
+}
+
 export type MatchmakingDeps = {
   db: Kysely<Database>
   engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats'>
@@ -253,6 +267,45 @@ export class MatchmakingService {
 
   private searchersOf(mode: RankedMode): string[] {
     return [...this.searches.values()].filter(s => s.mode === mode).flatMap(userIdsOf)
+  }
+
+  /** Every search waiting in the queue, longest wait first, for the admin Queue panel. */
+  searchList(): QueuedSearch[] {
+    const now = this.now()
+    return [...this.searches.values()]
+      .map(s => ({
+        id: s.id,
+        mode: s.mode,
+        firstTo: s.firstTo,
+        since: new Date(s.since).toISOString(),
+        waitSeconds: Math.max(0, Math.round((now - s.since) / 1000)),
+        range: rangeOf(s, now),
+        rating: s.rating,
+        placing: s.players.some(p => p.placing),
+        players: s.players.map(p => ({ userId: p.userId, name: p.name })),
+      }))
+      .sort((a, b) => b.waitSeconds - a.waitSeconds)
+  }
+
+  /**
+   * A moderator takes a user out of the queue: their whole search (their duo's too), or the found
+   * match they were in, which falls through for the other side without a pause. Returns who was
+   * taken out and from which mode; null when they were not searching.
+   */
+  async dequeue(userId: string): Promise<{ mode: RankedMode; userIds: string[] } | null> {
+    return this.run(() => {
+      const found = this.foundOf(userId)
+      if (found) {
+        const own = found.sides.find(s => userIdsOf(s).includes(userId)) ?? found.sides[0]
+        this.drop(found, userIdsOf(own), false)
+        return { mode: own.mode, userIds: userIdsOf(own) }
+      }
+      const search = this.searchOf(userId)
+      if (!search) return null
+      this.searches.delete(search.id)
+      this.push([...search.userIds, ...this.searchersOf(search.mode)])
+      return { mode: search.mode, userIds: search.userIds }
+    })
   }
 
   /** Stops the user's search; a duo's only by its host. In a found match it counts as declining. */

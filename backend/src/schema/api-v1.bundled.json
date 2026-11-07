@@ -2623,6 +2623,143 @@
         }
       }
     },
+    "/api/admin/games/{id}/void": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/GameId"
+        }
+      ],
+      "post": {
+        "operationId": "voidAdminGame",
+        "summary": "Void a running ranked game, with no rating change for anyone (admin or moderator)",
+        "description": "Ends the game aborted, not as a forfeit; nobody's rating moves, it is marked void in the ranked match record and never rated or replayed. Its players see that a moderator voided it. Writes a ranked.void audit entry. Only a running ranked game can be.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvalidateGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Voided"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The game is not a running ranked game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/ranked/queue": {
+      "get": {
+        "operationId": "listRankedQueue",
+        "summary": "The searches waiting in the ranked queue, longest wait first (admin or moderator)",
+        "description": "Searches live in memory; a restart empties the list. A duo is one search.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The waiting searches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankedQueueList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/ranked/queue/{userId}/remove": {
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "removeFromRankedQueue",
+        "summary": "Take a user out of the ranked queue (admin or moderator)",
+        "description": "Ends their whole search (their duo's too), or the found match they are in, which falls through for the other side without a pause. They see their search end. Writes a ranked.dequeue audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvalidateGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/admin/games/{id}/invalidate": {
       "parameters": [
         {
@@ -8525,6 +8662,7 @@
           "finishedAt",
           "board",
           "ranked",
+          "voided",
           "invalidated",
           "players"
         ],
@@ -8576,7 +8714,11 @@
           },
           "ranked": {
             "type": "boolean",
-            "description": "The game moved ranked ratings"
+            "description": "The game was a ranked match (running games too)"
+          },
+          "voided": {
+            "type": "boolean",
+            "description": "A moderator voided this running ranked game"
           },
           "invalidated": {
             "$ref": "#/components/schemas/AdminGameInvalidation"
@@ -8597,6 +8739,85 @@
             "type": "string",
             "maxLength": 500,
             "description": "Why the game is invalidated; optional, blank counts as none"
+          }
+        }
+      },
+      "RankedQueueList": {
+        "type": "object",
+        "required": [
+          "searches"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "searches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "mode",
+                "firstTo",
+                "since",
+                "waitSeconds",
+                "range",
+                "rating",
+                "placing",
+                "players"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "1v1",
+                    "2v2"
+                  ]
+                },
+                "firstTo": {
+                  "type": "integer"
+                },
+                "since": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "waitSeconds": {
+                  "type": "integer"
+                },
+                "range": {
+                  "type": "integer",
+                  "description": "RP either way the search matches now"
+                },
+                "rating": {
+                  "type": "integer",
+                  "description": "The side's rating (hidden from the players while they place)"
+                },
+                "placing": {
+                  "type": "boolean"
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },

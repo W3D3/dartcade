@@ -71,6 +71,7 @@
   "status": "active",
   "results": null,
   "rankedGame": false,
+  "voided": false,
   "finishPending": false,
   "canUndoVisit": false,
   "scoreBased": true,

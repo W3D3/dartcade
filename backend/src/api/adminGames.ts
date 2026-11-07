@@ -37,6 +37,7 @@ function serialize(g: AdminGame) {
     finishedAt: g.finished_at?.toISOString() ?? null,
     board: g.board,
     ranked: g.ranked,
+    voided: g.voided,
     invalidated: serializeInvalidation(g.invalidated),
     players: g.seats.map(s => ({
       seat: s.seat,
