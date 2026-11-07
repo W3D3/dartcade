@@ -15,6 +15,7 @@
   import { targetLabel } from '$lib/details/stats'
   import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
   import { otherColor } from '$lib/details/chartColors'
+  import { chartGrid, xPositions } from '$lib/charts/grid'
 
   /** Tagged with its seat: the tooltip names the player from the point it's on. `hit`: a target
    * done (the line's last point may only carry it on to the darts thrown). */
@@ -46,6 +47,9 @@
   const yTicks = $derived([...Array.from({ length: Math.floor(total / 5) + 1 }, (_, i) => i * 5).filter(t => t <= total - 3), total])
   const xStep = $derived(maxDarts > 100 ? 20 : 10)
   const xTicks = $derived(Array.from({ length: Math.floor(maxDarts / xStep) + 1 }, (_, i) => i * xStep))
+
+  // A rule at every dart count a line has a point at
+  const rules = $derived(xPositions(series.flatMap(s => s.points.map(p => p.darts))))
 
   // The others dashed: one grey line against you; several in a colour and a dash each
   const others = $derived(series.filter(s => s.seat !== lead).map(s => s.seat))
@@ -144,7 +148,7 @@
           yNice={false}
           padding={{ left: 40, right: series.length > 2 ? 140 : 190, top: 12, bottom: 28 }}
           axis
-          grid={{ x: false, y: { class: 'stroke-line', strokeWidth: 1 }, yTicks }}
+          grid={chartGrid(rules, { class: 'stroke-line', strokeWidth: 1, yTicks })}
           rule={false}
           highlight={{ points: { r: 4, class: 'stroke-surface-panel', strokeWidth: 2 }, lines: false }}
           tooltipContext={{ mode: 'quadtree' }}

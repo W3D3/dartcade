@@ -9,6 +9,7 @@
   import type { ChartState, AnyScale } from 'layerchart'
   import { remainingTicks, type Side } from '$lib/details/x01'
   import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
+  import { chartGrid, integerTicks } from '$lib/charts/grid'
   import { otherColor } from '$lib/details/chartColors'
 
   type Visit = { visit: number; left: number; scored: number }
@@ -28,6 +29,9 @@
   const lead = $derived(highlight === null ? (series[0]?.key ?? 0) : highlight)
   const name = (key: number) => sides.find(s => s.key === key)?.name ?? ''
   const ticks = $derived(remainingTicks(start))
+  // A rule at every visit (and the start), a label on each visit number
+  const rules = $derived(Array.from({ length: maxVisits + 1 }, (_, i) => i))
+  const visitTicks = $derived(integerTicks(1, maxVisits))
 
   // Lime for the highlighted side; the others dashed, in grey or (several) a colour each
   const others = $derived(series.filter(s => s.key !== lead).map(s => s.key))
@@ -94,13 +98,14 @@
     yDomain={[0, start]}
     xNice={false}
     yNice={false}
-    padding={{ left: 44, right: 20, top: 12, bottom: 16 }}
-    axis="y"
-    grid={{ x: false, y: { class: 'stroke-line', strokeWidth: 1 }, yTicks: ticks }}
+    padding={{ left: 44, right: 20, top: 12, bottom: 28 }}
+    axis
+    grid={chartGrid(rules, { class: 'stroke-line', strokeWidth: 1, yTicks: ticks })}
     rule={false}
     highlight={{ points: { r: 4, class: 'stroke-bg', strokeWidth: 2 }, lines: false }}
     tooltipContext={{ mode: 'quadtree' }}
     props={{
+      xAxis: { ticks: visitTicks, format: String, tickMarks: false, classes: { tickLabel: 'fill-text-dim text-[11px]' } },
       yAxis: { ticks, tickMarks: false, classes: { tickLabel: 'fill-text-dim text-[11px]' } },
     }}
   >

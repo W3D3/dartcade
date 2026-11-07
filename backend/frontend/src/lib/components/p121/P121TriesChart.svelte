@@ -6,6 +6,7 @@
 <script lang="ts">
   import { Chart, Spline } from 'layerchart/svg'
   import type { ChartState, AnyScale } from 'layerchart'
+  import { chartGrid } from '$lib/charts/grid'
 
   type Point = { n: number; target: number; made: boolean }
   type PointChartState = ChartState<Point, AnyScale<number, number>, AnyScale<number, number>>
@@ -52,7 +53,10 @@
       yNice={false}
       padding={{ left: 40, right: 14, top: 14, bottom: 28 }}
       axis
-      grid={{ x: false, y: { class: 'stroke-surface-paused', strokeWidth: 1 }, yTicks }}
+      grid={chartGrid(
+        points.map(p => p.n),
+        { class: 'stroke-surface-paused', strokeWidth: 1, yTicks },
+      )}
       rule={false}
       props={{
         xAxis: { ticks: points.map(p => p.n), tickMarks: false, format: String, classes: { tickLabel } },
