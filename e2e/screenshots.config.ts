@@ -12,6 +12,6 @@ export default defineConfig({
   timeout: 120_000,
   globalSetup: './screenshots/global-setup.ts',
   globalTeardown: './screenshots/global-teardown.ts',
-  use: { ...base.use, baseURL: 'http://localhost:5181', trace: 'off' },
+  use: { ...base.use, baseURL: `http://localhost:${process.env.SHOTS_FRONTEND_PORT ?? 5181}`, trace: 'off' },
   reporter: 'list',
 })

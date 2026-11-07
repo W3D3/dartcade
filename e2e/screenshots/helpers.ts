@@ -3,7 +3,7 @@ import type { Browser, BrowserContext, Page } from '@playwright/test'
 import path from 'path'
 import { root } from './compose.js'
 
-export const BASE = 'http://localhost:5181'
+export const BASE = `http://localhost:${process.env.SHOTS_FRONTEND_PORT ?? 5181}`
 
 /** The dev accounts the backend seeds with NODE_ENV=development (backend/src/auth/seed.ts). */
 export type Who = 'admin' | 'luke' | 'phil' | 'michael' | 'gerwyn'
