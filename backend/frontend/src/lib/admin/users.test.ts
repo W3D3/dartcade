@@ -199,6 +199,12 @@ describe('grantSummary', () => {
 })
 
 describe('auditDetail', () => {
+  it('words a rating change with its reason', () => {
+    const detail = { mode: '1v1', reason: 'bad seed', before: { rating: 1200 }, after: { rating: 1500 } }
+    expect(auditDetail('ranked.adjust', detail)).toBe('1v1 1,200 → 1,500 RP · Reason: bad seed')
+    expect(auditDetail('ranked.reset', detail)).toBe('1v1 1,200 → 1,500 RP, placing again · Reason: bad seed')
+  })
+
   it('says what each known action did', () => {
     expect(auditDetail('user.ban', { category: 'cheating', note: 'typed-in 180s', until: null })).toBe(
       'Closed for cheating · typed-in 180s',

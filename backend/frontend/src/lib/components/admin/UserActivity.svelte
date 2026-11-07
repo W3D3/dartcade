@@ -9,7 +9,7 @@
   import { cn } from '$lib/utils.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { gameTitle } from '$shared/gameNames.js'
-  import { rank } from '$shared/ranked.js'
+  import { PLACEMENT_MATCHES, START_RATING, rank } from '$shared/ranked.js'
   import { levelOf } from '$shared/progression.js'
   import { banLine } from '$lib/bans'
   import {
@@ -20,6 +20,7 @@
     roleActions,
     type AdminUser,
     type AdminUserActivity,
+    type RankedMode,
     type Role,
   } from '$lib/admin/users'
 
@@ -32,6 +33,7 @@
     onxp,
     onban,
     onunban,
+    onrating,
   }: {
     user: AdminUser
     busy: boolean
@@ -41,6 +43,7 @@
     onxp: () => void
     onban: () => void
     onunban: () => void
+    onrating: (mode: RankedMode, kind: 'set' | 'reset', rating: number) => void
   } = $props()
 
   let activity = $state<AdminUserActivity | null>(null)
@@ -51,6 +54,11 @@
     activity = await loadUserActivity(user.id)
     failed = activity === null
   })
+
+  const MODES: RankedMode[] = ['1v1', '2v2']
+  // A mode they never played has no row: they start placing at the start rating
+  const ratingIn = (mode: RankedMode) =>
+    activity?.games.ranked.ratings.find(r => r.mode === mode) ?? { mode, rating: START_RATING, rankIndex: null, matches: 0 }
 
   const n = (v: number): string => v.toLocaleString('en-US')
 </script>
@@ -132,6 +140,31 @@
           <dd class="m-0">{n(activity.darts.total - activity.darts.manual)} detected</dd>
           <dt class="text-text-muted">30 days</dt>
           <dd class="m-0">{n(activity.darts.last30Days)}, {manualShare(activity.darts.manualLast30Days, activity.darts.last30Days)}</dd>
+        </dl>
+      {/if}
+    </section>
+
+    <section>
+      {@render block('Ranked rating')}
+      {#if !activity}
+        {@render none()}
+      {:else}
+        <dl class="m-0 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-[14px]">
+          {#each MODES as mode (mode)}
+            {@const r = ratingIn(mode)}
+            <dt class="text-text-muted">{mode}</dt>
+            <dd class="m-0 flex flex-wrap items-center gap-2">
+              <span
+                >{r.rankIndex === null
+                  ? `Placing (${r.matches} of ${PLACEMENT_MATCHES}), ${n(r.rating)} RP hidden`
+                  : `${rank(r.rankIndex).name}, ${n(r.rating)} RP`}</span
+              >
+              <Button variant="outline" size="sm" disabled={busy} onclick={() => onrating(mode, 'set', r.rating)}>Adjust…</Button>
+              <Button variant="outline" size="sm" disabled={busy || r.matches === 0} onclick={() => onrating(mode, 'reset', r.rating)}
+                >Reset…</Button
+              >
+            </dd>
+          {/each}
         </dl>
       {/if}
     </section>
