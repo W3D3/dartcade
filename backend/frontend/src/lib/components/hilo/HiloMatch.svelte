@@ -37,6 +37,7 @@
     onNext,
     onBoardClick,
     onCorrect,
+    onDartMove,
     keypad = false,
     onDart = () => {},
     viewOnly = false,
@@ -56,6 +57,7 @@
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onCorrect?: (dartIndex: number, label: string) => void
+    onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** The header's Enter view: the keypad takes the board's place. */
     keypad?: boolean
     onDart?: (segment: Segment) => void
@@ -107,6 +109,7 @@
     {onBoardClick}
     {onDart}
     {onCorrect}
+    {onDartMove}
     bind:openDart
     class="min-h-[160px] min-w-0"
     keypadClass="min-h-0 min-w-0"

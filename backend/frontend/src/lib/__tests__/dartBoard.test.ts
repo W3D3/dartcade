@@ -69,3 +69,21 @@ describe('DartBoard last dart', () => {
     expect(html({ darts: [] })).not.toContain('data-last-dart')
   })
 })
+
+describe('DartBoard dart selection', () => {
+  const dart = { segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }, score: 60, coords: { x: 0, y: 0.6 } }
+  const props = { darts: [dart], onBoardClick: () => {} }
+
+  it('draws no extra hit area over a dart: a board tap next to it, or on it, still places a dart', () => {
+    const out = html(props)
+    expect(out).not.toContain('data-dart-hit')
+    expect(out).not.toContain('Tap the board to move this dart')
+    expect(out).not.toContain('data-dart-selected')
+  })
+
+  it('highlights the selected dart and says a board tap moves it', () => {
+    const out = html({ ...props, selectedDart: 0 })
+    expect(out).toContain('data-dart-selected')
+    expect(out).toContain('Tap the board to move this dart')
+  })
+})
