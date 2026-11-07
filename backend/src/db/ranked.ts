@@ -121,8 +121,10 @@ export type RecentRanked = {
   /** null for one of the player's placement matches (hidden). */
   change: number | null
   at: Date
-  /** The other side, with their ratings going into the game (null while they were placing). */
-  opponents: { userId: string; name: string; rating: number | null; avatar: Avatar }[]
+  /** Legs won by your side and by theirs; null when the game did not record them. */
+  score: { mine: number; theirs: number } | null
+  /** The other side, with their ratings and the rank they held going into the game (null while they were placing). */
+  opponents: { userId: string; name: string; rating: number | null; rankIndex: number | null; avatar: Avatar }[]
 }
 
 /** The player's last ranked games, newest first, with who they played. */
@@ -145,6 +147,7 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
       'r.won',
       'r.placement',
       'r.rating_before',
+      'r.rank_before',
       'u.name',
       'u.avatar_kind',
       'u.avatar_preset',
@@ -160,16 +163,37 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
     .where(counts('r'))
     .orderBy('u.name')
     .execute()
-  return mine.map(m => ({
-    sessionId: m.session_id,
-    mode: m.mode,
-    won: m.won,
-    change: m.placement ? null : m.rating_after - m.rating_before,
-    at: m.created_at,
-    opponents: others
-      .filter(o => o.session_id === m.session_id && o.won !== m.won)
-      .map(o => ({ userId: o.user_id, name: o.name, rating: o.placement ? null : o.rating_before, avatar: toAvatar(o) })),
-  }))
+  // A side's legs are the same for each of its players, so one seat of each side gives the score
+  const legs = await db
+    .selectFrom('game_players')
+    .select(['session_id', 'user_id', sql<number | null>`(stats->>'legsWon')::int`.as('legs')])
+    .where(
+      'session_id',
+      'in',
+      mine.map(m => m.session_id),
+    )
+    .where('user_id', 'in', [userId, ...others.map(o => o.user_id)])
+    .execute()
+  return mine.map(m => {
+    const opponents = others.filter(o => o.session_id === m.session_id && o.won !== m.won)
+    const legsOf = (id: string | undefined) => legs.find(l => l.session_id === m.session_id && l.user_id === id)?.legs ?? null
+    const [mineLegs, theirLegs] = [legsOf(userId), legsOf(opponents[0]?.user_id)]
+    return {
+      sessionId: m.session_id,
+      mode: m.mode,
+      won: m.won,
+      change: m.placement ? null : m.rating_after - m.rating_before,
+      at: m.created_at,
+      score: mineLegs === null || theirLegs === null ? null : { mine: mineLegs, theirs: theirLegs },
+      opponents: opponents.map(o => ({
+        userId: o.user_id,
+        name: o.name,
+        rating: o.placement ? null : o.rating_before,
+        rankIndex: o.placement ? null : o.rank_before,
+        avatar: toAvatar(o),
+      })),
+    }
+  })
 }
 
 /** A side as a game records it: who played, their average, and whose seat forfeited. */

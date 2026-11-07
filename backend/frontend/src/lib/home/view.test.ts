@@ -103,6 +103,7 @@ const game = (won: boolean, mode: RankedGame['mode'] = '1v1'): RankedGame => ({
   won,
   change: won ? 10 : -10,
   at: '2026-10-27T10:00:00Z',
+  score: null,
   opponents: [],
 })
 

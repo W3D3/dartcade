@@ -1,7 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import RankBadge from '../components/ranked/RankBadge.svelte'
-import { fmtRp, fmtSeconds, ladder, ratingCard, recentRow, record, signedRp, whenPlayed, type RankedRating } from '../ranked/view'
+import {
+  fmtRp,
+  fmtSeconds,
+  ladder,
+  playingOn,
+  progressBar,
+  ratingCard,
+  recentRow,
+  record,
+  signedRp,
+  stageThreshold,
+  whenPlayed,
+  type RankedRating,
+} from '../ranked/view'
 import { rank } from '$shared/ranked.js'
 
 const rating = (r: Partial<RankedRating>): RankedRating => ({
@@ -79,9 +92,10 @@ describe('ranked view', () => {
         won: true,
         change: 14,
         at: new Date(2026, 9, 13, 20).toISOString(),
+        score: { mine: 2, theirs: 0 },
         opponents: [
-          { userId: 'm', name: 'Marco', rating: 1220, avatar: { kind: 'none' } },
-          { userId: 'j', name: 'Jule', rating: 1240, avatar: { kind: 'none' } },
+          { userId: 'm', name: 'Marco', rating: 1220, rankIndex: 12, avatar: { kind: 'none' } },
+          { userId: 'j', name: 'Jule', rating: 1240, rankIndex: 13, avatar: { kind: 'none' } },
         ],
       },
       new Date(2026, 9, 14, 12),
@@ -94,6 +108,9 @@ describe('ranked view', () => {
       change: '+14',
       placement: false,
       opponent: null,
+      score: '2–0',
+      opponentRank: null,
+      day: 'Yesterday',
     })
   })
 
@@ -105,7 +122,8 @@ describe('ranked view', () => {
         won: false,
         change: null,
         at: new Date(2026, 9, 14, 9).toISOString(),
-        opponents: [{ userId: 'b', name: 'Ben', rating: null, avatar: { kind: 'none' } }],
+        score: null,
+        opponents: [{ userId: 'b', name: 'Ben', rating: null, rankIndex: null, avatar: { kind: 'none' } }],
       },
       new Date(2026, 9, 14, 12),
     )
@@ -117,15 +135,58 @@ describe('ranked view', () => {
       change: 'Placement',
       placement: true,
       opponent: { userId: 'b', avatar: { kind: 'none' } },
+      score: null,
+      opponentRank: null,
+      day: 'Today',
     })
   })
 
-  it('the ladder, Elite first, stage V first', () => {
+  it('a 1v1 row shows the legs and the rank the opponent held', () => {
+    const row = recentRow(
+      {
+        sessionId: 'g3',
+        mode: '1v1',
+        won: true,
+        change: 17,
+        at: new Date(2026, 9, 14, 9).toISOString(),
+        score: { mine: 2, theirs: 1 },
+        opponents: [{ userId: 'a', name: 'Anna K.', rating: 1290, rankIndex: 15, avatar: { kind: 'none' } }],
+      },
+      new Date(2026, 9, 14, 12),
+    )
+    // Gold I held (stage 15) although the rating of 1 290 is Silver V's: the demotion buffer
+    expect(row).toMatchObject({ score: '2–1', opponentRank: { name: 'Gold I' } })
+  })
+
+  it('the ladder, Wood to Elite, stage V first', () => {
     const l = ladder()
-    expect(l.map(t => t.tier)).toEqual(['Elite', 'Diamond', 'Gold', 'Silver', 'Bronze', 'Wood'])
-    expect(l[0].range).toBe('1 800+')
-    expect(l[5].range).toBe('0 – 799')
-    expect(l[3].stages.map(s => s.name)).toEqual(['Silver V', 'Silver IV', 'Silver III', 'Silver II', 'Silver I'])
+    expect(l.map(t => t.tier)).toEqual(['Wood', 'Bronze', 'Silver', 'Gold', 'Diamond', 'Elite'])
+    expect(l[5].range).toBe(`${fmtRp(1800)}+`)
+    expect(l[0].range).toBe(`0 – 799`)
+    expect(l[2].stages.map(s => s.name)).toEqual(['Silver V', 'Silver IV', 'Silver III', 'Silver II', 'Silver I'])
+  })
+
+  it('plays on the first board that is online, else the first one paired', () => {
+    const a = { name: 'Garage', online: false }
+    const b = { name: 'Living room', online: true }
+    expect(playingOn([a, b])).toBe(b)
+    expect(playingOn([a])).toBe(a)
+    expect(playingOn([])).toBeNull()
+  })
+
+  it('what a stage takes, the last one open-ended', () => {
+    const l = ladder()
+    expect(stageThreshold(l[0].stages[4])).toBe('Start')
+    expect(stageThreshold(l[0].stages[0])).toBe('750 RP')
+    expect(stageThreshold(l[5].stages[0])).toBe(`${fmtRp(2000)}+ RP`)
+  })
+
+  it('the progress bar between a stage and the next', () => {
+    // Silver V starts at 1 250, Gold I at 1 300
+    expect(progressBar(14, 1284)).toMatchObject({ percent: 68, from: fmtRp(1250), missing: '16 RP', next: { name: 'Gold I' } })
+    // Held a stage above the rating (the demotion buffer): empty, not negative
+    expect(progressBar(14, 1240)?.percent).toBe(0)
+    expect(progressBar(29, 2100)).toBeNull()
   })
 })
 

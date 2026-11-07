@@ -96,6 +96,10 @@ async function send(request: () => Promise<Answer>): Promise<string | null> {
   }
 }
 
+/** A duo search needs your lobby to be you, as host, and exactly one more person (the server checks the same). */
+export const duoLobbyReady = (lobby: { peopleCount: number; youHost: boolean } | null): boolean =>
+  lobby !== null && lobby.youHost && lobby.peopleCount === 2
+
 export const startSearch = (mode: RankedMode, firstTo: FirstTo) =>
   send(() => api.POST('/api/matchmaking/search', { body: { mode, firstTo } }))
 

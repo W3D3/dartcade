@@ -2985,16 +2985,24 @@ components:
         change30d: { type: integer, description: 'RP gained (or lost) in the last 30 days, placement matches left out' }
     RankedOpponent:
       type: object
-      required: [userId, name, rating, avatar]
+      required: [userId, name, rating, rankIndex, avatar]
       additionalProperties: false
       properties:
         userId: { type: string }
         name: { type: string }
         rating: { type: integer, nullable: true, description: 'Their rating going into the game; null while they were placing' }
+        rankIndex:
+          {
+            type: integer,
+            minimum: 0,
+            maximum: 29,
+            nullable: true,
+            description: 'The stage they held going into the game (not derivable from the rating: the demotion buffer); null while they were placing',
+          }
         avatar: { $ref: '#/components/schemas/Avatar' }
     RankedGame:
       type: object
-      required: [sessionId, mode, won, change, at, opponents]
+      required: [sessionId, mode, won, change, at, score, opponents]
       additionalProperties: false
       properties:
         sessionId: { type: string }
@@ -3002,6 +3010,15 @@ components:
         won: { type: boolean }
         change: { type: integer, nullable: true, description: 'RP the game moved your rating by; null for a placement match' }
         at: { type: string, format: date-time }
+        score:
+          type: object
+          nullable: true
+          required: [mine, theirs]
+          additionalProperties: false
+          description: 'Legs won by your side and by theirs; null when the game did not record them'
+          properties:
+            mine: { type: integer, minimum: 0 }
+            theirs: { type: integer, minimum: 0 }
         opponents: { type: array, items: { $ref: '#/components/schemas/RankedOpponent' } }
     RankedProfile:
       type: object
