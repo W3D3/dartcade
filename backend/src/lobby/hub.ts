@@ -4,6 +4,7 @@ import type {
   BoardStatusMessage,
   FriendsMessage,
   LobbyServerMessage,
+  MatchmakingEndedMessage,
   MatchmakingMessage,
   MeMessage,
   XpGainedMessage,
@@ -115,6 +116,11 @@ export class LobbyHub {
   sendBoardStatus(ownerUserId: string, boardId: string, online: boolean): void {
     const msg: BoardStatusMessage = { type: 'board.status', boardId, online }
     this.users.pushEach(ownerUserId, () => msg)
+  }
+
+  /** Tells the user's /ws/me sockets that their search or found match ended, and why (once, never deduplicated). */
+  sendMatchmakingEnded(userId: string, msg: MatchmakingEndedMessage): void {
+    this.users.pushEach(userId, () => msg)
   }
 
   /** Sends the user's /ws/me sockets their ranked search, unless it's what they already have. */

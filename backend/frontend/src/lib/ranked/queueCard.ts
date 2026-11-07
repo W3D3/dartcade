@@ -3,15 +3,9 @@
 import type { Matchmaking } from '$lib/lobby/sockets'
 import { acceptedLine, clock, secondsLeft, youAccepted } from './queue'
 
-// TODO: flip to true when dartcade-38's matchmaking PR lets either member of a duo
-// DELETE /api/matchmaking/search (it answers 403 for the partner until then). Leaving cancels the
-// whole duo search; the other member then sees "X left the queue" (matchmaking.ended, reason 'left').
-export const MEMBERS_CAN_LEAVE = false
-
-/** Who may stop a search and what the button says: whoever started it cancels (a solo search is its own host); a duo's other member leaves the queue once the server allows it. */
-export function stopRule(search: { hostUserId: string }, userId: string | null): { allowed: boolean; label: string } {
-  const host = search.hostUserId === userId
-  return { allowed: host || MEMBERS_CAN_LEAVE, label: host ? 'Cancel search' : 'Leave queue' }
+/** What the button that stops a search says: whoever started it cancels (a solo search is its own host); a duo's other member leaves the queue, which ends it for both. */
+export function stopLabel(search: { hostUserId: string }, userId: string | null): string {
+  return search.hostUserId === userId ? 'Cancel search' : 'Leave queue'
 }
 
 export type QueueView = {
@@ -26,7 +20,7 @@ export type QueueView = {
   clock: string
   /** The phone strip's one line: "Searching · Ranked 2v2". */
   strip: string
-  /** Who may stop it: the one who searched, and the rest of the duo once the server allows it. */
+  /** Whether the card offers to stop it: a search, by either member of a duo; not a found match (you decline it). */
   canCancel: boolean
   /** "Cancel search" for the one who searched, "Leave queue" for their partner. */
   cancelLabel: string
@@ -61,7 +55,6 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
   if (!search) return null
   const duo = search.mode === '2v2'
   const host = search.hostUserId === userId
-  const stop = stopRule(search, userId)
   return {
     kind: 'searching',
     tag: `Searching · ${search.mode}`,
@@ -69,8 +62,8 @@ export function queueView(mm: Matchmaking | null, userId: string | null, now: nu
     line: `${duo ? (host ? 'You started' : `${search.players[0]} started it`) : 'Ranked'} · ±${search.range} RP`,
     clock: clock((now - Date.parse(search.since)) / 1000),
     strip: `Searching · Ranked ${search.mode}`,
-    canCancel: stop.allowed,
-    cancelLabel: stop.label,
+    canCancel: true,
+    cancelLabel: stopLabel(search, userId),
     matchId: null,
     secondsLeft: 0,
     acceptSeconds: 0,
