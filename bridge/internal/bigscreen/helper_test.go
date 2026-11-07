@@ -65,9 +65,11 @@ func runHelper(t *testing.T, version string, l Launcher) (net.Conn, *bufio.Reade
 	}
 	t.Cleanup(func() { ln.Close() })
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	errc := make(chan error, 1)
-	go func() { errc <- RunHelper(ctx, ln.Addr().String(), l, "v1") }()
+	done := make(chan struct{})
+	// wait for the helper to end: a later test changes retryDelay, which it reads
+	t.Cleanup(func() { cancel(); <-done })
+	go func() { defer close(done); errc <- RunHelper(ctx, ln.Addr().String(), l, "v1") }()
 	c, err := ln.Accept()
 	if err != nil {
 		t.Fatal(err)
