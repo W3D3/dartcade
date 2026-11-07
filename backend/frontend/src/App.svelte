@@ -94,6 +94,14 @@
     loading: CoachLoading,
     loadingParams: { page: 'sandbox' },
   })
+  // The stats components' showcase: only on the dev server, so a build leaves it (and its fixtures) out
+  const devRoutes = import.meta.env.DEV
+    ? {
+        '/dev/stats': wrap({
+          asyncComponent: () => import('./routes/DevStatsShowcase.svelte').catch(() => ({ default: RouteLoadFailed })),
+        }),
+      }
+    : {}
   const loadMinigolfHoleEditor = Object.assign(
     () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
     { loading: RouteLoading },
@@ -149,6 +157,7 @@
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
     '/admin/minigolf/holes/:id': wrap({ asyncComponent: loadMinigolfHoleEditor }),
+    ...devRoutes,
   }
 
   let checked = $state(false)
