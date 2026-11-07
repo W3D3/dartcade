@@ -5,7 +5,7 @@
   import { ArrowRight, Swords } from '@lucide/svelte'
   import RankBadge from './RankBadge.svelte'
   import { PLACEMENT_MATCHES } from '$shared/ranked.js'
-  import { TIER_COLOR, fmtRp } from '$lib/ranked/view'
+  import { TIER_TEXT, fmtRp } from '$lib/ranked/view'
   import type { RankedOutcome } from '$lib/ranked/result'
 
   let { outcome }: { outcome: RankedOutcome } = $props()
@@ -51,7 +51,7 @@
     <div class="flex items-center gap-3 rounded-[12px] border border-warn-line bg-warn-panel px-4 py-3">
       <RankBadge rank={rankAfter} size={52} />
       <span class="flex flex-col">
-        <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_COLOR[rankAfter.tier]}>Placed</span>
+        <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_TEXT[rankAfter.tier]}>Placed</span>
         <span class="font-display text-[30px] font-bold uppercase leading-none">{rankAfter.name}</span>
         <span class="text-[12px] text-text-muted">Your rank is yours now</span>
       </span>
@@ -67,7 +67,7 @@
         <ArrowRight size={16} class="text-text-muted" aria-hidden="true" />
         <RankBadge rank={rankAfter} size={52} />
         <span class="flex flex-col">
-          <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_COLOR[rankAfter.tier]}
+          <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_TEXT[rankAfter.tier]}
             >{outcome.moved === 'promoted' ? 'Promoted' : 'Demoted'} · {rankAfter.tier !== rankBefore.tier ? 'new tier' : 'new stage'}</span
           >
           <span class="font-display text-[30px] font-bold uppercase leading-none">{rankAfter.name}</span>

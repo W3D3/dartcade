@@ -1,7 +1,7 @@
 // What the Matchmaking and Ranks pages show for a ranked profile (MM-Home, MM-Ranks boards).
 // The rank maths lives in $shared/ranked, shared with the server.
 import type { components } from '$lib/api/schema'
-import { PLACEMENT_MATCHES, TIERS, nextStage, rank, rankThreshold, type Rank, type Tier } from '$shared/ranked.js'
+import { PLACEMENT_MATCHES, RANK_COUNT, TIERS, nextStage, rank, rankThreshold, type Rank, type Tier } from '$shared/ranked.js'
 import { MONTHS, pad2, startOfDay } from '$lib/fmt'
 
 export type RankedRating = components['schemas']['RankedRating']
@@ -23,6 +23,26 @@ export function fmtSeconds(s: number): string {
   return s > 60 && s % 60 === 0 ? `${s / 60} min` : `${s} s`
 }
 
+/** Each tier's colour for text, a lighter shade than the insignia's (MM-Ranks board). */
+export const TIER_TEXT: Record<Tier, string> = {
+  Wood: '#c99a6b',
+  Bronze: '#e0a06a',
+  Silver: '#cfd5dd',
+  Gold: '#f2c94c',
+  Diamond: '#7fd6f5',
+  Elite: '#c6f24e',
+}
+
+/** The tint a tier's column fades in from at the top (MM-Ranks board). */
+export const TIER_TINT: Record<Tier, string> = {
+  Wood: '#8a5a32',
+  Bronze: '#a8652f',
+  Silver: '#9aa3af',
+  Gold: '#d39b1c',
+  Diamond: '#36a9dc',
+  Elite: '#9dc63a',
+}
+
 /** Each tier's colour, from the Rank insignia board. */
 export const TIER_COLOR: Record<Tier, string> = {
   Wood: '#b88660',
@@ -31,6 +51,17 @@ export const TIER_COLOR: Record<Tier, string> = {
   Gold: '#eac24f',
   Diamond: '#74d2f2',
   Elite: '#c6f24e',
+}
+
+/** Where a rating stands between its stage and the next (the Ranks page's progress bar). */
+export type ProgressBar = { percent: number; from: string; missing: string; next: Rank }
+
+export function progressBar(rankIndex: number, rating: number): ProgressBar | null {
+  const next = nextStage(rankIndex, rating)
+  if (!next) return null
+  const from = rankThreshold(rankIndex)
+  const percent = Math.floor(Math.min(1, Math.max(0, (rating - from) / (next.rank.min - from))) * 100)
+  return { percent, from: fmtRp(from), missing: `${fmtRp(next.missing)} RP`, next: next.rank }
 }
 
 export type RatingCardView = {
@@ -45,6 +76,8 @@ export type RatingCardView = {
   title: string
   /** '· 16 to Gold I', '· rank shown after 5', '· top rank'. */
   progress: string
+  /** The way to the next stage; null while placing and at the top. */
+  bar: ProgressBar | null
   /** '+46 in the last 30 days'. */
   trend: string
   /** The phone's shorter trend: '+46 in 30 days'. */
@@ -63,6 +96,7 @@ export function ratingCard(r: RankedRating): RatingCardView {
       rank: null,
       title: 'Placement',
       progress: `· rank shown after ${PLACEMENT_MATCHES}`,
+      bar: null,
       trend: r.matches === 0 ? 'Your first matches place you' : 'Your rating stays hidden until then',
       trendShort: r.matches === 0 ? 'Not placed yet' : 'Rating hidden',
       trendUp: false,
@@ -73,7 +107,13 @@ export function ratingCard(r: RankedRating): RatingCardView {
   const base = { label, rating: fmtRp(r.rating), unit: 'RP', trend, trendShort, trendUp: r.change30d > 0 }
   const held = rank(r.rankIndex)
   const next = nextStage(r.rankIndex, r.rating)
-  return { ...base, rank: held, title: held.name, progress: next ? `· ${next.missing} to ${next.rank.name}` : '· top rank' }
+  return {
+    ...base,
+    rank: held,
+    title: held.name,
+    progress: next ? `· ${next.missing} to ${next.rank.name}` : '· top rank',
+    bar: progressBar(r.rankIndex, r.rating),
+  }
 }
 
 /** Both modes together: "23–17" and "57% won · 3 wins in a row" ("57% won" on phones). */
@@ -107,6 +147,12 @@ export type RecentRow = {
   placement: boolean
   /** The one opponent's avatar in 1v1; null for 2v2 (no single face to show). */
   opponent: { userId: string; avatar: RankedGame['opponents'][number]['avatar'] } | null
+  /** Legs, yours first: '2–1'; null when the game did not record them. */
+  score: string | null
+  /** The 1v1 opponent's rank going into the game; null in 2v2 and while they were placing. */
+  opponentRank: Rank | null
+  /** The day alone, for the phone's short line: 'Today', 'Yesterday', 'Mon'. */
+  day: string
 }
 
 /** One line of Recent ranked matches: "Marco & Jule", "2v2 · Yesterday · 1 230 RP", "+14". */
@@ -118,12 +164,29 @@ export function recentRow(g: RankedGame, now: Date): RecentRow {
   const meta = [g.mode, whenPlayed(new Date(g.at), now), ...(opp === null ? [] : [`${fmtRp(opp)} RP`])].join(' · ')
   const placement = g.change === null
   const opponent = g.opponents.length === 1 ? { userId: g.opponents[0].userId, avatar: g.opponents[0].avatar } : null
-  return { key: g.sessionId, won: g.won, name, meta, change: g.change === null ? 'Placement' : signedRp(g.change), placement, opponent }
+  const heldRank = g.opponents.length === 1 ? g.opponents[0].rankIndex : null
+  return {
+    key: g.sessionId,
+    won: g.won,
+    name,
+    meta,
+    change: g.change === null ? 'Placement' : signedRp(g.change),
+    placement,
+    opponent,
+    score: g.score ? `${g.score.mine}–${g.score.theirs}` : null,
+    opponentRank: heldRank === null ? null : rank(heldRank),
+    day: whenPlayed(new Date(g.at), now).split(',')[0],
+  }
 }
 
 export type TierRow = { tier: Tier; range: string; stages: Rank[] }
 
-/** The Ranks page's ladder, top tier first, stage V first within each. */
+/** What a stage row says it takes: 'Start', '750 RP', '2 000+ RP' for the open-ended last stage. */
+export function stageThreshold(r: Rank): string {
+  return r.index === 0 ? 'Start' : `${fmtRp(r.min)}${r.index === RANK_COUNT - 1 ? '+' : ''} RP`
+}
+
+/** The Ranks page's ladder, Wood to Elite, stage V first within each tier. */
 export function ladder(): TierRow[] {
   return TIERS.map((tier, t) => {
     const lo = t === 0 ? 0 : rankThreshold(t * 5)
@@ -131,5 +194,10 @@ export function ladder(): TierRow[] {
     const range = hi === null ? `${fmtRp(lo)}+` : `${fmtRp(lo)} – ${fmtRp(hi)}`
     const stages = Array.from({ length: 5 }, (_, s) => rank(t * 5 + 4 - s))
     return { tier, range, stages }
-  }).reverse()
+  })
+}
+
+/** The board a ranked match is played on, as the Matchmaking page says it: the first one online, else the first paired. */
+export function playingOn<B extends { name: string; online: boolean }>(boards: readonly B[]): B | null {
+  return boards.find(b => b.online) ?? boards.at(0) ?? null
 }
