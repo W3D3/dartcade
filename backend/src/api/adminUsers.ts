@@ -17,6 +17,7 @@ import {
   type AdminUserRow,
 } from '../db/adminUsers.js'
 import { bridgeConnections as liveBridges, type BridgeConnections } from '../bridge-gw/connections.js'
+import { adjustRating } from '../db/ranked.js'
 import { grantXp } from '../db/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -125,6 +126,30 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     req.log.info({ targetId: req.params.id, amount: req.body.amount, adminId: req.userId }, 'admin granted user xp')
     return result
   })
+
+  app.post<Route<'adjustUserRating'>>(
+    '/api/admin/users/:id/ranked/adjust',
+    { preValidation: adminOnly, schema: fromSpec('adjustUserRating') },
+    async req => {
+      const { mode, rating, reason } = req.body
+      const result = await adjustRating(db, req.userId, req.params.id, { kind: 'set', mode, rating, reason: reason.trim() })
+      if (!result) throw new ApiError(404, { error: 'not found' })
+      req.log.info({ targetId: req.params.id, mode, rating, adminId: req.userId }, 'admin adjusted ranked rating')
+      return result
+    },
+  )
+
+  app.post<Route<'resetUserRating'>>(
+    '/api/admin/users/:id/ranked/reset',
+    { preValidation: adminOnly, schema: fromSpec('resetUserRating') },
+    async req => {
+      const { mode, reason } = req.body
+      const result = await adjustRating(db, req.userId, req.params.id, { kind: 'reset', mode, reason: reason.trim() })
+      if (!result) throw new ApiError(404, { error: 'not found' })
+      req.log.info({ targetId: req.params.id, mode, adminId: req.userId }, 'admin reset ranked rating')
+      return result
+    },
+  )
 
   app.put<Route<'banUser'>>('/api/admin/users/:id/ban', { preValidation: adminOnly, schema: fromSpec('banUser') }, async req => {
     const until = req.body.until === null ? null : new Date(req.body.until)

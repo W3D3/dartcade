@@ -1102,6 +1102,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/ranked/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set an account's ranked rating in a mode (admin)
+         * @description Recorded as an adjustment the rating replay applies in order with the games, so a later invalidation keeps it. Writes a ranked.adjust audit entry. Moderators can't.
+         */
+        post: operations["adjustUserRating"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/ranked/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send an account back to placement in a mode (admin)
+         * @description Placement matches again with the rating kept (hidden). Replayed like an adjustment. Writes a ranked.reset audit entry. Moderators can't.
+         */
+        post: operations["resetUserRating"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{id}/ban": {
         parameters: {
             query?: never;
@@ -3836,6 +3880,30 @@ export interface components {
                 last30Days: number;
                 manualLast30Days: number;
             };
+        };
+        AdjustRatingRequest: {
+            /** @enum {string} */
+            mode: "1v1" | "2v2";
+            /** @description RP to put them on */
+            rating: number;
+            /** @description Why, kept in the audit trail */
+            reason: string;
+        };
+        ResetRatingRequest: {
+            /** @enum {string} */
+            mode: "1v1" | "2v2";
+            /** @description Why, kept in the audit trail */
+            reason: string;
+        };
+        RatingSnapshot: {
+            rating: number;
+            /** @description null while placing */
+            rankIndex: number | null;
+            matches: number;
+        };
+        RatingAdjustment: {
+            before: components["schemas"]["RatingSnapshot"];
+            after: components["schemas"]["RatingSnapshot"];
         };
         UserAuditResponse: {
             entries: components["schemas"]["UserAuditEntry"][];
@@ -6579,6 +6647,68 @@ export interface operations {
                     "application/json": components["schemas"]["AdminUserActivity"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    adjustUserRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustRatingRequest"];
+            };
+        };
+        responses: {
+            /** @description Their rating in the mode before and after */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingAdjustment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    resetUserRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetRatingRequest"];
+            };
+        };
+        responses: {
+            /** @description Their rating in the mode before and after */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingAdjustment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

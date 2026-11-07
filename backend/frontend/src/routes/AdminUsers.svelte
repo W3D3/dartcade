@@ -11,6 +11,7 @@
   import PageTitle from '$lib/components/PageTitle.svelte'
   import { deviceStore } from '$lib/storage'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import RankedRatingModal from '$lib/components/admin/RankedRatingModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
   import UserActivity from '$lib/components/admin/UserActivity.svelte'
@@ -40,6 +41,7 @@
     banUser,
     unbanUser,
     type AdminUser,
+    type RankedMode,
     type Role,
   } from '$lib/admin/users'
 
@@ -87,6 +89,7 @@
   >(null)
   let busyId = $state<string | null>(null)
   let xpUser = $state<AdminUser | null>(null)
+  let ratingChange = $state<{ user: AdminUser; mode: RankedMode; kind: 'set' | 'reset'; rating: number } | null>(null)
   let rowError = $state<{ id: string; text: string } | null>(null)
 
   // Another admin can't be viewed as (the server refuses), and nor can yourself
@@ -251,6 +254,10 @@
       onrole={(role: Role) => askRole(user, role)}
       onverified={() => askVerified(user)}
       onxp={() => ((rowError = null), (xpUser = user))}
+      onrating={(mode: RankedMode, kind: 'set' | 'reset', rating: number) => (
+        (rowError = null),
+        (ratingChange = { user, mode, kind, rating })
+      )}
       onban={() => askBan(user)}
       onunban={() => {
         rowError = null
@@ -361,6 +368,9 @@
           }
         }}
       />
+    {/if}
+    {#if ratingChange}
+      <RankedRatingModal {...ratingChange} onclose={() => (ratingChange = null)} ondone={() => activityReload++} />
     {/if}
     {#if banning}
       <BanUserModal name={banning.name} error={banError} onconfirm={confirmBan} oncancel={() => (banning = null)} />

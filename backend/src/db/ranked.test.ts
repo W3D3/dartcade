@@ -4,6 +4,7 @@ import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import {
   type RankedSide,
+  adjustRating,
   getRatings,
   onlineAverage,
   ratingChangeSince,
@@ -363,6 +364,76 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
       await db.deleteFrom('user').where('id', '=', 'liv').execute()
       await recalculateRatings(db, '1v1')
       expect((await getRatings(db, 'eli'))['1v1']).toEqual(recorded)
+    })
+  })
+
+  describe('admin adjustments', () => {
+    const users = ['ada', 'bob', 'cyd']
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values([...users, 'boss'].map(id => ({ id, name: id, email: `${id}@adj`, emailVerified: false, image: null })))
+        .execute()
+    })
+    const rating = async (u: string) => (await getRatings(db, u))['1v1']
+    const audit = (action: string) =>
+      db.selectFrom('admin_audit').selectAll().where('action', '=', action).where('target', '=', 'ada').execute()
+
+    it('survives the replay that follows an invalidation, in order with the games', async () => {
+      const first = await game()
+      await recordRankedResult(db, { sessionId: first, mode: '1v1', at: at(1), sides: duel('ada', 'bob', 60, 40) })
+      const result = await adjustRating(db, 'boss', 'ada', { kind: 'set', mode: '1v1', rating: 1500, reason: 'fixed a bad seed' })
+      expect(result?.after.rating).toBe(1500)
+      // A game finished before the adjustment is replayed before it; one after, on top of it
+      const after = await game()
+      await recordRankedResult(db, { sessionId: after, mode: '1v1', at: new Date(), sides: duel('cyd', 'ada', 60, 40) })
+      const expected = await rating('ada')
+      // Invalidate the first game: the replay must put 1500 back in the middle
+      await db.updateTable('game_sessions').set({ invalidated_at: new Date() }).where('id', '=', first).execute()
+      await recalculateRatings(db, '1v1')
+      const replayed = await rating('ada')
+      expect(replayed.matches).toBe(1)
+      expect(replayed.rating).toBeLessThan(1500)
+      expect(replayed.rating).toBeGreaterThan(1400)
+      expect(expected.rating).toBeLessThan(1500)
+      const row = await db
+        .selectFrom('ranked_results')
+        .select('rating_before')
+        .where('session_id', '=', after)
+        .where('user_id', '=', 'ada')
+        .executeTakeFirstOrThrow()
+      expect(row.rating_before).toBe(1500)
+    })
+
+    it('sends a player back to placement and keeps that through a replay', async () => {
+      const result = await adjustRating(db, 'boss', 'ada', { kind: 'reset', mode: '1v1', reason: 'smurf' })
+      expect(result?.after).toMatchObject({ matches: 0, rankIndex: null })
+      await recalculateRatings(db, '1v1')
+      expect(await rating('ada')).toMatchObject({ matches: 0, rankIndex: null })
+    })
+
+    it('gives a player with no games a rating, and writes the audit row with before and after', async () => {
+      const result = await adjustRating(db, 'boss', 'bob', { kind: 'set', mode: '2v2', reason: 'tournament seed', rating: 1700 })
+      expect(result?.before).toMatchObject({ rating: 1200, matches: 0 })
+      expect((await getRatings(db, 'bob'))['2v2']).toMatchObject({ rating: 1700, matches: 0, rankIndex: null })
+      const entries = await db
+        .selectFrom('admin_audit')
+        .selectAll()
+        .where('action', '=', 'ranked.adjust')
+        .where('target', '=', 'bob')
+        .execute()
+      expect(entries).toHaveLength(1)
+      expect(entries[0]?.detail).toMatchObject({
+        mode: '2v2',
+        reason: 'tournament seed',
+        before: { rating: 1200 },
+        after: { rating: 1700 },
+      })
+      expect((await audit('ranked.reset')).length).toBe(1)
+    })
+
+    it('answers null for an unknown account', async () => {
+      expect(await adjustRating(db, 'boss', 'nobody', { kind: 'reset', mode: '1v1', reason: 'x' })).toBeNull()
     })
   })
 
