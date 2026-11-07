@@ -40,6 +40,7 @@
   import FinishSprite from '$lib/components/FinishSprite.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
+  import AdminDartSamples from './routes/AdminDartSamples.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
   import MatchFound from '$lib/components/ranked/MatchFound.svelte'
   import { get } from 'svelte/store'
@@ -143,6 +144,7 @@
     '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
     '/admin/system': AdminSystem,
+    '/admin/dart-samples': AdminDartSamples,
     '/admin/cosmetics': AdminCosmetics,
     '/admin/coach': wrap({ asyncComponent: loadAdminCoach }),
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
