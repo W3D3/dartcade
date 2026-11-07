@@ -69,6 +69,7 @@ reach it over `https://`/`wss://`. More env vars worth knowing about (all option
 - `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
 - `PUBLIC_URL` — the address the app is reached at, e.g. `https://darts.example.com`, so shared links show a preview image
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)
+- `DART_SAMPLES_MAX_GB` — how much of the database the dart detection training pictures may take, in GB (default `20`; `0` keeps none). They stay on your server; see `#/admin/dart-samples`
 
 **Mail and legal pages**: without `SMTP_URL` set, there's no verification mail, password reset
 or account-deletion mail, and sign-up skips verification. Pass `SMTP_URL`, `MAIL_FROM` and

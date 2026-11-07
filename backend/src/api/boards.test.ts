@@ -86,6 +86,7 @@ describe('GET /api/boards', () => {
         lights_enabled: true,
         auto_start: true,
         reset_on_next: true,
+        share_training_images: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -214,6 +215,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         lights_enabled: true,
         auto_start: true,
         reset_on_next: true,
+        share_training_images: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -244,6 +246,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         lights_enabled: true,
         auto_start: true,
         reset_on_next: true,
+        share_training_images: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -268,6 +271,7 @@ describe('GET /api/boards - bridgeVersion', () => {
         lights_enabled: true,
         auto_start: true,
         reset_on_next: true,
+        share_training_images: true,
         big_screen_mode: 'off' as const,
         big_screen_token_hash: null,
       },
@@ -479,6 +483,7 @@ describe('PATCH /api/boards/:id', () => {
     lights_enabled: true,
     auto_start: true,
     reset_on_next: true,
+    share_training_images: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -517,6 +522,7 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     lights_enabled: true,
     auto_start: true,
     reset_on_next: true,
+    share_training_images: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -701,6 +707,7 @@ describe('GET /api/boards/:id/events', () => {
     lights_enabled: true,
     auto_start: true,
     reset_on_next: true,
+    share_training_images: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -734,6 +741,7 @@ describe('boards: spec enforcement', () => {
     lights_enabled: true,
     auto_start: true,
     reset_on_next: true,
+    share_training_images: true,
     big_screen_mode: 'off' as const,
     big_screen_token_hash: null,
   }
@@ -776,6 +784,7 @@ describe('POST /api/boards/:id/bridge-update', () => {
       lights_enabled: true,
       auto_start: true,
       reset_on_next: true,
+      share_training_images: true,
       big_screen_mode: 'off' as const,
       big_screen_token_hash: null,
     })

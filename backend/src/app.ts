@@ -34,6 +34,7 @@ import { applyBan } from './auth/ban.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
+import { adminDartSamplesApiPlugin } from './api/adminDartSamples.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
 import { boardsWithWledDevices, rehostWledDevices } from './db/lights.js'
@@ -58,6 +59,7 @@ import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { maxSampleBytes, type SampleCollector } from './detection/collector.js'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -72,6 +74,8 @@ export type AppDeps = {
   lights?: LightsService
   /** The big screen's follow service (see bigscreen/service.ts). */
   bigScreen: BigScreenService
+  /** Keeps camera darts as training data (see detection/collector.ts); omitted when collection is off. */
+  samples?: SampleCollector
   /** The ranked queue (see matchmaking/service.ts). */
   matchmaking: MatchmakingService
   /** Built frontend to serve; omitted in tests. */
@@ -122,6 +126,7 @@ export async function buildApp({
   friends,
   lights,
   bigScreen,
+  samples,
   matchmaking,
   frontendDist,
   onRoute,
@@ -187,6 +192,7 @@ export async function buildApp({
   await app.register(bridgeGwPlugin, {
     engine,
     db,
+    samples,
     onBoardPresence: boardId => {
       lobbies.onBoardPresence(boardId)
       bigScreen.onBoardPresence(boardId)
@@ -288,6 +294,7 @@ export async function buildApp({
       }
     : undefined
   await app.register(adminFlagsApiPlugin, { db, onFlagChanged })
+  await app.register(adminDartSamplesApiPlugin, { db, maxBytes: samples ? maxSampleBytes() : 0 })
   await app.register(systemApiPlugin, {
     db,
     live: async () => {

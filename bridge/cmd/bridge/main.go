@@ -278,7 +278,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 	// WLEDs are only scanned when a user asks (wled.scan), never on a timer or a connect.
 	tr.OnConnect(func() {
 		bigScreen.Announce()
-		stills.Trigger(ctx)
+		stills.Trigger(ctx, 0)
 	})
 
 	go func() {
@@ -290,12 +290,12 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 	eventCh := make(chan []differ.Event, 256)
 	go func() {
 		for evs := range eventCh {
-			tr.Send(evs)
+			seq := tr.Send(evs)
 			if calibrationChanged(evs) {
 				combined.CalibrationChanged()
 			}
 			if tr.Connected() && triggersStills(evs) {
-				stills.Trigger(ctx)
+				stills.Trigger(ctx, seq)
 			}
 		}
 	}()

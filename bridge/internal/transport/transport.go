@@ -121,10 +121,21 @@ func StillMessage(st camera.Still) any {
 		"data": schema.CameraStillData{
 			Cam:         st.Cam,
 			CapturedAt:  st.CapturedAt.UTC(),
+			SourceSeq:   seqField(st.SourceSeq),
+			PreviousSeq: seqField(st.PreviousSeq),
 			ContentType: "image/jpeg",
 			Data:        base64.StdEncoding.EncodeToString(st.JPEG),
 		},
 	}
+}
+
+// seqField is a still's seq as the schema has it: absent for 0.
+func seqField(seq uint64) *int {
+	if seq == 0 {
+		return nil
+	}
+	n := int(seq)
+	return &n
 }
 
 // SendStill sends a camera still on the live connection. Stills are never stored or
@@ -148,13 +159,15 @@ func (t *Transport) SendMessage(v any) bool {
 }
 
 // Send adds a batch of events to the outbox for delivery to the backend. It works whether
-// or not the backend is connected: the outbox is replayed on the next connection.
-func (t *Transport) Send(evs []differ.Event) {
-	t.enqueue(evs)
+// or not the backend is connected: the outbox is replayed on the next connection. It returns
+// the seq of the batch's bm.frame (its events' source_seq), 0 when it has none.
+func (t *Transport) Send(evs []differ.Event) uint64 {
+	seq := t.enqueue(evs)
 	select {
 	case t.wake <- struct{}{}:
 	default:
 	}
+	return seq
 }
 
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
@@ -348,9 +361,9 @@ func write(ctx context.Context, conn *websocket.Conn, v any) error {
 	return wsjson.Write(ctx, conn, v)
 }
 
-func (t *Transport) enqueue(evs []differ.Event) {
+func (t *Transport) enqueue(evs []differ.Event) uint64 {
 	if len(evs) == 0 {
-		return
+		return 0
 	}
 
 	t.mu.Lock()
@@ -419,6 +432,7 @@ func (t *Transport) enqueue(evs []differ.Event) {
 		}
 	next:
 	}
+	return bmFrameSeq
 }
 
 func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {

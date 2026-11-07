@@ -99,7 +99,7 @@ func TestTriggerFetchesAWarpedStillFromEachCamera(t *testing.T) {
 	f := camera.New(srv.URL, func() int { return 3 }, s.put)
 
 	before := time.Now()
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	stills := s.wait(t, 3)
 
 	for i, st := range stills {
@@ -129,7 +129,7 @@ func TestCamerasTheBoardManagerDoesNotHaveAreSkipped(t *testing.T) {
 	s := newSink()
 	// Board Manager reports two cameras
 	f := camera.New(srv.URL, func() int { return 2 }, s.put)
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	stills := s.wait(t, 2)
 	time.Sleep(50 * time.Millisecond)
 	if len(stills) != 2 || bm.count("/api/img/cams/2") != 0 {
@@ -144,7 +144,7 @@ func TestAFailedFetchSendsNothing(t *testing.T) {
 	defer srv.Close()
 	s := newSink()
 	f := camera.New(srv.URL, func() int { return 3 }, s.put)
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	stills := s.wait(t, 1)
 	time.Sleep(100 * time.Millisecond)
 	s.mu.Lock()
@@ -160,7 +160,7 @@ func TestAnOversizedStillIsDropped(t *testing.T) {
 	defer srv.Close()
 	var got atomic.Int32
 	f := camera.New(srv.URL, func() int { return 1 }, func(camera.Still) { got.Add(1) })
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	deadline := time.Now().Add(time.Second)
 	for bm.count("/api/img/cams/0") == 0 && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
@@ -179,15 +179,15 @@ func TestOneFetchPerCameraInFlightNewerTriggersCoalesce(t *testing.T) {
 	s := newSink()
 	f := camera.New(srv.URL, func() int { return 1 }, s.put)
 
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	deadline := time.Now().Add(time.Second)
 	for bm.count("/api/img/cams/0") == 0 && time.Now().Before(deadline) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	// Three more events while the first fetch hangs: one more fetch, not three
-	f.Trigger(context.Background())
-	f.Trigger(context.Background())
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
+	f.Trigger(context.Background(), 0)
+	f.Trigger(context.Background(), 0)
 	time.Sleep(50 * time.Millisecond)
 	if n := bm.count("/api/img/cams/0"); n != 1 {
 		t.Fatalf("requests in flight: %d, want 1", n)
@@ -209,10 +209,10 @@ func TestAHangingCameraTimesOut(t *testing.T) {
 	defer close(gate)
 	f := camera.New(srv.URL, func() int { return 1 }, func(camera.Still) {})
 	f.Timeout = 50 * time.Millisecond
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	time.Sleep(150 * time.Millisecond)
 	// The first fetch gave up, so the next trigger fetches again
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	time.Sleep(30 * time.Millisecond)
 	if n := bm.count("/api/img/cams/0"); n != 2 {
 		t.Fatalf("requests: %d, want 2", n)
@@ -243,9 +243,9 @@ func TestStillsCarryTheirTriggerRound(t *testing.T) {
 	defer srv.Close()
 	s := newSink()
 	f := camera.New(srv.URL, func() int { return 2 }, s.put)
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	s.wait(t, 2)
-	f.Trigger(context.Background())
+	f.Trigger(context.Background(), 0)
 	all := s.wait(t, 2) // every still so far
 	rounds := map[uint64]int{}
 	for _, st := range all {
@@ -258,5 +258,29 @@ func TestStillsCarryTheirTriggerRound(t *testing.T) {
 		if n != 2 {
 			t.Errorf("round %d has %d stills, want 2 (one per camera)", r, n)
 		}
+	}
+}
+
+func TestStillsCarryTheirBatchSeqAndThePreviousOne(t *testing.T) {
+	bm := &fakeBM{t: t, n: 2}
+	srv := httptest.NewServer(bm)
+	defer srv.Close()
+	s := newSink()
+	f := camera.New(srv.URL, func() int { return 2 }, s.put)
+	f.Trigger(context.Background(), 7)
+	s.wait(t, 2)
+	f.Trigger(context.Background(), 12)
+	all := s.wait(t, 2)
+	want := map[uint64]uint64{7: 0, 12: 7} // seq → previous
+	count := map[uint64]int{}
+	for _, st := range all {
+		prev, ok := want[st.SourceSeq]
+		if !ok || st.PreviousSeq != prev {
+			t.Errorf("cam %d round %d: seq %d, previous %d", st.Cam, st.Round, st.SourceSeq, st.PreviousSeq)
+		}
+		count[st.SourceSeq]++
+	}
+	if count[7] != 2 || count[12] != 2 {
+		t.Errorf("stills per seq: %v, want 2 each", count)
 	}
 }

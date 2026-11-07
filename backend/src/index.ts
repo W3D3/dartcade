@@ -34,6 +34,8 @@ import { ProgressionService } from './progression/service.js'
 import { getFinishedGame } from './db/history.js'
 import { gameDetailBody } from './api/games.js'
 import { backfillCoachLegs, buildCoachLegs } from './coach/store.js'
+import { SampleCollector, maxSampleBytes } from './detection/collector.js'
+import { boardShares, insertSample, pruneSamples } from './db/dartSamples.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -238,6 +240,27 @@ const sweeps: [what: string, run: () => Promise<unknown>][] = [
   // Home shows a week of friend activity; a month is kept
   ['friend activity', () => pruneActivity(db, new Date(Date.now() - 30 * 24 * HOUR_MS))],
 ]
+// Camera darts kept as training data for the dart detection model, on boards that share, while the
+// flag is on for the board's owner; DART_SAMPLES_MAX_GB caps them (0: none kept)
+const sampleBytes = maxSampleBytes()
+const samples =
+  sampleBytes > 0
+    ? new SampleCollector({
+        shares: async boardId => {
+          const owner = await boardOwner(db, boardId)
+          return (
+            owner !== null &&
+            (await flagEnabled('detection.collect.enabled', await loadFlagUser(db, owner))) &&
+            (await boardShares(db, boardId))
+          )
+        },
+        save: sample => insertSample(db, sample),
+        warn: (message, details) => {
+          warn(message, details)
+        },
+      })
+    : undefined
+if (samples) sweeps.push(['dart sample', () => pruneSamples(db, sampleBytes)])
 const idleSweep = setInterval(
   () => {
     for (const [what, run] of sweeps) {
@@ -258,6 +281,7 @@ const app = await buildApp({
   friends,
   lights,
   bigScreen,
+  samples,
   matchmaking,
   frontendDist: join(__dirname, '../frontend/dist'),
 })

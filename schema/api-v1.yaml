@@ -686,6 +686,31 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/share-training-images:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    patch:
+      operationId: setBoardShareTrainingImages
+      summary: Set whether the board's camera darts are kept as training data (owner only)
+      description: Turning it off deletes the samples already kept from this board.
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BoardShareTrainingImagesRequest' }
+      responses:
+        '200':
+          description: The new setting
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardShareTrainingImagesRequest' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -1096,6 +1121,77 @@ paths:
               schema: { $ref: '#/components/schemas/AdminSystem' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/dart-samples:
+    get:
+      operationId: listAdminDartSamples
+      summary: Training data for the dart detection model, newest first, with totals (admin)
+      tags: [admin]
+      parameters:
+        - { name: label, in: query, required: false, schema: { $ref: '#/components/schemas/DartSampleLabel' } }
+        - {
+            name: before,
+            in: query,
+            required: false,
+            description: 'A page: samples older than this id',
+            schema: { type: string, pattern: '^[0-9]+$' },
+          }
+      responses:
+        '200':
+          description: Totals and a page of samples
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminDartSamples' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/dart-samples/export:
+    get:
+      operationId: exportAdminDartSamples
+      summary: Download samples as a tar of stills and labels.jsonl (admin)
+      description: >-
+        Samples with an id above `after` and up to `upTo`, oldest first, only those settled (an hour
+        old, so their visit can no longer be corrected): `<id>/{before,after}-{cam}.jpg` for each,
+        and `labels.jsonl` with one line per sample at the end. A download that ends at `upTo`
+        (from the list's `settledNewestId`) lets the next one start after it.
+      tags: [admin]
+      parameters:
+        - { name: after, in: query, required: false, schema: { type: string, pattern: '^[0-9]+$' } }
+        - { name: upTo, in: query, required: true, schema: { type: string, pattern: '^[0-9]+$' } }
+        - { name: label, in: query, required: false, schema: { $ref: '#/components/schemas/DartSampleLabel' } }
+      responses:
+        '200':
+          description: A tar archive
+          content:
+            application/x-tar:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/dart-samples/{id}/stills/{phase}/{cam}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9]+$' } }
+      - { name: phase, in: path, required: true, schema: { type: string, enum: [before, after] } }
+      - { name: cam, in: path, required: true, schema: { type: integer, minimum: 0, maximum: 2 } }
+    get:
+      operationId: getAdminDartSampleStill
+      summary: One still of a sample, a warped top-down JPEG (admin)
+      tags: [admin]
+      responses:
+        '200':
+          description: JPEG still
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/admin/games:
@@ -4177,7 +4273,22 @@ components:
     Board:
       type: object
       required:
-        [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl, bridgeUpdate, bigScreen, autoStart, resetOnNext]
+        [
+          id,
+          name,
+          hardwareId,
+          online,
+          bridgeVersion,
+          bmVersion,
+          createdAt,
+          ip,
+          bmUrl,
+          bridgeUpdate,
+          bigScreen,
+          autoStart,
+          resetOnNext,
+          shareTrainingImages,
+        ]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -4193,6 +4304,8 @@ components:
         bigScreen: { $ref: '#/components/schemas/BoardBigScreen' }
         autoStart: { type: boolean, description: A lobby game starts the board's stopped Board Manager session }
         resetOnNext: { type: boolean, description: 'Next player also resets the board, as its Reset button does' }
+        shareTrainingImages:
+          { type: boolean, description: "The board's camera darts are kept as training data for the dart detection model" }
     BoardAutoStartRequest:
       type: object
       required: [autoStart]
@@ -4205,6 +4318,91 @@ components:
       additionalProperties: false
       properties:
         resetOnNext: { type: boolean }
+    BoardShareTrainingImagesRequest:
+      type: object
+      required: [shareTrainingImages]
+      additionalProperties: false
+      properties:
+        shareTrainingImages: { type: boolean }
+    DartSampleLabel:
+      type: string
+      enum: [autodarts, corrected_spot, corrected_segment]
+      description: >-
+        How far to trust a sample: autodarts (not corrected), corrected_spot (dragged to a spot on
+        the board), corrected_segment (corrected to a segment, so no spot)
+    DartSampleSpot:
+      type: object
+      required: [segment, coords]
+      additionalProperties: false
+      properties:
+        segment: { type: string, description: 'Segment name, e.g. T20' }
+        coords:
+          type: object
+          nullable: true
+          required: [x, y]
+          additionalProperties: false
+          description: Normalised board position (r = 1 at the outer double wire); null when there is none
+          properties:
+            x: { type: number }
+            y: { type: number }
+    DartSampleFinal:
+      type: object
+      required: [segment, coords, corrected]
+      additionalProperties: false
+      properties:
+        segment: { type: string, description: 'Segment name, e.g. T20' }
+        coords:
+          type: object
+          nullable: true
+          required: [x, y]
+          additionalProperties: false
+          description: Normalised board position (r = 1 at the outer double wire); null when there is none
+          properties:
+            x: { type: number }
+            y: { type: number }
+        corrected: { type: boolean, description: A player corrected it }
+    DartSample:
+      type: object
+      required: [id, boardId, bmVersion, capturedAt, autodarts, final, label]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        boardId: { type: string }
+        bmVersion: { type: string, nullable: true }
+        capturedAt: { type: string, format: date-time }
+        autodarts: { $ref: '#/components/schemas/DartSampleSpot' }
+        final:
+          description: Where the dart ended up in its game; null outside a game or before its visit was committed
+          anyOf: [{ $ref: '#/components/schemas/DartSampleFinal' }, { type: string, nullable: true, enum: [null] }]
+        label: { $ref: '#/components/schemas/DartSampleLabel' }
+    AdminDartSamples:
+      type: object
+      required: [totals, settledNewestId, samples]
+      additionalProperties: false
+      properties:
+        totals:
+          type: object
+          required: [byLabel, boards, sharingBoards, bytes, maxBytes, newest]
+          additionalProperties: false
+          properties:
+            byLabel:
+              type: object
+              required: [autodarts, corrected_spot, corrected_segment]
+              additionalProperties: false
+              properties:
+                autodarts: { type: integer }
+                corrected_spot: { type: integer }
+                corrected_segment: { type: integer }
+            boards: { type: integer, description: Boards with samples }
+            sharingBoards: { type: integer, description: Boards whose owner shares }
+            bytes: { type: integer, description: What the stills take }
+            maxBytes: { type: integer, description: 'The cap (DART_SAMPLES_MAX_GB); 0: collection is off' }
+            newest: { type: string, format: date-time, nullable: true }
+        settledNewestId:
+          type: string
+          nullable: true
+          description: The newest sample a download can include now (`upTo`); null when none is settled
+        samples: { type: array, items: { $ref: '#/components/schemas/DartSample' } }
     BoardBigScreen:
       type: object
       required: [mode, running, helper]
