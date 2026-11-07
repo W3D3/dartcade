@@ -47,13 +47,13 @@ describe('liveCoach', () => {
     const c = liveCoach(MODELS, 40, darts('D20'), 60)
     expect(c.aims).toEqual([])
     expect(c.done).toBe(true)
-    expect(c.visit?.tag).toBe('doubling')
+    expect(c.visit?.tags).toEqual(['doubling'])
   })
 
   it('has no change on a scoring visit', () => {
     const c = liveCoach(MODELS, 501, darts('T20', 'T20', 'T20'), 60)
     expect(c.visit?.darts.every(d => d.delta === null)).toBe(true)
-    expect(c.done && c.visit?.tag).toBe('scoring')
+    expect(c.done && c.visit?.tags).toEqual(['scoring'])
   })
 })
 

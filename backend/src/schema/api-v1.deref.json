@@ -5725,7 +5725,7 @@
                               "scored",
                               "then",
                               "bust",
-                              "tag",
+                              "tags",
                               "grade",
                               "text",
                               "tip",
@@ -6054,13 +6054,17 @@
                               "bust": {
                                 "type": "boolean"
                               },
-                              "tag": {
-                                "type": "string",
-                                "enum": [
-                                  "scoring",
-                                  "setup",
-                                  "doubling"
-                                ]
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scoring",
+                                    "setup",
+                                    "doubling"
+                                  ]
+                                },
+                                "description": "Every phase the visit went through, in order"
                               },
                               "grade": {
                                 "type": "string",
@@ -6096,6 +6100,7 @@
                                     "better",
                                     "betterAimId",
                                     "cost",
+                                    "byLeave",
                                     "reason",
                                     "book",
                                     "tip"
@@ -6136,7 +6141,11 @@
                                     },
                                     "cost": {
                                       "type": "number",
-                                      "description": "Checkout chance lost, 0-1"
+                                      "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                                    },
+                                    "byLeave": {
+                                      "type": "boolean",
+                                      "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                                     },
                                     "reason": {
                                       "type": "string",
@@ -6170,6 +6179,7 @@
                                       "better",
                                       "betterAimId",
                                       "cost",
+                                      "byLeave",
                                       "reason",
                                       "book",
                                       "tip"
@@ -6210,7 +6220,11 @@
                                       },
                                       "cost": {
                                         "type": "number",
-                                        "description": "Checkout chance lost, 0-1"
+                                        "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                                      },
+                                      "byLeave": {
+                                        "type": "boolean",
+                                        "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                                       },
                                       "reason": {
                                         "type": "string",
@@ -54838,6 +54852,7 @@
           "better",
           "betterAimId",
           "cost",
+          "byLeave",
           "reason",
           "book",
           "tip"
@@ -54878,7 +54893,11 @@
           },
           "cost": {
             "type": "number",
-            "description": "Checkout chance lost, 0-1"
+            "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+          },
+          "byLeave": {
+            "type": "boolean",
+            "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
           },
           "reason": {
             "type": "string",
@@ -54905,7 +54924,7 @@
           "scored",
           "then",
           "bust",
-          "tag",
+          "tags",
           "grade",
           "text",
           "tip",
@@ -55234,13 +55253,17 @@
           "bust": {
             "type": "boolean"
           },
-          "tag": {
-            "type": "string",
-            "enum": [
-              "scoring",
-              "setup",
-              "doubling"
-            ]
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "scoring",
+                "setup",
+                "doubling"
+              ]
+            },
+            "description": "Every phase the visit went through, in order"
           },
           "grade": {
             "type": "string",
@@ -55276,6 +55299,7 @@
                 "better",
                 "betterAimId",
                 "cost",
+                "byLeave",
                 "reason",
                 "book",
                 "tip"
@@ -55316,7 +55340,11 @@
                 },
                 "cost": {
                   "type": "number",
-                  "description": "Checkout chance lost, 0-1"
+                  "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                },
+                "byLeave": {
+                  "type": "boolean",
+                  "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                 },
                 "reason": {
                   "type": "string",
@@ -55350,6 +55378,7 @@
                   "better",
                   "betterAimId",
                   "cost",
+                  "byLeave",
                   "reason",
                   "book",
                   "tip"
@@ -55390,7 +55419,11 @@
                   },
                   "cost": {
                     "type": "number",
-                    "description": "Checkout chance lost, 0-1"
+                    "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                  },
+                  "byLeave": {
+                    "type": "boolean",
+                    "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                   },
                   "reason": {
                     "type": "string",
@@ -55752,7 +55785,7 @@
                 "scored",
                 "then",
                 "bust",
-                "tag",
+                "tags",
                 "grade",
                 "text",
                 "tip",
@@ -56081,13 +56114,17 @@
                 "bust": {
                   "type": "boolean"
                 },
-                "tag": {
-                  "type": "string",
-                  "enum": [
-                    "scoring",
-                    "setup",
-                    "doubling"
-                  ]
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "scoring",
+                      "setup",
+                      "doubling"
+                    ]
+                  },
+                  "description": "Every phase the visit went through, in order"
                 },
                 "grade": {
                   "type": "string",
@@ -56123,6 +56160,7 @@
                       "better",
                       "betterAimId",
                       "cost",
+                      "byLeave",
                       "reason",
                       "book",
                       "tip"
@@ -56163,7 +56201,11 @@
                       },
                       "cost": {
                         "type": "number",
-                        "description": "Checkout chance lost, 0-1"
+                        "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                      },
+                      "byLeave": {
+                        "type": "boolean",
+                        "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                       },
                       "reason": {
                         "type": "string",
@@ -56197,6 +56239,7 @@
                         "better",
                         "betterAimId",
                         "cost",
+                        "byLeave",
                         "reason",
                         "book",
                         "tip"
@@ -56237,7 +56280,11 @@
                         },
                         "cost": {
                           "type": "number",
-                          "description": "Checkout chance lost, 0-1"
+                          "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                        },
+                        "byLeave": {
+                          "type": "boolean",
+                          "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                         },
                         "reason": {
                           "type": "string",
@@ -58326,7 +58373,7 @@
                     "scored",
                     "then",
                     "bust",
-                    "tag",
+                    "tags",
                     "grade",
                     "text",
                     "tip",
@@ -58655,13 +58702,17 @@
                     "bust": {
                       "type": "boolean"
                     },
-                    "tag": {
-                      "type": "string",
-                      "enum": [
-                        "scoring",
-                        "setup",
-                        "doubling"
-                      ]
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "scoring",
+                          "setup",
+                          "doubling"
+                        ]
+                      },
+                      "description": "Every phase the visit went through, in order"
                     },
                     "grade": {
                       "type": "string",
@@ -58697,6 +58748,7 @@
                           "better",
                           "betterAimId",
                           "cost",
+                          "byLeave",
                           "reason",
                           "book",
                           "tip"
@@ -58737,7 +58789,11 @@
                           },
                           "cost": {
                             "type": "number",
-                            "description": "Checkout chance lost, 0-1"
+                            "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                          },
+                          "byLeave": {
+                            "type": "boolean",
+                            "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                           },
                           "reason": {
                             "type": "string",
@@ -58771,6 +58827,7 @@
                             "better",
                             "betterAimId",
                             "cost",
+                            "byLeave",
                             "reason",
                             "book",
                             "tip"
@@ -58811,7 +58868,11 @@
                             },
                             "cost": {
                               "type": "number",
-                              "description": "Checkout chance lost, 0-1"
+                              "description": "Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave"
+                            },
+                            "byLeave": {
+                              "type": "boolean",
+                              "description": "Judged by its leave (the last dart with 171-230 left), not by checkout chance"
                             },
                             "reason": {
                               "type": "string",

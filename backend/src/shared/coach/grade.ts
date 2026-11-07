@@ -1,4 +1,4 @@
-// Every visit's tag (Scoring, Setup, Doubling) and grade (Brilliant to Bad, eight classes); the line
+// Every visit's tags (Scoring, Setup, Doubling: each phase it went through) and grade (Brilliant to Bad, eight classes); the line
 // saying why is visitText.ts. A strategy note (not a tip) makes any visit Bad; a visit that keeps the fewest-darts
 // finish is Brilliant when that was hard for the fixed reference tier (tiers.ts BRILLIANT_TIER,
 // the semi-pro's 75 average — not the player's own target tier), else at least Excellent. Otherwise a Scoring visit is graded on its rating against the average, a Setup
@@ -8,7 +8,7 @@ import { oneDartFinish } from './aims.js'
 import type { DartClass } from './dartClass.js'
 import { closenessBonus, groupingBonus, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
-import { landedNumber, type Throw } from './walk.js'
+import { dartPhase, landedNumber, onFinish, type Throw } from './walk.js'
 
 /** Scoring: a visit under this scores Weak at best. On the raw score: a tight group doesn't rescue a 25 */
 export const VERY_LOW = 26
@@ -47,7 +47,9 @@ export const BRILLIANT_CHANCE = 0.25
 /** A bust costs this many points for each dart of the visit it kept from being thrown */
 export const BUST_DART_LOST = 5
 
-export type VisitTag = 'scoring' | 'setup' | 'doubling'
+/** In the order a visit goes through them */
+export const VISIT_TAGS = ['scoring', 'setup', 'doubling'] as const
+export type VisitTag = (typeof VISIT_TAGS)[number]
 /** Best to worst */
 export const VISIT_GRADES = ['brilliant', 'excellent', 'great', 'good', 'ok', 'inaccuracy', 'weak', 'bad'] as const
 export type VisitGrade = (typeof VISIT_GRADES)[number]
@@ -63,8 +65,9 @@ export type VisitFacts = {
   bust: boolean
   /** Each walked dart's class (dartClass.ts), in throw order */
   classes: readonly DartClass[]
-  /** Each walked dart's value change (value.ts dartDeltas); empty on a Scoring visit */
-  deltas: readonly number[]
+  /** Each walked dart's value change (value.ts dartDeltas), in throw order; null for a dart not on
+   *  a finish (walk.ts onFinish): the darts with more than 170 left */
+  deltas: readonly (number | null)[]
   /** How its placed darts sat together (grouping.ts); null with fewer than 2 */
   grouping: Pick<Grouping, 'spreadMm' | 'edgeMm' | 'rating' | 'comment'> | null
   /** This visit's notes, tips included */
@@ -105,8 +108,8 @@ export type VisitValue = {
   rule: GradeRule
   fewestChance: number | null
 }
-/** A visit's tag and grade, and how the grade was worked out */
-export type Grading = { tag: VisitTag; grade: VisitGrade; value: VisitValue }
+/** A visit's tags and grade, and how the grade was worked out */
+export type Grading = { tags: VisitTag[]; grade: VisitGrade; value: VisitValue }
 
 /** A scale's lower bounds, best first: the first class whose bound `points` reaches, else Bad */
 export type GradeBands = readonly { grade: ValueGrade; from: number }[]
@@ -135,6 +138,13 @@ export const bandOf = (points: number, bands: GradeBands): ValueGrade => bands.f
 /** The worse of two grades, and the better */
 const worse = (a: VisitGrade, b: VisitGrade): VisitGrade => (VISIT_GRADES.indexOf(a) > VISIT_GRADES.indexOf(b) ? a : b)
 const better = (a: VisitGrade, b: VisitGrade): VisitGrade => (worse(a, b) === a ? b : a)
+
+/** The walked darts on a finish with their class and value change: what a Setup or Doubling grade sums */
+export const finishDarts = (f: VisitFacts) =>
+  f.throws.flatMap((t, i) => {
+    const delta = f.deltas[i]
+    return delta === null ? [] : [{ t, i, delta, c: f.classes[i] }]
+  })
 
 /** The note a visit's text (and the leg review's rail) explains: the costliest that isn't a tip,
  *  else the costliest tip; null without notes. */
@@ -177,14 +187,20 @@ export function dartBand(delta: number, close: number | null, hit: boolean, bust
   return g > DART_PLAIN_ABOVE ? 'plain' : 'weak'
 }
 
-export function tagOf(f: VisitFacts): VisitTag {
-  if (f.start > 170) return 'scoring'
-  return f.throws.some(t => oneDartFinish(t.left)) ? 'doubling' : 'setup'
+/** The tag of a dart, judged on the score left before it (walk.ts dartPhase): Doubling on a one-dart
+ *  finish, Setup on any other finish or a leave dart, else Scoring. */
+const tagOfDart = (t: Throw): VisitTag => {
+  const phase = dartPhase(t)
+  return phase === 'scoring' ? 'scoring' : phase === 'finish' && oneDartFinish(t.left) ? 'doubling' : 'setup'
 }
 
-/** A Scoring visit's darts aimed at the T20 that drifted into the 1 or 5 */
+/** Every phase the visit went through, in order: a visit from 200 is Scoring and Setup, from 170 Setup
+ *  and Doubling when its first darts hit the setup, else Setup alone. */
+export const tagsOf = (f: VisitFacts): VisitTag[] => VISIT_TAGS.filter(tag => f.throws.some(t => tagOfDart(t) === tag))
+
+/** Darts with more than 170 left aimed at the T20 that drifted into the 1 or 5 */
 export const spilled = (f: VisitFacts) =>
-  f.throws.filter((t, i) => f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
+  f.throws.filter((t, i) => !onFinish(t) && f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
 
 /** A rule over the value's band: `set` the grade, `cap` it (at best) or `floor` it (at least) */
 type Override = { rule: NonNullable<GradeRule>; applies: (f: VisitFacts) => boolean } & (
@@ -192,7 +208,9 @@ type Override = { rule: NonNullable<GradeRule>; applies: (f: VisitFacts) => bool
   | { cap: VisitGrade }
   | { floor: VisitGrade }
 )
-const scoringVisit = (f: VisitFacts) => f.start > 170
+/** The grade is on the scoring scale unless a dart was on 170 or less, also for a Setup visit whose only
+ *  setup dart is a leave dart */
+const scoringVisit = (f: VisitFacts) => !f.throws.some(onFinish)
 /** Best first: the first that applies decides; a tip leaves the grade alone. Excellent is the best
  *  a value gives, so the fewest darts' floor is the grade. */
 const OVERRIDES: readonly Override[] = [
@@ -222,31 +240,30 @@ function scoringValue(f: VisitFacts): { points: number; scoring: ScoringValue } 
  *  closeness credit, less a bust's penalty. A bust ends on the start's next visit (value.ts): graded
  *  like any other end. */
 const finishTerms = (f: VisitFacts): DartTerm[] =>
-  f.throws.map((t, i) => ({ delta: f.deltas[i], closeness: closeness(f.classes[i]), penalty: t.bust ? bustPenalty(t.dart) : 0 }))
+  finishDarts(f).map(({ t, c, delta }) => ({ delta, closeness: closeness(c), penalty: t.bust ? bustPenalty(t.dart) : 0 }))
 
 /** The visit's grade: its value's band, then the first override that applies; the rule is
  *  recorded only when it moved the band. */
 export function gradeVisit(f: VisitFacts): Grading {
-  const tag = tagOf(f)
-  const terms = tag === 'scoring' ? [] : finishTerms(f)
-  const { points, scoring } =
-    tag === 'scoring'
-      ? scoringValue(f)
-      : { points: terms.reduce((s, d) => s + dartGrade(d.delta, d.closeness, d.penalty), 0), scoring: null }
-  const bands = tag === 'scoring' ? SCORING_BANDS : FINISH_BANDS
+  const onScoring = scoringVisit(f)
+  const terms = onScoring ? [] : finishTerms(f)
+  const { points, scoring } = onScoring
+    ? scoringValue(f)
+    : { points: terms.reduce((s, d) => s + dartGrade(d.delta, d.closeness, d.penalty), 0), scoring: null }
+  const bands = onScoring ? SCORING_BANDS : FINISH_BANDS
   const band = bandOf(points, bands)
   const o = OVERRIDES.find(x => x.applies(f))
   const grade = o ? overridden(o, band) : band
   const fewest = o?.rule === 'brilliant' || o?.rule === 'fewest' ? f.fewest : null
   return {
-    tag,
+    tags: tagsOf(f),
     grade,
     value: {
       points,
       scoring,
       terms,
       band,
-      bands: tag === 'scoring' ? SCORING_SCALE : FINISH_SCALE,
+      bands: onScoring ? SCORING_SCALE : FINISH_SCALE,
       rule: o && grade !== band ? o.rule : null,
       fewestChance: fewest === null ? null : fewest * 100,
     },

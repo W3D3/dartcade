@@ -76,8 +76,10 @@
   ]
 
   const visits = $derived(review?.visits ?? [])
-  const shown = $derived(filter === 'all' ? visits : visits.filter(v => v.tag === filter))
-  const tagCount = (id: VisitTag | 'all') => (id === 'all' ? visits.length : visits.filter(v => v.tag === id).length)
+  // A visit that went through two phases is under both
+  const has = (v: ReviewVisit, id: VisitTag | 'all') => id === 'all' || v.tags.includes(id)
+  const shown = $derived(visits.filter(v => has(v, filter)))
+  const tagCount = (id: VisitTag | 'all') => visits.filter(v => has(v, id)).length
   const select = (n: number) => (selected = n)
   // The selection among the visits the chips show: the first shown when a chip hides the selected one
   const at = $derived(

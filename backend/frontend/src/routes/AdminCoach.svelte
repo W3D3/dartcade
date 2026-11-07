@@ -90,7 +90,7 @@
   const pct = (p: number) => `${(p * 100).toFixed(1)}%`
   /** "S17 instead: S20 leaves 37, with no one-dart finish. Costs 12.3% · book: T17 D3" */
   const noteLine = (n: CoachNote) =>
-    `${n.better} instead${n.reason ? `: ${n.reason}` : ''}. Costs ${pct(n.cost)} of the checkout chance${n.book ? ` · book: ${n.book.join(' ')}` : ''}.`
+    `${n.better} instead${n.reason ? `: ${n.reason}` : ''}. ${n.byLeave ? `${pct(n.cost)} more chance of a leave no visit can finish` : `Costs ${pct(n.cost)} of the checkout chance`}${n.book ? ` · book: ${n.book.join(' ')}` : ''}.`
 </script>
 
 <Layout title="Coach sandbox">
@@ -156,7 +156,7 @@
             <h2 id="sandbox-coach" class="m-0 text-[17px] font-semibold">The coach</h2>
             {#if visit}
               <span class="inline-flex flex-wrap items-center gap-2 text-[13px] text-text-muted capitalize"
-                >{visit.tag}<GradePill grade={visit.grade} /><GroupingPill grouping={visit.grouping} /></span
+                >{visit.tags.join(' + ')}<GradePill grade={visit.grade} /><GroupingPill grouping={visit.grouping} /></span
               >
             {/if}
           </div>

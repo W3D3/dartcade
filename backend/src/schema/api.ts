@@ -3296,8 +3296,10 @@ export interface components {
             better: string;
             /** @description The better aim's id in AIMS: SO17 or SI17, W20-1, Bull */
             betterAimId: string;
-            /** @description Checkout chance lost, 0-1 */
+            /** @description Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave */
             cost: number;
+            /** @description Judged by its leave (the last dart with 171-230 left), not by checkout chance */
+            byLeave: boolean;
             reason: string | null;
             book: string[] | null;
             tip: boolean;
@@ -3310,8 +3312,8 @@ export interface components {
             scored: number;
             then: number;
             bust: boolean;
-            /** @enum {string} */
-            tag: "scoring" | "setup" | "doubling";
+            /** @description Every phase the visit went through, in order */
+            tags: ("scoring" | "setup" | "doubling")[];
             /** @enum {string} */
             grade: "brilliant" | "excellent" | "great" | "good" | "ok" | "inaccuracy" | "weak" | "bad";
             text: string;

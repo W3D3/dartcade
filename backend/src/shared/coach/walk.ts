@@ -75,6 +75,17 @@ export function afterDart(left: number, points: number, double: boolean): number
 /** The score a dart leaves (afterDart's `after`): 0 on a checkout, the visit's `start` again on a bust */
 export const settle = (after: number | 'out' | 'bust', start: number): number => (after === 'out' ? 0 : after === 'bust' ? start : after)
 
+/** The most a dart scores: a treble 20 */
+const MAX_DART = 60
+/** How a dart is judged, by the score left before it and the darts left in its visit: `finish`, on
+ *  170 or less, by the checkout chances (model.ts); `leave`, the visit's last dart with more than 170
+ *  left but a treble 20 from 170 or less, by its leave (notes.ts leaveCost), since there the checkout
+ *  chances are all too small to tell aims apart; else `scoring`, by its score. */
+export type DartPhase = 'scoring' | 'leave' | 'finish'
+export const dartPhase = (t: Pick<Throw, 'left' | 'darts'>): DartPhase =>
+  t.left <= 170 ? 'finish' : t.darts === 1 && t.left <= 170 + MAX_DART ? 'leave' : 'scoring'
+export const onFinish = (t: Pick<Throw, 'left' | 'darts'>): boolean => dartPhase(t) === 'finish'
+
 export type Step = Pick<Throw, 'left' | 'after' | 'checkout' | 'bust'>
 
 /** A visit's darts from `start`, up to and including the one that busts: the score before and

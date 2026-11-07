@@ -22,6 +22,7 @@ describe('leg review text', () => {
     better: 'D8',
     betterAimId: 'D8',
     cost: 0.3,
+    byLeave: false,
     reason: null,
     book: ['D8'],
     tip: false,

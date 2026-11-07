@@ -242,7 +242,8 @@ the visit didn't check out (a checkout keeps its own "Checked out on …" line).
 
 Every visit gets one **tag** and one **grade**, as in `Coach-Leg.dc.html`.
 
-**Tag**, by the score left before the visit:
+**Tag**, by the score left before each dart (see `2026-11-07-coach-per-dart-judging.md`: a visit takes
+every phase it went through, not the one of its start):
 
 - **Scoring**: more than 170.
 - **Doubling**: at least one dart of the visit was thrown on a one-dart finish (an even number up

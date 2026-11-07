@@ -100,7 +100,7 @@
     <section class="flex flex-col gap-2" aria-labelledby="live-coach-grade">
       <div class="flex items-center justify-between gap-2">
         <h3 id="live-coach-grade" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          {live.done ? 'This visit' : 'Last visit'} · <span class="capitalize">{grade.tag}</span>
+          {live.done ? 'This visit' : 'Last visit'} · <span class="capitalize">{grade.tags.join(' + ')}</span>
         </h3>
         <GradePill grade={grade.grade} />
       </div>

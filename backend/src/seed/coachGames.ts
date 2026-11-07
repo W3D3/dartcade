@@ -62,7 +62,8 @@ export const COACH_GAMES: CoachSample[] = [
     ],
     kinds: [
       [
-        ['scoringHit', 'scoringHit', 'scoringHit'],
+        // The third T20 is thrown on 181, the last dart with a treble 20 from 170 or less: a leave dart (a route)
+        ['scoringHit', 'scoringHit', 'route'],
         // From 121: T16, S16, then S20 on 57: far from every aim worth taking there (S17), so wild
         ['route', 'route', 'wild'],
         ['route', 'double'],
@@ -97,24 +98,20 @@ export const COACH_GAMES: CoachSample[] = [
       ['good', 'ok', 'ok', 'excellent'],
       // 140 leaves 161, still a 3-dart finish (Brilliant); from 65, 25 then S20 and S10 chase D10 down to 10
       ['brilliant', 'good', 'bad'],
-      // 26 on an 88 average is Bad; 140 Excellent
-      ['bad', 'good', 'excellent'],
+      // 26 on an 88 average is Bad; 140 ends with an S20 on 57 (S17 would leave 40), graded on the darts on 170 or less: Ok
+      ['bad', 'good', 'ok'],
     ],
+    // The last dart of a visit with 171 to 230 left is a leave dart (a route), whatever it hit
     kinds: [
+      [['scoringHit', 'scoringSingle', 'route'], ['scoringSingle', 'scoringMiss', 'route'], ['route', 'route', 'double'], ['double']],
       [
-        ['scoringHit', 'scoringSingle', 'scoringSingle'],
-        ['scoringSingle', 'scoringMiss', 'scoringHit'],
-        ['route', 'route', 'double'],
-        ['double'],
-      ],
-      [
-        ['scoringHit', 'scoringHit', 'scoringSingle'],
+        ['scoringHit', 'scoringHit', 'route'],
         ['route', 'route', 'route'],
         ['bull', 'double', 'double'],
       ],
       [
         ['scoringSingle', 'scoringMiss', 'scoringMiss'],
-        ['scoringHit', 'scoringSingle', 'scoringSingle'],
+        ['scoringHit', 'scoringSingle', 'route'],
         ['scoringHit', 'route', 'wild'],
       ],
     ],
@@ -138,12 +135,13 @@ export const COACH_GAMES: CoachSample[] = [
       { seat: 0, leg: 0, visit: 3, dart: 1 },
     ],
     grades: [
-      ['great', 'excellent', 'bad', 'bad', 'excellent'],
+      // The second visit's T20 on 137 is graded from there, not from its start of 201: Good
+      ['great', 'good', 'bad', 'bad', 'excellent'],
       ['inaccuracy', 'inaccuracy', 'inaccuracy', 'inaccuracy'],
     ],
     kinds: [
       [
-        ['scoringHit', 'scoringSingle', 'scoringSingle'],
+        ['scoringHit', 'scoringSingle', 'route'],
         ['scoringMiss', 'scoringHit', 'route'],
         // T10 on 77 and S1 on 47 are far from every aim worth taking there: wild
         ['wild', 'wild', 'route'],
@@ -154,8 +152,8 @@ export const COACH_GAMES: CoachSample[] = [
       [
         ['scoringSingle', 'scoringMiss', 'scoringMiss'],
         ['scoringSingle', 'scoringMiss', 'scoringMiss'],
-        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
-        ['scoringSingle', 'scoringMiss', 'scoringMiss'],
+        ['scoringSingle', 'scoringMiss', 'route'],
+        ['scoringSingle', 'scoringMiss', 'route'],
       ],
     ],
   },

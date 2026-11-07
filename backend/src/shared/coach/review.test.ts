@@ -84,7 +84,7 @@ describe('reviewLeg', () => {
           scored: 140,
           then: 361,
           bust: false,
-          tag: 'scoring',
+          tags: ['scoring'],
           grade: 'excellent',
           text: 'Two trebles.',
           tip: false,
@@ -122,7 +122,7 @@ describe('reviewLeg', () => {
           scored: 26,
           then: 335,
           bust: false,
-          tag: 'scoring',
+          tags: ['scoring'],
           grade: 'bad',
           text: 'Scored 26; your usual visit is 88.',
           tip: false,
@@ -160,7 +160,7 @@ describe('reviewLeg', () => {
           scored: 100,
           then: 235,
           bust: false,
-          tag: 'scoring',
+          tags: ['scoring'],
           grade: 'good',
           text: 'Scored 100.',
           tip: false,
@@ -175,12 +175,21 @@ describe('reviewLeg', () => {
           darts: [
             { name: 'T20', bedAimId: 'T20', coords: null, left: 175, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
             { name: 'T19', bedAimId: 'T19', coords: null, left: 118, bust: false, class: kind('scoringHit'), delta: null, closeness: null },
-            { name: 'S20', bedAimId: 'SO20', coords: null, left: 98, bust: false, class: kind('route'), delta: null, closeness: null },
+            {
+              name: 'S20',
+              bedAimId: 'SO20',
+              coords: null,
+              left: 98,
+              bust: false,
+              class: kind('route'),
+              delta: expect.any(Number),
+              closeness: null,
+            },
           ],
           scored: 137,
           then: 98,
           bust: false,
-          tag: 'scoring',
+          tags: ['scoring', 'setup'],
           // 235 is a 5-dart finish, 98 a 2-dart one: a semi-pro keeps that path 19% of the time,
           // rarely enough for Brilliant
           grade: 'brilliant',
@@ -229,7 +238,7 @@ describe('reviewLeg', () => {
           scored: 58,
           then: 40,
           bust: false,
-          tag: 'setup',
+          tags: ['setup'],
           grade: 'bad',
           text: "On 47, S1: better S15 — S1 leaves 46, which one dart can't finish.",
           tip: false,
@@ -275,7 +284,7 @@ describe('reviewLeg', () => {
           scored: 40,
           then: 0,
           bust: false,
-          tag: 'doubling',
+          tags: ['doubling'],
           grade: 'good',
           text: 'Checked out on D10.',
           tip: false,
@@ -297,7 +306,7 @@ describe('reviewLeg', () => {
       skills: {
         // 383 in 11 darts with more than 170 left, against the game's 88.4
         scoring: { grade: 'A', line: 'Leg average 104.5 · one low visit' },
-        setup: { grade: 'D', line: '1 of 1 setup visit graded Bad' },
+        setup: { grade: 'C', line: '1 of 2 setup visits graded Bad' },
         doubling: { grade: 'A', line: '1 of 2 darts at a double' },
       },
       take: 'Won in 17 darts. 1 bad setup visit.',
@@ -397,7 +406,7 @@ describe('reviewLeg', () => {
       const r = reviewLeg([leg([visit(0, 20, ['S10', 'S7', third])])], 0, 0, ctx(501))
       expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'route', 'bustBack'])
       expect(r?.visits[0]).toMatchObject({
-        tag: 'doubling',
+        tags: ['setup', 'doubling'],
         grade: 'bad',
         text: 'Busted on purpose with the third dart to stay on 20 (D10).',
         tip: false,
@@ -408,13 +417,13 @@ describe('reviewLeg', () => {
   it('a bust from a bad spot stays Bad: on 40, S20 then S19 with D10 to throw at', () => {
     const r = reviewLeg([leg([visit(0, 40, ['S20', 'S19'])])], 0, 0, ctx(501))
     expect(r?.visits[0].darts.map(d => d.class.kind)).toEqual(['double', 'bust'])
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'bad', text: 'On 20, S19: better D10 — S19 busts.' })
+    expect(r?.visits[0]).toMatchObject({ tags: ['doubling'], grade: 'bad', text: 'On 20, S19: better D10 — S19 busts.' })
   })
 
   it('counts as bad setups only the setup visits the Setup line counts', () => {
     // On 24 with the opponent on 32: S14 is a real note (not a tip), but in a doubling visit
     const r = reviewLeg([leg([visit(1, 32, []), visit(0, 24, ['S14', 'S1', 'S1'])])], 0, 0, ctx(501))
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', tip: false })
+    expect(r?.visits[0]).toMatchObject({ tags: ['setup', 'doubling'], tip: false })
     expect(r?.visits[0].notes.some(n => !n.tip)).toBe(true)
     expect(r?.skills.setup).toEqual({ grade: null, line: '–' })
     expect(r?.counts.badSetups).toBe(0)
@@ -423,7 +432,7 @@ describe('reviewLeg', () => {
   it('counts a setup visit graded Bad by its value as a bad setup, with no note', () => {
     // 100: S20 then S1 and a miss give away the 2-dart finish
     const r = reviewLeg([leg([visit(0, 100, ['S20', 'S1', 'Miss'])])], 0, 0, ctx(100))
-    expect(r?.visits[0]).toMatchObject({ tag: 'setup', grade: 'bad', notes: [] })
+    expect(r?.visits[0]).toMatchObject({ tags: ['setup'], grade: 'bad', notes: [] })
     expect(r?.counts.badSetups).toBe(1)
     expect(r?.skills.setup).toEqual({ grade: 'D', line: '1 of 1 setup visit graded Bad' })
   })
@@ -431,7 +440,7 @@ describe('reviewLeg', () => {
   it("marks a visit whose text is a tip's", () => {
     // Solo on 24: S14 instead of the direct D12 is a tip, then two misses at D5
     const r = reviewLeg([leg([visit(0, 24, ['S14', 'Miss', 'Miss'])])], 0, 0, ctx(24))
-    expect(r?.visits[0]).toMatchObject({ tag: 'doubling', grade: 'bad', tip: true })
+    expect(r?.visits[0]).toMatchObject({ tags: ['doubling'], grade: 'bad', tip: true })
     expect(r?.visits[0].text).toMatch(/^Tip: /)
   })
 
@@ -541,5 +550,29 @@ describe('the coaching tier', () => {
   it('still calls a wasted 59 bad, and a good 121 setup good, at both ends', async () => {
     for (const average of [40, 80, 81]) expect((await graded(average, 59, ['Miss', 'S3', 'S19'])).grade).toBe('bad')
     for (const average of [40, 80]) expect(['good', 'great']).toContain((await graded(average, 121, ['S20', 'T17', 'S18'])).grade)
+  })
+})
+
+describe('reviewLeg with a leave dart', () => {
+  // The S20 is placed: a typed single could have been thrown at the bull (walk.ts nearBull), which hides the bad aim
+  const setup = (third: string) => {
+    const v = visit(0, 204, ['S5', 'S20', third])
+    const placed = { x: 0, y: 0.9 }
+    const l = leg([{ ...v, darts: [...v.darts.slice(0, 2), { ...v.darts[2], coords: third === 'S20' ? placed : null }] }])
+    return reviewLeg([l], 0, 0, ctx(501))
+  }
+  it('counts a good leave as a Setup visit that is not Bad, and a bad one as a bad setup', () => {
+    expect(setup('T19')?.visits[0]).toMatchObject({ tags: ['scoring', 'setup'], grade: expect.not.stringMatching(/^bad$/) })
+    expect(setup('T19')?.skills.setup).toEqual({ grade: 'A', line: '0 of 1 setup visit graded Bad' })
+    expect(setup('S20')?.skills.setup).toMatchObject({ line: '1 of 1 setup visit graded Bad' })
+  })
+
+  it('does not count a bad leave after a strong score as a low scoring visit too', () => {
+    const v = visit(0, 299, ['T20', 'T20', 'S20'])
+    const last = { ...v.darts[2], coords: { x: 0, y: 0.9 } }
+    const r = reviewLeg([leg([{ ...v, darts: [...v.darts.slice(0, 2), last] }])], 0, 0, ctx(501))
+    expect(r?.visits[0]).toMatchObject({ grade: 'bad', tags: ['scoring', 'setup'] })
+    expect(r?.counts).toMatchObject({ badSetups: 1, lowVisits: 0, clean: false })
+    expect(r?.skills.scoring.line).toContain('no low visits')
   })
 })
