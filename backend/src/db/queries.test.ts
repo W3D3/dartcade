@@ -128,7 +128,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       const ranked = {
         mode: '1v1' as const,
         sides: [['u-test-1'], ['u-test-2']] as [string[], string[]],
-        ratings: { 'u-test-1': 1200, 'u-test-2': 1300 },
+        entries: {
+          'u-test-1': { rating: 1200, rankIndex: null, matches: 0, stakes: null },
+          'u-test-2': { rating: 1300, rankIndex: 12, matches: 9, stakes: { win: 14, loss: 18 } },
+        },
         rules: { visitSeconds: 120, reserveSeconds: 300, manualEntry: false },
       }
       await insertGameSession(db, {

@@ -17,7 +17,7 @@ const seat = (name: string, user: string): Seat => ({
 })
 const seats = [seat('Ann', 'ann'), seat('Bob', 'bob')]
 const rules: RankedRules = { visitSeconds: 10, reserveSeconds: 20, manualEntry: true }
-const ranked = (r: RankedRules | null = rules): RankedGame => ({ mode: '1v1', sides: [['ann'], ['bob']], ratings: {}, rules: r })
+const ranked = (r: RankedRules | null = rules): RankedGame => ({ mode: '1v1', sides: [['ann'], ['bob']], entries: {}, rules: r })
 const config = { ...x01Module.defaultConfig, bullOff: 'off' as const }
 
 function makeStore() {
@@ -277,7 +277,7 @@ describe('forfeiting a ranked game', () => {
           ['ann', 'cy'],
           ['bob', 'di'],
         ],
-        ratings: {},
+        entries: {},
         rules: rules,
       },
     })

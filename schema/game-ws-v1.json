@@ -864,7 +864,6 @@
         "seats",
         "mySeats",
         "results",
-        "rankedGame",
         "voided"
       ],
       "properties": {
@@ -942,10 +941,6 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
-        },
-        "rankedGame": {
-          "type": "boolean",
-          "description": "Started by the ranked queue: it cannot be ended for the other side, leaving forfeits."
         },
         "voided": {
           "type": "boolean",

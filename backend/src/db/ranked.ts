@@ -423,27 +423,26 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     .execute()
 }
 
+export type MatchRating = { rating: number; rankIndex: number | null; matches: number; placing: boolean }
+
 /**
  * What matchmaking rates each player at in a mode: their rating (hidden or not), or for a mode
  * they never played, where their first game would start them (their X01 average). `placing`:
- * still in their placement matches.
+ * still in their placement matches; `matches` and `rankIndex` are what the match screen shows.
  */
-export async function matchRatings(
-  db: Kysely<Database>,
-  userIds: string[],
-  mode: RankedMode,
-): Promise<Map<string, { rating: number; placing: boolean }>> {
-  const out = new Map<string, { rating: number; placing: boolean }>()
+export async function matchRatings(db: Kysely<Database>, userIds: string[], mode: RankedMode): Promise<Map<string, MatchRating>> {
+  const out = new Map<string, MatchRating>()
   if (userIds.length === 0) return out
   const rows = await db
     .selectFrom('ranked_ratings')
-    .select(['user_id', 'rating', 'matches'])
+    .select(['user_id', 'rating', 'rank_index', 'matches'])
     .where('mode', '=', mode)
     .where('user_id', 'in', userIds)
     .execute()
-  for (const r of rows) out.set(r.user_id, { rating: r.rating, placing: r.matches < PLACEMENT_MATCHES })
+  for (const r of rows)
+    out.set(r.user_id, { rating: r.rating, rankIndex: r.rank_index, matches: r.matches, placing: r.matches < PLACEMENT_MATCHES })
   for (const id of userIds) {
-    if (!out.has(id)) out.set(id, { rating: seedRating(await x01Average(db, id)), placing: true })
+    if (!out.has(id)) out.set(id, { rating: seedRating(await x01Average(db, id)), rankIndex: null, matches: 0, placing: true })
   }
   return out
 }
@@ -461,7 +460,7 @@ export async function recordRankedGame(db: Kysely<Database>, sessionId: string, 
   const match = await db
     .selectFrom('ranked_matches as m')
     .innerJoin('game_sessions as g', 'g.id', 'm.session_id')
-    .select(['m.mode', 'm.sides', 'm.ratings', 'm.void_reason', 'g.status', 'g.finished_at', 'g.invalidated_at'])
+    .select(['m.mode', 'm.sides', 'm.entries', 'm.void_reason', 'g.status', 'g.finished_at', 'g.invalidated_at'])
     .where('m.session_id', '=', sessionId)
     .executeTakeFirst()
   if (!match || match.status !== 'finished' || match.void_reason !== null) return false
@@ -489,7 +488,13 @@ export async function recordRankedGame(db: Kysely<Database>, sessionId: string, 
     await db.updateTable('ranked_matches').set({ void_reason: reason }).where('session_id', '=', sessionId).execute()
     return false
   }
-  const game = { sessionId, mode: match.mode, sides, seeds: match.ratings, at: at ?? match.finished_at ?? undefined }
+  const game = {
+    sessionId,
+    mode: match.mode,
+    sides,
+    seeds: Object.fromEntries(Object.entries(match.entries).map(([id, e]) => [id, e.rating])),
+    at: at ?? match.finished_at ?? undefined,
+  }
   if (match.invalidated_at === null) await recordRankedResult(db, game)
   else {
     // It doesn't count: written, left out of the ratings again and kept out of the friends' feed,
@@ -500,6 +505,24 @@ export async function recordRankedGame(db: Kysely<Database>, sessionId: string, 
     })
   }
   return true
+}
+
+/** What a recorded ranked game did to a player: the RP it moved (null for a placement match, whose rating is hidden) and their rank going in and out. */
+export type RankedOutcome = { userId: string; change: number | null; rankIndexBefore: number | null; rankIndexAfter: number | null }
+
+/** The recorded outcome for each player of a ranked game; none until it's recorded. */
+export async function rankedOutcomes(db: Kysely<Database>, sessionId: string): Promise<RankedOutcome[]> {
+  const rows = await db
+    .selectFrom('ranked_results')
+    .select(['user_id', 'placement', 'rating_before', 'rating_after', 'rank_before', 'rank_after'])
+    .where('session_id', '=', sessionId)
+    .execute()
+  return rows.map(r => ({
+    userId: r.user_id,
+    change: r.placement ? null : r.rating_after - r.rating_before,
+    rankIndexBefore: r.rank_before,
+    rankIndexAfter: r.rank_after,
+  }))
 }
 
 /** Finished ranked games whose ratings haven't moved yet (they ended while the server was down). */
