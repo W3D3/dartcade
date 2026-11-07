@@ -3,6 +3,7 @@ import type { components } from '../schema/api.js'
 import type { SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
 import type { RankedRules } from '../session/rankedClock.js'
+import type { RankedEntry } from '../session/types.js'
 
 type BigScreenMode = components['schemas']['BigScreenMode']
 
@@ -495,8 +496,8 @@ export interface RankedMatchesTable {
   mode: '1v1' | '2v2'
   /** The user ids of each side's players (written as JSON). */
   sides: ColumnType<[string[], string[]], string, never>
-  /** The rating each player was matched on, by user id (written as JSON). */
-  ratings: ColumnType<Record<string, number>, string | undefined, never>
+  /** What each player went into the game with, by user id (written as JSON). */
+  entries: ColumnType<Record<string, RankedEntry>, string | undefined, never>
   /** Why a finished game was deliberately not rated; null while it still is to be. */
   void_reason: string | null
   /** The ranked rules the game started with (written as JSON); null for a game from before them. */

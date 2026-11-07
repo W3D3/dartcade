@@ -3,13 +3,24 @@ import type { Snapshot } from '$lib/api'
 import { endControl, afterGameRoute, leaveRefused, winActions } from '../endControl.js'
 import fixture from './fixtures/x01-snapshot.json'
 
-const snap = (patch: { ownerUserId?: string; mySeats?: number[]; rankedGame?: boolean; lobbyId?: string | null } = {}): Snapshot => {
+const RANKED: NonNullable<Snapshot['ranked']> = {
+  now: '2026-11-07T10:00:00.000Z',
+  mode: '1v1',
+  visitSeconds: 120,
+  reserveSeconds: 300,
+  manualEntry: true,
+  visitDeadline: null,
+  forfeitAt: null,
+  seats: [],
+}
+
+const snap = (patch: { ownerUserId?: string; mySeats?: number[]; ranked?: Snapshot['ranked']; lobbyId?: string | null } = {}): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
   return {
     ...base,
     ownerUserId: patch.ownerUserId ?? base.ownerUserId,
     mySeats: patch.mySeats ?? base.mySeats,
-    rankedGame: patch.rankedGame ?? base.rankedGame,
+    ranked: patch.ranked ?? null,
     lobbyId: patch.lobbyId === undefined ? base.lobbyId : patch.lobbyId,
   }
 }
@@ -20,7 +31,7 @@ describe('endControl', () => {
   })
 
   it('gives the owner of a ranked game Leave, never End', () => {
-    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], rankedGame: true }), 'host')).toBe('leave')
+    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], ranked: RANKED }), 'host')).toBe('leave')
   })
 
   it('gives a seated non-host Leave', () => {

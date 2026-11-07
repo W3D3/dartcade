@@ -12,7 +12,7 @@ const seat = (name: string, user: string): Seat => ({
   boardName: null,
   bot: null,
 })
-const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']], ratings: { ann: 1200, bob: 1200 }, rules: null }
+const ranked: RankedGame = { mode: '1v1', sides: [['ann'], ['bob']], entries: {}, rules: null }
 
 function makeStore() {
   return {
@@ -45,7 +45,7 @@ describe('a ranked session', () => {
     const session = engine.getSession(sessionId)
     expect(session?.ranked).toEqual(ranked)
     expect(session && isHost('ann', session)).toBe(false)
-    expect(engine.getSnapshot(sessionId)).toMatchObject({ rankedGame: true })
+    expect(engine.getSnapshot(sessionId)).toMatchObject({ ranked: { mode: '1v1', manualEntry: true } })
   })
 
   it('is ranked again when the game is rebuilt', async () => {

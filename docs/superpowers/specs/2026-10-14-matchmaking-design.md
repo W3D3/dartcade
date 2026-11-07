@@ -78,6 +78,9 @@ so seat control, remote boards, forfeits and history work as they do today.
   that is deliberately not rated (`no_winner`, `player_deleted`), so it is not retried at every start.
   The winning side is read off the engine's placements by seat. `ranked_results` also keeps
   `forfeited` (a game with a forfeit is rated on the result alone) and `rank_before`/`rank_after`.
+  `ranked_matches.entries` keeps what each player went into the game with (rating, rank, placement matches played,
+  stakes) for the match screen; the game's snapshot carries it as `ranked` (RankedState: the clock, each seat's
+  reserve, rank and stakes, and once recorded what the game did to them).
   A ranked game is recorded before its final snapshot is pushed, so the result screen reads the change.
   A game invalidated before it was recorded is recorded and left out again at once.
 - `recordRankedResult` moves the ratings for a finished game in one transaction and is idempotent

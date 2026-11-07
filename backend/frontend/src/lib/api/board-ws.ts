@@ -522,10 +522,6 @@ export interface SnapshotBase {
    */
   mySeats: number[]
   /**
-   * Started by the ranked queue: it cannot be ended for the other side, leaving forfeits.
-   */
-  rankedGame: boolean
-  /**
    * A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating.
    */
   voided: boolean

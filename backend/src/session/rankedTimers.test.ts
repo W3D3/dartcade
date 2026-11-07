@@ -27,7 +27,7 @@ const game = (mode: '1v1' | '2v2', r: RankedRules): RankedGame => ({
           ['ann', 'bob'],
           ['cal', 'dee'],
         ],
-  ratings: {},
+  entries: {},
   rules: r,
 })
 const config = { ...x01Module.defaultConfig, bullOff: 'off' as const }

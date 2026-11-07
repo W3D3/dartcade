@@ -16,6 +16,8 @@ import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, S
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
 import { restartVisit } from './rankedClock.js'
 import { RankedTimers } from './rankedTimers.js'
+import { rankedState } from './rankedState.js'
+import type { RankedOutcome } from '../db/ranked.js'
 import type { SystemAction } from './systemInput.js'
 
 type PushFn = (sessionId: string) => void
@@ -191,6 +193,9 @@ export class SessionEngine {
   private readonly queues = new KeyedQueue()
 
   private bots: BotScheduler | undefined
+
+  // What a finished ranked game did to each player, by game and user id (from the ratings recording)
+  private readonly rankedOutcomes = new Map<string, Map<string, RankedOutcome>>()
 
   // The ranked clock and disconnect timers; they turn time passing into logged system inputs
   private readonly timers = new RankedTimers({
@@ -384,6 +389,11 @@ export class SessionEngine {
     if (!session) return
     this.timers.sync(session)
     this.push(session.id)
+  }
+
+  /** The ratings of a finished ranked game were recorded: its final snapshot shows what they did to each player. */
+  setRankedOutcomes(sessionId: string, outcomes: RankedOutcome[]): void {
+    this.rankedOutcomes.set(sessionId, new Map(outcomes.map(o => [o.userId, o])))
   }
 
   /** A player opened or left the game's screen: a ranked game starts or stops waiting for them. */
@@ -659,8 +669,13 @@ export class SessionEngine {
       // The places the server saves, so no screen re-ranks the seats itself
       results: session.status === 'finished' ? results(session).map(r => ({ placement: r.placement, forfeited: r.forfeited })) : null,
       finishPending: session.status === 'active' && ((session.takeoutHeld === true && takeoutWins(session)) || awaitsFinish(session)),
-      rankedGame: session.ranked !== null,
       voided: session.voided === true,
+      ranked: rankedState(
+        session,
+        Date.now(),
+        { connected: view.connectedUserIds, awayUntil: userId => this.timers.awayUntil(session.id, userId) },
+        this.rankedOutcomes.get(session.id),
+      ),
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
@@ -763,6 +778,7 @@ export class SessionEngine {
     this.byId.delete(session.id)
     this.bots?.stop(session.id)
     this.timers.stop(session.id)
+    this.rankedOutcomes.delete(session.id)
     this.opts.forgotten?.(session.id)
   }
 }
