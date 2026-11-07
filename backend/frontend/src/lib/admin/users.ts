@@ -117,6 +117,8 @@ const AUDIT_LABELS: Record<string, string> = {
   'user.impersonate': 'Viewed as them',
   'ranked.void': 'Voided a ranked game',
   'ranked.dequeue': 'Removed from the ranked queue',
+  'ranked.adjust': 'Adjusted ranked rating',
+  'ranked.reset': 'Reset ranked rating',
   'game.invalidate': 'Invalidated a game',
   'game.restore': 'Restored a game',
   'game.delete': 'Deleted a game',
@@ -151,6 +153,15 @@ export function auditDetail(action: string, detail: unknown): string | null {
     case 'ranked.void':
     case 'ranked.dequeue':
       return str(d.reason) && `Reason: ${str(d.reason)}`
+    case 'ranked.adjust':
+    case 'ranked.reset': {
+      const [before, after] = [rec(d.before), rec(d.after)]
+      const change =
+        typeof before.rating === 'number' && typeof after.rating === 'number'
+          ? `${str(d.mode) ?? ''} ${before.rating.toLocaleString('en-US')} → ${after.rating.toLocaleString('en-US')} RP${action === 'ranked.reset' ? ', placing again' : ''}`.trim()
+          : null
+      return [change, str(d.reason) && `Reason: ${str(d.reason)}`].filter(Boolean).join(' · ') || null
+    }
     case 'game.invalidate':
       return str(d.reason) && `Reason: ${str(d.reason)}`
     case 'game.restore':
@@ -174,6 +185,22 @@ export const XP_QUICK_AMOUNTS = [
 export function grantSummary(g: XpGrant): string {
   const n = g.unlocked.length
   return `Now level ${g.level} · ${g.xp.toLocaleString('en-US')} XP · ${n} new unlock${n === 1 ? '' : 's'}`
+}
+
+export type RankedMode = '1v1' | '2v2'
+export type RatingChange = { mode: RankedMode; reason: string } & ({ kind: 'set'; rating: number } | { kind: 'reset' })
+
+/** Set an account's rating in a mode, or send it back to placement. On a refusal, the message to show inline. */
+export async function changeRating(id: string, change: RatingChange): Promise<{ ok: true } | { error: string }> {
+  const params = { path: { id } }
+  const res =
+    change.kind === 'set'
+      ? await api.POST('/api/admin/users/{id}/ranked/adjust', {
+          params,
+          body: { mode: change.mode, rating: change.rating, reason: change.reason },
+        })
+      : await api.POST('/api/admin/users/{id}/ranked/reset', { params, body: { mode: change.mode, reason: change.reason } })
+  return res.data ? { ok: true } : { error: res.error.error }
 }
 
 /** Ban an account (until: ISO end, null for good). On a refusal (yourself, an admin, a past end), the message to show inline. */
