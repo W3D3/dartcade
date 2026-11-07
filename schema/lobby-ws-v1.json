@@ -541,6 +541,30 @@
         }
       }
     },
+    "MatchmakingEndedMessage": {
+      "title": "MatchmakingEndedMessage",
+      "description": "Pushed once when your ranked search or found match ends, and why, so the screens don't have to guess from what changed. started: everyone accepted and the game is on (sessionId). declined: someone declined the found match (by names them when they are on your side; the other side stays hidden). timeout: the time to accept ran out. failed: the game could not be started. left: a member of your duo left the queue, which cancelled the whole search.",
+      "type": "object",
+      "required": ["type", "reason", "by", "sessionId"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "matchmaking.ended" },
+        "reason": { "type": "string", "enum": ["started", "declined", "timeout", "failed", "left"] },
+        "by": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["userId", "name"],
+              "additionalProperties": false,
+              "properties": { "userId": { "type": "string" }, "name": { "type": "string" } }
+            },
+            { "type": "null" }
+          ],
+          "description": "Who declined or left, when it was someone on your side; null otherwise."
+        },
+        "sessionId": { "type": ["string", "null"], "description": "started: the game that began." }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -549,7 +573,8 @@
         { "$ref": "#/$defs/FriendsMessage" },
         { "$ref": "#/$defs/XpGainedMessage" },
         { "$ref": "#/$defs/BoardStatusMessage" },
-        { "$ref": "#/$defs/MatchmakingMessage" }
+        { "$ref": "#/$defs/MatchmakingMessage" },
+        { "$ref": "#/$defs/MatchmakingEndedMessage" }
       ]
     }
   }

@@ -14,6 +14,7 @@ import type {
   Lobby,
   LobbyServerMessage,
   LobbySummary,
+  MatchmakingEndedMessage,
   MatchmakingMessage,
   MeServerMessage,
   PendingInvite,
@@ -103,6 +104,7 @@ export function createMeStore(open?: OpenSocket) {
   const state = writable<MeState | null>(null)
   const xp = writable<XpGainedMessage | null>(null)
   const boardStatus = writable<BoardStatusMessage | null>(null)
+  const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
@@ -112,6 +114,8 @@ export function createMeStore(open?: OpenSocket) {
     xp: { subscribe: xp.subscribe } satisfies Readable<XpGainedMessage | null>,
     /** One of your boards' bridges last connected or dropped (board.status), as it arrives. */
     boardStatus: { subscribe: boardStatus.subscribe } satisfies Readable<BoardStatusMessage | null>,
+    /** The last time your ranked search or found match ended, and why (matchmaking.ended), as it arrives. */
+    matchmakingEnded: { subscribe: matchmakingEnded.subscribe } satisfies Readable<MatchmakingEndedMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -130,6 +134,8 @@ export function createMeStore(open?: OpenSocket) {
               xp.set(msg)
             } else if (msg?.type === 'board.status') {
               boardStatus.set(msg)
+            } else if (msg?.type === 'matchmaking.ended') {
+              matchmakingEnded.set(msg)
             } else if (msg?.type === 'matchmaking') {
               const { type: _type, ...matchmaking } = msg
               state.update(s => ({ ...(s ?? EMPTY), matchmaking }))
@@ -151,6 +157,7 @@ export function createMeStore(open?: OpenSocket) {
       state.set(null)
       xp.set(null)
       boardStatus.set(null)
+      matchmakingEnded.set(null)
     },
   }
 }

@@ -165,6 +165,16 @@ describe('createMeStore', () => {
     expect(FakeSocket.opened).toHaveLength(1)
   })
 
+  it('keeps why your ranked search or match ended (matchmaking.ended), and forgets it when stopped', () => {
+    const m = createMeStore(open)
+    m.start()
+    const ended = { type: 'matchmaking.ended', reason: 'left', by: { userId: 'lena', name: 'Lena' }, sessionId: null }
+    FakeSocket.opened[0].receive(ended)
+    expect(get(m.matchmakingEnded)).toEqual(ended)
+    m.stop()
+    expect(get(m.matchmakingEnded)).toBeNull()
+  })
+
   it('carries the running game from /ws/me, live (#69)', () => {
     const m = createMeStore(open)
     m.start()

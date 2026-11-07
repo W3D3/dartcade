@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { queueView, stopRule } from '../ranked/queueCard.js'
+import { queueView, stopLabel } from '../ranked/queueCard.js'
 import type { Matchmaking } from '../lobby/sockets.js'
 
 const NOW = Date.parse('2026-11-04T12:00:00Z')
@@ -45,7 +45,7 @@ describe('queueView', () => {
       line: 'You started · ±75 RP',
     })
     const member = queueView(mm({ search: search() }), 'lena', NOW)!
-    expect(member).toMatchObject({ canCancel: false, cancelLabel: 'Leave queue', line: 'Christoph started it · ±75 RP' })
+    expect(member).toMatchObject({ canCancel: true, cancelLabel: 'Leave queue', line: 'Christoph started it · ±75 RP' })
   })
 
   it('is the solo card without a lobby', () => {
@@ -70,11 +70,11 @@ describe('queueView', () => {
   })
 })
 
-describe('stopRule', () => {
+describe('stopLabel', () => {
   it('lets whoever started the search cancel it', () => {
-    expect(stopRule({ hostUserId: 'me' }, 'me')).toEqual({ allowed: true, label: 'Cancel search' })
+    expect(stopLabel({ hostUserId: 'me' }, 'me')).toBe('Cancel search')
   })
-  it("keeps a duo's other member waiting until the server allows leaving", () => {
-    expect(stopRule({ hostUserId: 'me' }, 'lena')).toEqual({ allowed: false, label: 'Leave queue' })
+  it("lets a duo's other member leave the queue", () => {
+    expect(stopLabel({ hostUserId: 'me' }, 'lena')).toBe('Leave queue')
   })
 })

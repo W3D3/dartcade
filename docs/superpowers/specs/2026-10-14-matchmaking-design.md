@@ -59,6 +59,9 @@ so seat control, remote boards, forfeits and history work as they do today.
 - **Queue:** starts at ±75 RP, widens every 30 s; runs on the server while you browse. A match found
   gives everyone 60 s to accept (the flag `matchmaking.acceptSeconds`, 10 to 300); opponents stay hidden until all accept. Declining or timing out
   pauses your queue for 2 min; everyone else keeps their place. No bots in the queue.
+  The server says how a search or found match ended with a one-off `/ws/me` message, `matchmaking.ended`
+  (`started` with the game, `declined`, `timeout`, `failed`, `left`), so the screens don't guess from what changed.
+  Either member of a duo may leave the queue, which ends the search for both (the other is told `left`).
 - **Placing:** two sides that are both still placing match at once, whatever the gap between their
   hidden ratings (the closest one first, then whoever searched longer). A placing side and a ranked
   one keep the widening range. The hidden rating is never sent to clients.

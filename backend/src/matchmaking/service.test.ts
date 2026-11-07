@@ -8,7 +8,7 @@ import { recordVoid } from '../db/adminGames.js'
 import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { LobbyService } from '../lobby/service.js'
-import type { MatchmakingMessage } from '../schema/lobby-ws.js'
+import type { MatchmakingEndedMessage, MatchmakingMessage } from '../schema/lobby-ws.js'
 import { MatchmakingService, PAUSE_MS, rankedConfig } from './service.js'
 import { setupFlags } from '../flags/index.js'
 import { ACCEPT_SECONDS } from '../shared/ranked.js'
@@ -27,6 +27,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
   let sent: Map<string, MatchmakingMessage>
   // The last snapshot the engine pushed for each session (a voided one is gone from the engine afterwards)
   let pushed: Map<string, unknown>
+  let ended: Map<string, MatchmakingEndedMessage[]>
 
   const last = (userId: string): MatchmakingMessage => {
     const msg = sent.get(userId)
@@ -41,6 +42,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
         .where('id', '=', sessionId ?? '')
         .executeTakeFirst()
     )?.config
+  const endedFor = (userId: string) => ended.get(userId) ?? []
   const matchId = (userId: string): string => {
     const id = last(userId).match?.id
     if (id === undefined) throw new Error(`no match for ${userId}`)
@@ -71,6 +73,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     now = Date.UTC(2026, 9, 15, 20)
     sent = new Map()
     pushed = new Map()
+    ended = new Map()
     const hub = new LobbyHub()
     engine = new SessionEngine(
       createEngineStore(db),
@@ -80,7 +83,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
       e => mm.onGameEnded(e),
     )
     lobbies = new LobbyService({ db, engine, hub, isBoardOnline: () => true })
-    mm = new MatchmakingService({ db, engine, send: (u, m) => sent.set(u, m), now: () => now, warn: () => {} })
+    mm = new MatchmakingService({
+      db,
+      engine,
+      send: (u, m) => sent.set(u, m),
+      ended: (u, m) => ended.set(u, [...(ended.get(u) ?? []), m]),
+      now: () => now,
+      warn: () => {},
+    })
   })
 
   it('pairs two searches near each other, and starts the game once both accept', async () => {
@@ -116,6 +126,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
       expect.objectContaining({ session_id: session?.id, mode: '1v1', sides: [['chris'], ['anna']] }),
     ])
     expect(last('chris')).toMatchObject({ search: null, match: null })
+    // Both are told the game started, and which one
+    for (const u of ['chris', 'anna']) {
+      expect(endedFor(u)).toEqual([{ type: 'matchmaking.ended', reason: 'started', by: null, sessionId: session?.id }])
+    }
+    // What the match screen needs of each player is kept with the game
+    const entries = (await db.selectFrom('ranked_matches').select('entries').executeTakeFirstOrThrow()).entries
+    expect(entries.chris).toMatchObject({ rankIndex: null, matches: 0, stakes: null })
+  })
+
+  it('tells only the player who was busy that the game could not start, and keeps the other searching', async () => {
+    await mm.search('chris', { mode: '1v1', firstTo: 2 })
+    await mm.search('anna', { mode: '1v1', firstTo: 2 })
+    await mm.tick()
+    // Anna starts another game while the match waits for accepts
+    await engine.create('anna', null, 'atc', {}, [{ name: 'Anna' }])
+    await mm.accept('chris', matchId('chris'))
+    await mm.accept('anna', matchId('anna'))
+    expect(endedFor('anna')).toEqual([{ type: 'matchmaking.ended', reason: 'failed', by: null, sessionId: null }])
+    expect(endedFor('chris')).toEqual([])
+    expect(last('chris').search).not.toBeNull()
+    expect(last('anna').search).toBeNull()
   })
 
   it('pairs only within range, and the range widens while searching', async () => {
@@ -140,6 +171,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     const since = Date.UTC(2026, 9, 15, 20)
     await mm.decline('anna', matchId('anna'))
     expect(last('anna')).toMatchObject({ search: null, match: null, pausedUntil: new Date(now + PAUSE_MS).toISOString() })
+    // The other side learns it fell through, not who declined
+    expect(endedFor('chris')).toEqual([{ type: 'matchmaking.ended', reason: 'declined', by: null, sessionId: null }])
+    expect(endedFor('anna')).toEqual([])
     expect(last('chris').search?.since).toBe(new Date(since).toISOString())
     await expect(mm.search('anna', { mode: '1v1', firstTo: 2 })).rejects.toMatchObject({ statusCode: 409, body: { code: 'paused' } })
     now += PAUSE_MS
@@ -157,6 +191,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     expect(last('chris').search).not.toBeNull()
     expect(last('anna').pausedUntil).not.toBeNull()
     expect(engine.getSessionByUser('chris')).toBeUndefined()
+    for (const u of ['chris', 'anna'])
+      expect(endedFor(u)).toEqual([{ type: 'matchmaking.ended', reason: 'timeout', by: null, sessionId: null }])
   })
 
   it('gives a found match the 60 s of the flag matchmaking.acceptSeconds, and says so in the message', async () => {
@@ -197,16 +233,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
     await expect(mm.search('ben', { mode: '1v1', firstTo: 2 })).rejects.toMatchObject({ body: { code: 'active_session' } })
   })
 
-  it('a duo searches from a lobby of two; only its host cancels', async () => {
+  it('a duo searches from a lobby of two, and either member leaves the queue for both', async () => {
     await expect(mm.search('chris', { mode: '2v2', firstTo: 2 })).rejects.toMatchObject({ body: { code: 'not_duo' } })
     const { id, code } = await lobbies.create('chris')
     await lobbies.join('lena', id, code)
     await expect(mm.search('lena', { mode: '2v2', firstTo: 2 })).rejects.toMatchObject({ body: { code: 'not_duo' } })
     await mm.search('chris', { mode: '2v2', firstTo: 2 })
     expect(last('lena').search).toMatchObject({ mode: '2v2', hostUserId: 'chris', players: ['Christoph', 'Lena'] })
-    await expect(mm.cancel('lena')).rejects.toMatchObject({ statusCode: 403 })
+    // Someone outside the duo has no search to cancel and changes nothing
+    await mm.cancel('ben')
+    expect(last('lena').search).not.toBeNull()
+    // The member leaves: the whole search ends, and the host is told who left
+    await mm.cancel('lena')
+    expect(last('chris').search).toBeNull()
+    expect(last('lena').search).toBeNull()
+    expect(endedFor('chris')).toEqual([
+      { type: 'matchmaking.ended', reason: 'left', by: { userId: 'lena', name: 'Lena' }, sessionId: null },
+    ])
+    expect(endedFor('lena')).toEqual([])
+    // The host leaving ends it the same way
+    await mm.search('chris', { mode: '2v2', firstTo: 2 })
     await mm.cancel('chris')
     expect(last('lena').search).toBeNull()
+    expect(endedFor('lena')).toEqual([
+      { type: 'matchmaking.ended', reason: 'left', by: { userId: 'chris', name: 'Christoph' }, sessionId: null },
+    ])
   })
 
   it('a 2v2 match needs all four to accept and plays in teams', async () => {
