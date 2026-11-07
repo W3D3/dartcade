@@ -446,6 +446,17 @@
         "online": { "type": "boolean" }
       }
     },
+    "LobbyIdleClosedMessage": {
+      "title": "LobbyIdleClosedMessage",
+      "description": "Pushed on /ws/me to each member of a lobby the server closed for idleness (nobody had it open), so the app can say why it is gone.",
+      "type": "object",
+      "required": ["type", "minutes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "lobby.idleClosed" },
+        "minutes": { "type": "integer", "description": "How many minutes without activity it took." }
+      }
+    },
     "MatchmakingSearch": {
       "title": "MatchmakingSearch",
       "description": "Your ranked search: yours alone (1v1), or your duo's (2v2), which its host started and only they cancel.",
@@ -549,6 +560,7 @@
         { "$ref": "#/$defs/FriendsMessage" },
         { "$ref": "#/$defs/XpGainedMessage" },
         { "$ref": "#/$defs/BoardStatusMessage" },
+        { "$ref": "#/$defs/LobbyIdleClosedMessage" },
         { "$ref": "#/$defs/MatchmakingMessage" }
       ]
     }

@@ -1,6 +1,8 @@
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { LOBBY_IDLE_SHARED_MINUTES, LOBBY_IDLE_SOLO_MINUTES } from '../flags/definitions.js'
+import { flagNumber } from '../flags/index.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
@@ -24,10 +26,7 @@ import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId,
 
 const CODE_ATTEMPTS = 5
 
-/** A lobby with one account closes after this long without activity (and no game running). */
-export const SOLO_IDLE_MS = 6 * 60 * 60 * 1000
-/** A lobby with several accounts closes after this long without activity (and no game running). */
-export const SHARED_IDLE_MS = 24 * 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
 
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string } & ReturnType<typeof lobbyGlance>
@@ -149,7 +148,11 @@ export class LobbyService {
     else console.warn(message, details)
   }
 
+  // When each open lobby last had a change through this service or a lobby socket (see closeIdleLobbies)
+  private readonly touched = new Map<string, number>()
+
   private enqueue<T>(lobbyId: string, task: () => Promise<T>): Promise<T> {
+    this.touched.set(lobbyId, Date.now())
     return this.queues.run(lobbyId, task)
   }
 
@@ -291,6 +294,7 @@ export class LobbyService {
 
   /** A lobby socket opened or closed: everyone sees who's online. */
   async refreshPresence(lobbyId: string): Promise<void> {
+    this.touched.set(lobbyId, Date.now())
     const lobby = await this.state(lobbyId)
     if (lobby && lobby.closedAt === null) this.send(lobby)
   }
@@ -557,13 +561,15 @@ export class LobbyService {
   // /ws/me. A null from closeLobbyRows means it was closed already (the DB backstop in
   // lobbyIsOpenForShare/closeLobbyRows raced it — shouldn't happen for a call that's
   // properly inside this lobby's own queue): nothing left to do.
-  private async closeNow(lobby: LobbyState): Promise<void> {
+  private async closeNow(lobby: LobbyState, idleMinutes?: number): Promise<void> {
     const invitees = await q.closeLobbyRows(this.db, lobby.id, new Date())
     if (invitees === null) return
     this.cache.delete(lobby.id)
+    this.touched.delete(lobby.id)
     this.boardsChanged(lobby, undefined)
     this.deps.hub.sendLobby(lobby.id, { type: 'lobby_closed', lobbyId: lobby.id })
     this.deps.hub.closeLobby(lobby.id, WsCloseCode.NotFound, 'lobby closed')
+    if (idleMinutes !== undefined) for (const userId of memberIds(lobby)) this.deps.hub.sendIdleClosed(userId, idleMinutes)
     await this.notifyUsers([...memberIds(lobby), ...invitees])
   }
 
@@ -580,23 +586,45 @@ export class LobbyService {
   }
 
   /**
-   * The idle sweep (every few minutes, from index.ts): closes lobbies with no game running and no
-   * activity for SOLO_IDLE_MS (one account) or SHARED_IDLE_MS (several), so last night's guests
-   * aren't waiting tomorrow.
+   * The idle sweep (every minute, from index.ts): closes lobbies with no activity for
+   * lobby.idleMinutes.solo (one real user) or lobby.idleMinutes.shared (several). A lobby with a game
+   * running is closed (the game aborted) once the game has had no event for that long; open
+   * pages and lobby changes don't keep a stalled game alive.
+   * Guests and bots are people without an account, so they never count as a user.
+   * Activity is a row in the lobby's feed (joins, leaves, boards, games, host changes), any
+   * change made through this service (ready, settings, teams, invites: `touch`), and a member
+   * having the lobby open (a lobby socket), who is waiting in it; the clock restarts when that
+   * socket closes. Server start counts as activity for every open lobby.
    * Each close re-checks inside the lobby's queue: someone may have joined or started a game
    * since the query. Returns the ids it closed.
    */
   async closeIdleLobbies(now: Date = new Date()): Promise<string[]> {
-    const soloBefore = new Date(now.getTime() - SOLO_IDLE_MS)
-    const sharedBefore = new Date(now.getTime() - SHARED_IDLE_MS)
+    const soloMinutes = await flagNumber('lobby.idleMinutes.solo', LOBBY_IDLE_SOLO_MINUTES, null)
+    const sharedMinutes = await flagNumber('lobby.idleMinutes.shared', LOBBY_IDLE_SHARED_MINUTES, null)
+    const soloBefore = new Date(now.getTime() - soloMinutes * MINUTE_MS)
+    const sharedBefore = new Date(now.getTime() - sharedMinutes * MINUTE_MS)
     const closed: string[] = []
     for (const id of await q.idleLobbyIds(this.db, soloBefore, sharedBefore)) {
-      const done = await this.enqueue(id, async () => {
-        if (this.deps.engine.getLobbySession(id)) return false
-        if ((await q.idleLobbyIds(this.db, soloBefore, sharedBefore, id)).length === 0) return false
+      // Not this.enqueue: the sweep itself is no activity
+      const done = await this.queues.run(id, async () => {
         const lobby = await q.loadLobby(this.db, id)
         if (!lobby || lobby.closedAt !== null) return false
-        await this.closeNow(lobby)
+        const minutes = memberIds(lobby).length > 1 ? sharedMinutes : soloMinutes
+        const limitMs = minutes * MINUTE_MS
+        const running = this.deps.engine.getLobbySession(id)
+        if (running) {
+          // A game with no event (dart, correction, bull off) for the limit is abandoned. Ranked
+          // games end by their own clock and forfeit, never by a lobby sweep.
+          if (running.ranked) return false
+          const lastEvent = (await q.lastGameEventAt(this.db, running.id)) ?? running.createdAt
+          if (now.getTime() - lastEvent.getTime() < limitMs) return false
+          await this.deps.engine.deleteSession(running.id, null)
+        } else {
+          if (this.deps.hub.online(id).size > 0) return false
+          if (now.getTime() - (this.touched.get(id) ?? 0) < limitMs) return false
+          if ((await q.idleLobbyIds(this.db, soloBefore, sharedBefore, id)).length === 0) return false
+        }
+        await this.closeNow(lobby, minutes)
         return true
       })
       if (done) closed.push(id)

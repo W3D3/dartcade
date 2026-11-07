@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertBoard } from '../db/queries.js'
@@ -310,34 +310,110 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   })
 
   describe('idle close', () => {
-    const later = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
+    const later = (minutes: number) => new Date(Date.now() + minutes * 60 * 1000)
 
-    it('closes a solo lobby (guests count as solo) idle for 6 hours, not one idle for less', async () => {
+    it('closes a lobby with one real user (guests and bots do not count) after 10 minutes, not 9', async () => {
       const { id } = await lobbies.create('chris')
       await lobbies.addGuest('chris', id, { name: 'Guest 1' })
-      expect(await lobbies.closeIdleLobbies(later(5))).toEqual([])
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await lobbies.addGuest('chris', id, { name: 'Bot', bot: { level: 3 } })
+      expect(await lobbies.closeIdleLobbies(later(9))).toEqual([])
       expect(await lobbies.view(id)).not.toBeNull()
-      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([id])
+      expect(await lobbies.closeIdleLobbies(later(11))).toEqual([id])
       expect(await lobbies.view(id)).toBeNull()
     })
 
-    it('closes a lobby with two accounts after 24 hours without activity, not 23', async () => {
+    it('closes a lobby with two accounts after 20 minutes without activity, not 19', async () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
-      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([])
-      expect(await lobbies.closeIdleLobbies(later(23))).toEqual([])
+      expect(await lobbies.closeIdleLobbies(later(11))).toEqual([])
+      expect(await lobbies.closeIdleLobbies(later(19))).toEqual([])
       expect(await lobbies.view(id)).not.toBeNull()
-      expect(await lobbies.closeIdleLobbies(later(25))).toEqual([id])
+      expect(await lobbies.closeIdleLobbies(later(21))).toEqual([id])
       expect(await lobbies.view(id)).toBeNull()
     })
 
-    it('never closes a lobby whose game is running, solo or shared', async () => {
-      const solo = await lobbies.create('max')
-      await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
-      await lobbies.start('max', solo.id, false)
-      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([])
-      expect(await lobbies.closeIdleLobbies(later(100))).toEqual([])
-      expect(await lobbies.view(solo.id)).not.toBeNull()
+    it('a change that leaves no feed line (a rename) restarts the clock', async () => {
+      const { id } = await lobbies.create('chris')
+      const old = new Date(Date.now() - 60 * 60 * 1000)
+      await sql`UPDATE lobby_activity SET at = ${old}`.execute(db)
+      await sql`UPDATE lobbies SET created_at = ${old} WHERE id = ${id}`.execute(db)
+      await lobbies.update('chris', id, { name: 'Still here' })
+      expect(await lobbies.closeIdleLobbies(later(5))).toEqual([])
+      expect(await lobbies.closeIdleLobbies(later(11))).toEqual([id])
+    })
+
+    it('a member with the lobby open is waiting in it: not idle until the socket closes', async () => {
+      const { id } = await lobbies.create('chris')
+      const online = new Set(['chris'])
+      vi.spyOn(hub, 'online').mockReturnValue(online)
+      expect(await lobbies.closeIdleLobbies(later(60))).toEqual([])
+      online.clear()
+      await lobbies.refreshPresence(id)
+      expect(await lobbies.closeIdleLobbies(later(5))).toEqual([])
+      expect(await lobbies.closeIdleLobbies(later(11))).toEqual([id])
+    })
+
+    it('tells each member on /ws/me how long it waited, and not the lobby sockets', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      const idle = vi.spyOn(hub, 'sendIdleClosed')
+      await lobbies.closeIdleLobbies(later(21))
+      expect(idle.mock.calls.sort()).toEqual([
+        ['chris', 20],
+        ['lena', 20],
+      ])
+    })
+
+    it('a lobby closed by its host is no idle close', async () => {
+      const { id } = await lobbies.create('chris')
+      const idle = vi.spyOn(hub, 'sendIdleClosed')
+      await lobbies.close('chris', id)
+      expect(idle).not.toHaveBeenCalled()
+    })
+
+    describe('a running game', () => {
+      let lobbyId: string
+      let sessionId: string
+      beforeEach(async () => {
+        lobbyId = (await lobbies.create('max')).id
+        await lobbies.update('max', lobbyId, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+        sessionId = (await lobbies.start('max', lobbyId, false)).sessionId
+      })
+
+      it('stays open while it had an event within the limit, wherever the lobby page is', async () => {
+        vi.spyOn(hub, 'online').mockReturnValue(new Set())
+        expect(await lobbies.closeIdleLobbies(later(9))).toEqual([])
+        expect(engine.getLobbySession(lobbyId)).toBeDefined()
+        await sql`INSERT INTO game_sessions (id, game_id, config, status) VALUES (${sessionId}, 'x01', '{}', 'active')`.execute(db)
+        await sql`INSERT INTO game_session_events (session_id, seq, source, kind, data, created_at)
+          VALUES (${sessionId}, 9999, 'user', 'dart', '{}', ${later(8)})`.execute(db)
+        expect(await lobbies.closeIdleLobbies(later(17))).toEqual([])
+      })
+
+      it('is aborted and its lobby closed once nothing happened for the limit', async () => {
+        vi.spyOn(hub, 'online').mockReturnValue(new Set(['max']))
+        expect(await lobbies.closeIdleLobbies(later(11))).toEqual([lobbyId])
+        expect(engine.getLobbySession(lobbyId)).toBeUndefined()
+        expect(await lobbies.view(lobbyId)).toBeNull()
+      })
+
+      it('uses the 20 minutes of a lobby with several users', async () => {
+        await db
+          .insertInto('lobby_people')
+          .values({
+            id: 'lena-row',
+            lobby_id: lobbyId,
+            user_id: 'lena',
+            added_by_user_id: 'lena',
+            name: 'Lena',
+            board_id: null,
+            position: 1,
+          })
+          .execute()
+        expect(await lobbies.closeIdleLobbies(later(15))).toEqual([])
+        expect(await lobbies.closeIdleLobbies(later(21))).toEqual([lobbyId])
+      })
     })
 
     it('re-checks inside the queue: a lobby someone joined meanwhile stays open', async () => {
@@ -347,7 +423,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       let release!: () => void
       const gate = new Promise<void>(resolve => (release = resolve))
       const held = (lobbies as any).enqueue(id, () => gate) as Promise<void>
-      const sweep = lobbies.closeIdleLobbies(later(7))
+      const sweep = lobbies.closeIdleLobbies(later(11))
       await db
         .insertInto('lobby_people')
         .values({ id: 'lena-row', lobby_id: id, user_id: 'lena', added_by_user_id: 'lena', name: 'Lena', board_id: null, position: 1 })
