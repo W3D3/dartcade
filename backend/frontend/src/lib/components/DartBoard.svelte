@@ -5,6 +5,7 @@
     AIM_OFFSET_PX,
     AIM_ZOOM,
     aimOffsetFor,
+    clampToView,
     edgePush,
     moveAim,
     shownAt,
@@ -28,6 +29,7 @@
     onBoardHover,
     selectedDart = null,
     onDartMove,
+    onDartSelect,
     zoom = 1,
     overlay,
     cameraSrc = null,
@@ -49,14 +51,17 @@
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
-     *  and the segment under it. */
-    onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+     *  and the segment under it. `outside`: the tap was past the round board, so the coords are
+     *  clamped to its edge. */
+    onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number }; outside: boolean }) => void
     /** The pointer over the board, in the same units as onBoardClick; null when it leaves. */
     onBoardHover?: (coords: { x: number; y: number } | null) => void
     /** Index into `darts` of the dart picked for correction; it is highlighted. */
     selectedDart?: number | null
     /** A dart was dragged to a new spot (any dart can be dragged while this is set). */
     onDartMove?: (index: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** The selected dart was tapped (not dragged): the parent deselects it. */
+    onDartSelect?: (index: number) => void
     /** Magnification around the bull (1 = whole board); changes animate. */
     zoom?: number
     /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
@@ -134,11 +139,7 @@
 
   /** Keep a dot inside the visible, round board area (the view is clipped to it), so a dart
    *  dropped or recorded past the edge stays on screen and can be grabbed again. Board units, y up. */
-  function inView(p: { x: number; y: number }): { x: number; y: number } {
-    const lim = 1.06 / zoom
-    const r = Math.hypot(p.x, p.y)
-    return r <= lim ? p : { x: (p.x * lim) / r, y: (p.y * lim) / r }
-  }
+  const inView = (p: Pt): Pt => clampToView(p, zoom).at
 
   function dartPos(dart: (typeof darts)[0]): { x: number; y: number } | null {
     if (dart.coords) return inView(dart.coords)
@@ -168,11 +169,15 @@
   let svgEl: SVGSVGElement
 
   /** Pointer position in board units: zoom undone, y up like camera coords. */
-  function toBoard(e: MouseEvent): { x: number; y: number } | null {
+  function rawBoard(e: MouseEvent): { x: number; y: number } | null {
     const ctm = svgEl.getScreenCTM()
     if (!ctm) return null
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
-    return inView({ x: p.x / zoom, y: -p.y / zoom })
+    return { x: p.x / zoom, y: -p.y / zoom }
+  }
+  const toBoard = (e: MouseEvent) => {
+    const raw = rawBoard(e)
+    return raw && inView(raw)
   }
 
   function boardClick(e: MouseEvent) {
@@ -181,8 +186,10 @@
       justDragged = false
       return
     }
-    const c = toBoard(e)
-    if (c) onBoardClick({ segment: segmentAt(c.x, c.y), coords: c })
+    const raw = rawBoard(e)
+    if (!raw) return
+    const { at, outside } = clampToView(raw, zoom)
+    onBoardClick({ segment: segmentAt(at.x, at.y), coords: at, outside })
   }
 
   // Dragging the selected dart: preview where it goes, report the drop
@@ -208,13 +215,18 @@
     const { index, from } = drag
     const c = toBoard(e) ?? drag.at
     drag = null
-    // A tap without moving is an ordinary click (it may place a new dart)
-    if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
+    const tapped = Math.hypot(c.x - from.x, c.y - from.y) < 0.01
+    // Nothing selected: a tap on a marker is an ordinary board tap (it may place a dart on the same
+    // spot, as in a bull-bull-bull). Selecting is done from the slots; a tap on the selected dart
+    // deselects it.
+    if (tapped && selectedDart !== index) return
+    // The click that follows is not another dart
     justDragged = true
     setTimeout(() => {
       justDragged = false
     })
-    onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
+    if (tapped) onDartSelect?.(index)
+    else onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
 
   // Long press: zoom in around the spot and aim a little above the finger (see boardAim.ts).
@@ -307,7 +319,7 @@
     if (!at || off) return
     const hit = { segment: segmentAt(at.x, at.y), coords: at }
     if (dart !== null) onDartMove?.(dart, hit)
-    else onBoardClick?.(hit)
+    else onBoardClick?.({ ...hit, outside: false })
   }
   function pressCancel() {
     cancelHold()
@@ -630,14 +642,14 @@
             >
               {#if selected}
                 <circle
+                  data-dart-selected
                   cx={pos.x}
                   cy={-pos.y}
-                  r="0.055"
+                  r="0.085"
                   fill="var(--color-accent)"
-                  fill-opacity="0.18"
+                  fill-opacity="0.25"
                   stroke="var(--color-accent)"
-                  stroke-width="0.012"
-                  stroke-dasharray="0.02 0.015"
+                  stroke-width="0.016"
                 />
               {/if}
               {#if i === darts.length - 1}
@@ -648,7 +660,7 @@
               <circle
                 cx={pos.x}
                 cy={-pos.y}
-                r={selected ? 0.03 : i === darts.length - 1 ? 0.027 : 0.022}
+                r={selected ? 0.04 : i === darts.length - 1 ? 0.027 : 0.022}
                 fill={DOT_COLORS[i % DOT_COLORS.length]}
                 stroke={DOT_STROKE}
                 stroke-width="0.006"
@@ -696,6 +708,15 @@
        Two-tone (dark outline + light inner stroke) so it reads on every board colour: the
        black/cream segments and the red/green rings. Its own SVG over the board, not nested in
        the zoomed one: iOS Safari left stale dark pieces of a nested one behind as the viewBox moved. -->
+  {#if selectedDart !== null && onBoardClick && !zoomBox}
+    <p
+      role="status"
+      class="absolute top-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap pointer-events-none bg-bg/85 text-accent border border-accent"
+    >
+      Tap the board to move this dart
+    </p>
+  {/if}
+
   {#if zoomBox && shown && aimed}
     {@const at = shown}
     {@const tone = aimOff ? 'var(--color-live-text)' : 'var(--color-accent)'}

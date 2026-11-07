@@ -47,3 +47,12 @@ export function viewBoxFor(aim: Pt, shown: Pt, scale: number, half: number): { x
   // A screen position p (in the unzoomed frame) shows board point x + (p + half) / scale
   return { x: aim.x - (shown.x + half) / scale, y: aim.y - (shown.y + half) / scale, w }
 }
+
+/** Keeps a board point inside the visible, round board area (the view is clipped to it, and a
+ *  magnified one shows less of it), so a dart dropped past the edge stays on screen. `outside`: the
+ *  point was past that area and `at` is on its edge. Board units, y up. */
+export function clampToView(p: Pt, zoom: number): { at: Pt; outside: boolean } {
+  const lim = 1.06 / zoom
+  const r = Math.hypot(p.x, p.y)
+  return r <= lim ? { at: p, outside: false } : { at: { x: (p.x * lim) / r, y: (p.y * lim) / r }, outside: true }
+}

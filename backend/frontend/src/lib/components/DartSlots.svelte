@@ -167,7 +167,7 @@
         {/if}
         <span class="text-[14px] font-semibold whitespace-nowrap">Correct dart {openDart + 1}</span>
         <span class="text-[13px] text-text-muted truncate">
-          Detected <strong class="text-text">{slots[openDart]?.label}</strong> · or drag it on the board
+          Detected <strong class="text-text">{slots[openDart]?.label}</strong> · or tap the board to move it
         </span>
         <button
           type="button"

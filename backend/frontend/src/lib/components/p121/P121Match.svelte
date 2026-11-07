@@ -39,6 +39,7 @@
     onNext,
     onBoardClick,
     onCorrect,
+    onDartMove,
     onGiveUp,
     settings,
     checkout,
@@ -62,6 +63,7 @@
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onCorrect?: (dartIndex: number, label: string) => void
+    onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onGiveUp: () => void
     settings: GameSettings
     checkout?: CheckoutPrefs
@@ -117,6 +119,7 @@
     {onBoardClick}
     {onDart}
     {onCorrect}
+    {onDartMove}
     bind:openDart
     board={{ checkoutTargets: playing ? boardCheckoutTargets(slots, true) : [] }}
     keypadClass="min-h-[220px]"

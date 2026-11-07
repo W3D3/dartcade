@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aimOffsetFor, edgePush, moveAim, shownAt, viewBoxFor } from '../boardAim.js'
+import { aimOffsetFor, clampToView, edgePush, moveAim, shownAt, viewBoxFor } from '../boardAim.js'
 
 const box = { half: 1.15, margin: 0.1 }
 
@@ -44,5 +44,21 @@ describe('long-press aim', () => {
     expect(vb.w).toBeCloseTo(2.3 / 3)
     expect(vb.x + vb.w / 2).toBeCloseTo(0.5)
     expect(vb.y + vb.w / 2).toBeCloseTo(0.5)
+  })
+})
+
+describe('clamping a tap to the visible board', () => {
+  it('leaves a tap on the board alone, and clamps one past the edge to it, flagged outside', () => {
+    expect(clampToView({ x: 1.05, y: 0 }, 1)).toEqual({ at: { x: 1.05, y: 0 }, outside: false })
+    const out = clampToView({ x: 2, y: 0 }, 1)
+    expect(out.outside).toBe(true)
+    expect(out.at.x).toBeCloseTo(1.06)
+  })
+
+  it('a zoomed-in board shows less of itself: the same tap is outside there, and the edge is nearer', () => {
+    expect(clampToView({ x: 0.6, y: 0 }, 1).outside).toBe(false)
+    const zoomed = clampToView({ x: 0.6, y: 0 }, 2)
+    expect(zoomed.outside).toBe(true)
+    expect(zoomed.at.x).toBeCloseTo(0.53)
   })
 })

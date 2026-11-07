@@ -205,6 +205,7 @@
     {onBoardClick}
     onDart={canThrow ? onDart : noop}
     {onCorrect}
+    {onDartMove}
     bind:openDart={correcting}
     board={{
       dim: !isX01,
@@ -212,7 +213,6 @@
       nextTarget: boardNext,
       playerMarkers: markers,
       checkoutTargets: isActive ? checkoutTargets : [],
-      onDartMove: canThrow ? onDartMove : undefined,
       cameraSrc,
     }}
     class={minHeight}

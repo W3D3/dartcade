@@ -11,6 +11,7 @@
   import DartKeypad from '$lib/components/DartKeypad.svelte'
 
   type Hit = { segment: Segment; coords: { x: number; y: number } }
+  type Tap = Hit & { outside: boolean }
 
   let {
     keypad = false,
@@ -24,6 +25,7 @@
     onBoardClick,
     onDart,
     onCorrect,
+    onDartMove,
     openDart = $bindable(null),
     board = {},
     over,
@@ -45,10 +47,12 @@
     onDart: (segment: Segment) => void
     /** A key with a dart selected: that dart becomes the key's segment. */
     onCorrect?: (dartIndex: number, label: string) => void
+    /** A dart of the open visit moved to a board spot (dragged, or tapped while it is selected). */
+    onDartMove?: (dartIndex: number, hit: Hit) => void
     /** The dart selected in the slots (0-based), shared with DartSlots. */
     openDart?: number | null
     /** What the game draws on the board besides the darts. */
-    board?: Omit<ComponentProps<typeof DartBoard>, 'darts' | 'onBoardClick' | 'selectedDart'>
+    board?: Omit<ComponentProps<typeof DartBoard>, 'darts' | 'onBoardClick' | 'selectedDart' | 'onDartMove' | 'onDartSelect'>
     /** Over the board, in its square (the board view toggle). */
     over?: Snippet
     /** The board's column: its minimum height. */
@@ -59,6 +63,17 @@
     keypadClass?: string
   } = $props()
 
+  // A selected dart makes the next board tap a correction, never a new dart (even in a locked visit)
+  function boardTap(hit: Tap): void {
+    if (openDart === null) {
+      onBoardClick(hit)
+      return
+    }
+    if (!hit.outside) onDartMove?.(openDart, hit)
+    openDart = null
+  }
+  const deselectDart = () => (openDart = null)
+
   function keyDart(segment: Segment): void {
     if (openDart === null) {
       onDart(segment)
@@ -68,6 +83,8 @@
     openDart = null
   }
 </script>
+
+<svelte:window onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && openDart !== null && !e.defaultPrevented && (openDart = null)} />
 
 {#if keypad}
   <div class="flex-1 {keypadClass}">
@@ -89,7 +106,14 @@
   <!-- The board takes the height the column has left (capped by its width) -->
   <div class="flex-1 {className} w-full [container-type:size] flex items-center justify-center">
     <div class="relative aspect-square {square}" style="width: min(100cqw, 100cqh)">
-      <DartBoard {darts} {...board} onBoardClick={canThrow && !locked ? onBoardClick : undefined} selectedDart={openDart} />
+      <DartBoard
+        {darts}
+        {...board}
+        onBoardClick={canThrow && (!locked || openDart !== null) ? boardTap : undefined}
+        selectedDart={openDart}
+        onDartMove={canThrow ? onDartMove : undefined}
+        onDartSelect={canThrow ? deselectDart : undefined}
+      />
       {@render over?.()}
     </div>
   </div>

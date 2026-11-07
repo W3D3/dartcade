@@ -583,6 +583,7 @@
           onNext={advance}
           onBoardClick={addBoardDart}
           onCorrect={correct}
+          onDartMove={canThrow ? moveDart : undefined}
           onGiveUp={() => send({ type: 'p121_give_up' })}
           {settings}
           {checkout}
@@ -604,6 +605,7 @@
           onNext={advance}
           onBoardClick={addBoardDart}
           onCorrect={correct}
+          onDartMove={canThrow ? moveDart : undefined}
           {keypad}
           onDart={canThrow ? addManualDart : () => {}}
         />
@@ -623,6 +625,7 @@
           onNext={advance}
           onBoardClick={addBoardDart}
           onCorrect={correct}
+          onDartMove={canThrow ? moveDart : undefined}
           {keypad}
           onDart={canThrow ? addManualDart : () => {}}
         />
@@ -649,8 +652,8 @@
           onNext={advance}
           onDart={addManualDart}
           onCorrect={correct}
+          onDartMove={canThrow ? moveDart : undefined}
           onBoardClick={addBoardDart}
-          onDartMove={moveDart}
           onabort={() => (showEndConfirm = true)}
           coach={liveCoachOn ? liveCoach : undefined}
         />
