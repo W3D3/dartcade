@@ -6,7 +6,7 @@
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
   import { currentUser } from '$lib/auth'
-  import { toolsFor } from '$lib/admin/tools'
+  import { toolGroupsFor } from '$lib/admin/tools'
 
   // Not an admin or moderator: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
@@ -18,20 +18,25 @@
   <PageMain>
     <PageTitle trail={[{ label: 'Admin' }]} title="Admin" sub="Tools for running this dartcade" />
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-      {#each toolsFor($currentUser) as tool (tool.href)}
-        {@const Icon = tool.icon}
-        <a href="#{tool.href}" class="flex items-center gap-[14px] p-4 card no-underline !text-text hover:bg-surface-active">
-          <span class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] bg-surface-active text-accent">
-            <Icon size={20} strokeWidth={1.8} />
-          </span>
-          <span class="flex flex-col gap-[2px] flex-grow min-w-0">
-            <span class="text-[17px] font-semibold">{tool.title}</span>
-            <span class="text-[13px] text-text-muted truncate">{tool.desc}</span>
-          </span>
-          <ChevronRight size={18} class="text-text-muted shrink-0" />
-        </a>
-      {/each}
-    </div>
+    {#each toolGroupsFor($currentUser) as group (group.category)}
+      <section class="flex flex-col gap-3">
+        <h2 class="m-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">{group.category}</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {#each group.tools as tool (tool.href)}
+            {@const Icon = tool.icon}
+            <a href="#{tool.href}" class="flex items-center gap-[14px] p-4 card no-underline !text-text hover:bg-surface-active">
+              <span class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] bg-surface-active text-accent">
+                <Icon size={20} strokeWidth={1.8} />
+              </span>
+              <span class="flex flex-col gap-[2px] flex-grow min-w-0">
+                <span class="text-[17px] font-semibold">{tool.title}</span>
+                <span class="text-[13px] text-text-muted truncate">{tool.desc}</span>
+              </span>
+              <ChevronRight size={18} class="text-text-muted shrink-0" />
+            </a>
+          {/each}
+        </div>
+      </section>
+    {/each}
   </PageMain>
 </Layout>
