@@ -43,7 +43,7 @@
           <span class="col-span-3 col-start-3 flex min-w-0 flex-col gap-1.5 @min-[640px]:col-span-1 @min-[640px]:col-start-auto">
             <span class="flex flex-wrap items-center gap-2">
               <GradePill grade={v.grade} />
-              <span class="text-[12.5px] capitalize text-text-dim">{v.tag}</span>
+              <span class="text-[12.5px] capitalize text-text-dim">{v.tags.join(' + ')}</span>
               <GroupingPill grouping={v.grouping} />
             </span>
             <span class="text-[13.5px] leading-[1.45] {v.tip ? 'text-ice' : 'text-ink-2'}">{v.text}</span>

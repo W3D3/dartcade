@@ -51,17 +51,17 @@ describe('groupingLine', () => {
     { name: 'S20', bedAimId: 'SO20', coords: null, left: 481, bust: false, class: t20, delta: null, closeness: null },
     { name: 'S20', bedAimId: 'SO20', coords: { x: 0, y: 0.7 }, left: 461, bust: false, class: t20, delta: null, closeness: null },
   ]
+  const scoring = { value: { scoring: { scored: 100, grouping: 0, closeness: 0, rating: 75, average: 60 } } }
+  const finish = { value: { scoring: null } }
   const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 
   it("words a visit's grouping, its target from a placed dart", () => {
-    expect(groupingLine({ darts, tag: 'scoring', grouping: g })).toBe(
-      'Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75',
-    )
-    expect(groupingLine({ darts, tag: 'setup', grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm')
+    expect(groupingLine({ darts, ...scoring, grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75')
+    expect(groupingLine({ darts, ...finish, grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm')
   })
   it('leaves the spread out without a shared target, and is null without a grouping', () => {
-    expect(groupingLine({ darts, tag: 'scoring', grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
-    expect(groupingLine({ darts, tag: 'scoring', grouping: null })).toBeNull()
+    expect(groupingLine({ darts, ...scoring, grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
+    expect(groupingLine({ darts, ...scoring, grouping: null })).toBeNull()
   })
 })
 

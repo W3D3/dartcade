@@ -6,13 +6,13 @@ import type { ReviewVisit } from '$shared/coach'
 import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModels } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
-import { afterDart, coachDart } from '$shared/coach/walk'
+import { afterDart, coachDart, dartPhase } from '$shared/coach/walk'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
 export type LiveCoach = {
   /** The score before the next dart */
   left: number
-  /** Over 170: the scoring aims (points a dart); else the checkout aims (chance) */
+  /** More than 170 left, and not the leave dart (walk.ts): the scoring aims (points a dart); else the checkout aims (chance) */
   scoring: boolean
   /** The next dart's best aims; empty once the visit is done */
   aims: LiveAim[]
@@ -37,7 +37,7 @@ function leaves(left: number, a: Aim): string {
  *  (loadCoachModels). Solo: no opponent, w = 1. */
 export function liveCoach(models: CoachModels, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
   const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), models, TOP)
-  const scoring = r.left > 170
+  const scoring = dartPhase({ left: r.left, darts: 3 - darts.length }) === 'scoring'
   const aims = r.done
     ? []
     : scoring

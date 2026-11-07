@@ -26,10 +26,10 @@ landed.
 
 **The phase** comes from the score left _before the dart_ and the darts left in the visit:
 
-| Phase       | When               | Candidate targets                                                                                                                                                        |
-| ----------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Scoring** | more than 170 left | T20, T19, T18, T17                                                                                                                                                       |
-| **Finish**  | 2–170 left         | the evaluator's top 5 aims for (left, darts left) **∪** the checkout table's first darts for that score **∪** T16 **∪** the aims on the landed number (typed darts only) |
+| Phase       | When                                                                                                         | Candidate targets                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Scoring** | more than 170 left (a last dart with up to 230 left is a leave dart: scoring candidates, classed as a route) | T20, T19, T18, T17                                                                                                                                                       |
+| **Finish**  | 2–170 left                                                                                                   | the evaluator's top 5 aims for (left, darts left) **∪** the checkout table's first darts for that score **∪** T16 **∪** the aims on the landed number (typed darts only) |
 
 The candidates are then narrowed:
 
@@ -426,6 +426,8 @@ wide screens (1280 px and up), a folded line above the dart slots below that and
   opponent), each with its chance to check out this visit or the next and what it leaves
   ("T19 · 64% · leaves 67"). Over 170 left nothing checks out soon enough to rank by chance, so it
   shows the three aims with the most points a dart for a player of the target tier (its landing table).
+  The last dart with 171 to 230 left is ranked by chance again, without the aims the grade would call a bad setup
+  (`2026-11-07-coach-per-dart-judging.md`).
 - **This visit**: each dart as the leg review classes it (`dartLabel`), with its change in checkout
   chance and its near-miss credit (`value.ts`); none on a scoring visit.
 - **Last visit**: once the visit is done (three darts, a bust or a checkout) its grade and line from

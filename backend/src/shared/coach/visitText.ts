@@ -6,6 +6,7 @@ import type { DartClass } from './dartClass.js'
 import {
   bandOf,
   explainedNote,
+  finishDarts,
   gradeVisit,
   NEAR_MISS_MM,
   SCORING_BANDS,
@@ -142,18 +143,17 @@ function doublingText(f: VisitFacts): string {
 
 /** Setup and Doubling: a bust, a checkout, what happened to the double, or the leave and the
  *  costliest dart of a visit that lost value */
-function finishingText(f: VisitFacts, { tag, value: { points } }: Grading): string {
+function finishingText(f: VisitFacts, { tags, value: { points } }: Grading): string {
   const out = f.throws.find(t => t.checkout)
-  const doubling = tag === 'doubling'
+  const doubling = tags.includes('doubling')
   if (f.bust) return bustBack(f) ? bustBackText(f) : bustText(f, doubling ? doublingStory(f, f.throws.length - 1, true) : [])
   if (out) return `Checked out on ${outName(out.left)}.`
   if (doubling) return doublingText(f)
   const leave = routeText(f.then, checkoutHint(f.then, 'double', 3)) ?? `${f.then} left: no checkout in three darts.`
-  const worst = f.throws.reduce((a, _, i) => (f.deltas[i] < f.deltas[a] ? i : a), 0)
-  const cost = Math.round(-f.deltas[worst])
+  const worst = finishDarts(f).reduce((a, d) => (d.delta < a.delta ? d : a))
+  const cost = Math.round(-worst.delta)
   if (points >= 0 || cost < 1) return leave
-  const t = f.throws[worst]
-  return `${dartName(t)} on ${t.left} cost ${cost}% checkout chance: ${leave}`
+  return `${dartName(worst.t)} on ${worst.t.left} cost ${cost}% checkout chance: ${leave}`
 }
 
 function fewestText(f: VisitFacts): string {
@@ -176,7 +176,7 @@ export function visitText(f: VisitFacts, g: Grading): { text: string; tip: boole
   if (note && !note.tip) return line(noteText(note))
   if (f.fewest !== null) return line(fewestText(f))
   if (note && !f.bust && !out) return line(noteText(note), true)
-  return line(g.tag === 'scoring' ? scoringText(f, g) : finishingText(f, g))
+  return line(g.value.scoring ? scoringText(f, g) : finishingText(f, g))
 }
 
 /** The visit's grade and its line */

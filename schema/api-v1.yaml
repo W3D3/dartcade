@@ -4061,7 +4061,7 @@ components:
             kind: { type: string, enum: [scoringHit, scoringMiss, split, bustBack, bust, wild, notCounted] }
     CoachNote:
       type: object
-      required: [leg, visit, dart, left, darts, thrown, better, betterAimId, cost, reason, book, tip]
+      required: [leg, visit, dart, left, darts, thrown, better, betterAimId, cost, byLeave, reason, book, tip]
       additionalProperties: false
       properties:
         leg: { type: integer, minimum: 0 }
@@ -4072,13 +4072,14 @@ components:
         thrown: { type: string, description: "The dart's segment name, Miss off the board" }
         better: { type: string, description: "The better aim's label: S17, 20/1, Bull" }
         betterAimId: { type: string, description: "The better aim's id in AIMS: SO17 or SI17, W20-1, Bull" }
-        cost: { type: number, description: 'Checkout chance lost, 0-1' }
+        cost: { type: number, description: 'Checkout chance lost, 0-1; the extra chance of a bogey leave when byLeave' }
+        byLeave: { type: boolean, description: 'Judged by its leave (the last dart with 171-230 left), not by checkout chance' }
         reason: { type: string, nullable: true }
         book: { type: array, nullable: true, items: { type: string } }
         tip: { type: boolean }
     ReviewVisit:
       type: object
-      required: [n, left, darts, scored, then, bust, tag, grade, text, tip, notes, explained, grouping, value]
+      required: [n, left, darts, scored, then, bust, tags, grade, text, tip, notes, explained, grouping, value]
       additionalProperties: false
       properties:
         n: { type: integer, minimum: 1, description: 1-based among the seat's visits in the leg }
@@ -4087,7 +4088,12 @@ components:
         scored: { type: integer, minimum: 0 }
         then: { type: integer, minimum: 0 }
         bust: { type: boolean }
-        tag: { type: string, enum: [scoring, setup, doubling] }
+        tags:
+          {
+            type: array,
+            items: { type: string, enum: [scoring, setup, doubling] },
+            description: 'Every phase the visit went through, in order',
+          }
         grade: { type: string, enum: [brilliant, excellent, great, good, ok, inaccuracy, weak, bad] }
         text: { type: string }
         tip: { type: boolean, description: "The text is a tip's (a note that leaves the grade alone)" }

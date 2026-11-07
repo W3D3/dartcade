@@ -4,7 +4,7 @@ import { HALF, R, SEGS } from '../board.js'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, aimsOn, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import type { Evaluation } from './model.js'
-import { afterDart, landedNumber, settle, type Throw } from './walk.js'
+import { afterDart, dartPhase, landedNumber, settle, type Throw } from './walk.js'
 
 // --- Constants, to be tuned with the admin sandbox ---
 /** An amateur's spread, for guessing targets only (the strategy model keeps the target tier's):
@@ -22,6 +22,7 @@ const WILD_WEDGES = 2
 /** The evaluator's best aims that are candidates on a finish */
 const TOP_K = 5
 const SCORING_PRIOR: Readonly<Record<string, number>> = { T20: 1, T19: 0.6, T18: 0.3, T17: 0.3 }
+const SCORING_CANDIDATES = Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimIndex(id), prior }))
 /** r = 1 is the outer double wire, 170 mm from the centre */
 export const MM_PER_UNIT = 170
 
@@ -215,21 +216,23 @@ const likeliest = (e: Evaluation, a: number) => e.outcomes(a).reduce((x, y) => (
 const isBullAim = (a: Aim) => a.id === 'Bull' || a.id === '25'
 
 /** One walked dart's class. `evaluation` is its visit's evaluator (model.ts) at the dart's (left,
- *  darts); null on Scoring (more than 170 left), which doesn't use it. */
+ *  darts); null on a scoring dart (more than 170 left, and not the leave dart), which doesn't use it. */
 export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): DartClass {
   const seg = t.d.segment
   const bed = t.d.coords === null ? bedAim(seg.name) : null
   const pos = t.d.coords ?? bed
   const estimated = t.d.coords === null
-  const scoring = t.left > 170
+  const phase = dartPhase(t)
+  const scoring = phase === 'scoring'
   const evaluation = scoring ? null : ctx.evaluation
   if (!scoring && !evaluation) throw new Error('classifyDart: a dart on a finish needs its evaluation')
 
   // Step 1: the target
   const landed = landedNumber(t.d)
   const busts = evaluation ? bustAims(evaluation) : null
+  // A leave dart is aimed like a scoring dart: from far out every aim is worth the same checkout chance
   const cands =
-    evaluation && busts
+    evaluation && busts && phase !== 'leave'
       ? // A typed dart has no position, so its own bed explains it; a dart with coords meets the real candidates
         finishCandidates(
           t.left,
@@ -241,7 +244,7 @@ export function classifyDart(t: Throw, ctx: { evaluation: Evaluation | null }): 
         )
       : landed === 25
         ? aimsOn([25]).map(a => ({ a, prior: 1 }))
-        : Object.entries(SCORING_PRIOR).map(([id, prior]) => ({ a: aimIndex(id), prior }))
+        : SCORING_CANDIDATES
   // A typed miss on a one-dart finish was at the double, off the board: where, nobody knows
   const out = directOutId(t.left)
   let target: { a: number; d: number | null } | null = !pos && evaluation && out ? { a: aimIndex(out), d: null } : null

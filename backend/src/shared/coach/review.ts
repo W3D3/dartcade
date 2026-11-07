@@ -12,7 +12,7 @@ import { executionStats } from './stats.js'
 import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
 import { tierOf, type CoachTierId } from './tiers.js'
-import { throwsOf, type CoachLeg, type CoachVisit } from './walk.js'
+import { onFinish, throwsOf, type CoachLeg, type CoachVisit } from './walk.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
@@ -38,7 +38,8 @@ export type ReviewVisit = {
   scored: number
   then: number
   bust: boolean
-  tag: VisitTag
+  /** Every phase the visit went through, in order (grade.ts tagsOf) */
+  tags: VisitTag[]
   grade: VisitGrade
   text: string
   /** The text is a tip's: shown in the blue Info style */
@@ -89,6 +90,9 @@ export type ReviewContext = {
  *  finish before the last dart is thrown (the live panel, the admin sandbox). */
 const isOpenVisit = (v: CoachVisit): boolean => !v.bust && v.remaining !== 0 && v.darts.length < 3
 
+/** A Setup visit graded Bad as a setup: by its checkout chance or a note, not by a low score (a leave dart's visit, on the scoring scale) */
+const isBadSetup = (v: ReviewVisit) => v.grade === 'bad' && (v.value.scoring === null || v.notes.length > 0)
+
 const NONE: SkillGrade = { grade: null, line: '–' }
 const RANK = { A: 0, B: 1, C: 2, D: 3 }
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -127,8 +131,11 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   const visits = mine.map(({ v, i }, k): ReviewVisit => {
     const start = visitStart(v)
     const vThrows = throws.filter(t => t.visit === i)
-    const values = start > 170 ? [] : visitValues(vThrows, evaluate, model)
-    const deltas = deltasOf(values)
+    // The darts on 170 or less left are the last ones of the visit: the scoring darts before them have no value change
+    const onChance = vThrows.filter(onFinish)
+    const skipped = vThrows.length - onChance.length
+    const values = visitValues(onChance, evaluate, model)
+    const deltas = [...Array<null>(skipped).fill(null), ...deltasOf(values)]
     const reviewDarts = v.darts.map((d, j): Omit<ReviewDart, 'closeness'> => {
       // Undefined for a dart after the bust
       const t = vThrows.at(j)
@@ -169,7 +176,10 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
       n: k + 1,
       left: start,
       // A walked dart's closeness is the one its grade summed (grade.ts DartTerm)
-      darts: reviewDarts.map((d, j) => ({ ...d, closeness: grading.value.terms.at(j)?.closeness ?? null })),
+      darts: reviewDarts.map((d, j) => ({
+        ...d,
+        closeness: (j < skipped ? undefined : grading.value.terms[j - skipped])?.closeness ?? null,
+      })),
       scored: v.scored,
       then: v.remaining,
       bust: v.bust,
@@ -181,14 +191,19 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     }
   })
 
-  const low = (v: ReviewVisit) => v.grade === 'weak' || v.grade === 'bad'
-  const scoringVisits = visits.filter(v => v.tag === 'scoring')
-  const setups = visits.filter(v => v.tag === 'setup')
+  const lowBand = (g: VisitGrade) => g === 'weak' || g === 'bad'
+  const low = (v: ReviewVisit) => lowBand(v.grade)
+  // A note's Bad on a leave dart is a setup mistake, not a low score: the scoring band says which
+  const lowScore = (v: ReviewVisit) => lowBand(v.value.rule === 'note' ? v.value.band : v.grade)
+  // Graded on the scoring scale, whatever the tag: a leave dart's visit is a scoring visit too
+  const scoringVisits = visits.filter(v => v.value.scoring !== null)
+  // Its most advanced phase is a setup: a visit that went on to a finish is a Doubling visit
+  const setups = visits.filter(v => v.tags.at(-1) === 'setup')
   const stats = executionStats(throws)
   const counts: LegCounts = {
-    lowVisits: scoringVisits.filter(low).length,
-    // The setup visits graded Bad, as the Setup skill's line counts them
-    badSetups: setups.filter(v => v.grade === 'bad').length,
+    lowVisits: scoringVisits.filter(lowScore).length,
+    // The setup visits graded Bad as a setup, as the Setup skill's line counts them
+    badSetups: setups.filter(isBadSetup).length,
     missedDoubles: stats.dartsAtDouble - stats.checkouts,
     clean: !visits.some(low),
   }
@@ -248,9 +263,9 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
   else if (weakest.k === 'setup') take.push(`${plural(counts.badSetups, 'bad setup visit')}.`)
   else take.push(`${plural(counts.missedDoubles, 'missed double')}.`)
 
-  const onFinish = before.findIndex(b => b <= 170)
-  if (won && onFinish >= 0 && darts - onFinish > LONG_FINISH)
-    take.push(`From your first finish to the checkout took ${darts - onFinish} darts.`)
+  const firstFinish = before.findIndex(b => b <= 170)
+  if (won && firstFinish >= 0 && darts - firstFinish > LONG_FINISH)
+    take.push(`From your first finish to the checkout took ${darts - firstFinish} darts.`)
   const scored = scoringVisits.map(v => v.scored)
   if (scored.length >= LATE_DROP_VISITS && mean(scored.slice(3)) <= mean(scored.slice(0, 3)) - LATE_DROP)
     take.push('Your scoring dropped after visit 3.')

@@ -6,7 +6,7 @@
   import { gradeWorking, groupingLine, one, signedPoints, whatHappened } from '$lib/coach/numbers'
   import GradeScale from './GradeScale.svelte'
 
-  let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'grouping' | 'tag' | 'left' | 'bust' | 'value'> } = $props()
+  let { visit }: { visit: Pick<ReviewVisit, 'n' | 'darts' | 'grouping' | 'left' | 'bust' | 'value'> } = $props()
 
   const COLUMNS: [string, string][] = [
     ['Dart', 'Dart'],

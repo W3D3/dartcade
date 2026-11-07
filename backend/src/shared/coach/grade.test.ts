@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SEGS, segAngle, segmentAt } from '../board.js'
+import { HALF, R, SEGS, segAngle, segmentAt } from '../board.js'
 import {
   BRILLIANT_CHANCE,
   BUST_DART_LOST,
@@ -17,7 +17,7 @@ import {
   OK_FROM,
   SCORING_BANDS,
   SCORING_SCALE,
-  tagOf,
+  tagsOf,
   WEAK_FROM,
   type VisitFacts,
 } from './grade.js'
@@ -25,11 +25,17 @@ import { classifyDart } from './dartClass.js'
 import { classifyVisit, routeShape } from './visitText.js'
 import { fewestPath } from './minDarts.js'
 import { strategyNotes, throwEvaluations } from './notes.js'
-import { leg, seg, visit, REF } from './testLegs.js'
+import { dart, leg, seg, visit, REF } from './testLegs.js'
 import { dartDeltas } from './value.js'
-import { throwsOf, type CoachDart, type CoachVisit } from './walk.js'
+import { onFinish, throwsOf, type CoachDart, type CoachVisit, type Throw } from './walk.js'
 
 type Opts = { average?: number; lost?: boolean; opponentLeft?: number; visit?: CoachVisit }
+
+/** Each dart's value change, null for the darts with more than 170 left (review.ts) */
+const deltasOn = (throws: Throw[], evaluate: ReturnType<typeof throwEvaluations>) => {
+  const onChance = throws.filter(onFinish)
+  return [...Array<null>(throws.length - onChance.length).fill(null), ...dartDeltas(onChance, evaluate, REF)]
+}
 
 /** Seat 0's visit from `start`, after an opponent (seat 1) left on `opponentLeft` (default 501). */
 function facts(start: number, names: string[], { average = 60, lost = false, opponentLeft = 501, visit: given }: Opts = {}): VisitFacts {
@@ -43,7 +49,7 @@ function facts(start: number, names: string[], { average = 60, lost = false, opp
     then: v.remaining,
     bust: v.bust,
     classes: throws.map(t => classifyDart(t, { evaluation: evaluate(t) })),
-    deltas: start > 170 ? [] : dartDeltas(throws, evaluate, REF),
+    deltas: deltasOn(throws, evaluate),
     notes: strategyNotes(throws, REF, evaluate),
     average,
     first: start === 501,
@@ -85,20 +91,34 @@ describe('routeShape', () => {
   })
 })
 
-describe('tagOf', () => {
-  it('is Scoring above 170, Doubling once a dart is on a one-dart finish, else Setup', () => {
-    expect(tagOf(facts(171, ['S20', 'S20', 'S20']))).toBe('scoring')
-    expect(tagOf(facts(100, ['S20', 'S20', 'S20']))).toBe('setup')
+describe('tagsOf', () => {
+  it('lists every phase the visit went through, in order, by the score before each dart', () => {
+    expect(tagsOf(facts(501, ['S20', 'S20', 'S20']))).toEqual(['scoring'])
+    // Scoring on 171, then Setup on 151 and 131: the score before the dart decides, not the visit's start
+    expect(tagsOf(facts(171, ['S20', 'S20', 'S20']))).toEqual(['scoring', 'setup'])
+    // The last dart of a visit from 200 has 160 left: a leave dart is a setup dart
+    expect(tagsOf(facts(200, ['S20', 'S20', 'S20']))).toEqual(['scoring', 'setup'])
+    expect(tagsOf(facts(100, ['S20', 'S20', 'S20']))).toEqual(['setup'])
+  })
+
+  it('from 170 is Setup and Doubling when the first darts hit the setup, else Setup alone', () => {
+    // T20 T20 leave 50, the third dart is at the bull
+    expect(tagsOf(facts(170, ['T20', 'T20', 'Bull']))).toEqual(['setup', 'doubling'])
+    expect(tagsOf(facts(170, ['S1', 'S1', 'S1']))).toEqual(['setup'])
     // The third dart is thrown on 40
-    expect(tagOf(facts(80, ['S20', 'S20', 'S20']))).toBe('doubling')
-    expect(tagOf(facts(50, ['Bull']))).toBe('doubling')
+    expect(tagsOf(facts(80, ['S20', 'S20', 'S20']))).toEqual(['setup', 'doubling'])
+    expect(tagsOf(facts(50, ['Bull']))).toEqual(['doubling'])
+  })
+
+  it('never runs through all three: a dart cannot bring a score above 170 down to a finish in two', () => {
+    expect(tagsOf(facts(230, ['T20', 'T20', 'Bull']))).toEqual(['scoring', 'setup'])
   })
 })
 
 describe('scoring visits', () => {
   it('Bad: 30 or more below the average', () => {
     expect(grade(501, ['S20', 'S1', 'S1'])).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'bad',
       text: 'Scored 22; your usual visit is 60.',
       tip: false,
@@ -107,7 +127,7 @@ describe('scoring visits', () => {
 
   it('Weak: 15 to 30 below the average, with the average rounded', () => {
     expect(grade(501, ['S20', 'S20', 'S20'], { average: 85.4 })).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'weak',
       text: 'Scored 60; your usual visit is 85.',
       tip: false,
@@ -116,7 +136,7 @@ describe('scoring visits', () => {
 
   it('Inaccuracy at best: two darts at 20 drift into 1 or 5', () => {
     expect(grade(501, ['S20', 'S1', 'S5'], { average: 40 })).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'inaccuracy',
       text: '2 darts drifted into 1 or 5.',
       value: { points: -14, rule: null },
@@ -137,18 +157,18 @@ describe('scoring visits', () => {
   })
 
   it('Excellent: 50 or more above the average, Great 25 or more, naming the trebles', () => {
-    expect(grade(501, ['T20', 'T20', 'S20'])).toMatchObject({ tag: 'scoring', grade: 'excellent', text: 'Two trebles.', tip: false })
-    expect(grade(501, ['T20', 'T20', 'T5'])).toMatchObject({ tag: 'scoring', grade: 'excellent', text: 'Three trebles.', tip: false })
-    expect(grade(501, ['T20', 'S20', 'S20'])).toMatchObject({ tag: 'scoring', grade: 'great', text: 'Scored 100.', tip: false })
+    expect(grade(501, ['T20', 'T20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'excellent', text: 'Two trebles.', tip: false })
+    expect(grade(501, ['T20', 'T20', 'T5'])).toMatchObject({ tags: ['scoring'], grade: 'excellent', text: 'Three trebles.', tip: false })
+    expect(grade(501, ['T20', 'S20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'great', text: 'Scored 100.', tip: false })
     expect(grade(501, ['T20', 'S20', 'S5'])).toMatchObject({ grade: 'great', text: 'Scored 85.' })
   })
 
   it('Good: 10 or more above the average', () => {
-    expect(grade(501, ['T20', 'S7', 'S3'])).toMatchObject({ tag: 'scoring', grade: 'good', text: 'Scored 70.', tip: false })
+    expect(grade(501, ['T20', 'S7', 'S3'])).toMatchObject({ tags: ['scoring'], grade: 'good', text: 'Scored 70.', tip: false })
   })
 
   it('OK: from 5 below the average to 10 above', () => {
-    expect(grade(501, ['S20', 'S20', 'S20'])).toMatchObject({ tag: 'scoring', grade: 'ok', text: 'Scored 60.', tip: false })
+    expect(grade(501, ['S20', 'S20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'ok', text: 'Scored 60.', tip: false })
   })
 
   it('grades the rating, not the raw score, and says when the grouping lifted the grade', () => {
@@ -158,7 +178,7 @@ describe('scoring visits', () => {
     })
     // 60 is OK on a 60 average; rated 80 it is Good
     expect(classifyVisit(rated(['S20', 'S20', 'S20'], 80))).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'good',
       text: 'Scored 60, great grouping (6 mm), close to the target (2 mm).',
       tip: false,
@@ -166,14 +186,19 @@ describe('scoring visits', () => {
     // 45 is Weak on a 70 average; rated 68 it is OK
     expect(classifyVisit(rated(['S20', 'S20', 'S5'], 68, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
     // A rating that leaves the grade alone keeps the plain text
-    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 64))).toMatchObject({ tag: 'scoring', grade: 'ok', text: 'Scored 60.', tip: false })
+    expect(classifyVisit(rated(['S20', 'S20', 'S20'], 64))).toMatchObject({
+      tags: ['scoring'],
+      grade: 'ok',
+      text: 'Scored 60.',
+      tip: false,
+    })
   })
 
   it('a very low score is Weak at best: a tight group never lifts it higher', () => {
     expect(
       classifyVisit({ ...facts(501, ['S5', 'S5', 'S5']), grouping: { spreadMm: 2, edgeMm: 1, rating: 57, comment: null } }),
     ).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'weak',
       text: 'Scored 15; your usual visit is 60.',
       value: { points: -3, rule: 'veryLow' },
@@ -199,22 +224,78 @@ describe('scoring visits', () => {
   it('Bad: a strategy note on a later dart, told from the note', () => {
     // From 177 the third dart is thrown on 57
     expect(grade(177, ['T20', 'T20', 'S20'])).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring', 'setup'],
       grade: 'bad',
       text: 'On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
       tip: false,
     })
   })
 
-  it('a tip does not make it Bad, and speaks for the visit', () => {
+  it('a tip does not make it Bad (the value decides), and speaks for the visit', () => {
     const f = facts(177, ['T20', 'T20', 'S20'])
     expect(f.notes).toHaveLength(1)
     expect(classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })).toMatchObject({
-      tag: 'scoring',
-      grade: 'excellent',
+      tags: ['scoring', 'setup'],
+      grade: 'good',
       text: 'Tip: On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
       tip: true,
     })
+  })
+})
+
+/** The visit with its last dart replaced by a placed one of the same segment */
+const withLast = (v: CoachVisit, d: CoachDart): CoachVisit => ({ ...v, darts: [...v.darts.slice(0, -1), d] })
+
+describe('a visit is judged dart by dart on the score left before it', () => {
+  // Start 204: S5 and S20 leave 179 for the last dart, where a miss of the 20 leaves 159, 174 or 178
+  /** A dart in the outer single of `n`'s 20-side neighbour, `mm` outside the T20 and just past its wire: aimed at the T20 */
+  const driftedFromT20 = (mm: number) => {
+    const angle = segAngle(0) + HALF * 1.15
+    const r = R.tr + mm / 170
+    return { x: r * Math.cos(angle), y: r * Math.sin(angle) }
+  }
+
+  it("tags the visit by its darts, not its start: the owner's 204 · S5 S20 S5 is a Bad setup", () => {
+    const placed = driftedFromT20(14)
+    expect(segmentAt(placed.x, placed.y)).toMatchObject({ number: 5, multiplier: 1 })
+    const f = facts(204, ['S5', 'S20', 'S5'], { visit: withLast(visit(0, 204, ['S5', 'S20', 'S5']), dart('S5', placed)) })
+    expect(f.throws.map(t => t.left)).toEqual([204, 199, 179])
+    // Only a dart on 170 or less has a value change
+    expect(f.deltas).toEqual([null, null, null])
+    expect(classifyVisit(f)).toMatchObject({
+      tags: ['scoring', 'setup'],
+      grade: 'bad',
+      text: "On 179, S5: better T19 — S5 leaves 174, which one visit can't finish.",
+      tip: false,
+    })
+    expect(f.notes).toMatchObject([{ left: 179, darts: 1, byLeave: true }])
+  })
+
+  it('T20 from 179 landing in the S20 leaves the bogey 159: a Bad setup', () => {
+    // Just outside the treble, in the middle of the 20
+    const placed = { x: (R.tr + 0.05) * Math.cos(segAngle(0)), y: (R.tr + 0.05) * Math.sin(segAngle(0)) }
+    const f = facts(204, ['S5', 'S20', 'S20'], { visit: withLast(visit(0, 204, ['S5', 'S20', 'S20']), dart('S20', placed)) })
+    expect(f.classes[2].target?.aimId).toBe('T20')
+    expect(classifyVisit(f)).toMatchObject({
+      tags: ['scoring', 'setup'],
+      grade: 'bad',
+      text: "On 179, S20: better T19 — S20 leaves 159, which one visit can't finish.",
+    })
+  })
+
+  it('aiming the 19s from 179 is no setup mistake, whether the T19 or the S19 (160) is hit', () => {
+    for (const third of ['T19', 'S19']) {
+      const f = facts(204, ['S5', 'S20', third])
+      expect(f.notes).toEqual([])
+      expect(classifyVisit(f).grade).not.toBe('bad')
+    }
+    // A Setup visit all the same (its last dart was a leave dart), graded on its score
+    expect(grade(204, ['S5', 'S20', 'T19'])).toMatchObject({ tags: ['scoring', 'setup'], value: { scoring: expect.anything() } })
+  })
+
+  it('a last dart with a treble 20 out of reach of 170 is still a scoring dart', () => {
+    expect(facts(231 + 40, ['S20', 'S20', 'S20']).deltas).toEqual([null, null, null])
+    expect(tagsOf(facts(300, ['S20', 'S20', 'S1']))).toEqual(['scoring'])
   })
 })
 
@@ -239,20 +320,23 @@ describe('explainedNote', () => {
 describe('setup and doubling visits: graded by value', () => {
   /** The visit's grade points: its darts' value changes plus their closeness credits */
   const points = (f: VisitFacts) =>
-    f.deltas.reduce((s, d, i) => s + dartGrade(d, closeness(f.classes[i]), f.throws[i].bust ? bustPenalty(f.throws[i].dart) : 0), 0)
+    f.deltas.reduce<number>(
+      (s, d, i) => s + (d === null ? 0 : dartGrade(d, closeness(f.classes[i]), f.throws[i].bust ? bustPenalty(f.throws[i].dart) : 0)),
+      0,
+    )
 
   it("marks a tip's text as a tip, and only that", () => {
     const f = facts(97, ['S20', 'S20', 'S20'])
     expect(f.notes.length).toBeGreaterThan(0)
     const r = classifyVisit({ ...f, notes: f.notes.map(n => ({ ...n, tip: true })) })
-    expect(r).toMatchObject({ tag: 'setup', tip: true, grade: classifyVisit({ ...f, notes: [] }).grade })
+    expect(r).toMatchObject({ tags: ['setup'], tip: true, grade: classifyVisit({ ...f, notes: [] }).grade })
     expect(r.text).toMatch(/^Tip: /)
     expect(classifyVisit(f).tip).toBe(false)
   })
 
   it('Bad: a strategy note, told from the note', () => {
     expect(grade(97, ['S20', 'S20', 'S20'])).toMatchObject({
-      tag: 'setup',
+      tags: ['setup'],
       grade: 'bad',
       text: 'On 57, S20: better S17 — S20 leaves 37, with no one-dart finish.',
       tip: false,
@@ -260,10 +344,10 @@ describe('setup and doubling visits: graded by value', () => {
   })
 
   it('a bust is graded by its value: it goes back to the start', () => {
-    expect(grade(7, ['S20'])).toMatchObject({ tag: 'setup', grade: 'bad' })
+    expect(grade(7, ['S20'])).toMatchObject({ tags: ['setup'], grade: 'bad' })
     expect(classifyVisit({ ...facts(7, ['S20']), notes: [] }).text).toBe('Busted on the first dart (S20 on 7).')
     expect(classifyVisit({ ...facts(2, ['S1']), notes: [] })).toMatchObject({
-      tag: 'doubling',
+      tags: ['doubling'],
       grade: 'bad',
       text: 'Busted on the first dart (S1 on 2).',
       tip: false,
@@ -277,7 +361,7 @@ describe('setup and doubling visits: graded by value', () => {
     expect(two.then).toBe(2)
     expect(points(bust)).toBeGreaterThan(points(two))
     expect(classifyVisit(bust)).toMatchObject({
-      tag: 'doubling',
+      tags: ['doubling'],
       grade: 'bad',
       text: 'Busted on the second dart (T8 on 16), after one miss inside D16. Back on 32.',
       tip: false,
@@ -315,14 +399,14 @@ describe('setup and doubling visits: graded by value', () => {
     expect(f.notes.map(n => n.tip)).toEqual([true])
     expect(points(f)).toBeLessThan(OK_FROM)
     expect(classifyVisit(f)).toMatchObject({
-      tag: 'doubling',
+      tags: ['setup', 'doubling'],
       grade: 'bad',
       text: 'Busted on purpose with the third dart to stay on 20 (D10).',
       tip: false,
     })
     // The same darts, the last a plain bust: the same value
     expect(classifyVisit({ ...f, classes: [...f.classes.slice(0, 2), { ...f.classes[2], kind: 'bust' }] })).toMatchObject({
-      tag: 'doubling',
+      tags: ['setup', 'doubling'],
       grade: 'bad',
       text: 'Busted on the third dart (S5 on 3), after one miss inside D10, the second was S7. Back on 20.',
       tip: false,
@@ -335,7 +419,7 @@ describe('setup and doubling visits: graded by value', () => {
   it('Bad: a strategy note that is not a tip', () => {
     // 24 left: S14 instead of the direct D12, with the opponent on 32
     const r = grade(24, ['S14', 'Miss', 'Miss'], { opponentLeft: 32 })
-    expect(r).toMatchObject({ tag: 'doubling', grade: 'bad' })
+    expect(r).toMatchObject({ tags: ['doubling'], grade: 'bad' })
     expect(r.text).toMatch(/^On 24, S14: better D12/)
     expect(r.tip).toBe(false)
   })
@@ -343,11 +427,11 @@ describe('setup and doubling visits: graded by value', () => {
   it('a tip speaks for the visit, its grade left to the value', () => {
     const f = facts(24, ['S14', 'Miss', 'Miss'])
     const r = classifyVisit(f)
-    expect(r).toMatchObject({ tag: 'doubling', grade: classifyVisit({ ...f, notes: [] }).grade, tip: true })
+    expect(r).toMatchObject({ tags: ['doubling'], grade: classifyVisit({ ...f, notes: [] }).grade, tip: true })
     expect(r.text).toMatch(/^Tip: On 24, S14: better D12/)
     expect(grade(24, ['S14', 'Miss', 'Miss'], { lost: true }).text).toMatch(/^Missed the match dart\. Tip: On 24, S14/)
     // A checkout keeps its own line
-    expect(grade(24, ['S14', 'D5'])).toMatchObject({ tag: 'doubling', text: 'Checked out on D5.' })
+    expect(grade(24, ['S14', 'D5'])).toMatchObject({ tags: ['doubling'], text: 'Checked out on D5.' })
   })
 
   it('59 → Miss, S3, S19: the darts gave away the finish, told from the costliest', () => {
@@ -355,7 +439,7 @@ describe('setup and doubling visits: graded by value', () => {
     const f = { ...facts(59, ['Miss', 'S3', 'S19']), notes: [] }
     expect(points(f)).toBeLessThan(WEAK_FROM)
     expect(classifyVisit(f)).toMatchObject({
-      tag: 'setup',
+      tags: ['setup'],
       grade: 'bad',
       text: 'S19 on 56 cost 15% checkout chance: 37 left is a single to double (S5 · D16).',
       tip: false,
@@ -375,7 +459,7 @@ describe('setup and doubling visits: graded by value', () => {
       fewestChance: null,
     })
     expect(classifyVisit(f)).toMatchObject({
-      tag: 'doubling',
+      tags: ['setup', 'doubling'],
       grade: 'good',
       text: 'The third split to D16. 32 left is a one-dart finish (D16).',
       tip: false,
@@ -383,20 +467,25 @@ describe('setup and doubling visits: graded by value', () => {
   })
 
   it('a checkout is told by its double', () => {
-    expect(grade(32, ['S16', 'D8'])).toMatchObject({ tag: 'doubling', grade: 'good', text: 'Checked out on D8.', tip: false })
-    expect(grade(76, ['S20', 'S16', 'D20'])).toMatchObject({ tag: 'doubling', grade: 'great', text: 'Checked out on D20.', tip: false })
+    expect(grade(32, ['S16', 'D8'])).toMatchObject({ tags: ['doubling'], grade: 'good', text: 'Checked out on D8.', tip: false })
+    expect(grade(76, ['S20', 'S16', 'D20'])).toMatchObject({
+      tags: ['setup', 'doubling'],
+      grade: 'great',
+      text: 'Checked out on D20.',
+      tip: false,
+    })
     expect(grade(50, ['Miss', 'Bull'])).toMatchObject({ text: 'Checked out on the bull.' })
   })
 
   it('a flat or better visit says what it left, a worse one leads with its costliest dart', () => {
     expect(grade(170, ['T20', 'T20', 'S25'])).toMatchObject({
-      tag: 'doubling',
+      tags: ['setup', 'doubling'],
       grade: 'good',
       text: '1 dart at the bull, in the 25. 25 left is a single to double (S9 · D8).',
       tip: false,
     })
     expect(grade(150, ['S20', 'S20', 'S20'])).toMatchObject({
-      tag: 'setup',
+      tags: ['setup'],
       grade: 'weak',
       text: 'S20 on 110 cost 5% checkout chance: 90 left is a treble to double (T20 · D15).',
       tip: false,
@@ -406,7 +495,7 @@ describe('setup and doubling visits: graded by value', () => {
 
   it('three darts missed at the double: Bad for a semi-pro', () => {
     expect(grade(32, ['Miss', 'Miss', 'Miss'])).toMatchObject({
-      tag: 'doubling',
+      tags: ['doubling'],
       grade: 'bad',
       text: '3 darts at D16, all outside. Still on 32.',
       tip: false,
@@ -467,7 +556,7 @@ describe('setup and doubling visits: graded by value', () => {
   it('the match dart: a dart at the double on the last visit of a lost leg', () => {
     expect(grade(52, ['S12', 'Miss'], { lost: true }).text).toMatch(/^Missed the match dart\. /)
     expect(classifyVisit({ ...facts(40, ['S20', 'S20'], { lost: true }), notes: [] })).toMatchObject({
-      tag: 'doubling',
+      tags: ['doubling'],
       grade: 'bad',
       text: 'Missed the match dart. Busted on the second dart (S20 on 20), after one miss inside D20. Back on 40.',
       tip: false,
@@ -485,7 +574,7 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
 
   it('scoring visits that leave a finish in the fewest darts', () => {
     expect(grade(501, ['T20', 'T19', 'T19'])).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring'],
       grade: 'brilliant',
       text: 'Nine-darter still on.',
       tip: false,
@@ -495,7 +584,7 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
     // 361 needs 7
     expect(fewest(501, ['T20', 'T20', 'S20'])).toBe(false)
     expect(grade(211, ['T20', 'T20', 'T17'])).toMatchObject({
-      tag: 'scoring',
+      tags: ['scoring', 'setup'],
       grade: 'brilliant',
       text: 'Scored 171: 40 left is still a one-dart finish (D20), the fewest possible.',
       tip: false,
@@ -535,7 +624,7 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
     // 40 → D20: 32.0%, above BRILLIANT_CHANCE: the Excellent floor
     const d40 = grade(40, ['D20'])
     expect(d40.value.fewestChance! / 100).toBeGreaterThan(BRILLIANT_CHANCE)
-    expect(d40).toMatchObject({ tag: 'doubling', grade: 'excellent', text: 'Checked out in the fewest darts (D20).', tip: false })
+    expect(d40).toMatchObject({ tags: ['doubling'], grade: 'excellent', text: 'Checked out in the fewest darts (D20).', tip: false })
     expect(d40.value.rule).toBe(bandOf(d40.value.points, FINISH_BANDS) === 'excellent' ? null : 'fewest')
   })
 
@@ -552,7 +641,7 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
 
   it('a setup visit can keep the fewest darts', () => {
     expect(fewest(169, ['T20', 'T19', 'S12'])).toBe(true)
-    expect(grade(169, ['T20', 'T19', 'S12']).tag).toBe('setup')
+    expect(grade(169, ['T20', 'T19', 'S12']).tags).toEqual(['setup'])
   })
 
   it('never on a bust; a strategy note wins, a tip does not', () => {

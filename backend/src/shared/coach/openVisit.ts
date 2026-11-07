@@ -2,8 +2,9 @@
 // way the coach reviews a real leg, and the next dart's best aims.
 import { AIMS, type Aim } from './aims.js'
 import type { CoachModel, CoachModels } from './model.js'
+import { bestLeaveAim, bogeyChance, BOGEY_THRESHOLD } from './notes.js'
 import { reviewLeg, type ReviewVisit } from './review.js'
-import { walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
+import { dartPhase, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
 
 export type OpenVisitInput = {
   /** The score left when the visit starts, 2–501 */
@@ -54,8 +55,11 @@ function bestPerLabel<T extends { aim: Aim }>(xs: readonly T[], by: (x: T) => nu
 /** The next dart's `top` best aims from `left` with `darts` darts left in a visit that started on
  *  `start`, by their chance (`model`'s) to check out this visit or (weighted by w) the next; none that can't. */
 export function bestAims(model: CoachModel, start: number, left: number, darts: number, w: number, top: number): AimChance[] {
-  const { values } = model.evaluator(start, w)(left, darts)
-  const chances = values.map((chance, i) => ({ aim: AIMS[i], chance })).filter(a => a.chance > 0)
+  const e = model.evaluator(start, w)(left, darts)
+  const best = bestLeaveAim(e)
+  // A leave dart is graded by its leave (notes.ts leaveCost), so no aim the grade would call a bad setup is offered
+  const safe = (i: number) => dartPhase({ left, darts }) !== 'leave' || bogeyChance(e, i) - bogeyChance(e, best) < BOGEY_THRESHOLD
+  const chances = e.values.flatMap((chance, i) => (chance > 0 && safe(i) ? [{ aim: AIMS[i], chance }] : []))
   return bestPerLabel(chances, a => a.chance, top)
 }
 
