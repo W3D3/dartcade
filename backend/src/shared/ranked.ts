@@ -168,6 +168,16 @@ export function applyResult(before: RatingState, won: boolean, change: number): 
   }
 }
 
+/** An admin's change: put the player on `rating`, or send them back to placement (the rating stays, hidden again). */
+export type RatingAdjustment = { kind: 'set'; rating: number } | { kind: 'reset' }
+
+/** A player's state after an admin's adjustment. A set keeps their matches and re-derives the stage without the demotion buffer. */
+export function applyAdjustment(before: RatingState, adj: RatingAdjustment): RatingState {
+  if (adj.kind === 'reset') return { rating: before.rating, rankIndex: null, matches: 0, wins: 0, streak: 0 }
+  const rating = Math.max(0, adj.rating)
+  return { ...before, rating, rankIndex: before.matches < PLACEMENT_MATCHES ? null : rankIndexFor(rating) }
+}
+
 /**
  * What one finished ranked game does to each player: the live path and the replay that follows an
  * invalidated game both rate games with this. `states` holds every player's rating before the game.

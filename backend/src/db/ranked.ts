@@ -7,11 +7,13 @@ import { rankUpEvent } from '../activity/events.js'
 import {
   PLACEMENT_MATCHES,
   START_RATING,
+  applyAdjustment,
   applyResult,
   rateGame,
   seedRating,
   type RankedMode,
   type RatedSide,
+  type RatingAdjustment,
   type RatingState,
 } from '../shared/ranked.js'
 
@@ -290,7 +292,8 @@ function ratingColumns(s: RatingState) {
  * calls this, as ratings depend on game order.
  * A player starts from the seed their first game in the mode recorded (the excluded games included),
  * so their X01 average is never looked at again; a player left with no games loses their rating row
- * and is seeded afresh by their next game. Runs inside `db`'s transaction when it is one.
+ * and is seeded afresh by their next game. An admin's adjustment (`ranked_adjustments`) is applied between
+ * the games it falls between. Runs inside `db`'s transaction when it is one.
  */
 export async function recalculateRatings(db: Kysely<Database>, mode: RankedMode, exclude: ReadonlySet<string> = new Set()): Promise<void> {
   if (db.isTransaction) return replay(db, mode, exclude)
@@ -326,7 +329,29 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     rows.filter(r => !exclude.has(r.session_id) && r.invalidated_at === null),
     r => r.session_id,
   )
+  const adjustments = await trx
+    .selectFrom('ranked_adjustments')
+    .select(['user_id', 'kind', 'rating', 'created_at'])
+    .where('mode', '=', mode)
+    .orderBy('created_at')
+    .orderBy('id')
+    .execute()
+  let nextAdjustment = 0
+  // Applied between the games they fall between, so no later replay erases them
+  const adjustUntil = (until: Date | null) => {
+    for (; nextAdjustment < adjustments.length; nextAdjustment++) {
+      const a = adjustments[nextAdjustment]
+      if (until !== null && a.created_at > until) return
+      const before = states.get(a.user_id) ?? { rating: START_RATING, rankIndex: null, matches: 0, wins: 0, streak: 0 }
+      states.set(
+        a.user_id,
+        applyAdjustment(before, a.kind === 'set' ? { kind: 'set', rating: a.rating ?? START_RATING } : { kind: 'reset' }),
+      )
+      lastGame.set(a.user_id, a.created_at)
+    }
+  }
   for (const [sessionId, players] of games) {
+    adjustUntil(players[0]?.created_at ?? null)
     const forfeit = players.some(p => p.forfeited)
     const side = (won: boolean): RatedSide => ({
       won,
@@ -360,6 +385,7 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
         .execute()
     }
   }
+  adjustUntil(null)
   for (const [userId, state] of states) {
     const at = lastGame.get(userId)
     if (at !== undefined) {
@@ -469,4 +495,52 @@ export async function unrecordedRankedGames(db: Kysely<Database>): Promise<strin
     .where(eb => eb.not(eb.exists(eb.selectFrom('ranked_results as r').select('r.user_id').whereRef('r.session_id', '=', 'm.session_id'))))
     .execute()
   return rows.map(r => r.session_id)
+}
+
+export type RatingSnapshot = { rating: number; rankIndex: number | null; matches: number }
+
+/**
+ * An admin sets a player's rating in a mode, or sends them back to placement, and the mode is
+ * replayed so the adjustment sits in the order of the games. Returns their rating before and
+ * after; null when the account doesn't exist. Writes the `ranked.adjust` / `ranked.reset` audit row.
+ */
+export async function adjustRating(
+  db: Kysely<Database>,
+  adminUserId: string,
+  userId: string,
+  change: { mode: RankedMode; reason: string } & RatingAdjustment,
+): Promise<{ before: RatingSnapshot; after: RatingSnapshot } | null> {
+  return db.transaction().execute(async trx => {
+    if (!(await trx.selectFrom('user').select('id').where('id', '=', userId).executeTakeFirst())) return null
+    await lockMode(trx, change.mode)
+    const snapshot = async (): Promise<RatingSnapshot> => {
+      const { rating, rankIndex, matches } = (await getRatings(trx, userId))[change.mode]
+      return { rating, rankIndex, matches }
+    }
+    const before = await snapshot()
+    await trx
+      .insertInto('ranked_adjustments')
+      .values({
+        user_id: userId,
+        mode: change.mode,
+        kind: change.kind,
+        rating: change.kind === 'set' ? change.rating : null,
+        reason: change.reason,
+        admin_user_id: adminUserId,
+        created_at: new Date(),
+      })
+      .execute()
+    await recalculateRatings(trx, change.mode)
+    const after = await snapshot()
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: adminUserId,
+        action: change.kind === 'set' ? 'ranked.adjust' : 'ranked.reset',
+        target: userId,
+        detail: JSON.stringify({ mode: change.mode, reason: change.reason, before, after }),
+      })
+      .execute()
+    return { before, after }
+  })
 }

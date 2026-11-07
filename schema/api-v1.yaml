@@ -1390,6 +1390,56 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/admin/users/{id}/ranked/adjust:
+    parameters:
+      - $ref: '#/components/parameters/AdminUserId'
+    post:
+      operationId: adjustUserRating
+      summary: Set an account's ranked rating in a mode (admin)
+      description: Recorded as an adjustment the rating replay applies in order with the games, so a later invalidation keeps it. Writes a ranked.adjust audit entry. Moderators can't.
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdjustRatingRequest' }
+      responses:
+        '200':
+          description: Their rating in the mode before and after
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RatingAdjustment' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/users/{id}/ranked/reset:
+    parameters:
+      - $ref: '#/components/parameters/AdminUserId'
+    post:
+      operationId: resetUserRating
+      summary: Send an account back to placement in a mode (admin)
+      description: Placement matches again with the rating kept (hidden). Replayed like an adjustment. Writes a ranked.reset audit entry. Moderators can't.
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetRatingRequest' }
+      responses:
+        '200':
+          description: Their rating in the mode before and after
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RatingAdjustment' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/admin/users/{id}/ban:
     parameters:
       - $ref: '#/components/parameters/AdminUserId'
@@ -4975,6 +5025,36 @@ components:
             manual: { type: integer }
             last30Days: { type: integer }
             manualLast30Days: { type: integer }
+    AdjustRatingRequest:
+      type: object
+      required: [mode, rating, reason]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: ['1v1', '2v2'] }
+        rating: { type: integer, minimum: 0, maximum: 3000, description: RP to put them on }
+        reason: { type: string, minLength: 1, maxLength: 500, pattern: '\S', description: 'Why, kept in the audit trail' }
+    ResetRatingRequest:
+      type: object
+      required: [mode, reason]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: ['1v1', '2v2'] }
+        reason: { type: string, minLength: 1, maxLength: 500, pattern: '\S', description: 'Why, kept in the audit trail' }
+    RatingSnapshot:
+      type: object
+      required: [rating, rankIndex, matches]
+      additionalProperties: false
+      properties:
+        rating: { type: integer }
+        rankIndex: { type: integer, nullable: true, description: null while placing }
+        matches: { type: integer }
+    RatingAdjustment:
+      type: object
+      required: [before, after]
+      additionalProperties: false
+      properties:
+        before: { $ref: '#/components/schemas/RatingSnapshot' }
+        after: { $ref: '#/components/schemas/RatingSnapshot' }
     UserAuditResponse:
       type: object
       required: [entries]

@@ -20892,6 +20892,633 @@
         }
       }
     },
+    "/api/admin/users/{id}/ranked/adjust": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "adjustUserRating",
+        "summary": "Set an account's ranked rating in a mode (admin)",
+        "description": "Recorded as an adjustment the rating replay applies in order with the games, so a later invalidation keeps it. Writes a ranked.adjust audit entry. Moderators can't.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "rating",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "1v1",
+                      "2v2"
+                    ]
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3000,
+                    "description": "RP to put them on"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "\\S",
+                    "description": "Why, kept in the audit trail"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Their rating in the mode before and after",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "before",
+                    "after"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "before": {
+                      "type": "object",
+                      "required": [
+                        "rating",
+                        "rankIndex",
+                        "matches"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "rankIndex": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "null while placing"
+                        },
+                        "matches": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "after": {
+                      "type": "object",
+                      "required": [
+                        "rating",
+                        "rankIndex",
+                        "matches"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "rankIndex": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "null while placing"
+                        },
+                        "matches": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/ranked/reset": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "resetUserRating",
+        "summary": "Send an account back to placement in a mode (admin)",
+        "description": "Placement matches again with the rating kept (hidden). Replayed like an adjustment. Writes a ranked.reset audit entry. Moderators can't.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "1v1",
+                      "2v2"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "\\S",
+                    "description": "Why, kept in the audit trail"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Their rating in the mode before and after",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "before",
+                    "after"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "before": {
+                      "type": "object",
+                      "required": [
+                        "rating",
+                        "rankIndex",
+                        "matches"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "rankIndex": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "null while placing"
+                        },
+                        "matches": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "after": {
+                      "type": "object",
+                      "required": [
+                        "rating",
+                        "rankIndex",
+                        "matches"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "rankIndex": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "null while placing"
+                        },
+                        "matches": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/users/{id}/ban": {
       "parameters": [
         {
@@ -62731,6 +63358,137 @@
                 "type": "integer"
               },
               "manualLast30Days": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "AdjustRatingRequest": {
+        "type": "object",
+        "required": [
+          "mode",
+          "rating",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "1v1",
+              "2v2"
+            ]
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3000,
+            "description": "RP to put them on"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "\\S",
+            "description": "Why, kept in the audit trail"
+          }
+        }
+      },
+      "ResetRatingRequest": {
+        "type": "object",
+        "required": [
+          "mode",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "1v1",
+              "2v2"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "\\S",
+            "description": "Why, kept in the audit trail"
+          }
+        }
+      },
+      "RatingSnapshot": {
+        "type": "object",
+        "required": [
+          "rating",
+          "rankIndex",
+          "matches"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "rating": {
+            "type": "integer"
+          },
+          "rankIndex": {
+            "type": "integer",
+            "nullable": true,
+            "description": "null while placing"
+          },
+          "matches": {
+            "type": "integer"
+          }
+        }
+      },
+      "RatingAdjustment": {
+        "type": "object",
+        "required": [
+          "before",
+          "after"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "type": "object",
+            "required": [
+              "rating",
+              "rankIndex",
+              "matches"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rating": {
+                "type": "integer"
+              },
+              "rankIndex": {
+                "type": "integer",
+                "nullable": true,
+                "description": "null while placing"
+              },
+              "matches": {
+                "type": "integer"
+              }
+            }
+          },
+          "after": {
+            "type": "object",
+            "required": [
+              "rating",
+              "rankIndex",
+              "matches"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rating": {
+                "type": "integer"
+              },
+              "rankIndex": {
+                "type": "integer",
+                "nullable": true,
+                "description": "null while placing"
+              },
+              "matches": {
                 "type": "integer"
               }
             }
