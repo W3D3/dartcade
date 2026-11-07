@@ -258,6 +258,8 @@ export interface Session {
   totalVisits: number[]
   /** Started by the ranked queue; null for any other game. No player owns it: nobody aborts it (leaving forfeits) and either side starts its bull off. */
   ranked: RankedGame | null
+  /** A moderator voided this ranked game while it ran: aborted, never rated. */
+  voided?: boolean
   /** The ranked time limit (session/rankedClock.ts); null without rules. */
   clock: RankedClock | null
   /** Seat indices that have forfeited, ascending. */

@@ -8,6 +8,14 @@ import { RANKED_MODES, type RankedMode } from '../shared/ranked.js'
 import type { Cursor } from '../history/cursor.js'
 import { groupBy } from '../util/groupBy.js'
 
+/** A game the ranked queue started (a running one has no results yet) or that moved ratings. */
+const isRanked = sql.raw(
+  '(EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id) OR EXISTS (SELECT 1 FROM ranked_results rr WHERE rr.session_id = gs.id))',
+)
+
+/** ranked_matches.void_reason of a running game a moderator ended without a result. */
+export const MODERATOR_VOID = 'moderator_void'
+
 export type AdminGameStatus = 'finished' | 'aborted' | 'active'
 
 export type AdminGameSeat = {
@@ -30,6 +38,8 @@ export type AdminGame = {
   finished_at: Date | null
   board: { id: string; name: string } | null
   ranked: boolean
+  /** A moderator voided this ranked game while it ran. */
+  voided: boolean
   invalidated: Invalidation | null
   seats: AdminGameSeat[]
 }
@@ -95,7 +105,10 @@ export async function listAllGames(
       'iu.name as invalidator',
       'b.id as board_id',
       'b.name as board_name',
-      sql<boolean>`EXISTS (SELECT 1 FROM ranked_results rr WHERE rr.session_id = gs.id)`.as('ranked'),
+      sql<boolean>`${isRanked}`.as('ranked'),
+      sql<boolean>`EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id AND rm.void_reason = ${MODERATOR_VOID})`.as(
+        'voided',
+      ),
     ])
     .orderBy('gs.created_at', 'desc')
     .orderBy('gs.id', 'desc')
@@ -106,7 +119,7 @@ export async function listAllGames(
   if (filter.board) q = q.where('gs.board_db_id', '=', filter.board)
   if (filter.from) q = q.where('gs.created_at', '>=', filter.from)
   if (filter.to) q = q.where('gs.created_at', '<', filter.to)
-  if (filter.ranked) q = q.where(sql<boolean>`EXISTS (SELECT 1 FROM ranked_results rr WHERE rr.session_id = gs.id)`)
+  if (filter.ranked) q = q.where(sql<boolean>`${isRanked}`)
   const player = filter.player
   if (player) {
     q = q.where(
@@ -147,6 +160,7 @@ export async function listAllGames(
       finished_at: r.finished_at,
       board: r.board_id !== null && r.board_name !== null ? { id: r.board_id, name: r.board_name } : null,
       ranked: r.ranked,
+      voided: r.voided,
       invalidated: toInvalidation(r),
       seats: (seats.get(r.id) ?? []).map(({ session_id: _s, ...seat }) => seat),
     })),
@@ -319,5 +333,35 @@ export async function deleteGame(
       })
       .execute()
     return { recalculated: modes }
+  })
+}
+
+/**
+ * Records a moderator's void of a running ranked game (the engine has aborted it): the match is
+ * marked void so nothing ever rates it, and an audit row names the players and the optional reason.
+ */
+export async function recordVoid(db: Kysely<Database>, moderatorUserId: string, sessionId: string, reason: string | null): Promise<void> {
+  await db.transaction().execute(async trx => {
+    const match = await trx
+      .updateTable('ranked_matches')
+      .set({ void_reason: MODERATOR_VOID })
+      .where('session_id', '=', sessionId)
+      .returning('mode')
+      .executeTakeFirstOrThrow()
+    const players = await trx
+      .selectFrom('game_players')
+      .select(['seat', 'name', 'user_id'])
+      .where('session_id', '=', sessionId)
+      .orderBy('seat')
+      .execute()
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: moderatorUserId,
+        action: 'ranked.void',
+        target: sessionId,
+        detail: JSON.stringify({ mode: match.mode, players, reason }),
+      })
+      .execute()
   })
 }

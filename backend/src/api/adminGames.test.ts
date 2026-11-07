@@ -41,6 +41,7 @@ const row = (o: Partial<AdminGame> = {}): AdminGame => ({
   finished_at: null,
   board: null,
   ranked: false,
+  voided: false,
   invalidated: null,
   seats: [{ seat: 0, name: 'Ann', user_id: 'u1', bot_level: null, placement: null, forfeited: false }],
   ...o,

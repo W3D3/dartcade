@@ -518,6 +518,12 @@
         onviewmode={setViewMode}
       />
 
+      {#if snapshot.voided}
+        <div role="status" class="shrink-0 box-border px-7 py-3 border-b border-line bg-surface-1 text-[15px] text-text">
+          This game was voided by a moderator. It has no result and nobody's rating changed.
+        </div>
+      {/if}
+
       {#if endError}
         <div class="shrink-0 box-border px-7 py-2 border-b border-line bg-surface-1">
           <ErrorText>{endError}</ErrorText>

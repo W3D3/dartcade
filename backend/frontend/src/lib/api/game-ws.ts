@@ -792,6 +792,10 @@ export interface SnapshotBase {
    */
   rankedGame: boolean
   /**
+   * A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating.
+   */
+  voided: boolean
+  /**
    * A ranked game's rules and clock; null or missing for a game that is not ranked.
    */
   ranked?: RankedState | null

@@ -6,8 +6,8 @@ describe('toolsFor', () => {
     expect(toolsFor({ isAdmin: true })).toEqual(ADMIN_TOOLS)
   })
 
-  it('shows a moderator only the game tools', () => {
-    expect(toolsFor({ isAdmin: false }).map(t => t.href)).toEqual(['/admin/games'])
+  it('shows a moderator only the game and queue tools', () => {
+    expect(toolsFor({ isAdmin: false }).map(t => t.href)).toEqual(['/admin/games', '/admin/ranked'])
   })
 
   it('shows nobody nothing', () => {
