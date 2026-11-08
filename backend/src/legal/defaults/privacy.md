@@ -14,12 +14,17 @@ The controller for data processed by Dartcade is {{operator.name}}, {{address}},
 | Name, email, password hash                                                          | Your account and signing you in                                                       | Art. 6(1)(b) — the contract        |
 | Passkeys: public key, credential ID, the name you gave it, when added and last used | Signing you in without a password (your fingerprint or face never leaves your device) | Art. 6(1)(b) — the contract        |
 | Game history, down to each dart thrown                                              | Scoring, match history, statistics                                                    | Art. 6(1)(b) — the contract        |
-| Friends and presence (who's online)                                                 | The friends list and lobby features                                                   | Art. 6(1)(b) — the contract        |
+| Friends and presence (who's online)                                                 | The friends list, lobby features and Watch                                            | Art. 6(1)(b) — the contract        |
 | Lobbies you're in, ranked ratings                                                   | Running lobbies and matchmaking                                                       | Art. 6(1)(b) — the contract        |
 | Preferences (caller voice, settings)                                                | Remembering your settings                                                             | Art. 6(1)(b) — the contract        |
 | Uploaded voice packs and courses                                                    | Letting you and others use what you uploaded                                          | Art. 6(1)(b) — the contract        |
 | Camera stills of each dart (see 3.)                                                 | Training our own dart detection                                                       | Art. 6(1)(f) — legitimate interest |
 | Server logs (IP address, request, time)                                             | Keeping the service running and secure                                                | Art. 6(1)(f) — legitimate interest |
+
+Your games are visible to your friends. A friend can see that you are in a running game and watch it
+live: the score, the darts thrown and the result, as the players see them. Camera stills are not
+part of it. This applies to all your friends and there is no setting to limit it to some. While you
+are Invisible, your friends don't see your games and can't open them from your entry.
 
 ## 3. Camera stills
 
