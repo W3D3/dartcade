@@ -5,8 +5,8 @@ Issue: [#135](https://github.com/W3D3/dartcade/issues/135). Design canvas: `proj
 
 ## Goal
 
-WLED strips at a board follow the game: the seat colour on each turn, flashes for 180, 100+, bust and
-checkout and a few per-game moments, a work light during takeout, an idle scene when no game runs.
+WLED strips at a board follow the game: flashes for 180, 100+, bust and
+checkout and a few per-game moments, a work light during takeout, a lobby scene (off by default) while a lobby has no game running.
 Every user can set it up without knowing WLED: the bridge finds the strip, it blinks to confirm, and the
 built-in profile works out of the box.
 
@@ -30,9 +30,9 @@ reorder, preset / playlist / raw JSON looks, bridge-side matching of board event
   bridge release. The cost is a bridge → backend → bridge round trip (about 50–150 ms) per flash.
 - **Lights belong to a board.** Only the board's owner configures them. The owner's profile applies to
   every game played on that board.
-- **Remote games: each board shows only its own seats.** A waiting scene on the other board's turn,
-  and flashes only for its own seats. This is data in the default profile (`seats: 'mine' | 'other'`),
-  not special code.
+- **Remote games: each board shows only its own seats.** A waiting scene on the other
+  board's turn, and flashes only for its own seats. This is data in the default profile
+  (`seats: 'mine' | 'other'`), not special code.
 - **No stored WLED presets.** The built-in profile sends full state patches and never touches the
   device's `presets.json`.
 
@@ -83,23 +83,22 @@ Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 One pure function per game: `(before: View | null, after: View) => Trigger[]`, in the style of the
 caller's `callsFor`. Undo or a correction that reopens a visit must not fire the visit's triggers twice.
 
-| Trigger                                       | Fields          | Source                                                                               |
-| --------------------------------------------- | --------------- | ------------------------------------------------------------------------------------ |
-| `turn`                                        | `seat`          | every game: the current seat changed, or the game started                            |
-| `game.won`                                    | `seat`          | every game                                                                           |
-| `idle`                                        | —               | no active game on the board: after a game ends, on bridge connect                    |
-| `takeout.started`, `takeout.finished`         | —               | bridge board events, from the gateway                                                |
-| `calibration.started`, `calibration.finished` | —               | bridge `board.status` events: the Board Manager's status enters/leaves `Calibrating` |
-| `visit`                                       | `seat, total`   | X01: a visit was committed                                                           |
-| `bust`                                        | `seat`          | X01                                                                                  |
-| `checkout`                                    | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)             |
-| `atc.hit`                                     | `seat, target`  | Around the Clock                                                                     |
-| `hilo.lifeLost`                               | `seat`          | Higher Lower                                                                         |
-| `golf.sunk`                                   | `seat, strokes` | Minigolf                                                                             |
-| `bulloff.won`                                 | `seat`          | bull off, in any game                                                                |
+| Trigger                                       | Fields          | Source                                                                                              |
+| --------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| `turn`                                        | `seat`          | every game: the current seat changed, or the game started                                           |
+| `game.won`                                    | `seat`          | every game                                                                                          |
+| `lobby`                                       | —               | no active game on the board but someone sits at it in a lobby: after a game ends, on bridge connect |
+| `takeout.started`, `takeout.finished`         | —               | bridge board events, from the gateway                                                               |
+| `calibration.started`, `calibration.finished` | —               | bridge `board.status` events: the Board Manager's status enters/leaves `Calibrating`                |
+| `visit`                                       | `seat, total`   | X01: a visit was committed                                                                          |
+| `bust`                                        | `seat`          | X01                                                                                                 |
+| `checkout`                                    | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)                            |
+| `hilo.lifeLost`                               | `seat`          | Higher Lower                                                                                        |
+| `golf.sunk`                                   | `seat, strokes` | Minigolf                                                                                            |
+| `bulloff.won`                                 | `seat`          | bull off, in any game                                                                               |
 
 For each board, the service adds `local: boolean` (the seat plays on this board). Takeout, calibration
-and idle are always local.
+and lobby are always local.
 
 ### Rules and patches (`backend/src/shared/lights/`, shared with the frontend)
 
@@ -135,16 +134,19 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 | 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"            |
 | 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"          |
 | 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"         |
-| 8   | `atc.hit` · mine       | flash 0.6 s | seat colour · solid             |
-| 9   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink               |
-| 10  | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle           |
-| 11  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink             |
-| 12  | `takeout.started`      | scene       | `#ffa000` · breathe · 255       |
-| 13  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255    |
-| 14  | `idle`                 | scene       | `#c6f24e` · breathe · 60 · slow |
+| 8   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink               |
+| 9   | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle           |
+| 10  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink             |
+| 11  | `takeout.started`      | scene       | `#ffa000` · breathe · 255       |
+| 12  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255    |
+| 13  | `lobby` · **off**      | scene       | `#c6f24e` · breathe · 60 · slow |
 
 `takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
-scene (see below).
+scene (see below). The Target hit flash was removed in #522 because it disturbed detection.
+
+Each rule has `enabled`; a disabled rule never matches. **Lobby** ("Shows only while you are in a lobby
+with no game running") is off by default: with it off, a board in a lobby is switched off, like a board
+no lobby uses.
 
 A won X01 match plays only the game.won look, on the winning dart.
 
@@ -160,7 +162,7 @@ A won X01 match plays only the game.won look, on the winning dart.
 - Tracks, per board, whether the Board Manager's last `board.status` reported `Calibrating`: entering
   it fires `calibration.started`, leaving it fires the `takeout.finished`-style restore. A repeated
   status (still/not yet `Calibrating`) does nothing, and malformed `board.status` data is ignored.
-- On bridge connect: send `wled.devices`, then the game scene (or the `idle` scene if no game is active).
+- On bridge connect: send `wled.devices`, then the game scene (or the lobby scene if a lobby uses the board and that rule is on, otherwise off).
 - Bridges older than the first version with `wled` support (checked from `bridge.hello`'s
   `bridge_version`) get nothing; the API reports `bridgeOutdated: true`.
 - Turning lights off sends `{on: false}` to every device, then an empty `wled.devices`, so the strip goes
@@ -208,7 +210,7 @@ The page re-fetches `GET` every 3 s while it's open.
   "On <board>" for devices paired elsewhere. **Add by IP** below, with an inline error ("No WLED answered
   at 192.168.1.80").
 - **Light profile:** "Dartcade default · built in", seat colour swatches, the numbered read-only rule list
-  (trigger, filter, Scene/Flash, look summary) with **▶ Test**. Duplicate, Import, Export shown disabled
+  (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. Duplicate, Import, Export shown disabled
   ("Coming soon").
 - **Pair dialog** (`ui/modal`): (1) blink check: "Blinking lime now", Blink again, "Yes, it blinked" /
   "No, show me another" (next found device); (2) name (prefilled) and board; (3) segments: Whole strip /

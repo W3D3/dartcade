@@ -4056,6 +4056,8 @@ export interface components {
             onBoard?: string;
         };
         LightRule: {
+            /** @description A disabled rule never triggers */
+            enabled: boolean;
             when: {
                 trigger: string;
                 /** @enum {string} */

@@ -5213,9 +5213,10 @@ components:
         onBoard: { type: string, description: Name of another of your boards this device is paired to }
     LightRule:
       type: object
-      required: [when, type, look]
+      required: [when, type, enabled, look]
       additionalProperties: false
       properties:
+        enabled: { type: boolean, description: A disabled rule never triggers }
         when:
           type: object
           required: [trigger, seats]

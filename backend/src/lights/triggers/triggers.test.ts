@@ -144,10 +144,10 @@ describe('x01', () => {
 })
 
 describe('other games', () => {
-  it('atc: a hit on the current target', () => {
+  it('atc: a hit on the target fires nothing (no Target hit effect)', () => {
     const g = (hits: boolean[], target: number) =>
       snap('atc', { currentPlayer: 0, winner: null, targets: [target, 1], currentVisitHits: hits })
-    expect(triggersFor(g([false], 3), g([false, true], 4))).toEqual([{ kind: 'atc.hit', seat: 0, target: 3 }])
+    expect(triggersFor(g([false], 3), g([false, true], 4))).toEqual([])
   })
   it('hilo: a life lost', () => {
     const g = (lives: number) => snap('hilo', { phase: 'game', currentPlayer: 0, winner: null, seats: [{ lives }, { lives: 3 }] })

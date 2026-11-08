@@ -9,6 +9,7 @@ type RuleLike = {
   when: { trigger: string; seats: string; total?: { op: string; n: number } }
   type: string
   look: { color: string; fx: number; bri: number; speed?: number } | { preset: string; state: unknown }
+  enabled: boolean
   holdMs?: number
 }
 
@@ -18,7 +19,6 @@ const TRIGGER_LABELS: Record<string, string> = {
   bust: 'Bust',
   checkout: 'Checkout',
   'game.won': 'Game won',
-  'atc.hit': 'Target hit',
   'hilo.lifeLost': 'Life lost',
   'golf.sunk': 'Ball sunk',
   'bulloff.won': 'Bull off won',
@@ -26,8 +26,10 @@ const TRIGGER_LABELS: Record<string, string> = {
   'takeout.finished': 'Takeout',
   'calibration.started': 'Calibrating',
   'calibration.finished': 'Calibrating',
-  idle: 'No game',
+  lobby: 'Lobby',
 }
+
+const TRIGGER_HINTS: Record<string, string> = { lobby: 'Shows only while you are in a lobby with no game running' }
 
 const COLOR_NAMES: Record<string, string> = {
   '#ffffff': 'white',
@@ -49,7 +51,14 @@ const fxLabel = (fx: number): string => FX_NAMES[fx] ?? `fx ${fx}`
 const holdLabel = (holdMs: number): string => `${Number((holdMs / 1000).toFixed(1))} s`
 
 /** A rule's row in the Light profile card: when it fires, its filter chip, type and look. */
-export function ruleLabel(rule: RuleLike): { when: string; filter: string | null; type: 'Scene' | 'Flash'; look: string } {
+export function ruleLabel(rule: RuleLike): {
+  when: string
+  filter: string | null
+  type: 'Scene' | 'Flash'
+  look: string
+  enabled: boolean
+  hint: string | null
+} {
   const totalPart = rule.when.total ? `${rule.when.total.op === '=' ? '=' : '≥'} ${rule.when.total.n}` : null
   const otherPart = rule.when.seats === 'other' ? 'other board' : null
   const filterParts = [totalPart, otherPart].filter((p): p is string => p !== null)
@@ -61,6 +70,8 @@ export function ruleLabel(rule: RuleLike): { when: string; filter: string | null
     filter: filterParts.length ? filterParts.join(' · ') : null,
     type: rule.type === 'scene' ? 'Scene' : 'Flash',
     look,
+    enabled: rule.enabled,
+    hint: TRIGGER_HINTS[rule.when.trigger] ?? null,
   }
 }
 

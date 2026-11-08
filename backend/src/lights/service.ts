@@ -28,7 +28,7 @@ export type LightsDeps = {
   getSnapshot: (sessionId: string) => Snapshot | undefined
   /** The active session id on the board, if any. */
   sessionOnBoard: (boardId: string) => string | null
-  /** Whether someone sits at the board in an open lobby: idle glows only then, otherwise it's off. */
+  /** Whether someone sits at the board in an open lobby: the lobby scene shows only then, otherwise it's off. */
   inLobby: (boardId: string) => Promise<boolean>
   warn: (msg: string, details?: unknown) => void
 }
@@ -82,7 +82,7 @@ function layoutFor(session: SessionLike, snap: Snapshot): SeatLayout {
 /** A trigger to show for `test()`: seat 0, a round total for `visit`, a sample target/strokes. */
 function sampleTrigger(kind: TriggerKind): Trigger {
   switch (kind) {
-    case 'idle':
+    case 'lobby':
     case 'takeout.started':
     case 'takeout.finished':
     case 'calibration.started':
@@ -90,8 +90,6 @@ function sampleTrigger(kind: TriggerKind): Trigger {
       return { kind }
     case 'visit':
       return { kind, seat: 0, total: 180 }
-    case 'atc.hit':
-      return { kind, seat: 0, target: 20 }
     case 'golf.sunk':
       return { kind, seat: 0, strokes: 3 }
     default:
@@ -244,10 +242,13 @@ export class LightsService {
   /** Chains `task` on `board`'s queue: it runs after every earlier call for this board has settled,
    *  in the order they were enqueued (not the order their internal awaits happen to resolve), and
    *  the queue itself never rejects (a failing task is warned and the chain moves on). */
-  private enqueue(board: string, task: () => Promise<void>): Promise<void> {
-    const chain = (this.queues.get(board) ?? Promise.resolve()).then(task).catch((err: unknown) => {
-      this.deps.warn('lights queue failed', err)
-    })
+  private enqueue(board: string, task: () => Promise<unknown>): Promise<void> {
+    const chain = (this.queues.get(board) ?? Promise.resolve())
+      .then(task)
+      .then(() => undefined)
+      .catch((err: unknown) => {
+        this.deps.warn('lights queue failed', err)
+      })
     this.queues.set(board, chain)
     return chain
   }
@@ -286,12 +287,12 @@ export class LightsService {
     await this.idle(boardId)
   }
 
-  /** No game on the board: the idle scene while a lobby uses it, otherwise off. Never remembered,
-   *  so a reconnect or takeout asks the lobby again. */
+  /** No game on the board: the lobby scene while a lobby uses it and its rule is on (it is off by
+   *  default), otherwise off. Never remembered, so a reconnect or takeout asks the lobby again. */
   private async idle(boardId: string): Promise<void> {
     try {
-      if (await this.deps.inLobby(boardId)) await this.fire(boardId, { kind: 'idle', local: true }, null, { seatCount: 1 })
-      else await this.turnOff(boardId)
+      const inLobby = await this.deps.inLobby(boardId)
+      if (!inLobby || !(await this.fire(boardId, { kind: 'lobby', local: true }, null, { seatCount: 1 }))) await this.turnOff(boardId)
     } catch (err) {
       this.deps.warn('lights idle failed', err)
     }
@@ -326,19 +327,21 @@ export class LightsService {
   }
 
   /** Lights off, an unsupported/offline bridge or no devices: nothing to send. Otherwise sends the matching rule to every device. */
-  private async fire(board: string, t: BoardTrigger, game: GameId | null, layout: SeatLayout): Promise<void> {
+  private async fire(board: string, t: BoardTrigger, game: GameId | null, layout: SeatLayout): Promise<boolean> {
     try {
-      if (!(await this.deps.enabled(board))) return
-      if (!supportsLights(this.deps.bridgeVersion(board))) return
+      if (!(await this.deps.enabled(board))) return false
+      if (!supportsLights(this.deps.bridgeVersion(board))) return false
       const devices = await this.deps.devices(board)
-      if (devices.length === 0) return
+      if (devices.length === 0) return false
       const rule = match(DEFAULT_PROFILE, t, game)
-      if (!rule) return
+      if (!rule) return false
       for (const device of devices) this.send(board, device, rule, t, layout, rule.type === 'flash' ? rule.holdMs : undefined)
       if (rule.type === 'scene' && t.kind !== 'takeout.started' && t.kind !== 'calibration.started')
         this.scene.set(board, { t, game, layout })
+      return true
     } catch (err) {
       this.deps.warn('lights fire failed', err)
+      return false
     }
   }
 

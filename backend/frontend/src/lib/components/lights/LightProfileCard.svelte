@@ -46,6 +46,7 @@
     {#each profile.rules as rule, i (i)}
       {@const label = ruleLabel(rule)}
       <li
+        class:opacity-60={!label.enabled}
         class="grid grid-cols-[18px_1fr_auto] md:grid-cols-[18px_minmax(130px,1fr)_52px_1.1fr_auto]
                items-center gap-[10px] min-h-11 px-[10px] py-2 md:py-0 rounded-[10px] bg-surface-active"
       >
@@ -53,7 +54,8 @@
 
         <!-- md and up: the trigger with its filter chip, the badge and the look each in their own column -->
         <span class="hidden md:flex md:col-start-2 md:row-start-1 items-center gap-[6px] min-w-0 text-[13px] font-semibold">
-          <span class="truncate">{label.when}</span>
+          <span class="truncate" title={label.hint ?? undefined}>{label.when}</span>
+          {#if !label.enabled}<span class="shrink-0 text-[11px] font-bold text-text-dim">Off</span>{/if}
           {#if label.filter}
             <span class="shrink-0 whitespace-nowrap font-mono text-[12px] text-ink-2 px-[6px] py-[2px] rounded-[5px] bg-surface-key">
               {label.filter}
@@ -70,7 +72,10 @@
 
         <!-- Phones: row 1 is the trigger name alone (never squeezed); row 2 wraps the filter chip,
              the type badge and the look together, under the trigger -->
-        <span class="md:hidden col-start-2 row-start-1 text-[13px] font-semibold truncate">{label.when}</span>
+        <span class="md:hidden col-start-2 row-start-1 text-[13px] font-semibold truncate" title={label.hint ?? undefined}>
+          {label.when}{#if !label.enabled}
+            <span class="text-[11px] font-bold text-text-dim">· Off</span>{/if}
+        </span>
         <span class="md:hidden col-start-2 row-start-2 flex flex-wrap items-center gap-[6px] min-w-0">
           {#if label.filter}
             <span class="shrink-0 whitespace-nowrap font-mono text-[12px] text-ink-2 px-[6px] py-[2px] rounded-[5px] bg-surface-key">
@@ -101,6 +106,7 @@
   </ol>
 
   <span class="text-[12px] text-text-dim">
-    The built-in default can't be edited and never touches your WLED presets. Duplicate it to make your own.
+    Lobby shows only while you are in a lobby with no game running, and is off by default. The built-in default can't be edited and never
+    touches your WLED presets. Duplicate it to make your own.
   </span>
 </section>
