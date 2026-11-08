@@ -130,6 +130,103 @@
   --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.5);
   --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.5);
 
+  /* Type scale: the canvas's type styles (tokens.json "type"). text-<name> sets size, line height,
+   * weight and letter spacing together; the type-<name> utilities below add the family and case. */
+  --text-score: 220px;
+  --text-score--line-height: 0.8;
+  --text-score--font-weight: 700;
+  --text-score--letter-spacing: -0.02em;
+  --text-hero: 104px;
+  --text-hero--line-height: 0.88;
+  --text-hero--font-weight: 700;
+  --text-hero--letter-spacing: 0.01em;
+  --text-glyph: 88px;
+  --text-glyph--line-height: 0.9;
+  --text-glyph--font-weight: 700;
+  --text-page-title: 48px;
+  --text-page-title--line-height: 1;
+  --text-page-title--font-weight: 700;
+  --text-page-title--letter-spacing: 0.02em;
+  --text-checkout: 38px;
+  --text-checkout--line-height: 1;
+  --text-checkout--font-weight: 700;
+  --text-card-title: 32px;
+  --text-card-title--line-height: 1;
+  --text-card-title--font-weight: 700;
+  --text-section-title: 26px;
+  --text-section-title--line-height: 1.1;
+  --text-section-title--font-weight: 700;
+  --text-section-title--letter-spacing: 0.04em;
+  --text-cta: 20px;
+  --text-cta--line-height: 1;
+  --text-cta--font-weight: 700;
+  --text-cta--letter-spacing: 0.08em;
+  --text-wordmark: 28px;
+  --text-wordmark--line-height: 1;
+  --text-wordmark--font-weight: 700;
+  --text-wordmark--letter-spacing: 0.06em;
+  --text-lead: 18px;
+  --text-lead--line-height: 1.55;
+  --text-lead--font-weight: 400;
+  --text-player-name: 22px;
+  --text-player-name--line-height: 1.2;
+  --text-player-name--font-weight: 600;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.5;
+  --text-body-lg--font-weight: 400;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-body--font-weight: 400;
+  --text-label: 14px;
+  --text-label--line-height: 1.4;
+  --text-label--font-weight: 500;
+  --text-small: 13px;
+  --text-small--line-height: 1.4;
+  --text-small--font-weight: 400;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 400;
+  --text-eyebrow: 12px;
+  --text-eyebrow--line-height: 1.3;
+  --text-eyebrow--font-weight: 400;
+  --text-eyebrow--letter-spacing: 0.1em;
+  --text-pill: 13px;
+  --text-pill--line-height: 1;
+  --text-pill--font-weight: 700;
+  --text-pill--letter-spacing: 0.08em;
+  --text-mono: 13px;
+  --text-mono--line-height: 1.9;
+  --text-mono--font-weight: 400;
+  --text-mono-sm: 12px;
+  --text-mono-sm--line-height: 1.4;
+  --text-mono-sm--font-weight: 400;
+  --text-kicker: 13px;
+  --text-kicker--line-height: 1.4;
+  --text-kicker--font-weight: 400;
+  --text-kicker--letter-spacing: 0.08em;
+
+  /* Letter spacing steps the canvas uses (tracking-<name>) */
+  --tracking-score: -0.02em;
+  --tracking-hero: 0.01em;
+  --tracking-title: 0.02em;
+  --tracking-section: 0.04em;
+  --tracking-wordmark: 0.06em;
+  --tracking-cta: 0.08em;
+  --tracking-caps: 0.1em;
+
+  /* Radii (tokens.json "radius"). The canvas's sm, md and lg replace Tailwind's rounded-sm/md/lg. */
+  --radius-bar: 2px;
+  --radius-chip: 6px;
+  --radius-segment: 7px;
+  --radius-sm: 8px;
+  --radius-key: 9px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-card: 14px;
+  --radius-popover: 16px;
+  --radius-panel: 18px;
+  --radius-pill: 999px;
+
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -185,12 +282,12 @@
 
 /* A panel card: the panel surface with a hairline and 14 px corners (md:card for one that's flat on phones) */
 @utility card {
-  @apply rounded-[14px] bg-surface-panel border border-line-2;
+  @apply rounded-card bg-surface-panel border border-line-2;
 }
 
 /* The small uppercase label over a value or a section (size and colour vary) */
 @utility label-caps {
-  @apply uppercase tracking-[0.1em];
+  @apply uppercase tracking-caps;
 }
 
 /* A progress bar's fill: diagonal stripes over its colour (bg-accent, bg-gold). A 45° stripe only
@@ -206,11 +303,57 @@
 }
 /* A chart's hover box: the value under the pointer (or the keyboard's point) */
 @utility chart-tooltip {
-  @apply whitespace-nowrap rounded-[10px] border border-line-popover bg-surface-inset px-2.5 py-1.5 text-[13px] text-text shadow-tooltip;
+  @apply whitespace-nowrap rounded-md border border-line-popover bg-surface-inset px-2.5 py-1.5 text-small/[1.5] text-text shadow-tooltip;
 }
+/* Canvas type styles with their family and case (text-<name> alone is size, line height, weight and
+ * tracking). type-<name> is the canvas style in full: score, hero, glyph, page-title, checkout,
+ * card-title, section-title, cta, wordmark, eyebrow, pill, mono, mono-sm, kicker. */
+@utility type-score {
+  @apply font-display text-score;
+}
+@utility type-hero {
+  @apply font-display text-hero uppercase;
+}
+@utility type-glyph {
+  @apply font-display text-glyph;
+}
+@utility type-page-title {
+  @apply font-display text-page-title uppercase;
+}
+@utility type-checkout {
+  @apply font-display text-checkout;
+}
+@utility type-card-title {
+  @apply font-display text-card-title uppercase;
+}
+@utility type-section-title {
+  @apply font-display text-section-title uppercase;
+}
+@utility type-cta {
+  @apply font-display text-cta uppercase;
+}
+@utility type-wordmark {
+  @apply font-display text-wordmark uppercase;
+}
+@utility type-eyebrow {
+  @apply text-eyebrow uppercase;
+}
+@utility type-pill {
+  @apply text-pill uppercase;
+}
+@utility type-mono {
+  @apply font-mono text-mono;
+}
+@utility type-mono-sm {
+  @apply font-mono text-mono-sm;
+}
+@utility type-kicker {
+  @apply font-mono text-kicker;
+}
+
 /* The label above a form control */
 @utility field-label {
-  @apply text-[14px] font-medium text-ink-soft;
+  @apply text-label/[1.5] font-medium text-ink-soft;
 }
 
 @layer utilities {

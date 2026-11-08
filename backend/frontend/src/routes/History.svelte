@@ -339,7 +339,7 @@
         <button
           type="button"
           onclick={() => (columnSizing = {})}
-          class="hidden h-9 items-center gap-1.5 self-end rounded-lg border border-line-strong bg-transparent px-3 text-[14px] text-ink-2 hover:text-text lg:inline-flex"
+          class="hidden h-9 items-center gap-1.5 self-end rounded-sm border border-line-strong bg-transparent px-3 text-[14px] text-ink-2 hover:text-text lg:inline-flex"
           ><RotateCcw size={14} /> Reset columns</button
         >
       {/if}
@@ -372,7 +372,7 @@
               type="button"
               onclick={() => void more()}
               disabled={loadingMore}
-              class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
+              class="h-10 rounded-sm border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
             >
               {loadingMore ? 'Loading…' : 'Load more'}
             </button>

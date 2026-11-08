@@ -83,7 +83,7 @@
   <Select.Item
     value={o.value}
     label={o.label}
-    class="h-10 px-[10px] flex items-center gap-[10px] rounded-lg cursor-pointer outline-none
+    class="h-10 px-[10px] flex items-center gap-[10px] rounded-sm cursor-pointer outline-none
            data-[highlighted]:bg-surface-paused data-[selected]:bg-surface-paused"
   >
     {#snippet children({ selected })}
