@@ -7,6 +7,7 @@ import { getProgress, revokeGameXp } from '../db/progression.js'
 import { insertSet, getSet } from '../db/challenges.js'
 import { claim, ensureSets, reroll } from './challengeSets.js'
 import type { XpGainedMessage } from '../schema/lobby-ws.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const T20 = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }
 const S1 = { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 }
@@ -21,10 +22,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('progression_service'))
-    await db
-      .insertInto('user')
-      .values(['ann', 'bob'].map(id => ({ id, name: id, email: `${id}@example.com`, emailVerified: true, image: null })))
-      .execute()
+    await insertUsers(
+      db,
+      ['ann', 'bob'].map(id => ({ id, emailVerified: true })),
+    )
   })
   afterAll(async () => {
     await close()

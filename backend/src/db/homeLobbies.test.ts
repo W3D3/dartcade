@@ -6,6 +6,7 @@ import { insertLobby, insertPerson } from './lobbies.js'
 import { homeLobbies } from './homeLobbies.js'
 import { openTestSchema } from './testSchema.js'
 import type { Database } from './schema.js'
+import { insertUser, insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
   let db: Kysely<Database>
@@ -26,10 +27,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('home_lobbies_test'))
     const users = ['ann', 'bob', 'dan', 'eve', 'fay', 'gus']
-    await db
-      .insertInto('user')
-      .values(users.map(id => ({ id, name: id, email: `${id}@example.com`, emailVerified: true, image: null, role: null })))
-      .execute()
+    await insertUsers(
+      db,
+      users.map(id => ({ id, emailVerified: true })),
+    )
     await db
       .insertInto('boards')
       .values(['b1', 'b2'].map(id => ({ id, owner_user_id: 'bob', name: id, token_hash: `hash-${id}` })))
@@ -87,10 +88,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
   })
 
   it('leaves out the lobby of a host who is Invisible', async () => {
-    await db
-      .insertInto('user')
-      .values({ id: 'ivy', name: 'ivy', email: 'ivy@example.com', emailVerified: true, image: null, role: null, invisible: true })
-      .execute()
+    await insertUser(db, { id: 'ivy', emailVerified: true, invisible: true })
     await insertFriendRequest(db, { id: 'f-ivy', requesterId: 'ann', addresseeId: 'ivy' })
     await acceptFriendRequest(db, 'f-ivy', new Date())
     await lobby('li', 'ivy', 'IIIIII')

@@ -15,6 +15,7 @@ import { createFastify } from '../api/fastify.js'
 import { coachApiPlugin } from '../api/coach.js'
 import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs, pendingCoachGames } from './store.js'
 import { coachLegsPage, coachLegsSummary, getCoachLeg } from './legs.js'
+import { insertUsers } from '../test/fixtures.js'
 
 signInAs('ann')
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(() => Promise.resolve(true)), loadFlagUser: vi.fn(() => Promise.resolve(null)) }))
@@ -40,11 +41,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('coach_store'))
-    for (const id of ['ann', 'bob'])
-      await db
-        .insertInto('user')
-        .values({ id, name: id, email: `${id}@example.com`, emailVerified: true, image: null })
-        .execute()
+    await insertUsers(db, [
+      { id: 'ann', emailVerified: true },
+      { id: 'bob', emailVerified: true },
+    ])
     engine = new SessionEngine(createEngineStore(db), () => undefined)
   })
   afterAll(async () => {

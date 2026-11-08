@@ -8,6 +8,7 @@ import { storedDetail } from '../history/detail.js'
 import type { Database } from '../db/schema.js'
 import { seedSample } from './sample.js'
 import { COACH_GAMES } from './coachGames.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const NAMES = ['Admin', 'Luke', 'Phil', 'Michael', 'Gerwyn']
 
@@ -35,18 +36,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
   })
 
   it('plays finished games for every dev account, befriends them and opens a lobby, once', async () => {
-    await db
-      .insertInto('user')
-      .values(
-        NAMES.map(name => ({
-          id: name.toLowerCase(),
-          name,
-          email: `${name.toLowerCase()}@dartcade.local`,
-          emailVerified: false,
-          image: null,
-        })),
-      )
-      .execute()
+    await insertUsers(
+      db,
+      NAMES.map(name => ({ id: name.toLowerCase(), name, email: `${name.toLowerCase()}@dartcade.local` })),
+    )
 
     await seedSample(db)
     const first = await counts()

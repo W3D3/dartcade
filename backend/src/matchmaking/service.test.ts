@@ -13,9 +13,8 @@ import { MatchmakingService, PAUSE_MS, rankedConfig } from './service.js'
 import { setupFlags } from '../flags/index.js'
 import { ACCEPT_SECONDS } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
-
-const user = (id: string, name: string) => ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null })
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
   let db: Kysely<Database>
@@ -51,10 +50,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('MatchmakingService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('matchmaking_service_test'))
-    await db
-      .insertInto('user')
-      .values([user('chris', 'Christoph'), user('anna', 'Anna'), user('lena', 'Lena'), user('ben', 'Ben'), user('ida', 'Ida')])
-      .execute()
+    await insertUsers(db, [
+      { id: 'chris', name: 'Christoph' },
+      { id: 'anna', name: 'Anna' },
+      { id: 'lena', name: 'Lena' },
+      { id: 'ben', name: 'Ben' },
+      { id: 'ida', name: 'Ida' },
+    ])
     await insertBoard(db, { id: 'living', owner_user_id: 'chris', name: 'Living room', token_hash: 'h-living' })
   })
   afterAll(async () => {

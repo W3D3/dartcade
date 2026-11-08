@@ -4,14 +4,7 @@ import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 import { getAccount, getAvatarUpload, setAvatar, setAvatarUpload, UnknownAvatarFinishError } from './users.js'
-
-const user = (id: string, name: string) => ({
-  id,
-  name,
-  email: `${id}@example.com`,
-  emailVerified: false,
-  image: null,
-})
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('avatar', () => {
   let db: Kysely<Database>
@@ -19,10 +12,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('avatar', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('avatar_test'))
-    await db
-      .insertInto('user')
-      .values([user('lena', 'Lena')])
-      .execute()
+    await insertUsers(db, [{ id: 'lena', name: 'Lena' }])
   })
   afterAll(async () => {
     await close()

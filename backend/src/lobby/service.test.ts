@@ -10,6 +10,7 @@ import { applyBan } from '../auth/ban.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
@@ -33,8 +34,6 @@ const lastMsg = (ws: { send: { mock: { calls: unknown[][] } } }) =>
     .filter(m => m.type !== 'friends')
     .at(-1)
 const friendsMsg = { type: 'friends' as const, friends: [], incoming: [], outgoing: [] }
-const user = (id: string, name: string) => ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null })
-
 describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   let db: Kysely<Database>
   let close: () => Promise<void>
@@ -46,10 +45,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('lobby_service_test'))
-    await db
-      .insertInto('user')
-      .values([user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'Sam')])
-      .execute()
+    await insertUsers(db, [
+      { id: 'chris', name: 'Christoph' },
+      { id: 'lena', name: 'Lena' },
+      { id: 'max', name: 'Max' },
+      { id: 'sam', name: 'Sam' },
+    ])
     await insertBoard(db, { id: 'living', owner_user_id: 'chris', name: 'Living room', token_hash: 'h-living' })
     await insertBoard(db, { id: 'lenas', owner_user_id: 'lena', name: "Lena's place", token_hash: 'h-lenas' })
     await insertBoard(db, { id: 'garage', owner_user_id: 'chris', name: 'Garage', token_hash: 'h-garage' })
@@ -132,7 +133,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
 
   describe('create, join, leave', () => {
     it('keeps the default name within the 48 characters a rename allows', async () => {
-      await db.insertInto('user').values(user('long', 'Bartholomew Maximilian von Hohenzollern-Sigmaringen')).execute()
+      await insertUsers(db, [{ id: 'long', name: 'Bartholomew Maximilian von Hohenzollern-Sigmaringen' }])
       const { name } = await lobbies.create('long')
       expect(name.length).toBeLessThanOrEqual(48)
       expect(name.endsWith("'s lobby")).toBe(true)
@@ -305,7 +306,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await db.deleteFrom('user').where('id', '=', 'sam').execute()
       await lobbies.update('lena', id, { name: 'Ours now' })
       expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: 'Ours now' })
-      await db.insertInto('user').values(user('sam', 'Sam')).execute()
+      await insertUsers(db, [{ id: 'sam', name: 'Sam' }])
     })
   })
 

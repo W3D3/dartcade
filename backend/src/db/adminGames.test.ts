@@ -271,10 +271,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     const pair = ['u5', 'u6', 'u7', 'u8']
 
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values(pair.map(id => ({ id, name: id.toUpperCase(), email: `${id}@example.com`, emailVerified: true, image: null, role: null })))
-        .execute()
+      await insertUsers(
+        db,
+        pair.map(id => ({ id, name: id.toUpperCase(), emailVerified: true })),
+      )
       const seats = (a: string, b: string): [string, string | null][] => [
         [a.toUpperCase(), a],
         [b.toUpperCase(), b],
@@ -363,19 +363,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     ]
 
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values(
-          ['u9', 'u10'].map(id => ({
-            id,
-            name: id.toUpperCase(),
-            email: `${id}@example.com`,
-            emailVerified: true,
-            image: null,
-            role: null,
-          })),
-        )
-        .execute()
+      await insertUsers(
+        db,
+        ['u9', 'u10'].map(id => ({ id, name: id.toUpperCase(), emailVerified: true })),
+      )
       for (const [id, min] of [
         ['d1', 400],
         ['d2', 410],
