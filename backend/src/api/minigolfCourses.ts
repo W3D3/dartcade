@@ -38,9 +38,10 @@ import {
   type CourseContent,
   type HoleRow,
 } from '../db/minigolfCourses.js'
-import { MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/minigolf/limits.js'
+import { COURSE_TEXT_MAX, MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/minigolf/limits.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import type { Hole } from '../shared/minigolf/types.js'
+import { normalizeName } from '../users/names.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -50,7 +51,7 @@ import type { components } from '../schema/api.js'
 // (the same JSON, AJV checks the lengths), so a Hole goes out cast and comes in through holeSchema.
 type ApiHole = components['schemas']['MinigolfHole']
 // oxlint-disable-next-line typescript/consistent-type-assertions -- the same JSON, only Pt's readonly differs
-const toApiHole = (h: Hole | null) => h as ApiHole | null
+export const toApiHole = (h: Hole | null) => h as ApiHole | null
 
 /** The body's hole, refused when its shape is malformed. Checked here, not in the spec: AJV can't
  *  compare lengths, and responses must still serialize a stored hole saved before this check. */
@@ -68,7 +69,7 @@ function bodyHole(body: unknown): Hole {
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 /** The signed-in user as the course rules see them. An admin may always; others only with the flag. */
-async function viewerOf(db: Kysely<Database>, userId: string): Promise<CourseViewer> {
+export async function viewerOf(db: Kysely<Database>, userId: string): Promise<CourseViewer> {
   const user = await loadFlagUser(db, userId)
   const admin = !!user && isAdmin(user)
   return { id: userId, admin, userCourses: admin || (await flagEnabled('minigolf.userCourses.enabled', user)) }
@@ -105,9 +106,28 @@ async function checkCourseHoles(db: Kysely<Database>, ownerId: string | null, co
     })
 }
 
-type ApiCourse = Omit<CourseRow, 'updatedAt' | 'publishedAt' | 'draft'> & {
+/** Course texts are shown to other players, so they follow the names' rules: trimmed, Unicode NFC, no control characters, short. */
+// oxlint-disable-next-line no-control-regex -- the point is to refuse them
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/
+
+function cleanCourseText(content: CourseContent): CourseContent {
+  return { ...content, name: normalizeName(content.name), description: normalizeName(content.description) }
+}
+
+function checkCourseText(content: CourseContent): void {
+  const invalid = (path: string, message: string) =>
+    new ApiError(400, { error: 'invalid request', details: [{ path: `body/${path}`, message }] })
+  for (const field of ['name', 'description'] as const) {
+    if (Array.from(content[field]).length > COURSE_TEXT_MAX[field])
+      throw invalid(field, `must be at most ${COURSE_TEXT_MAX[field]} characters`)
+    if (CONTROL_CHARS.test(content[field])) throw invalid(field, 'must not contain control characters')
+  }
+}
+
+type ApiCourse = Omit<CourseRow, 'updatedAt' | 'publishedAt' | 'draft' | 'moderation'> & {
   updatedAt: string
   publishedAt: string | null
+  moderation?: { reason: string; at: string } | null
   draft?: CourseRow['draft']
   hasChanges?: boolean
   builtIn?: boolean
@@ -130,7 +150,8 @@ function serializeCourse(row: CourseRow, v: CourseViewer, drafted: Set<string>):
   }
   if (!seesDraft(row.ownerUserId, v)) return base
   const hasChanges = row.draft !== null || (row.published?.holeIds ?? []).some(id => drafted.has(id))
-  return { ...base, draft: row.draft, hasChanges, builtIn: isBuiltInCourse(row.id) }
+  const moderation = row.moderation && { reason: row.moderation.reason, at: row.moderation.at.toISOString() }
+  return { ...base, draft: row.draft, hasChanges, builtIn: isBuiltInCourse(row.id), moderation }
 }
 
 /** The course after a write, read again so it carries the author's name. */
@@ -185,8 +206,10 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
       if (!v.userCourses) throw forbidden()
       const ownerId = v.admin ? null : v.id
       if (ownerId && (await ownedCounts(db, ownerId)).courses >= MINIGOLF_LIMITS.courses) throw limitReached('courses')
-      await checkCourseHoles(db, ownerId, req.body)
-      const row = await createCourse(db, req.body, ownerId)
+      const content = cleanCourseText(req.body)
+      checkCourseText(content)
+      await checkCourseHoles(db, ownerId, content)
+      const row = await createCourse(db, content, ownerId)
       return reply.code(201).send(await respondCourse(db, row.id, v))
     },
   )
@@ -208,8 +231,10 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
     async req => {
       const v = await viewerOf(db, req.userId)
       const course = await writableCourse(db, req.params.id, v)
-      await checkCourseHoles(db, course.ownerUserId, req.body.content)
-      const result = await saveCourseDraft(db, req.params.id, req.body.version, req.body.content)
+      const content = cleanCourseText(req.body.content)
+      checkCourseText(content)
+      await checkCourseHoles(db, course.ownerUserId, content)
+      const result = await saveCourseDraft(db, req.params.id, req.body.version, content)
       if (result === 'missing') throw notFound()
       if (result === 'conflict') throw new ApiError(409, { error: 'conflict' })
       return respondCourse(db, req.params.id, v)
@@ -233,6 +258,13 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
     async req => {
       const v = await viewerOf(db, req.userId)
       const course = await writableCourse(db, req.params.id, v)
+      const refusal = !v.admin && course.moderation && `A moderator took this course out of play: ${course.moderation.reason}`
+      const nameless = (course.draft ?? course.published)?.name === ''
+      if (refusal || nameless)
+        throw new ApiError(422, {
+          error: 'invalid',
+          problems: [{ holeId: '', checks: [{ level: 'error', message: refusal || 'Give the course a name' }] }],
+        })
       if (
         course.ownerUserId &&
         course.published === null &&

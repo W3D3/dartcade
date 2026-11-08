@@ -11,3 +11,6 @@ export const MINIGOLF_LIMITS = {
 } as const
 
 export type MinigolfLimit = keyof typeof MINIGOLF_LIMITS
+
+/** The longest a course's name and description may be (they are shown to other players). */
+export const COURSE_TEXT_MAX = { name: 40, description: 280 } as const

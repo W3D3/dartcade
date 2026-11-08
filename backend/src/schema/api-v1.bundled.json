@@ -6167,6 +6167,290 @@
         }
       }
     },
+    "/api/minigolf/browse": {
+      "get": {
+        "operationId": "browseMinigolfCourses",
+        "summary": "The published user courses to browse, most played first, by name if searched",
+        "description": "Needs minigolf.userCourses.enabled (or an admin). A thumbnail is the course's first published hole; plays count the games started on the course.",
+        "tags": [
+          "minigolf"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Part of the course name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 100 courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinigolfBrowseList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/minigolf/courses/{id}/report": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "reportMinigolfCourse",
+        "summary": "Report a published user course; once per person per course",
+        "tags": [
+          "minigolf"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MinigolfReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reported"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "You reported this course already, or it is yours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/reports": {
+      "get": {
+        "operationId": "listMinigolfReports",
+        "summary": "Published user courses with open reports, most reported first, and the moderated ones (admin or moderator)",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The reported courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinigolfReportList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/unpublish": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "moderateUnpublishMinigolfCourse",
+        "summary": "Take a user course out of play, with a reason its author sees (admin or moderator)",
+        "description": "The course becomes a draft again and its author cannot publish it until it is allowed again. Closes its open reports. Writes a minigolf.unpublish audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MinigolfReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Unpublished"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/remove": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "removeMinigolfCourse",
+        "summary": "Delete a user course for good, with a reason kept in the audit log (admin or moderator)",
+        "description": "Writes a minigolf.remove audit entry. Official courses cannot be removed here.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MinigolfReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/dismiss-reports": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "dismissMinigolfReports",
+        "summary": "Close a course's open reports, leaving the course as it is (admin or moderator)",
+        "description": "Writes a minigolf.dismiss audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Dismissed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/allow": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "allowMinigolfCoursePublish",
+        "summary": "Let the author publish a moderated course again (admin or moderator)",
+        "description": "Clears the moderation reason. Writes a minigolf.allow audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Allowed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/minigolf/holes": {
       "get": {
         "operationId": "listMinigolfHoles",
@@ -15518,7 +15802,7 @@
       },
       "MinigolfCourse": {
         "type": "object",
-        "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+        "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
         "required": [
           "id",
           "ownerUserId",
@@ -15589,6 +15873,25 @@
             "type": "boolean",
             "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
           },
+          "moderation": {
+            "type": "object",
+            "nullable": true,
+            "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+            "required": [
+              "reason",
+              "at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "reason": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
           "version": {
             "type": "integer",
             "minimum": 0
@@ -15634,6 +15937,189 @@
           },
           "content": {
             "$ref": "#/components/schemas/MinigolfCourseContent"
+          }
+        }
+      },
+      "MinigolfReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The reason; blank counts as missing"
+          }
+        }
+      },
+      "MinigolfBrowseCourse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "difficulty",
+          "authorName",
+          "holeCount",
+          "plays",
+          "thumbnail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3
+            ]
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "holeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "plays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Games started on the course"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MinigolfHole"
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ],
+            "description": "Its first published hole"
+          }
+        }
+      },
+      "MinigolfBrowseList": {
+        "type": "object",
+        "required": [
+          "courses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinigolfBrowseCourse"
+            }
+          }
+        }
+      },
+      "MinigolfReportedCourse": {
+        "type": "object",
+        "required": [
+          "course",
+          "reports"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/MinigolfBrowseCourse"
+          },
+          "reports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "reporterName",
+                "reason",
+                "createdAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "reporterName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MinigolfReportList": {
+        "type": "object",
+        "required": [
+          "courses",
+          "moderated"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinigolfReportedCourse"
+            }
+          },
+          "moderated": {
+            "type": "array",
+            "description": "Courses a moderator took out of play, still waiting to be allowed, newest first",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "authorName",
+                "reason",
+                "at"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "authorName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
           }
         }
       },
