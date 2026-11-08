@@ -1,3 +1,4 @@
+import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -8,18 +9,6 @@ import { seedOfficialCourses, createHole, createCourse, listCourses, canReadCour
 import { setupFlags } from '../flags/index.js'
 import { MINIGOLF_LIMITS } from '../shared/minigolf/limits.js'
 import type { Hole, Shape } from '../shared/minigolf/types.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 // requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
 // redirect it to the test schema so a real `role` column decides who is an admin.

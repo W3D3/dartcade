@@ -1,14 +1,10 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { matchmakingApiPlugin } from './matchmaking.js'
 import { MatchmakingError } from '../matchmaking/service.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'chris'
-    done()
-  }),
-}))
+signInAs('chris')
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn().mockResolvedValue(null) }))
 
 import { flagEnabled } from '../flags/index.js'

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import '../test/authByHeader.js'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import rateLimit from '@fastify/rate-limit'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -6,18 +7,6 @@ import { openTestSchema } from '../db/testSchema.js'
 import type { Mail } from '../mail/transport.js'
 import { createFastify } from './fastify.js'
 import { feedbackAddress, feedbackApiPlugin } from './feedback.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (adminUsers.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0xff, 0xd9])
 const context = {

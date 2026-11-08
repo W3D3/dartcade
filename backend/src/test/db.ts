@@ -3,7 +3,7 @@
 // itself; once the test schema is open, `useDbSingleton(db)` points the singleton at it.
 import { vi } from 'vitest'
 
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
+const dbRef = vi.hoisted<{ current: unknown }>(() => ({ current: undefined }))
 
 vi.mock('../db/index.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../db/index.js')>()

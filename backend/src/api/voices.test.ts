@@ -1,3 +1,4 @@
+import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import { createHash } from 'crypto'
 import { request } from 'http'
@@ -12,18 +13,6 @@ import { setupFlags } from '../flags/index.js'
 import { reserveImport, VoiceBusyError, type ImportSlot } from '../caller/service.js'
 import { createFastify } from './fastify.js'
 import { voicesApiPlugin } from './voices.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 // Three clips of 1000 bytes each, named by key; "murmel" isn't a caller key and is dropped

@@ -1,13 +1,9 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { rankedApiPlugin } from './ranked.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'chris'
-    done()
-  }),
-}))
+signInAs('chris')
 vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), ratingChangeSince: vi.fn(), onlineAverage: vi.fn(), recentRanked: vi.fn() }))
 
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked } from '../db/ranked.js'

@@ -1,14 +1,8 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import rateLimit from '@fastify/rate-limit'
 import { createFastify } from './fastify.js'
 import { pairingApiPlugin } from './pairing.js'
-
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: (req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  },
-}))
 
 vi.mock('../db/queries.js', () => ({
   insertPairingCode: vi.fn().mockResolvedValue(undefined),

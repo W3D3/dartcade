@@ -1,15 +1,11 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { lobbiesApiPlugin } from './lobbies.js'
 import { LobbyError, inLobby } from '../lobby/errors.js'
 import { requireAuth } from '../auth/middleware.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'chris'
-    done()
-  }),
-}))
+signInAs('chris')
 
 const ref = { id: 'l1', name: "Christoph's lobby", code: 'K7Q4MD' }
 

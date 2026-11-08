@@ -1,3 +1,4 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { meApiPlugin } from './me.js'
@@ -6,12 +7,7 @@ import { setupFlags } from '../flags/index.js'
 import { AVATAR_FINISHES } from '../shared/avatarFinishes.js'
 import * as middleware from '../auth/middleware.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'old'
-    done()
-  }),
-}))
+signInAs('old')
 vi.mock('../db/users.js', () => ({
   getAccount: vi.fn(),
   getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }),

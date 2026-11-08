@@ -1,15 +1,10 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import rateLimit from '@fastify/rate-limit'
 import { createFastify } from './fastify.js'
 import { sessionsApiPlugin } from './sessions.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from '../session/errors.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  }),
-}))
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' }),
   getBoardsByOwner: vi.fn().mockResolvedValue([{ id: 'b1' }]),

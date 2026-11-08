@@ -1,3 +1,4 @@
+import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -6,18 +7,6 @@ import { createFastify } from './fastify.js'
 import { adminFlagsApiPlugin } from './adminFlags.js'
 import { ofrepApiPlugin } from './ofrep.js'
 import { setOverrides, setupFlags } from '../flags/index.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 // ofrep.ts reads the signed-in user through getAuthUser; map it to x-user the same way
 vi.mock('../auth/session.js', () => ({

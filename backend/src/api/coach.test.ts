@@ -1,3 +1,4 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { coachApiPlugin } from './coach.js'
@@ -14,12 +15,7 @@ export const legReviewParity = {
   dartClassFromApi: (x: components['schemas']['DartClass']): DartClass => x,
 }
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'ann'
-    done()
-  }),
-}))
+signInAs('ann')
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
 vi.mock('../coach/store.js', () => ({ ensureCoachLegs: vi.fn(), ensureCoachGame: vi.fn(), pendingCoachGames: vi.fn() }))
 vi.mock('../coach/legs.js', () => ({ coachLegsSummary: vi.fn(), coachLegsPage: vi.fn(), getCoachLeg: vi.fn() }))

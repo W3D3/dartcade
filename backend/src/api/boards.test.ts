@@ -1,3 +1,4 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
@@ -7,12 +8,6 @@ import { BridgeUpdates } from '../boards/bridgeUpdate.js'
 import { hashBoardToken } from '../boards/token.js'
 import { BigScreenState } from '../boards/bigScreenState.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  }),
-}))
 const request = vi.hoisted(() => vi.fn())
 const { send } = vi.hoisted(() => ({ send: vi.fn().mockReturnValue(true) }))
 vi.mock('../bridge-gw/connections.js', () => ({
