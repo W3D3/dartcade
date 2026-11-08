@@ -1,13 +1,9 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { homeApiPlugin } from './home.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'ann'
-    done()
-  }),
-}))
+signInAs('ann')
 vi.mock('../db/homeLobbies.js', () => ({ homeLobbies: vi.fn() }))
 vi.mock('../db/activity.js', () => ({ listFriendActivity: vi.fn() }))
 

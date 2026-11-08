@@ -1,3 +1,4 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -15,12 +16,7 @@ import { coachApiPlugin } from '../api/coach.js'
 import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs, pendingCoachGames } from './store.js'
 import { coachLegsPage, coachLegsSummary, getCoachLeg } from './legs.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'ann'
-    done()
-  }),
-}))
+signInAs('ann')
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(() => Promise.resolve(true)), loadFlagUser: vi.fn(() => Promise.resolve(null)) }))
 
 const fail = (msg: string, details: unknown) => {

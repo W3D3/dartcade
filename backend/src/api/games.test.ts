@@ -1,3 +1,4 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { gamesApiPlugin } from './games.js'
@@ -5,12 +6,6 @@ import type { HistoryGame } from '../db/history.js'
 import { setupFlags } from '../flags/index.js'
 import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  }),
-}))
 vi.mock('../db/history.js', () => ({
   listFinishedGames: vi.fn(),
   getStatRows: vi.fn().mockResolvedValue([]),

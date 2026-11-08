@@ -17,11 +17,12 @@ export const mockAuthAs = () => ({
 /** `../auth/middleware.js` where the `x-user` header names the user, and no header means not signed in. */
 export const mockAuthByHeader = () => ({
   requireAuth: vi.fn((req: Req, reply: Reply, done: () => void) => {
-    if (!req.headers['x-user']) {
+    const user = req.headers['x-user']
+    if (typeof user !== 'string' || !user) {
       reply.code(401).send({ error: 'unauthorized' })
       return
     }
-    req.userId = req.headers['x-user'] as string
+    req.userId = user
     done()
   }),
 })

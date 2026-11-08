@@ -1,15 +1,11 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import rateLimit from '@fastify/rate-limit'
 import { createFastify } from './fastify.js'
 import { friendsApiPlugin } from './friends.js'
 import { FriendError } from '../friends/errors.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'chris'
-    done()
-  }),
-}))
+signInAs('chris')
 
 const empty = { friends: [], incoming: [], outgoing: [] }
 function makeApp() {

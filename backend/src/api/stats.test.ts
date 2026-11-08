@@ -1,15 +1,10 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { statsApiPlugin } from './stats.js'
 import type { StatGameRow } from '../stats/x01Legs.js'
 import type { X01Detail } from '../session/types.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  }),
-}))
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
 vi.mock('../db/history.js', () => ({ x01StatOptions: vi.fn(), listX01StatGames: vi.fn(), countX01StatLegs: vi.fn() }))
 vi.mock('../history/detail.js', () => ({ storedDetails: vi.fn() }))

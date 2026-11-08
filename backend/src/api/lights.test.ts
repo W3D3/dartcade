@@ -1,15 +1,10 @@
+import '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { lightsApiPlugin } from './lights.js'
 import { LightsStore } from '../lights/store.js'
 import { setupFlags } from '../flags/index.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'user-1'
-    done()
-  }),
-}))
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn(),
   getBoardsByOwner: vi.fn(),

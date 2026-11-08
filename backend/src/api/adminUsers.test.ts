@@ -1,3 +1,4 @@
+import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -7,18 +8,6 @@ import { adminUsersApiPlugin } from './adminUsers.js'
 import { usersApiPlugin } from './users.js'
 import { BridgeConnections, type BridgeConn } from '../bridge-gw/connections.js'
 import { insertGameSession, finishGameSession, insertGameDarts } from '../db/queries.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 // users.ts's name check reads the session; signing in through better-auth isn't what's tested here
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))

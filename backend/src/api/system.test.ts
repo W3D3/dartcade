@@ -1,21 +1,10 @@
+import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { systemApiPlugin } from './system.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (adminUsers.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
 
 // requireAdmin reads the db singleton: point it at the test schema
 const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))

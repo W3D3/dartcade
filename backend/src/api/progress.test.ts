@@ -1,13 +1,9 @@
+import { signInAs } from '../test/authAs.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { progressApiPlugin } from './progress.js'
 
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
-    req.userId = 'chris'
-    done()
-  }),
-}))
+signInAs('chris')
 vi.mock('../progression/challengeSets.js', () => ({ ensureSets: vi.fn(), challengesView: vi.fn(), reroll: vi.fn(), claim: vi.fn() }))
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
 vi.mock('../db/progression.js', () => ({
