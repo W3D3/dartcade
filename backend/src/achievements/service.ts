@@ -12,7 +12,7 @@ import { xpForTiers } from '../shared/achievements.js'
 import { levelOf, localDate } from '../shared/progression.js'
 import type { AchievementUnlockedMessage } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
-import { achievementDeltas } from './rules.js'
+import { achievementDeltas, biggestTierFirst } from './rules.js'
 
 export type AchievementsDeps = {
   db: Kysely<Database>
@@ -48,13 +48,15 @@ export class AchievementsService {
         if (!(await q.claimGame(trx, userId, game.id))) return null
         const changed = (await q.addCounts(trx, userId, game.id, game.finishedAt, deltas)).filter(c => c.after > c.before)
         if (changed.length === 0) return null
-        const unlocked = changed.map(c => ({
-          id: c.id,
-          tier: c.after,
-          count: c.count,
-          tierUp: c.before > 0,
-          xp: xpForTiers(c.before, c.after),
-        }))
+        const unlocked = biggestTierFirst(
+          changed.map(c => ({
+            id: c.id,
+            tier: c.after,
+            count: c.count,
+            tierUp: c.before > 0,
+            xp: xpForTiers(c.before, c.after),
+          })),
+        )
         if (!paying) return null
         const day = localDate(game.finishedAt, await xp.userTimeZone(trx, userId))
         await xp.insertAwards(

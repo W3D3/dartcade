@@ -27,3 +27,8 @@ export function achievementDeltas(g: ChallengeGame): Map<string, number> {
   }
   return deltas
 }
+
+/** The push promises the biggest tier first (the headline badge of the toast); ties keep the catalogue order. */
+export function biggestTierFirst<T extends { tier: number }>(unlocked: T[]): T[] {
+  return [...unlocked].sort((a, b) => b.tier - a.tier)
+}

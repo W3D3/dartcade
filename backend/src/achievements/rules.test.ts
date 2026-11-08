@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { ChallengeGame, Checkout, Seg, Visit } from '../progression/challenges.js'
 import { ACHIEVEMENTS, tierOf, xpForTiers } from '../shared/achievements.js'
-import { achievementDeltas } from './rules.js'
+import { achievementDeltas, biggestTierFirst } from './rules.js'
 
 const T20: Seg = { n: 20, m: 3 }
 const BULL: Seg = { n: 25, m: 2 }
@@ -62,5 +62,17 @@ describe('catalogue', () => {
     expect([0, 1, 4, 5, 19, 20, 500].map(c => tierOf(t, c))).toEqual([0, 1, 1, 2, 3, 4, 5])
     expect(xpForTiers(0, 2)).toBe(250)
     expect(xpForTiers(2, 2)).toBe(0)
+  })
+})
+
+describe('biggestTierFirst', () => {
+  it('puts the highest tier first and keeps the catalogue order between equals', () => {
+    const list = [
+      { id: 'a', tier: 1 },
+      { id: 'b', tier: 3 },
+      { id: 'c', tier: 1 },
+      { id: 'd', tier: 2 },
+    ]
+    expect(biggestTierFirst(list).map(u => u.id)).toEqual(['b', 'd', 'a', 'c'])
   })
 })
