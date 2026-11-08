@@ -4,6 +4,7 @@
 import type { PillKind } from './components/pills.js'
 import { atcTargetSegment, atcLeaders } from './atc.js'
 import { boardCheckoutTargets, atcSlots, x01Slots } from './dartSlots.js'
+import { setupTip } from './setupTip.svelte.js'
 import { initial } from './fmt.js'
 import type { GameSettings } from './gameSettings.js'
 import { gameState } from './gameState.js'
@@ -64,6 +65,7 @@ export function matchView(snapshot: Snapshot | null, history: VisitHistory, sett
         opened,
         suggest: settings.checkoutSuggestions && isActive,
         checkout,
+        setup: setupTip,
       })
     : atcSlots({
         darts,

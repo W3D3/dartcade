@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { aimById } from '$shared/coach/aims.js'
 import { x01Slots, atcSlots, boardCheckoutTargets } from '../dartSlots.js'
 
 const d = (name: string, score: number) => ({ segment: { name }, score })
@@ -23,6 +24,23 @@ describe('x01Slots', () => {
       ['suggested-next', 'D20', 'Game shot'],
       ['empty-later', '', ''],
     ])
+  })
+
+  it('tips a setup dart in place of a finish route when none fits the darts left', () => {
+    const setup = (left: number, darts: number) => (left === 47 && darts === 1 ? { aim: aimById('SO7')!, leaves: 40 } : null)
+    const s = x01Slots({ ...base, darts: [d('T20', 60), d('T20', 60)], remaining: 47, setup })
+    expect(s.map(x => [x.kind, x.label, x.foot])).toEqual([
+      ['thrown', 'T20', ''],
+      ['thrown', 'T20', ''],
+      ['suggested-next', 'S7', 'Setup · leaves 40'],
+    ])
+    expect(s[2].aria).toBe('Dart 3: suggested S7, Setup · leaves 40')
+  })
+
+  it('keeps the finish route when there is one, and shows no setup when suggestions are off', () => {
+    const setup = () => ({ aim: aimById('SO7')!, leaves: 40 })
+    expect(x01Slots({ ...base, darts: [d('T20', 60)], remaining: 40, setup })[1].foot).toBe('Game shot')
+    expect(x01Slots({ ...base, suggest: false, darts: [d('T20', 60), d('T20', 60)], remaining: 47, setup })[2].kind).toBe('empty-next')
   })
 
   it('a zero-point dart is a miss', () => {

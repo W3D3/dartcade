@@ -1,6 +1,7 @@
 // The three dart slots under the board: thrown darts, then what to aim at next.
 import { parseLabel } from './dartUtils.js'
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
+import type { Setup } from '$shared/coach/setup.js'
 import { nextTargetIndex } from '$shared/atc.js'
 import { dartMarks } from './cricket/view.js'
 import { plural } from './fmt.js'
@@ -47,6 +48,9 @@ function openSlots(from: number, suggestions: { label: string; foot: string }[])
   return out
 }
 
+/** "Setup · leaves 40": the dart is not a finish, it sets one up */
+const setupFoot = ({ leaves }: Setup): string => (leaves === null ? 'Setup' : `Setup · leaves ${leaves}`)
+
 export function x01Slots(o: {
   darts: ThrownDart[]
   remaining: number
@@ -58,6 +62,8 @@ export function x01Slots(o: {
   checkout?: CheckoutPrefs
   /** Replaces the last suggestion's 'Game shot'/'to win the leg' foot, e.g. 121's 'checks out'. */
   finishFoot?: string
+  /** The best setup dart for a score no finish is left for: shown in place of a finish route. Double out only. */
+  setup?: (left: number, darts: number) => Setup | null
 }): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i) => {
     const score = d.score ?? 0
@@ -77,8 +83,10 @@ export function x01Slots(o: {
     ]
   }
   const dartsLeft = 3 - done.length
-  const hint =
-    o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0 ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
+  const suggest = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0
+  const hint = suggest ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
+  const setup = suggest && !hint && o.outMode === 'double' ? o.setup?.(o.remaining, dartsLeft) : null
+  if (setup) return [...done, ...openSlots(done.length, [{ label: setup.aim.label, foot: setupFoot(setup) }])]
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score
