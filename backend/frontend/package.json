@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json",
-    "lint": "eslint src"
+    "lint": "eslint src && node ../../scripts/tw-ratchet.mjs",
+    "lint:tw": "eslint -c eslint.tailwind.config.js --concurrency auto src"
   },
   "dependencies": {
     "@better-auth/core": "1.7.6",
@@ -47,6 +48,7 @@
     "@vitest/browser": "2.1.9",
     "bits-ui": "2.19.3",
     "eslint": "9.39.5",
+    "eslint-plugin-better-tailwindcss": "4.10.0",
     "eslint-plugin-svelte": "3.23.0",
     "globals": "16.5.0",
     "svelte-check": "4.7.6",
