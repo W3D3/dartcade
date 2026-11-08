@@ -11,13 +11,23 @@ import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
 import { bannedSignIn } from './banGate.js'
 import { runAccountCleanup } from './cleanup.js'
+import { passkeyPlugins } from './passkeys.js'
 
-export type AuthDeps = { db: Kysely<Database>; mail: MailConfig; mailer: Mailer | null; trustedOrigins: string[] }
+export type AuthDeps = {
+  db: Kysely<Database>
+  mail: MailConfig
+  mailer: Mailer | null
+  trustedOrigins: string[]
+  /** The deployment's public URL (BETTER_AUTH_URL): the passkeys' relying party id is its host, its origin the one they accept. */
+  baseURL?: string
+  /** Whether the passkeys flag is on for a user; off for everyone when not given. */
+  passkeysEnabledFor?: (userId: string) => Promise<boolean>
+}
 
 /** better-auth's options: email/password with optional verification, and terms acceptance at sign-up. */
 // No return type annotation: it would widen to BetterAuthOptions and lose the plugins' literal
 // types (e.g. admin()'s and openAPI()'s own auth.api methods); `satisfies` below checks the shape instead.
-export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
+export function authOptions({ db, mail, mailer, trustedOrigins, baseURL, passkeysEnabledFor = () => Promise.resolve(false) }: AuthDeps) {
   return {
     database: { db, type: 'pg' as const },
     emailAndPassword: {
@@ -81,6 +91,7 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
         '/send-verification-email': { window: 60, max: 3 },
         '/request-password-reset': { window: 60, max: 3 },
         '/delete-user': { window: 60, max: 3 },
+        '/delete-user/passkey': { window: 60, max: 3 },
       },
     },
     // Keyed by this header, set to the real client address below (never the socket address);
@@ -91,6 +102,11 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
     plugins: [
       openAPI({ disableDefaultReference: true }),
       admin(),
+      ...passkeyPlugins({
+        origin: baseURL ? [new URL(baseURL).origin, ...trustedOrigins] : null,
+        enabledFor: passkeysEnabledFor,
+        requireVerifiedEmail: mail.verification,
+      }),
       // Refuses disposable email domains on sign-up and email change (offline list). `DISPOSABLE_EMAIL_ALLOW`: domains to let through anyway.
       vetto({
         message: 'Please use a permanent email address',

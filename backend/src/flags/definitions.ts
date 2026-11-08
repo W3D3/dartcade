@@ -58,6 +58,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Cricket on the Play page.',
     defaultRule: 'admins',
   },
+  'auth.passkeys.enabled': {
+    kind: 'boolean',
+    description: 'Lets players add passkeys to their account, sign in with one and confirm account deletion with one.',
+    defaultRule: 'admins',
+  },
   'matchmaking.enabled': {
     kind: 'boolean',
     description: 'Turns on ranked play: the Matchmaking page, ratings and ranks.',
@@ -228,6 +233,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('gamemode.cricket.enabled', isAdmin),
+    },
+    'auth.passkeys.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('auth.passkeys.enabled', isAdmin),
     },
     'matchmaking.enabled': {
       variants: { on: true, off: false },

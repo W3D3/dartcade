@@ -523,6 +523,18 @@ export interface AuthSessionTable {
   expiresAt: Date
 }
 
+/** better-auth's passkey plugin (migration 059, auth/passkeys.ts); only what our own queries and tests touch. */
+export interface PasskeyTable {
+  id: string
+  name: string | null
+  publicKey: string
+  userId: string
+  credentialID: string
+  counter: number
+  deviceType: string
+  backedUp: boolean
+}
+
 /** A game the ranked queue started, with who played on which side (migration 039). */
 export interface RankedMatchesTable {
   session_id: string
@@ -541,6 +553,7 @@ export interface RankedMatchesTable {
 export interface Database {
   user: UserTable
   session: AuthSessionTable
+  passkey: PasskeyTable
   boards: BoardsTable
   bridge_install_tokens: BridgeInstallTokensTable
   pairing_codes: PairingCodesTable
