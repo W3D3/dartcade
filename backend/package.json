@@ -11,7 +11,7 @@
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "typecheck": "tsc --noEmit",
     "gen:types": "json2ts ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
-    "lint": "oxlint",
+    "lint": "oxlint && depcruise src --config .dependency-cruiser.cjs",
     "calibrate:bots": "tsx src/bots/calibrate.ts",
     "gen:coach": "tsx src/coach/genLanding.ts"
   },
@@ -50,6 +50,7 @@
     "@types/semver": "7.8.0",
     "@types/tar-stream": "3.1.5",
     "@types/ws": "8.18.1",
+    "dependency-cruiser": "18.7.2",
     "json-schema-to-typescript": "14.1.0",
     "oxlint": "1.87.0",
     "oxlint-tsgolint": "7.0.2003",
