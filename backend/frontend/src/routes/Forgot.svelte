@@ -43,7 +43,7 @@
       {#if !infoLoaded}
         <!-- avoid flashing the "isn't available" message before /api/auth-info has loaded -->
       {:else if !$authInfo.mail}
-        <p class="m-0 text-[16px] text-text-muted">Password reset isn't available on this server. Ask whoever runs it.</p>
+        <p class="text-[16px] text-text-muted">Password reset isn't available on this server. Ask whoever runs it.</p>
       {:else}
         <form
           onsubmit={e => {
@@ -53,10 +53,10 @@
           class="flex flex-col gap-5 md:gap-7"
         >
           <div class="flex flex-col gap-2">
-            <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+            <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
               Reset password
             </h1>
-            <p class="m-0 text-[16px] text-text-muted">Enter the email on your account and we'll send you a link.</p>
+            <p class="text-[16px] text-text-muted">Enter the email on your account and we'll send you a link.</p>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -74,13 +74,13 @@
         {#if sent}
           <div class="h-px bg-line-2"></div>
           <div class="p-4 rounded-[10px] bg-surface-inset border border-line-popover">
-            <p class="m-0 text-[15px] leading-[1.5] text-ink-soft">
+            <p class="text-[15px] leading-[1.5] text-ink-soft">
               If that address has an account, we've sent a link. It's valid for an hour.
             </p>
           </div>
         {/if}
 
-        <p class="m-0 text-[15px] text-text-muted text-center"><a href="#/login" class="font-semibold no-underline">Back to sign in</a></p>
+        <p class="text-[15px] text-text-muted text-center"><a href="#/login" class="font-semibold no-underline">Back to sign in</a></p>
       {/if}
     </div>
   </main>

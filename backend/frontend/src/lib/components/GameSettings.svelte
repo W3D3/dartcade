@@ -110,7 +110,7 @@
 {#if gameId === 'x01'}
   <div class={root}>
     {#if teams && meta.format}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.format.label}
           {#if meta.format.tooltip}
@@ -128,7 +128,7 @@
     {/if}
 
     {#if hasBot && meta.botSpeed}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.botSpeed.label}
           {#if meta.botSpeed.tooltip}
@@ -145,7 +145,7 @@
       </fieldset>
     {/if}
 
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+    <fieldset class="border-0 flex flex-col gap-2">
       <legend class="field-label mb-2">Start score</legend>
       <SegmentedControl
         options={startScoreOptions}
@@ -156,7 +156,7 @@
       />
     </fieldset>
 
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+    <fieldset class="border-0 flex flex-col gap-2">
       <legend class="field-label mb-2">Check-in</legend>
       <SegmentedControl
         options={inOutOptions}
@@ -167,7 +167,7 @@
       />
     </fieldset>
 
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+    <fieldset class="border-0 flex flex-col gap-2">
       <legend class="field-label mb-2">Check-out</legend>
       <SegmentedControl
         options={inOutOptions}
@@ -178,7 +178,7 @@
       />
     </fieldset>
 
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+    <fieldset class="border-0 flex flex-col gap-2">
       <legend class="flex items-center gap-2 field-label mb-2">
         Bull off
         <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
@@ -192,7 +192,7 @@
       />
     </fieldset>
 
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+    <fieldset class="border-0 flex flex-col gap-2">
       <legend class="field-label mb-2">Bull value</legend>
       <SegmentedControl
         options={bullValueOptions}
@@ -235,7 +235,7 @@
     {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
             {#if field.tooltip}
@@ -258,7 +258,7 @@
     {#each P121_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
             {#if field.tooltip}
@@ -327,7 +327,7 @@
     {#each HILO_TOGGLE_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
             {#if field.tooltip}
@@ -348,7 +348,7 @@
 {:else if gameId === 'cricket'}
   <div class={root}>
     {#if meta.mode}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.mode.label}
           {#if meta.mode.tooltip}
@@ -378,7 +378,7 @@
     </div>
 
     {#if meta.bullOff}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.bullOff.label}
           {#if meta.bullOff.tooltip}
@@ -396,7 +396,7 @@
     {/if}
 
     {#if teams && meta.format}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.format.label}
           {#if meta.format.tooltip}
@@ -414,7 +414,7 @@
     {/if}
 
     {#if hasBot && meta.botSpeed}
-      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <fieldset class="border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
           {meta.botSpeed.label}
           {#if meta.botSpeed.tooltip}
@@ -433,7 +433,7 @@
   </div>
 {:else if gameId === 'minigolf'}
   <div class={root}>
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2 lg:col-span-2">
+    <fieldset class="border-0 flex flex-col gap-2 lg:col-span-2">
       <legend class="field-label mb-2">Course</legend>
       <!-- Option values can be anything, so each card goes by its position -->
       <RadioGroup
@@ -460,7 +460,7 @@
     {#each ['tries', 'aimAssist', 'shotPreview', 'ballContact'] as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
             {#if field.tooltip}<Tooltip text={field.tooltip} />{/if}

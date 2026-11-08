@@ -25,7 +25,7 @@
 
 <HomeSection title="Friend activity" loading={feed.loading} error={feed.error}>
   {#if feed.data && feed.data.events.length > 0}
-    <ul class="m-0 flex list-none flex-col gap-[10px] p-0">
+    <ul class="flex flex-col gap-[10px]">
       {#each feed.data.events as e, i (e.id)}
         <!-- One Watch per friend, on their newest line -->
         {@const watch = feed.data.events.findIndex(x => x.userId === e.userId) === i ? watchFor(e.userId) : null}
@@ -40,6 +40,6 @@
       {/each}
     </ul>
   {:else}
-    <p class="m-0 text-[14px] text-text-muted">No friend activity yet. 180s, big checkouts and rank-ups show up here.</p>
+    <p class="text-[14px] text-text-muted">No friend activity yet. 180s, big checkouts and rank-ups show up here.</p>
   {/if}
 </HomeSection>

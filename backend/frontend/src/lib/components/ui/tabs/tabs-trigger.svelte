@@ -7,7 +7,7 @@
   import { cn } from '$lib/utils.js'
 
   const variants = tv({
-    base: 'cursor-pointer whitespace-nowrap border-0 font-[inherit]',
+    base: 'cursor-pointer whitespace-nowrap border-0',
     variants: {
       variant: {
         title:

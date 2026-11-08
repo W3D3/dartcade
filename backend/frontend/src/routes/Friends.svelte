@@ -69,8 +69,8 @@
     <Tabs.Root value={tab} onValueChange={pickTab} class="contents">
       <header class="hidden md:flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div class="flex flex-col gap-[6px]">
-          <h1 class="m-0 font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Friends</h1>
-          <p class="m-0 text-[15px] text-text-muted">
+          <h1 class="font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Friends</h1>
+          <p class="text-[15px] text-text-muted">
             <strong class="text-text font-semibold">{counts.online} online</strong> · {counts.all}
             {counts.all === 1 ? 'friend' : 'friends'} <span class="hidden xl:inline">· invite them to your lobby from here.</span>
           </p>
@@ -102,9 +102,9 @@
             </div>
           {:else}
             {#if query !== '' && shown.length === 0}
-              <p class="m-0 text-[15px] text-text-muted {tab === 'requests' ? 'md:hidden' : ''}">No friend matches “{query.trim()}”.</p>
+              <p class="text-[15px] text-text-muted {tab === 'requests' ? 'md:hidden' : ''}">No friend matches “{query.trim()}”.</p>
             {:else if tab === 'online' && groups.online.length === 0}
-              <p class="hidden md:block m-0 text-[15px] text-text-muted">Nobody's online right now.</p>
+              <p class="hidden md:block text-[15px] text-text-muted">Nobody's online right now.</p>
             {/if}
             <FriendsSection
               title="Online"
@@ -150,7 +150,7 @@
           >
             <div class="flex items-baseline justify-between gap-3">
               <h2
-                class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
+                class="text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
               >
                 Requests<span class="md:hidden">{` · ${list.incoming.length} for you · ${list.outgoing.length} sent`}</span>
               </h2>

@@ -70,13 +70,13 @@
       type="button"
       onclick={forfeits ? onend : onleave}
       aria-label={forfeits ? 'Forfeit game' : 'Leave game'}
-      class="w-11 h-11 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer"
+      class="w-11 h-11 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
     >
       <ChevronLeft size={18} />
     </button>
     <div class="flex flex-col gap-[3px] min-w-0">
       <span class="flex items-center gap-[6px] min-w-0">
-        <h1 class="m-0 font-display font-bold text-[20px] leading-none uppercase tracking-[0.04em] whitespace-nowrap">{title}</h1>
+        <h1 class="font-display font-bold text-[20px] leading-none uppercase tracking-[0.04em] whitespace-nowrap">{title}</h1>
         {#if paused}
           <span
             class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full bg-surface-paused text-ink-2 text-[10px] font-bold tracking-[0.1em]"
@@ -143,7 +143,7 @@
     </Button>
 
     <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
-      <h1 class="m-0 font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
+      <h1 class="font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
       {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
       {#if ranked}
         <RankedPill />

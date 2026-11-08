@@ -52,7 +52,7 @@
       <Input type="number" min={0} max={3000} step={1} bind:value aria-label="New rating" />
     </label>
   {:else}
-    <p class="m-0 text-[14px] text-text-muted">
+    <p class="text-[14px] text-text-muted">
       {user.name} plays placement matches again in {mode}. Their rating stays, hidden, as the starting point.
     </p>
   {/if}

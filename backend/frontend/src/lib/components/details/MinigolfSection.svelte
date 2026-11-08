@@ -28,7 +28,7 @@
     </Tabs.List>
 
     <Tabs.Content value="summary" class="flex min-w-0 flex-col gap-3">
-      <h3 class="m-0 font-display text-[14px] font-bold uppercase tracking-[0.06em] text-text-dim">Scorecard · {golf.course}</h3>
+      <h3 class="font-display text-[14px] font-bold uppercase tracking-[0.06em] text-text-dim">Scorecard · {golf.course}</h3>
       <Scorecard scores={golf.scores} pars={golf.holes.map(h => h.par)} {players} />
     </Tabs.Content>
 
@@ -49,7 +49,7 @@
         </Tabs.List>
         {#if shown}
           <Tabs.Content value={hole} class="flex min-w-0 flex-col gap-2">
-            <h3 class="m-0 flex items-baseline justify-between gap-2 text-[17px] font-semibold">
+            <h3 class="flex items-baseline justify-between gap-2 text-[17px] font-semibold">
               <span>Hole {Number(hole) + 1} · {shown.name}</span><span class="text-[14px] font-normal text-text-muted">Par {shown.par}</span
               >
             </h3>
@@ -63,7 +63,7 @@
                 height="max-h-[560px]"
               />
             {:else}
-              <p class="m-0 text-text-muted">Nobody played this hole.</p>
+              <p class="text-text-muted">Nobody played this hole.</p>
             {/if}
           </Tabs.Content>
         {/if}

@@ -114,10 +114,10 @@
       </div>
     {/snippet}
     {#if phase === 'loading'}
-      <p class="m-0 p-8 text-[15px] text-text-muted">Loading the game…</p>
+      <p class="p-8 text-[15px] text-text-muted">Loading the game…</p>
     {:else if phase === 'missing'}
       <div class="flex flex-col items-start gap-3 p-8">
-        <p class="m-0 text-[17px] font-semibold">This game isn't available</p>
+        <p class="text-[17px] font-semibold">This game isn't available</p>
         <a href={back.href} class="font-semibold no-underline">Back to {back.label}</a>
       </div>
     {:else if phase === 'failed' || !detail}

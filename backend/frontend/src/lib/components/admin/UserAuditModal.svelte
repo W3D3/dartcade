@@ -22,11 +22,11 @@
   {#if failed}
     <ErrorText>Couldn't load the audit log.</ErrorText>
   {:else if entries === null}
-    <p class="m-0 text-[14px] text-text-dim">Loading…</p>
+    <p class="text-[14px] text-text-dim">Loading…</p>
   {:else if entries.length === 0}
-    <p class="m-0 text-[14px] text-text-dim">Nothing recorded for this account.</p>
+    <p class="text-[14px] text-text-dim">Nothing recorded for this account.</p>
   {:else}
-    <ul class="m-0 flex max-h-[60vh] list-none flex-col gap-3 overflow-y-auto p-0">
+    <ul class="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
       {#each entries as e (e.id)}
         <li class="flex flex-col gap-0.5">
           <span class="text-[14px] text-text">{auditLabel(e.action)}</span>

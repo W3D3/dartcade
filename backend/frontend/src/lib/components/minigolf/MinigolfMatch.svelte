@@ -353,7 +353,7 @@
           camera={roll && zoom.current > 0 ? { focus: pt(rolling(roll.seat) ?? ball), t: zoom.current } : null}
         />
       </div>
-      <p class="absolute left-1/2 -translate-x-1/2 bottom-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
+      <p class="absolute left-1/2 -translate-x-1/2 bottom-3 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
         3D isn't available on this device; showing the flat view
       </p>
     {/if}
@@ -427,7 +427,7 @@
       <div class="mx-auto w-full max-w-[min(340px,30vh)] lg:max-w-[340px]">
         <DartBoard {darts} onBoardClick={canThrow && !locked ? onBoardClick : undefined} />
       </div>
-      <p class="m-0 hidden text-center text-[12px] text-text-muted lg:block">
+      <p class="hidden text-center text-[12px] text-text-muted lg:block">
         Angle from the bull = direction · Distance from the bull = power · Bull putts at the cup
       </p>
       {@render tries(false)}

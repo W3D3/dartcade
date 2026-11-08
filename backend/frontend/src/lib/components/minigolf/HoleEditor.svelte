@@ -49,12 +49,12 @@
     class="w-full box-border rounded-[10px] border border-line-2 bg-bg-deep p-3 font-mono text-[12px] leading-[1.45] text-text"
     aria-invalid={errors.length > 0}
     aria-describedby="hole-errors"></textarea>
-  <ul id="hole-errors" class="m-0 pl-5 text-[13px] text-danger-text" aria-live="polite">
+  <ul id="hole-errors" class="pl-5 text-[13px] text-danger-text" aria-live="polite">
     {#each errors as e (e)}<li>{e}</li>{/each}
   </ul>
   <button
     type="button"
-    class="self-start h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium font-[inherit] cursor-pointer hover:bg-surface-hover"
+    class="self-start h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium cursor-pointer hover:bg-surface-hover"
     onclick={() => void clip.copy(text)}>{clip.state === 'copied' ? 'Copied' : 'Copy'}</button
   >
 </section>

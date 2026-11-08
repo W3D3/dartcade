@@ -100,7 +100,7 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
         <section class="card p-4 md:p-5 flex flex-col gap-4" aria-labelledby="sandbox-visit">
-          <h2 id="sandbox-visit" class="m-0 text-[17px] font-semibold">The visit</h2>
+          <h2 id="sandbox-visit" class="text-[17px] font-semibold">The visit</h2>
           <div class="grid grid-cols-3 gap-3">
             <div class="flex flex-col gap-2">
               <label for="sandbox-start" class="field-label">Score left</label>
@@ -115,7 +115,7 @@
               <Select label="Coach me as" options={tierOptions} value={tierId} onchange={pickTier} />
             </div>
           </div>
-          <p class="m-0 text-[13px] text-text-muted">Graded as: {tier.name} ({tierAverage} average)</p>
+          <p class="text-[13px] text-text-muted">Graded as: {tier.name} ({tierAverage} average)</p>
           {#if inputError}<ErrorText>{inputError}</ErrorText>{/if}
           {#if loaded.failed}<ErrorText>The {tier.name} model couldn't load. Reload to try again.</ErrorText>{/if}
 
@@ -142,7 +142,7 @@
             >
           </form>
           {#if typedError}<ErrorText>{typedError}</ErrorText>{/if}
-          <p class="m-0 text-[13px] text-text-muted">
+          <p class="text-[13px] text-text-muted">
             {#if !inputError && !loaded.models && !loaded.failed}Loading the {tier.name} model…
             {:else if !result}Fix the inputs to throw.
             {:else if result.done}{visit?.bust ? 'Bust' : visit?.then === 0 ? 'Checked out' : 'Three darts thrown'}: undo or clear to throw
@@ -153,7 +153,7 @@
 
         <section class="card p-4 md:p-5 flex flex-col gap-4" aria-labelledby="sandbox-coach">
           <div class="flex items-baseline justify-between gap-3">
-            <h2 id="sandbox-coach" class="m-0 text-[17px] font-semibold">The coach</h2>
+            <h2 id="sandbox-coach" class="text-[17px] font-semibold">The coach</h2>
             {#if visit}
               <span class="inline-flex flex-wrap items-center gap-2 text-[13px] text-text-muted capitalize"
                 >{visit.tags.join(' + ')}<GradePill grade={visit.grade} /><GroupingPill grouping={visit.grouping} /></span
@@ -162,8 +162,8 @@
           </div>
 
           {#if visit}
-            <p class="m-0 text-[14px] {visit.tip ? 'text-ice' : ''}">{visit.text}</p>
-            <ul class="m-0 p-0 list-none flex flex-col gap-2.5">
+            <p class="text-[14px] {visit.tip ? 'text-ice' : ''}">{visit.text}</p>
+            <ul class="flex flex-col gap-2.5">
               {#each visitTiles(visit) as tile, i (i)}
                 {@const n = visit.notes.find(x => x.dart === i)}
                 <li class="flex items-start gap-3">
@@ -176,8 +176,8 @@
             </ul>
             <VisitDetail {visit} />
             <div class="flex flex-col gap-2">
-              <h3 class="m-0 text-[15px] font-semibold">Dart classes</h3>
-              <p class="m-0 text-[12px] text-text-muted">
+              <h3 class="text-[15px] font-semibold">Dart classes</h3>
+              <p class="text-[12px] text-text-muted">
                 Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
                 is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against a
                 {tierAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
@@ -185,14 +185,14 @@
               <VisitNumbers {visit} />
             </div>
           {:else}
-            <p class="m-0 text-[14px] text-text-muted">Throw a dart to see the coach's review.</p>
+            <p class="text-[14px] text-text-muted">Throw a dart to see the coach's review.</p>
           {/if}
 
           {#if result && !result.done}
             <div class="flex flex-col gap-2">
-              <h3 class="m-0 text-[15px] font-semibold">Next dart: best aims (chance to check out this visit or next)</h3>
+              <h3 class="text-[15px] font-semibold">Next dart: best aims (chance to check out this visit or next)</h3>
               {#if result.next.length}
-                <ol class="m-0 p-0 list-none flex flex-col">
+                <ol class="flex flex-col">
                   {#each result.next as a (a.aim.label)}
                     <li class="flex justify-between py-1.5 border-b border-line last:border-b-0 text-[14px]">
                       <span class="font-display font-bold text-[18px]">{a.aim.label}</span>
@@ -201,7 +201,7 @@
                   {/each}
                 </ol>
               {:else}
-                <p class="m-0 text-[14px] text-text-muted">No aim reaches a checkout from {result.left}.</p>
+                <p class="text-[14px] text-text-muted">No aim reaches a checkout from {result.left}.</p>
               {/if}
             </div>
           {/if}

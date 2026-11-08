@@ -31,7 +31,7 @@
     <header class="flex items-end justify-between gap-4">
       <div class="flex min-w-0 flex-col gap-1">
         <span class="text-[13px] text-text-muted">{longDate(now)}</span>
-        <h1 class="m-0 font-display text-[28px] font-bold uppercase leading-none tracking-[0.02em] md:text-[42px] xl:text-[48px]">
+        <h1 class="font-display text-[28px] font-bold uppercase leading-none tracking-[0.02em] md:text-[42px] xl:text-[48px]">
           {greeting(now)}{#if $currentUser}, {$currentUser.name}{/if}
         </h1>
       </div>

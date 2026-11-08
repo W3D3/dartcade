@@ -27,10 +27,8 @@
         aria-pressed={on}
         onclick={() => onselect(board.id)}
         class="h-11 px-[14px] inline-flex items-center gap-2 rounded-[11px] text-[14px] font-semibold cursor-pointer
-               font-[inherit] transition-colors
-               {on
-          ? 'border-2 border-accent bg-surface-active text-text'
-          : 'border border-line-3 bg-transparent text-text hover:bg-surface-active'}"
+ transition-colors
+ {on ? 'border-2 border-accent bg-surface-active text-text' : 'border border-line-3 bg-transparent text-text hover:bg-surface-active'}"
       >
         <span
           title={board.online ? 'Reachable' : 'Not answering'}

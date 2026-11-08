@@ -62,7 +62,7 @@
       autocomplete="off"
       oninput={e => (typed = e.currentTarget.value)}
       onclick={() => (open = true)}
-      class="h-[50px] w-full box-border rounded-[10px] border border-line-chip bg-bg pl-[50px] pr-11 text-[16px] text-text font-[inherit]
+      class="h-[50px] w-full box-border rounded-[10px] border border-line-chip bg-bg pl-[50px] pr-11 text-[16px] text-text
              placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none"
     />
     <Combobox.Trigger
@@ -99,7 +99,7 @@
             {/snippet}
           </Combobox.Item>
         {:else}
-          <p class="m-0 px-3 py-4 text-[14px] text-text-muted">No country matches “{typed.trim()}”.</p>
+          <p class="px-3 py-4 text-[14px] text-text-muted">No country matches “{typed.trim()}”.</p>
         {/each}
       </Combobox.Viewport>
     </Combobox.Content>

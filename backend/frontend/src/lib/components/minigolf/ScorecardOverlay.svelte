@@ -26,7 +26,7 @@
   >
     <div class="flex max-h-full w-full max-w-[1100px] flex-col gap-5 overflow-y-auto rounded-2xl border border-line bg-surface-1 p-6">
       <header class="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 class="m-0 font-display text-[32px] font-bold uppercase">Hole {last.index + 1} · {last.hole.name} · done</h2>
+        <h2 class="font-display text-[32px] font-bold uppercase">Hole {last.index + 1} · {last.hole.name} · done</h2>
         <span class="text-text-muted">Par {last.hole.par}</span>
       </header>
       <div class="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">

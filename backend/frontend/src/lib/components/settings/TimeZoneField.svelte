@@ -30,7 +30,7 @@
       id="time-zone"
       value={zone}
       onchange={e => void save(e.currentTarget.value)}
-      class="min-w-0 max-w-[60%] h-9 rounded-[8px] border border-line-3 bg-surface-inset px-2 text-[14px] text-ink-2 font-[inherit]"
+      class="min-w-0 max-w-[60%] h-9 rounded-[8px] border border-line-3 bg-surface-inset px-2 text-[14px] text-ink-2"
     >
       {#if !zones.includes(zone)}<option value={zone}>{zone}</option>{/if}
       {#each zones as z (z)}<option value={z}>{z.replaceAll('_', ' ')}</option>{/each}
@@ -38,4 +38,4 @@
   {/if}
 </div>
 {#if error}<ErrorText>{error}</ErrorText>{/if}
-<p class="m-0 text-[13px] leading-[1.5] text-text-dim">Your day streak and daily XP limits count days in this time zone.</p>
+<p class="text-[13px] leading-[1.5] text-text-dim">Your day streak and daily XP limits count days in this time zone.</p>

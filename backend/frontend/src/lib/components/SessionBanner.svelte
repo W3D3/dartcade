@@ -26,7 +26,7 @@
       type="button"
       onclick={() => void push(`/session/${game.sessionId}`)}
       class="ml-auto flex items-center gap-[6px] text-[13px] font-semibold text-accent
-             bg-transparent border-0 cursor-pointer shrink-0"
+ border-0 cursor-pointer shrink-0"
     >
       Return to game
       <ArrowRight size={14} strokeWidth={2.5} />

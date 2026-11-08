@@ -48,11 +48,11 @@
     </div>
     {#if error}<ErrorText>{error}</ErrorText>{/if}
     {#if data.friends === null}
-      <p class="m-0 text-[14px] text-text-muted">Only friends can see their list.</p>
+      <p class="text-[14px] text-text-muted">Only friends can see their list.</p>
     {:else if data.friends.length === 0}
-      <p class="m-0 text-[14px] text-text-muted">No friends yet.</p>
+      <p class="text-[14px] text-text-muted">No friends yet.</p>
     {:else}
-      <ul class="m-0 p-0 list-none flex flex-col">
+      <ul class="flex flex-col">
         {#each data.friends as f (f.id)}
           <li class="flex items-center gap-3 py-2 border-b border-line last:border-b-0">
             <a href="#/profile/{f.id}" class="flex items-center gap-3 min-w-0 flex-1 text-text no-underline">

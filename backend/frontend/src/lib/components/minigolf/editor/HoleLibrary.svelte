@@ -36,7 +36,7 @@
 
 <aside aria-label="Hole library" class="flex flex-col gap-3">
   <div class="flex items-baseline justify-between">
-    <h2 class="m-0 font-display font-bold text-[22px] uppercase">Hole library</h2>
+    <h2 class="font-display font-bold text-[22px] uppercase">Hole library</h2>
     <span class="text-[12px] text-text-muted">{plural(shown.length, 'hole')}</span>
   </div>
   <SearchInput bind:value={search} label="Search holes" class="h-10" />
@@ -44,7 +44,7 @@
     <Chip selected={filter === 'all'} onclick={() => (filter = 'all')}>All</Chip>
     <Chip selected={filter === 'official'} onclick={() => (filter = 'official')}>Official</Chip>
   </div>
-  <ul class="m-0 grid list-none grid-cols-2 gap-[10px] p-0" data-sortable-zone="library">
+  <ul class="grid grid-cols-2 gap-[10px]" data-sortable-zone="library">
     {#each shown as r (r.id)}
       {@const hole = holeOf(r)}
       {@const name = hole?.name ?? ''}
@@ -68,7 +68,7 @@
               aria-label="Add {name} to the course"
               title="Add to the course"
               onclick={() => onadd(r.id)}
-              class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-line-3 bg-transparent text-text-muted hover:bg-surface-hover"
+              class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-line-3 text-text-muted hover:bg-surface-hover"
               ><Plus size={16} /></button
             >
           {/if}
@@ -78,7 +78,7 @@
       <li class="col-span-2 text-[14px] text-text-muted">No holes match.</li>
     {/each}
   </ul>
-  <p class="m-0 text-[12px] leading-[1.5] text-text-muted">
+  <p class="text-[12px] leading-[1.5] text-text-muted">
     Drag a hole into the course to reuse it. Holes are shared, so changing an official hole updates every course that uses it. Copy it first
     to make your own version.
   </p>

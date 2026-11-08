@@ -218,9 +218,9 @@
     </div>
 
     {#if lights?.bridgeOutdated}
-      <p class="m-0 text-[13px] text-warn">Update your bridge to use lights.</p>
+      <p class="text-[13px] text-warn">Update your bridge to use lights.</p>
     {:else if lights && !lights.bridgeOnline}
-      <p class="m-0 text-[13px] text-live-text">The bridge is offline.</p>
+      <p class="text-[13px] text-live-text">The bridge is offline.</p>
     {/if}
 
     {#if panelState === 'error'}
@@ -234,13 +234,13 @@
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_1.08fr] gap-[18px] items-start">
         <section aria-label="WLED devices · {lights.devices.length}" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
           <div class="flex items-center justify-between gap-3">
-            <h2 class="m-0 text-[17px] font-semibold">WLED devices · {lights.devices.length}</h2>
+            <h2 class="text-[17px] font-semibold">WLED devices · {lights.devices.length}</h2>
             <Button variant="outline" size="sm" disabled={!canAct} onclick={() => void rescan()}>
               <RotateCcw size={14} />Rescan
             </Button>
           </div>
           {#if deviceError}<ErrorText>{deviceError}</ErrorText>{/if}
-          <ul class="m-0 p-0 list-none flex flex-col gap-2">
+          <ul class="flex flex-col gap-2">
             {#each lights.devices as device (device.id)}
               <WledDeviceRow
                 {device}
@@ -297,5 +297,5 @@
     <Button variant="outline" size="sm" onclick={() => void loadBoards()}>Retry</Button>
   </div>
 {:else if loaded}
-  <p class="m-0 text-[14px] text-text-muted">Pair a board first, in the Boards section, to set up its lights.</p>
+  <p class="text-[14px] text-text-muted">Pair a board first, in the Boards section, to set up its lights.</p>
 {/if}

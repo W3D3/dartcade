@@ -42,7 +42,7 @@
         <RadioGroup.Item
           value={m.value}
           class="flex flex-col gap-1 text-left p-[14px] rounded-[12px] border-[1.5px] border-line-2 bg-surface-panel cursor-pointer
-                 font-[inherit] transition-colors hover:border-line-popover
+                 transition-colors hover:border-line-popover
                  data-[state=checked]:border-accent data-[state=checked]:bg-card-active"
         >
           <span class="text-[15px] font-semibold text-text">{m.label}</span>

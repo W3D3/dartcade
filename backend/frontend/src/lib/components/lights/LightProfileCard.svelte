@@ -13,7 +13,7 @@
 </script>
 
 <section aria-label="Light profile" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
-  <h2 class="m-0 text-[17px] font-semibold">Light profile</h2>
+  <h2 class="text-[17px] font-semibold">Light profile</h2>
   <div class="flex gap-2 items-center flex-wrap">
     <button
       type="button"
@@ -42,7 +42,7 @@
     {/each}
   </div>
 
-  <ol class="m-0 p-0 list-none flex flex-col gap-1">
+  <ol class="flex flex-col gap-1">
     {#each profile.rules as rule, i (i)}
       {@const label = ruleLabel(rule)}
       <li

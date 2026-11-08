@@ -46,7 +46,7 @@
         </div>
       </div>
     {:else}
-      <p class="m-0 text-[13px] text-text-muted">{card.progress.replace(/^· /, '')}</p>
+      <p class="text-[13px] text-text-muted">{card.progress.replace(/^· /, '')}</p>
     {/if}
     <div class="flex items-center gap-2 text-[12px] text-text-muted">
       <span>Last 5</span>

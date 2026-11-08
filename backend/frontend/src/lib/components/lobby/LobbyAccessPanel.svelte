@@ -27,5 +27,5 @@
       }}
     />
   </div>
-  <p class="m-0 text-[12px] leading-[1.45] text-text-dim">{accessHint(access)}</p>
+  <p class="text-[12px] leading-[1.45] text-text-dim">{accessHint(access)}</p>
 </div>

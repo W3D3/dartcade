@@ -21,8 +21,8 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-end" role="group" aria-roledescription="slide" aria-label={current.title}>
       <div class="flex min-w-0 flex-1 flex-col items-start gap-2 {slides.length === 1 ? 'md:pb-5' : ''}">
         <span class="text-[11px] font-semibold tracking-[0.12em] text-accent">{current.badge}</span>
-        <h3 class="m-0 font-display text-[34px] font-bold uppercase leading-none">{current.title}</h3>
-        <p class="m-0 max-w-[52ch] text-[15px] text-text-muted">{current.text}</p>
+        <h3 class="font-display text-[34px] font-bold uppercase leading-none">{current.title}</h3>
+        <p class="max-w-[52ch] text-[15px] text-text-muted">{current.text}</p>
         <Button href={current.primary.href} variant="accent" class="mt-1">{current.primary.label}<ArrowRight size={16} /></Button>
       </div>
       <!-- With one banner the picture sits on the card's bottom edge, as in the design -->
@@ -45,7 +45,7 @@
           {#each slides as slide, i (slide.id)}
             <button
               type="button"
-              class="size-2 cursor-pointer rounded-full border-0 p-0 {slide.id === current.id ? 'bg-accent' : 'bg-line-3'}"
+              class="size-2 cursor-pointer rounded-full border-0 {slide.id === current.id ? 'bg-accent' : 'bg-line-3'}"
               aria-label="Show {slide.title}"
               aria-current={slide.id === current.id}
               onclick={() => (picked = i)}

@@ -70,11 +70,11 @@
       {#if tab === 'friends'}
         <div class="flex flex-col gap-2 flex-grow min-h-0 overflow-y-auto scrollbar-themed pr-1">
           {#if loaded && rows.length === 0}
-            <p class="m-0 py-2 text-[14px] text-text-muted">
+            <p class="py-2 text-[14px] text-text-muted">
               No friends yet. <a href="#/friends" class="font-semibold no-underline">Add a friend</a> and they show up here to invite.
             </p>
           {:else}
-            <ul aria-label="Your friends" class="m-0 p-0 list-none flex flex-col">
+            <ul aria-label="Your friends" class="flex flex-col">
               {#each rows as r (r.friend.id)}
                 <li class="flex items-center gap-3 min-h-[52px] border-b border-surface-paused last:border-b-0">
                   <span class="relative shrink-0 flex m-1">
@@ -101,14 +101,14 @@
                       disabled={inviting !== null}
                       aria-label="Invite {r.friend.name} to {lobby.name}"
                       onclick={() => void invite(r.friend.id)}
-                      class="shrink-0 h-9 px-[14px] rounded-[9px] border border-line-strong bg-transparent text-text text-[14px] font-semibold font-[inherit] cursor-pointer hover:bg-surface-active disabled:opacity-60"
+                      class="shrink-0 h-9 px-[14px] rounded-[9px] border border-line-strong text-text text-[14px] font-semibold cursor-pointer hover:bg-surface-active disabled:opacity-60"
                       >Invite</button
                     >
                   {/if}
                 </li>
               {/each}
             </ul>
-            <p class="m-0 text-[12px] leading-[1.45] text-text-dim">
+            <p class="text-[12px] leading-[1.45] text-text-dim">
               Invited friends join once they accept. Someone not on your list? Add them by @username in People.
               <a href="#/friends" class="font-semibold no-underline">All friends</a>
             </p>

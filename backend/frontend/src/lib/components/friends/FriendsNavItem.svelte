@@ -19,10 +19,8 @@
   aria-haspopup="dialog"
   aria-expanded={$friendsDrawerOpen}
   onclick={() => friendsDrawerOpen.update(o => !o)}
-  class="relative w-[72px] h-14 box-border flex flex-col items-center justify-center gap-[3px] rounded-[10px] border cursor-pointer font-[inherit] text-[11px] font-semibold
-         {active
-    ? 'bg-accent-tint border-accent-line-strong text-accent'
-    : 'bg-transparent border-transparent text-text-muted hover:text-text'}"
+  class="relative w-[72px] h-14 box-border flex flex-col items-center justify-center gap-[3px] rounded-[10px] border cursor-pointer text-[11px] font-semibold
+ {active ? 'bg-accent-tint border-accent-line-strong text-accent' : 'bg-transparent border-transparent text-text-muted hover:text-text'}"
 >
   <UsersRound size={18} strokeWidth={1.8} />
   Friends

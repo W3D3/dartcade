@@ -91,12 +91,12 @@
 {#snippet row(name: string, value: string)}
   <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line last:border-b-0">
     <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">{name}</dt>
-    <dd class="m-0 min-w-0 break-words text-[14px] text-text">{value}</dd>
+    <dd class="min-w-0 break-words text-[14px] text-text">{value}</dd>
   </div>
 {/snippet}
 
 {#snippet still(s: DartSample, phase: 'before' | 'after', cam: number)}
-  <figure class="m-0 relative aspect-square overflow-hidden rounded-[8px] bg-bg border border-line">
+  <figure class="relative aspect-square overflow-hidden rounded-[8px] bg-bg border border-line">
     <img src={stillUrl(s.id, phase, cam)} alt="Camera {cam + 1}, {phase} the dart" loading="lazy" class="block size-full object-cover" />
     {#if phase === 'after'}
       {#if s.autodarts.coords}
@@ -143,8 +143,8 @@
         {@const t = data.totals}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
           <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="ds-totals">
-            <h2 id="ds-totals" class="m-0 text-[17px] font-semibold">Totals</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="ds-totals" class="text-[17px] font-semibold">Totals</h2>
+            <dl class="flex flex-col">
               {@render row('Samples', String(total))}
               {#each LABELS as l (l.value)}{@render row(l.text, String(t.byLabel[l.value]))}{/each}
               {@render row('Boards', `${t.boards} with samples · ${t.sharingBoards} sharing`)}
@@ -157,8 +157,8 @@
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-3" aria-labelledby="ds-download">
-            <h2 id="ds-download" class="m-0 text-[17px] font-semibold">Download</h2>
-            <p class="m-0 text-[13.5px] leading-[1.45] text-text-muted">
+            <h2 id="ds-download" class="text-[17px] font-semibold">Download</h2>
+            <p class="text-[13.5px] leading-[1.45] text-text-muted">
               A tar of each sample's six stills (<code>&lt;id&gt;/after-0.jpg</code>, …) and <code>labels.jsonl</code>. A sample is included
               once it's an hour old, when its visit can no longer be corrected.
             </p>
@@ -188,7 +188,7 @@
                   </Button>
                 {/if}
               </div>
-              <p class="m-0 text-[13px] text-text-muted">
+              <p class="text-[13px] text-text-muted">
                 {upToDate
                   ? `Nothing new since your last download (up to #${downloadedUpTo}).`
                   : downloadedUpTo
@@ -196,14 +196,14 @@
                     : `Samples up to #${upTo}.`}
               </p>
             {:else}
-              <p class="m-0 text-[14px]">No sample is an hour old yet.</p>
+              <p class="text-[14px]">No sample is an hour old yet.</p>
             {/if}
           </section>
         </div>
 
         <section class="flex flex-col gap-3" aria-labelledby="ds-latest">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="ds-latest" class="m-0 text-[17px] font-semibold">Latest samples</h2>
+            <h2 id="ds-latest" class="text-[17px] font-semibold">Latest samples</h2>
             <div class="flex flex-wrap gap-2">
               <Chip selected={label === null} onclick={() => (label = null)}>All</Chip>
               {#each LABELS as l (l.value)}
@@ -211,19 +211,19 @@
               {/each}
             </div>
           </div>
-          <p class="m-0 text-[13px] text-text-muted">
+          <p class="text-[13px] text-text-muted">
             <span class="inline-block size-2.5 rounded-full bg-live align-middle"></span> where Autodarts put the dart ·
             <span class="inline-block size-3 rounded-full border-2 border-grade-good align-middle"></span> where a player moved it
           </p>
 
           {#if samples.length === 0}
-            <p class="m-0 text-[14px] text-text-muted">No samples{label ? ` with this label` : ''} yet.</p>
+            <p class="text-[14px] text-text-muted">No samples{label ? ` with this label` : ''} yet.</p>
           {/if}
           {#each samples as s (s.id)}
             <article class="card p-3 md:p-4 flex flex-col gap-3">
               <button
                 type="button"
-                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-left bg-transparent border-0 p-0 cursor-pointer font-[inherit] text-text"
+                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-left border-0 cursor-pointer text-text"
                 aria-expanded={open === s.id}
                 onclick={() => (open = open === s.id ? null : s.id)}
               >
@@ -239,7 +239,7 @@
                 {#each CAMS as cam (cam)}{@render still(s, 'after', cam)}{/each}
               </div>
               {#if open === s.id}
-                <p class="m-0 text-[13px] text-text-muted">Before the dart</p>
+                <p class="text-[13px] text-text-muted">Before the dart</p>
                 <div class="grid grid-cols-3 gap-2">
                   {#each CAMS as cam (cam)}{@render still(s, 'before', cam)}{/each}
                 </div>

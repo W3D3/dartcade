@@ -75,8 +75,7 @@
             rows="5"
             required
             placeholder={form.kind === 'bug' ? 'What did you do, what did you expect, what happened instead?' : 'Tell us more'}
-            class="resize-y rounded-[10px] border border-line-3 bg-transparent px-3 py-2 text-[14px] normal-case tracking-normal text-text font-[inherit]"
-          ></textarea>
+            class="resize-y rounded-[10px] border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
           <span class="self-end normal-case tracking-normal text-[12px]">{form.message.length} / {MESSAGE_MAX}</span>
         </label>
 
@@ -89,28 +88,28 @@
             <img src={dialog.screenshot} alt="Screenshot of the page to send" class="w-full rounded-[10px] border border-line-2" />
           {/if}
         {:else if dialog.captureFailed}
-          <p class="m-0 text-[13px] text-warn">Couldn't take a screenshot of this page; the report goes without one.</p>
+          <p class="text-[13px] text-warn">Couldn't take a screenshot of this page; the report goes without one.</p>
         {/if}
 
         <details class="text-[13px] text-text-muted">
           <summary class="cursor-pointer">Sent along with your report</summary>
           <dl class="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
             <dt class="text-text-dim">Account</dt>
-            <dd class="m-0 break-all">{$currentUser?.name} · {$currentUser?.email} · {role}</dd>
+            <dd class="break-all">{$currentUser?.name} · {$currentUser?.email} · {role}</dd>
             <dt class="text-text-dim">Page</dt>
-            <dd class="m-0 break-all font-mono">{context.route}</dd>
+            <dd class="break-all font-mono">{context.route}</dd>
             {#if context.sessionId}
               <dt class="text-text-dim">Game</dt>
-              <dd class="m-0 break-all font-mono">{context.sessionId}</dd>
+              <dd class="break-all font-mono">{context.sessionId}</dd>
             {/if}
             <dt class="text-text-dim">App</dt>
-            <dd class="m-0 font-mono">{context.version}{context.commit ? ` (${context.commit.slice(0, 7)})` : ''}</dd>
+            <dd class="font-mono">{context.version}{context.commit ? ` (${context.commit.slice(0, 7)})` : ''}</dd>
             <dt class="text-text-dim">Browser</dt>
-            <dd class="m-0 break-all">{context.userAgent}</dd>
+            <dd class="break-all">{context.userAgent}</dd>
             <dt class="text-text-dim">Screen</dt>
-            <dd class="m-0">{context.viewport} · {context.locale}</dd>
+            <dd>{context.viewport} · {context.locale}</dd>
             <dt class="text-text-dim">Time</dt>
-            <dd class="m-0">Now</dd>
+            <dd>Now</dd>
           </dl>
         </details>
 

@@ -56,12 +56,12 @@
         <div class="flex items-start justify-between">
           <div class="flex flex-col gap-1">
             {#if title}
-              <h2 id={titleId} class="m-0 font-display font-bold text-[28px] uppercase leading-none">
+              <h2 id={titleId} class="font-display font-bold text-[28px] uppercase leading-none">
                 {title}
               </h2>
             {/if}
             {#if subtitle}
-              <p class="m-0 text-[14px] text-text-muted">{subtitle}</p>
+              <p class="text-[14px] text-text-muted">{subtitle}</p>
             {/if}
           </div>
           {#if showClose}

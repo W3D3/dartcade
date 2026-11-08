@@ -20,8 +20,8 @@
   data-sortable-handle
   aria-label={label}
   aria-describedby={describedby}
-  class="w-8 h-11 md:h-9 shrink-0 flex items-center justify-center p-0 rounded-[8px] border-0 bg-transparent
-         text-text-muted cursor-grab touch-none select-none"
+  class="w-8 h-11 md:h-9 shrink-0 flex items-center justify-center rounded-[8px] border-0
+ text-text-muted cursor-grab touch-none select-none"
 >
   <GripVertical size={18} strokeWidth={2} />
 </button>

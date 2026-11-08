@@ -132,7 +132,7 @@
     <span class="shrink-0 flex flex-col items-end">
       <button
         type="button"
-        class="h-11 px-2 border-0 bg-transparent text-text-muted text-[15px] cursor-pointer hover:text-text disabled:cursor-default disabled:text-text-dim disabled:hover:text-text-dim"
+        class="h-11 px-2 border-0 text-text-muted text-[15px] cursor-pointer hover:text-text disabled:cursor-default disabled:text-text-dim disabled:hover:text-text-dim"
         disabled={darts.length > 0}
         aria-describedby={darts.length > 0 ? 'p121-give-up-hint' : undefined}
         onclick={() => (confirmGiveUp = true)}>Give up this try ›</button

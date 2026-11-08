@@ -59,7 +59,7 @@
       Not connected yet
     {/if}
   </span>
-  <p class="m-0 max-w-[300px] text-text-muted leading-[1.5] {compact ? 'text-[13px]' : 'text-[15px]'}">
+  <p class="max-w-[300px] text-text-muted leading-[1.5] {compact ? 'text-[13px]' : 'text-[15px]'}">
     {#if forfeitLeft !== null}
       If {name} is not back in <span class="font-mono text-text tabular-nums">{forfeitLeft}</span>, you win by forfeit.
     {:else}
@@ -71,7 +71,7 @@
       <button
         type="button"
         onclick={onabort}
-        class="h-12 px-5 inline-flex items-center gap-2 rounded-[10px] border border-danger-line bg-transparent text-live-text text-[15px] font-semibold cursor-pointer"
+        class="h-12 px-5 inline-flex items-center gap-2 rounded-[10px] border border-danger-line text-live-text text-[15px] font-semibold cursor-pointer"
       >
         <X size={16} />Abort game
       </button>

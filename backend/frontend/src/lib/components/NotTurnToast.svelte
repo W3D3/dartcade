@@ -34,7 +34,7 @@
     type="button"
     onclick={ondismiss}
     aria-label="Dismiss"
-    class="ml-auto self-start -mr-2 -mt-2 w-11 h-11 shrink-0 flex items-center justify-center bg-transparent border-0 text-text-muted cursor-pointer"
+    class="ml-auto self-start -mr-2 -mt-2 w-11 h-11 shrink-0 flex items-center justify-center border-0 text-text-muted cursor-pointer"
   >
     <X size={18} />
   </button>

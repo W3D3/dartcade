@@ -23,8 +23,8 @@
   <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-y-auto px-4 py-4 md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-col gap-2">
       <a href="#/coach" class="text-[12px] font-semibold label-caps no-underline">Coach · Review</a>
-      <h1 class="m-0 font-display text-[34px] font-bold uppercase leading-none md:text-[48px]">What the coach can detect</h1>
-      <p class="m-0 max-w-[900px] text-[15px] leading-normal text-text-muted md:text-[16px]">
+      <h1 class="font-display text-[34px] font-bold uppercase leading-none md:text-[48px]">What the coach can detect</h1>
+      <p class="max-w-[900px] text-[15px] leading-normal text-text-muted md:text-[16px]">
         {total} checks run on every X01 leg with double out. Visit checks put a label and a note on the visit; leg patterns go into the coach's
         take. Each dart is judged on the score left before it, not on the score the visit started on, so one visit can run from scoring into a
         setup, or from a setup into a finish: it carries a tag for each phase it went through, Scoring, Setup, Doubling, never more than two.
@@ -34,7 +34,7 @@
 
     {#if !$enabled}
       <!-- Until the flags load, nothing: the checks are on the page already, not fetched -->
-      {#if $flagsLoaded}<p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>{/if}
+      {#if $flagsLoaded}<p class="text-[15px] text-text-muted">The coach isn't available yet.</p>{/if}
     {:else}
       <div class="flex flex-wrap items-start gap-7">
         <div class="flex min-w-0 max-w-full flex-col gap-2">
@@ -83,7 +83,7 @@
         <!-- shrink-0: overflow-hidden lets a flex child shrink below its content, which clipped the rows to the main's height -->
         <section aria-labelledby="checks-{g.title}" class="card shrink-0 overflow-hidden">
           <div class="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 px-[18px] pt-[18px] pb-3">
-            <h2 id="checks-{g.title}" class="m-0 font-display text-[28px] font-bold uppercase tracking-[0.02em]">{g.title}</h2>
+            <h2 id="checks-{g.title}" class="font-display text-[28px] font-bold uppercase tracking-[0.02em]">{g.title}</h2>
             <span class="text-[14px] text-text-muted">{g.scope}</span>
             <span class="ml-auto text-[13px] text-text-dim">{g.checks.length} {g.checks.length === 1 ? 'check' : 'checks'}</span>
           </div>
@@ -95,19 +95,19 @@
           </div>
           {#each g.checks as c (c.name)}
             <div class="flex flex-col gap-2 border-t border-surface-paused px-[18px] py-3.5 lg:grid lg:items-start lg:gap-[18px] {COLUMNS}">
-              <h3 class="m-0 text-[15.5px] font-semibold leading-[1.35]">{c.name}</h3>
+              <h3 class="text-[15.5px] font-semibold leading-[1.35]">{c.name}</h3>
               <span class="flex flex-wrap gap-1"
                 >{#each c.labels as l (l)}<GradePill grade={l} />{/each}</span
               >
               <span class="lg:pt-[3px]">{@render source(c.source)}</span>
-              <p class="m-0 text-[14px] leading-normal text-ink-2">
+              <p class="text-[14px] leading-normal text-ink-2">
                 <span class="label-caps text-[11px] text-text-dim lg:hidden">Detected when · </span>{c.when}
               </p>
               <code
                 class="self-start rounded-[8px] border border-surface-paused bg-bg px-[9px] py-1.5 font-mono text-[12.5px] leading-[1.55] text-text"
                 >{c.example}</code
               >
-              <p class="m-0 text-[13.5px] leading-normal text-text-muted">
+              <p class="text-[13.5px] leading-normal text-text-muted">
                 <span class="label-caps text-[11px] text-text-dim lg:hidden">Coach says · </span>{c.says}
               </p>
             </div>

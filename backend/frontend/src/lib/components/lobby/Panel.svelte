@@ -27,7 +27,7 @@
          {flat ? 'md:p-5 md:card' : 'p-4 md:p-5 card'} {className}"
 >
   <div class="flex justify-between items-baseline gap-3">
-    <h2 class="m-0 text-[15px] md:text-[17px] font-semibold">{title}</h2>
+    <h2 class="text-[15px] md:text-[17px] font-semibold">{title}</h2>
     {#if note}<span class="text-[12px] md:text-[13px] text-text-muted text-right">{@render note()}</span>{/if}
   </div>
   {@render children()}

@@ -17,7 +17,7 @@
     aria-label="Coach"
     class="box-border flex min-h-0 w-[340px] shrink-0 flex-col gap-5 rounded-[18px] border border-line-2 bg-surface-panel p-6 2xl:w-[400px]"
   >
-    <h2 class="m-0 font-display text-[26px] font-bold uppercase leading-none">Coach</h2>
+    <h2 class="font-display text-[26px] font-bold uppercase leading-none">Coach</h2>
     <p role="status" class="sr-only">Loading the coach…</p>
     <div class="flex flex-col gap-2">
       <Skeleton class="h-4 w-20" />

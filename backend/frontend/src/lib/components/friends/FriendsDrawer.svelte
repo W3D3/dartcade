@@ -53,7 +53,7 @@
       >
         <header class="shrink-0 flex items-center gap-[10px] pt-[22px] pb-[14px] pl-5 pr-4">
           <div class="flex flex-col gap-[2px] flex-grow min-w-0">
-            <h2 class="m-0 font-display font-bold text-[30px] leading-none uppercase tracking-[0.02em]">Friends</h2>
+            <h2 class="font-display font-bold text-[30px] leading-none uppercase tracking-[0.02em]">Friends</h2>
             <span class="text-[13px] text-text-muted"
               ><strong class="text-accent font-semibold">{counts.online} online</strong> · {counts.all}
               {counts.all === 1 ? 'friend' : 'friends'}</span
@@ -70,7 +70,7 @@
             type="button"
             aria-label="Close"
             onclick={close}
-            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] border-0 bg-transparent text-text-muted hover:text-text cursor-pointer"
+            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] border-0 text-text-muted hover:text-text cursor-pointer"
             ><X size={20} /></button
           >
         </header>
@@ -111,7 +111,7 @@
           {/if}
 
           {#if loaded && list.friends.length === 0}
-            <p class="m-0 px-[6px] text-[14px] leading-[1.45] text-text-muted">
+            <p class="px-[6px] text-[14px] leading-[1.45] text-text-muted">
               No friends yet. Add one by their name: once they accept, you see what they play and can join each other's lobbies.
             </p>
           {/if}
@@ -119,7 +119,7 @@
             {#if g.friends.length > 0}
               <section aria-label="{g.title} · {g.friends.length}" class="flex flex-col gap-[2px]">
                 <h3 class={H}>{g.title} · {g.friends.length}</h3>
-                <ul class="m-0 p-0 list-none flex flex-col">
+                <ul class="flex flex-col">
                   {#each g.friends as f (f.id)}
                     <DrawerFriendRow
                       friend={f}

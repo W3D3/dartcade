@@ -111,7 +111,7 @@
   description="Sign in with your fingerprint, face or a security key instead of your password."
 >
   {#if passkeys && passkeys.length > 0}
-    <ul class="m-0 p-0 list-none flex flex-col" aria-label="Your passkeys">
+    <ul class="flex flex-col" aria-label="Your passkeys">
       {#each passkeys as p (p.id)}
         <li class="flex items-center justify-between gap-3 min-h-14 border-t border-surface-paused">
           {#if renaming?.id === p.id}
@@ -136,7 +136,7 @@
                 type="button"
                 aria-label="Rename {passkeyName(p)}"
                 onclick={() => (renaming = { id: p.id, value: passkeyName(p) })}
-                class="size-11 flex items-center justify-center rounded-[10px] border-0 bg-transparent text-text-muted cursor-pointer hover:bg-surface-paused"
+                class="size-11 flex items-center justify-center rounded-[10px] border-0 text-text-muted cursor-pointer hover:bg-surface-paused"
               >
                 <Pencil size={16} />
               </button>
@@ -145,7 +145,7 @@
                 aria-label="Remove {passkeyName(p)}"
                 disabled={busy}
                 onclick={() => void remove(p)}
-                class="size-11 flex items-center justify-center rounded-[10px] border-0 bg-transparent text-live-text cursor-pointer hover:bg-live-soft"
+                class="size-11 flex items-center justify-center rounded-[10px] border-0 text-live-text cursor-pointer hover:bg-live-soft"
               >
                 <Trash size={16} />
               </button>
@@ -155,11 +155,11 @@
       {/each}
     </ul>
   {:else if passkeys}
-    <p class="m-0 text-[14px] text-text-muted">No passkeys yet.</p>
+    <p class="text-[14px] text-text-muted">No passkeys yet.</p>
   {/if}
 
   {#if !passkeysSupported()}
-    <p class="m-0 text-[14px] text-text-muted">This browser does not support passkeys.</p>
+    <p class="text-[14px] text-text-muted">This browser does not support passkeys.</p>
   {:else if confirming}
     <form
       class="flex flex-col gap-2"

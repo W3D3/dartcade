@@ -170,8 +170,8 @@
   <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
       <div class="flex flex-col gap-1.5">
-        <h1 class="m-0 hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Coach</h1>
-        <p class="m-0 text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
+        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Coach</h1>
+        <p class="text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
       </div>
       {#if $enabled}
         <div class="flex flex-col items-start gap-2 md:items-end">
@@ -189,7 +189,7 @@
     {#if !$enabled && !$flagsLoaded}
       <ListSkeleton />
     {:else if !$enabled}
-      <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
+      <p class="text-[15px] text-text-muted">The coach isn't available yet.</p>
     {:else}
       <nav aria-label="Coach" class="flex gap-[30px] border-b border-surface-paused">
         <a
@@ -206,7 +206,7 @@
       </nav>
 
       {#if pending > 0 && !loading}
-        <p role="status" class="m-0 flex items-center gap-2 text-[14px] text-text-muted">
+        <p role="status" class="flex items-center gap-2 text-[14px] text-text-muted">
           <LoaderCircle size={16} class="animate-spin motion-reduce:animate-none" />Reviewing your latest games… {pending} to go
         </p>
       {/if}
@@ -234,7 +234,7 @@
 
           {#if loading}
             <div aria-busy="true" class="flex flex-col gap-3">
-              <p role="status" class="m-0 text-[14px] text-text-muted {slow ? '' : 'sr-only'}">
+              <p role="status" class="text-[14px] text-text-muted {slow ? '' : 'sr-only'}">
                 {slow ? 'Reviewing your latest games… This can take a moment after an update.' : 'Loading your coach reviews…'}
               </p>
               <LegRowsSkeleton />
@@ -245,7 +245,7 @@
               <Button variant="outline" onclick={() => reload(filter)}>Retry</Button>
             </div>
           {:else if legs.length === 0}
-            <p class="m-0 py-8 text-[15px] text-text-muted">No legs match this filter.</p>
+            <p class="py-8 text-[15px] text-text-muted">No legs match this filter.</p>
           {:else}
             <div
               aria-hidden="true"
@@ -255,7 +255,7 @@
                 class="text-right">Avg</span
               ><span>Coach found</span><span></span>
             </div>
-            <ul class="m-0 flex list-none flex-col p-0">
+            <ul class="flex flex-col">
               {#each legs as row, i (`${row.gameId}/${row.leg}`)}
                 {@const title = vsLine(row.opponents)}
                 {@const avg = row.average === null ? '–' : row.average.toFixed(1)}
@@ -299,7 +299,7 @@
                 <Button variant="outline" class="h-11 text-[15px] font-semibold" onclick={() => void more()} disabled={loadingMore}>
                   {loadingMore ? 'Loading…' : 'Show 40 more legs'}
                 </Button>
-                {#if loadMoreError}<p role="alert" class="m-0 text-[13px] text-text-muted">{loadMoreError}</p>{/if}
+                {#if loadMoreError}<p role="alert" class="text-[13px] text-text-muted">{loadMoreError}</p>{/if}
               </div>
             {/if}
           {/if}

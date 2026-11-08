@@ -12,7 +12,7 @@
     >Avg</span
   ><span>Coach found</span><span></span>
 </div>
-<ul aria-hidden="true" class="m-0 flex list-none flex-col p-0">
+<ul aria-hidden="true" class="flex flex-col">
   {#each { length: rows }, i (i)}
     <li class="border-t border-surface-inset first:border-transparent">
       <div class="hidden items-center gap-3.5 px-3.5 py-3 lg:grid {LEG_COLUMNS}">

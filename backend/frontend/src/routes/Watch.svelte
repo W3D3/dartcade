@@ -85,14 +85,14 @@
       {#if phase === 'connecting'}
         <span class="text-lg text-text-muted">Connecting…</span>
       {:else}
-        <p class="m-0 max-w-sm text-lg text-text">
+        <p class="max-w-sm text-lg text-text">
           {phase === 'full'
             ? 'This game has as many watchers as it can have. Try again in a moment.'
             : "You can't watch this game. It may be over, or your friend has gone Invisible."}
         </p>
         <button
           type="button"
-          class="h-11 cursor-pointer rounded-[10px] border border-line-strong bg-transparent px-5 text-[15px] text-ink-2"
+          class="h-11 cursor-pointer rounded-[10px] border border-line-strong px-5 text-[15px] text-ink-2"
           onclick={leave}>Back</button
         >
       {/if}

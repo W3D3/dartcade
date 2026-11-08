@@ -43,7 +43,7 @@
     {state === 'over' ? 'Back' : 'Stop watching'}
   </Button>
   <Eye size={18} class="shrink-0 text-accent" aria-hidden="true" />
-  <p class="m-0 min-w-0 truncate text-[15px] text-text">You are watching <strong class="font-semibold">{title}</strong></p>
+  <p class="min-w-0 truncate text-[15px] text-text">You are watching <strong class="font-semibold">{title}</strong></p>
   <span class="hidden min-w-0 truncate text-[13px] text-text-muted sm:inline">{[game, meta].filter(Boolean).join(' · ')}</span>
   <span class="ml-auto flex items-center gap-3">
     {#if count}<span class="text-[13px] text-text-muted">{count}</span>{/if}

@@ -68,7 +68,7 @@
 {#snippet row(label: string, value: string)}
   <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line last:border-b-0">
     <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">{label}</dt>
-    <dd class="m-0 min-w-0 break-words text-[14px] text-text">{value}</dd>
+    <dd class="min-w-0 break-words text-[14px] text-text">{value}</dd>
   </div>
 {/snippet}
 
@@ -94,7 +94,7 @@
       {#if loadError}<ErrorText>{loadError}</ErrorText>{/if}
       {#if clip.state === 'failed' && system}
         <pre
-          class="m-0 max-h-60 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{debugMarkdown(
+          class="max-h-60 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{debugMarkdown(
             system,
             { userAgent: navigator.userAgent, spa: SPA_BUILD },
           )}</pre>
@@ -104,12 +104,12 @@
         {@const { build, runtime, database, live, config } = system}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
           <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="sys-build">
-            <h2 id="sys-build" class="m-0 text-[17px] font-semibold">Build</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="sys-build" class="text-[17px] font-semibold">Build</h2>
+            <dl class="flex flex-col">
               {@render row('Version', build.version)}
               <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line">
                 <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">Commit</dt>
-                <dd class="m-0 text-[14px] font-mono">
+                <dd class="text-[14px] font-mono">
                   {#if build.commit}
                     <a href={commitUrl(build.commit)} target="_blank" rel="noopener noreferrer">{shortCommit(build.commit)}</a>
                   {:else}–{/if}
@@ -119,7 +119,7 @@
               {#if build.preview}
                 <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line">
                   <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">Preview</dt>
-                  <dd class="m-0 text-[14px]">
+                  <dd class="text-[14px]">
                     <a href={build.preview.url} target="_blank" rel="noopener noreferrer">PR #{build.preview.pr}</a>
                   </dd>
                 </div>
@@ -129,8 +129,8 @@
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="sys-live">
-            <h2 id="sys-live" class="m-0 text-[17px] font-semibold">Live</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="sys-live" class="text-[17px] font-semibold">Live</h2>
+            <dl class="flex flex-col">
               {@render row('Browsers connected', String(live.browsers))}
               {@render row('Bridges connected', String(live.bridges))}
               {@render row('Boards online', String(live.boardsOnline))}
@@ -140,8 +140,8 @@
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="sys-runtime">
-            <h2 id="sys-runtime" class="m-0 text-[17px] font-semibold">Runtime</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="sys-runtime" class="text-[17px] font-semibold">Runtime</h2>
+            <dl class="flex flex-col">
               {@render row('Node', `${runtime.node} (${runtime.platform}/${runtime.arch})`)}
               {@render row('Host', runtime.hostname)}
               {@render row('Timezone', runtime.timezone)}
@@ -154,8 +154,8 @@
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="sys-db">
-            <h2 id="sys-db" class="m-0 text-[17px] font-semibold">Database</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="sys-db" class="text-[17px] font-semibold">Database</h2>
+            <dl class="flex flex-col">
               {@render row('Postgres', database.serverVersion)}
               {@render row('Latest migration', database.latestMigration ?? '–')}
               {@render row('Size', formatBytes(database.sizeBytes))}
@@ -166,12 +166,12 @@
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-2 lg:col-span-2" aria-labelledby="sys-config">
-            <h2 id="sys-config" class="m-0 text-[17px] font-semibold">Config</h2>
-            <dl class="m-0 flex flex-col">
+            <h2 id="sys-config" class="text-[17px] font-semibold">Config</h2>
+            <dl class="flex flex-col">
               {#each Object.entries(config.values) as [key, value] (key)}
                 <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line">
                   <dt class="sm:w-[260px] shrink-0 font-mono text-[13px] text-text-muted">{key}</dt>
-                  <dd class="m-0 min-w-0 break-all font-mono text-[13px] {value === null ? 'text-text-dim' : 'text-text'}">
+                  <dd class="min-w-0 break-all font-mono text-[13px] {value === null ? 'text-text-dim' : 'text-text'}">
                     {value ?? 'not set'}
                   </dd>
                 </div>
@@ -179,7 +179,7 @@
               {#each Object.entries(config.secrets) as [key, set] (key)}
                 <div class="flex flex-col gap-[2px] sm:flex-row sm:items-center sm:gap-4 py-2 border-b border-line last:border-b-0">
                   <dt class="sm:w-[260px] shrink-0 font-mono text-[13px] text-text-muted">{key}</dt>
-                  <dd class="m-0">
+                  <dd>
                     {#if set}<Badge variant="ready">set</Badge>{:else}<Badge variant="pending">not set</Badge>{/if}
                   </dd>
                 </div>

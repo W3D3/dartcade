@@ -58,11 +58,11 @@
 {#snippet body(live: LiveCoach)}
   <section class="flex flex-col gap-2" aria-labelledby="live-coach-aims">
     <div class="flex items-baseline justify-between gap-2">
-      <h3 id="live-coach-aims" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">Aim now</h3>
+      <h3 id="live-coach-aims" class="text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">Aim now</h3>
       {#if live.aims.length}<span class="text-[12px] text-text-dim">dart {rows.length + 1} of 3 · {live.left} left</span>{/if}
     </div>
     {#if live.aims.length}
-      <ol class="m-0 p-0 list-none flex flex-col gap-1.5">
+      <ol class="flex flex-col gap-1.5">
         {#each live.aims as a, i (a.aimId)}
           <li
             class="flex items-center justify-between gap-3 px-3 py-2 rounded-[10px] border {i === 0
@@ -74,37 +74,37 @@
           </li>
         {/each}
       </ol>
-      <p class="m-0 text-[12px] text-text-dim">
+      <p class="text-[12px] text-text-dim">
         {live.scoring
           ? `Points a dart for a ${tierAverage}-average player.`
           : 'Chance to check out this visit or the next, and what the aim leaves.'}
       </p>
     {:else}
-      <p class="m-0 text-[13px] text-text-muted">Visit done. Pull your darts.</p>
+      <p class="text-[13px] text-text-muted">Visit done. Pull your darts.</p>
     {/if}
   </section>
 
   <section class="flex flex-col gap-2" aria-labelledby="live-coach-visit">
-    <h3 id="live-coach-visit" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">This visit</h3>
+    <h3 id="live-coach-visit" class="text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">This visit</h3>
     {#if rows.length}
-      <ul class="m-0 p-0 list-none flex flex-col gap-2">
+      <ul class="flex flex-col gap-2">
         {#each rows as r, i (i)}<li class="flex items-center gap-2"><DartTile tile={r} /></li>{/each}
       </ul>
       {#if $debug && live.visit}<VisitNumbers visit={live.visit} />{/if}
     {:else}
-      <p class="m-0 text-[13px] text-text-muted">No darts yet.</p>
+      <p class="text-[13px] text-text-muted">No darts yet.</p>
     {/if}
   </section>
 
   {#if grade}
     <section class="flex flex-col gap-2" aria-labelledby="live-coach-grade">
       <div class="flex items-center justify-between gap-2">
-        <h3 id="live-coach-grade" class="m-0 text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+        <h3 id="live-coach-grade" class="text-[13px] font-semibold uppercase tracking-[0.08em] text-text-muted">
           {live.done ? 'This visit' : 'Last visit'} · <span class="capitalize">{grade.tags.join(' + ')}</span>
         </h3>
         <GradePill grade={grade.grade} />
       </div>
-      <p class="m-0 text-[14px] leading-[1.45] {grade.tip ? 'text-ice' : ''}">
+      <p class="text-[14px] leading-[1.45] {grade.tip ? 'text-ice' : ''}">
         <span class="font-display font-bold text-[16px]">{grade.darts.map(d => d.name).join(' ')}</span> · {grade.text}
       </p>
     </section>
@@ -118,7 +118,7 @@
 {:else if compact}
   <details class="group shrink-0 rounded-[14px] bg-surface-panel border border-line-2" aria-labelledby="live-coach-title">
     <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-[14px]">
-      <h2 id="live-coach-title" class="m-0 text-[14px] font-semibold">Coach</h2>
+      <h2 id="live-coach-title" class="text-[14px] font-semibold">Coach</h2>
       {#if top}
         <span class="text-text-muted">· aim <b class="font-display text-[17px] text-accent">{top.label}</b> {top.detail}</span>
       {/if}
@@ -136,7 +136,7 @@
     class="w-[340px] 2xl:w-[400px] shrink-0 min-h-0 overflow-y-auto box-border p-6 rounded-[18px] flex flex-col gap-5 bg-surface-panel border border-line-2"
     aria-labelledby="live-coach-title"
   >
-    <h2 id="live-coach-title" class="m-0 font-display font-bold text-[26px] leading-none uppercase">Coach</h2>
+    <h2 id="live-coach-title" class="font-display font-bold text-[26px] leading-none uppercase">Coach</h2>
     {@render body(live)}
   </aside>
 {/if}

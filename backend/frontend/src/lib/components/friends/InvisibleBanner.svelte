@@ -7,8 +7,6 @@
   <span class="w-[10px] h-[10px] box-border rounded-full border-2 border-text-dim shrink-0" aria-hidden="true"></span>
   <span
     ><strong class="text-text">You're invisible.</strong> Friends see you as offline.
-    <button type="button" onclick={ongoonline} class="p-0 bg-transparent border-0 text-accent font-semibold cursor-pointer font-[inherit]"
-      >Go online</button
-    ></span
+    <button type="button" onclick={ongoonline} class="border-0 text-accent font-semibold cursor-pointer">Go online</button></span
   >
 </div>

@@ -18,7 +18,7 @@
 
 <!-- Phones -->
 <div class="flex flex-col gap-3 xl:hidden">
-  <ul class="m-0 grid list-none grid-cols-3 gap-2 p-0">
+  <ul class="grid grid-cols-3 gap-2">
     {#each rows as r (r.name)}
       <li class="card flex flex-col items-start gap-1 p-3">
         <span class="font-display text-[30px] font-bold leading-none {TONE_TEXT[tone(r.grade)]}">{r.grade ?? '–'}</span>
@@ -26,12 +26,12 @@
       </li>
     {/each}
   </ul>
-  <p class="m-0 text-[15px] leading-normal">{take}</p>
+  <p class="text-[15px] leading-normal">{take}</p>
 </div>
 
 <!-- Desktop -->
 <section class="card hidden flex-col gap-1.5 px-[22px] py-5 xl:flex">
-  <h2 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Coach's take</h2>
+  <h2 class="text-[12px] font-semibold label-caps text-text-dim">Coach's take</h2>
   <p class="mt-1 mb-2 text-[17px] leading-normal">{take}</p>
   {#each rows as r (r.name)}
     {@const t = tone(r.grade)}

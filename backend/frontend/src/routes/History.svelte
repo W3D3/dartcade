@@ -287,8 +287,8 @@
   >
     <header class="flex flex-wrap items-end justify-between gap-6">
       <div class="hidden md:flex flex-col gap-1.5">
-        <h1 class="m-0 font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
-        <p class="m-0 text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
+        <h1 class="font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
+        <p class="text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
         {@render coachLink()}
       </div>
       <div
@@ -318,12 +318,12 @@
       <dl
         aria-label={tilesLabel}
         tabindex="0"
-        class="m-0 grid flex-shrink-0 snap-x snap-mandatory auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-px overflow-x-auto rounded-[12px] border border-line-2 bg-line-2 [scrollbar-width:none] md:snap-none md:grid-flow-row md:grid-cols-2 md:overflow-hidden md:rounded-[14px] lg:grid-cols-4 [&::-webkit-scrollbar]:hidden"
+        class="grid flex-shrink-0 snap-x snap-mandatory auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-px overflow-x-auto rounded-[12px] border border-line-2 bg-line-2 [scrollbar-width:none] md:snap-none md:grid-flow-row md:grid-cols-2 md:overflow-hidden md:rounded-[14px] lg:grid-cols-4 [&::-webkit-scrollbar]:hidden"
       >
         {#each tiles as t (t.label)}
           <div class="flex min-w-[116px] snap-start flex-col gap-0.5 bg-surface-panel px-3 py-2.5 md:gap-1.5 md:px-[22px] md:py-[18px]">
             <dt class="text-[10px] label-caps text-text-dim max-md:whitespace-nowrap md:text-[12px]">{t.label}</dt>
-            <dd class="m-0 flex items-baseline gap-1.5 md:gap-2.5">
+            <dd class="flex items-baseline gap-1.5 md:gap-2.5">
               <span class="font-display text-[26px] max-md:whitespace-nowrap font-bold leading-none md:text-[40px]">{t.value}</span>
               {#if t.note}<span class="whitespace-nowrap text-[12px] md:text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}"
                   >{t.note}</span
@@ -339,16 +339,16 @@
         <button
           type="button"
           onclick={() => (columnSizing = {})}
-          class="hidden h-9 items-center gap-1.5 self-end rounded-sm border border-line-strong bg-transparent px-3 text-[14px] text-ink-2 hover:text-text lg:inline-flex"
+          class="hidden h-9 items-center gap-1.5 self-end rounded-sm border border-line-strong px-3 text-[14px] text-ink-2 hover:text-text lg:inline-flex"
           ><RotateCcw size={14} /> Reset columns</button
         >
       {/if}
       {#if loading}
-        <p class="card m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
+        <p class="card flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
           <LoaderCircle size={18} class="animate-spin" /> Loading matches…
         </p>
       {:else if error}
-        <p role="alert" class="card m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
+        <p role="alert" class="card px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
       {:else}
         <DataTable
           data={games}
@@ -372,11 +372,11 @@
               type="button"
               onclick={() => void more()}
               disabled={loadingMore}
-              class="h-10 rounded-sm border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
+              class="h-10 rounded-sm border border-line-strong px-5 text-[15px] text-text disabled:opacity-60"
             >
               {loadingMore ? 'Loading…' : 'Load more'}
             </button>
-            {#if loadMoreError}<p role="alert" class="m-0 text-[13px] text-text-muted">{loadMoreError}</p>{/if}
+            {#if loadMoreError}<p role="alert" class="text-[13px] text-text-muted">{loadMoreError}</p>{/if}
           </div>
         {/if}
       {/if}

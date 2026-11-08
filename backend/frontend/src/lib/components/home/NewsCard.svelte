@@ -9,7 +9,7 @@
 </script>
 
 <HomeSection title="What's new" link={{ label: 'Changelog', href: 'https://github.com/W3D3/dartcade/releases' }}>
-  <ul class="m-0 flex list-none flex-col gap-3 p-0">
+  <ul class="flex flex-col gap-3">
     {#each items as item (item.id)}
       <li class="flex flex-col gap-[2px]">
         <span class="flex items-baseline justify-between gap-3">

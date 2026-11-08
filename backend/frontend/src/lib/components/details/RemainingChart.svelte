@@ -72,7 +72,7 @@
   )
 </script>
 
-<figure class="m-0 flex flex-col gap-2">
+<figure class="flex flex-col gap-2">
   <figcaption class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-text-muted">
     <span>Points remaining after each visit</span>
     {#each series as s (s.key)}

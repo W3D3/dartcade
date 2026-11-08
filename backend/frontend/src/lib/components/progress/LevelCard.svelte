@@ -166,7 +166,7 @@
             type="button"
             disabled={equipped}
             onclick={() => void wear()}
-            class="rounded-[8px] border border-line-strong bg-transparent px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer font-[inherit] disabled:cursor-default disabled:text-accent"
+            class="rounded-[8px] border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
             >{equipped ? 'Equipped' : `Wear ${newTitle.name}`}</button
           >
         {/if}
@@ -175,7 +175,7 @@
           type="button"
           aria-label="Dismiss"
           onclick={() => (up = null)}
-          class="flex rounded-[6px] border-0 bg-transparent p-1 text-text-muted cursor-pointer hover:text-text"><X size={16} /></button
+          class="flex rounded-[6px] border-0 p-1 text-text-muted cursor-pointer hover:text-text"><X size={16} /></button
         >
       </span>
     </div>

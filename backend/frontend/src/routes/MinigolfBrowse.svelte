@@ -62,16 +62,16 @@
 
     <SearchInput bind:value={search} oninput={onSearch} label="Search by course name" class="w-full max-w-[360px]" />
     {#if error}<ErrorText>{error}</ErrorText>{/if}
-    {#if notice}<p role="status" class="m-0 text-[14px] text-text-muted">{notice}</p>{/if}
+    {#if notice}<p role="status" class="text-[14px] text-text-muted">{notice}</p>{/if}
 
     {#if courses === null}
-      <p class="m-0 text-[14px] text-text-muted">Loading…</p>
+      <p class="text-[14px] text-text-muted">Loading…</p>
     {:else if courses.length === 0}
-      <p class="m-0 text-[14px] text-text-muted">
+      <p class="text-[14px] text-text-muted">
         {search.trim() ? 'No course has that name.' : 'No player has published a course yet. Make the first one under My courses.'}
       </p>
     {:else}
-      <ul class="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3" aria-label="Courses">
+      <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Courses">
         {#each courses as c (c.id)}
           <li class="card flex flex-col gap-3 p-3">
             <HoleThumb hole={c.thumbnail} class="h-[120px] w-full" />

@@ -50,7 +50,7 @@
     {/if}
   </div>
   {#if scanError}<ErrorText>Couldn't scan this network: {scanError}</ErrorText>{/if}
-  <ul class="m-0 p-0 list-none flex flex-col gap-[6px]">
+  <ul class="flex flex-col gap-[6px]">
     {#each found as device (device.mac)}
       <li class="flex items-center gap-3 min-h-[54px] py-2 px-3 rounded-[10px] border border-dashed border-line-chip">
         <span class="flex text-text-dim shrink-0"><Lightbulb size={18} strokeWidth={1.8} /></span>

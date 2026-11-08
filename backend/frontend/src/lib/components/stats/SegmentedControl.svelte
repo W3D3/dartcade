@@ -37,7 +37,7 @@
       <button
         type="button"
         aria-pressed={s.id === value}
-        class="cursor-pointer whitespace-nowrap border-0 bg-transparent {item} {look(s.id === value)}"
+        class="cursor-pointer whitespace-nowrap border-0 {item} {look(s.id === value)}"
         onclick={() => onchange?.(s.id)}>{s.label}</button
       >
     {/if}

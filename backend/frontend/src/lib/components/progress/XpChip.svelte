@@ -46,12 +46,12 @@
     </div>
   {/if}
   {#if streak}
-    <p class="m-0 flex items-center gap-[6px] text-[13px] text-ink-2">
+    <p class="flex items-center gap-[6px] text-[13px] text-ink-2">
       <Flame size={14} class="shrink-0 text-accent" aria-hidden="true" />{streak.days}-day streak · +{fmtXp(streak.bonus)} first game today
     </p>
   {/if}
   {#each gain.challenges ?? [] as c (c.title)}
-    <p class="m-0 flex items-center gap-[6px] text-[13px] text-ink-2">
+    <p class="flex items-center gap-[6px] text-[13px] text-ink-2">
       <Target size={14} class="shrink-0 text-accent" aria-hidden="true" /><span class="min-w-0 truncate">Challenge done: {c.title}</span><a
         href="#/progress"
         class="ml-auto shrink-0 whitespace-nowrap font-semibold">Claim +{fmtXp(c.xp)} XP</a
@@ -59,7 +59,7 @@
     </p>
   {/each}
   {#if motion.levelUp}
-    <p class="lunote m-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] text-ink-2">
+    <p class="lunote flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] text-ink-2">
       <span>
         <b class="font-semibold text-accent">Level {motion.levelAfter}</b>
         {#if newTitle}<span class="whitespace-nowrap">· new title: <b class="font-semibold text-text">{newTitle.name}</b></span>{/if}
@@ -69,7 +69,7 @@
           type="button"
           disabled={equipped}
           onclick={() => void wear()}
-          class="rounded-[8px] border border-line-strong bg-transparent px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer font-[inherit] disabled:cursor-default disabled:text-accent"
+          class="rounded-[8px] border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
           >{equipped ? 'Equipped' : 'Equip'}</button
         >
       {/if}
@@ -82,8 +82,8 @@
     aria-label="Level {after.level}, +{gain.total} XP. Show the breakdown"
     onclick={() => (open = !open)}
     style="--from: {motion.from}%; --to: {motion.to}%"
-    class="chip w-full flex items-center gap-[10px] rounded-[12px] border bg-surface-inset px-3 py-[10px] text-left text-text cursor-pointer font-[inherit]
-           {motion.levelUp ? 'border-accent' : 'border-line-2 hover:border-line-strong'}"
+    class="chip w-full flex items-center gap-[10px] rounded-[12px] border bg-surface-inset px-3 py-[10px] text-left text-text cursor-pointer
+ {motion.levelUp ? 'border-accent' : 'border-line-2 hover:border-line-strong'}"
   >
     <span
       class="lv relative h-[22px] min-w-[54px] overflow-hidden whitespace-nowrap font-display font-bold text-[18px] leading-[22px] tracking-[0.06em]"

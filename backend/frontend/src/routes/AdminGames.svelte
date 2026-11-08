@@ -227,15 +227,15 @@
 
       <section aria-label="Games" class="flex shrink-0 flex-col overflow-hidden card">
         {#if loading}
-          <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
+          <p class="flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
             <LoaderCircle size={18} class="animate-spin" /> Loading games…
           </p>
         {:else if error && games.length === 0}
-          <p role="alert" class="m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
+          <p role="alert" class="px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
         {:else if games.length === 0}
-          <p class="m-0 px-[22px] py-10 text-[15px] text-text-muted">No games match.</p>
+          <p class="px-[22px] py-10 text-[15px] text-text-muted">No games match.</p>
         {:else}
-          <ul class="m-0 list-none p-0">
+          <ul>
             {#each games as g (g.id)}
               {@const when = formatWhen(g.createdAt, now)}
               <li class="relative border-b border-line">
@@ -314,7 +314,7 @@
               </li>
             {/each}
           </ul>
-          {#if error}<p role="alert" class="m-0 px-[22px] py-3 text-[13px] text-text-muted">{error}</p>{/if}
+          {#if error}<p role="alert" class="px-[22px] py-3 text-[13px] text-text-muted">{error}</p>{/if}
           {#if nextCursor !== null}
             <div class="flex justify-center p-4">
               <Button variant="outline" onclick={() => void more()} disabled={loadingMore}>

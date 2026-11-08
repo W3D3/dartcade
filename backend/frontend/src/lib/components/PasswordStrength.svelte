@@ -25,7 +25,7 @@
       ></div>
     {/each}
   </div>
-  <p class="m-0 text-[13px]" style:color={strengthColors[strength]}>
+  <p class="text-[13px]" style:color={strengthColors[strength]}>
     {strengthLabels[strength]}
   </p>
 {/if}

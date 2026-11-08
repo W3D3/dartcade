@@ -28,20 +28,20 @@
       type="button"
       disabled
       aria-label="Undo (only {status.name} can undo)"
-      class="w-10 h-11 flex items-center justify-center border-0 bg-transparent text-line-strong"><Undo2 size={18} /></button
+      class="w-10 h-11 flex items-center justify-center border-0 text-line-strong"><Undo2 size={18} /></button
     >
     <button
       type="button"
       disabled
       aria-label="Skip to next (only {status.name} can skip)"
-      class="w-10 h-11 flex items-center justify-center border-0 bg-transparent text-line-strong"><ChevronRight size={18} /></button
+      class="w-10 h-11 flex items-center justify-center border-0 text-line-strong"><ChevronRight size={18} /></button
     >
   {:else}
     <button
       type="button"
       disabled
       title="Only {status.name} can undo {status.name}'s darts"
-      class="h-11 px-3 flex items-center gap-[6px] rounded-[10px] border border-line-2 bg-transparent text-line-strong text-[14px]"
+      class="h-11 px-3 flex items-center gap-[6px] rounded-[10px] border border-line-2 text-line-strong text-[14px]"
       ><Undo2 size={16} />Undo</button
     >
     <!-- Tablets: Skip is the arrow alone, so the status keeps its room -->
@@ -50,7 +50,7 @@
       disabled
       title="Only {status.name} can skip"
       aria-label="Skip to next (only {status.name} can skip)"
-      class="h-11 w-11 justify-center xl:w-auto xl:px-[10px] flex items-center gap-1 border-0 bg-transparent text-line-strong text-[14px]"
+      class="h-11 w-11 justify-center xl:w-auto xl:px-[10px] flex items-center gap-1 border-0 text-line-strong text-[14px]"
       ><span class="hidden xl:inline">Skip to next</span><ChevronRight size={16} /></button
     >
   {/if}

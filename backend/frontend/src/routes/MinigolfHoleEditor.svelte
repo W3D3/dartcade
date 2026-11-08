@@ -341,16 +341,16 @@
       </header>
 
       {#if !store || store.status === 'loading'}
-        <p class="m-0 p-5 text-[15px] text-text-muted">Loading…</p>
+        <p class="p-5 text-[15px] text-text-muted">Loading…</p>
       {:else if store.status === 'missing'}
         <div role="status" class="m-5 flex flex-col items-start gap-3">
-          <p class="m-0 text-[15px]">This hole is gone: someone deleted it.</p>
+          <p class="text-[15px]">This hole is gone: someone deleted it.</p>
           <Button variant="outline" href="#{area.base}/courses">Back to the courses</Button>
         </div>
       {:else if !hole}
         {@const s = store}
         <div class="m-5 flex flex-col items-start gap-3">
-          <p class="m-0 text-[15px] text-live-text">Couldn't load this hole.</p>
+          <p class="text-[15px] text-live-text">Couldn't load this hole.</p>
           <Button variant="outline" onclick={() => void load(s)}>Try again</Button>
         </div>
       {:else}
@@ -381,7 +381,7 @@
               />
             </div>
             {#if courseId && holeIds.length > 0}
-              <ol aria-label="Holes on this course" class="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-1">
+              <ol aria-label="Holes on this course" class="flex gap-2 overflow-x-auto p-0 pb-1">
                 {#each holeIds as id, i (id)}
                   {@const h = rowHole(id)}
                   <li class="shrink-0">

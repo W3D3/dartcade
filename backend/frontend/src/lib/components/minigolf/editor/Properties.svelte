@@ -199,7 +199,7 @@
 
 {#snippet panel(heading: string, body: Snippet)}
   <section aria-label="Properties" class="flex flex-col gap-3">
-    <h2 class="m-0 font-display font-bold text-[20px] uppercase">{heading}</h2>
+    <h2 class="font-display font-bold text-[20px] uppercase">{heading}</h2>
     {@render body()}
   </section>
 {/snippet}
@@ -218,7 +218,7 @@
         if (positive(v)) onshape(resizeCircle(hole, i, v))
       })}
     {:else if selection.kind === 'edge'}
-      <p class="m-0 text-[14px] text-text-muted">From corner {i + 1} to corner {((i + 1) % corners.length) + 1}.</p>
+      <p class="text-[14px] text-text-muted">From corner {i + 1} to corner {((i + 1) % corners.length) + 1}.</p>
       <Button variant="outline" title="Curve or straighten (K)" onclick={oncurve}
         ><Spline size={16} />{hole.shape?.curves[i] ? 'Straighten' : 'Curve'}</Button
       >
@@ -281,33 +281,33 @@
 
 {#snippet toolBody()}
   {#if tool === 'select'}
-    <p class="m-0 text-[14px] text-text-muted">Click anything on the hole, or in the list below, to change it.</p>
+    <p class="text-[14px] text-text-muted">Click anything on the hole, or in the list below, to change it.</p>
   {:else if tool === 'outline'}
-    <p class="m-0 text-[14px] text-text-muted">
+    <p class="text-[14px] text-text-muted">
       {corners.length} corners. Drag a corner to move it, click ● on an edge to add one, click a corner to select it. Click an edge to curve it
       (K), then drag its handles. Snaps to a 50 mm grid and 45°; hold Shift to draw freely.
     </p>
   {:else if tool === 'circle'}
-    <p class="m-0 text-[14px] text-text-muted">
+    <p class="text-[14px] text-text-muted">
       A round area merged into the outline, like a green round the cup. Drag from its centre to set the radius; it must overlap the course.
       Snaps to a 50 mm grid and 10 mm; hold Shift to draw freely.
     </p>
   {:else if tool === 'tee'}
-    <p class="m-0 text-[14px] text-text-muted">
+    <p class="text-[14px] text-text-muted">
       One tee per hole. Drag it anywhere inside the outline. Balls start in the middle of the tee box.
     </p>
   {:else if tool === 'cup'}
-    <p class="m-0 text-[14px] text-text-muted">One cup per hole. Keep it at least one ball away from the rail and walls.</p>
+    <p class="text-[14px] text-text-muted">One cup per hole. Keep it at least one ball away from the rail and walls.</p>
     {@render segmented('Cup size', CUP_SIZES, presetOf(CUP_SIZES, CUP, hole.cup.r), v => onedit(setCupSize(hole, v)))}
   {:else if tool === 'bumper'}
-    <p class="m-0 text-[14px] text-text-muted">Round, red, fixed in place. Click on the felt to place one.</p>
+    <p class="text-[14px] text-text-muted">Round, red, fixed in place. Click on the felt to place one.</p>
     {@render segmented('Size', SIZES, options.bumperSize, v => (options.bumperSize = v))}
     {@render segmented('Bounce', BOUNCES, options.bounce, v => (options.bounce = v))}
   {:else if tool === 'wall'}
-    <p class="m-0 text-[14px] text-text-muted">Straight, fixed rail pieces. Drag to draw; walls bounce like the outer rail.</p>
+    <p class="text-[14px] text-text-muted">Straight, fixed rail pieces. Drag to draw; walls bounce like the outer rail.</p>
     {@render segmented('Thickness', THICKNESSES, options.wallThickness, v => (options.wallThickness = v))}
   {:else if tool === 'terrain'}
-    <p class="m-0 text-[14px] text-text-muted">Shape the ground under the felt.</p>
+    <p class="text-[14px] text-text-muted">Shape the ground under the felt.</p>
     {@render segmented('Brush', BRUSHES, options.brush, v => (options.brush = v))}
     {#if options.brush !== 'flatten'}
       <div class="flex flex-col gap-1">

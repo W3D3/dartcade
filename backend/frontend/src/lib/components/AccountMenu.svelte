@@ -95,7 +95,7 @@
     {#if placement === 'sidebar'}
       <DropdownMenu.Trigger
         aria-label={triggerLabel}
-        class="w-full box-border flex items-center gap-[10px] p-[6px] rounded-[9px] border-0 bg-transparent text-left text-text cursor-pointer font-[inherit] hover:bg-surface-active"
+        class="w-full box-border flex items-center gap-[10px] p-[6px] rounded-[9px] border-0 bg-transparent text-left text-text cursor-pointer hover:bg-surface-active"
       >
         {@render avatar(36)}
         <span class="flex flex-col gap-[2px] min-w-0 flex-grow">

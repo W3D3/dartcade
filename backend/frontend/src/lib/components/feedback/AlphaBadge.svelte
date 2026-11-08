@@ -16,8 +16,8 @@
     onclick={() => void openFeedback()}
     title="Report a bug or give feedback"
     aria-label="Alpha: report a bug or give feedback"
-    class="shrink-0 inline-flex rounded-full cursor-pointer bg-transparent border-0 p-0 hover:brightness-125
-           focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]"
+    class="shrink-0 inline-flex rounded-full cursor-pointer border-0 hover:brightness-125
+ focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]"
   >
     <Badge variant="alpha">Alpha</Badge>
   </button>

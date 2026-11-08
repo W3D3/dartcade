@@ -65,8 +65,7 @@
       maxlength={NOTE_MAX}
       rows="3"
       placeholder="What happened? Only admins see this."
-      class="resize-y rounded-[10px] border border-line-3 bg-transparent px-3 py-2 text-[14px] normal-case tracking-normal text-text font-[inherit]"
-    ></textarea>
+      class="resize-y rounded-[10px] border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
   </label>
   <div class="flex flex-col gap-2">
     <span class="text-[13px] label-caps text-text-dim" id="ban-length">How long</span>

@@ -19,7 +19,7 @@
 
 {#if x01}
   <div class="flex flex-col gap-4 min-w-0">
-    <p class="m-0 text-[15px] text-text-muted">{legSummary(x01, leg, sides, nameOf, forfeitedBy)}</p>
+    <p class="text-[15px] text-text-muted">{legSummary(x01, leg, sides, nameOf, forfeitedBy)}</p>
     <div class="flex flex-col gap-4 {party ? 'xl:flex-row xl:items-start' : ''}">
       <div class="min-w-0 {party ? 'xl:flex-grow' : ''}">
         <RemainingChart series={legSeries(x01, leg, sides, start)} {sides} {start} {highlight} />

@@ -15,16 +15,16 @@
   ])
 </script>
 
-<dl class="m-0 grid grid-cols-2 gap-3 lg:grid-cols-4">
+<dl class="grid grid-cols-2 gap-3 lg:grid-cols-4">
   {#each cards as c (c.label)}
     <div class="card flex min-w-0 flex-col gap-1 px-4 py-3.5">
       <dt class="text-[12px] font-semibold label-caps text-text-dim">{c.label}</dt>
       {#if c.value === undefined}
-        <dd class="m-0"><Skeleton class="h-8 w-10" /></dd>
+        <dd><Skeleton class="h-8 w-10" /></dd>
       {:else}
-        <dd class="m-0 font-display text-[32px] font-bold leading-none {c.cls}">{c.value}</dd>
+        <dd class="font-display text-[32px] font-bold leading-none {c.cls}">{c.value}</dd>
       {/if}
-      <dd class="m-0 text-[12.5px] text-text-muted">{c.sub}</dd>
+      <dd class="text-[12.5px] text-text-muted">{c.sub}</dd>
     </div>
   {/each}
 </dl>

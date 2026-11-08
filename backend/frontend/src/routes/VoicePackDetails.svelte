@@ -78,23 +78,23 @@
       sub={clips ? `${have} of ${total} sounds` : 'Every sound the caller can use, and a preview of the ones this voice has'}
     />
     {#if !$enabled}
-      <p class="m-0 text-[15px] text-text-dim">Voice pack details aren't available to you yet.</p>
+      <p class="text-[15px] text-text-dim">Voice pack details aren't available to you yet.</p>
     {:else if failed}
       <ErrorText>This voice couldn't be loaded. It may have been deleted.</ErrorText>
     {:else if !clips}
-      <p class="m-0 text-[15px] text-text-dim">Loading…</p>
+      <p class="text-[15px] text-text-dim">Loading…</p>
     {:else}
       {#each CATALOGUE as group (group.id)}
         {@const count = haveOf(group, clips)}
         <section class="flex flex-col gap-3" aria-labelledby="vp-{group.id}">
           <div class="flex flex-col gap-[2px]">
-            <h2 id="vp-{group.id}" class="m-0 font-display font-bold text-[22px] leading-none uppercase">
+            <h2 id="vp-{group.id}" class="font-display font-bold text-[22px] leading-none uppercase">
               {group.title}
               <span class="ml-2 font-body text-[13px] font-normal normal-case text-text-dim">{count.have} of {count.total}</span>
             </h2>
-            <p class="m-0 text-[13px] text-text-dim">{group.hint}</p>
+            <p class="text-[13px] text-text-dim">{group.hint}</p>
           </div>
-          <ul class="m-0 p-0 list-none grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-[6px]">
+          <ul class="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-[6px]">
             {#each group.keys as k (k.key)}
               {@render sound(k.key, k.label)}
             {/each}
@@ -104,10 +104,10 @@
       {#if others.length}
         <section class="flex flex-col gap-3" aria-labelledby="vp-other">
           <div class="flex flex-col gap-[2px]">
-            <h2 id="vp-other" class="m-0 font-display font-bold text-[22px] leading-none uppercase">Other</h2>
-            <p class="m-0 text-[13px] text-text-dim">In this voice, but not something the caller says yet</p>
+            <h2 id="vp-other" class="font-display font-bold text-[22px] leading-none uppercase">Other</h2>
+            <p class="text-[13px] text-text-dim">In this voice, but not something the caller says yet</p>
           </div>
-          <ul class="m-0 p-0 list-none grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-[6px]">
+          <ul class="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-[6px]">
             {#each others as key (key)}
               {@render sound(key, key)}
             {/each}

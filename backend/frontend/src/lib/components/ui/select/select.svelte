@@ -27,7 +27,7 @@
   <Select.Trigger
     aria-label={label}
     class={cn(
-      'h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-[10px] border border-line-3 bg-transparent px-3 text-[14px] text-text cursor-pointer font-[inherit] focus-visible:outline-2 focus-visible:outline-accent',
+      'h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-[10px] border border-line-3 bg-transparent px-3 text-[14px] text-text cursor-pointer focus-visible:outline-2 focus-visible:outline-accent',
       className,
     )}
   >

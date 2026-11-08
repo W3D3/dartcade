@@ -98,7 +98,7 @@
           <PopoverPanel label="QR code to join {name}" role="dialog" align="right">
             <div class="flex flex-col items-center gap-3 p-[10px]">
               <QrCode text={qrLink} size={240} />
-              <p class="m-0 w-[240px] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
+              <p class="w-[240px] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
             </div>
           </PopoverPanel>
         {/snippet}
@@ -128,14 +128,14 @@
   <Modal title="QR code" subtitle="Join {name}" onclose={closeQrSheet} dismissOnBackdrop={true} widthClass="max-w-[360px]" zClass="z-[200]">
     <div class="flex flex-col items-center gap-3">
       <QrCode text={qrLink} size={240} class="w-[min(80vw,320px)] h-[min(80vw,320px)] max-w-full" />
-      <p class="m-0 w-full max-w-[min(80vw,320px)] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
+      <p class="w-full max-w-[min(80vw,320px)] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
     </div>
     {#snippet footer()}
       <button
         type="button"
         onclick={closeQrSheet}
-        class="flex-1 h-12 rounded-[10px] border border-line-3 bg-transparent text-text
-               text-[15px] font-medium cursor-pointer"
+        class="flex-1 h-12 rounded-[10px] border border-line-3 text-text
+ text-[15px] font-medium cursor-pointer"
       >
         Close
       </button>

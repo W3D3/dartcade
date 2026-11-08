@@ -40,12 +40,12 @@
   >
     <div class="flex flex-col gap-2">
       <span class="text-[12px] font-bold label-caps tracking-[0.12em] text-accent">No board yet</span>
-      <h2 class="m-0 font-display font-bold text-[34px] md:text-[44px] leading-[0.95] uppercase">Connect your first board</h2>
-      <p class="m-0 text-[15px] leading-[1.5] text-ink-2">
+      <h2 class="font-display font-bold text-[34px] md:text-[44px] leading-[0.95] uppercase">Connect your first board</h2>
+      <p class="text-[15px] leading-[1.5] text-ink-2">
         Dartcade works with Autodarts. Pair your board once and it's ready on every device you sign in on.
       </p>
     </div>
-    <ul class="m-0 p-0 list-none flex flex-col gap-[18px]">
+    <ul class="flex flex-col gap-[18px]">
       {#each benefits as b (b.title)}
         <li class="flex gap-[14px]">
           <span
@@ -63,8 +63,8 @@
   </section>
 
   <section aria-labelledby="pair-a-board" class="box-border p-5 md:p-[26px] card flex flex-col gap-[18px]">
-    <h2 id="pair-a-board" class="m-0 font-display font-bold text-[28px] leading-none uppercase">Pair a board</h2>
-    <ol class="m-0 p-0 list-none flex flex-col gap-[14px]">
+    <h2 id="pair-a-board" class="font-display font-bold text-[28px] leading-none uppercase">Pair a board</h2>
+    <ol class="flex flex-col gap-[14px]">
       {#each steps as step, i (step.title)}
         <li class="flex gap-3 items-start">
           <span
@@ -120,7 +120,7 @@
         >
       </div>
     </form>
-    <p class="m-0 flex gap-[10px] px-[14px] py-3 rounded-[12px] bg-surface-1 border border-line text-[13px] leading-[1.5] text-text-muted">
+    <p class="flex gap-[10px] px-[14px] py-3 rounded-[12px] bg-surface-1 border border-line text-[13px] leading-[1.5] text-text-muted">
       <Calculator size={16} class="shrink-0 mt-[2px]" />
       <span
         ><strong class="text-text font-semibold">No Autodarts board?</strong> You can still play every game by typing your scores on the keypad.</span

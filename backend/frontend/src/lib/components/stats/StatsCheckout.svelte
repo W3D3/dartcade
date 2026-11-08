@@ -113,7 +113,7 @@
         />
       {/snippet}
       {#if c.doubles.length === 0}
-        <p class="m-0 text-[13px] text-text-muted">No darts at a double yet.</p>
+        <p class="text-[13px] text-text-muted">No darts at a double yet.</p>
       {:else if view === 'list'}
         <BarList items={doubles} label="Your doubles" />
       {:else}
@@ -130,7 +130,7 @@
             {#snippet title()}{t.value} <span class="font-normal text-text-muted">· {(t.darts ?? []).join(' ')}</span>{/snippet}
           </LinkRow>
         {:else}
-          <p class="m-0 text-[13px] text-text-muted">No checkouts yet.</p>
+          <p class="text-[13px] text-text-muted">No checkouts yet.</p>
         {/each}
       </div>
     </ChartCard>

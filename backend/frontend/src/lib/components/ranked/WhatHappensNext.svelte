@@ -12,8 +12,8 @@
 </script>
 
 <section class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-5 py-4" aria-label="What happens next">
-  <h3 class="m-0 text-[16px] font-semibold">What happens next</h3>
-  <ol class="m-0 flex list-none flex-col gap-3 p-0">
+  <h3 class="text-[16px] font-semibold">What happens next</h3>
+  <ol class="flex flex-col gap-3">
     {#each steps as step, i (step.title)}
       <li class="flex items-start gap-3">
         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-line-strong text-[12px] text-text-muted"

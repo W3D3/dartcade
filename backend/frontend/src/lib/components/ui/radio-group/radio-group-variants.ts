@@ -2,7 +2,7 @@ import { tv } from 'tailwind-variants'
 
 // The looks of a radio option that isn't a SegmentedControl: picked by `data-[state=checked]`, not by the caller.
 export const radioItemVariants = tv({
-  base: 'font-[inherit] cursor-pointer outline-none focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px] disabled:cursor-default',
+  base: 'cursor-pointer outline-none focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px] disabled:cursor-default',
   variants: {
     variant: {
       // Matchmaking's queue: a tall card, a thick accent border when picked

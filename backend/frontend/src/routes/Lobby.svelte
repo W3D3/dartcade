@@ -295,7 +295,7 @@
         <LobbySidePanel lobby={l} {viewerId} {host} oninvite={invite} onaccess={(access: LobbyAccess) => void updateLobby({ access })} />
       {/snippet}
     {:else}
-      <p class="m-0 text-[15px] text-text-muted">Loading the lobby…</p>
+      <p class="text-[15px] text-text-muted">Loading the lobby…</p>
     {/if}
   </main>
 </Layout>

@@ -31,8 +31,8 @@
     type="button"
     onclick={onUndo}
     disabled={!canUndo}
-    class="{compact ? 'h-11 px-3' : 'h-12 px-4'} flex items-center gap-2 rounded-[10px] border border-line-strong bg-transparent text-text
-           text-[15px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-default"
+    class="{compact ? 'h-11 px-3' : 'h-12 px-4'} flex items-center gap-2 rounded-[10px] border border-line-strong text-text
+ text-[15px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-default"
   >
     <Undo2 size={18} />
     Undo

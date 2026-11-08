@@ -51,9 +51,9 @@
 
 <Layout title="Stats components">
   <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-y-auto px-4 py-4 md:px-8 md:py-10 xl:px-11">
-    <h1 class="m-0 font-display text-[40px] font-bold uppercase leading-none">Stats components</h1>
+    <h1 class="font-display text-[40px] font-bold uppercase leading-none">Stats components</h1>
 
-    <h2 class="m-0 text-[18px] font-semibold">Range pickers</h2>
+    <h2 class="text-[18px] font-semibold">Range pickers</h2>
     <div class="flex flex-wrap gap-2">
       <SegmentedControl
         label="Range by legs"
@@ -77,7 +77,7 @@
       />
     </div>
 
-    <h2 class="m-0 text-[18px] font-semibold">Stat tiles</h2>
+    <h2 class="text-[18px] font-semibold">Stat tiles</h2>
     <TileGrid>
       <StatTile
         label="3-dart average"
@@ -106,7 +106,7 @@
       <StatTile label="Legs won" value="31" unit="of 50" sub="No range before to compare with" />
     </TileGrid>
 
-    <h2 class="m-0 text-[18px] font-semibold">Charts</h2>
+    <h2 class="text-[18px] font-semibold">Charts</h2>
     <ChartCard title="Average per leg" note="Bars are legs (darker = lost), line is the 10-leg trend">
       {#snippet aside()}
         <ChartLegend
@@ -165,7 +165,7 @@
       </ChartCard>
     </div>
 
-    <h2 class="m-0 text-[18px] font-semibold">Lists and the board</h2>
+    <h2 class="text-[18px] font-semibold">Lists and the board</h2>
     <div class="grid gap-3 lg:grid-cols-3">
       <ChartCard title="Your doubles" note="Hit rate when going for the double">
         {#snippet aside()}
@@ -196,7 +196,7 @@
       </ChartCard>
     </div>
 
-    <h2 class="m-0 text-[18px] font-semibold">States</h2>
+    <h2 class="text-[18px] font-semibold">States</h2>
     <StatsState kind="loading" />
     <div class="grid gap-6 lg:grid-cols-2">
       <StatsState kind="empty" title="No stats yet" text="Finish an X01 game and your averages, scoring and checkouts show up here." />

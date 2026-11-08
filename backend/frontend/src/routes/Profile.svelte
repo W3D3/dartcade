@@ -84,7 +84,7 @@
   >
     {#if !$progression}
       {#if banOnly}<BanNotice ban={banOnly} />{/if}
-      <p class="m-0 text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
+      <p class="text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
     {:else if !profile || !$profile}
       <PageLoading />
     {:else}
@@ -96,7 +96,7 @@
         <button
           type="button"
           onclick={() => history.back()}
-          class="inline-flex items-center gap-[6px] bg-transparent border-0 p-0 text-[14px] font-semibold text-text-muted cursor-pointer font-[inherit] hover:text-text"
+          class="inline-flex items-center gap-[6px] border-0 text-[14px] font-semibold text-text-muted cursor-pointer hover:text-text"
           ><ArrowLeft size={16} />Back</button
         >
         {#if self}
@@ -127,7 +127,7 @@
             <div class="flex flex-col gap-2 min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1
-                  class="m-0 min-w-0 truncate font-display font-bold uppercase tracking-[0.02em] text-[32px] md:text-[38px] leading-[0.95] {nameClass(
+                  class="min-w-0 truncate font-display font-bold uppercase tracking-[0.02em] text-[32px] md:text-[38px] leading-[0.95] {nameClass(
                     p.look.name,
                   )}"
                   style="color: {accentOf(colors)}"
@@ -225,9 +225,9 @@
               <span class="text-[13px] text-text-muted">{p.matches} played</span>
             </div>
             {#if p.recent.length === 0}
-              <p class="m-0 text-[14px] text-text-muted">{self ? 'No finished games yet.' : 'No games you can see yet.'}</p>
+              <p class="text-[14px] text-text-muted">{self ? 'No finished games yet.' : 'No games you can see yet.'}</p>
             {:else}
-              <ul class="m-0 p-0 list-none flex flex-col">
+              <ul class="flex flex-col">
                 {#each p.recent as g (g.id)}
                   {@const mark = placementMark(g.placement, g.players)}
                   <li class="border-b border-line last:border-b-0">

@@ -39,7 +39,7 @@
       </span>
     </div>
   {/if}
-  <ul class="m-0 p-0 list-none flex flex-col gap-[10px]">
+  <ul class="flex flex-col gap-[10px]">
     {#each set.items as item (item.id)}
       <ChallengeRow {item} fresh={fresh(item.id)} onreroll={() => onreroll(item.id)} onclaim={(from: DOMRect) => onclaim(item.id, from)} />
     {/each}

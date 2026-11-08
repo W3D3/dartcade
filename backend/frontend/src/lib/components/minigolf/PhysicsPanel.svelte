@@ -36,7 +36,7 @@
   const clip = createCopy()
 
   const BUTTON =
-    'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium font-[inherit] cursor-pointer hover:bg-surface-hover'
+    'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium cursor-pointer hover:bg-surface-hover'
 </script>
 
 <section class="flex flex-col gap-3" aria-label="Physics">
@@ -48,7 +48,7 @@
     </div>
   {/each}
   <!-- How far a putt rolls on flat felt for each distance from the bull -->
-  <figure class="m-0 flex flex-col gap-1">
+  <figure class="flex flex-col gap-1">
     <svg
       viewBox="0 0 100 60"
       preserveAspectRatio="none"

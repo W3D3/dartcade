@@ -47,7 +47,7 @@
       aria-label="Hide for now"
       title="Hide for now"
       onclick={hide}
-      class="absolute top-[6px] right-[6px] w-8 h-8 flex items-center justify-center rounded-sm border-0 bg-transparent text-text-dim cursor-pointer hover:text-text hover:bg-surface-hover"
+      class="absolute top-[6px] right-[6px] w-8 h-8 flex items-center justify-center rounded-sm border-0 text-text-dim cursor-pointer hover:text-text hover:bg-surface-hover"
     >
       <X size={14} strokeWidth={2.2} />
     </button>

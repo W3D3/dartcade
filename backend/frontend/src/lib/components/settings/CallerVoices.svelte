@@ -128,8 +128,8 @@
 
 <section id="caller-voices" aria-labelledby="cv-title" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
   <div class="flex flex-col gap-1">
-    <h2 id="cv-title" class="m-0 font-display font-bold text-[26px] md:text-[28px] leading-none uppercase">Caller voices</h2>
-    <p class="m-0 text-[13px] md:text-[14px] leading-normal text-text-muted">
+    <h2 id="cv-title" class="font-display font-bold text-[26px] md:text-[28px] leading-none uppercase">Caller voices</h2>
+    <p class="text-[13px] md:text-[14px] leading-normal text-text-muted">
       <span class="md:hidden">On your account, ready on every board and device.</span>
       <span class="hidden md:inline"
         >Packs you import live on your account, so they're ready on every board and device. Pick one in a match from the game settings.</span
@@ -159,13 +159,13 @@
         </span>
       </div>
     {:else}
-      <p class="m-0 text-[14px] text-text-dim">Importing voices is turned off on this server.</p>
+      <p class="text-[14px] text-text-dim">Importing voices is turned off on this server.</p>
     {/if}
 
     {#if $packDetails && lib.builtins.length}
       <div class="flex flex-col gap-2">
         <span class="text-[12px] font-semibold label-caps text-text-dim">Built-in · {lib.builtins.length}</span>
-        <ul class="m-0 p-0 list-none flex flex-col gap-[6px]">
+        <ul class="flex flex-col gap-[6px]">
           {#each lib.builtins as b (b.id)}
             <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-[10px] bg-surface-row border border-line">
               <span class="w-[38px] h-[38px] shrink-0 rounded-[9px] bg-surface-paused text-accent flex items-center justify-center">
@@ -190,7 +190,7 @@
     <div class="flex flex-col gap-2">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Your packs · {lib.packs.length}</span>
       {#if lib.packs.length}
-        <ul class="m-0 p-0 list-none flex flex-col gap-[6px]">
+        <ul class="flex flex-col gap-[6px]">
           {#each lib.packs as p (p.id)}
             <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-[10px] bg-surface-row border border-line">
               <span class="w-[38px] h-[38px] shrink-0 rounded-[9px] bg-surface-paused text-accent flex items-center justify-center">
@@ -260,8 +260,8 @@
                 onclick={() => void remove(p.id)}
                 disabled={deleting === p.id}
                 aria-label="Delete {p.name}"
-                class="h-10 px-[10px] md:px-3 shrink-0 flex items-center gap-[6px] rounded-[9px] border border-danger-line bg-transparent
-                       text-live-text text-[14px] font-semibold cursor-pointer disabled:opacity-50"
+                class="h-10 px-[10px] md:px-3 shrink-0 flex items-center gap-[6px] rounded-[9px] border border-danger-line
+ text-live-text text-[14px] font-semibold cursor-pointer disabled:opacity-50"
               >
                 {#if deleting === p.id}<LoaderCircle size={16} class="animate-spin" />{:else}<Trash size={16} strokeWidth={1.8} />{/if}
                 <span class="hidden md:inline">Delete</span>
@@ -335,7 +335,7 @@
               <button
                 type="button"
                 onclick={() => uploadAbort?.abort()}
-                class="ml-auto h-8 px-[10px] border-0 bg-transparent text-text-muted text-[13px] cursor-pointer">Cancel</button
+                class="ml-auto h-8 px-[10px] border-0 text-text-muted text-[13px] cursor-pointer">Cancel</button
               >
             {/if}
           </div>
@@ -361,7 +361,7 @@
       {#if $autodartsOn}
         <div class="flex flex-col gap-2">
           <span class="text-[14px] font-semibold">Import Autodarts voices</span>
-          <ol class="m-0 pl-5 flex flex-col gap-1 text-[13px] leading-[1.5] text-text-muted">
+          <ol class="pl-5 flex flex-col gap-1 text-[13px] leading-[1.5] text-text-muted">
             <li>
               Drag
               <!-- A bookmarklet: dragged to the bookmarks bar, not clicked here -->
@@ -384,7 +384,7 @@
             <summary class="cursor-pointer min-h-10 flex items-center">Bookmarks blocked? Paste the code into the console instead</summary>
             <div class="flex flex-col gap-2">
               <pre
-                class="m-0 max-h-40 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
+                class="max-h-40 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
               <Button type="button" variant="key" class="self-start h-10 px-4 rounded-[9px]" onclick={() => void clip.copy(consoleSnippet)}
                 >{clip.state === 'copied'
                   ? 'Copied'
@@ -400,7 +400,7 @@
         </div>
       {/if}
 
-      <p class="m-0 text-[12px] leading-normal text-text-dim">
+      <p class="text-[12px] leading-normal text-text-dim">
         A voice pack is a .zip of short .mp3, .ogg or .wav clips named by what they call:
         <span class="font-mono text-ink-2">180.mp3</span>, <span class="font-mono text-ink-2">gameshot.mp3</span>,
         <span class="font-mono text-ink-2">busted.mp3</span>, <span class="font-mono text-ink-2">require_121.mp3</span>. Missing clips fall

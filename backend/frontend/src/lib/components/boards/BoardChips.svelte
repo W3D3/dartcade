@@ -13,7 +13,7 @@
     $props()
 
   const chip =
-    'h-12 px-4 inline-flex items-center gap-[10px] rounded-[12px] text-text text-[15px] font-semibold cursor-pointer font-[inherit] transition-colors'
+    'h-12 px-4 inline-flex items-center gap-[10px] rounded-[12px] text-text text-[15px] font-semibold cursor-pointer transition-colors'
 </script>
 
 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -40,11 +40,7 @@
         </span>
       </button>
     {/each}
-    <button
-      type="button"
-      onclick={onpair}
-      class="{chip} gap-2 border-[1.5px] border-dashed border-line-dashed bg-transparent hover:bg-surface-active"
-    >
+    <button type="button" onclick={onpair} class="{chip} gap-2 border-[1.5px] border-dashed border-line-dashed hover:bg-surface-active">
       <Plus size={16} strokeWidth={2.4} />Pair board
     </button>
   </div>

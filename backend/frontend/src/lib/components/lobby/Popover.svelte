@@ -38,7 +38,7 @@
     if (o) onopen?.()
   }}
 >
-  <Popover.Trigger aria-haspopup={haspopup} aria-label={triggerLabel} class="cursor-pointer font-[inherit] {triggerClass}">
+  <Popover.Trigger aria-haspopup={haspopup} aria-label={triggerLabel} class="cursor-pointer {triggerClass}">
     {@render trigger(open)}
   </Popover.Trigger>
   {@render panel(close)}

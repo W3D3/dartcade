@@ -33,7 +33,7 @@
   })
 </script>
 
-<ul class="m-0 flex list-none flex-col gap-2 p-0">
+<ul class="flex flex-col gap-2">
   {#each visits as v (v.n)}
     {@const sel = v.n === selected}
     <li
@@ -46,7 +46,7 @@
         bind:this={buttons[v.n]}
         aria-expanded={sel && expanded}
         onclick={() => tap(v.n)}
-        class="flex w-full cursor-pointer flex-col gap-2 border-0 bg-transparent p-3 text-left font-[inherit] text-text"
+        class="flex w-full cursor-pointer flex-col gap-2 border-0 p-3 text-left text-text"
       >
         <span class="flex w-full items-center gap-2.5">
           <span class="w-[18px] font-display text-[18px] font-bold text-text-dim"><span class="sr-only">Visit </span>{v.n}</span>
