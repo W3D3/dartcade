@@ -88,6 +88,7 @@ export type MeServerMessage =
   | MeMessage
   | FriendsMessage
   | XpGainedMessage
+  | AchievementUnlockedMessage
   | BoardStatusMessage
   | LobbyIdleClosedMessage
   | MatchmakingMessage
@@ -554,6 +555,37 @@ export interface XpGainedMessage {
      */
     milestone: number | null
   }
+}
+/**
+ * Pushed on /ws/me when a finished game unlocks an achievement or raises its tier (achievements.enabled). Biggest tier first.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "AchievementUnlockedMessage".
+ */
+export interface AchievementUnlockedMessage {
+  type: 'achievement.unlocked'
+  /**
+   * The game that earned them.
+   */
+  sessionId: string
+  unlocked: {
+    /**
+     * shared/achievements.ts id.
+     */
+    id: string
+    tier: number
+    count: number
+    /**
+     * False for the first tier.
+     */
+    tierUp: boolean
+    /**
+     * XP the tiers paid.
+     */
+    xp: number
+  }[]
+  levelBefore: number
+  levelAfter: number
 }
 /**
  * Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.

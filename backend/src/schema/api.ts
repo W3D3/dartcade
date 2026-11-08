@@ -2029,6 +2029,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your achievements (achievements.enabled)
+         * @description What you have counted towards each achievement. The catalogue itself (names, tiers, thresholds) is shared code, not an API.
+         */
+        get: operations["getMyAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/achievements/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Pick the earned achievements your profile shows, in order */
+        put: operations["setAchievementShowcase"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/achievements/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** You have looked at everything earned so far (clears the "new" dots) */
+        post: operations["markAchievementsSeen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** A player's achievements, as the profile's Achievements tab shows them (achievements.enabled for you) */
+        get: operations["getPlayerAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/challenges": {
         parameters: {
             query?: never;
@@ -4547,6 +4620,26 @@ export interface components {
                 sound?: string;
                 celebration?: string;
             };
+        };
+        Achievements: {
+            /** @description One entry per achievement with any count; the rest of the catalogue is not earned yet */
+            achievements: {
+                id: string;
+                count: number;
+                /** @description 0 = counting, not earned yet */
+                tier: number;
+                /** Format: date-time */
+                earnedAt: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the current tier was reached
+                 */
+                tierAt: string | null;
+            }[];
+            /** @description The shown achievement ids, in order */
+            showcase: string[];
+            /** @description Achievements with a tier you have not looked at yet (yours only; 0 for another player) */
+            unseen: number;
         };
         Progress: {
             /** @description Total XP */
@@ -8712,6 +8805,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerFriends"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getMyAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your achievements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Achievements"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setAchievementShowcase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Your achievements after it */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Achievements"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    markAchievementsSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPlayerAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Their achievements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Achievements"];
                 };
             };
             401: components["responses"]["Unauthorized"];
