@@ -14,12 +14,13 @@ describe('lights view', () => {
       type: 'Flash',
       look: '180 preset · 4 s',
     })
+    // A big score sparkles white rather than flashing the player's colour
     expect(ruleLabel(DEFAULT_PROFILE.rules[3])).toEqual({
       ...base,
       when: 'Visit scored',
       filter: '≥ 100',
       type: 'Flash',
-      look: 'seat colour · pulse · 2 s',
+      look: 'white · sparkle · 2 s',
     })
     expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ ...base, when: 'Bust', type: 'Flash', look: 'Busted preset · 1.5 s' })
     expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ ...base, when: 'Checkout', type: 'Flash', look: 'Gameshot preset · 3 s' })

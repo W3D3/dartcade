@@ -32,7 +32,8 @@ export const DEFAULT_PROFILE: Profile = {
     { when: { trigger: 'turn', seats: 'mine' }, type: 'scene', enabled: true, look: { color: 'seat', fx: SOLID, bri: 255 } },
     { when: { trigger: 'turn', seats: 'other' }, type: 'scene', enabled: true, look: { color: '#ffffff', fx: SOLID, bri: 40 } },
     flash('visit', { preset: '180', state: PRESET_180 }, 4000, { total: { op: '=', n: 180 } }),
-    flash('visit', { color: 'seat', fx: BREATHE, bri: 255 }, 2000, { total: { op: '>=', n: 100 } }),
+    // A big score sparkles white rather than flashing the player's colour
+    flash('visit', { color: '#ffffff', fx: SPARKLE, bri: 255 }, 2000, { total: { op: '>=', n: 100 } }),
     flash('bust', { preset: 'Busted', state: PRESET_BUSTED }, 1500),
     flash('checkout', { preset: 'Gameshot', state: PRESET_GAMESHOT }, 3000),
     flash('game.won', { preset: 'Matchshot', state: PRESET_MATCHSHOT }, 5000),
