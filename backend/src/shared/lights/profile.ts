@@ -1,8 +1,10 @@
 import { PRESET_180, PRESET_BUSTED, PRESET_GAMESHOT, PRESET_MATCHSHOT } from './presets.js'
 import type { BoardTrigger, GameId, Profile, Rule } from './types.js'
 
-/** The seats' colours, from the design tokens; seat 5 on wraps around. */
-export const SEAT_COLORS: readonly string[] = ['#c6f24e', '#efeee6', '#ff9b45', '#5ad1e6']
+/** The seats' colours; seat 7 on wraps around. Checked for colour blindness (normal, deuteranopia,
+ *  protanopia: CIE76 distance 17+ between any two), and none is near the takeout yellow (28+ even
+ *  with deuteranopia). Tritanopia cannot tell off-white from that yellow, which no white avoids. */
+export const SEAT_COLORS: readonly string[] = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']
 export const seatColor = (seat: number): string => SEAT_COLORS[((seat % SEAT_COLORS.length) + SEAT_COLORS.length) % SEAT_COLORS.length]
 
 // WLED effect ids
@@ -11,6 +13,8 @@ const SOLID = 0,
   BREATHE = 2,
   SPARKLE = 20
 const RED = '#ff3b30'
+/** Hue 50: clearly yellow, apart from the orange seat colour (the old amber looked like it). */
+const TAKEOUT_YELLOW = '#ffd60a'
 
 const flash = (trigger: Rule['when']['trigger'], look: Rule['look'], holdMs: number, extra: Partial<Rule['when']> = {}): Rule => ({
   when: { trigger, seats: 'mine', ...extra },
@@ -39,7 +43,7 @@ export const DEFAULT_PROFILE: Profile = {
       when: { trigger: 'takeout.started', seats: 'any' },
       type: 'scene',
       enabled: true,
-      look: { color: '#ffa000', fx: BREATHE, bri: 255, speed: 60 },
+      look: { color: TAKEOUT_YELLOW, fx: BREATHE, bri: 255, speed: 60 },
     },
     // WLED fx 41 "Lighthouse": a comet travelling around the strip leaving a fading trail
     {

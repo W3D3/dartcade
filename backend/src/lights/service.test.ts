@@ -64,7 +64,7 @@ describe('LightsService', () => {
     const [a] = applies(sent, 'b1')
     expect(a.device_id).toBe('dev-b1')
     expect(a.hold_ms).toBeUndefined()
-    expect((a.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[198, 242, 78]])
+    expect((a.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[86, 212, 232]])
   })
 
   it('remote game: a bust flashes only the throwing board; the other board shows waiting', async () => {
@@ -88,7 +88,7 @@ describe('LightsService', () => {
     expect(applies(sent, 'b2')[0].hold_ms).toBeUndefined()
   })
 
-  it('takeout lights amber, then the game scene comes back', async () => {
+  it('takeout lights yellow, then the game scene comes back', async () => {
     const { svc, sent, snaps, sessions } = setup()
     sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
     snaps.set('s', x01({}))
@@ -97,8 +97,8 @@ describe('LightsService', () => {
     sent.length = 0
     await svc.onBoardEvent('b1', 'takeout.started')
     await svc.onBoardEvent('b1', 'takeout.finished')
-    const [amber, back] = applies(sent, 'b1')
-    expect((amber.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[255, 160, 0]])
+    const [yellow, back] = applies(sent, 'b1')
+    expect((yellow.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[255, 214, 10]])
     expect(back.state).toEqual(turn)
   })
 
@@ -347,7 +347,7 @@ describe('LightsService', () => {
       const second = svc.onPush('s') // fast: turn seat 1, issued right behind the slow one
       await Promise.all([first, second])
       const cols = applies(sent, 'b1').map(a => (a.state as { seg: { col: number[][] }[] }).seg[0].col)
-      expect(cols).toEqual([[[198, 242, 78]], [[239, 238, 230]]]) // seat 0, then seat 1 — never reversed
+      expect(cols).toEqual([[[86, 212, 232]], [[239, 238, 230]]]) // seat 0, then seat 1 — never reversed
     })
 
     it('onGameEnded racing an in-flight scene fire still leaves the strip dark', async () => {

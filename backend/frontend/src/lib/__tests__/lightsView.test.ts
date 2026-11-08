@@ -24,8 +24,8 @@ describe('lights view', () => {
     expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ ...base, when: 'Bust', type: 'Flash', look: 'Busted preset · 1.5 s' })
     expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ ...base, when: 'Checkout', type: 'Flash', look: 'Gameshot preset · 3 s' })
     expect(ruleLabel(DEFAULT_PROFILE.rules[6])).toEqual({ ...base, when: 'Game won', type: 'Flash', look: 'Matchshot preset · 5 s' })
-    // The takeout scene is an amber pulse, so players see the board isn't ready
-    expect(ruleLabel(DEFAULT_PROFILE.rules[10])).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'amber · pulse' })
+    // The takeout scene is a yellow pulse, so players see the board isn't ready
+    expect(ruleLabel(DEFAULT_PROFILE.rules[10])).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'yellow · pulse' })
     // The calibration scene is a purple comet travelling around the strip
     expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ ...base, when: 'Calibrating', type: 'Scene', look: 'purple · comet' })
   })
