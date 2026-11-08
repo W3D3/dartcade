@@ -4,6 +4,7 @@
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import RankedPill from '$lib/components/ranked/RankedPill.svelte'
+  import WatchingPill from '$lib/components/watch/WatchingPill.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import type { Board } from '$lib/api'
   import type { GameSettings } from '$lib/gameSettings.js'
@@ -23,6 +24,7 @@
     paused = false,
     myBoard = null,
     ranked = null,
+    watching = 0,
     settings = $bindable(),
     onleave,
     onend,
@@ -49,6 +51,8 @@
     myBoard?: MyBoard | null
     /** A ranked game: the pill and the stakes ("Win +16 · Loss −14", null while placing). */
     ranked?: { stakes: string | null } | null
+    /** Friends watching the game (Watch). */
+    watching?: number
     settings: GameSettings
     onleave: () => void
     onend: () => void
@@ -105,6 +109,7 @@
           {#if viewMode === 'board'}<Grid3x3 size={19} />{:else}<Target size={19} />{/if}
         </Button>
       {/if}
+      <WatchingPill count={watching} />
       {#each boards as b (b.id)}<BoardStatusPanel board={b} compact />{/each}
       <Button
         variant="outline"
@@ -172,6 +177,8 @@
           <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
         </span>
       {/if}
+
+      <WatchingPill count={watching} />
 
       {#each boards as b (b.id)}
         <BoardStatusPanel board={b} />

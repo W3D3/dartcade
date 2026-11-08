@@ -58,7 +58,7 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    onCorrect: (dartIndex: number, label: string) => void
+    onCorrect?: (dartIndex: number, label: string) => void
     onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** The header's Enter view: the keypad takes the board's place. */
     keypad?: boolean

@@ -34,6 +34,7 @@
   import Rewards from './routes/Rewards.svelte'
   import Admin from './routes/Admin.svelte'
   import BigScreen from './routes/BigScreen.svelte'
+  import Watch from './routes/Watch.svelte'
   import BigScreenFrame from './routes/BigScreenFrame.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
@@ -121,6 +122,7 @@
     '/': Root,
     '/play': CreateSession,
     '/session/:id': GameDisplay,
+    '/watch/:id': Watch,
     '/login': Login,
     '/register': Register,
     '/verify': Verify,

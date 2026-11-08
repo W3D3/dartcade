@@ -7,7 +7,10 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import StatusRing from './StatusRing.svelte'
-  import { statusLine, type RowAction } from '$lib/friends/view'
+  import { Eye } from '@lucide/svelte'
+  import { push } from 'svelte-spa-router'
+  import { flag } from '$lib/flags'
+  import { statusLine, watchPath, type RowAction } from '$lib/friends/view'
 
   let {
     friend,
@@ -16,6 +19,8 @@
     oninvite,
     onjoin,
   }: { friend: Friend; action: RowAction; busy: boolean; oninvite: () => void; onjoin: () => void } = $props()
+  const watchOn = flag('watch.enabled')
+  const watch = $derived(watchPath(friend.status, $watchOn))
   const line = $derived(statusLine(friend))
   const offline = $derived(friend.status.kind === 'offline')
   const TONE = { ink: 'text-text-muted', playing: 'text-live-text', muted: 'text-text-dim' }
@@ -51,5 +56,13 @@
     <span class="shrink-0 h-[34px] px-2 flex items-center gap-1 text-ink-2 text-[13px]">
       <Check size={14} strokeWidth={3} class="text-accent" />Invited
     </span>
+  {/if}
+  {#if watch}
+    <Button
+      variant="outline"
+      onclick={() => void push(watch)}
+      aria-label="Watch {friend.name}"
+      class="shrink-0 h-[34px] px-3 rounded-[9px] border-line-strong text-[13px] font-semibold"><Eye size={15} />Watch</Button
+    >
   {/if}
 </li>

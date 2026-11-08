@@ -23,6 +23,5 @@ export const viewOnlyProps = (snapshot: Snapshot): Omit<MatchProps, 'snapshot' |
   onUndo: noop,
   onNext: noop,
   onDart: noop,
-  onCorrect: noop,
   onBoardClick: noop,
 })

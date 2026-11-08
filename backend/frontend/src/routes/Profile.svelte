@@ -4,7 +4,7 @@
   // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
   // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
   // opens `#/profile/customise`. Friends see the streak and status; recent games are public ones plus those the viewer played in (the API decides).
-  import { ArrowLeft, Flame } from '@lucide/svelte'
+  import { ArrowLeft, Eye, Flame } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -38,7 +38,8 @@
   import BanNotice from '$lib/components/BanNotice.svelte'
   import { fetchBan, type Ban } from '$lib/bans'
 
-  import { lastSeenText, type LastSeen } from '$lib/friends/view'
+  import { lastSeenText, watchPath, type LastSeen } from '$lib/friends/view'
+  import { me } from '$lib/lobby/sockets'
 
   let { params = {} }: { params?: { id?: string } } = $props()
 
@@ -48,6 +49,12 @@
   // One store per player shown; read again when the page opens
   let profile = $derived(userId ? profileOf(userId) : null)
   let status = $derived(userId ? statusOf(userId) : null)
+  // A friend in a running game can be watched (behind watch.enabled)
+  const watchOn = flag('watch.enabled')
+  const watchHref = $derived.by(() => {
+    const f = $me?.friends?.friends.find(x => x.id === userId)
+    return f ? watchPath(f.status, $watchOn) : null
+  })
   $effect(() => {
     if (userId) refreshProfile(userId)
   })
@@ -145,6 +152,13 @@
               <div class="text-[13px] text-text-muted">{self ? 'You · m' : 'M'}ember since {since(p.memberSince)}</div>
               {#if p.ban}<BanNotice ban={p.ban} class="self-start" />{/if}
             </div>
+            {#if watchHref}
+              <a
+                href="#{watchHref}"
+                class="inline-flex items-center gap-2 rounded-[10px] border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-text no-underline"
+                ><Eye size={16} aria-hidden="true" />Watch</a
+              >
+            {/if}
             {#if self}
               <div class="flex flex-wrap gap-2">
                 <a

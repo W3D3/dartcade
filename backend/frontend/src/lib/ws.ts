@@ -51,7 +51,8 @@ export function parseCamera(m: unknown): CameraMessage | null {
   return r.success ? r.data : null
 }
 
-export function createSessionStore(sessionId: string) {
+/** `watch`: open the game as a friend watching it (read only), not as a player. */
+export function createSessionStore(sessionId: string, { watch = false }: { watch?: boolean } = {}) {
   const snapshot = writable<Snapshot | null>(null)
   const notice = writable<NoticeMessage | null>(null)
   const error = writable<ErrorMessage | null>(null)
@@ -61,7 +62,9 @@ export function createSessionStore(sessionId: string) {
   const connected = writable(false)
   // A snapshot didn't parse: this tab is older than the server (reloading fixes it)
   const stale = writable(false)
-  const socket = reconnectingSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`, {
+  // Why the socket stopped for good (the close code's name), if it did
+  const stopped = writable<string | null>(null)
+  const socket = reconnectingSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}${watch ? '&watch=1' : ''}`, {
     onOpen: () => connected.set(true),
     onMessage: data => {
       const snap = parseSnapshot(data)
@@ -101,8 +104,9 @@ export function createSessionStore(sessionId: string) {
       // Not this user's session, or it no longer exists: retrying won't help. A successful
       // Leave or End already navigated away by the time this fires (a reconnect racing the
       // session's deletion): only follow it while this session's page is still showing.
-      if (code === 'Forbidden' || code === 'NotFound') {
-        if (/^#\/session\/([^/?]+)/.exec(window.location.hash)?.[1] === sessionId) {
+      if (code === 'Forbidden' || code === 'NotFound' || code === 'TooManyWatchers') {
+        stopped.set(code)
+        if (!watch && /^#\/session\/([^/?]+)/.exec(window.location.hash)?.[1] === sessionId) {
           window.location.hash = `#${afterGameRoute(get(snapshot))}`
         }
         return 'stop'
@@ -125,6 +129,7 @@ export function createSessionStore(sessionId: string) {
   const connectedStore: Readable<boolean> = { subscribe: connected.subscribe }
   const camerasStore: Readable<CameraVersions> = { subscribe: cameras.subscribe }
   const staleStore: Readable<boolean> = { subscribe: stale.subscribe }
+  const stoppedStore: Readable<string | null> = { subscribe: stopped.subscribe }
   return {
     snapshot,
     notice: noticeStore,
@@ -132,6 +137,7 @@ export function createSessionStore(sessionId: string) {
     connected: connectedStore,
     cameras: camerasStore,
     stale: staleStore,
+    stopped: stoppedStore,
     send,
     destroy,
   }

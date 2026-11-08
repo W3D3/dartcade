@@ -9,6 +9,7 @@ import {
   parseFriendName,
   rowAction,
   searchState,
+  watchPath,
   sendOutcome,
   splitOnline,
   statusLine,
@@ -37,7 +38,10 @@ describe('statusLine', () => {
     expect(
       statusLine(friend({ inYourLobby: true, status: { kind: 'lobby', lobbyId: 'l1', lobbyName: 'Friday darts', joinable: false } })),
     ).toEqual({ text: 'In your lobby · Friday darts', tone: 'ink' })
-    expect(statusLine(friend({ status: { kind: 'playing', gameId: 'x01' } }))).toEqual({ text: 'Playing X01', tone: 'playing' })
+    expect(statusLine(friend({ status: { kind: 'playing', gameId: 'x01', sessionId: 's1' } }))).toEqual({
+      text: 'Playing X01',
+      tone: 'playing',
+    })
     expect(statusLine(friend({ status: { kind: 'offline' } }))).toEqual({ text: 'Offline', tone: 'muted' })
     expect(statusLine(friend({ status: { kind: 'offline' }, lastSeen: 'yesterday' }))).toEqual({
       text: 'Last online yesterday',
@@ -129,5 +133,15 @@ describe('searchState', () => {
       { text: 'Wants to be your friend', action: 'Accept' },
       { text: 'Friends', action: null },
     ])
+  })
+})
+
+describe('watchPath', () => {
+  it('links a playing friend to their game while the flag is on, and nobody else', () => {
+    const playing = { kind: 'playing', gameId: 'x01', sessionId: 's1' } as const
+    expect(watchPath(playing, true)).toBe('/watch/s1')
+    expect(watchPath(playing, false)).toBeNull()
+    expect(watchPath({ kind: 'online' }, true)).toBeNull()
+    expect(watchPath({ kind: 'offline' }, true)).toBeNull()
   })
 })

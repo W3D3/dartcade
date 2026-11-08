@@ -9,7 +9,10 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import FriendMenu from './FriendMenu.svelte'
   import StatusRing from './StatusRing.svelte'
-  import { statusLine, type RowAction } from '$lib/friends/view'
+  import { Eye } from '@lucide/svelte'
+  import { push } from 'svelte-spa-router'
+  import { flag } from '$lib/flags'
+  import { statusLine, watchPath, type RowAction } from '$lib/friends/view'
 
   let {
     friend,
@@ -26,6 +29,8 @@
     onjoin: () => void
     onremove: () => void
   } = $props()
+  const watchOn = flag('watch.enabled')
+  const watch = $derived(watchPath(friend.status, $watchOn))
   const line = $derived(statusLine(friend))
   const TONE = { ink: 'text-ink-2', playing: 'text-live-text', muted: 'text-text-dim' }
 </script>
@@ -69,6 +74,15 @@
     >
       <Check size={16} strokeWidth={3} class="text-accent" />Invited
     </span>
+  {/if}
+  {#if watch}
+    <Button
+      variant="outline"
+      onclick={() => void push(watch)}
+      aria-label="Watch {friend.name}"
+      class="shrink-0 h-9 px-3 md:px-[14px] rounded-[9px] border-line-strong text-[13px] md:text-[14px] font-semibold"
+      ><Eye size={15} />Watch</Button
+    >
   {/if}
   <FriendMenu name={friend.name} {onremove} />
 </li>
