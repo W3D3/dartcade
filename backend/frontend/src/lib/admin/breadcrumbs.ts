@@ -1,6 +1,7 @@
 // Breadcrumb trails for the admin pages, as plain data: each page renders it with
 // $lib/components/ui/breadcrumb and wires any onclick it needs (e.g. an unsaved-changes guard).
 import type { BreadcrumbItem } from '$lib/components/ui/breadcrumb/index.js'
+import { ADMIN_AREA, type Area } from '$lib/minigolf/editor/area'
 
 const ADMIN: BreadcrumbItem = { label: 'Admin', href: '#/admin' }
 
@@ -24,15 +25,23 @@ export const cosmeticsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Cosmetic
 export const flagsTrail = (flagKey?: string | null): BreadcrumbItem[] =>
   flagKey ? [ADMIN, { label: 'Feature flags', href: '#/admin/flags' }, { label: flagKey }] : [ADMIN, { label: 'Feature flags' }]
 
-/** `courseName` set: a course is open, so "Minigolf courses" becomes a link back to the list. */
-export const minigolfCoursesTrail = (courseName?: string | null): BreadcrumbItem[] =>
-  courseName
-    ? [ADMIN, { label: 'Minigolf courses', href: '#/admin/minigolf/courses' }, { label: courseName }]
-    : [ADMIN, { label: 'Minigolf courses' }]
+const PLAY: BreadcrumbItem = { label: 'Play', href: '#/play' }
 
-export const minigolfHoleTrail = (courseName: string | null, courseHref: string, holeName: string): BreadcrumbItem[] => [
-  ADMIN,
-  { label: 'Minigolf courses', href: '#/admin/minigolf/courses' },
+/** `courseName` set: a course is open, so the courses crumb becomes a link back to the list. */
+export const minigolfCoursesTrail = (courseName: string | null | undefined, area: Area = ADMIN_AREA): BreadcrumbItem[] => {
+  const root = area.admin ? ADMIN : PLAY
+  const label = area.admin ? 'Minigolf courses' : 'My courses'
+  return courseName ? [root, { label, href: `#${area.base}/courses` }, { label: courseName }] : [root, { label }]
+}
+
+export const minigolfHoleTrail = (
+  courseName: string | null,
+  courseHref: string,
+  holeName: string,
+  area: Area = ADMIN_AREA,
+): BreadcrumbItem[] => [
+  area.admin ? ADMIN : PLAY,
+  { label: area.admin ? 'Minigolf courses' : 'My courses', href: `#${area.base}/courses` },
   { label: courseName ?? 'Courses', href: courseHref },
   { label: holeName },
 ]

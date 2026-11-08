@@ -1,5 +1,5 @@
 <!--
-  Admin hole editor (#/admin/minigolf/holes/:id?course=:courseId): the tool rail, a 2D top-down
+  Hole editor (#/admin/minigolf/holes/:id?course=:courseId, or #/minigolf/holes/:id for players): the tool rail, a 2D top-down
   canvas, and the Properties panel with the Elements, the live Checks and a small 3D view. Every
   edit is one undo step and goes to the hole's draft (autosaved, lib/minigolf/editor/store.svelte.ts).
   With `course`, the header pages through that course's holes and a strip shows them all.
@@ -11,6 +11,7 @@
   import { push, querystring } from 'svelte-spa-router'
   import { ChevronLeft, ChevronRight, Minus, Play, Plus, Redo2, Undo2 } from '@lucide/svelte'
   import { currentUser } from '$lib/auth'
+  import { flag, flagsLoaded } from '$lib/flags'
   import { api } from '$lib/api'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -22,6 +23,8 @@
   import CheckList from '$lib/components/minigolf/editor/CheckList.svelte'
   import EditorCanvas from '$lib/components/minigolf/editor/EditorCanvas.svelte'
   import ElementList from '$lib/components/minigolf/editor/ElementList.svelte'
+  import PhoneBanner from '$lib/components/minigolf/editor/PhoneBanner.svelte'
+  import { ADMIN_AREA, mayEdit, type Area } from '$lib/minigolf/editor/area'
   import Properties from '$lib/components/minigolf/editor/Properties.svelte'
   import TestHole from '$lib/components/minigolf/editor/TestHole.svelte'
   import ToolRail from '$lib/components/minigolf/editor/ToolRail.svelte'
@@ -43,11 +46,14 @@
   import { GRID } from '$shared/minigolf/presets'
   import type { Hole } from '$shared/minigolf/types'
 
-  let { params }: { params: { id: string } } = $props()
+  let { params, area = ADMIN_AREA }: { params: { id: string }; area?: Area } = $props()
 
-  // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
+  // Not allowed (not an admin; or, for players, the flag is off): nothing to see here (signed-out
+  // users are sent to the login page by App)
+  const userCoursesOn = flag('minigolf.userCourses.enabled')
+  const allowed = $derived(!!$currentUser && mayEdit(area, $currentUser, $userCoursesOn))
   $effect(() => {
-    if ($currentUser && !$currentUser.isAdmin) void push('/')
+    if ($currentUser && $flagsLoaded && !allowed) void push('/')
   })
 
   const holeId = $derived(params.id)
@@ -208,7 +214,7 @@
   let rows = $state<HoleRow[]>([])
   $effect(() => {
     const id = courseId
-    if (!id || !$currentUser?.isAdmin) return
+    if (!id || !allowed) return
     untrack(() => {
       void apiLoadCourse(id)
         .then(c => (course = c.value))
@@ -224,8 +230,8 @@
     const content = row && holeOf(row)
     return content ? toHole(content) : null
   }
-  const holeHref = (id: string) => `#/admin/minigolf/holes/${id}?course=${courseId}`
-  const back = $derived(courseId ? `#/admin/minigolf/courses/${courseId}` : '#/admin/minigolf/courses')
+  const holeHref = (id: string) => `#${area.base}/holes/${id}?course=${courseId}`
+  const back = $derived(courseId ? `#${area.base}/courses/${courseId}` : `#${area.base}/courses`)
 
   const time = (d: Date | null) => d?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) ?? ''
   const STATUS: Record<DraftStatus, () => string> = {
@@ -244,12 +250,13 @@
 <svelte:window {onbeforeunload} {onkeydown} />
 
 <Layout title="Hole editor">
-  {#if $currentUser?.isAdmin}
+  {#if allowed}
+    <PhoneBanner />
     <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
       <header class="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 md:px-5">
         <!-- Replaces the old "back to the course" link: a breadcrumb would collide with the rest of
              this single-row toolbar, so it takes that link's spot instead of a line of its own. -->
-        <Breadcrumb items={minigolfHoleTrail(course?.name ?? null, back, hole?.name ?? 'Hole')} />
+        <Breadcrumb items={minigolfHoleTrail(course?.name ?? null, back, hole?.name ?? 'Hole', area)} />
         {#if courseId && at >= 0}
           <nav aria-label="Holes" class="flex items-center gap-1 text-[13px] label-caps text-text-muted">
             <Button variant="ghost" size="icon" href={holeHref(holeIds[at - 1] ?? '')} disabled={at === 0} aria-label="Previous hole"
@@ -292,11 +299,13 @@
             >
           </div>
         {/if}
-        <span
-          title="You can edit official holes"
-          class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
-          >Admin</span
-        >
+        {#if area.admin}
+          <span
+            title="You can edit official holes"
+            class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
+            >Admin</span
+          >
+        {/if}
         <div class="ml-auto flex flex-wrap items-center gap-[10px]">
           {#if hole}
             <Button
@@ -336,7 +345,7 @@
       {:else if store.status === 'missing'}
         <div role="status" class="m-5 flex flex-col items-start gap-3">
           <p class="m-0 text-[15px]">This hole is gone: someone deleted it.</p>
-          <Button variant="outline" href="#/admin/minigolf/courses">Back to the courses</Button>
+          <Button variant="outline" href="#{area.base}/courses">Back to the courses</Button>
         </div>
       {:else if !hole}
         {@const s = store}
