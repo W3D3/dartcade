@@ -35,7 +35,7 @@ const COLOR_NAMES: Record<string, string> = {
   '#ffffff': 'white',
   '#ff3b30': 'red',
   '#c6f24e': 'lime',
-  '#ffa000': 'amber',
+  '#ffd60a': 'yellow',
   '#a855f7': 'purple',
 }
 

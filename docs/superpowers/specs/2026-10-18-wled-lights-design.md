@@ -120,26 +120,26 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
     every segment with the look.
   - `wled`: as `perSeat`, but seat _i_ is the device's existing segment _i_ (segments beyond the device's
     count are skipped).
-- `SEAT_COLORS = ['#c6f24e', '#efeee6', '#ff9b45', '#5ad1e6']` (design tokens), cycled for seats 5+.
+- `SEAT_COLORS = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']` (six seats, checked for colour blindness and for distance from the takeout yellow), cycled for seats 7+.
   `team` uses the team's first seat's colour.
 
 **Dartcade default** (WLED effect IDs: 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 20 Sparkle, 41 Lighthouse, 42 Fireworks):
 
-| #   | When                   | Type        | Look                            |
-| --- | ---------------------- | ----------- | ------------------------------- |
-| 1   | `turn` · mine          | scene       | seat colour · solid · 255       |
-| 2   | `turn` · other         | scene       | white · solid · 40 ("Waiting")  |
-| 3   | `visit` = 180 · mine   | flash 4 s   | user preset "180"               |
-| 4   | `visit` ≥ 100 · mine   | flash 2 s   | seat colour · breathe           |
-| 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"            |
-| 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"          |
-| 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"         |
-| 8   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink               |
-| 9   | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle           |
-| 10  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink             |
-| 11  | `takeout.started`      | scene       | `#ffa000` · breathe · 255       |
-| 12  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255    |
-| 13  | `lobby` · **off**      | scene       | `#c6f24e` · breathe · 60 · slow |
+| #   | When                   | Type        | Look                               |
+| --- | ---------------------- | ----------- | ---------------------------------- |
+| 1   | `turn` · mine          | scene       | seat colour · solid · 255          |
+| 2   | `turn` · other         | scene       | white · solid · 40 ("Waiting")     |
+| 3   | `visit` = 180 · mine   | flash 4 s   | user preset "180"                  |
+| 4   | `visit` ≥ 100 · mine   | flash 2 s   | seat colour · breathe              |
+| 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"               |
+| 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"             |
+| 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"            |
+| 8   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink                  |
+| 9   | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle              |
+| 10  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink                |
+| 11  | `takeout.started`      | scene       | `#ffd60a` (yellow) · breathe · 255 |
+| 12  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255       |
+| 13  | `lobby` · **off**      | scene       | `#c6f24e` · breathe · 60 · slow    |
 
 `takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
 scene (see below). The Target hit flash was removed in #522 because it disturbed detection.

@@ -3,7 +3,7 @@ import { DEFAULT_PROFILE, patchFor, type ColorLook, type Rule, type WledPresetSt
 import { PRESET_180, PRESET_BUSTED, PRESET_GAMESHOT, PRESET_MATCHSHOT } from './presets.js'
 
 const turn = DEFAULT_PROFILE.rules[0] // seat colour, solid, 255
-const lime = [198, 242, 78]
+const cyan = [86, 212, 232]
 const offWhite = [239, 238, 230]
 const device = { leds: 145, segmentMode: 'whole' as const, segments: 1 }
 const layout = { seatCount: 2 }
@@ -23,7 +23,7 @@ describe('patchFor', () => {
       stop: 120,
       on: true,
       bri: 255,
-      col: [lime],
+      col: [cyan],
       fx: 0,
       sx: 128,
       pal: 0,
@@ -67,7 +67,7 @@ describe('patchFor', () => {
       [108, 145],
     ])
     expect(s.seg[1]).toMatchObject({ bri: 255, col: [offWhite] })
-    expect(s.seg[0]).toMatchObject({ bri: 38, col: [lime], fx: 0 })
+    expect(s.seg[0]).toMatchObject({ bri: 38, col: [cyan], fx: 0 })
     expect(s.seg[4]).toEqual({ id: 4, stop: 0 })
   })
   it('one per seat with a seatless trigger lights every part with the look', () => {
@@ -78,7 +78,7 @@ describe('patchFor', () => {
       { leds: 60, segmentMode: 'perSeat', segments: 1 },
       { seatCount: 2 },
     ) as WledState
-    expect(s.seg.slice(0, 2).every(g => g.bri === 255 && g.col?.[0].join() === '255,160,0')).toBe(true)
+    expect(s.seg.slice(0, 2).every(g => g.bri === 255 && g.col?.[0].join() === '255,214,10')).toBe(true)
   })
   it('WLED segments: seat i is segment i, no layout changes, extra seats skipped', () => {
     const s = patchFor(
@@ -106,14 +106,15 @@ describe('patchFor', () => {
     ) as WledState
     expect(s.seg[0].col).toEqual([offWhite])
   })
-  it('seat colours cycle after four', () => {
-    const s = patchFor(
-      turn,
-      { kind: 'turn', seat: 4, local: true },
-      { leds: 10, segmentMode: 'whole', segments: 1 },
-      { seatCount: 6 },
-    ) as WledState
-    expect(s.seg[0].col).toEqual([lime])
+  it('six seats have their own colour, then the colours cycle', () => {
+    const colorOf = (seat: number) =>
+      (
+        patchFor(turn, { kind: 'turn', seat, local: true }, { leds: 10, segmentMode: 'whole', segments: 1 }, { seatCount: 8 }) as WledState
+      ).seg[0].col?.[0].join()
+    const six = [0, 1, 2, 3, 4, 5].map(colorOf)
+    expect(new Set(six).size).toBe(6)
+    expect(colorOf(6)).toBe(six[0])
+    expect(colorOf(7)).toBe(six[1])
   })
   it('a strip with fewer LEDs than seats still gets valid segments', () => {
     const s = patchFor(
