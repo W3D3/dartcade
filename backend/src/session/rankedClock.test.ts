@@ -240,6 +240,7 @@ describe('forfeiting a ranked game', () => {
     connectedUserIds: new Set(['bob']),
     disconnectedAt: () => null,
     isBoardOnline: () => false,
+    spectators: 0,
   })
   for (const bullOff of ['off', 'pdc'] as const) {
     it(`ends it at once for the opponent (bull off ${bullOff})`, async () => {

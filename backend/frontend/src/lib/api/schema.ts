@@ -2662,6 +2662,8 @@ export interface components {
                 state: "open" | "in_game";
                 /** @description The game mode id, from the running game or else the next game; null when none is set */
                 mode: string | null;
+                /** @description The running game (Watch it at #/watch/<sessionId>); null while the lobby is open */
+                sessionId: string | null;
                 /** @description X01's start score; null for another mode or none set */
                 startScore: number | null;
                 people: number;
@@ -5147,6 +5149,8 @@ export interface components {
             /** @enum {string} */
             kind: "playing";
             gameId: string;
+            /** @description The running game, for Watch (#/watch/<sessionId>). */
+            sessionId: string;
         };
         /** FriendInLobby */
         FriendInLobby: {

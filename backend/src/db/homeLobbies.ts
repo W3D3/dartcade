@@ -9,6 +9,8 @@ export type HomeLobby = {
   hostName: string
   state: 'open' | 'in_game'
   mode: string | null
+  /** The running game, for Watch; null while the lobby is open. */
+  sessionId: string | null
   /** X01's start score; null for another mode or none set. */
   startScore: number | null
   people: number
@@ -49,7 +51,7 @@ export async function homeLobbies(db: Kysely<Database>, viewerId: string): Promi
       .execute(),
     db
       .selectFrom('game_sessions')
-      .select(['lobby_id', 'game_id', 'config'])
+      .select(['id', 'lobby_id', 'game_id', 'config'])
       .where('lobby_id', 'in', ids)
       .where('status', '=', 'active')
       .execute(),
@@ -65,6 +67,7 @@ export async function homeLobbies(db: Kysely<Database>, viewerId: string): Promi
       hostName: l.host_name,
       state: live ? 'in_game' : 'open',
       mode: game.success ? game.data.gameId : null,
+      sessionId: live?.id ?? null,
       startScore: game.success && game.data.gameId === 'x01' ? (game.data.config.startScore ?? null) : null,
       people: Number(counts?.people ?? 0),
       boards: Number(counts?.boards ?? 0),

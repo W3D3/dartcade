@@ -55,7 +55,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
     await guest('lb', 2, 'b1')
     await guest('lb', 3, 'b2')
     expect(await homeLobbies(db, 'ann')).toEqual([
-      { id: 'lb', name: "bob's lobby", hostName: 'bob', state: 'open', mode: 'x01', startScore: 501, people: 4, boards: 2 },
+      {
+        id: 'lb',
+        name: "bob's lobby",
+        hostName: 'bob',
+        state: 'open',
+        mode: 'x01',
+        sessionId: null,
+        startScore: 501,
+        people: 4,
+        boards: 2,
+      },
     ])
   })
 
@@ -81,7 +91,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
     })
     await db.updateTable('game_sessions').set({ lobby_id: 'lg' }).where('id', '=', 'running').execute()
     const lg = (await homeLobbies(db, 'ann')).find(l => l.id === 'lg')
-    expect(lg).toMatchObject({ state: 'in_game', mode: 'minigolf', startScore: null, people: 1, boards: 0 })
+    expect(lg).toMatchObject({ state: 'in_game', mode: 'minigolf', sessionId: 'running', startScore: null, people: 1, boards: 0 })
   })
 
   it('leaves out the lobby of a host who is Invisible', async () => {

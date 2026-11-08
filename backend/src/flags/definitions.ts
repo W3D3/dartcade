@@ -129,6 +129,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: "Big screen: a view-only game display that follows a board, optionally on the bridge machine's screen",
     defaultRule: 'admins',
   },
+  'watch.enabled': {
+    kind: 'boolean',
+    description: "Watch: friends can watch each other's running games, view only, from the Friends page or Home.",
+    defaultRule: 'admins',
+  },
   'caller.autodartsImport': {
     kind: 'boolean',
     description: "Lets players import Autodarts' caller voices in Settings → Caller.",
@@ -316,6 +321,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('bigscreen.enabled', isAdmin),
+    },
+    'watch.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('watch.enabled', isAdmin),
     },
     'caller.autodartsImport': {
       variants: { on: true, off: false },

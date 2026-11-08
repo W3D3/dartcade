@@ -7290,6 +7290,7 @@
                 "hostName",
                 "state",
                 "mode",
+                "sessionId",
                 "startScore",
                 "people",
                 "boards"
@@ -7317,6 +7318,11 @@
                   "type": "string",
                   "nullable": true,
                   "description": "The game mode id, from the running game or else the next game; null when none is set"
+                },
+                "sessionId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The running game (Watch it at #/watch/<sessionId>); null while the lobby is open"
                 },
                 "startScore": {
                   "type": "integer",
@@ -16440,7 +16446,8 @@
         "type": "object",
         "required": [
           "kind",
-          "gameId"
+          "gameId",
+          "sessionId"
         ],
         "additionalProperties": false,
         "properties": {
@@ -16452,6 +16459,10 @@
           },
           "gameId": {
             "type": "string"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "The running game, for Watch (#/watch/<sessionId>)."
           }
         }
       },

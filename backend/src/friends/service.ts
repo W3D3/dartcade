@@ -31,7 +31,7 @@ export type FriendsDeps = {
   /** Open /ws/me sockets: where friends messages go. */
   hub: LobbyHub
   /** The running game the user is seated in, if any (status "playing"). */
-  gameOf: (userId: string) => { gameId: string } | null
+  gameOf: (userId: string) => { gameId: string; sessionId: string } | null
   /** Both sides of every change to a request or friendship. */
   onChange?: (userIds: string[]) => void
   graceMs?: number
@@ -169,6 +169,12 @@ export class FriendsService {
       this.warn(m, {})
     })
     return msg
+  }
+
+  /** Whether the viewer is a friend of any of these accounts who is not Invisible (Watch). */
+  async watchable(viewerId: string, userIds: string[]): Promise<boolean> {
+    const rows = await q.friendshipsOf(this.db, viewerId)
+    return rows.some(r => r.status === 'accepted' && !r.otherInvisible && userIds.includes(r.otherId))
   }
 
   // ---- lists ------------------------------------------------------------------------

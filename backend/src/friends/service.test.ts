@@ -14,7 +14,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   let close: () => Promise<void>
   let friends: FriendsService
   let hub: LobbyHub
-  const games = new Map<string, { gameId: string }>()
+  const games = new Map<string, { gameId: string; sessionId: string }>()
   const onChange = vi.fn()
 
   beforeAll(async () => {
@@ -254,15 +254,26 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       friends.touch(['lena'])
       await friends.flush()
       expect(last(chris).friends[0].status).toEqual({ kind: 'lobby', lobbyId: 'l1', lobbyName: 'Friday darts', joinable: true })
-      games.set('lena', { gameId: 'x01' })
+      games.set('lena', { gameId: 'x01', sessionId: 's1' })
       friends.touch(['lena'])
       await friends.flush()
-      expect(last(chris).friends[0].status).toEqual({ kind: 'playing', gameId: 'x01' })
+      expect(last(chris).friends[0].status).toEqual({ kind: 'playing', gameId: 'x01', sessionId: 's1' })
       await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
       friends.touch(['lena'])
       await friends.flush()
       expect(last(chris).friends[0].status).toEqual({ kind: 'offline' })
       await db.updateTable('user').set({ invisible: false }).where('id', '=', 'lena').execute()
+    })
+
+    it('watchable: a friend who is not Invisible; not a stranger, a pending request or an Invisible friend', async () => {
+      await befriend('chris', 'lena')
+      await friends.request('chris', 'Max')
+      expect(await friends.watchable('chris', ['lena'])).toBe(true)
+      expect(await friends.watchable('chris', ['max'])).toBe(false)
+      expect(await friends.watchable('chris', ['sam'])).toBe(false)
+      expect(await friends.watchable('chris', ['sam', 'lena'])).toBe(true)
+      await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
+      expect(await friends.watchable('chris', ['lena'])).toBe(false)
     })
 
     it('a friend in your lobby shows there even while Invisible; one you invited shows invited', async () => {

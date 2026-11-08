@@ -73,6 +73,13 @@ export class BrowserConnections {
     return n
   }
 
+  /** Open sockets under this key (of the user, when given). */
+  size(key: string, userId?: string): number {
+    const m = this.sessions.get(key)
+    if (!m) return 0
+    return userId === undefined ? m.size : [...m.values()].filter(u => u === userId).length
+  }
+
   /** Whether any socket is open under this key. */
   has(key: string): boolean {
     return (this.sessions.get(key)?.size ?? 0) > 0

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { authorizeAction, canAccessSession, canWatchSession, isHost } from './access.js'
+import { authorizeAction, canAccessSession, canSpectateSession, canWatchSession, isHost } from './access.js'
 import { applyInput } from './apply.js'
 import { newSession } from './replay.js'
 import { x01Module } from '../games/x01.js'
@@ -189,5 +189,45 @@ describe('canWatchSession', () => {
     })
     expect(await canWatchSession('lena', local, isMember)).toBe(false)
     expect(isMember).not.toHaveBeenCalled()
+  })
+})
+
+describe('canSpectateSession', () => {
+  // Viewers' friends who are visible (an Invisible friend is left out, as FriendsService.watchable does)
+  const friendsOf: Record<string, string[]> = { max: ['lena'], ina: ['host'], pia: [], lena: ['host'] }
+  const watchable = (viewer: string, ids: string[]) => Promise.resolve((friendsOf[viewer] ?? []).some(f => ids.includes(f)))
+  const running = () => game([seat('Host', 'host', 'a'), seat('Lena', 'lena', 'b')])
+
+  it('lets a friend of any seat watch', async () => {
+    expect(await canSpectateSession('max', running(), watchable)).toBe(true)
+    expect(await canSpectateSession('ina', running(), watchable)).toBe(true)
+  })
+
+  it('refuses a stranger and a viewer whose friends are Invisible', async () => {
+    expect(await canSpectateSession('pia', running(), watchable)).toBe(false)
+    expect(await canSpectateSession('nobody', running(), watchable)).toBe(false)
+  })
+
+  it('refuses a player of the game: they use the game socket', async () => {
+    expect(await canSpectateSession('lena', running(), watchable)).toBe(false)
+    expect(await canSpectateSession('host', running(), watchable)).toBe(false)
+  })
+
+  it('refuses a game that has ended', async () => {
+    const s = running()
+    s.status = 'finished'
+    expect(await canSpectateSession('max', s, watchable)).toBe(false)
+    s.status = 'aborted'
+    expect(await canSpectateSession('max', s, watchable)).toBe(false)
+  })
+
+  it('asks about the controller of a guest seat too', async () => {
+    const ask = vi.fn(watchable)
+    const remote = game([
+      { ...seat('Guest', 'lena', 'a'), userId: null },
+      { ...seat('Bot', 'host', null), userId: null },
+    ])
+    expect(await canSpectateSession('max', remote, ask)).toBe(true)
+    expect(ask).toHaveBeenCalledWith('max', expect.arrayContaining(['lena', 'host']))
   })
 })

@@ -207,6 +207,7 @@ describe('snapshots match schema/game-ws-v1.json', () => {
       connectedUserIds: new Set(['lena']),
       disconnectedAt: u => (u === 'host' ? new Date('2026-10-02T18:00:00.000Z') : null),
       isBoardOnline: () => true,
+      spectators: 0,
     })
     expect(snap?.seats[0]?.disconnectedAt).toBe('2026-10-02T18:00:00.000Z')
     expectValid(snap)

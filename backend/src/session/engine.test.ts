@@ -1381,6 +1381,7 @@ describe('getSnapshot per viewer', () => {
       connectedUserIds: new Set(['host']),
       disconnectedAt: () => null,
       isBoardOnline: b => b === 'board-a',
+      spectators: 0,
     })
     expect(snap).toMatchObject({
       status: 'active',
@@ -1513,6 +1514,7 @@ describe('remote states in the snapshot', () => {
     connectedUserIds: new Set(['host']),
     disconnectedAt: () => null,
     isBoardOnline: () => true,
+    spectators: 0,
     ...over,
   })
   const left = new Date('2026-10-02T18:00:00.000Z')

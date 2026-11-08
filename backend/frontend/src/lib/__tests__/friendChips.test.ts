@@ -8,7 +8,7 @@ const f = (id: string, name: string, kind: 'online' | 'offline' | 'playing'): Fr
   id,
   name,
   friendsSince: '2026-10-01T10:00:00.000Z',
-  status: kind === 'playing' ? { kind, gameId: 'x01' } : { kind },
+  status: kind === 'playing' ? { kind, gameId: 'x01', sessionId: 's1' } : { kind },
   inYourLobby: false,
   invited: false,
   avatar: { kind: 'none' },

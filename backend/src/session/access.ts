@@ -27,6 +27,21 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
   return session.lobbyId !== null && (await isLobbyMember(session.lobbyId, userId))
 }
 
+/** Whether the viewer is a friend of any of these accounts, and that friend is not Invisible. */
+export type WatchableFriend = (viewerId: string, userIds: string[]) => Promise<boolean>
+
+/**
+ * Who may spectate a running game (Watch): a friend of a seated account (a seat's player or its
+ * controller; any seat in a team or remote game) who is not Invisible. Whoever may play or
+ * already watch it as a participant uses the game socket as before, so is not a spectator.
+ * Ended games are not watched.
+ */
+export async function canSpectateSession(userId: string, session: Session, watchable: WatchableFriend): Promise<boolean> {
+  if (session.status !== 'active' || canAccessSession(userId, session)) return false
+  const seated = new Set(session.seats.flatMap(s => [s.userId, s.controllerUserId]).filter((id): id is string => id !== null))
+  return seated.size > 0 && (await watchable(userId, [...seated]))
+}
+
 // Actions on the turn in progress: only whoever controls the seat that's up
 function bullOffNeedsRethrow(session: Session): boolean {
   const view = session.module.view(session.currentState, session.players)

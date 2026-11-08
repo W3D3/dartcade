@@ -3813,7 +3813,8 @@
                     "type": "object",
                     "required": [
                       "kind",
-                      "gameId"
+                      "gameId",
+                      "sessionId"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -3825,6 +3826,10 @@
                       },
                       "gameId": {
                         "type": "string"
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "description": "The running game, for Watch (#/watch/<sessionId>)."
                       }
                     }
                   },
@@ -6314,7 +6319,8 @@
                         "type": "object",
                         "required": [
                           "kind",
-                          "gameId"
+                          "gameId",
+                          "sessionId"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -6326,6 +6332,10 @@
                           },
                           "gameId": {
                             "type": "string"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "description": "The running game, for Watch (#/watch/<sessionId>)."
                           }
                         }
                       },
