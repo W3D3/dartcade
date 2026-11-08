@@ -4,6 +4,8 @@ import { checkoutHint } from '../shared/checkout.js'
 import { R, SEGS, segAngle, segmentAt, type Segment } from '../shared/board.js'
 import type { Rng } from '../session/rng.js'
 import { SIGMA_JITTER } from '../shared/botLevels.js'
+import { setupAim } from '../shared/coach/setup.js'
+import { setupModel } from './setupModel.js'
 
 type OutMode = 'straight' | 'double' | 'master'
 type Point = { x: number; y: number }
@@ -37,7 +39,8 @@ export function pointFor(label: string): Point {
 const DOUBLE_20: Point = pointFor('D20')
 
 /** Where the bot aims: the live checkout suggestion's first dart once one's reachable with the
- *  darts left, otherwise treble 20 — unless the player hasn't opened yet under double-in, in
+ *  darts left, else (double out, from 230 or less) the best setup dart for the darts left
+ *  (shared/coach/setup.ts, the same aim the match screen tips), otherwise treble 20 — unless the player hasn't opened yet under double-in, in
  *  which case nothing counts until a double lands, so it aims at D20 instead (under master-in a
  *  treble already counts, so T20 needs no special case). `inOpts` is omitted by calibration and
  *  existing tests, which only ever model straight-in 501 (no opening requirement, so the
@@ -45,7 +48,9 @@ const DOUBLE_20: Point = pointFor('D20')
 export function pickTarget(remaining: number, dartsLeft: number, outMode: OutMode, inOpts?: { opened: boolean; inMode: OutMode }): Point {
   if (inOpts && !inOpts.opened && inOpts.inMode === 'double') return DOUBLE_20
   const hint = checkoutHint(remaining, outMode, dartsLeft)
-  return hint ? pointFor(hint[0]) : TREBLE_20
+  if (hint) return pointFor(hint[0])
+  const setup = outMode === 'double' ? setupAim(setupModel(), remaining, dartsLeft) : null
+  return setup?.aim ?? TREBLE_20
 }
 
 /** Box-Muller: two independent standard-normal samples from two uniform draws. */

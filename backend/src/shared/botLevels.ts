@@ -10,8 +10,8 @@ export const LEVEL_AVERAGE: readonly number[] = Array.from({ length: 20 }, (_, i
 // coach (shared with the frontend) can read a player's expected spread from it. Recalibrate and
 // replace this array if bots/accuracy.ts's targeting, throw, or sigma-jitter model changes.
 export const LEVEL_SIGMA: readonly number[] = [
-  0.29867, 0.23168, 0.19806, 0.16652, 0.13718, 0.12266, 0.10531, 0.09414, 0.08246, 0.07438, 0.06748, 0.06041, 0.05529, 0.05001, 0.04574,
-  0.04196, 0.03693, 0.03239, 0.02994, 0.0265,
+  0.29818, 0.23258, 0.20053, 0.16297, 0.13926, 0.12188, 0.10575, 0.09594, 0.08357, 0.07616, 0.06893, 0.06198, 0.05692, 0.05124, 0.04739,
+  0.04269, 0.03849, 0.03348, 0.0313, 0.02868,
 ]
 
 /** The spread of a bot dart's log-normal sigma multiplier (bots/accuracy.ts), calibrated with LEVEL_SIGMA */

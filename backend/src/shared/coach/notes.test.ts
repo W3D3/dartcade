@@ -210,7 +210,7 @@ describe('strategy notes: the book', () => {
       }
     }
     // The book's second route on 45, S19 (26 left, D13), costs a semi-pro just over the threshold against its first, S13
-    expect(costly).toEqual(['45/3 S19: 5.1'])
+    expect(costly).toEqual(['45/3 S19: 5.2'])
   })
 
   it('shows the book route with a note', () => {

@@ -381,10 +381,10 @@ describe('setup and doubling visits: graded by value', () => {
     // The third dart's bust loses no dart: it ends where three misses do
     expect(third.value.points).toBeCloseTo(missed.value.points)
     expect([first, second, third, missed].map(v => [Math.round(v.value.points), v.grade])).toEqual([
-      [-30, 'bad'],
-      [-25, 'bad'],
-      [-20, 'bad'],
-      [-20, 'bad'],
+      [-31, 'bad'],
+      [-26, 'bad'],
+      [-21, 'bad'],
+      [-21, 'bad'],
     ])
     expect(first.text).toBe('Busted on the first dart (S10 on 8).')
   })
@@ -486,7 +486,7 @@ describe('setup and doubling visits: graded by value', () => {
     })
     expect(grade(150, ['S20', 'S20', 'S20'])).toMatchObject({
       tags: ['setup'],
-      grade: 'weak',
+      grade: 'inaccuracy',
       text: 'S20 on 110 cost 5% checkout chance: 90 left is a treble to double (T20 · D15).',
       tip: false,
     })
@@ -594,14 +594,14 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
     expect(fewest(211, ['T20', 'T20', 'T20'])).toBe(false)
   })
 
-  it('501 → 180 and 501 → 171 are Brilliant: a semi-pro keeps a nine-darter on in about 3% of visits', () => {
+  it('501 → 180 and 501 → 171 are Brilliant: a semi-pro keeps a nine-darter on in about 2.6% of visits', () => {
     for (const names of [
       ['T20', 'T20', 'T20'],
       ['T20', 'T19', 'T19'],
     ]) {
       const g = grade(501, names)
       expect(g).toMatchObject({ grade: 'brilliant', value: { rule: 'brilliant' } })
-      expect(g.value.fewestChance).toBeCloseTo(2.9, 1)
+      expect(g.value.fewestChance).toBeCloseTo(2.64, 1)
     }
   })
 
@@ -612,14 +612,14 @@ describe('Brilliant: the fewest-darts finish when it was hard, else Excellent at
   })
 
   it('checkouts in the fewest darts: Brilliant from a hard finish, Excellent from an easy one', () => {
-    // 120 → D20 D20 D20: 13.6% for a semi-pro to check out 120 in three darts
+    // 120 → D20 D20 D20: 12.9% for a semi-pro to check out 120 in three darts
     const d120 = grade(120, ['D20', 'D20', 'D20'])
     expect(d120).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (D20).', value: { rule: 'brilliant' } })
-    expect(d120.value.fewestChance).toBeCloseTo(13.6, 1)
-    // 100 → T20 D20: 9.6%
+    expect(d120.value.fewestChance).toBeCloseTo(12.88, 1)
+    // 100 → T20 D20: 9.1%
     const t100 = grade(100, ['T20', 'D20'])
     expect(t100).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (D20).' })
-    expect(t100.value.fewestChance).toBeCloseTo(9.6, 1)
+    expect(t100.value.fewestChance).toBeCloseTo(9.11, 1)
     expect(grade(170, ['T20', 'T20', 'Bull'])).toMatchObject({ grade: 'brilliant', text: 'Checked out in the fewest darts (the bull).' })
     // 40 → D20: 32.0%, above BRILLIANT_CHANCE: the Excellent floor
     const d40 = grade(40, ['D20'])

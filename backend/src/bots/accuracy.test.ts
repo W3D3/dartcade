@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { pickTarget, throwAt } from './accuracy.js'
 import { R, segAngle, segmentAt } from '../shared/board.js'
 
+const xy = (p: { x: number; y: number }): [number, number] => [p.x, p.y]
+
 describe('pickTarget', () => {
   it('aims at treble 20 while no finish is on', () => {
     const t = pickTarget(501, 3, 'double')
@@ -22,10 +24,20 @@ describe('pickTarget', () => {
     expect(segmentAt(t.x, t.y).name).toBe('Bull')
   })
 
-  it('falls back to treble 20 when no finish fits the darts left', () => {
-    // 169: can't be finished in 3 darts (not in the table, and > 40 so no direct double)
-    const t = pickTarget(169, 3, 'double')
-    expect(segmentAt(t.x, t.y).name).toBe('T20')
+  it('sets up a finish with the last dart when it cannot check out, not treble 20', () => {
+    // 47 on the last dart: T20 leaves 27 or worse; S15 leaves D16
+    expect(segmentAt(...xy(pickTarget(47, 1, 'double'))).name).toBe('S15')
+    expect(segmentAt(...xy(pickTarget(59, 1, 'double'))).name).toBe('S19')
+  })
+
+  it('sets up with the dart after a non-finishing second dart too, and the same way every time', () => {
+    expect(pickTarget(169, 3, 'double')).toEqual(pickTarget(169, 3, 'double'))
+    expect(segmentAt(...xy(pickTarget(169, 3, 'double'))).name).toBe('T19')
+  })
+
+  it('still scores with treble 20 far from a finish, and in other out modes', () => {
+    expect(segmentAt(...xy(pickTarget(300, 3, 'double'))).name).toBe('T20')
+    expect(segmentAt(...xy(pickTarget(47, 1, 'straight'))).name).toBe('T20')
   })
 
   it('aims at D20 instead of treble 20 while not yet opened under double-in', () => {

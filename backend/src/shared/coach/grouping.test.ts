@@ -71,8 +71,8 @@ describe('grouping', () => {
     expect(groupingWhy({ spreadMm: 20, edgeMm: 18, comment: null })).toBe('')
   })
 
-  it('expects the spread a bot of the same average throws: 81 → ~10.7 mm over 3 darts (jitter included), wider lower down', () => {
-    expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.68, 1)
+  it('expects the spread a bot of the same average throws: 81 → ~11 mm over 3 darts (jitter included), wider lower down', () => {
+    expect(expectedSpreadMm(81, 3)).toBeCloseTo(10.99, 1)
     // 2 darts sit closer to their own centroid than 3
     expect(expectedSpreadMm(81, 2)).toBeLessThan(expectedSpreadMm(81, 3))
     const avgs = [10, 20, 30, 40, 60, 81, 100, 115, 130]
@@ -108,13 +108,13 @@ describe('grouping', () => {
     const said = (target: number) => (r: number) => grouping(ring(r), 60, target)?.comment?.level ?? null
     expect(grouping(ring(13), 60, 60)?.spreadMm).toBeCloseTo(13, 9)
     // An intermediate (60) groups 3 darts in ~16 mm: Great to 9.75, Good to 13.8, Scattered from 32.5
-    expect(expectedSpreadMm(60, 3)).toBeCloseTo(16.26, 1)
+    expect(expectedSpreadMm(60, 3)).toBeCloseTo(16.47, 1)
     expect([9, 13, 20, 33].map(said(60))).toEqual(['great', 'good', null, 'scattered'])
     // A pro (90) in ~9 mm: the same 9 mm is only what a pro throws; Great to 5.4, Good to 7.7, Scattered from 18.1
-    expect(expectedSpreadMm(90, 3)).toBeCloseTo(9.02, 1)
+    expect(expectedSpreadMm(90, 3)).toBeCloseTo(9.34, 1)
     expect([5, 7, 9, 19].map(said(90))).toEqual(['great', 'good', null, 'scattered'])
     // A beginner (30) in ~40 mm: the caps keep 12 mm only Good and 20 mm unremarkable; Scattered from 78
-    expect(expectedSpreadMm(30, 3)).toBeCloseTo(39.04, 1)
+    expect(expectedSpreadMm(30, 3)).toBeCloseTo(39.53, 1)
     expect([9, 12, 20, 80].map(said(30))).toEqual(['great', 'good', null, 'scattered'])
   })
 })
