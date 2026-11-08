@@ -20,7 +20,13 @@ export type Seg = { n: number; m: number }
 /** One of your visits in the game itself, in order; `scored` and `bust` only in X01. */
 export type Visit = { leg: number; segs: Seg[]; scored: number | null; bust: boolean }
 /** An X01 leg you checked out: the dart it ended on, the score it took out, your darts in the leg. */
-export type Checkout = { last: Seg; value: number; darts: number; startScore: number }
+export type Checkout = {
+  last: Seg
+  value: number
+  darts: number
+  startScore: number
+  /** The dart before the last one in the checkout visit. */ prev?: Seg
+}
 
 /** What a finished game did, from your seat: what every template reads. */
 export type ChallengeGame = {

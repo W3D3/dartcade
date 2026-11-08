@@ -532,6 +532,27 @@ export interface UserUnlocksTable {
   unlocked_at: ColumnType<Date, Date | undefined, never>
 }
 
+export interface UserAchievementsTable {
+  user_id: string
+  achievement_id: string
+  count: number
+  tier: number
+  earned_at: Date | null
+  tier_at: Date | null
+  game_id: string | null
+  seen_tier: ColumnType<number, number | undefined, number>
+  showcase_slot: number | null
+}
+
+export interface AchievementGamesTable {
+  user_id: string
+  game_id: string
+}
+
+export interface AchievementBackfillTable {
+  done_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
@@ -609,6 +630,9 @@ export interface Database {
   progression_backfill: ProgressionBackfillTable
   user_challenges: UserChallengesTable
   user_unlocks: UserUnlocksTable
+  user_achievements: UserAchievementsTable
+  achievement_games: AchievementGamesTable
+  achievement_backfill: AchievementBackfillTable
   ranked_matches: RankedMatchesTable
   coach_legs: CoachLegsTable
   coach_games: CoachGamesTable

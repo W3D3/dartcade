@@ -73,6 +73,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Turns on ranked play: the Matchmaking page, ratings and ranks.',
     defaultRule: 'admins',
   },
+  'achievements.enabled': {
+    kind: 'boolean',
+    description:
+      'Turns on achievements: badges with tiers counted from finished games, their XP, the unlock push, the showcase and the profile tab. Counting runs for everyone; this gates what is paid and shown.',
+    defaultRule: 'admins',
+  },
   'progression.enabled': {
     kind: 'boolean',
     description:
@@ -261,6 +267,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('matchmaking.enabled', isAdmin),
+    },
+    'achievements.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('achievements.enabled', isAdmin),
     },
     'progression.enabled': {
       variants: { on: true, off: false },

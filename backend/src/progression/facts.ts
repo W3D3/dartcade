@@ -47,8 +47,10 @@ export function challengeGame(
     const last = leg.visits.filter(v => v.seat === seat).at(-1)
     if (leg.winner === seat && last && last.darts.length > 0) {
       const dart = last.darts[last.darts.length - 1].segment
+      const before = last.darts.length > 1 ? last.darts[last.darts.length - 2].segment : null
       checkouts.push({
         last: { n: dart.number, m: dart.multiplier },
+        ...(before && { prev: { n: before.number, m: before.multiplier } }),
         value: last.scored,
         darts: leg.visits.filter(v => v.seat === seat).reduce((a, v) => a + v.darts.length, 0),
         startScore,
