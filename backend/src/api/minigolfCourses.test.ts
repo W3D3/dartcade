@@ -1,5 +1,6 @@
+import { useDbSingleton } from '../test/db.js'
 import '../test/authByHeader.js'
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
@@ -9,19 +10,6 @@ import { seedOfficialCourses, createHole, createCourse, listCourses, canReadCour
 import { setupFlags } from '../flags/index.js'
 import { MINIGOLF_LIMITS } from '../shared/minigolf/limits.js'
 import type { Hole, Shape } from '../shared/minigolf/types.js'
-
-// requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
-// redirect it to the test schema so a real `role` column decides who is an admin.
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
 
 const validHole = (id: string, overrides: Partial<Hole> = {}): Hole => ({
   id,
@@ -48,7 +36,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('minigolf_courses_api_test'))
-    dbRef.current = db
+    useDbSingleton(db)
     await db
       .insertInto('user')
       .values([

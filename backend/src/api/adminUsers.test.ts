@@ -1,3 +1,4 @@
+import { useDbSingleton } from '../test/db.js'
 import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
@@ -12,26 +13,13 @@ import { insertGameSession, finishGameSession, insertGameDarts } from '../db/que
 // users.ts's name check reads the session; signing in through better-auth isn't what's tested here
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 
-// requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
-// redirect it to the test schema so a real `role` column decides who is an admin.
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
-
 describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20_000 }, () => {
   let db: Kysely<Database>
   let close: () => Promise<void>
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_users_api_test'))
-    dbRef.current = db
+    useDbSingleton(db)
     await db
       .insertInto('user')
       .values([
