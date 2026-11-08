@@ -7,7 +7,7 @@ const rule = (t: Parameters<typeof match>[1], game: Parameters<typeof match>[2] 
 describe('match', () => {
   it('picks 180 over 100+ because it comes first', () => {
     expect(rule({ kind: 'visit', seat: 0, total: 180, local: true })?.look).toEqual({ preset: '180', state: PRESET_180 })
-    expect(rule({ kind: 'visit', seat: 0, total: 140, local: true })?.look).toEqual({ color: 'seat', fx: 2, bri: 255 })
+    expect(rule({ kind: 'visit', seat: 0, total: 140, local: true })?.look).toEqual({ color: '#ffffff', fx: 20, bri: 255 })
   })
   it('ignores visits under 100', () => {
     expect(rule({ kind: 'visit', seat: 0, total: 60, local: true })).toBeNull()
@@ -20,6 +20,11 @@ describe('match', () => {
     const r = rule({ kind: 'turn', seat: 1, local: false })
     expect(r?.type).toBe('scene')
     expect(r?.look).toEqual({ color: '#ffffff', fx: 0, bri: 40 })
+  })
+  it('a big score sparkles white instead of flashing the player colour', () => {
+    const r = rule({ kind: 'visit', seat: 1, total: 120, local: true })
+    expect(r?.type).toBe('flash')
+    expect(r?.look).toMatchObject({ color: '#ffffff', fx: 20 })
   })
   it('has no rule for a target hit', () => {
     expect(DEFAULT_PROFILE.rules.map(r => r.when.trigger)).not.toContain('atc.hit')

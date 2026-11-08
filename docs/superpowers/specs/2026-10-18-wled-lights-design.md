@@ -130,7 +130,7 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 | 1   | `turn` · mine          | scene       | seat colour · solid · 255          |
 | 2   | `turn` · other         | scene       | white · solid · 40 ("Waiting")     |
 | 3   | `visit` = 180 · mine   | flash 4 s   | user preset "180"                  |
-| 4   | `visit` ≥ 100 · mine   | flash 2 s   | seat colour · breathe              |
+| 4   | `visit` ≥ 100 · mine   | flash 2 s   | white · sparkle · 255              |
 | 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"               |
 | 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"             |
 | 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"            |
@@ -142,7 +142,9 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 | 13  | `lobby` · **off**      | scene       | `#c6f24e` · breathe · 60 · slow    |
 
 `takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
-scene (see below). The Target hit flash was removed in #522 because it disturbed detection.
+scene (see below). The Target hit flash was removed in #522 because it disturbed detection, and the
+100+ flash no longer flashes the player's colour: a big score sparkles white (the Turn change scene
+keeps the player colour).
 
 Each rule has `enabled`; a disabled rule never matches. **Lobby** ("Shows only while you are in a lobby
 with no game running") is off by default: with it off, a board in a lobby is switched off, like a board
