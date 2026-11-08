@@ -10,11 +10,19 @@ import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { kingfisherCourse } from '../shared/minigolf/courses/kingfisher.js'
 import type { Course, Hole } from '../shared/minigolf/types.js'
 
+/** official: admin-made. private: a player's draft or unpublished course. public: a player's published course. */
+export type CourseVisibility = 'official' | 'private' | 'public'
+
+/** Who is asking: `userCourses` is minigolf.userCourses.enabled for them (an admin always may). */
+export type CourseViewer = { id: string; admin: boolean; userCourses: boolean }
+
 export type CourseContent = { name: string; description: string; difficulty: 1 | 2 | 3; holeIds: string[] }
 export type CourseRow = {
   id: string
   ownerUserId: string | null
-  visibility: 'official'
+  visibility: CourseVisibility
+  /** The owner's display name; null for an official course. */
+  authorName: string | null
   published: CourseContent | null
   draft: CourseContent | null
   version: number
@@ -61,11 +69,12 @@ type DbRow = {
   published_at: Date | null
 }
 
-function toCourseRow(r: DbRow): CourseRow {
+function toCourseRow(r: DbRow & { visibility?: string; author_name?: string | null }): CourseRow {
   return {
     id: r.id,
     ownerUserId: r.owner_user_id,
-    visibility: 'official',
+    visibility: r.visibility === 'public' || r.visibility === 'private' ? r.visibility : 'official',
+    authorName: r.author_name ?? null, // only the joined reads (listCourses, getCourse) know it
     published: parsedJson(CourseContentSchema, r.published),
     draft: parsedJson(CourseContentSchema, r.draft),
     version: r.version,
@@ -86,19 +95,39 @@ function toHoleRow(r: DbRow): HoleRow {
   }
 }
 
-/** All courses, or (without drafts) only the published ones, with their draft nulled out. */
-export async function listCourses(db: Kysely<Database>, opts: { drafts: boolean }): Promise<CourseRow[]> {
-  let q = db.selectFrom('minigolf_courses').selectAll()
-  if (!opts.drafts) q = q.where('published', 'is not', null)
-  const rows = await q.orderBy('created_at').execute()
-  return rows.map(r => {
-    const row = toCourseRow(r)
-    return opts.drafts ? row : { ...row, draft: null }
-  })
+/** Whether `v` may read the course. User courses need the flag; their drafts are the owner's. */
+export function canReadCourse(row: Pick<CourseRow, 'ownerUserId' | 'published'>, v: CourseViewer): boolean {
+  if (v.admin) return true
+  if (row.ownerUserId === null) return row.published !== null
+  return v.userCourses && (row.ownerUserId === v.id || row.published !== null)
 }
 
+/** Whether `v` may change the course: an admin any, the flag's players their own. */
+export const canWriteCourse = (ownerUserId: string | null, v: CourseViewer): boolean =>
+  v.admin || (v.userCourses && ownerUserId !== null && ownerUserId === v.id)
+
+/** Whether `v` sees the course's draft (and its holes' drafts). */
+export const seesDraft = (ownerUserId: string | null, v: CourseViewer): boolean => v.admin || (ownerUserId !== null && ownerUserId === v.id)
+
+const courseSelect = (db: Kysely<Database>) =>
+  db.selectFrom('minigolf_courses as c').leftJoin('user as u', 'u.id', 'c.owner_user_id').selectAll('c').select('u.name as author_name')
+
+export function visibleTo(row: CourseRow, v: CourseViewer): CourseRow {
+  return seesDraft(row.ownerUserId, v) ? row : { ...row, draft: null }
+}
+
+/** The courses `v` may read, oldest first; a draft only for its owner and admins. */
+export async function listCourses(db: Kysely<Database>, v: CourseViewer): Promise<CourseRow[]> {
+  const rows = await courseSelect(db).orderBy('c.created_at').execute()
+  return rows
+    .map(toCourseRow)
+    .filter(r => canReadCourse(r, v))
+    .map(r => visibleTo(r, v))
+}
+
+/** The course, whoever it belongs to: callers check `canReadCourse` and use `visibleTo`. */
 export async function getCourse(db: Kysely<Database>, id: string): Promise<CourseRow | undefined> {
-  const row = await db.selectFrom('minigolf_courses').selectAll().where('id', '=', id).executeTakeFirst()
+  const row = await courseSelect(db).where('c.id', '=', id).executeTakeFirst()
   return row ? toCourseRow(row) : undefined
 }
 
@@ -107,10 +136,15 @@ export async function getHole(db: Kysely<Database>, id: string): Promise<HoleRow
   return row ? toHoleRow(row) : undefined
 }
 
-/** The hole library: every hole, how many courses (draft or published) use it, newest edit first. */
-export async function listHoles(db: Kysely<Database>, opts: { search?: string } = {}): Promise<(HoleRow & { usedBy: number })[]> {
+/** The hole library: every hole (or just `ownerId`'s), how many courses (draft or published) use it, newest edit first. */
+export async function listHoles(
+  db: Kysely<Database>,
+  opts: { search?: string; ownerId?: string } = {},
+): Promise<(HoleRow & { usedBy: number })[]> {
+  let holes = db.selectFrom('minigolf_holes').selectAll().orderBy('updated_at', 'desc')
+  if (opts.ownerId) holes = holes.where('owner_user_id', '=', opts.ownerId)
   const [holeRows, courseRows] = await Promise.all([
-    db.selectFrom('minigolf_holes').selectAll().orderBy('updated_at', 'desc').execute(),
+    holes.execute(),
     db.selectFrom('minigolf_courses').select(['draft', 'published']).execute(),
   ])
   const usedBy = new Map<string, number>()
@@ -127,24 +161,53 @@ export async function draftedHoleIds(db: Kysely<Database>): Promise<Set<string>>
   return new Set(rows.map(r => r.id))
 }
 
-/** A new course, draft only (not yet published). */
-export async function createCourse(db: Kysely<Database>, content: CourseContent): Promise<CourseRow> {
+/** A new course, draft only (not yet published): official, or a player's private one. */
+export async function createCourse(db: Kysely<Database>, content: CourseContent, ownerId: string | null = null): Promise<CourseRow> {
   const row = await db
     .insertInto('minigolf_courses')
-    .values({ id: ulid(), owner_user_id: null, visibility: 'official', draft: JSON.stringify(content) })
+    .values({ id: ulid(), owner_user_id: ownerId, visibility: ownerId ? 'private' : 'official', draft: JSON.stringify(content) })
     .returningAll()
     .executeTakeFirstOrThrow()
   return toCourseRow(row)
 }
 
 /** A new hole, draft only (not yet published); the hole's own id is the row id. */
-export async function createHole(db: Kysely<Database>, hole: Hole): Promise<HoleRow> {
+export async function createHole(db: Kysely<Database>, hole: Hole, ownerId: string | null = null): Promise<HoleRow> {
   const row = await db
     .insertInto('minigolf_holes')
-    .values({ id: hole.id, owner_user_id: null, draft: JSON.stringify(hole) })
+    .values({ id: hole.id, owner_user_id: ownerId, draft: JSON.stringify(hole) })
     .returningAll()
     .executeTakeFirstOrThrow()
   return toHoleRow(row)
+}
+
+/** How many courses, published ones among them, and holes `ownerId` has. */
+export async function ownedCounts(db: Kysely<Database>, ownerId: string): Promise<{ courses: number; published: number; holes: number }> {
+  const [courses, holes] = await Promise.all([
+    db.selectFrom('minigolf_courses').select(['published']).where('owner_user_id', '=', ownerId).execute(),
+    db
+      .selectFrom('minigolf_holes')
+      .select(eb => eb.fn.countAll<string>().as('n'))
+      .where('owner_user_id', '=', ownerId)
+      .executeTakeFirstOrThrow(),
+  ])
+  return { courses: courses.length, published: courses.filter(c => c.published !== null).length, holes: Number(holes.n) }
+}
+
+/** The ids among `holeIds` that don't exist or aren't `ownerId`'s: a player's course may only use their own holes. */
+export async function foreignHoleIds(db: Kysely<Database>, ownerId: string, holeIds: string[]): Promise<string[]> {
+  if (holeIds.length === 0) return []
+  const mine = await db.selectFrom('minigolf_holes').select('id').where('id', 'in', holeIds).where('owner_user_id', '=', ownerId).execute()
+  const own = new Set(mine.map(r => r.id))
+  return holeIds.filter(id => !own.has(id))
+}
+
+/** Whether a published course `v` may read uses the hole (then `v` may read its published content). */
+export async function holeInReadableCourse(db: Kysely<Database>, holeId: string, v: CourseViewer): Promise<boolean> {
+  const rows = await courseSelect(db)
+    .where(sql<boolean>`c.published->'holeIds' @> ${JSON.stringify([holeId])}::jsonb`)
+    .execute()
+  return rows.some(r => canReadCourse(toCourseRow(r), v))
 }
 
 /** Overwrites the draft if `version` is still current (optimistic concurrency), bumping it. */
@@ -154,7 +217,7 @@ async function saveDraft(
   id: string,
   version: number,
   draft: CourseContent | Hole,
-): Promise<DbRow | 'conflict' | 'missing'> {
+): Promise<(DbRow & { visibility?: string }) | 'conflict' | 'missing'> {
   const row = await db
     .updateTable(table)
     .set({ draft: JSON.stringify(draft), version: sql<number>`version + 1`, updated_at: sql<Date>`now()` })
@@ -214,6 +277,10 @@ export async function publishCourse(
         problems.push({ holeId, checks: [{ level: 'error', message: 'Hole no longer exists' }] })
         continue
       }
+      if (course.ownerUserId !== null && holeDbRow.owner_user_id !== course.ownerUserId) {
+        problems.push({ holeId, checks: [{ level: 'error', message: "A player's course can only use that player's own holes" }] })
+        continue
+      }
       const holeRow = toHoleRow(holeDbRow)
       holeRows.set(holeId, holeRow)
       const holeContent = holeRow.draft ?? holeRow.published
@@ -246,6 +313,7 @@ export async function publishCourse(
       .set({
         published: JSON.stringify(content),
         draft: null,
+        visibility: course.ownerUserId === null ? 'official' : 'public',
         version: sql<number>`version + 1`,
         published_at: sql<Date>`now()`,
         updated_at: sql<Date>`now()`,
@@ -305,6 +373,7 @@ export async function unpublishCourse(db: Kysely<Database>, id: string): Promise
     .set({
       draft: sql`COALESCE(draft, published)`,
       published: null,
+      visibility: sql<string>`CASE WHEN owner_user_id IS NULL THEN 'official' ELSE 'private' END`,
       published_at: null,
       version: sql<number>`version + 1`,
       updated_at: sql<Date>`now()`,

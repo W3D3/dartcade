@@ -1,12 +1,14 @@
-// Minigolf courses and holes: admins read and write drafts; players read published official
-// courses only (schema/api-v1.yaml, tag minigolf; see docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md).
+// Minigolf courses and holes: admins write official ones and read every draft; with
+// minigolf.userCourses.enabled a player writes their own (visibility private, public once published)
+// and reads the published ones (schema/api-v1.yaml, tag minigolf; see
+// docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md and the user-courses plan).
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import type { Database } from '../db/schema.js'
-import { isAdmin, requireAdmin } from '../auth/admin.js'
+import { isAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { getRoleAndEmail } from '../db/users.js'
+import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import {
   listCourses,
   getCourse,
@@ -17,6 +19,13 @@ import {
   unpublishCourse,
   deleteCourse,
   isBuiltInCourse,
+  canReadCourse,
+  canWriteCourse,
+  seesDraft,
+  visibleTo,
+  ownedCounts,
+  foreignHoleIds,
+  holeInReadableCourse,
   listHoles,
   getHole,
   createHole,
@@ -24,8 +33,11 @@ import {
   deleteHole,
   draftedHoleIds,
   type CourseRow,
+  type CourseViewer,
+  type CourseContent,
   type HoleRow,
 } from '../db/minigolfCourses.js'
+import { MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/minigolf/limits.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import type { Hole } from '../shared/minigolf/types.js'
 import { ApiError } from './errors.js'
@@ -54,10 +66,43 @@ function bodyHole(body: unknown): Hole {
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
-/** The signed-in user's isAdmin (requireAdmin's check). */
-async function viewerIsAdmin(db: Kysely<Database>, userId: string): Promise<boolean> {
-  const user = await getRoleAndEmail(db, userId)
-  return !!user && isAdmin(user)
+/** The signed-in user as the course rules see them. An admin may always; others only with the flag. */
+async function viewerOf(db: Kysely<Database>, userId: string): Promise<CourseViewer> {
+  const user = await loadFlagUser(db, userId)
+  const admin = !!user && isAdmin(user)
+  return { id: userId, admin, userCourses: admin || (await flagEnabled('minigolf.userCourses.enabled', user)) }
+}
+
+const forbidden = () => new ApiError(403, { error: 'forbidden' })
+const notFound = () => new ApiError(404, { error: 'not found' })
+const limitReached = (limit: MinigolfLimit) => new ApiError(409, { error: 'limit reached', limit, max: MINIGOLF_LIMITS[limit] })
+
+/** A course the viewer may write; 404 for one they can't read at all, 403 for one they can only read. */
+async function writableCourse(db: Kysely<Database>, id: string, v: CourseViewer): Promise<CourseRow> {
+  const row = await getCourse(db, id)
+  if (!row || !canReadCourse(row, v)) throw notFound()
+  if (!canWriteCourse(row.ownerUserId, v)) throw forbidden()
+  return row
+}
+
+/** A hole the viewer may write (same 404/403 split). */
+async function writableHole(db: Kysely<Database>, id: string, v: CourseViewer): Promise<HoleRow> {
+  const row = await getHole(db, id)
+  if (!row || !(v.admin || row.ownerUserId === v.id || (await holeInReadableCourse(db, id, v)))) throw notFound()
+  if (!(v.admin || (v.userCourses && row.ownerUserId === v.id))) throw forbidden()
+  return row
+}
+
+/** A player's course uses only their own holes (so editing never changes someone else's course) and at most courseHoles of them. */
+async function checkCourseHoles(db: Kysely<Database>, ownerId: string | null, content: CourseContent): Promise<void> {
+  if (ownerId === null) return
+  if (content.holeIds.length > MINIGOLF_LIMITS.courseHoles) throw limitReached('courseHoles')
+  const foreign = await foreignHoleIds(db, ownerId, content.holeIds)
+  if (foreign.length > 0)
+    throw new ApiError(400, {
+      error: 'invalid request',
+      details: [{ path: 'body/holeIds', message: "A player's course can only use that player's own holes; copy a hole to use it" }],
+    })
 }
 
 type ApiCourse = Omit<CourseRow, 'updatedAt' | 'publishedAt' | 'draft'> & {
@@ -69,22 +114,30 @@ type ApiCourse = Omit<CourseRow, 'updatedAt' | 'publishedAt' | 'draft'> & {
 }
 
 /**
- * A course row as the API returns it. Admins get `draft`, `hasChanges` (its own draft, or a
- * draft of one of its holes: `drafted`, from draftedHoleIds) and `builtIn`; a player gets none.
+ * A course row as the API returns it. Its owner and admins get `draft`, `hasChanges` (its own
+ * draft, or a draft of one of its holes: `drafted`, from draftedHoleIds) and `builtIn`; others none.
  */
-function serializeCourse(row: CourseRow, drafted: Set<string> | null): ApiCourse {
+function serializeCourse(row: CourseRow, v: CourseViewer, drafted: Set<string>): ApiCourse {
   const base = {
     id: row.id,
     ownerUserId: row.ownerUserId,
+    authorName: row.authorName,
     visibility: row.visibility,
     published: row.published,
     version: row.version,
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
   }
-  if (!drafted) return base
+  if (!seesDraft(row.ownerUserId, v)) return base
   const hasChanges = row.draft !== null || (row.published?.holeIds ?? []).some(id => drafted.has(id))
   return { ...base, draft: row.draft, hasChanges, builtIn: isBuiltInCourse(row.id) }
+}
+
+/** The course after a write, read again so it carries the author's name. */
+async function respondCourse(db: Kysely<Database>, id: string, v: CourseViewer): Promise<ApiCourse> {
+  const row = await getCourse(db, id)
+  if (!row) throw notFound()
+  return serializeCourse(visibleTo(row, v), v, await draftedHoleIds(db))
 }
 
 type ApiHoleRow = Omit<HoleRow, 'updatedAt' | 'publishedAt' | 'published' | 'draft'> & {
@@ -95,12 +148,13 @@ type ApiHoleRow = Omit<HoleRow, 'updatedAt' | 'publishedAt' | 'published' | 'dra
   usedBy?: number
 }
 
-function serializeHoleRow(row: HoleRow & { usedBy?: number }): ApiHoleRow {
+/** A hole row; `draft` only for its owner and admins. */
+function serializeHoleRow(row: HoleRow & { usedBy?: number }, v: CourseViewer): ApiHoleRow {
   return {
     id: row.id,
     ownerUserId: row.ownerUserId,
     published: toApiHole(row.published),
-    draft: toApiHole(row.draft),
+    draft: seesDraft(row.ownerUserId, v) ? toApiHole(row.draft) : null,
     version: row.version,
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
@@ -108,149 +162,180 @@ function serializeHoleRow(row: HoleRow & { usedBy?: number }): ApiHoleRow {
   }
 }
 
-/** Courses and holes: GET /courses(/:id) are requireAuth only (hiding drafts from non-admins); every other route is admin-only. */
+/** Courses and holes. Reads: every signed-in user (user courses need the flag). Writes: a course's or hole's owner with the flag, and admins. */
 export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
-  const adminOnly = [requireAuth, requireAdmin]
 
   app.get<Route<'listMinigolfCourses'>>(
     '/api/minigolf/courses',
     { preValidation: requireAuth, schema: fromSpec('listMinigolfCourses') },
     async req => {
-      const admin = await viewerIsAdmin(db, req.userId)
-      const rows = await listCourses(db, { drafts: admin })
-      const drafted = admin ? await draftedHoleIds(db) : null
-      return { courses: rows.map(r => serializeCourse(r, drafted)) }
+      const v = await viewerOf(db, req.userId)
+      const rows = await listCourses(db, v)
+      const drafted = await draftedHoleIds(db)
+      return { courses: rows.map(r => serializeCourse(r, v, drafted)) }
     },
   )
 
   app.post<Route<'createMinigolfCourse'>>(
     '/api/minigolf/courses',
-    { preValidation: adminOnly, schema: fromSpec('createMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('createMinigolfCourse') },
     async (req, reply) => {
-      const row = await createCourse(db, req.body)
-      return reply.code(201).send(serializeCourse(row, await draftedHoleIds(db)))
+      const v = await viewerOf(db, req.userId)
+      if (!v.userCourses) throw forbidden()
+      const ownerId = v.admin ? null : v.id
+      if (ownerId && (await ownedCounts(db, ownerId)).courses >= MINIGOLF_LIMITS.courses) throw limitReached('courses')
+      await checkCourseHoles(db, ownerId, req.body)
+      const row = await createCourse(db, req.body, ownerId)
+      return reply.code(201).send(await respondCourse(db, row.id, v))
     },
   )
 
   app.get<Route<'getMinigolfCourse'>>(
     '/api/minigolf/courses/:id',
     { preValidation: requireAuth, schema: fromSpec('getMinigolfCourse') },
-    async (req, reply) => {
+    async req => {
+      const v = await viewerOf(db, req.userId)
       const row = await getCourse(db, req.params.id)
-      const admin = await viewerIsAdmin(db, req.userId)
-      if (!row || (!admin && row.published === null)) return reply.code(404).send({ error: 'not found' })
-      return serializeCourse(row, admin ? await draftedHoleIds(db) : null)
+      if (!row || !canReadCourse(row, v)) throw notFound()
+      return serializeCourse(visibleTo(row, v), v, await draftedHoleIds(db))
     },
   )
 
   app.patch<Route<'saveMinigolfCourse'>>(
     '/api/minigolf/courses/:id',
-    { preValidation: adminOnly, schema: fromSpec('saveMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('saveMinigolfCourse') },
     async req => {
+      const v = await viewerOf(db, req.userId)
+      const course = await writableCourse(db, req.params.id, v)
+      await checkCourseHoles(db, course.ownerUserId, req.body.content)
       const result = await saveCourseDraft(db, req.params.id, req.body.version, req.body.content)
-      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
+      if (result === 'missing') throw notFound()
       if (result === 'conflict') throw new ApiError(409, { error: 'conflict' })
-      return serializeCourse(result, await draftedHoleIds(db))
+      return respondCourse(db, req.params.id, v)
     },
   )
 
   app.delete<Route<'deleteMinigolfCourse'>>(
     '/api/minigolf/courses/:id',
-    { preValidation: adminOnly, schema: fromSpec('deleteMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('deleteMinigolfCourse') },
     async (req, reply) => {
+      await writableCourse(db, req.params.id, await viewerOf(db, req.userId))
       if (isBuiltInCourse(req.params.id)) throw new ApiError(409, { error: 'built-in course' })
-      if (!(await deleteCourse(db, req.params.id))) return reply.code(404).send({ error: 'not found' })
+      if (!(await deleteCourse(db, req.params.id))) throw notFound()
       return reply.code(204).send()
     },
   )
 
   app.post<Route<'publishMinigolfCourse'>>(
     '/api/minigolf/courses/:id/publish',
-    { preValidation: adminOnly, schema: fromSpec('publishMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('publishMinigolfCourse') },
     async req => {
+      const v = await viewerOf(db, req.userId)
+      const course = await writableCourse(db, req.params.id, v)
+      if (
+        course.ownerUserId &&
+        course.published === null &&
+        (await ownedCounts(db, course.ownerUserId)).published >= MINIGOLF_LIMITS.published
+      )
+        throw limitReached('published')
       const result = await publishCourse(db, req.params.id)
-      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
+      if (result === 'missing') throw notFound()
       if (!result.ok) throw new ApiError(422, { error: 'invalid', problems: result.problems })
-      return serializeCourse(result.course, await draftedHoleIds(db))
+      return respondCourse(db, req.params.id, v)
     },
   )
 
   app.post<Route<'discardMinigolfCourse'>>(
     '/api/minigolf/courses/:id/discard',
-    { preValidation: adminOnly, schema: fromSpec('discardMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('discardMinigolfCourse') },
     async req => {
-      const result = await discardCourseDraft(db, req.params.id)
-      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
-      return serializeCourse(result, await draftedHoleIds(db))
+      const v = await viewerOf(db, req.userId)
+      await writableCourse(db, req.params.id, v)
+      if ((await discardCourseDraft(db, req.params.id)) === 'missing') throw notFound()
+      return respondCourse(db, req.params.id, v)
     },
   )
 
   app.post<Route<'unpublishMinigolfCourse'>>(
     '/api/minigolf/courses/:id/unpublish',
-    { preValidation: adminOnly, schema: fromSpec('unpublishMinigolfCourse') },
+    { preValidation: requireAuth, schema: fromSpec('unpublishMinigolfCourse') },
     async req => {
-      const result = await unpublishCourse(db, req.params.id)
-      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
-      return serializeCourse(result, await draftedHoleIds(db))
+      const v = await viewerOf(db, req.userId)
+      await writableCourse(db, req.params.id, v)
+      if ((await unpublishCourse(db, req.params.id)) === 'missing') throw notFound()
+      return respondCourse(db, req.params.id, v)
     },
   )
 
   app.get<Route<'listMinigolfHoles'>>(
     '/api/minigolf/holes',
-    { preValidation: adminOnly, schema: fromSpec('listMinigolfHoles') },
+    { preValidation: requireAuth, schema: fromSpec('listMinigolfHoles') },
     async req => {
-      const rows = await listHoles(db, { search: req.query.search })
-      return { holes: rows.map(serializeHoleRow) }
+      const v = await viewerOf(db, req.userId)
+      if (!v.userCourses) throw forbidden()
+      const rows = await listHoles(db, { search: req.query.search, ownerId: v.admin ? undefined : v.id })
+      return { holes: rows.map(r => serializeHoleRow(r, v)) }
     },
   )
 
   app.post<Route<'createMinigolfHole'>>(
     '/api/minigolf/holes',
-    { preValidation: adminOnly, schema: fromSpec('createMinigolfHole') },
+    { preValidation: requireAuth, schema: fromSpec('createMinigolfHole') },
     async (req, reply) => {
+      const v = await viewerOf(db, req.userId)
+      if (!v.userCourses) throw forbidden()
+      const ownerId = v.admin ? null : v.id
+      if (ownerId && (await ownedCounts(db, ownerId)).holes >= MINIGOLF_LIMITS.holes) throw limitReached('holes')
       let hole: Hole
       if ('copyOf' in req.body) {
         const source = await getHole(db, req.body.copyOf)
-        const content = source?.draft ?? source?.published
-        if (!content) return reply.code(404).send({ error: 'not found' })
+        const mayCopy = source && (v.admin || source.ownerUserId === v.id || (await holeInReadableCourse(db, source.id, v)))
+        const content = source && seesDraft(source.ownerUserId, v) ? (source.draft ?? source.published) : source?.published
+        if (!mayCopy || !content) throw notFound()
         hole = { ...content, id: ulid(), name: `${content.name} (copy)` }
       } else {
         hole = { ...bodyHole(req.body.hole), id: ulid() }
       }
-      const row = await createHole(db, hole)
-      return reply.code(201).send(serializeHoleRow(row))
+      const row = await createHole(db, hole, ownerId)
+      return reply.code(201).send(serializeHoleRow(row, v))
     },
   )
 
   app.get<Route<'getMinigolfHole'>>(
     '/api/minigolf/holes/:id',
-    { preValidation: adminOnly, schema: fromSpec('getMinigolfHole') },
-    async (req, reply) => {
+    { preValidation: requireAuth, schema: fromSpec('getMinigolfHole') },
+    async req => {
+      const v = await viewerOf(db, req.userId)
       const row = await getHole(db, req.params.id)
-      if (!row) return reply.code(404).send({ error: 'not found' })
-      return serializeHoleRow(row)
+      if (!row) throw notFound()
+      const own = seesDraft(row.ownerUserId, v)
+      if (!(own || (await holeInReadableCourse(db, row.id, v)))) throw notFound()
+      return serializeHoleRow(row, v)
     },
   )
 
   app.patch<Route<'saveMinigolfHole'>>(
     '/api/minigolf/holes/:id',
-    { preValidation: adminOnly, schema: fromSpec('saveMinigolfHole') },
+    { preValidation: requireAuth, schema: fromSpec('saveMinigolfHole') },
     async req => {
+      const v = await viewerOf(db, req.userId)
+      await writableHole(db, req.params.id, v)
       const result = await saveHoleDraft(db, req.params.id, req.body.version, { ...bodyHole(req.body.hole), id: req.params.id })
-      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
+      if (result === 'missing') throw notFound()
       if (result === 'conflict') throw new ApiError(409, { error: 'conflict' })
-      return serializeHoleRow(result)
+      return serializeHoleRow(result, v)
     },
   )
 
   app.delete<Route<'deleteMinigolfHole'>>(
     '/api/minigolf/holes/:id',
-    { preValidation: adminOnly, schema: fromSpec('deleteMinigolfHole') },
+    { preValidation: requireAuth, schema: fromSpec('deleteMinigolfHole') },
     async (req, reply) => {
+      await writableHole(db, req.params.id, await viewerOf(db, req.userId))
       const result = await deleteHole(db, req.params.id)
-      if (result === 'missing') return reply.code(404).send({ error: 'not found' })
-      if (result === 'in-use') return reply.code(409).send({ error: 'in use' })
+      if (result === 'missing') throw notFound()
+      if (result === 'in-use') throw new ApiError(409, { error: 'in use' })
       return reply.code(204).send()
     },
   )

@@ -26,6 +26,9 @@ import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
 
+const ADMIN = { id: 'admin', admin: true, userCourses: true }
+const PLAYER = { id: 'player', admin: false, userCourses: false }
+
 describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', () => {
   let db: Kysely<Database>
   let close: () => Promise<void>
@@ -68,9 +71,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
   })
 
   it('seeding again changes nothing', async () => {
-    const before = await listCourses(db, { drafts: true })
+    const before = await listCourses(db, ADMIN)
     await seedOfficialCourses(db)
-    const after = await listCourses(db, { drafts: true })
+    const after = await listCourses(db, ADMIN)
     expect(after).toEqual(before)
   })
 
@@ -83,7 +86,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
   })
 
   it('listCourses without drafts only returns published courses, draft nulled', async () => {
-    const withDrafts = await listCourses(db, { drafts: false })
+    const withDrafts = await listCourses(db, PLAYER)
     expect(withDrafts.map(c => c.id)).toContain('test')
     expect(withDrafts.find(c => c.id === 'test')?.draft).toBeNull()
   })
@@ -415,7 +418,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
     if (result === 'missing') throw new Error('expected the course')
     expect(result).toMatchObject({ published: null, publishedAt: null, draft: published?.published })
     expect(result.version).toBeGreaterThan(published?.version ?? 0)
-    expect((await listCourses(db, { drafts: false })).map(c => c.id)).not.toContain('test')
+    expect((await listCourses(db, PLAYER)).map(c => c.id)).not.toContain('test')
     expect(await publishedCourse(db, 'test')).toBeUndefined()
     const draft: CourseContent = { ...result.draft!, name: 'Test, edited' }
     const saved = await saveCourseDraft(db, 'test', result.version, draft)
@@ -425,8 +428,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
   })
 
   it('seeding again after every course was deleted recreates Greenhorn without failing on its still-existing holes', async () => {
-    for (const c of await listCourses(db, { drafts: true })) await deleteCourse(db, c.id)
-    expect(await listCourses(db, { drafts: true })).toEqual([])
+    for (const c of await listCourses(db, ADMIN)) await deleteCourse(db, c.id)
+    expect(await listCourses(db, ADMIN)).toEqual([])
 
     await expect(seedOfficialCourses(db)).resolves.toBeUndefined()
 

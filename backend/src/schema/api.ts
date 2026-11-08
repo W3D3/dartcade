@@ -2257,10 +2257,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Courses with their status; players see only published official courses, without a draft */
+        /** Courses with their status. A player sees the published official courses, the published user courses (visibility `public`, with the author's name) and their own courses with their drafts; user courses are left out unless `minigolf.userCourses.enabled` is on for them. Admins see everything */
         get: operations["listMinigolfCourses"];
         put?: never;
-        /** A new course, draft only (admin) */
+        /** A new course, draft only. An admin makes an official course; a player (with `minigolf.userCourses.enabled`) a private one of their own, using only their own holes */
         post: operations["createMinigolfCourse"];
         delete?: never;
         options?: never;
@@ -2277,15 +2277,15 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** A course; players see it only once published, without a draft */
+        /** A course; a player sees it once published (or if it is theirs), and its draft only if it is theirs */
         get: operations["getMinigolfCourse"];
         put?: never;
         post?: never;
-        /** Delete a course; a built-in course can't be deleted, only unpublished (admin) */
+        /** Delete a course (the owner, or an admin); a built-in course can't be deleted, only unpublished */
         delete: operations["deleteMinigolfCourse"];
         options?: never;
         head?: never;
-        /** Overwrite the draft if `version` is still current (admin) */
+        /** Overwrite the draft if `version` is still current (the owner, or an admin) */
         patch: operations["saveMinigolfCourse"];
         trace?: never;
     };
@@ -2300,7 +2300,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Publish the course's draft: checks it and every hole it uses, and refuses with the failing checks if any blocks (admin) */
+        /** Publish the course's draft: checks it and every hole it uses, and refuses with the failing checks if any blocks (the owner, or an admin). A player's course becomes `public` (a user course, not official); a player may have at most `MINIGOLF_LIMITS.published` public courses */
         post: operations["publishMinigolfCourse"];
         delete?: never;
         options?: never;
@@ -2319,7 +2319,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Clear the course's draft, and the drafts of its holes that no other course uses (in its draft or published) (admin) */
+        /** Clear the course's draft, and the drafts of its holes that no other course uses (in its draft or published) (the owner, or an admin) */
         post: operations["discardMinigolfCourse"];
         delete?: never;
         options?: never;
@@ -2338,7 +2338,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (admin) */
+        /** Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (the owner, or an admin). A player's course goes back to `private` */
         post: operations["unpublishMinigolfCourse"];
         delete?: never;
         options?: never;
@@ -2353,10 +2353,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The hole library, newest edit first, with how many courses use each one (admin) */
+        /** The hole library, newest edit first, with how many courses use each one (an admin sees all holes, a player their own) */
         get: operations["listMinigolfHoles"];
         put?: never;
-        /** A new hole, draft only, as given or a copy of another (admin) */
+        /** A new hole, draft only, as given or a copy of another. A player's hole is theirs (owner set); a copy needs a hole the caller may read, and an admin's hole is official */
         post: operations["createMinigolfHole"];
         delete?: never;
         options?: never;
@@ -2373,15 +2373,15 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** A hole (admin) */
+        /** A hole: the owner or an admin gets it whole; anyone else gets a hole that a published course they can read uses, with its published content only */
         get: operations["getMinigolfHole"];
         put?: never;
         post?: never;
-        /** Delete a hole; refused while a course (draft or published) uses it (admin) */
+        /** Delete a hole (the owner, or an admin); refused while a course (draft or published) uses it */
         delete: operations["deleteMinigolfHole"];
         options?: never;
         head?: never;
-        /** Overwrite the draft if `version` is still current (admin) */
+        /** Overwrite the draft if `version` is still current (the owner, or an admin) */
         patch: operations["saveMinigolfHole"];
         trace?: never;
     };
@@ -4788,13 +4788,18 @@ export interface components {
             /** @description Playing order */
             holeIds: string[];
         };
-        /** @description A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player) */
+        /** @description A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin */
         MinigolfCourse: {
             id: string;
             /** @description null for an official course */
             ownerUserId: string | null;
-            /** @enum {string} */
-            visibility: "official";
+            /**
+             * @description official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)
+             * @enum {string}
+             */
+            visibility: "official" | "private" | "public";
+            /** @description The owner's display name; null for an official course */
+            authorName: string | null;
             published: components["schemas"]["MinigolfCourseContent"] | (null);
             draft?: components["schemas"]["MinigolfCourseContent"] | (null);
             /** @description Something to publish: its own draft, or a draft of one of its holes */
@@ -4815,7 +4820,7 @@ export interface components {
             version: number;
             content: components["schemas"]["MinigolfCourseContent"];
         };
-        /** @description A hole row, as the hole library and the editor see it (admin only) */
+        /** @description A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin */
         MinigolfHoleRow: {
             id: string;
             /** @description null for an official hole */
@@ -4860,6 +4865,16 @@ export interface components {
             /** @description '' for a problem with the course itself (no holes) */
             holeId: string;
             checks: components["schemas"]["MinigolfCheck"][];
+        };
+        MinigolfLimitRefusal: {
+            /** @enum {string} */
+            error: "limit reached";
+            /**
+             * @description courses a player owns, public courses, holes a player owns, holes in one course
+             * @enum {string}
+             */
+            limit: "courses" | "published" | "holes" | "courseHoles";
+            max: number;
         };
         MinigolfPublishRefusal: {
             /** @enum {string} */
@@ -5109,6 +5124,24 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["MinigolfPublishRefusal"];
+            };
+        };
+        /** @description The player already has as many courses, holes or public courses as allowed */
+        MinigolfLimitReached: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MinigolfLimitRefusal"];
+            };
+        };
+        /** @description The version is stale, or the course would have more holes than a player may use */
+        MinigolfConflictOrLimit: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["MinigolfLimitRefusal"];
             };
         };
         /** @description Would leave no user with the admin role */
@@ -8824,8 +8857,10 @@ export interface operations {
                     "application/json": components["schemas"]["MinigolfCourse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["MinigolfLimitReached"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -8903,10 +8938,11 @@ export interface operations {
                     "application/json": components["schemas"]["MinigolfCourse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            409: components["responses"]["MinigolfConflictOrLimit"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -8933,6 +8969,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["MinigolfLimitReached"];
             422: components["responses"]["MinigolfPublishRefused"];
             429: components["responses"]["TooManyRequests"];
         };
@@ -9041,6 +9078,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["MinigolfLimitReached"];
             429: components["responses"]["TooManyRequests"];
         };
     };

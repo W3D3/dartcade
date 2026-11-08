@@ -39622,7 +39622,7 @@
     "/api/minigolf/courses": {
       "get": {
         "operationId": "listMinigolfCourses",
-        "summary": "Courses with their status; players see only published official courses, without a draft",
+        "summary": "Courses with their status. A player sees the published official courses, the published user courses (visibility `public`, with the author's name) and their own courses with their drafts; user courses are left out unless `minigolf.userCourses.enabled` is on for them. Admins see everything",
         "tags": [
           "minigolf"
         ],
@@ -39642,10 +39642,11 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                        "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                         "required": [
                           "id",
                           "ownerUserId",
+                          "authorName",
                           "visibility",
                           "published",
                           "version",
@@ -39665,8 +39666,16 @@
                           "visibility": {
                             "type": "string",
                             "enum": [
-                              "official"
-                            ]
+                              "official",
+                              "private",
+                              "public"
+                            ],
+                            "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The owner's display name; null for an official course"
                           },
                           "published": {
                             "anyOf": [
@@ -39869,7 +39878,7 @@
       },
       "post": {
         "operationId": "createMinigolfCourse",
-        "summary": "A new course, draft only (admin)",
+        "summary": "A new course, draft only. An admin makes an official course; a player (with `minigolf.userCourses.enabled`) a private one of their own, using only their own holes",
         "tags": [
           "minigolf"
         ],
@@ -39921,10 +39930,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -39944,8 +39954,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -40063,6 +40081,45 @@
               }
             }
           },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "Not signed in",
             "content": {
@@ -40141,6 +40198,44 @@
               }
             }
           },
+          "409": {
+            "description": "The player already has as many courses, holes or public courses as allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "limit",
+                    "max"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "limit reached"
+                      ]
+                    },
+                    "limit": {
+                      "type": "string",
+                      "enum": [
+                        "courses",
+                        "published",
+                        "holes",
+                        "courseHoles"
+                      ],
+                      "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Rate limit exceeded",
             "content": {
@@ -40197,7 +40292,7 @@
       ],
       "get": {
         "operationId": "getMinigolfCourse",
-        "summary": "A course; players see it only once published, without a draft",
+        "summary": "A course; a player sees it once published (or if it is theirs), and its draft only if it is theirs",
         "tags": [
           "minigolf"
         ],
@@ -40208,10 +40303,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -40231,8 +40327,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -40471,7 +40575,7 @@
       },
       "patch": {
         "operationId": "saveMinigolfCourse",
-        "summary": "Overwrite the draft if `version` is still current (admin)",
+        "summary": "Overwrite the draft if `version` is still current (the owner, or an admin)",
         "tags": [
           "minigolf"
         ],
@@ -40538,10 +40642,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -40561,8 +40666,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -40674,6 +40787,45 @@
                       "type": "string",
                       "format": "date-time",
                       "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -40798,40 +40950,75 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state",
+            "description": "The version is stale, or the course would have more holes than a player may use",
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "ErrorResponse",
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "path",
-                          "message"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "path": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
+                  "oneOf": [
+                    {
+                      "title": "ErrorResponse",
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "path",
+                              "message"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            }
                           }
                         }
                       }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "limit",
+                        "max"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "type": "string",
+                          "enum": [
+                            "limit reached"
+                          ]
+                        },
+                        "limit": {
+                          "type": "string",
+                          "enum": [
+                            "courses",
+                            "published",
+                            "holes",
+                            "courseHoles"
+                          ],
+                          "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                        },
+                        "max": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -40879,7 +41066,7 @@
       },
       "delete": {
         "operationId": "deleteMinigolfCourse",
-        "summary": "Delete a course; a built-in course can't be deleted, only unpublished (admin)",
+        "summary": "Delete a course (the owner, or an admin); a built-in course can't be deleted, only unpublished",
         "tags": [
           "minigolf"
         ],
@@ -41099,7 +41286,7 @@
       ],
       "post": {
         "operationId": "publishMinigolfCourse",
-        "summary": "Publish the course's draft: checks it and every hole it uses, and refuses with the failing checks if any blocks (admin)",
+        "summary": "Publish the course's draft: checks it and every hole it uses, and refuses with the failing checks if any blocks (the owner, or an admin). A player's course becomes `public` (a user course, not official); a player may have at most `MINIGOLF_LIMITS.published` public courses",
         "tags": [
           "minigolf"
         ],
@@ -41110,10 +41297,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -41133,8 +41321,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -41369,6 +41565,44 @@
               }
             }
           },
+          "409": {
+            "description": "The player already has as many courses, holes or public courses as allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "limit",
+                    "max"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "limit reached"
+                      ]
+                    },
+                    "limit": {
+                      "type": "string",
+                      "enum": [
+                        "courses",
+                        "published",
+                        "holes",
+                        "courseHoles"
+                      ],
+                      "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
           "422": {
             "description": "The course has no holes, or a hole in it fails a check that blocks Publish",
             "content": {
@@ -41517,7 +41751,7 @@
       ],
       "post": {
         "operationId": "discardMinigolfCourse",
-        "summary": "Clear the course's draft, and the drafts of its holes that no other course uses (in its draft or published) (admin)",
+        "summary": "Clear the course's draft, and the drafts of its holes that no other course uses (in its draft or published) (the owner, or an admin)",
         "tags": [
           "minigolf"
         ],
@@ -41528,10 +41762,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -41551,8 +41786,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -41843,7 +42086,7 @@
       ],
       "post": {
         "operationId": "unpublishMinigolfCourse",
-        "summary": "Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (admin)",
+        "summary": "Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (the owner, or an admin). A player's course goes back to `private`",
         "tags": [
           "minigolf"
         ],
@@ -41854,10 +42097,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
+                    "authorName",
                     "visibility",
                     "published",
                     "version",
@@ -41877,8 +42121,16 @@
                     "visibility": {
                       "type": "string",
                       "enum": [
-                        "official"
-                      ]
+                        "official",
+                        "private",
+                        "public"
+                      ],
+                      "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's display name; null for an official course"
                     },
                     "published": {
                       "anyOf": [
@@ -42158,7 +42410,7 @@
     "/api/minigolf/holes": {
       "get": {
         "operationId": "listMinigolfHoles",
-        "summary": "The hole library, newest edit first, with how many courses use each one (admin)",
+        "summary": "The hole library, newest edit first, with how many courses use each one (an admin sees all holes, a player their own)",
         "tags": [
           "minigolf"
         ],
@@ -42191,7 +42443,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "description": "A hole row, as the hole library and the editor see it (admin only)",
+                        "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
                         "required": [
                           "id",
                           "ownerUserId",
@@ -43122,7 +43374,7 @@
       },
       "post": {
         "operationId": "createMinigolfHole",
-        "summary": "A new hole, draft only, as given or a copy of another (admin)",
+        "summary": "A new hole, draft only, as given or a copy of another. A player's hole is theirs (owner set); a copy needs a hole the caller may read, and an admin's hole is official",
         "tags": [
           "minigolf"
         ],
@@ -43539,7 +43791,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A hole row, as the hole library and the editor see it (admin only)",
+                  "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -44502,6 +44754,44 @@
               }
             }
           },
+          "409": {
+            "description": "The player already has as many courses, holes or public courses as allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "limit",
+                    "max"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "limit reached"
+                      ]
+                    },
+                    "limit": {
+                      "type": "string",
+                      "enum": [
+                        "courses",
+                        "published",
+                        "holes",
+                        "courseHoles"
+                      ],
+                      "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Rate limit exceeded",
             "content": {
@@ -44558,7 +44848,7 @@
       ],
       "get": {
         "operationId": "getMinigolfHole",
-        "summary": "A hole (admin)",
+        "summary": "A hole: the owner or an admin gets it whole; anyone else gets a hole that a published course they can read uses, with its published content only",
         "tags": [
           "minigolf"
         ],
@@ -44569,7 +44859,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A hole row, as the hole library and the editor see it (admin only)",
+                  "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -45536,7 +45826,7 @@
       },
       "patch": {
         "operationId": "saveMinigolfHole",
-        "summary": "Overwrite the draft if `version` is still current (admin)",
+        "summary": "Overwrite the draft if `version` is still current (the owner, or an admin)",
         "tags": [
           "minigolf"
         ],
@@ -45940,7 +46230,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A hole row, as the hole library and the editor see it (admin only)",
+                  "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -46985,7 +47275,7 @@
       },
       "delete": {
         "operationId": "deleteMinigolfHole",
-        "summary": "Delete a hole; refused while a course (draft or published) uses it (admin)",
+        "summary": "Delete a hole (the owner, or an admin); refused while a course (draft or published) uses it",
         "tags": [
           "minigolf"
         ],
@@ -48004,6 +48294,118 @@
                   }
                 }
               }
+            }
+          }
+        }
+      },
+      "MinigolfLimitReached": {
+        "description": "The player already has as many courses, holes or public courses as allowed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "error",
+                "limit",
+                "max"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "enum": [
+                    "limit reached"
+                  ]
+                },
+                "limit": {
+                  "type": "string",
+                  "enum": [
+                    "courses",
+                    "published",
+                    "holes",
+                    "courseHoles"
+                  ],
+                  "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "MinigolfConflictOrLimit": {
+        "description": "The version is stale, or the course would have more holes than a player may use",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "limit",
+                    "max"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "limit reached"
+                      ]
+                    },
+                    "limit": {
+                      "type": "string",
+                      "enum": [
+                        "courses",
+                        "published",
+                        "holes",
+                        "courseHoles"
+                      ],
+                      "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              ]
             }
           }
         }
@@ -70345,10 +70747,11 @@
       },
       "MinigolfCourse": {
         "type": "object",
-        "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+        "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
         "required": [
           "id",
           "ownerUserId",
+          "authorName",
           "visibility",
           "published",
           "version",
@@ -70368,8 +70771,16 @@
           "visibility": {
             "type": "string",
             "enum": [
-              "official"
-            ]
+              "official",
+              "private",
+              "public"
+            ],
+            "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The owner's display name; null for an official course"
           },
           "published": {
             "anyOf": [
@@ -70495,10 +70906,11 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+              "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
               "required": [
                 "id",
                 "ownerUserId",
+                "authorName",
                 "visibility",
                 "published",
                 "version",
@@ -70518,8 +70930,16 @@
                 "visibility": {
                   "type": "string",
                   "enum": [
-                    "official"
-                  ]
+                    "official",
+                    "private",
+                    "public"
+                  ],
+                  "description": "official: admin-made. private: a player's draft or unpublished course (owner only). public: a player's published course (a user course)"
+                },
+                "authorName": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The owner's display name; null for an official course"
                 },
                 "published": {
                   "anyOf": [
@@ -70688,7 +71108,7 @@
       },
       "MinigolfHoleRow": {
         "type": "object",
-        "description": "A hole row, as the hole library and the editor see it (admin only)",
+        "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
         "required": [
           "id",
           "ownerUserId",
@@ -71503,7 +71923,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "A hole row, as the hole library and the editor see it (admin only)",
+              "description": "A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin",
               "required": [
                 "id",
                 "ownerUserId",
@@ -73207,6 +73627,37 @@
                 }
               }
             }
+          }
+        }
+      },
+      "MinigolfLimitRefusal": {
+        "type": "object",
+        "required": [
+          "error",
+          "limit",
+          "max"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "limit reached"
+            ]
+          },
+          "limit": {
+            "type": "string",
+            "enum": [
+              "courses",
+              "published",
+              "holes",
+              "courseHoles"
+            ],
+            "description": "courses a player owns, public courses, holes a player owns, holes in one course"
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },
