@@ -1,3 +1,4 @@
+import { useDbSingleton } from '../test/db.js'
 import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
@@ -5,18 +6,6 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { adminRankedApiPlugin } from './adminRanked.js'
-
-// requireModerator reads the db singleton: point it at the test schema
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('admin ranked API', { timeout: 20_000 }, () => {
   let db: Kysely<Database>
@@ -56,7 +45,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin ranked API', { timeout: 2
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_ranked_api_test'))
-    dbRef.current = db
+    useDbSingleton(db)
     await db
       .insertInto('user')
       .values([

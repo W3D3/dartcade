@@ -1,5 +1,6 @@
+import { useDbSingleton } from '../test/db.js'
 import '../test/authByHeader.js'
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
 import { extract } from 'tar-stream'
 import { Readable } from 'node:stream'
@@ -9,18 +10,6 @@ import { insertBridgeEvent } from '../db/queries.js'
 import { insertSample } from '../db/dartSamples.js'
 import { createFastify } from './fastify.js'
 import { adminDartSamplesApiPlugin } from './adminDartSamples.js'
-
-// requireAdmin reads the db singleton: point it at the test schema
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
 
 const HOUR = 3_600_000
 
@@ -54,7 +43,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin dart samples API', { time
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_dart_samples_api_test'))
-    dbRef.current = db
+    useDbSingleton(db)
     await db
       .insertInto('user')
       .values([

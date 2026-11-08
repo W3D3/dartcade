@@ -1,3 +1,4 @@
+import { useDbSingleton } from '../test/db.js'
 import '../test/authByHeader.js'
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
@@ -13,26 +14,13 @@ vi.mock('../auth/session.js', () => ({
   getAuthUser: vi.fn((req: any) => (req.headers['x-user'] ? { userId: req.headers['x-user'] } : null)),
 }))
 
-// requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
-// redirect it to the test schema so a real `role` column decides who is an admin.
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
-
 describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20_000 }, () => {
   let db: Kysely<Database>
   let close: () => Promise<void>
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_flags_api_test'))
-    dbRef.current = db
+    useDbSingleton(db)
     await setupFlags(new Set())
     await db
       .insertInto('user')
