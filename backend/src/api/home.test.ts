@@ -23,7 +23,17 @@ beforeEach(() => {
 
 describe('/api/home/lobbies', () => {
   it('returns the viewer’s friends’ lobbies', async () => {
-    const lobby = { id: 'l1', name: 'Mara’s lobby', hostName: 'Mara', state: 'open', mode: 'x01', startScore: 501, people: 3, boards: 2 }
+    const lobby = {
+      id: 'l1',
+      name: 'Mara’s lobby',
+      hostName: 'Mara',
+      state: 'open',
+      mode: 'x01',
+      sessionId: null,
+      startScore: 501,
+      people: 3,
+      boards: 2,
+    }
     vi.mocked(homeLobbies).mockResolvedValue([{ ...lobby, state: 'open' }])
     const res = await app().inject({ method: 'GET', url: '/api/home/lobbies' })
     expect(res.statusCode).toBe(200)

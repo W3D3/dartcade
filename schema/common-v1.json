@@ -168,9 +168,13 @@
     "FriendPlaying": {
       "title": "FriendPlaying",
       "type": "object",
-      "required": ["kind", "gameId"],
+      "required": ["kind", "gameId", "sessionId"],
       "additionalProperties": false,
-      "properties": { "kind": { "type": "string", "enum": ["playing"] }, "gameId": { "type": "string" } }
+      "properties": {
+        "kind": { "type": "string", "enum": ["playing"] },
+        "gameId": { "type": "string" },
+        "sessionId": { "type": "string", "description": "The running game, for Watch (#/watch/<sessionId>)." }
+      }
     },
     "FriendInLobby": {
       "title": "FriendInLobby",

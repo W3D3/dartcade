@@ -445,6 +445,10 @@ export interface Friend {
 export interface FriendPlaying {
   kind: 'playing'
   gameId: string
+  /**
+   * The running game, for Watch (#/watch/<sessionId>).
+   */
+  sessionId: string
 }
 export interface FriendInLobby {
   kind: 'lobby'

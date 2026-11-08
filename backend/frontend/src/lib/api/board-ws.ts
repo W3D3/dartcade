@@ -529,6 +529,10 @@ export interface SnapshotBase {
    */
   mySeats: number[]
   /**
+   * Friends watching the game right now (/ws?watch=1); missing: none.
+   */
+  spectators?: number
+  /**
    * A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating.
    */
   voided: boolean

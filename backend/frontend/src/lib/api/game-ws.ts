@@ -795,6 +795,10 @@ export interface SnapshotBase {
    */
   mySeats: number[]
   /**
+   * Friends watching the game right now (/ws?watch=1); missing: none.
+   */
+  spectators?: number
+  /**
    * A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating.
    */
   voided: boolean
@@ -1074,7 +1078,7 @@ export interface ClientMessage {
 }
 
 /**
- * Close codes the backend sends. The client stops reconnecting on Unauthorized (go to login), Forbidden and NotFound.
+ * Close codes the backend sends. The client stops reconnecting on Unauthorized (go to login), Forbidden, NotFound and TooManyWatchers (a game has a limited number of watchers).
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "WsCloseCode".
@@ -1084,5 +1088,6 @@ export enum WsCloseCode {
   Unauthorized = 4401,
   Forbidden = 4403,
   NotFound = 4404,
+  TooManyWatchers = 4429,
   InternalError = 4500
 }

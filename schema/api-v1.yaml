@@ -3257,7 +3257,7 @@ components:
           type: array
           items:
             type: object
-            required: [id, name, hostName, state, mode, startScore, people, boards]
+            required: [id, name, hostName, state, mode, sessionId, startScore, people, boards]
             additionalProperties: false
             properties:
               id: { type: string }
@@ -3269,6 +3269,12 @@ components:
                   type: string,
                   nullable: true,
                   description: 'The game mode id, from the running game or else the next game; null when none is set',
+                }
+              sessionId:
+                {
+                  type: string,
+                  nullable: true,
+                  description: 'The running game (Watch it at #/watch/<sessionId>); null while the lobby is open',
                 }
               startScore: { type: integer, nullable: true, description: "X01's start score; null for another mode or none set" }
               people: { type: integer, minimum: 0 }

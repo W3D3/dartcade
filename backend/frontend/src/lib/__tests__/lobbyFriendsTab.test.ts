@@ -6,7 +6,7 @@ const f = (name: string, kind: 'online' | 'offline' | 'playing', extra: Partial<
   id: name.toLowerCase(),
   name,
   friendsSince: '2026-10-01T10:00:00.000Z',
-  status: kind === 'playing' ? { kind, gameId: 'atc' } : { kind },
+  status: kind === 'playing' ? { kind, gameId: 'atc', sessionId: 's1' } : { kind },
   inYourLobby: false,
   invited: false,
   avatar: { kind: 'none' },

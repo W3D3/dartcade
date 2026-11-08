@@ -680,3 +680,116 @@ describe('WS camera stills', () => {
     ws.close()
   })
 })
+
+describe('WS spectators (Watch)', () => {
+  let testApp: FastifyInstance | null = null
+  afterEach(async () => {
+    await testApp?.close()
+    testApp = null
+  })
+
+  async function setup(canSpectate: (userId: string) => boolean) {
+    const { getAuthUser } = await import('../auth/session.js')
+    // Who connects is told by the url (?as=…), so sockets opened one after the other can be different users
+    vi.mocked(getAuthUser).mockImplementation(((req: { query: { as: string } }) =>
+      Promise.resolve({ userId: req.query.as, impersonatedBy: null })) as never)
+    const { SessionEngine } = await import('../session/engine.js')
+    const { x01Module } = await import('../games/x01.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+      getAvatars: vi.fn().mockResolvedValue(new Map()),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
+      seats: [
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: null, bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null, bot: null },
+      ],
+    })
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine, canSpectate: u => Promise.resolve(canSpectate(u)) })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+    const connect = (as: string, watch = true) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}&as=${as}${watch ? '&watch=1' : ''}`)
+      const messages: any[] = []
+      const closed = new Promise<number>(resolve => ws.addEventListener('close', e => resolve(e.code)))
+      ws.addEventListener('message', e => messages.push(JSON.parse(String(e.data))))
+      return { ws, messages, closed }
+    }
+    return { engine, connect, store, sessionId }
+  }
+
+  const settle = () => new Promise(r => setTimeout(r, 150))
+
+  it('gives a watcher the snapshot, tells the players how many watch, and ignores the watcher’s actions', async () => {
+    const { engine, connect, store, sessionId } = await setup(u => u === 'max')
+    const onUserAction = vi.spyOn(engine, 'onUserAction')
+    const lena = connect('lena', false)
+    await settle()
+    const max = connect('max')
+    await settle()
+
+    expect(max.messages[0]).toMatchObject({ type: 'snapshot', mySeats: [], spectators: 1 })
+    expect(max.messages.filter(m => m.type === 'camera')).toEqual([])
+    expect(lena.messages.at(-1)).toMatchObject({ type: 'snapshot', mySeats: [1], spectators: 1 })
+
+    max.ws.send(JSON.stringify({ type: 'user_action', action: { type: 'takeout' } }))
+    await settle()
+    expect(onUserAction).not.toHaveBeenCalled()
+    expect(store.appendEvent).not.toHaveBeenCalled()
+
+    max.ws.close()
+    await settle()
+    expect(lena.messages.at(-1)).toMatchObject({ type: 'snapshot', spectators: 0 })
+    // A game that is forgotten leaves nothing of its watchers behind
+    const { spectators, forgetSession } = await import('./handler.js')
+    expect(spectators.disconnectedAt(sessionId, 'max')).not.toBeNull()
+    forgetSession(sessionId)
+    expect(spectators.disconnectedAt(sessionId, 'max')).toBeNull()
+    lena.ws.close()
+  })
+
+  it('closes the socket of someone who may not watch, and never opens a player’s game as a watcher by accident', async () => {
+    const { connect } = await setup(u => u === 'max')
+    const stranger = connect('pia')
+    expect(await stranger.closed).toBe(WsCloseCode.Forbidden)
+    expect(stranger.messages).toEqual([])
+    // Without ?watch=1 the old rule applies: a friend who is no player or lobby member is out
+    const plain = connect('max', false)
+    expect(await plain.closed).toBe(WsCloseCode.Forbidden)
+  })
+
+  it('caps the sockets of one watcher on a game', async () => {
+    const { connect } = await setup(() => true)
+    const a = connect('max')
+    const b = connect('max')
+    await settle()
+    const c = connect('max')
+    expect(await c.closed).toBe(WsCloseCode.TooManyWatchers)
+    a.ws.close()
+    b.ws.close()
+  })
+
+  it('caps the watchers of a game', async () => {
+    const { MAX_WATCHERS } = await import('./handler.js')
+    const { connect } = await setup(() => true)
+    const open = Array.from({ length: MAX_WATCHERS }, (_, i) => connect(`w${i}`))
+    await settle()
+    const extra = connect('late')
+    expect(await extra.closed).toBe(WsCloseCode.TooManyWatchers)
+    for (const o of open) o.ws.close()
+  })
+})

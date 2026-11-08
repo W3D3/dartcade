@@ -80,10 +80,18 @@ export type SnapshotView = {
   /** When the user's last socket of the game closed; null if open or never opened. */
   disconnectedAt: (userId: string) => Date | null
   isBoardOnline: (boardId: string) => boolean
+  /** Friends watching the game (Watch). */
+  spectators: number
 }
 
 const NO_AVATAR: Avatar = { kind: 'none' }
-const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), disconnectedAt: () => null, isBoardOnline: () => false }
+const NO_VIEWER: SnapshotView = {
+  viewerUserId: null,
+  connectedUserIds: new Set(),
+  disconnectedAt: () => null,
+  isBoardOnline: () => false,
+  spectators: 0,
+}
 
 // Where an input came from: the bridge event it was, and the board it was thrown on
 type Origin = { bridgeEventId: string | null; boardId: string | null }
@@ -681,6 +689,7 @@ export class SessionEngine {
       ownerUserId: session.ownerUserId,
       scoreBased: session.module.scoreBased === true,
       seats: seatViews(session, view),
+      spectators: view.spectators,
       mySeats: session.seats.flatMap((s, i) => (s.controllerUserId === view.viewerUserId ? [i] : [])),
       // The status pill follows the board of the seat that's up
       bmStatus: upBoard === null ? null : (session.boardStatus.get(upBoard) ?? null),

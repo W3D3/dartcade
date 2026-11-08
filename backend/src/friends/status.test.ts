@@ -7,7 +7,11 @@ const friendsOfViewer = new Set(['lena'])
 
 describe('friendStatus', () => {
   it('first match wins: playing, then lobby, then online', () => {
-    expect(friendStatus(facts({ game: { gameId: 'x01' }, lobby }), friendsOfViewer)).toEqual({ kind: 'playing', gameId: 'x01' })
+    expect(friendStatus(facts({ game: { gameId: 'x01', sessionId: 's1' }, lobby }), friendsOfViewer)).toEqual({
+      kind: 'playing',
+      gameId: 'x01',
+      sessionId: 's1',
+    })
     expect(friendStatus(facts({ lobby }), friendsOfViewer)).toEqual({
       kind: 'lobby',
       lobbyId: 'l1',
@@ -24,8 +28,12 @@ describe('friendStatus', () => {
   })
 
   it('offline, or Invisible, shows offline and nothing about lobbies or games', () => {
-    expect(friendStatus(facts({ online: false, lobby, game: { gameId: 'x01' } }), friendsOfViewer)).toEqual({ kind: 'offline' })
-    expect(friendStatus(facts({ invisible: true, lobby, game: { gameId: 'x01' } }), friendsOfViewer)).toEqual({ kind: 'offline' })
+    expect(friendStatus(facts({ online: false, lobby, game: { gameId: 'x01', sessionId: 's1' } }), friendsOfViewer)).toEqual({
+      kind: 'offline',
+    })
+    expect(friendStatus(facts({ invisible: true, lobby, game: { gameId: 'x01', sessionId: 's1' } }), friendsOfViewer)).toEqual({
+      kind: 'offline',
+    })
   })
 })
 
@@ -37,19 +45,20 @@ describe('seatedGame', () => {
     boardId: null,
     boardName: null,
   })
-  const session = (status: string, seats: ReturnType<typeof seat>[]) => ({ status, seats, module: { id: 'x01' } }) as any
+  const session = (status: string, seats: ReturnType<typeof seat>[]) => ({ id: 's1', status, seats, module: { id: 'x01' } }) as any
 
   it('a seat of your own or one you throw for, in a running game', () => {
-    expect(seatedGame(session('active', [seat('lena', 'lena')]), 'lena')).toEqual({ gameId: 'x01' })
-    expect(seatedGame(session('active', [seat(null, 'lena')]), 'lena')).toEqual({ gameId: 'x01' })
+    expect(seatedGame(session('active', [seat('lena', 'lena')]), 'lena')).toEqual({ gameId: 'x01', sessionId: 's1' })
+    expect(seatedGame(session('active', [seat(null, 'lena')]), 'lena')).toEqual({ gameId: 'x01', sessionId: 's1' })
     expect(seatedGame(session('active', [seat('max', 'max')]), 'lena')).toBeNull()
     expect(seatedGame(session('finished', [seat('lena', 'lena')]), 'lena')).toBeNull()
     expect(seatedGame(undefined, 'lena')).toBeNull()
   })
 
   it('a host who sits out is not playing; a seated host is', () => {
-    const hosted = (seats: ReturnType<typeof seat>[]) => ({ status: 'active', ownerUserId: 'lena', seats, module: { id: 'x01' } }) as any
+    const hosted = (seats: ReturnType<typeof seat>[]) =>
+      ({ id: 's1', status: 'active', ownerUserId: 'lena', seats, module: { id: 'x01' } }) as any
     expect(seatedGame(hosted([seat('max', 'max')]), 'lena')).toBeNull()
-    expect(seatedGame(hosted([seat('max', 'max'), seat('lena', 'lena')]), 'lena')).toEqual({ gameId: 'x01' })
+    expect(seatedGame(hosted([seat('max', 'max'), seat('lena', 'lena')]), 'lena')).toEqual({ gameId: 'x01', sessionId: 's1' })
   })
 })

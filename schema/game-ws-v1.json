@@ -6,10 +6,10 @@
   "$defs": {
     "WsCloseCode": {
       "title": "WsCloseCode",
-      "description": "Close codes the backend sends. The client stops reconnecting on Unauthorized (go to login), Forbidden and NotFound.",
+      "description": "Close codes the backend sends. The client stops reconnecting on Unauthorized (go to login), Forbidden, NotFound and TooManyWatchers (a game has a limited number of watchers).",
       "type": "integer",
-      "enum": [4400, 4401, 4403, 4404, 4500],
-      "tsEnumNames": ["MissingSession", "Unauthorized", "Forbidden", "NotFound", "InternalError"]
+      "enum": [4400, 4401, 4403, 4404, 4429, 4500],
+      "tsEnumNames": ["MissingSession", "Unauthorized", "Forbidden", "NotFound", "TooManyWatchers", "InternalError"]
     },
     "BmStatus": {
       "title": "BmStatus",
@@ -941,6 +941,11 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
+        },
+        "spectators": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Friends watching the game right now (/ws?watch=1); missing: none."
         },
         "voided": {
           "type": "boolean",

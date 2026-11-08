@@ -24,6 +24,7 @@ import { meApiPlugin } from './api/me.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
+import { canSpectateSession } from './session/access.js'
 import { rankedApiPlugin } from './api/ranked.js'
 import { homeApiPlugin } from './api/home.js'
 import { progressApiPlugin } from './api/progress.js'
@@ -42,7 +43,7 @@ import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
 import { boardsWithWledDevices, rehostWledDevices } from './db/lights.js'
 import type { LightsService } from './lights/service.js'
-import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
+import { envFlagValues, envFlagsOn, flagEnabled, loadFlagUser, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
 import { authInfoApiPlugin } from './api/authInfo.js'
@@ -221,7 +222,13 @@ export async function buildApp({
           })
       : undefined,
   })
-  await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
+  await app.register(browserGwPlugin, {
+    engine,
+    isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
+    canSpectate: async (userId, session) =>
+      (await flagEnabled('watch.enabled', await loadFlagUser(db, userId))) &&
+      (await canSpectateSession(userId, session, (viewer, ids) => friends.watchable(viewer, ids))),
+  })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
   await app.register(bigScreenGwPlugin, { db, service: bigScreen })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })

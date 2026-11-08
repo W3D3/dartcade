@@ -1,12 +1,13 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
-import type { RawData } from 'ws'
+import type { RawData, WebSocket } from 'ws'
 import { z } from 'zod'
 import { BrowserConnections } from './connections.js'
 import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import { withAuthedSocket, socketQuery } from './authedSocket.js'
 import { isOpen, onceGone } from '../util/socket.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
+import type { Session } from '../session/types.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
 import { WsCloseCode, type CameraMessage, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
@@ -14,11 +15,17 @@ import { ClientMessageSchema } from '../schema/zod.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
 
 export const browserConnections = new BrowserConnections()
+/** Friends watching a game (Watch): read-only sockets, kept apart from the players so presence and the ranked timers never see them. */
+export const spectators = new BrowserConnections()
+
+/** Watchers per game, and sockets per watcher and game (a second tab); the next one is refused. */
+export const MAX_WATCHERS = 10
+export const MAX_SOCKETS_PER_WATCHER = 2
 
 // Tolerant reader: the zod schema (generated from schema/game-ws-v1.json) strips fields a
 // newer or buggy client adds, at every level, before the action reaches the engine and
 // gets persisted or pushed in snapshots.
-const SessionQuerySchema = z.object({ sessionId: z.string().min(1) })
+const SessionQuerySchema = z.object({ sessionId: z.string().min(1), watch: z.literal('1').optional() })
 
 // ws hands over a Buffer (its default binaryType); the other forms are handled for completeness
 function rawText(raw: RawData): string {
@@ -31,10 +38,12 @@ type Opts = FastifyPluginOptions & {
   isLobbyMember?: IsLobbyMember
   /** Camera stills of the boards (tests pass their own). */
   stills?: CameraStills
+  /** Whether the user may watch this game without playing in it (Watch: flag, friendship, Invisible); default: nobody. */
+  canSpectate?: (userId: string, session: Session) => Promise<boolean>
 }
 
 export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { engine, isLobbyMember = noLobbies, stills = cameraStills } = opts
+  const { engine, isLobbyMember = noLobbies, stills = cameraStills, canSpectate = () => Promise.resolve(false) } = opts
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
     withAuthedSocket(connection, req, async (socket, userId) => {
@@ -45,6 +54,10 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const session = engine.getSession(sessionId)
       if (!session) {
         socket.close(WsCloseCode.NotFound, 'session not found')
+        return
+      }
+      if (query.watch) {
+        await spectate(socket, userId, session)
         return
       }
       if (!(await canWatchSession(userId, session, isLobbyMember))) {
@@ -111,6 +124,31 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       })
     })
   })
+  /** A friend's read-only socket: the game's snapshots, no actions, no camera stills (they are the owner's). */
+  async function spectate(socket: WebSocket, userId: string, session: Session) {
+    if (!(await canSpectate(userId, session))) {
+      socket.close(WsCloseCode.Forbidden, 'forbidden')
+      return
+    }
+    if (!isOpen(socket)) return
+    if (spectators.size(session.id) >= MAX_WATCHERS || spectators.size(session.id, userId) >= MAX_SOCKETS_PER_WATCHER) {
+      socket.close(WsCloseCode.TooManyWatchers, 'too many watchers')
+      return
+    }
+    spectators.add(session.id, socket, userId)
+    if (!engine.getSnapshot(session.id)) {
+      spectators.remove(session.id, socket)
+      socket.close(WsCloseCode.NotFound, 'session not found')
+      return
+    }
+    // The watcher's own first snapshot and the players' new count, in one push
+    pushSnapshot(session.id, engine)
+    onceGone(socket, () => {
+      spectators.remove(session.id, socket)
+      pushSnapshot(session.id, engine)
+    })
+  }
+
   done()
 }
 
@@ -120,26 +158,31 @@ function viewFor(sessionId: string, userId: string): SnapshotView {
     connectedUserIds: browserConnections.connectedUsers(sessionId),
     disconnectedAt: u => browserConnections.disconnectedAt(sessionId, u),
     isBoardOnline: b => bridgeConnections.isOnline(b),
+    spectators: spectators.connectedUsers(sessionId).size,
   }
 }
 
 /** The engine forgot the game: nobody's leaving time for it is needed any more. */
 export function forgetSession(sessionId: string): void {
   browserConnections.forget(sessionId)
+  spectators.forget(sessionId)
+  spectators.closeAll(sessionId, WsCloseCode.NotFound, 'game ended')
 }
 
 /** Sends every viewer of the game their own snapshot. */
 export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
   // The viewers' snapshots differ only in viewer fields: check the first one, log it once
   let checked = false
-  browserConnections.pushEach(sessionId, userId => {
+  const build = (userId: string) => {
     const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
     if (snap && !checked) {
       checked = true
       checkSnapshot(snap, msg => console.error(msg))
     }
     return snap ?? null
-  })
+  }
+  browserConnections.pushEach(sessionId, build)
+  spectators.pushEach(sessionId, build)
 }
 
 /** Tells every viewer of the board's game that it has a new camera still. */
