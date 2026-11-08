@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@better-auth/core": "1.7.6",
+    "@better-auth/passkey": "1.7.6",
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@fastify/rate-limit": "9.1.0",
     "@fastify/static": "7.0.4",

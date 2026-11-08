@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { db } from '../db/index.js'
 import { resolveMailConfig } from '../mail/config.js'
 import { createMailer } from '../mail/transport.js'
+import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { authOptions } from './options.js'
 
 const trustedOrigins =
@@ -12,4 +13,13 @@ const trustedOrigins =
 export const mailConfig = resolveMailConfig(process.env)
 export const mailer = createMailer(mailConfig, (message, details) => console.warn(message, details))
 
-export const auth = betterAuth(authOptions({ db, mail: mailConfig, mailer, trustedOrigins }))
+export const auth = betterAuth(
+  authOptions({
+    db,
+    mail: mailConfig,
+    mailer,
+    trustedOrigins,
+    baseURL: process.env.BETTER_AUTH_URL,
+    passkeysEnabledFor: async userId => flagEnabled('auth.passkeys.enabled', await loadFlagUser(db, userId)),
+  }),
+)
