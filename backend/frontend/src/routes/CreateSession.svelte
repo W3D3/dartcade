@@ -366,7 +366,10 @@
               {#if $currentUser?.isAdmin}
                 <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
               {:else if $userCoursesOn}
-                <a href="#/minigolf/courses" class="self-start text-[14px] font-semibold">My courses</a>
+                <span class="flex gap-4">
+                  <a href="#/minigolf/courses" class="text-[14px] font-semibold">My courses</a>
+                  <a href="#/minigolf/browse" class="text-[14px] font-semibold">Player courses</a>
+                </span>
               {/if}
             {/if}
             <!-- Phones: the rules line closes the settings; the bar below holds only the button -->
