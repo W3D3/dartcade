@@ -3,6 +3,7 @@
   // Lives in the frame (routes/BigScreenFrame.svelte), so its media queries see the frame's window.
   import { whoOf } from '$lib/face'
   import BullOffPanel from '$lib/components/BullOffPanel.svelte'
+  import CricketMatch from '$lib/components/cricket/CricketMatch.svelte'
   import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import P121Match from '$lib/components/p121/P121Match.svelte'
@@ -36,7 +37,7 @@
   } = $props()
 
   const current = $derived(gameState(snapshot))
-  const { x01, atc, p121, hilo, minigolf } = $derived(current)
+  const { x01, atc, p121, hilo, cricket, minigolf } = $derived(current)
   // The kiosk always shows the finish to aim at
   const shown = $derived({ ...settings, checkoutSuggestions: true })
   const mv = $derived(matchView(snapshot, history, shown))
@@ -83,6 +84,17 @@
     />
   {:else if hilo}
     <HiloMatch {...VIEW_ONLY} game={hilo} who={whoOf(snapshot)} darts={hilo.currentVisitDarts} {layout} locked={hilo.visitLocked} />
+  {:else if cricket}
+    <CricketMatch
+      {...VIEW_ONLY}
+      game={cricket}
+      players={snapshot.players}
+      who={whoOf(snapshot)}
+      darts={cricket.currentVisitDarts}
+      {layout}
+      locked={cricket.visitLocked}
+      onCorrect={noop}
+    />
   {:else}
     <FallbackCard {snapshot} />
   {/if}
