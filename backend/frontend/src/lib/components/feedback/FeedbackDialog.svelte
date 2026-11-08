@@ -2,6 +2,7 @@
   // Report a bug or give feedback (the Alpha badge, Settings → Profile). Mounted once in Layout;
   // openFeedback() took the page's screenshot before this opened.
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import FieldLabel from '$lib/components/FieldLabel.svelte'
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import Chip from '$lib/components/ui/chip/chip.svelte'
@@ -67,7 +68,7 @@
           {/each}
         </div>
 
-        <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
+        <FieldLabel>
           What happened?
           <textarea
             bind:value={form.message}
@@ -77,7 +78,7 @@
             placeholder={form.kind === 'bug' ? 'What did you do, what did you expect, what happened instead?' : 'Tell us more'}
             class="resize-y rounded-md border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
           <span class="self-end normal-case tracking-normal text-[12px]">{form.message.length} / {MESSAGE_MAX}</span>
-        </label>
+        </FieldLabel>
 
         {#if dialog.screenshot}
           <label class="flex items-center gap-3 cursor-pointer text-[14px]">

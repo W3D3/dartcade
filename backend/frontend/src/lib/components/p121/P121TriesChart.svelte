@@ -7,6 +7,7 @@
   import { Chart, Spline } from 'layerchart/svg'
   import type { ChartState, AnyScale } from 'layerchart'
   import { chartGrid } from '$lib/charts/grid'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
 
   type Point = { n: number; target: number; made: boolean }
   type PointChartState = ChartState<Point, AnyScale<number, number>, AnyScale<number, number>>
@@ -29,7 +30,7 @@
   class="flex flex-col gap-[10px] box-border px-[22px] py-5 rounded-2xl border border-line bg-surface-1 min-w-0"
 >
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-    <h2 class="text-[12px] font-semibold label-caps text-text-dim">Target per try</h2>
+    <SectionLabel as="h2">Target per try</SectionLabel>
     <span class="md:ml-auto inline-flex items-center gap-[6px] text-[13px] text-text-muted"
       ><span class="size-[10px] rounded-full bg-accent"></span>Checked out</span
     >

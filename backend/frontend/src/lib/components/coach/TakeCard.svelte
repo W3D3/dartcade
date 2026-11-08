@@ -5,6 +5,7 @@
   import type { LegReview, SkillGrade } from '$shared/coach'
   import { legGroupingLine } from '$lib/coach/leg'
   import { pillTone, SKILL_TONE, TONE_TEXT } from '$lib/coach/tone'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
 
   let { take, skills, grouping }: Pick<LegReview, 'take' | 'skills' | 'grouping'> = $props()
 
@@ -31,7 +32,7 @@
 
 <!-- Desktop -->
 <section class="card hidden flex-col gap-1.5 px-[22px] py-5 xl:flex">
-  <h2 class="text-[12px] font-semibold label-caps text-text-dim">Coach's take</h2>
+  <SectionLabel as="h2">Coach's take</SectionLabel>
   <p class="mt-1 mb-2 text-[17px] leading-normal">{take}</p>
   {#each rows as r (r.name)}
     {@const t = tone(r.grade)}

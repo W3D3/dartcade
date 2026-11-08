@@ -4,6 +4,7 @@
   import { Modal } from '$lib/components/ui/modal/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import FieldLabel from '$lib/components/FieldLabel.svelte'
   import { grantXp, grantSummary, XP_QUICK_AMOUNTS, type AdminUser, type XpGrant } from '$lib/admin/users'
 
   let { user, onclose, ongranted }: { user: AdminUser; onclose: () => void; ongranted: (g: XpGrant) => void } = $props()
@@ -33,10 +34,10 @@
   {#if done}
     <p class="text-[15px] text-text">{grantSummary(done)}</p>
   {:else}
-    <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
+    <FieldLabel>
       Amount
       <Input type="number" min={1} max={100000} step={1} bind:value={amount} aria-label="XP amount" />
-    </label>
+    </FieldLabel>
     <div class="flex flex-wrap gap-2">
       {#each XP_QUICK_AMOUNTS as q (q.label)}
         <Button variant="outline" size="sm" onclick={() => (amount = q.amount)}>{q.label}</Button>

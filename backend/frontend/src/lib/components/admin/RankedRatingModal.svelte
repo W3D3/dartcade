@@ -4,6 +4,7 @@
   import { Modal } from '$lib/components/ui/modal/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import FieldLabel from '$lib/components/FieldLabel.svelte'
   import { changeRating, type AdminUser, type RankedMode } from '$lib/admin/users'
 
   let {
@@ -47,19 +48,19 @@
   zClass="z-[200]"
 >
   {#if kind === 'set'}
-    <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
+    <FieldLabel>
       New rating (RP)
       <Input type="number" min={0} max={3000} step={1} bind:value aria-label="New rating" />
-    </label>
+    </FieldLabel>
   {:else}
     <p class="text-[14px] text-text-muted">
       {user.name} plays placement matches again in {mode}. Their rating stays, hidden, as the starting point.
     </p>
   {/if}
-  <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
+  <FieldLabel>
     Reason (kept in the audit trail)
     <Input type="text" maxlength={500} bind:value={reason} aria-label="Reason" />
-  </label>
+  </FieldLabel>
   {#if error}<ErrorText>{error}</ErrorText>{/if}
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={onclose}>Cancel</Button>

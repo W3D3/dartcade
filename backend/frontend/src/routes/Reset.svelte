@@ -6,6 +6,7 @@
   import AuthHero from '$lib/components/AuthHero.svelte'
   import PasswordStrength from '$lib/components/PasswordStrength.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import { authClient } from '$lib/auth'
 
   // better-auth's redirect puts token/error in the page's real query string (before the hash
@@ -47,7 +48,7 @@
     <div class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
       {#if expired}
         <div class="flex flex-col gap-[10px]">
-          <span class="text-[12px] font-semibold label-caps text-text-dim">Invalid or used token</span>
+          <SectionLabel>Invalid or used token</SectionLabel>
           <div class="flex flex-col gap-3 p-4 rounded-md bg-surface-inset border border-danger-line">
             <p class="text-body/normal text-danger-text">This link has expired or was already used.</p>
             <a href="#/forgot" class="text-[14px] font-semibold no-underline">Request a new link</a>

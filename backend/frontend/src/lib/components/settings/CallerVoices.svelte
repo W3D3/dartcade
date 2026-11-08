@@ -11,6 +11,7 @@
   import PreviewButton from '$lib/components/PreviewButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import { createCaller } from '$lib/caller/player.js'
   import { audioContext } from '$lib/sounds.js'
   import { flag } from '$lib/flags'
@@ -164,7 +165,7 @@
 
     {#if $packDetails && lib.builtins.length}
       <div class="flex flex-col gap-2">
-        <span class="text-[12px] font-semibold label-caps text-text-dim">Built-in · {lib.builtins.length}</span>
+        <SectionLabel>Built-in · {lib.builtins.length}</SectionLabel>
         <ul class="flex flex-col gap-[6px]">
           {#each lib.builtins as b (b.id)}
             <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-md bg-surface-row border border-line">
@@ -188,7 +189,7 @@
     {/if}
 
     <div class="flex flex-col gap-2">
-      <span class="text-[12px] font-semibold label-caps text-text-dim">Your packs · {lib.packs.length}</span>
+      <SectionLabel>Your packs · {lib.packs.length}</SectionLabel>
       {#if lib.packs.length}
         <ul class="flex flex-col gap-[6px]">
           {#each lib.packs as p (p.id)}
