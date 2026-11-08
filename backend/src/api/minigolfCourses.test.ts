@@ -4,7 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { minigolfCoursesApiPlugin } from './minigolfCourses.js'
-import { seedOfficialCourses, createHole, createCourse } from '../db/minigolfCourses.js'
+import { seedOfficialCourses, createHole, createCourse, listCourses, canReadCourse } from '../db/minigolfCourses.js'
 import { setupFlags } from '../flags/index.js'
 import { MINIGOLF_LIMITS } from '../shared/minigolf/limits.js'
 import type { Hole, Shape } from '../shared/minigolf/types.js'
@@ -648,6 +648,49 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
       } finally {
         await setupFlags(new Set(['minigolf.userCourses.enabled']))
       }
+    })
+
+    it('lists exactly the courses canReadCourse allows, for every viewer', async () => {
+      const off = await createHole(db, validHole('p1'), 'owner')
+      await createCourse(db, content([off.id]), 'owner')
+      await ownerCourse(true)
+      const hole = (await createHoleAs(asAdmin, validHole('off'))).json()
+      const official = (await createCourseAs(asAdmin, content([hole.id], 'Off'))).json()
+      await call('POST', `/api/minigolf/courses/${official.id}/publish`, asAdmin)
+      await createCourseAs(asAdmin, content([], 'Official draft'))
+      const all = await listCourses(db, { id: 'admin', admin: true, userCourses: true })
+      for (const viewer of [
+        { id: 'owner', admin: false, userCourses: true },
+        { id: 'owner', admin: false, userCourses: false },
+        { id: 'other', admin: false, userCourses: true },
+        { id: 'other', admin: false, userCourses: false },
+        { id: 'admin', admin: true, userCourses: false },
+      ]) {
+        const listed = (await listCourses(db, viewer)).map(c => c.id).sort()
+        expect(listed).toEqual(
+          all
+            .filter(c => canReadCourse(c, viewer))
+            .map(c => c.id)
+            .sort(),
+        )
+      }
+    })
+
+    it("keeps a hole no more visible than its course: with the flag off even the owner's own hole is hidden", async () => {
+      const { hole } = await ownerCourse()
+      await setupFlags(new Set())
+      try {
+        expect((await call('GET', `/api/minigolf/holes/${hole.id}`, asOwner)).statusCode).toBe(404)
+        expect((await call('POST', '/api/minigolf/holes', asOwner, { copyOf: hole.id })).statusCode).toBe(403)
+      } finally {
+        await setupFlags(new Set(['minigolf.userCourses.enabled']))
+      }
+    })
+
+    it("refuses a player's hole in an official course", async () => {
+      const { hole } = await ownerCourse()
+      const res = await createCourseAs(asAdmin, content([hole.id], 'Official'))
+      expect(res.statusCode).toBe(400)
     })
 
     it("takes a deleted account's courses and holes with it", async () => {
