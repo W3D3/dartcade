@@ -1,5 +1,17 @@
 import type { Component } from 'svelte'
-import { Flag, GraduationCap, Gamepad2, Map as MapIcon, Palette, ScanEye, Server, Swords, ToggleRight, Users } from '@lucide/svelte'
+import {
+  Flag,
+  FlagTriangleRight,
+  GraduationCap,
+  Gamepad2,
+  Map as MapIcon,
+  Palette,
+  ScanEye,
+  Server,
+  Swords,
+  ToggleRight,
+  Users,
+} from '@lucide/svelte'
 
 /** The hub's sections, in the order they are shown. */
 export const ADMIN_CATEGORIES = ['People & moderation', 'Content & cosmetics', 'Platform & data', 'Labs'] as const
@@ -39,6 +51,14 @@ export const ADMIN_TOOLS: AdminTool[] = [
     title: 'Ranked queue',
     desc: 'Who is searching for a ranked match, and take someone out',
     icon: Swords,
+    moderator: true,
+  },
+  {
+    category: 'People & moderation',
+    href: '/admin/minigolf/reports',
+    title: 'Course reports',
+    desc: 'Reported player courses: unpublish, remove or dismiss',
+    icon: FlagTriangleRight,
     moderator: true,
   },
   {

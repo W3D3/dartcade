@@ -37,7 +37,8 @@ export function provenance(row: HoleRow): string {
 }
 
 /** The status chip on a course in the list; `hasChanges` counts its holes' drafts too. */
-export function courseStatus(row: CourseRow): 'Published' | 'Draft changes' | 'Not published' {
+export function courseStatus(row: CourseRow): 'Published' | 'Draft changes' | 'Not published' | 'Taken down' {
+  if (row.moderation) return 'Taken down'
   if (row.published === null) return 'Not published'
   return row.hasChanges ? 'Draft changes' : 'Published'
 }

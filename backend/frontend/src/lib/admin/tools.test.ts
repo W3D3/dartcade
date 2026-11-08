@@ -6,8 +6,8 @@ describe('toolsFor', () => {
     expect(toolsFor({ isAdmin: true })).toEqual(ADMIN_TOOLS)
   })
 
-  it('shows a moderator only the game and queue tools', () => {
-    expect(toolsFor({ isAdmin: false }).map(t => t.href)).toEqual(['/admin/games', '/admin/ranked'])
+  it('shows a moderator only the game, queue and course report tools', () => {
+    expect(toolsFor({ isAdmin: false }).map(t => t.href)).toEqual(['/admin/games', '/admin/ranked', '/admin/minigolf/reports'])
   })
 
   it('shows nobody nothing', () => {
@@ -27,7 +27,7 @@ describe('toolGroupsFor', () => {
   it('shows a moderator only their tools and hides the empty categories', () => {
     const groups = toolGroupsFor({ isAdmin: false })
     expect(groups.map(g => g.category)).toEqual(['People & moderation'])
-    expect(groups[0].tools.map(t => t.href)).toEqual(['/admin/games', '/admin/ranked'])
+    expect(groups[0].tools.map(t => t.href)).toEqual(['/admin/games', '/admin/ranked', '/admin/minigolf/reports'])
   })
 
   it('shows nobody nothing', () => {

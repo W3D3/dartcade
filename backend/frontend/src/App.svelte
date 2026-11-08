@@ -41,6 +41,8 @@
   import FinishSprite from '$lib/components/FinishSprite.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminRanked from './routes/AdminRanked.svelte'
+  import AdminMinigolfReports from './routes/AdminMinigolfReports.svelte'
+  import MinigolfBrowse from './routes/MinigolfBrowse.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import AdminDartSamples from './routes/AdminDartSamples.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
@@ -160,6 +162,8 @@
     '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
     '/admin/ranked': AdminRanked,
+    '/admin/minigolf/reports': AdminMinigolfReports,
+    '/minigolf/browse': MinigolfBrowse,
     '/admin/system': AdminSystem,
     '/admin/dart-samples': AdminDartSamples,
     '/admin/cosmetics': AdminCosmetics,

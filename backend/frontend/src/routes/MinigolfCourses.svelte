@@ -22,6 +22,7 @@
   import HoleLibrary from '$lib/components/minigolf/editor/HoleLibrary.svelte'
   import HoleThumb from '$lib/components/minigolf/editor/HoleThumb.svelte'
   import PhoneBanner from '$lib/components/minigolf/editor/PhoneBanner.svelte'
+  import { COURSE_TEXT_MAX } from '$shared/minigolf/limits'
   import { ADMIN_AREA, limitMessage, listedCourses, mayEdit, type Area } from '$lib/minigolf/editor/area'
   import { sortable, type SortableDrop } from '$lib/actions/sortable'
   import { listKeyMove, listPlacement, reorder, type Direction, type Placement } from '$lib/lobby/dnd'
@@ -328,17 +329,25 @@
               <Button variant="outline" onclick={() => void store?.load()}>Try again</Button>
             </div>
           {:else}
+            {#if selected?.moderation}
+              <p role="status" class="m-0 rounded-[10px] border border-line-2 bg-warn-soft p-3 text-[14px] text-warn">
+                A moderator took this course out of play: {selected.moderation.reason}. You can't publish it until a moderator allows it
+                again.
+              </p>
+            {/if}
             <div class="flex flex-col gap-2">
               <label class="flex flex-col gap-1">
                 <span class="text-[11px] label-caps text-text-dim">Course name</span>
                 <input
                   value={content.name}
+                  maxlength={COURSE_TEXT_MAX.name}
                   oninput={e => edit({ name: e.currentTarget.value })}
                   class="h-[46px] rounded-[10px] border border-line-3 bg-bg px-3 font-display text-[26px] font-bold uppercase text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
                 />
               </label>
               <input
                 value={content.description}
+                maxlength={COURSE_TEXT_MAX.description}
                 oninput={e => edit({ description: e.currentTarget.value })}
                 aria-label="Short description"
                 placeholder="Short description"
