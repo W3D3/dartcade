@@ -7,8 +7,10 @@
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { minigolfCoursesTrail } from '$lib/admin/breadcrumbs'
   import type { DraftStatus } from '$lib/minigolf/editor/store.svelte'
+  import { ADMIN_AREA, type Area } from '$lib/minigolf/editor/area'
 
   let {
+    area = ADMIN_AREA,
     courseId,
     courseName = null,
     status,
@@ -26,6 +28,7 @@
     ondelete,
     onreload,
   }: {
+    area?: Area
     courseId: string | null
     /** The open course's name, for the breadcrumb (null: still loading, or none picked). */
     courseName?: string | null
@@ -69,19 +72,22 @@
 </script>
 
 <header class="flex flex-col gap-2 border-b border-line px-4 py-3 md:px-5">
-  <Breadcrumb items={minigolfCoursesTrail(courseId ? courseName : null)} />
+  <Breadcrumb items={minigolfCoursesTrail(courseId ? courseName : null, area)} />
   <div class="flex flex-wrap items-center gap-3">
     <h1 class="m-0 font-display font-bold text-[24px] uppercase tracking-[0.04em]">Course editor</h1>
-    <span
-      title="You can edit official courses"
-      class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
-      >Admin</span
-    >
+    {#if area.admin}
+      <span
+        title="You can edit official courses"
+        class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
+        >Admin</span
+      >
+    {/if}
     {#if courseId && status}
       <div class="ml-auto flex flex-wrap items-center gap-[10px]">
         <span class="text-[13px] {failing ? 'text-live-text' : 'text-text-muted'}" aria-live="polite">{STATUS[status]()}</span>
         {#if status === 'conflict'}<Button variant="outline" onclick={onreload}>Reload</Button>{/if}
-        <Button variant="ghost" href="#/admin/minigolf?course={courseId}&draft=1"><Play size={16} />Preview round</Button>
+        {#if area.admin}<Button variant="ghost" href="#/admin/minigolf?course={courseId}&draft=1"><Play size={16} />Preview round</Button
+          >{/if}
         {#if published}<Button variant="outline" disabled={busy || !editable} onclick={onunpublish}>Unpublish</Button>{/if}
         {#if !builtIn}<Button variant="ghost" disabled={busy || !loaded} onclick={ondelete}><Trash size={16} />Delete</Button>{/if}
         <Button variant="destructive" disabled={busy || !editable || !hasDraft || !published} onclick={ondiscard}>Discard draft</Button>

@@ -1,5 +1,6 @@
 <!--
-  Admin course editor (#/admin/minigolf/courses, /courses/:id): the courses on the left, the
+  Course editor (#/admin/minigolf/courses for admins, #/minigolf/courses for players with the
+  minigolf.userCourses.enabled flag; /courses/:id on both): the courses on the left, the
   picked course's details and holes in the centre, the hole library on the right. Edits go to the
   course's draft (autosaved, lib/minigolf/editor/store.svelte.ts) until Publish changes.
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The course editor".
@@ -11,6 +12,7 @@
   import { push } from 'svelte-spa-router'
   import { Plus } from '@lucide/svelte'
   import { currentUser } from '$lib/auth'
+  import { flag, flagsLoaded } from '$lib/flags'
   import { api } from '$lib/api'
   import Layout from '$lib/components/Layout.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -19,6 +21,8 @@
   import CourseHoles from '$lib/components/minigolf/editor/CourseHoles.svelte'
   import HoleLibrary from '$lib/components/minigolf/editor/HoleLibrary.svelte'
   import HoleThumb from '$lib/components/minigolf/editor/HoleThumb.svelte'
+  import PhoneBanner from '$lib/components/minigolf/editor/PhoneBanner.svelte'
+  import { ADMIN_AREA, limitMessage, listedCourses, mayEdit, type Area } from '$lib/minigolf/editor/area'
   import { sortable, type SortableDrop } from '$lib/actions/sortable'
   import { listKeyMove, listPlacement, reorder, type Direction, type Placement } from '$lib/lobby/dnd'
   import { createReorder } from '$lib/lobby/reorder.svelte'
@@ -27,24 +31,29 @@
   import { courseStatus, courseTotals, holeOf, newHole, publishOutcome, type CourseRow, type HoleRow } from '$lib/minigolf/editor/course'
 
   // The router passes null on the list route
-  let { params = null }: { params?: { id?: string } | null } = $props()
+  let { params = null, area = ADMIN_AREA }: { params?: { id?: string } | null; area?: Area } = $props()
 
-  // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
+  // Not allowed (not an admin; or, for players, the flag is off): nothing to see here (signed-out
+  // users are sent to the login page by App)
+  const userCoursesOn = flag('minigolf.userCourses.enabled')
+  const allowed = $derived(!!$currentUser && mayEdit(area, $currentUser, $userCoursesOn))
   $effect(() => {
-    if ($currentUser && !$currentUser.isAdmin) void push('/')
+    if ($currentUser && $flagsLoaded && !allowed) void push('/')
   })
 
   let courses = $state<CourseRow[]>([])
   let holes = $state<HoleRow[]>([])
   let listError = $state('')
+  let listLoaded = $state(false)
   async function loadLists(): Promise<void> {
     const [c, h] = await Promise.all([api.GET('/api/minigolf/courses'), api.GET('/api/minigolf/holes')])
     if (c.data) courses = c.data.courses
     if (h.data) holes = h.data.holes
     listError = c.data && h.data ? '' : "Couldn't load the courses."
+    listLoaded = !!c.data
   }
   $effect(() => {
-    if ($currentUser?.isAdmin) untrack(() => void loadLists())
+    if (allowed) untrack(() => void loadLists())
   })
 
   const courseId = $derived(params?.id ?? null)
@@ -75,7 +84,7 @@
     if (store?.status !== 'missing') return
     untrack(() => {
       gone = content?.name ?? 'This course'
-      void push('/admin/minigolf/courses')
+      void push(`${area.base}/courses`)
       void loadLists()
     })
   })
@@ -131,7 +140,7 @@
     const res = await api.POST('/api/minigolf/holes', { body })
     busy = false
     if (!res.data) {
-      error = "Couldn't create the hole."
+      error = 'limit' in res.error ? limitMessage(res.error.limit, res.error.max) : "Couldn't create the hole."
       return null
     }
     holes = [...holes, res.data]
@@ -142,7 +151,7 @@
     if (!row || !content || !store) return
     setHoles([...content.holeIds, row.id])
     await store.flush()
-    void push(`/admin/minigolf/holes/${row.id}?course=${courseId}`)
+    void push(`${area.base}/holes/${row.id}?course=${courseId}`)
   }
   async function onduplicate(holeId: string): Promise<void> {
     const row = await createHole({ copyOf: holeId })
@@ -197,9 +206,14 @@
     busy = false
     if (error) return
     courses = courses.filter(c => c.id !== id)
-    void push('/admin/minigolf/courses')
+    void push(`${area.base}/courses`)
   }
 
+  const listed = $derived(listedCourses(area, courses, $currentUser?.id ?? ''))
+  // A course that isn't the player's own (an official one, by its link) can't be edited here
+  $effect(() => {
+    if (!area.admin && listLoaded && courseId && !listed.some(c => c.id === courseId)) void push(`${area.base}/courses`)
+  })
   const selected = $derived(courses.find(c => c.id === courseId) ?? null)
   const hasDraft = $derived(!!selected && (!!selected.hasChanges || selected.published === null))
 
@@ -208,11 +222,11 @@
     const res = await api.POST('/api/minigolf/courses', { body: { name: 'New course', description: '', difficulty: 1, holeIds: [] } })
     busy = false
     if (!res.data) {
-      listError = "Couldn't create a course."
+      listError = 'limit' in res.error ? limitMessage(res.error.limit, res.error.max) : "Couldn't create a course."
       return
     }
     courses = [...courses, res.data]
-    void push(`/admin/minigolf/courses/${res.data.id}`)
+    void push(`${area.base}/courses/${res.data.id}`)
   }
 
   const DIFFICULTY = [
@@ -235,9 +249,11 @@
 <svelte:window {onbeforeunload} />
 
 <Layout title="Course editor">
-  {#if $currentUser?.isAdmin}
+  {#if allowed}
+    <PhoneBanner />
     <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
       <CourseHeader
+        {area}
         {courseId}
         courseName={content?.name ?? null}
         status={store?.status ?? null}
@@ -266,15 +282,17 @@
           {#if gone}<p role="status" class="m-0 rounded-[10px] border border-line-2 bg-surface-2 p-3 text-[14px]">
               {gone} is gone: someone deleted it.
             </p>{/if}
-          <!-- Every course is official in v1 -->
-          <h2 class="m-0 text-[11px] label-caps text-text-dim">Official</h2>
+          <h2 class="m-0 text-[11px] label-caps text-text-dim">{area.admin ? 'Courses' : 'My courses'}</h2>
+          {#if !area.admin && listed.length === 0 && !listError}
+            <p class="m-0 text-[14px] text-text-muted">No courses yet. Start one with New course.</p>
+          {/if}
           <ul class="m-0 flex list-none flex-col gap-[6px] p-0">
-            {#each courses as c (c.id)}
+            {#each listed as c (c.id)}
               {@const shown = listContent(c)}
               {@const chip = courseStatus(c)}
               <li>
                 <a
-                  href="#/admin/minigolf/courses/{c.id}"
+                  href="#{area.base}/courses/{c.id}"
                   aria-current={c.id === courseId ? 'page' : undefined}
                   onclick={() => (gone = null)}
                   class="flex items-center gap-[10px] rounded-[12px] border p-2 text-text no-underline
@@ -351,6 +369,7 @@
               <span class="text-text">{DIFFICULTY[content.difficulty - 1]?.label}</span>
             </RadioGroup>
             <CourseHoles
+              {area}
               items={moves.people}
               courseId={courseId ?? ''}
               announcement={moves.announcement}

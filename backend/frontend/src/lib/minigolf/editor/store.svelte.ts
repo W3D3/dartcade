@@ -3,6 +3,7 @@
 // renders. A 409 means someone else changed it meanwhile (conflict: edits stop until a reload);
 // a 404 means it's gone (missing); another 4xx can't succeed by retrying (rejected: only the next
 // edit tries again); anything else (offline, 5xx) retries with backoff, saving the latest edit.
+import { limitMessage } from './area'
 import { api } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { holeSchema } from '$shared/minigolf/holeSchema'
@@ -68,6 +69,9 @@ export async function apiSaveCourse(id: string, version: number, content: Course
 export async function apiPublishCourse(id: string): Promise<PublishProblem[] | null> {
   const res = await api.POST('/api/minigolf/courses/{id}/publish', { params: { path: { id } } })
   if (res.error && 'problems' in res.error) return res.error.problems
+  // Over the published-courses limit: said like a failed check, on the course itself
+  if (res.error && 'limit' in res.error)
+    return [{ holeId: '', checks: [{ level: 'error', message: limitMessage(res.error.limit, res.error.max) }] }]
   if (res.error) throw new HttpError(res.response.status)
   return null
 }

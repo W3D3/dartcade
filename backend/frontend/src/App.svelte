@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PLAYER_AREA } from '$lib/minigolf/editor/area'
   import { deviceStore } from '$lib/storage'
   import Router, { push, location } from 'svelte-spa-router'
   import wrap from 'svelte-spa-router/wrap'
@@ -71,12 +72,13 @@
   const loadMinigolfBench = Object.assign(() => import('./routes/MinigolfBench.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
-  // One wrapped component for both course editor routes, so picking another course keeps the page (and its lists)
-  const minigolfCourses = wrap({
-    asyncComponent: Object.assign(() => import('./routes/MinigolfCourses.svelte').catch(() => ({ default: RouteLoadFailed })), {
-      loading: RouteLoading,
-    }),
+  // One lazy component for every course editor route (admin and player), so picking another course keeps the page (and its lists)
+  const loadMinigolfCourses = Object.assign(() => import('./routes/MinigolfCourses.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
   })
+  const minigolfCourses = wrap({ asyncComponent: loadMinigolfCourses })
+  // The same editor for players, outside #/admin (the pages check the flag)
+  const playerMinigolfCourses = wrap({ asyncComponent: loadMinigolfCourses, props: { area: PLAYER_AREA } })
   // The coach pages load on demand: they're behind a flag and bring the coach's own code. Each shows
   // its own skeleton meanwhile (`loadingParams` is wrap()'s, passed to it as `params`)
   const loadCoach = Object.assign(() => import('./routes/Coach.svelte').catch(() => ({ default: RouteLoadFailed })), {
@@ -166,6 +168,9 @@
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
     '/admin/minigolf/holes/:id': wrap({ asyncComponent: loadMinigolfHoleEditor }),
+    '/minigolf/courses': playerMinigolfCourses,
+    '/minigolf/courses/:id': playerMinigolfCourses,
+    '/minigolf/holes/:id': wrap({ asyncComponent: loadMinigolfHoleEditor, props: { area: PLAYER_AREA } }),
     ...devRoutes,
   }
 

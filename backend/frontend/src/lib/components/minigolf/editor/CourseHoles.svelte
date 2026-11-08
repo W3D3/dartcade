@@ -11,8 +11,10 @@
   import { courseTotals, holeOf, holeTags, type HoleRow } from '$lib/minigolf/editor/course'
   import { plural } from '$lib/fmt'
   import HoleThumb from './HoleThumb.svelte'
+  import { ADMIN_AREA, type Area } from '$lib/minigolf/editor/area'
 
   let {
+    area = ADMIN_AREA,
     items,
     courseId,
     announcement = '',
@@ -21,6 +23,7 @@
     onremove,
     onnew,
   }: {
+    area?: Area
     /** In playing order; `row` is missing for a hole the library doesn't have (deleted). */
     items: { id: string; name: string; row?: HoleRow }[]
     courseId: string
@@ -58,7 +61,7 @@
         {#if hole}<span class="shrink-0 text-[13px] text-text-muted"
             ><span class="label-caps text-[11px]">Par</span> <span class="font-semibold text-text">{hole.par}</span></span
           >{/if}
-        {#if hole}<a href="#/admin/minigolf/holes/{item.id}?course={courseId}" class="shrink-0 px-2 text-[14px] font-semibold">Edit</a>{/if}
+        {#if hole}<a href="#{area.base}/holes/{item.id}?course={courseId}" class="shrink-0 px-2 text-[14px] font-semibold">Edit</a>{/if}
         <PopoverMenu
           label="More for {item.name}"
           triggerLabel="More for {item.name}"

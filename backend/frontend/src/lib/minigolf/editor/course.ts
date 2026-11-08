@@ -85,3 +85,13 @@ export function newHole(): ApiHole {
     cup: { at: [300, 300], r: 80 },
   }
 }
+
+export type CourseCard = { id: string; name: string; sub: string }
+
+/** The lobby picker's "User courses" group: the published courses players made, as cards. */
+export const userCourseCards = (courses: CourseRow[]): CourseCard[] =>
+  courses.flatMap(c =>
+    c.visibility === 'public' && c.published
+      ? [{ id: c.id, name: c.published.name, sub: `by ${c.authorName ?? 'a player'} · ${plural(c.published.holeIds.length, 'hole')}` }]
+      : [],
+  )
