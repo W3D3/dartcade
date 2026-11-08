@@ -457,8 +457,8 @@
 
           {#if stale.length > 0}
             <section class="flex flex-col gap-2">
-              <h2 class="m-0 text-[15px] font-semibold text-text-muted">Stale overrides</h2>
-              <ul class="m-0 flex list-none flex-col gap-2 p-0">
+              <h2 class="text-[15px] font-semibold text-text-muted">Stale overrides</h2>
+              <ul class="flex flex-col gap-2">
                 {#each stale as s (s.key)}
                   <li class="card flex items-center justify-between gap-3 p-3">
                     <div class="flex min-w-0 flex-col gap-[2px]">
@@ -488,8 +488,8 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="flex min-w-0 flex-col gap-2">
                   {@render featureTag(featureOf(f.key))}
-                  <h2 id="flag-panel-title" class="m-0 break-all font-mono text-[18px] md:text-[20px] font-bold leading-tight">{f.key}</h2>
-                  <p class="m-0 text-[14px] text-text-muted">{f.description}</p>
+                  <h2 id="flag-panel-title" class="break-all font-mono text-[18px] md:text-[20px] font-bold leading-tight">{f.key}</h2>
+                  <p class="text-[14px] text-text-muted">{f.description}</p>
                   <div class="mt-1 flex flex-wrap items-center gap-2">
                     <Badge variant="pending">{flagStateText(f)}</Badge>
                     <Badge variant="pending">{kindText(f)}</Badge>
@@ -499,14 +499,14 @@
                   type="button"
                   onclick={tryClose}
                   aria-label="Close"
-                  class="hidden lg:flex -mr-2 -mt-1 h-11 w-11 shrink-0 items-center justify-center border-0 bg-transparent text-ink-2 cursor-pointer"
+                  class="hidden lg:flex -mr-2 -mt-1 h-11 w-11 shrink-0 items-center justify-center border-0 text-ink-2 cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
               {#if f.kind === 'boolean'}
                 <section class="flex flex-col gap-2 border-t border-line-2 pt-3">
-                  <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Global</h3>
+                  <h3 class="text-[12px] font-semibold label-caps text-text-dim">Global</h3>
                   <SegmentedControl
                     options={globalOptions(f)}
                     value={boolMode}
@@ -516,7 +516,7 @@
                   />
                 </section>
                 <section class="flex flex-col gap-2 border-t border-line-2 pt-3">
-                  <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Conditional</h3>
+                  <h3 class="text-[12px] font-semibold label-caps text-text-dim">Conditional</h3>
                   <SegmentedControl options={conditionalOptions} value={boolMode} disabled={panelBusy} onchange={v => pickMode(v)} />
                   {#if boolMode === 'users'}
                     <div class="flex flex-col gap-2">
@@ -594,11 +594,11 @@
               class="sticky -bottom-4 md:-bottom-[34px] lg:static z-10 shrink-0 flex flex-col gap-2 rounded-b-[16px] border-t border-line-2 bg-surface-panel px-4 md:px-7 py-4"
             >
               {#if saved}
-                <p class="m-0 text-[13px] text-accent">Live now. Open tabs update within half a minute.</p>
+                <p class="text-[13px] text-accent">Live now. Open tabs update within half a minute.</p>
               {:else if dirty}
-                <p class="m-0 text-[13px] text-text-muted">Unsaved changes</p>
+                <p class="text-[13px] text-text-muted">Unsaved changes</p>
               {:else if overrideLine(f, new Date())}
-                <p class="m-0 text-[13px] text-text-muted">{overrideLine(f, new Date())}</p>
+                <p class="text-[13px] text-text-muted">{overrideLine(f, new Date())}</p>
               {/if}
               {#if panelError}<ErrorText>{panelError}</ErrorText>{/if}
               <div class="flex gap-2">
@@ -613,7 +613,7 @@
       </div>
 
       {#if !loading && flags.length === 0 && !listError}
-        <p class="m-0 text-[15px] text-text-muted">No flags defined.</p>
+        <p class="text-[15px] text-text-muted">No flags defined.</p>
       {/if}
     </PageMain>
 

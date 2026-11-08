@@ -64,7 +64,7 @@
   {/snippet}
   {#snippet footer()}
     {#if locked}
-      <p class="m-0 text-[12px] leading-[1.45] text-text-dim">
+      <p class="text-[12px] leading-[1.45] text-text-dim">
         Going not-ready or leaving stops the search for both of you. Boards and who is in are locked until it ends.
       </p>
     {:else}

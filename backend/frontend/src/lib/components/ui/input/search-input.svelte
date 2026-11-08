@@ -19,6 +19,6 @@
     oninput={e => oninput?.(e.currentTarget.value)}
     placeholder={label}
     aria-label={label}
-    class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
+    class="min-w-0 flex-grow border-0 text-[14px] text-text outline-none"
   />
 </label>

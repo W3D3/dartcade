@@ -109,17 +109,15 @@
       class="flex w-full md:w-[400px] flex-col gap-5 md:gap-[26px] xl:gap-7 box-border px-5 py-6 md:p-0"
     >
       <div class="flex flex-col gap-2">
-        <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
-          Sign in
-        </h1>
-        <p class="hidden md:block m-0 text-[16px] text-text-muted">Welcome back. Your boards are waiting.</p>
+        <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">Sign in</h1>
+        <p class="hidden md:block text-[16px] text-text-muted">Welcome back. Your boards are waiting.</p>
       </div>
 
       {#if justReset}
-        <p class="m-0 text-[14px] text-accent">Password changed. Sign in with the new one.</p>
+        <p class="text-[14px] text-accent">Password changed. Sign in with the new one.</p>
       {/if}
       {#if justDeleted}
-        <p class="m-0 text-[14px] text-accent">Your account was deleted.</p>
+        <p class="text-[14px] text-accent">Your account was deleted.</p>
       {/if}
 
       <div class="flex flex-col gap-[18px]">
@@ -198,7 +196,7 @@
         {/if}
       </div>
 
-      <p class="m-0 text-[15px] text-text-muted text-center">
+      <p class="text-[15px] text-text-muted text-center">
         New to Dartcade?
         <a href="#/register" class="font-semibold no-underline">Create an account</a>
       </p>

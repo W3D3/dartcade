@@ -30,8 +30,8 @@
   aria-checked={checked}
   {onclick}
   {disabled}
-  class="min-h-11 disabled:opacity-50 disabled:cursor-default flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit]
-         {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
+  class="min-h-11 disabled:opacity-50 disabled:cursor-default flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer
+ {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
 >
   {@render leading?.()}
   <span class="flex flex-col gap-px flex-grow">

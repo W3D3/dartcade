@@ -14,10 +14,10 @@
 <div class="flex size-full flex-col items-center justify-center gap-10 px-20 text-center">
   <div class="font-mono text-[22px] uppercase tracking-[0.2em] text-text-dim">Game over</div>
   {#if hasWinner}
-    <h1 class="m-0 font-display text-[136px] font-bold uppercase leading-none text-accent">{rows[0].name}</h1>
+    <h1 class="font-display text-[136px] font-bold uppercase leading-none text-accent">{rows[0].name}</h1>
     <div class="text-[35px] text-text-muted">wins</div>
   {/if}
-  <ol class="m-0 flex list-none flex-col gap-3 p-0 text-[38px]">
+  <ol class="flex flex-col gap-3 text-[38px]">
     {#each rows as r, i (i)}
       <li><span class="font-display font-bold text-text-muted">{ordinal(r.placement)}</span> {r.name}</li>
     {/each}

@@ -23,8 +23,8 @@
 {#if atc}
   <section aria-label="Target by target" class="flex flex-col gap-4 min-w-0 box-border p-4 md:p-6 card">
     <div class="flex flex-col gap-2">
-      <h2 class="m-0 font-display font-bold text-[24px] md:text-[32px] leading-none uppercase">Target by target</h2>
-      <p class="m-0 text-[15px] text-text-muted">How many darts each target took. {hardestLine(detail.stats.seats, nameOf)}</p>
+      <h2 class="font-display font-bold text-[24px] md:text-[32px] leading-none uppercase">Target by target</h2>
+      <p class="text-[15px] text-text-muted">How many darts each target took. {hardestLine(detail.stats.seats, nameOf)}</p>
     </div>
     <div class="overflow-x-auto">
       <div class="grid gap-1 items-center min-w-[560px]" style:grid-template-columns={cols}>

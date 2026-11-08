@@ -55,11 +55,11 @@
       {#if error}<ErrorText>{error}</ErrorText>{/if}
 
       <section class="flex flex-col gap-3" aria-label="Reported courses">
-        <h2 class="m-0 text-[11px] label-caps text-text-dim">Reported</h2>
+        <h2 class="text-[11px] label-caps text-text-dim">Reported</h2>
         {#if list === null}
-          <p class="m-0 text-[14px] text-text-muted">Loading…</p>
+          <p class="text-[14px] text-text-muted">Loading…</p>
         {:else if list.courses.length === 0}
-          <p class="m-0 text-[14px] text-text-muted">No open reports.</p>
+          <p class="text-[14px] text-text-muted">No open reports.</p>
         {:else}
           {#each list.courses as { course, reports } (course.id)}
             <article class="card flex flex-col gap-3 p-4">
@@ -70,7 +70,7 @@
                   <span class="text-[13px] text-text-muted">{courseMeta(course)}</span>
                 </div>
               </div>
-              <ul class="m-0 flex list-none flex-col gap-1 p-0 text-[14px]">
+              <ul class="flex flex-col gap-1 text-[14px]">
                 {#each reports as r, i (i)}
                   <li><span class="font-semibold">{r.reporterName ?? 'A deleted account'}:</span> {r.reason}</li>
                 {/each}
@@ -91,7 +91,7 @@
 
       {#if list && list.moderated.length > 0}
         <section class="flex flex-col gap-3" aria-label="Taken down">
-          <h2 class="m-0 text-[11px] label-caps text-text-dim">Taken down</h2>
+          <h2 class="text-[11px] label-caps text-text-dim">Taken down</h2>
           {#each list.moderated as m (m.id)}
             <article class="card flex flex-wrap items-center gap-3 p-4">
               <div class="flex min-w-0 flex-1 basis-[240px] flex-col">

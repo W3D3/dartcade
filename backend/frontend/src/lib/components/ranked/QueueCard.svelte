@@ -64,7 +64,7 @@
       type="button"
       disabled={busy}
       onclick={() => void run(() => declineMatch(id))}
-      class="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-[13px] text-text-muted">Decline</button
+      class="cursor-pointer border-0 text-[13px] text-text-muted">Decline</button
     >
   {:else if view.kind === 'searching' && view.canCancel}
     <Button variant="outline" disabled={busy} onclick={() => void run(cancelSearch)} class="h-[34px] text-[13px]"

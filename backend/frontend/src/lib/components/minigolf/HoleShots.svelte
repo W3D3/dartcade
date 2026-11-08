@@ -37,7 +37,7 @@
   })
 </script>
 
-<figure class="m-0 flex flex-col gap-2">
+<figure class="flex flex-col gap-2">
   <svg {viewBox} class="{height} w-full rounded-xl bg-bg-deep" role="img" aria-label={label}>
     <polygon points={pts(hole.outline)} fill="#2a7045" stroke="#e9dfc4" stroke-width="20" stroke-linejoin="round" />
     {#each hole.walls as w, i (i)}

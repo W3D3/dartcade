@@ -75,16 +75,16 @@
   {:else if !activity}
     <p class="m-0 mb-3 text-[14px] text-text-muted">Loading…</p>
   {/if}
-  {#snippet none()}<p class="m-0 text-[14px] text-text-muted">—</p>{/snippet}
+  {#snippet none()}<p class="text-[14px] text-text-muted">—</p>{/snippet}
   <div class="grid gap-6 sm:grid-cols-2">
     <section>
       {@render block('Bridges')}
       {#if !activity}
         {@render none()}
       {:else if activity.bridges.length === 0}
-        <p class="m-0 text-[14px] text-text-muted">None connected ({activity.account.boards.length} paired).</p>
+        <p class="text-[14px] text-text-muted">None connected ({activity.account.boards.length} paired).</p>
       {:else}
-        <ul class="m-0 flex list-none flex-col gap-2 p-0 text-[14px]">
+        <ul class="flex flex-col gap-2 text-[14px]">
           {#each activity.bridges as b (b.boardId)}
             <li>
               <Badge variant="ready">Online</Badge>
@@ -109,19 +109,19 @@
       {#if !activity}
         {@render none()}
       {:else}
-        <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
+        <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
           <dt class="text-text-muted">Played</dt>
-          <dd class="m-0">{n(activity.games.total)} ({n(activity.games.last30Days)} in 30 days)</dd>
+          <dd>{n(activity.games.total)} ({n(activity.games.last30Days)} in 30 days)</dd>
           <dt class="text-text-muted">Last game</dt>
-          <dd class="m-0">{activity.games.lastAt ? joinedDate(activity.games.lastAt) : '—'}</dd>
+          <dd>{activity.games.lastAt ? joinedDate(activity.games.lastAt) : '—'}</dd>
           <dt class="text-text-muted">Ranked</dt>
-          <dd class="m-0">
+          <dd>
             {n(activity.games.ranked.games)} games{#each activity.games.ranked.ratings as r (r.mode)}
               · {r.mode}
               {r.rankIndex === null ? `placing (${r.matches})` : `${rank(r.rankIndex).name}, ${n(r.rating)} RP`}{/each}
           </dd>
           <dt class="text-text-muted">By mode</dt>
-          <dd class="m-0">
+          <dd>
             {activity.games.byMode.map(m => `${gameTitle(m.mode)} ${n(m.count)}`).join(' · ') || '—'}
           </dd>
         </dl>
@@ -133,13 +133,13 @@
       {#if !activity}
         {@render none()}
       {:else}
-        <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
+        <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
           <dt class="text-text-muted">Total</dt>
-          <dd class="m-0">{n(activity.darts.total)}, {manualShare(activity.darts.manual, activity.darts.total)}</dd>
+          <dd>{n(activity.darts.total)}, {manualShare(activity.darts.manual, activity.darts.total)}</dd>
           <dt class="text-text-muted">Board</dt>
-          <dd class="m-0">{n(activity.darts.total - activity.darts.manual)} detected</dd>
+          <dd>{n(activity.darts.total - activity.darts.manual)} detected</dd>
           <dt class="text-text-muted">30 days</dt>
-          <dd class="m-0">{n(activity.darts.last30Days)}, {manualShare(activity.darts.manualLast30Days, activity.darts.last30Days)}</dd>
+          <dd>{n(activity.darts.last30Days)}, {manualShare(activity.darts.manualLast30Days, activity.darts.last30Days)}</dd>
         </dl>
       {/if}
     </section>
@@ -149,11 +149,11 @@
       {#if !activity}
         {@render none()}
       {:else}
-        <dl class="m-0 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-[14px]">
+        <dl class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-[14px]">
           {#each MODES as mode (mode)}
             {@const r = ratingIn(mode)}
             <dt class="text-text-muted">{mode}</dt>
-            <dd class="m-0 flex flex-wrap items-center gap-2">
+            <dd class="flex flex-wrap items-center gap-2">
               <span
                 >{r.rankIndex === null
                   ? `Placing (${r.matches} of ${PLACEMENT_MATCHES}), ${n(r.rating)} RP hidden`
@@ -171,23 +171,23 @@
 
     <section>
       {@render block('Account')}
-      <dl class="m-0 grid items-center grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
+      <dl class="grid items-center grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[14px]">
         <dt class="text-text-muted">Last login</dt>
-        <dd class="m-0">{lastLoginText(user.lastLoginAt)}</dd>
+        <dd>{lastLoginText(user.lastLoginAt)}</dd>
         <dt class="text-text-muted">XP</dt>
-        <dd class="m-0 flex flex-wrap items-center gap-2">
+        <dd class="flex flex-wrap items-center gap-2">
           {activity ? `Level ${levelOf(activity.account.xp).level} · ${n(activity.account.xp)} XP` : '—'}
           <Button variant="outline" size="sm" disabled={busy} onclick={onxp}>Give XP</Button>
         </dd>
         <dt class="text-text-muted">Email</dt>
-        <dd class="m-0 flex flex-wrap items-center gap-2">
+        <dd class="flex flex-wrap items-center gap-2">
           {user.emailVerified ? 'verified' : 'unverified'}
           <Button variant="outline" size="sm" disabled={busy} onclick={onverified}>
             {user.emailVerified ? 'Mark unverified' : 'Mark verified'}
           </Button>
         </dd>
         <dt class="text-text-muted">Role</dt>
-        <dd class="m-0 flex flex-wrap items-center gap-2">
+        <dd class="flex flex-wrap items-center gap-2">
           {user.role ?? 'player'}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger disabled={busy} class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
@@ -216,7 +216,7 @@
           </DropdownMenu.Root>
         </dd>
         <dt class="text-text-muted">Status</dt>
-        <dd class="m-0 flex flex-wrap items-center gap-2">
+        <dd class="flex flex-wrap items-center gap-2">
           {#if user.ban}
             <Badge variant="live">Banned</Badge>
             {banLine(user.ban)}
@@ -227,11 +227,11 @@
           {/if}
         </dd>
         <dt class="text-text-muted">Friends</dt>
-        <dd class="m-0">{activity ? n(activity.account.friends) : '—'}</dd>
+        <dd>{activity ? n(activity.account.friends) : '—'}</dd>
         <dt class="text-text-muted">Boards</dt>
-        <dd class="m-0">{activity ? n(activity.account.boards.length) : '—'}</dd>
+        <dd>{activity ? n(activity.account.boards.length) : '—'}</dd>
         <dt class="text-text-muted">Country</dt>
-        <dd class="m-0">{activity?.account.country ?? '—'}</dd>
+        <dd>{activity?.account.country ?? '—'}</dd>
       </dl>
     </section>
   </div>

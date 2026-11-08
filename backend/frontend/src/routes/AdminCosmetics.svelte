@@ -32,10 +32,10 @@
       {#each groups.filter(g => g.perks.length > 0) as g (g.kind)}
         <section class="card p-4 md:p-5 flex flex-col gap-2" aria-labelledby="cos-{g.kind}">
           <div class="flex items-baseline gap-3">
-            <h2 id="cos-{g.kind}" class="m-0 text-[17px] font-semibold">{g.label}</h2>
+            <h2 id="cos-{g.kind}" class="text-[17px] font-semibold">{g.label}</h2>
             <span class="text-[13px] text-text-muted tabular-nums">{g.perks.length}</span>
           </div>
-          <ul class="m-0 p-0 list-none flex flex-col">
+          <ul class="flex flex-col">
             {#each g.perks as p (p.id)}
               {@const source = sourceOf(p)}
               <li class="flex items-center gap-3 py-[10px] border-b border-line last:border-b-0 min-w-0">
@@ -54,7 +54,7 @@
           </ul>
         </section>
       {:else}
-        <p class="m-0 text-[14px] text-text-muted">No cosmetics match "{q}".</p>
+        <p class="text-[14px] text-text-muted">No cosmetics match "{q}".</p>
       {/each}
     </PageMain>
   {/if}

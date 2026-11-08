@@ -77,11 +77,11 @@
 
       <section class="card flex flex-col" aria-label="Searches">
         {#if searches === null}
-          <p class="m-0 p-5 text-[14px] text-text-muted">Loading…</p>
+          <p class="p-5 text-[14px] text-text-muted">Loading…</p>
         {:else if searches.length === 0}
-          <p class="m-0 p-5 text-[14px] text-text-muted">Nobody is searching.</p>
+          <p class="p-5 text-[14px] text-text-muted">Nobody is searching.</p>
         {:else}
-          <ul class="m-0 list-none p-0">
+          <ul>
             {#each searches as s (s.id)}
               <li class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-[22px] py-3 last:border-b-0">
                 <span class="w-[70px] shrink-0 font-display text-[20px] font-bold uppercase tracking-[0.02em]">{s.mode}</span>

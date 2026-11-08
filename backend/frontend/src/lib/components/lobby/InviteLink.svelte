@@ -59,20 +59,16 @@
             <span class="text-[15px] text-ink-2"><strong class="text-text">{host}</strong> invited you to play darts</span>
           </span>
         </div>
-        <h1 id="invite-link-title" class="m-0 font-display font-bold text-[40px] md:text-[52px] leading-[0.95] uppercase">
+        <h1 id="invite-link-title" class="font-display font-bold text-[40px] md:text-[52px] leading-[0.95] uppercase">
           {preview.name}
         </h1>
         <LobbyGlance glance={preview} class="bg-bg" />
       {:else}
-        <h1 id="invite-link-title" class="m-0 font-display font-bold text-[40px] leading-[0.95] uppercase">Lobby invite</h1>
-        <p class="m-0 text-[15px] text-text-muted">
+        <h1 id="invite-link-title" class="font-display font-bold text-[40px] leading-[0.95] uppercase">Lobby invite</h1>
+        <p class="text-[15px] text-text-muted">
           {#if missing}This lobby is closed, or the link is wrong. Ask the host for a new one.
           {:else if failed}Couldn't look up the lobby.
-            <button
-              type="button"
-              onclick={onretry}
-              class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Try again</button
-            >
+            <button type="button" onclick={onretry} class="border-0 text-accent font-semibold cursor-pointer">Try again</button>
           {:else}Looking up the lobby…{/if}
         </p>
       {/if}
@@ -83,7 +79,7 @@
           >Create a free account</Button
         >
       </div>
-      <p class="m-0 text-[13px] leading-[1.5] text-text-dim">
+      <p class="text-[13px] leading-[1.5] text-text-dim">
         You'll come straight back to this lobby after signing in. To throw, you need an Autodarts board paired to Dartcade.
         {#if preview}The link works until {host} closes the lobby.{/if}
       </p>

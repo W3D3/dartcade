@@ -76,7 +76,7 @@
     <span class="col-start-[-4]">Player</span><span>Board</span><span class="text-right pr-[42px]">Status</span>
   </div>
   <ol
-    class="m-0 p-0 list-none flex flex-col gap-[6px] lg:min-h-0 lg:overflow-y-auto"
+    class="flex flex-col gap-[6px] lg:min-h-0 lg:overflow-y-auto"
     data-sortable-zone="people"
     use:sortable={{ ondrop, onkey, oncancel: () => moves.cancelled() }}
   >

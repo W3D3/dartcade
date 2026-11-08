@@ -31,7 +31,7 @@
 
 <HomeSection title="Friends' lobbies" link={{ label: 'All friends', href: '#/friends' }} loading={lobbies.loading} error={lobbies.error}>
   {#if lobbies.data && lobbies.data.lobbies.length > 0}
-    <ul class="m-0 flex list-none flex-col gap-[10px] p-0">
+    <ul class="flex flex-col gap-[10px]">
       {#each lobbies.data.lobbies as lobby (lobby.id)}
         <li class="flex items-center gap-3">
           <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-1 text-text-muted" aria-hidden="true"
@@ -65,9 +65,9 @@
         </li>
       {/each}
     </ul>
-    <p class="m-0 text-[12px] text-text-dim">Open lobbies let friends drop in.</p>
+    <p class="text-[12px] text-text-dim">Open lobbies let friends drop in.</p>
   {:else}
-    <p class="m-0 text-[14px] text-text-muted">No friends' lobbies right now.</p>
+    <p class="text-[14px] text-text-muted">No friends' lobbies right now.</p>
   {/if}
   {#if actions.error}<ErrorText>{actions.error}</ErrorText>{/if}
 </HomeSection>

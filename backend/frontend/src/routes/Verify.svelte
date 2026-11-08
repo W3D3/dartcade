@@ -100,16 +100,16 @@
     <div class="flex w-full md:w-[440px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
       <div class="flex flex-col gap-2">
         {#if queryError}
-          <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
             That link has expired
           </h1>
         {:else}
           <StepBars step={2} label="Verify email" />
-          <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
             Check your inbox
           </h1>
           {#if email}
-            <p class="m-0 text-[16px] text-text-muted">
+            <p class="text-[16px] text-text-muted">
               We sent a link to <strong class="text-text font-semibold">{email}</strong>. Open it on any device to finish signing up; this
               page continues on its own.
             </p>

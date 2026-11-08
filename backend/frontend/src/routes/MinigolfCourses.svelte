@@ -280,14 +280,14 @@
         <nav aria-label="Courses" class="flex flex-col gap-3">
           <Button variant="outline" disabled={busy} onclick={() => void newCourse()}><Plus size={16} />New course</Button>
           {#if listError}<ErrorText>{listError}</ErrorText>{/if}
-          {#if gone}<p role="status" class="m-0 rounded-[10px] border border-line-2 bg-surface-2 p-3 text-[14px]">
+          {#if gone}<p role="status" class="rounded-[10px] border border-line-2 bg-surface-2 p-3 text-[14px]">
               {gone} is gone: someone deleted it.
             </p>{/if}
-          <h2 class="m-0 text-[11px] label-caps text-text-dim">{area.admin ? 'Courses' : 'My courses'}</h2>
+          <h2 class="text-[11px] label-caps text-text-dim">{area.admin ? 'Courses' : 'My courses'}</h2>
           {#if !area.admin && listed.length === 0 && !listError}
-            <p class="m-0 text-[14px] text-text-muted">No courses yet. Start one with New course.</p>
+            <p class="text-[14px] text-text-muted">No courses yet. Start one with New course.</p>
           {/if}
-          <ul class="m-0 flex list-none flex-col gap-[6px] p-0">
+          <ul class="flex flex-col gap-[6px]">
             {#each listed as c (c.id)}
               {@const shown = listContent(c)}
               {@const chip = courseStatus(c)}
@@ -320,17 +320,17 @@
         <!-- Changed elsewhere: read-only until Reload -->
         <section aria-label="Course" class="flex min-w-0 flex-col gap-5" inert={store?.status === 'conflict'}>
           {#if !courseId}
-            <p class="m-0 text-[15px] text-text-muted">Pick a course to edit, or start a new one.</p>
+            <p class="text-[15px] text-text-muted">Pick a course to edit, or start a new one.</p>
           {:else if store?.status === 'loading'}
-            <p class="m-0 text-[15px] text-text-muted">Loading…</p>
+            <p class="text-[15px] text-text-muted">Loading…</p>
           {:else if !content}
             <div class="flex flex-col items-start gap-3">
-              <p class="m-0 text-[15px] text-live-text">Couldn't load this course.</p>
+              <p class="text-[15px] text-live-text">Couldn't load this course.</p>
               <Button variant="outline" onclick={() => void store?.load()}>Try again</Button>
             </div>
           {:else}
             {#if selected?.moderation}
-              <p role="status" class="m-0 rounded-[10px] border border-line-2 bg-warn-soft p-3 text-[14px] text-warn">
+              <p role="status" class="rounded-[10px] border border-line-2 bg-warn-soft p-3 text-[14px] text-warn">
                 A moderator took this course out of play: {selected.moderation.reason}. You can't publish it until a moderator allows it
                 again.
               </p>

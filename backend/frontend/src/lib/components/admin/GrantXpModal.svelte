@@ -31,7 +31,7 @@
 
 <Modal title="Give {user.name} XP" {onclose} showClose={false} dismissOnBackdrop={true} widthClass="max-w-[400px]" zClass="z-[200]">
   {#if done}
-    <p class="m-0 text-[15px] text-text">{grantSummary(done)}</p>
+    <p class="text-[15px] text-text">{grantSummary(done)}</p>
   {:else}
     <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
       Amount

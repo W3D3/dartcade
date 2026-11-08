@@ -48,8 +48,8 @@
       <a href="#/matchmaking" class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"
         ><ChevronLeft size={16} />Matchmaking</a
       >
-      <h1 class="m-0 hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Ranks</h1>
-      <p class="m-0 text-[15px] text-text-muted">
+      <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Ranks</h1>
+      <p class="text-[15px] text-text-muted">
         Six tiers with five stages each. Your rank follows your rating, and solo 1v1 and duo 2v2 are ranked separately.
       </p>
     </header>
@@ -95,7 +95,7 @@
       {/each}
       <section class="flex flex-col gap-2 rounded-[14px] border border-line bg-surface-panel px-[18px] py-4 md:col-span-2 xl:col-span-1">
         {#each rules as r (r.title)}
-          <p class="m-0 text-[13px] text-ink-2"><strong class="font-semibold text-text">{r.title}</strong> · {r.text}</p>
+          <p class="text-[13px] text-ink-2"><strong class="font-semibold text-text">{r.title}</strong> · {r.text}</p>
         {/each}
       </section>
     </div>
@@ -113,12 +113,12 @@
         >
           <div class="flex flex-col items-center gap-[6px] text-center">
             <RankBadge rank={t.stages[0]} size={66} />
-            <h2 class="m-0 font-display text-[26px] font-bold uppercase leading-none tracking-[0.03em]" style:color={TIER_TEXT[t.tier]}>
+            <h2 class="font-display text-[26px] font-bold uppercase leading-none tracking-[0.03em]" style:color={TIER_TEXT[t.tier]}>
               {t.tier}
             </h2>
             <span class="font-mono text-[12px] text-ink-2">{t.range}</span>
           </div>
-          <ol class="m-0 flex list-none flex-col gap-[6px] border-t border-line p-0 pt-[6px]">
+          <ol class="flex flex-col gap-[6px] border-t border-line p-0 pt-[6px]">
             {#each t.stages as s (s.index)}
               {@const mine = modesAt(s.index)}
               <li

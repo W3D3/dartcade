@@ -35,10 +35,10 @@
 
     <!-- Headline + the three steps -->
     <div class="relative flex flex-col gap-8 xl:gap-10">
-      <h2 class="m-0 font-display font-bold text-[72px] xl:text-[96px] leading-[0.88] uppercase max-w-[480px] xl:max-w-[620px]">
+      <h2 class="font-display font-bold text-[72px] xl:text-[96px] leading-[0.88] uppercase max-w-[480px] xl:max-w-[620px]">
         Three darts.<br />Endless games.
       </h2>
-      <ol class="m-0 p-0 list-none flex flex-col max-w-[560px] border-t border-line-2">
+      <ol class="flex flex-col max-w-[560px] border-t border-line-2">
         {#each steps as step, i (step.title)}
           <li class="flex gap-4 xl:gap-6 py-4 xl:py-5 border-b border-line-2">
             <span class="font-mono text-[14px] pt-[3px] {i === 0 ? 'text-accent' : 'text-ink-faint'}">{String(i + 1).padStart(2, '0')}</span
@@ -63,10 +63,8 @@
     <!-- Headline -->
     <div class="relative flex flex-col gap-5 xl:gap-6 xl:w-[470px]">
       <div class="font-mono text-[13px] tracking-[0.08em] text-accent">T20 · T20 · T20 — 180</div>
-      <h2 class="m-0 font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-[0.01em] uppercase">
-        Step up to the oche.
-      </h2>
-      <p class="m-0 text-[17px] xl:text-[18px] leading-[1.55] text-text-muted max-w-[380px] xl:max-w-[430px]">
+      <h2 class="font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-[0.01em] uppercase">Step up to the oche.</h2>
+      <p class="text-[17px] xl:text-[18px] leading-[1.55] text-text-muted max-w-[380px] xl:max-w-[430px]">
         Custom minigames, X01 and tournaments — scored live from your Autodarts board.
       </p>
       <div class="hidden xl:flex gap-2 flex-wrap">

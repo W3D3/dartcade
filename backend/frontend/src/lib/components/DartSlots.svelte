@@ -160,7 +160,7 @@
             type="button"
             onclick={() => (mode = 'quick')}
             aria-label="Back to nearby segments"
-            class="w-9 h-9 -ml-2 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer"
+            class="w-9 h-9 -ml-2 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -173,7 +173,7 @@
           type="button"
           onclick={close}
           aria-label="Close"
-          class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer"
+          class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
         >
           <X size={16} />
         </button>
@@ -194,8 +194,8 @@
           <button
             type="button"
             onclick={() => (mode = 'full')}
-            class="h-11 flex items-center justify-center bg-transparent border-[1.5px] border-dashed border-line-pip rounded-[9px]
-                   text-accent text-[13px] font-semibold cursor-pointer">Other…</button
+            class="h-11 flex items-center justify-center border-[1.5px] border-dashed border-line-pip rounded-[9px]
+ text-accent text-[13px] font-semibold cursor-pointer">Other…</button
           >
         </div>
       {:else}
@@ -237,8 +237,7 @@
           <button
             type="button"
             onclick={() => pick('Miss')}
-            class="h-10 bg-transparent border border-line-key rounded-[8px] text-ink-2 text-[14px] font-semibold cursor-pointer"
-            >Miss · 0</button
+            class="h-10 border border-line-key rounded-[8px] text-ink-2 text-[14px] font-semibold cursor-pointer">Miss · 0</button
           >
         </div>
       {/if}

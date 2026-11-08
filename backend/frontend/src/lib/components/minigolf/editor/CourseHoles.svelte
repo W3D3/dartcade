@@ -40,11 +40,11 @@
 
 <section aria-labelledby="{hintId}-title" class="flex flex-col gap-3">
   <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-    <h2 id="{hintId}-title" class="m-0 font-display font-bold text-[22px] uppercase">Holes · played in this order</h2>
+    <h2 id="{hintId}-title" class="font-display font-bold text-[22px] uppercase">Holes · played in this order</h2>
     <span class="text-[13px] text-text-muted">{plural(totals.holes, 'hole')} · par {totals.par} · ≈ {totals.minutes} min</span>
   </div>
   <ReorderStatus id={hintId} hint="Arrow up or down moves a hole one place." {announcement} />
-  <ol class="m-0 p-0 list-none flex flex-col gap-[6px] min-h-[56px] rounded-[12px]" data-sortable-zone="course">
+  <ol class="flex flex-col gap-[6px] min-h-[56px] rounded-[12px]" data-sortable-zone="course">
     {#each items as item, i (item.id)}
       {@const hole = item.row && holeOf(item.row)}
       <li

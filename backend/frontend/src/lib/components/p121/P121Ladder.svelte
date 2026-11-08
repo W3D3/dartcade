@@ -33,7 +33,7 @@
 </script>
 
 {#if variant === 'list'}
-  <ol class="m-0 p-0 list-none flex flex-col">
+  <ol class="flex flex-col">
     {#each s.tries as t, i (i)}
       <li class="grid grid-cols-[54px_30px_1fr_auto] items-center gap-[10px] min-h-[42px] border-b border-line">
         <span class="font-mono text-[12px] text-text-dim">Try {i + 1}</span>

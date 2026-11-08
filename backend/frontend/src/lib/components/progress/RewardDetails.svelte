@@ -70,7 +70,7 @@
   <div class="flex items-start gap-4">
     <div class="flex-1 min-w-0 flex flex-col gap-[6px]">
       <span class="text-[12px] label-caps {got ? 'text-accent' : 'text-text-dim'}">{eyebrow}</span>
-      <Dialog.Title class="m-0 font-display font-bold text-[30px] md:text-[34px] leading-[1.05] uppercase tracking-[0.03em]"
+      <Dialog.Title class="font-display font-bold text-[30px] md:text-[34px] leading-[1.05] uppercase tracking-[0.03em]"
         >{title}</Dialog.Title
       >
       <span class="flex items-center gap-[6px] text-[13px] {got ? 'text-accent' : 'text-text-muted'}">
@@ -88,7 +88,7 @@
     </button>
   </div>
 
-  <ul class="m-0 p-0 list-none flex flex-col gap-2">
+  <ul class="flex flex-col gap-2">
     {#each perks as p (p.id)}
       {@const has = unlocked.includes(p.id)}
       {@const on = has && isWorn(p, worn)}

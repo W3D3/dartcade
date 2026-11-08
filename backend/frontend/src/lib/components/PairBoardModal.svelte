@@ -135,7 +135,7 @@
 <Modal {onclose} title="Pair a board" subtitle="Links an Autodarts board to your account.">
   {#if mode === 'install'}
     <div class="flex flex-col gap-3">
-      <p class="m-0 text-[14px] text-text-muted">
+      <p class="text-[14px] text-text-muted">
         Run this on the computer next to your board (the one running Autodarts). The command signs the bridge in to your account, so there
         is no code to type.
       </p>
@@ -145,9 +145,7 @@
         {/each}
       </div>
       {#if tokenFailed}
-        <p class="m-0 text-[13px] text-live-text">
-          Couldn't make an install command. Check your connection, or use a pairing code instead.
-        </p>
+        <p class="text-[13px] text-live-text">Couldn't make an install command. Check your connection, or use a pairing code instead.</p>
       {:else}
         <div class="rounded-[10px] bg-surface-2 border border-line-2 overflow-hidden">
           <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
@@ -156,19 +154,19 @@
               {clip.state === 'copied' ? 'Copied' : 'Copy command'}
             </button>
           </div>
-          <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{token
+          <pre class="px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{token
               ? command
               : 'Making your command…'}</pre>
         </div>
-        <p class="m-0 text-[13px] text-text-dim">
+        <p class="text-[13px] text-text-dim">
           {OS_NOTES[os]} The command works once and expires in 15 minutes.
         </p>
         {#if found}
-          <p class="m-0 flex items-center gap-2 text-[14px] text-text">
+          <p class="flex items-center gap-2 text-[14px] text-text">
             <CircleCheck size={16} class="text-accent" /> Bridge connected. Name your board.
           </p>
         {:else if token}
-          <p class="m-0 flex items-center gap-2 text-[14px] text-text-muted">
+          <p class="flex items-center gap-2 text-[14px] text-text-muted">
             <LoaderCircle size={16} class="animate-spin" /> Waiting for the bridge to connect…
           </p>
         {/if}
@@ -179,7 +177,7 @@
     </div>
   {:else if helpExpanded}
     <div class="flex flex-col gap-3">
-      <ol class="m-0 flex flex-col gap-2 list-none p-0">
+      <ol class="flex flex-col gap-2">
         <li class="flex gap-2 text-[14px]">
           <span class="text-accent font-mono">1</span>
           <span
@@ -199,7 +197,7 @@
             {clip.state === 'copied' ? 'Copied' : 'Copy command'}
           </button>
         </div>
-        <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
+        <pre class="px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
             >$ dartcade-bridge</span
           >
 <span class="text-accent">✓</span> Board Manager found at 192.168.1.42
@@ -243,12 +241,12 @@
         label="Pairing code"
       />
       {#if fieldError}
-        <p class="m-0 text-[13px]">
+        <p class="text-[13px]">
           <span class="text-live-text font-semibold">{fieldError.split('.')[0]}.</span>
           <span class="text-text-muted">{fieldError.slice(fieldError.indexOf('.') + 1).trim()}</span>
         </p>
       {:else}
-        <p class="m-0 text-[13px] text-text-dim">
+        <p class="text-[13px] text-text-dim">
           Use the newest code in the log; it changes every 10 minutes. Not case-sensitive, and pasting the whole line works.
         </p>
       {/if}

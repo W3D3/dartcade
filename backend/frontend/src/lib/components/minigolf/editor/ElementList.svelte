@@ -20,8 +20,8 @@
 </script>
 
 <section aria-label="Elements" class="flex flex-col gap-2">
-  <h2 class="m-0 text-[11px] label-caps text-text-dim">Elements · {rows.length}</h2>
-  <ul class="m-0 flex list-none flex-col gap-[2px] p-0">
+  <h2 class="text-[11px] label-caps text-text-dim">Elements · {rows.length}</h2>
+  <ul class="flex flex-col gap-[2px]">
     {#each rows as r (`${r.ref.kind}-${r.ref.index}`)}
       <li>
         <button

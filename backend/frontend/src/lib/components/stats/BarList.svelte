@@ -6,7 +6,7 @@
   let { items, label }: { items: BarItem[]; label: string } = $props()
 </script>
 
-<ul class="m-0 flex list-none flex-col gap-2.5 p-0" aria-label={label}>
+<ul class="flex flex-col gap-2.5" aria-label={label}>
   {#each items as r (r.key)}
     <li class="grid grid-cols-[60px_minmax(0,1fr)_auto] items-center gap-3">
       <span class="font-display text-[17px] font-bold">{r.name}</span>

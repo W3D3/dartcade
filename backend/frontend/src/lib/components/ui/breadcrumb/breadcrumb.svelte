@@ -6,7 +6,7 @@
 </script>
 
 <nav aria-label="Breadcrumb" class="min-w-0">
-  <ol class="m-0 flex min-w-0 flex-wrap items-center gap-x-1 gap-y-[2px] p-0 text-[13px] leading-none">
+  <ol class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-[2px] text-[13px] leading-none">
     {#each items as item, i (i)}
       {#if i > 0}
         <li role="presentation" aria-hidden="true" class="flex shrink-0 items-center text-text-dim">

@@ -33,7 +33,7 @@
 
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 items-start">
   <section aria-labelledby="during-games" class="box-border p-4 md:p-[22px] card flex flex-col">
-    <h2 id="during-games" class="m-0 text-[17px] font-semibold">During games</h2>
+    <h2 id="during-games" class="text-[17px] font-semibold">During games</h2>
     <p class="m-0 mt-1 mb-[14px] text-[13px] leading-[1.5] text-text-dim">
       Your defaults on every board. Changing one in a game's settings applies to that board only.
     </p>
@@ -52,11 +52,11 @@
         description="Pre-filled on Play for X01. You can still change them per game."
         class="gap-4"
       >
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="mb-2 text-[15px] text-text-muted">X01 start score</legend>
           <SegmentedControl options={x01.startScore.options ?? []} value={settings.x01StartScore} onchange={v => set('x01StartScore', v)} />
         </fieldset>
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="mb-2 text-[15px] text-text-muted">Check-out</legend>
           <SegmentedControl options={x01.outMode.options ?? []} value={settings.x01OutMode} onchange={v => set('x01OutMode', v)} />
         </fieldset>
@@ -64,7 +64,7 @@
           <span class="text-[15px] text-text-muted">First to</span>
           <Stepper value={settings.x01FirstTo} label="legs" unit={n => (n === 1 ? 'leg' : 'legs')} onchange={n => set('x01FirstTo', n)} />
         </div>
-        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <fieldset class="border-0 flex flex-col gap-2">
           <legend class="mb-2 text-[15px] text-text-muted">Throw order</legend>
           <SegmentedControl
             options={(x01.bullOff.options ?? []).map(o => ({ ...o, label: THROW_ORDER[String(o.value)] ?? o.label }))}

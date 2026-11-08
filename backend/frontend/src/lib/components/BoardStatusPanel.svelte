@@ -119,8 +119,8 @@
             onclick={() => runAction('start', 'start')}
             disabled={busy !== null || !board.online || isRunning}
             class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
-                   border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-line-3 cursor-pointer transition-colors
+ text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
             {#if busy === 'start'}
               <LoaderCircle size={13} class="animate-spin" />
@@ -135,8 +135,8 @@
             onclick={() => runAction('stop', 'stop')}
             disabled={busy !== null || !board.online || !isRunning}
             class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
-                   border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-line-3 cursor-pointer transition-colors
+ text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
             {#if busy === 'stop'}
               <LoaderCircle size={13} class="animate-spin" />
@@ -153,8 +153,8 @@
           onclick={() => runAction('reset', 'reset')}
           disabled={busy !== null || !board.online}
           class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
-                 border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-line-3 cursor-pointer transition-colors
+ text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
           {#if busy === 'reset'}
             <LoaderCircle size={13} class="animate-spin" />
@@ -170,8 +170,8 @@
           onclick={() => runAction('calibrate', 'calibrate')}
           disabled={busy !== null || !board.online}
           class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
-                 border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-line-3 cursor-pointer transition-colors
+ text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
           {#if busy === 'calibrate'}
             <LoaderCircle size={13} class="animate-spin" />

@@ -74,7 +74,7 @@
 <header class="flex flex-col gap-2 border-b border-line px-4 py-3 md:px-5">
   <Breadcrumb items={minigolfCoursesTrail(courseId ? courseName : null, area)} />
   <div class="flex flex-wrap items-center gap-3">
-    <h1 class="m-0 font-display font-bold text-[24px] uppercase tracking-[0.04em]">Course editor</h1>
+    <h1 class="font-display font-bold text-[24px] uppercase tracking-[0.04em]">Course editor</h1>
     {#if area.admin}
       <span
         title="You can edit official courses"
@@ -97,9 +97,9 @@
   </div>
   {#if problems.length > 0 || error}
     <div role="alert" class="rounded-[10px] border border-live-text/50 bg-live-soft px-3 py-2 text-[14px]">
-      {#if error}<p class="m-0 font-semibold text-live-text">{error}</p>{/if}
+      {#if error}<p class="font-semibold text-live-text">{error}</p>{/if}
       {#if problems.length > 0}
-        <p class="m-0 font-semibold text-live-text">Not published. Fix these first:</p>
+        <p class="font-semibold text-live-text">Not published. Fix these first:</p>
         <ul class="m-0 mt-1 pl-5">
           {#each problems as line (line)}<li>{line}</li>{/each}
         </ul>

@@ -71,19 +71,19 @@
          bg-surface-active border-l border-line-2 [box-shadow:-24px_0_48px_rgba(0,0,0,.45)] outline-none"
   >
     <div class="h-12 shrink-0 flex items-center justify-between">
-      <h2 id="game-settings-title" class="m-0 font-display font-bold text-[28px] uppercase">Game settings</h2>
+      <h2 id="game-settings-title" class="font-display font-bold text-[28px] uppercase">Game settings</h2>
       <button
         type="button"
         onclick={onclose}
         aria-label="Close settings"
-        class="w-11 h-11 -mr-2 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer"
+        class="w-11 h-11 -mr-2 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
       >
         <X size={18} />
       </button>
     </div>
 
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-      <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Display</h3>
+      <h3 class="text-[12px] font-semibold label-caps text-text-dim">Display</h3>
       {#each rows as row (row.key)}
         <SettingSwitch id="setting-{row.key}" label={row.label} sub={row.sub} bind:checked={settings[row.key]} />
       {/each}
@@ -119,7 +119,7 @@
     </section>
 
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-      <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Sound effects</h3>
+      <h3 class="text-[12px] font-semibold label-caps text-text-dim">Sound effects</h3>
       <VolumeSlider bind:value={settings.effectsVolume} />
       <div class="grid grid-cols-2 gap-x-4">
         {#each sounds as row (row.key)}
@@ -133,7 +133,7 @@
 
     {#if scoreBased}
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-        <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Caller</h3>
+        <h3 class="text-[12px] font-semibold label-caps text-text-dim">Caller</h3>
         <SettingSwitch
           id="setting-callerOn"
           label="Caller"
@@ -179,7 +179,7 @@
 
     {#if bigScreenBoardId && $bigScreenOn}
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-3">
-        <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Big screen</h3>
+        <h3 class="text-[12px] font-semibold label-caps text-text-dim">Big screen</h3>
         <a
           href="#/big-screen/{bigScreenBoardId}"
           class="self-start min-h-10 inline-flex items-center gap-2 text-[14px] font-semibold no-underline"

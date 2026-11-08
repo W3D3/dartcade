@@ -79,17 +79,17 @@
     <dl class="m-0 mt-4 grid grid-cols-3 gap-2 border-t border-line-2 pt-[14px]">
       <div class="flex flex-col gap-[3px]">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">3-dart avg</dt>
-        <dd class="m-0 font-display font-bold text-[26px] leading-none">{fmtAvg(profile.average ?? null)}</dd>
+        <dd class="font-display font-bold text-[26px] leading-none">{fmtAvg(profile.average ?? null)}</dd>
       </div>
       <div class="flex flex-col gap-[3px] min-w-0">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">Favourite</dt>
-        <dd class="m-0 truncate font-display font-bold text-[26px] leading-none">
+        <dd class="truncate font-display font-bold text-[26px] leading-none">
           {profile.favourite ? getGameView(profile.favourite).shortTitle : '—'}
         </dd>
       </div>
       <div class="flex flex-col gap-[3px]">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">{profile.relation === 'self' ? 'Matches' : 'You vs them'}</dt>
-        <dd class="m-0 font-display font-bold text-[26px] leading-none">{profile.relation === 'self' ? profile.matches : (h2h ?? '—')}</dd>
+        <dd class="font-display font-bold text-[26px] leading-none">{profile.relation === 'self' ? profile.matches : (h2h ?? '—')}</dd>
       </div>
     </dl>
   </div>

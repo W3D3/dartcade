@@ -76,7 +76,7 @@
 
 <main class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-7 flex flex-col gap-[18px]">
   {#if players.length > 1 || !detail}
-    <ol aria-label="Standings" class="m-0 p-0 list-none flex flex-wrap gap-2">
+    <ol aria-label="Standings" class="flex flex-wrap gap-2">
       {#each standings as s, i (i)}
         <li
           class="flex items-center gap-3 px-4 h-12 rounded-xl border {s.placement === 1
@@ -107,7 +107,7 @@
           <span class="text-[12px] font-semibold label-caps text-accent"
             >Session complete · {plural(data.checkouts.tries, 'try', 'tries')}</span
           >
-          <h1 class="m-0 font-display font-bold uppercase text-[44px] md:text-[64px] leading-[0.95]">Reached {data.reached}</h1>
+          <h1 class="font-display font-bold uppercase text-[44px] md:text-[64px] leading-[0.95]">Reached {data.reached}</h1>
           <span class="text-[15px] md:text-[16px] text-text-muted">{bestRunLine(data, missRule, startTarget)}</span>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-[14px]">
@@ -127,7 +127,7 @@
       <aside class="xl:w-[400px] shrink-0 flex flex-col gap-4">
         {#if data.doubles.length > 0}
           <section aria-label="Finishing doubles" class={card}>
-            <h2 class="m-0 {label}">Finishing doubles</h2>
+            <h2 class={label}>Finishing doubles</h2>
             {#each data.doubles as d (d.label)}
               <div class="grid grid-cols-[54px_1fr_54px] items-center gap-3">
                 <span class="font-display font-bold text-[22px]">{d.label}</span>
@@ -142,7 +142,7 @@
         {/if}
         {#if data.dartsPerCheckout.length > 0}
           <section aria-label="Darts per checkout" class={card}>
-            <h2 class="m-0 {label}">Darts per checkout</h2>
+            <h2 class={label}>Darts per checkout</h2>
             <div class="flex items-end gap-2 h-[110px]">
               {#each data.dartsPerCheckout as d (d.darts)}
                 <div class="flex flex-col items-center gap-[6px] flex-1">
@@ -170,7 +170,7 @@
       </aside>
     </div>
   {:else}
-    {#if loading}<p class="m-0 text-[15px] text-text-muted">Loading the summary…</p>{/if}
+    {#if loading}<p class="text-[15px] text-text-muted">Loading the summary…</p>{/if}
     {@render buttons()}
   {/if}
 </main>

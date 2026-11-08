@@ -137,7 +137,7 @@
       {#if twenties.length > 0}
         <BarList items={twenties} label="Where your 20s go" />
       {:else}
-        <p class="m-0 text-[13px] text-text-muted">No darts in the 20 bed yet.</p>
+        <p class="text-[13px] text-text-muted">No darts in the 20 bed yet.</p>
       {/if}
     </ChartCard>
     <ChartCard id="stats-180s" title="Your 180s" note="{s.list180.length} in {rangeNoun(range)}">
@@ -145,7 +145,7 @@
         {#each all180s ? s.list180 : s.list180.slice(0, SHOWN_180S) as ref (`${ref.gameId}-${ref.leg}-${ref.visit}`)}
           <LinkRow href={refHref(ref)} sub={refLine(ref)}>{#snippet title()}{visitTitle(ref)}{/snippet}</LinkRow>
         {:else}
-          <p class="m-0 text-[13px] text-text-muted">None yet. They'll show up here.</p>
+          <p class="text-[13px] text-text-muted">None yet. They'll show up here.</p>
         {/each}
       </div>
       {#if !all180s && s.list180.length > SHOWN_180S}

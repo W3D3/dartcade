@@ -58,8 +58,8 @@
     onclick={toggle}
     disabled={busy || waitingFor !== null || blocked || button.disabled}
     class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-semibold
-           border border-transparent bg-big-screen text-white cursor-pointer font-[inherit] transition-colors
-           hover:bg-big-screen-hover disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-transparent bg-big-screen text-white cursor-pointer transition-colors
+ hover:bg-big-screen-hover disabled:opacity-35 disabled:cursor-not-allowed"
   >
     {#if busy || waitingFor !== null}
       <LoaderCircle size={13} class="animate-spin" />
@@ -68,7 +68,7 @@
     {/if}
     {button.label}
   </button>
-  {#if button.hint}<p class="m-0 text-[12px] text-text-dim">{button.hint}</p>{/if}
+  {#if button.hint}<p class="text-[12px] text-text-dim">{button.hint}</p>{/if}
 {/if}
 
 {#if $failure}

@@ -14,7 +14,7 @@
 
 <HomeSection title="Jump back in" link={{ label: 'History', href: '#/history' }} loading={games.loading} error={games.error}>
   {#if rows.length > 0}
-    <ul class="m-0 flex list-none flex-col gap-[10px] p-0">
+    <ul class="flex flex-col gap-[10px]">
       {#each rows as row (row.id)}
         <li class="flex items-center gap-3">
           <a href="#/history/{row.id}" class="flex min-w-0 flex-1 flex-col text-text no-underline">
@@ -26,6 +26,6 @@
       {/each}
     </ul>
   {:else}
-    <p class="m-0 text-[14px] text-text-muted">No games yet. Your last ones show up here.</p>
+    <p class="text-[14px] text-text-muted">No games yet. Your last ones show up here.</p>
   {/if}
 </HomeSection>

@@ -21,7 +21,7 @@
       >Then</span
     ><span class="hidden @min-[640px]:inline">Coach</span>
   </div>
-  <ul class="m-0 flex list-none flex-col p-0">
+  <ul class="flex flex-col">
     {#each visits as v (v.n)}
       {@const sel = v.n === selected}
       <li>
@@ -29,7 +29,7 @@
           type="button"
           aria-pressed={sel}
           onclick={() => onselect(v.n)}
-          class="{COLUMNS} w-full cursor-pointer rounded-[12px] border py-3 text-left font-[inherit] text-text {sel
+          class="{COLUMNS} w-full cursor-pointer rounded-[12px] border py-3 text-left text-text {sel
             ? 'border-checkout-line bg-card-active'
             : 'border-transparent bg-transparent hover:bg-surface-drop'}"
         >

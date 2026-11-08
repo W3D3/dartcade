@@ -114,8 +114,8 @@
       class="flex flex-grow min-h-0 flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
     >
       <div class="flex flex-col gap-2">
-        <h2 class="m-0 font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
-        <p class="m-0 text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>
+        <h2 class="font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
+        <p class="text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>
       </div>
       <div class="flex flex-col gap-2">
         <label for="lobby-code" class="field-label">Lobby code</label>
@@ -134,10 +134,7 @@
         {#if failed}
           <span class="text-[13px] text-live-text"
             >Couldn't check the code.
-            <button
-              type="button"
-              onclick={() => check(code)}
-              class="p-0 border-0 bg-transparent text-live-text underline cursor-pointer font-[inherit]">Try again.</button
+            <button type="button" onclick={() => check(code)} class="border-0 text-live-text underline cursor-pointer">Try again.</button
             ></span
           >
         {/if}
@@ -148,18 +145,14 @@
           boardNames={preview.boardNames}
           peopleCount={preview.peopleCount}
         />{/if}
-      <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
+      <p class="text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
       <RefusalNotice {error} sessionId={runningSessionId} />
       <Button size="xl" class="mt-auto" disabled={!preview || busy} onclick={() => void join()}
         >{busy ? 'Joining…' : `Join as ${you}`}</Button
       >
-      <p class="m-0 text-[13px] text-center text-text-muted">
+      <p class="text-[13px] text-center text-text-muted">
         Not {you}?
-        <button
-          type="button"
-          onclick={switchAccount}
-          class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button
-        >
+        <button type="button" onclick={switchAccount} class="border-0 text-accent font-semibold cursor-pointer">Switch account</button>
       </p>
     </main>
   </Layout>

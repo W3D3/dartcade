@@ -120,11 +120,11 @@
       <LegSkeleton {breadcrumb} />
     {:else if !$enabled}
       {@render breadcrumb()}
-      <p class="m-0 text-[15px] text-text-muted">The coach isn't available yet.</p>
+      <p class="text-[15px] text-text-muted">The coach isn't available yet.</p>
     {:else if phase === 'missing'}
       {@render breadcrumb()}
       <div class="flex flex-col gap-2 py-8">
-        <p class="m-0 text-[17px] font-semibold">This leg has no review</p>
+        <p class="text-[17px] font-semibold">This leg has no review</p>
         <a href="#/coach" class="text-[15px]">Back to the coach</a>
       </div>
     {:else if phase === 'failed' || !review || !title}
@@ -137,7 +137,7 @@
       <header class="flex flex-wrap items-end justify-between gap-x-5 gap-y-3">
         <div class="flex flex-col gap-1.5">
           {@render breadcrumb()}
-          <h1 class="m-0 font-display text-[30px] font-bold uppercase leading-none tracking-[0.02em] xl:text-[44px]">
+          <h1 class="font-display text-[30px] font-bold uppercase leading-none tracking-[0.02em] xl:text-[44px]">
             {legHeading(review.leg, title.opponents)}
           </h1>
           <span class="text-[13px] text-text-muted xl:text-[15px]"
@@ -154,8 +154,8 @@
 
           <section aria-label="Every visit" class="flex flex-col gap-2.5 xl:card xl:px-[22px] xl:py-5">
             {#if wide.current}<div class="flex flex-wrap items-center gap-3.5">
-                <h2 class="m-0 font-display text-[24px] font-bold uppercase">Every visit</h2>
-                <ul class="m-0 ml-auto flex list-none flex-wrap gap-3.5 p-0" aria-label="Visits per grade">
+                <h2 class="font-display text-[24px] font-bold uppercase">Every visit</h2>
+                <ul class="m-0 ml-auto flex flex-wrap gap-3.5" aria-label="Visits per grade">
                   {#each VISIT_GRADES as g (g)}
                     <li class="inline-flex items-center gap-1.5">
                       <GradePill grade={g} /><span class="text-[13px] text-text-muted"
@@ -173,7 +173,7 @@
               {/each}
             </div>
             {#if shown.length === 0}
-              <p class="m-0 py-4 text-[14px] text-text-muted">No visits with this tag.</p>
+              <p class="py-4 text-[14px] text-text-muted">No visits with this tag.</p>
             {:else if wide.current}
               <VisitTable visits={shown} selected={current ? current.n : null} onselect={select} />
             {:else}
@@ -188,7 +188,7 @@
             aria-label="Selected visit"
           >
             <div class="flex items-baseline justify-between">
-              <h3 class="m-0 text-[16px] font-semibold">Visit {current.n} · {current.left} left</h3>
+              <h3 class="text-[16px] font-semibold">Visit {current.n} · {current.left} left</h3>
               <GradePill grade={current.grade} />
             </div>
             {@render visitDetail(current)}

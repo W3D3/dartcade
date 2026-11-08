@@ -25,8 +25,7 @@
       maxlength={REASON_MAX}
       rows="3"
       placeholder="Why does this game not count?"
-      class="resize-y rounded-[10px] border border-line-3 bg-transparent px-3 py-2 text-[14px] normal-case tracking-normal text-text font-[inherit]"
-    ></textarea>
+      class="resize-y rounded-[10px] border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
   </label>
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={oncancel}>Keep it</Button>

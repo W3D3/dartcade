@@ -7,7 +7,7 @@
   let { items }: { items: LegendItem[] } = $props()
 </script>
 
-<ul class="m-0 flex list-none flex-wrap gap-x-3.5 gap-y-1 p-0 text-[12px] text-text-muted">
+<ul class="flex flex-wrap gap-x-3.5 gap-y-1 text-[12px] text-text-muted">
   {#each items as item (item.label)}
     <li class="flex items-center gap-1.5">
       {#if item.mark === 'box'}

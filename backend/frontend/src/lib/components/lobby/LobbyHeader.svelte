@@ -64,13 +64,13 @@
           bind:value={draft}
           maxlength="48"
           aria-label="Lobby name"
-          class="h-11 min-w-0 flex-grow box-border px-3 rounded-[9px] bg-bg border border-line-chip text-text text-[18px] font-[inherit]"
+          class="h-11 min-w-0 flex-grow box-border px-3 rounded-[9px] bg-bg border border-line-chip text-text text-[18px]"
         />
         <Button variant="accent" size="icon" type="submit" aria-label="Save the name"><Check size={18} strokeWidth={2.5} /></Button>
       </form>
     {:else}
       <div class="flex items-center gap-3 min-w-0">
-        <h2 class="m-0 font-display font-bold text-[34px] md:text-[48px] leading-none uppercase tracking-[0.02em] truncate">
+        <h2 class="font-display font-bold text-[34px] md:text-[48px] leading-none uppercase tracking-[0.02em] truncate">
           {lobby.name}
         </h2>
         {#if host}
@@ -85,7 +85,7 @@
         {/if}
       </div>
     {/if}
-    <p class="m-0 flex flex-wrap items-center gap-x-[6px] gap-y-1 text-[13px] md:text-[15px] text-text-muted">
+    <p class="flex flex-wrap items-center gap-x-[6px] gap-y-1 text-[13px] md:text-[15px] text-text-muted">
       <span class="inline-flex items-center gap-[6px] text-accent font-semibold"
         ><span class="w-2 h-2 rounded-full bg-accent"></span>Lobby open</span
       >

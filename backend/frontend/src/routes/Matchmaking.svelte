@@ -100,10 +100,10 @@
   >
     <header class="flex items-end justify-between gap-6">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="m-0 hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
+        <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
           Matchmaking
         </h1>
-        <p class="m-0 text-[15px] text-text-muted">
+        <p class="text-[15px] text-text-muted">
           Ranked X01 against players near your level. Wins and losses move your rating and rank.
           <a href="#/matchmaking/ranks" class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
         </p>
@@ -160,7 +160,7 @@
             class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:gap-4 md:px-6 md:py-5"
           >
             <div class="flex items-center justify-between gap-3">
-              <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">Find a match</h2>
+              <h2 class="font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">Find a match</h2>
               <span class="text-right text-[12px] text-text-muted md:text-[13px]"
                 ><span class="hidden md:inline">X01 ·&nbsp;</span>501 · Double out</span
               >
@@ -287,15 +287,15 @@
           class="box-border flex flex-col gap-[6px] rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:px-[22px] md:py-5"
         >
           <div class="flex items-center justify-between">
-            <h2 class="m-0 text-[15px] font-semibold md:text-[16px]">Recent ranked<span class="hidden md:inline">&nbsp;matches</span></h2>
+            <h2 class="text-[15px] font-semibold md:text-[16px]">Recent ranked<span class="hidden md:inline">&nbsp;matches</span></h2>
             <a href="#/history" class="text-[13px] font-semibold text-accent no-underline"
               >All<span class="hidden md:inline">&nbsp;in History</span></a
             >
           </div>
           {#if recent.length === 0}
-            <p class="m-0 py-6 text-center text-[14px] text-text-muted">Your ranked matches show up here.</p>
+            <p class="py-6 text-center text-[14px] text-text-muted">Your ranked matches show up here.</p>
           {:else}
-            <ul class="m-0 flex list-none flex-col p-0">
+            <ul class="flex flex-col">
               {#each recent as r (r.key)}
                 <li class="flex min-h-14 items-center gap-3 border-b border-surface-paused last:border-b-0">
                   <span

@@ -446,7 +446,7 @@
 
 <!-- The live coach's panel or its models didn't load -->
 {#snippet coachFailed()}
-  <p class="m-0 text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
+  <p class="text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
 {/snippet}
 
 {#snippet liveCoach(compact: boolean)}

@@ -332,8 +332,8 @@
     onclick={() => runAction(action)}
     disabled={busy !== null || blocked}
     class="flex items-center justify-center gap-[6px] h-11 rounded-[10px] text-[14px] font-semibold
-           border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-           text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+ border border-line-3 cursor-pointer transition-colors
+ text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
   >
     {#if busy === action}
       <LoaderCircle size={14} class="animate-spin" />
@@ -364,7 +364,7 @@
 {#snippet cell(label: string, value: import('svelte').Snippet)}
   <div class="bg-surface-1 px-4 py-[14px] flex flex-col gap-[6px] min-w-0">
     <dt class="text-[12px] label-caps text-text-dim">{label}</dt>
-    <dd class="m-0 text-[16px] font-semibold break-words">{@render value()}</dd>
+    <dd class="text-[16px] font-semibold break-words">{@render value()}</dd>
   </div>
 {/snippet}
 
@@ -437,11 +437,11 @@
                   if (e.key === 'Enter') void saveName()
                   else if (e.key === 'Escape') editing = false
                 }}
-                class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
-                       font-display font-bold text-[36px] md:text-[52px] leading-[0.95] uppercase text-text"
+                class="w-full box-border border-0 border-b border-line-3 outline-none
+ font-display font-bold text-[36px] md:text-[52px] leading-[0.95] uppercase text-text"
               />
             {:else}
-              <h2 class="m-0 font-display font-bold text-[36px] md:text-[52px] leading-[0.95] tracking-[0.01em] uppercase truncate">
+              <h2 class="font-display font-bold text-[36px] md:text-[52px] leading-[0.95] tracking-[0.01em] uppercase truncate">
                 {selected.name}
               </h2>
             {/if}
@@ -451,7 +451,7 @@
               type="button"
               onclick={() => push(`/?board=${selectedId}`)}
               class="flex-grow sm:flex-grow-0 h-[52px] px-5 whitespace-nowrap rounded-[12px] border-0 bg-text text-accent-fg text-[16px]
-                     font-semibold cursor-pointer font-[inherit] transition-opacity hover:opacity-90"
+ font-semibold cursor-pointer transition-opacity hover:opacity-90"
             >
               Play on this board
             </button>
@@ -468,13 +468,13 @@
         </div>
 
         {#if !selected.online}
-          <p class="m-0 px-[14px] py-3 rounded-[12px] bg-surface-inset text-[14px] leading-[1.45] text-ink-2">
+          <p class="px-[14px] py-3 rounded-[12px] bg-surface-inset text-[14px] leading-[1.45] text-ink-2">
             Bridge not reachable. Check that it is running on the computer next to the Board Manager. Settings below are saved and apply as
             soon as it is back.
           </p>
         {/if}
 
-        <dl class="m-0 grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-[12px] overflow-hidden">
+        <dl class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-[12px] overflow-hidden">
           {@render cell('Board Manager', bmCell)}
           {@render cell('Bridge', bridgeCell)}
           {@render cell('Games here', gamesCell)}
@@ -500,8 +500,8 @@
                     onclick={updateBridge}
                     disabled={busy !== null}
                     class="shrink-0 flex items-center gap-[6px] h-11 px-4 rounded-[10px] text-[14px] font-semibold border border-line-3
-                           bg-transparent text-text cursor-pointer font-[inherit] transition-colors hover:bg-surface-active
-                           disabled:opacity-35 disabled:cursor-not-allowed"
+ text-text cursor-pointer transition-colors hover:bg-surface-active
+ disabled:opacity-35 disabled:cursor-not-allowed"
                   >
                     {#if busy === 'bridge-update'}<LoaderCircle size={14} class="animate-spin" />{:else}<Download size={14} />{/if}
                     Update bridge
@@ -537,7 +537,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {#each [0, 1, 2] as camIndex (camIndex)}
                 <figure
-                  class="m-0 relative aspect-[4/3] sm:aspect-auto sm:h-[150px] rounded-[12px] overflow-hidden border border-line bg-surface-inset"
+                  class="relative aspect-[4/3] sm:aspect-auto sm:h-[150px] rounded-[12px] overflow-hidden border border-line bg-surface-inset"
                 >
                   {#if selected.online}
                     {#if camOk[camIndex] === undefined}
@@ -566,7 +566,7 @@
                 </figure>
               {/each}
             </div>
-            {#if !selected.online}<p class="m-0 text-[14px] text-text-muted">No images while the board is offline.</p>{/if}
+            {#if !selected.online}<p class="text-[14px] text-text-muted">No images while the board is offline.</p>{/if}
           </SectionCard>
 
           <SectionCard title="Live events" icon={Activity}>
@@ -619,9 +619,9 @@
                 {/if}
               {/snippet}
               {#if n === undefined}
-                <p class="m-0 text-[14px] text-text-muted">—</p>
+                <p class="text-[14px] text-text-muted">—</p>
               {:else if n === 0}
-                <p class="m-0 text-[14px] leading-[1.45] text-text-muted">
+                <p class="text-[14px] leading-[1.45] text-text-muted">
                   Light up the board with WLED: colours per player, a flash on 180s, a glow on checkouts.
                 </p>
                 <a
@@ -630,7 +630,7 @@
                          font-semibold no-underline transition-colors hover:bg-surface-active">Add WLED lights</a
                 >
               {:else}
-                <p class="m-0 text-[15px]">{n} WLED device{n === 1 ? '' : 's'}</p>
+                <p class="text-[15px]">{n} WLED device{n === 1 ? '' : 's'}</p>
               {/if}
             </SectionCard>
           {/if}
@@ -657,8 +657,8 @@
                 onclick={() => {
                   confirmUnpair = true
                 }}
-                class="h-11 px-5 rounded-[10px] border border-danger-line bg-transparent text-danger-text text-[15px]
-                       font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active"
+                class="h-11 px-5 rounded-[10px] border border-danger-line text-danger-text text-[15px]
+ font-semibold cursor-pointer transition-colors hover:bg-surface-active"
               >
                 Unpair
               </button>

@@ -104,8 +104,8 @@
         disabled={busy}
         onclick={() => void create()}
         class="w-[72px] h-[60px] box-border flex flex-col items-center justify-center gap-1 rounded-[10px]
-               border border-dashed bg-transparent text-accent text-[11px] font-semibold
-               cursor-pointer font-[inherit] disabled:opacity-60 {error ? 'border-live' : 'border-accent-line-strong'}"
+ border border-dashed text-accent text-[11px] font-semibold
+ cursor-pointer disabled:opacity-60 {error ? 'border-live' : 'border-accent-line-strong'}"
       >
         <Plus size={20} strokeWidth={2.4} />{lobby.label}
       </button>

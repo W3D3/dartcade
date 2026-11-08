@@ -6,5 +6,5 @@
 </script>
 
 <Layout title="Match details">
-  <p class="m-0 p-8 text-[15px] text-text-muted">Loading the game…</p>
+  <p class="p-8 text-[15px] text-text-muted">Loading the game…</p>
 </Layout>

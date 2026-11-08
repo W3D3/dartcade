@@ -26,7 +26,7 @@
     <span class="text-[15px] font-semibold">Lobby invites</span>
     <NavBadge count={invites.length} label="{invites.length} pending" hidden />
   </div>
-  <ul class="m-0 p-0 list-none flex flex-col gap-2">
+  <ul class="flex flex-col gap-2">
     <li class="p-3 rounded-[12px] border border-accent-line bg-surface-picked flex flex-col gap-[10px]">
       <div class="flex items-center gap-[10px]">
         <InviteAvatar name={first.inviter?.name ?? first.lobbyName} face={first.inviter} size={36} offset="ring-offset-surface-picked" />

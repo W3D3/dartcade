@@ -69,8 +69,8 @@
   <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div class="flex flex-col gap-1.5">
-        <h1 class="m-0 hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Stats</h1>
-        <p class="m-0 text-[15px] text-text-muted">How you’ve been playing, and whether it’s getting better.</p>
+        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Stats</h1>
+        <p class="text-[15px] text-text-muted">How you’ve been playing, and whether it’s getting better.</p>
       </div>
       {#if $enabled}
         <div class="flex flex-col items-start gap-2 md:items-end">
@@ -86,7 +86,7 @@
     {#if !$enabled && !$flagsLoaded}
       <StatsState kind="loading" />
     {:else if !$enabled}
-      <p class="m-0 text-[15px] text-text-muted">Stats aren't available yet.</p>
+      <p class="text-[15px] text-text-muted">Stats aren't available yet.</p>
     {:else if error}
       <StatsState kind="error" onretry={retry} />
     {:else if !stats}
@@ -123,7 +123,7 @@
         {#each SECTIONS as s (s.id)}<Chip variant="plain" onclick={() => jump(s.id)}>{s.label}</Chip>{/each}
       </nav>
       {#if stats.window.legs === 0}
-        <p class="m-0 text-[15px] text-text-muted">No legs in this range with these filters. Try a longer range or another filter.</p>
+        <p class="text-[15px] text-text-muted">No legs in this range with these filters. Try a longer range or another filter.</p>
       {:else}
         <StatsOverview {stats} />
         <StatsScoring {stats} />

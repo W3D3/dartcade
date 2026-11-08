@@ -114,8 +114,8 @@
 
 {#if atc}
   <section aria-label="Race to the Bull" class="flex flex-col gap-2 min-w-0 box-border p-4 md:p-6 card">
-    <h2 class="m-0 font-display font-bold text-[24px] md:text-[28px] leading-none uppercase">Race to the Bull</h2>
-    <figure class="m-0 flex flex-col gap-2">
+    <h2 class="font-display font-bold text-[24px] md:text-[28px] leading-none uppercase">Race to the Bull</h2>
+    <figure class="flex flex-col gap-2">
       <figcaption class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-text-muted">
         <span>Targets hit against darts thrown</span>
         {#each [...series].sort((a, b) => Number(b.seat === lead) - Number(a.seat === lead)) as s, i (s.seat)}

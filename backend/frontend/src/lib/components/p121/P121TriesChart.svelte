@@ -29,7 +29,7 @@
   class="flex flex-col gap-[10px] box-border px-[22px] py-5 rounded-2xl border border-line bg-surface-1 min-w-0"
 >
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-    <h2 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Target per try</h2>
+    <h2 class="text-[12px] font-semibold label-caps text-text-dim">Target per try</h2>
     <span class="md:ml-auto inline-flex items-center gap-[6px] text-[13px] text-text-muted"
       ><span class="size-[10px] rounded-full bg-accent"></span>Checked out</span
     >

@@ -56,7 +56,7 @@
     if (!full) onDart(seg)
   }
 
-  const cell = 'bg-surface-panel border-0 font-[inherit] cursor-pointer disabled:cursor-not-allowed'
+  const cell = 'bg-surface-panel border-0 cursor-pointer disabled:cursor-not-allowed'
 </script>
 
 <div
@@ -140,8 +140,8 @@
       type="button"
       onclick={onNext}
       disabled={!nextEnabled}
-      class="border-0 font-[inherit] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-1 px-1 whitespace-nowrap text-[13px] md:text-[16px] font-semibold
-             {nextProminent ? 'bg-accent text-accent-fg' : 'bg-surface-panel text-text-muted'}"
+      class="border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-1 px-1 whitespace-nowrap text-[13px] md:text-[16px] font-semibold
+ {nextProminent ? 'bg-accent text-accent-fg' : 'bg-surface-panel text-text-muted'}"
     >
       {nextLabel}<ChevronRight size={16} />
     </button>

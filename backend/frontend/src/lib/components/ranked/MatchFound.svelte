@@ -68,7 +68,7 @@
       <span class="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.12em] text-accent"
         ><Swords size={16} />Ranked {match.mode}</span
       >
-      <h2 class="m-0 font-display text-[40px] font-bold uppercase leading-none tracking-[0.02em] md:text-[52px]">Match found</h2>
+      <h2 class="font-display text-[40px] font-bold uppercase leading-none tracking-[0.02em] md:text-[52px]">Match found</h2>
       <span class="text-[13px] text-text-muted md:text-[14px]">{formatLine(match.firstTo)} · bull-off decides who starts</span>
       {#if count}<span class="text-[13px] font-semibold text-ink-2">{count}</span>{/if}
     </div>
@@ -134,7 +134,7 @@
           type="button"
           disabled={busy}
           onclick={decline}
-          class="flex h-[60px] cursor-pointer items-center justify-center rounded-[14px] border border-line-strong bg-transparent font-[inherit] text-[16px] font-semibold text-text"
+          class="flex h-[60px] cursor-pointer items-center justify-center rounded-[14px] border border-line-strong text-[16px] font-semibold text-text"
           >Decline</button
         >
         {#if accepted}

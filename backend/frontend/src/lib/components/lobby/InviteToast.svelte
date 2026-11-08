@@ -61,7 +61,7 @@
         type="button"
         aria-label="Close. The invite stays in your invites"
         onclick={() => close(invite.id)}
-        class="ml-auto -mr-2 w-8 h-8 flex items-center justify-center rounded-[8px] bg-transparent border-0 text-text-muted cursor-pointer hover:bg-surface-hover"
+        class="ml-auto -mr-2 w-8 h-8 flex items-center justify-center rounded-[8px] border-0 text-text-muted cursor-pointer hover:bg-surface-hover"
       >
         <X size={18} />
       </button>
@@ -85,7 +85,7 @@
     </div>
     <LobbyGlance glance={invite} class="max-md:hidden bg-surface-panel" />
     {#if leaving}
-      <p class="m-0 px-[14px] py-[10px] rounded-[10px] bg-surface-panel border border-line text-[13px] leading-[1.45] text-text-muted">
+      <p class="px-[14px] py-[10px] rounded-[10px] bg-surface-panel border border-line text-[13px] leading-[1.45] text-text-muted">
         Joining takes you out of <strong class="text-text">{leaving}</strong>. You can only be in one lobby.
       </p>
     {/if}

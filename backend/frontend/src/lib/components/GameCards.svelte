@@ -32,7 +32,7 @@
       <section aria-label={cat.name} class="flex flex-col {open ? 'gap-[6px]' : 'gap-2 md:gap-[10px]'}">
         <div class="flex items-baseline gap-2 md:gap-[10px] whitespace-nowrap">
           <h2
-            class="m-0 font-display font-bold leading-none uppercase tracking-[0.06em] transition-all duration-[450ms] {open
+            class="font-display font-bold leading-none uppercase tracking-[0.06em] transition-all duration-[450ms] {open
               ? 'text-[15px] text-text-dim'
               : 'text-[18px] md:text-[22px] text-text'}"
           >

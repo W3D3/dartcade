@@ -243,10 +243,8 @@
     <!-- Header (phones: the title is in the phone header) -->
     <header class="flex items-end justify-between {showPanel ? 'max-md:hidden' : ''}">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="hidden md:block m-0 font-display font-bold text-[44px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
-          New game
-        </h1>
-        <p class="m-0 text-[14px] md:text-[15px] text-text-muted">
+        <h1 class="hidden md:block font-display font-bold text-[44px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">New game</h1>
+        <p class="text-[14px] md:text-[15px] text-text-muted">
           {#if !canEditGame}
             The host picks the game. You play it in the lobby.
           {:else if showPanel}
@@ -325,11 +323,11 @@
                   <span class="text-[11px] md:text-[12px] font-semibold label-caps text-text-dim"
                     >{GAME_CATEGORIES.find(c => c.id === shown.cat)?.name}</span
                   >
-                  <h2 class="m-0 font-display font-bold text-[26px] md:text-[38px] leading-none uppercase">{shown.name}</h2>
+                  <h2 class="font-display font-bold text-[26px] md:text-[38px] leading-none uppercase">{shown.name}</h2>
                   <span class="text-[13px] md:text-[14px] text-text-muted">{shown.desc}</span>
                 </span>
               {:else}
-                <h2 class="m-0 font-display font-bold text-[26px] md:text-[38px] leading-none uppercase">{shownName}</h2>
+                <h2 class="font-display font-bold text-[26px] md:text-[38px] leading-none uppercase">{shownName}</h2>
               {/if}
             </div>
 
@@ -346,7 +344,7 @@
                   wide
                 />
               {:else}
-                <p class="m-0 p-4 border border-line-2 rounded-[10px] bg-surface-2 text-[14px] leading-[1.5] text-text-muted">
+                <p class="p-4 border border-line-2 rounded-[10px] bg-surface-2 text-[14px] leading-[1.5] text-text-muted">
                   {$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.
                 </p>
               {/if}

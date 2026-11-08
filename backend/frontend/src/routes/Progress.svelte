@@ -38,7 +38,7 @@
     </header>
 
     {#if !$progression}
-      <p class="m-0 text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
+      <p class="text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
     {:else if $progress === null}
       <PageLoading />
     {:else}

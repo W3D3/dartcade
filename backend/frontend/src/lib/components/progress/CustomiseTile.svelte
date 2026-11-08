@@ -38,7 +38,7 @@
   aria-label={open ? name : `${name}, locked: ${unlock}`}
   title={open ? name : `${name} · ${unlock}`}
   onclick={() => open && onpick()}
-  class="relative min-w-0 box-border flex border font-[inherit] text-text text-center
+  class="relative min-w-0 box-border flex border text-text text-center
          {compact
     ? 'shrink-0 rounded-full p-[6px]'
     : row

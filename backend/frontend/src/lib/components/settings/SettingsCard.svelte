@@ -13,8 +13,8 @@
 
 <section aria-labelledby={id} class="box-border p-4 md:p-[22px] card flex flex-col {className}">
   <div class="flex flex-col gap-1">
-    <h2 {id} class="m-0 text-[17px] font-semibold">{title}</h2>
-    <p class="m-0 text-[13px] leading-[1.5] text-text-dim">{description}</p>
+    <h2 {id} class="text-[17px] font-semibold">{title}</h2>
+    <p class="text-[13px] leading-[1.5] text-text-dim">{description}</p>
   </div>
   {@render children()}
 </section>

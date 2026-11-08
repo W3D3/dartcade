@@ -333,7 +333,7 @@
       aria-label="Bull off players"
     >
       <div class="flex items-baseline justify-between">
-        <h2 class="m-0 font-display font-bold text-[30px] uppercase leading-none">
+        <h2 class="font-display font-bold text-[30px] uppercase leading-none">
           {result && !result.rethrow ? 'Result' : 'One dart each'}
         </h2>
         <span class="text-[14px] text-text-muted">Closest to the centre throws first</span>

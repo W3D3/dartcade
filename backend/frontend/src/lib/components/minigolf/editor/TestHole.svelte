@@ -74,7 +74,7 @@
       fill="bg-accent transition-[width]"
     />
   {:else if result}
-    <p class="m-0 text-[14px]" data-testid="bot-reached">
+    <p class="text-[14px]" data-testid="bot-reached">
       {result.reached > 0 ? 'Cup reachable' : 'Cup not reached'} · {result.reached} of {result.rounds}
     </p>
     <div class="flex items-center justify-between gap-2">
@@ -84,7 +84,7 @@
       >
     </div>
   {:else}
-    {#if failed}<p class="m-0 text-[14px] text-live-text">The test didn't finish – try again</p>{/if}
+    {#if failed}<p class="text-[14px] text-live-text">The test didn't finish – try again</p>{/if}
     <Button variant="outline" onclick={start}>Test the hole</Button>
   {/if}
 </section>

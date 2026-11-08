@@ -23,7 +23,7 @@
   <div class="flex min-w-0 flex-col gap-1.5">
     <Breadcrumb items={trail} />
     <div class="flex items-baseline gap-3 min-w-0 flex-wrap">
-      <h1 class="m-0 font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">
+      <h1 class="font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">
         {getGameView(detail.game.mode).title}
       </h1>
       <span class="text-[13px] md:text-[14px] text-text-muted">{metaLine(detail)}</span>

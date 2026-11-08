@@ -90,8 +90,8 @@
             type="button"
             aria-label="Move {p.name} to Team {other(team)}"
             title="Move to Team {other(team)}"
-            class="w-8 h-10 shrink-0 flex items-center justify-center rounded-[8px] border-0 bg-transparent
-                   text-text-muted cursor-pointer"
+            class="w-8 h-10 shrink-0 flex items-center justify-center rounded-[8px] border-0
+ text-text-muted cursor-pointer"
             onclick={() => onmove?.(p.id, other(team))}
           >
             <ArrowLeftRight size={18} strokeWidth={2} />

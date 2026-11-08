@@ -58,7 +58,7 @@
         type="button"
         aria-label="Clear {label}"
         onclick={() => onchange('')}
-        class="flex cursor-pointer items-center border-0 bg-transparent p-0 text-text-muted hover:text-text"
+        class="flex cursor-pointer items-center border-0 text-text-muted hover:text-text"
       >
         <X size={14} />
       </button>

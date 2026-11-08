@@ -59,7 +59,7 @@
   </div>
   <section aria-label="How the grade was worked out" class="flex flex-col gap-1 text-text-muted">
     <b class="text-text">How the grade was worked out</b>
-    <ul class="m-0 list-none p-0">
+    <ul>
       {#each working.parts as p (p)}<li>{p}</li>{/each}
     </ul>
     <span class="text-ink-2">{working.result}</span>

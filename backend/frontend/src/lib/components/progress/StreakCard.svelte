@@ -23,7 +23,7 @@
     <span class="font-display font-bold text-[64px] md:text-[84px] leading-[0.85]">{streak.current}</span>
     <span class="self-end pb-[6px] text-[16px] text-text-muted">{streak.current === 1 ? 'day' : 'days'}</span>
   </div>
-  <ol class="m-0 p-0 list-none grid grid-cols-7 gap-[6px]" aria-label="The last 7 days">
+  <ol class="grid grid-cols-7 gap-[6px]" aria-label="The last 7 days">
     {#each streak.days as d (d.date)}
       {@const today = d.state === 'today' || d.date === streak.today}
       <li class="flex flex-col items-center gap-2 text-[12px] {today ? 'text-text' : 'text-text-dim'}">

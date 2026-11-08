@@ -39,7 +39,7 @@
     <!-- Only this is announced: the timer below changes every second -->
     <span class="sr-only" role="status">Searching, {view.range}</span>
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-      <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">{view.title}</h2>
+      <h2 class="font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">{view.title}</h2>
       <span class="text-[12px] text-text-muted md:text-[13px]">{view.format}</span>
     </div>
     <div class="flex flex-grow items-center gap-5 md:gap-7 md:px-1 md:py-[6px]">
@@ -94,11 +94,11 @@
       </div>
     </div>
     {#if duo}
-      <dl class="m-0 grid grid-cols-2 gap-[6px] text-center md:hidden">
+      <dl class="grid grid-cols-2 gap-[6px] text-center md:hidden">
         {#each [{ label: 'Team', value: search.rating === null ? '–' : fmtRp(search.rating) }, { label: 'Range', value: view.range.replace(' RP', '') }] as tile (tile.label)}
           <div class="rounded-[10px] bg-surface-active px-1 py-2">
             <dt class="text-[10px] uppercase tracking-[0.08em] text-text-dim">{tile.label}</dt>
-            <dd class="m-0 font-display text-[20px] font-bold">{tile.value}</dd>
+            <dd class="font-display text-[20px] font-bold">{tile.value}</dd>
           </div>
         {/each}
       </dl>
@@ -113,7 +113,7 @@
           type="button"
           disabled={busy}
           onclick={cancel}
-          class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong bg-transparent px-[22px] font-[inherit] text-[15px] font-semibold text-text"
+          class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong px-[22px] text-[15px] font-semibold text-text"
         >
           <X size={18} />{stop}
         </button>

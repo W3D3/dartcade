@@ -111,7 +111,7 @@
         <button
           type="button"
           onclick={onreroll}
-          class="shrink-0 bg-transparent border-0 p-1 text-[12px] text-text-muted cursor-pointer font-[inherit] hover:text-text"
+          class="shrink-0 bg-transparent border-0 p-1 text-[12px] text-text-muted cursor-pointer hover:text-text"
           aria-label="Reroll: {item.title}">Reroll</button
         >
       {/if}

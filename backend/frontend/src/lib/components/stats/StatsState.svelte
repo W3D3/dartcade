@@ -39,7 +39,7 @@
     <span class="flex items-center gap-2 text-[15px] font-semibold text-danger-text"
       ><CircleAlert size={18} />{title ?? "Couldn't load your stats"}</span
     >
-    <p class="m-0 text-[14px] text-text-muted">{text ?? 'Check your connection and try again.'}</p>
+    <p class="text-[14px] text-text-muted">{text ?? 'Check your connection and try again.'}</p>
     {#if onretry}<Button variant="outline" class="h-9" onclick={onretry}>Try again</Button>{/if}
   </div>
 {/if}

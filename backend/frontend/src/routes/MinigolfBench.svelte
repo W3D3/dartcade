@@ -295,7 +295,7 @@
           <Toggle bind:pressed={assist}>Aim assist</Toggle>
         </div>
       </header>
-      {#if previewError}<p role="alert" class="m-0 text-[14px] text-live-text">{previewError}</p>{/if}
+      {#if previewError}<p role="alert" class="text-[14px] text-live-text">{previewError}</p>{/if}
       {#if playtest}
         <Playtest {hole} {physics} {assist} {felt} {shading} {freeCamera} {relief} />
       {:else}
@@ -334,7 +334,7 @@
             <div class="w-full max-w-[min(520px,34dvh)] lg:max-w-[520px]">
               <DartBoard {onBoardClick} {onBoardHover} />
             </div>
-            <p class="m-0 text-[14px] text-text-muted text-center">
+            <p class="text-[14px] text-text-muted text-center">
               Angle from the bull = direction · distance = power · bull putts at the cup · off the board is a miss
             </p>
           </div>

@@ -239,7 +239,7 @@
           </tr>
           {#if rowDetail && isExpanded?.(row.original)}
             <tr class="border-b border-line-3 bg-surface-inset last:border-0">
-              <td colspan={row.getVisibleCells().length} class="p-0">{@render rowDetail(row.original)}</td>
+              <td colspan={row.getVisibleCells().length}>{@render rowDetail(row.original)}</td>
             </tr>
           {/if}
         {/each}
@@ -247,7 +247,7 @@
     </tbody>
   </table>
   {#if narrowRow}
-    <ul class="m-0 list-none p-0 lg:hidden">
+    <ul class="lg:hidden">
       {#each rows as row (row.id)}
         <li class="relative border-b border-line-3 last:border-0 {rowHref ? 'hover:bg-surface-hover' : ''}">
           {@render rowLink(row.original)}

@@ -19,7 +19,7 @@
     type="button"
     disabled={busy}
     onclick={oncancel}
-    class="shrink-0 h-9 px-[10px] md:px-3 border-0 rounded-[8px] bg-transparent text-text-muted text-[13px] font-[inherit] cursor-pointer hover:text-text disabled:opacity-50"
+    class="shrink-0 h-9 px-[10px] md:px-3 border-0 rounded-[8px] text-text-muted text-[13px] cursor-pointer hover:text-text disabled:opacity-50"
     >Cancel</button
   >
 </div>

@@ -72,7 +72,7 @@
     >
       <div class="flex flex-col gap-[14px]">
         <StepBars step={1} label="Account" />
-        <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+        <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
           Create account
         </h1>
       </div>
@@ -126,7 +126,7 @@
         {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
       </Button>
 
-      <p class="m-0 text-[15px] text-text-muted text-center">
+      <p class="text-[15px] text-text-muted text-center">
         Already have an account?
         <a href="#/login" class="font-semibold no-underline">Sign in</a>
       </p>

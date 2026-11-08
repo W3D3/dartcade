@@ -200,7 +200,7 @@
 
     {#if emptyText}
       <div class="absolute inset-0 flex items-center justify-center p-6 text-center">
-        <p class="m-0 text-[13px] text-text-muted">{emptyText}</p>
+        <p class="text-[13px] text-text-muted">{emptyText}</p>
       </div>
     {/if}
 

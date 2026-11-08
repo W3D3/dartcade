@@ -76,8 +76,8 @@
               type="button"
               aria-pressed={selectedSeat === seat}
               onclick={() => onpick?.(seat)}
-              class="h-10 inline-flex items-center gap-2 pl-[5px] pr-3 rounded-full cursor-pointer font-[inherit] text-[14px] font-semibold text-text
-                     {selectedSeat === seat ? 'border-2 border-accent bg-accent-tint' : 'border border-line-chip bg-transparent'}"
+              class="h-10 inline-flex items-center gap-2 pl-[5px] pr-3 rounded-full cursor-pointer text-[14px] font-semibold text-text
+ {selectedSeat === seat ? 'border-2 border-accent bg-accent-tint' : 'border border-line-chip bg-transparent'}"
             >
               <Avatar name={playerName(seat)} guest={playerGuest(seat)} face={playerOf(seat) ?? null} size={24} />
               {playerName(seat)}
@@ -96,7 +96,7 @@
         </div>
 
         <div class="min-w-[11rem] flex flex-col gap-[18px] pt-1 @min-[34rem]:flex-[2_1_0%]">
-          <p class="m-0 text-[15px] text-ink-2"><strong class="font-semibold text-text">{name}</strong>{summaryRest}</p>
+          <p class="text-[15px] text-ink-2"><strong class="font-semibold text-text">{name}</strong>{summaryRest}</p>
 
           <div class="grid grid-cols-2 gap-x-4 gap-y-[18px]">
             <div class="flex flex-col gap-[3px] min-w-0">
@@ -123,7 +123,7 @@
 
           <div class="flex flex-col gap-[6px] pt-4 border-t border-line-2">
             <span class="text-[11px] label-caps text-text-dim font-medium">Most hit</span>
-            <ol class="m-0 p-0 list-none flex flex-col gap-[2px]">
+            <ol class="flex flex-col gap-[2px]">
               {#each hits as h (h.label)}
                 <li class="grid grid-cols-[44px_1fr_28px] items-center gap-[10px] h-7">
                   <span class="font-mono text-[13px] {isTreble(h.label) ? 'text-text font-bold' : 'text-ink-2 font-medium'}">{h.label}</span

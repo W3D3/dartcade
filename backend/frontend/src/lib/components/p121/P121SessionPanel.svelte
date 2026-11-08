@@ -23,7 +23,7 @@
   class="w-[280px] xl:w-[360px] shrink-0 box-border px-5 py-5 xl:px-6 xl:py-[22px] rounded-[18px] border border-line bg-surface-1 flex flex-col gap-[18px] min-h-0 overflow-y-auto"
 >
   <div class="flex items-baseline justify-between">
-    <h2 class="m-0 font-display font-bold text-[30px] uppercase">This session</h2>
+    <h2 class="font-display font-bold text-[30px] uppercase">This session</h2>
     <span class="font-mono text-[12px] text-text-dim">{plural(game.cfg.tries, 'try', 'tries')}</span>
   </div>
   <div class="grid grid-cols-3 gap-3">

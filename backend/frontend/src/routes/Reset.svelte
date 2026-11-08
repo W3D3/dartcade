@@ -49,7 +49,7 @@
         <div class="flex flex-col gap-[10px]">
           <span class="text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Invalid or used token</span>
           <div class="flex flex-col gap-3 p-4 rounded-[10px] bg-surface-inset border border-danger-line">
-            <p class="m-0 text-[15px] leading-[1.5] text-danger-text">This link has expired or was already used.</p>
+            <p class="text-[15px] leading-[1.5] text-danger-text">This link has expired or was already used.</p>
             <a href="#/forgot" class="text-[14px] font-semibold no-underline">Request a new link</a>
           </div>
         </div>
@@ -61,7 +61,7 @@
           }}
           class="flex flex-col gap-5 md:gap-7"
         >
-          <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
             New password
           </h1>
 

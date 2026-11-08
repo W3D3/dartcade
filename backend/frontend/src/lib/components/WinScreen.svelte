@@ -157,7 +157,7 @@
   <header
     class="relative z-[2] shrink-0 box-border h-14 md:h-16 px-4 md:px-7 flex items-center gap-3 md:gap-4 border-b border-line bg-surface-1"
   >
-    <h1 class="m-0 font-display font-bold text-[22px] md:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
+    <h1 class="font-display font-bold text-[22px] md:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
     <span class="hidden md:inline text-[14px] text-text-muted truncate">{meta}</span>
     {#if rankedGame}<RankedPill />{/if}
     {#if lobbyName && !rankedGame}
@@ -330,7 +330,7 @@
     {:else}
       <div class="rise flex flex-col items-center gap-1 text-center">
         <span class="text-[13px] tracking-[0.14em] uppercase text-accent font-bold">{view.kicker}</span>
-        <h2 class="m-0 font-display font-bold text-[44px] md:text-[56px] xl:text-[72px] leading-[0.9] uppercase">{winner.name} wins</h2>
+        <h2 class="font-display font-bold text-[44px] md:text-[56px] xl:text-[72px] leading-[0.9] uppercase">{winner.name} wins</h2>
         <span class="text-[15px] md:text-[16px] text-text-muted">{view.note}</span>
       </div>
 

@@ -20,7 +20,7 @@
 
     {#each toolGroupsFor($currentUser) as group (group.category)}
       <section class="flex flex-col gap-3">
-        <h2 class="m-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">{group.category}</h2>
+        <h2 class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">{group.category}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {#each group.tools as tool (tool.href)}
             {@const Icon = tool.icon}

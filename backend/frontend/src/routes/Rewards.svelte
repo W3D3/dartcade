@@ -85,7 +85,7 @@
     </header>
 
     {#if !$progression}
-      <p class="m-0 text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
+      <p class="text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
     {:else if $progress === null}
       <PageLoading />
     {:else}
@@ -129,14 +129,14 @@
       {#each tiers as tier (tier.label)}
         <section aria-label={tier.label} class="flex flex-col gap-[10px]">
           <div class="flex items-center gap-[14px]">
-            <h2 class="m-0 font-display font-bold text-[22px] uppercase tracking-[0.06em] whitespace-nowrap">{tier.label}</h2>
+            <h2 class="font-display font-bold text-[22px] uppercase tracking-[0.06em] whitespace-nowrap">{tier.label}</h2>
             <div aria-hidden="true" class="flex-1 h-1 rounded-full bg-surface-paused overflow-hidden">
               <div class="h-full bg-accent" style="width: {tier.got * 10}%"></div>
             </div>
             <span class="text-[13px] text-text-muted whitespace-nowrap">{tier.got} of {tier.levels.length}</span>
           </div>
           <!-- A list on the phone, a grid from there up -->
-          <ol class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-5 xl:grid-cols-10 gap-2">
+          <ol class="grid grid-cols-1 sm:grid-cols-5 xl:grid-cols-10 gap-2">
             {#each tier.levels as l (l.level)}
               {@const shown = previews(l)}
               {@const tierCls = levelTier(l.level)}
@@ -189,10 +189,10 @@
 
       <section aria-label="Off the track" class="flex flex-col gap-[10px]">
         <div class="flex flex-wrap items-baseline gap-x-[14px] gap-y-1">
-          <h2 class="m-0 font-display font-bold text-[22px] uppercase tracking-[0.06em]">Off the track</h2>
+          <h2 class="font-display font-bold text-[22px] uppercase tracking-[0.06em]">Off the track</h2>
           <span class="text-[13px] text-text-muted">Earned with your day streak and in ranked, not by level</span>
         </div>
-        <ul class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
+        <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
           {#each offTrack(unlocked) as o (o.when)}
             {@const got = o.perks.every(p => unlocked.includes(p.id))}
             <li class="min-w-0">

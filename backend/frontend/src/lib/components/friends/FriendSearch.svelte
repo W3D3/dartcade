@@ -214,7 +214,7 @@
         onkeydown={e => {
           if (e.key === 'Escape' && !open) onquery('')
         }}
-        class="h-full min-w-0 flex-grow bg-transparent text-[16px] text-text outline-none placeholder:text-text-faint font-[inherit]"
+        class="h-full min-w-0 flex-grow bg-transparent text-[16px] text-text outline-none placeholder:text-text-faint"
       />
       {#if search.phase === 'loading'}
         <span aria-hidden="true" class="mr-3 size-4 shrink-0 animate-spin rounded-full border-2 border-line-chip border-t-accent"></span>
@@ -237,7 +237,7 @@
       >
         <Combobox.Viewport class="flex max-h-[min(560px,var(--bits-floating-available-height))] flex-col gap-1 overflow-auto p-[6px]">
           {#if showSuggestions}
-            <p class="m-0 px-3 pt-2 text-[13px] leading-[1.45] text-text-muted">Search by name, or paste an exact email address.</p>
+            <p class="px-3 pt-2 text-[13px] leading-[1.45] text-text-muted">Search by name, or paste an exact email address.</p>
             {#if search.suggestions.length > 0}
               <div role="group" aria-label="People you may know">
                 <div class={groupLabel}>People you may know</div>
@@ -260,7 +260,7 @@
               </div>
             {/if}
             {#if search.phase === 'short'}
-              <p class="m-0 px-3 py-3 text-[13px] leading-[1.45] text-text-muted">
+              <p class="px-3 py-3 text-[13px] leading-[1.45] text-text-muted">
                 Type {missing} more letter{missing === 1 ? '' : 's'} to search everyone on Dartcade.
               </p>
             {:else if search.phase === 'error'}
@@ -294,7 +294,7 @@
       </Combobox.Content>
     </Combobox.Portal>
   </Combobox.Root>
-  <p class="m-0 text-[12px] leading-[1.4] text-text-muted">Names: type 3 or more letters. Email: exact address only.</p>
+  <p class="text-[12px] leading-[1.4] text-text-muted">Names: type 3 or more letters. Email: exact address only.</p>
   <div role="status" aria-live="polite" class="sr-only">{status}</div>
 </div>
 

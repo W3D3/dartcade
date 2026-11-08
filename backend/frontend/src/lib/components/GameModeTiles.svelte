@@ -22,8 +22,8 @@
       type="button"
       onclick={() => onselect?.(mode.id)}
       class="relative text-left box-border h-[92px] px-[14px] py-3 rounded-[12px] flex flex-col gap-[10px]
-             overflow-hidden transition-colors font-[inherit] cursor-pointer
-             {active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
+ overflow-hidden transition-colors cursor-pointer
+ {active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
     >
       {#if active}
         <span class="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent flex items-center justify-center">

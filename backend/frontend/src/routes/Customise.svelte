@@ -145,7 +145,7 @@
 <!-- A grid's heading: its name, subtitle and count; on a phone the Hide locked switch too -->
 {#snippet gridHead(title: string, sub: string, items: Item[])}
   <div class="flex items-baseline gap-[10px] lg:gap-3">
-    <h2 class="m-0 text-[16px] lg:text-[17px] font-semibold">{title}</h2>
+    <h2 class="text-[16px] lg:text-[17px] font-semibold">{title}</h2>
     {#if sub}<span class="hidden lg:inline text-[13px] text-text-muted">{sub}</span>{/if}
     <span class="lg:ml-auto text-[12px] text-text-dim">{unlockedCount(items)}</span>
     {@render hideSwitch('ml-auto lg:hidden inline-flex')}
@@ -160,7 +160,7 @@
   preview: Snippet<[Item]>,
   layout: 'tile' | 'row' | 'wide' = 'tile',
 )}
-  <ul class="m-0 p-0 list-none grid gap-2 {cols}">
+  <ul class="grid gap-2 {cols}">
     {#each gridItems(items, hideLocked) as it (it.id)}
       <li class="min-w-0">
         <CustomiseTile
@@ -257,7 +257,7 @@
   >
     <Breadcrumb items={[{ label: 'Profile', href: '#/profile' }, { label: 'Customise' }]} />
     <div class="hidden md:flex items-center gap-4 -mt-3">
-      <h1 class="m-0 font-display font-bold text-[40px] leading-none uppercase tracking-[0.02em]">Customise</h1>
+      <h1 class="font-display font-bold text-[40px] leading-none uppercase tracking-[0.02em]">Customise</h1>
       <div class="ml-auto flex gap-[10px]">
         <Button variant="outline" size="md" href="#/profile" class="px-5 text-[15px] font-semibold">Cancel</Button>
         {@render saveButton('h-11 px-5 font-semibold')}
@@ -266,7 +266,7 @@
     {#if error}<ErrorText>{error}</ErrorText>{/if}
 
     {#if !$progression}
-      <p class="m-0 text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
+      <p class="text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
     {:else if !look || !$profile}
       <PageLoading />
     {:else}
@@ -312,7 +312,7 @@
                 {/each}
               </div>
             {/if}
-            <p class="hidden lg:block m-0 text-center text-[13px] leading-[1.45] text-text-muted">{meta.hint}</p>
+            <p class="hidden lg:block text-center text-[13px] leading-[1.45] text-text-muted">{meta.hint}</p>
           </section>
           <section
             aria-label="How others see it"
