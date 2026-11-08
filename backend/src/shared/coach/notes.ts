@@ -53,9 +53,9 @@ export const bogeyChance = (e: Evaluation, a: number): number =>
   e.outcomes(a).reduce((s, o) => (typeof o.after === 'number' && minDarts(o.after) > 3 ? s + o.outcome[3] : s), 0)
 
 /** The best aim on a leave dart: the highest checkout chance, and of equal ones (all zero from far
- *  out) the one with the least chance of a bogey leave */
-export const bestLeaveAim = (e: Evaluation): number =>
-  e.values.reduce((b, v, i) => (v > e.values[b] || (v === e.values[b] && bogeyChance(e, i) < bogeyChance(e, b)) ? i : b), 0)
+ *  out) the one with the least chance of a bogey leave. `among`: only these aims (AIMS indexes). */
+export const bestLeaveAim = (e: Evaluation, among: readonly number[] = e.values.map((_, i) => i)): number =>
+  among.reduce((b, i) => (e.values[i] > e.values[b] || (e.values[i] === e.values[b] && bogeyChance(e, i) < bogeyChance(e, b)) ? i : b))
 
 /** numberCost for a leave dart: how much more chance of a bogey leave the dart's aim has than the
  *  best aim. The aim is `aimed` (the dart's classified target, when it has a position), else the
