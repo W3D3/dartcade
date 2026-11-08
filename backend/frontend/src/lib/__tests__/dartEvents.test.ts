@@ -57,11 +57,17 @@ describe('snapshotEvent', () => {
     expect(snapshotEvent(snap('minigolf', {}), snap('minigolf', { currentVisitDarts: [dart(0, 0)] }))).toEqual({ kind: 'hit', seat: 0 })
     // Cricket: a dart off the targets is a miss, a bullseye (50) and a treble on a target hit
     const targets = [20, 19, 18, 17, 16, 15, 25]
-    const cricket = (d: ReturnType<typeof dart>) =>
-      snapshotEvent(snap('cricket', { targets }), snap('cricket', { targets, currentVisitDarts: [d] }))
+    const cricket = (d: ReturnType<typeof dart>, effect = { marks: 0, points: 0 }) =>
+      snapshotEvent(
+        snap('cricket', { targets, currentVisitEffects: [] }),
+        snap('cricket', { targets, currentVisitDarts: [d], currentVisitEffects: [effect] }),
+      )
     expect(cricket(dart(14, 3))).toEqual({ kind: 'miss', seat: 0 })
-    expect(cricket(dart(20, 3))).toEqual({ kind: 'treble', seat: 0, number: 20 })
-    expect(cricket(dart(50, 1))).toEqual({ kind: 'hit', seat: 0 })
+    expect(cricket(dart(20, 3), { marks: 3, points: 0 })).toEqual({ kind: 'treble', seat: 0, number: 20 })
+    expect(cricket(dart(50, 1), { marks: 1, points: 0 })).toEqual({ kind: 'hit', seat: 0 })
+    // Only scoring on a number the thrower has closed is still a hit; a dead number sounds like a miss
+    expect(cricket(dart(20, 1), { marks: 0, points: 20 })).toEqual({ kind: 'hit', seat: 0 })
+    expect(cricket(dart(20, 3))).toEqual({ kind: 'miss', seat: 0 })
   })
 
   it('busts a 121 Checkout visit and a lost Higher Lower life, for the seat that threw it', () => {

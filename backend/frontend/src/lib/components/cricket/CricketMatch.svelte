@@ -90,7 +90,7 @@
     score: game.targets.filter((_, i) => targetState(game, cp, i) === 'score'),
     open: game.targets.filter((_, i) => targetState(game, cp, i) === 'need'),
   })
-  const slots = $derived(cricketSlots({ darts, targets: game.targets, locked: game.visitLocked }))
+  const slots = $derived(cricketSlots({ darts, effects: game.currentVisitEffects, targets: game.targets, locked: game.visitLocked }))
   let openDart = $state<number | null>(null)
   // Short screens (iPad landscape, 720p) and the keypad: compact duel cards leave the board or
   // keypad enough height in the left column
