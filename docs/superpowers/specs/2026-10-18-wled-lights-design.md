@@ -120,7 +120,7 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
     every segment with the look.
   - `wled`: as `perSeat`, but seat _i_ is the device's existing segment _i_ (segments beyond the device's
     count are skipped).
-- `SEAT_COLORS = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']` (six seats, checked for colour blindness and for distance from the takeout yellow), cycled for seats 7+.
+- `DEFAULT_SEAT_COLORS = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']` (six seats, checked for colour blindness and for distance from the takeout yellow). A profile has `seatColors`, one `#rrggbb` per seat; a seat past the last colour wraps around (`seatColor(seat, colors)`: seat 7 gets seat 1's colour). A board can set its own six (below); they are never part of a device's data.
   `team` uses the team's first seat's colour.
 
 **Dartcade default** (WLED effect IDs: 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 20 Sparkle, 41 Lighthouse, 42 Fireworks):
@@ -177,6 +177,7 @@ A won X01 match plays only the game.won look, on the winning dart.
   `version`, `segments`, `segment_mode` (`whole` | `perSeat` | `wled`), `max_bri` (1–255, default 178 = 70%),
   `created_at`; unique `(board_id, mac)`.
 - `boards.lights_enabled boolean not null default true`.
+- `boards.light_seat_colors jsonb` (migration 061): the board's six seat colours, null for the built-in ones. Only the built-in profile exists, so this is the one editable part of it; with stored profiles (duplicate, part 4 of #522) the colours move into the profile.
 - Found devices and live status: in memory per board (`backend/src/lights/store.ts`), like the camera
   store.
 
@@ -186,6 +187,7 @@ Under `/api/boards/{id}/lights`:
 
 - `GET` → `{enabled, bridgeOnline, bridgeOutdated, devices: [device + {reachable, error?}], found: [...], lastScanAt, profile}`
 - `PUT` `{enabled}`
+- `PUT seat-colors {seatColors: [six #rrggbb]}` (stored lower case; 400 for any other count or format), `DELETE seat-colors` (back to the built-in colours). Both resend the scene, so the strip shows the change at once.
 - `POST scan`, `POST probe {host}`, `POST blink {host} | {deviceId}`
 - `POST devices {mac, host, name, segment_mode, max_bri}` (the MAC must be in `found`), `PATCH devices/{deviceId}`, `DELETE devices/{deviceId}`
 - `POST test {rule: number}`: plays that default-profile rule as a flash (scenes too, held 3 s) for
@@ -211,7 +213,9 @@ The page re-fetches `GET` every 3 s while it's open.
 - **Found on this board's network:** unpaired found devices, "Scanning · x min ago", **Rescan**, **Pair**;
   "On <board>" for devices paired elsewhere. **Add by IP** below, with an inline error ("No WLED answered
   at 192.168.1.80").
-- **Light profile:** "Dartcade default · built in", seat colour swatches, the numbered read-only rule list
+- **Light profile:** "Dartcade default · built in". A **Seat colours** group on top of the list: one row per
+  seat with its swatch and a picker (a bits-ui popover with a palette as a radio group plus a custom
+  colour field), and **Reset to defaults**. Below it **Effects**: the numbered read-only rule list
   (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. Duplicate, Import, Export shown disabled
   ("Coming soon").
 - **Pair dialog** (`ui/modal`): (1) blink check: "Blinking lime now", Blink again, "Yes, it blinked" /
