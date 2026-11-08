@@ -1,5 +1,39 @@
 import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
+
+// The canvas type and radius tokens from app.css `@theme`, so twMerge reads text-small as a font size
+// (not a colour that text-ink would replace) and rounded-card as a radius.
+const twMerge = extendTailwindMerge({
+  extend: {
+    theme: {
+      text: [
+        'score',
+        'hero',
+        'glyph',
+        'page-title',
+        'checkout',
+        'card-title',
+        'section-title',
+        'cta',
+        'wordmark',
+        'lead',
+        'player-name',
+        'body-lg',
+        'body',
+        'label',
+        'small',
+        'caption',
+        'eyebrow',
+        'pill',
+        'mono',
+        'mono-sm',
+        'kicker',
+      ],
+      radius: ['bar', 'chip', 'segment', 'sm', 'key', 'md', 'lg', 'card', 'popover', 'panel', 'pill'],
+      tracking: ['score', 'hero', 'title', 'section', 'wordmark', 'cta', 'caps'],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
