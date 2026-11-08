@@ -18,7 +18,9 @@ dist/
 
 # Editor
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
 spike/recorder/recorder
 spike/visualiser/visualiser
