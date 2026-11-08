@@ -13,7 +13,9 @@ import {
   updateWledDevice as updateWledDeviceRow,
   deleteWledDevice as deleteWledDeviceRow,
   getLightsEnabled,
+  getSeatColors,
   setLightsEnabled,
+  setSeatColors,
   type WledDeviceRow,
 } from '../db/lights.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
@@ -131,8 +133,9 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
 
-      const [enabled, devices, otherBoards] = await Promise.all([
+      const [enabled, seatColors, devices, otherBoards] = await Promise.all([
         getLightsEnabled(db, id),
+        getSeatColors(db, id),
         listWledDevices(db, id),
         getBoardsByOwner(db, req.userId),
       ])
@@ -155,7 +158,7 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           .map(d => ({ ...d, ...(macToBoardName.has(d.mac) && { onBoard: macToBoardName.get(d.mac) }) })),
         lastScanAt: found.scannedAt ? found.scannedAt.toISOString() : null,
         probe: found.probe,
-        profile: { ...DEFAULT_PROFILE, builtIn: true },
+        profile: { ...DEFAULT_PROFILE, seatColors: [...seatColors], builtIn: true },
         scanError: found.scanError ?? null,
       })
     },
@@ -169,6 +172,36 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
       await setLightsEnabled(db, id, req.body.enabled)
+      notifyChanged(id, req.log)
+      return reply.code(204).send()
+    },
+  )
+
+  app.put<Route<'setBoardSeatColors'>>(
+    '/api/boards/:id/lights/seat-colors',
+    { preValidation: requireAuth, schema: fromSpec('setBoardSeatColors') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      await setSeatColors(
+        db,
+        id,
+        req.body.seatColors.map(c => c.toLowerCase()),
+      )
+      notifyChanged(id, req.log)
+      return reply.code(204).send()
+    },
+  )
+
+  app.delete<Route<'resetBoardSeatColors'>>(
+    '/api/boards/:id/lights/seat-colors',
+    { preValidation: requireAuth, schema: fromSpec('resetBoardSeatColors') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      await setSeatColors(db, id, null)
       notifyChanged(id, req.log)
       return reply.code(204).send()
     },

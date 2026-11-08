@@ -777,6 +777,42 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/lights/seat-colors:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    put:
+      operationId: setBoardSeatColors
+      summary: Set the board's seat colours (all six, from seat 1)
+      description: Applies to the board's light profile and is not part of any device data. A game with more seats than colours wraps around.
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seatColors]
+              additionalProperties: false
+              properties:
+                seatColors: { $ref: '#/components/schemas/LightSeatColors' }
+      responses:
+        '204': { description: Saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: resetBoardSeatColors
+      summary: Go back to the built-in seat colours
+      tags: [lights]
+      responses:
+        '204': { description: Reset }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights/scan:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -5251,14 +5287,21 @@ components:
                 preset: { type: string }
                 state: { type: object, additionalProperties: true }
         holdMs: { type: integer }
+    LightSeatColors:
+      type: array
+      description: One colour per seat from seat 1. A seat past the end wraps around to the first.
+      minItems: 6
+      maxItems: 6
+      items: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
     LightProfile:
       type: object
-      required: [id, name, builtIn, rules]
+      required: [id, name, builtIn, seatColors, rules]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
         builtIn: { type: boolean }
+        seatColors: { $ref: '#/components/schemas/LightSeatColors' }
         rules:
           type: array
           items: { $ref: '#/components/schemas/LightRule' }

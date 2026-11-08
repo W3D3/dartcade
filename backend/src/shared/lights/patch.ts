@@ -29,18 +29,24 @@ function withoutSegmentGeometry(state: WledPresetState): WledPresetState {
   return { ...state, seg: kept }
 }
 
-function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout): string {
+function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout, seatColors: readonly string[]): string {
   const c = look.color
-  if (c === 'seat') return seatColor(seat ?? 0)
+  if (c === 'seat') return seatColor(seat ?? 0, seatColors)
   if (c === 'team') {
     const team = layout.teams?.find(ts => seat !== null && ts.includes(seat))
-    return seatColor(team?.[0] ?? seat ?? 0)
+    return seatColor(team?.[0] ?? seat ?? 0, seatColors)
   }
   return c
 }
 
-/** The WLED state that shows `rule` for trigger `t` on one device. */
-export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout): WledState | WledPresetState {
+/** The WLED state that shows `rule` for trigger `t` on one device, in the board's `seatColors`. */
+export function patchFor(
+  rule: Rule,
+  t: BoardTrigger,
+  device: LightDevice,
+  layout: SeatLayout,
+  seatColors: readonly string[],
+): WledState | WledPresetState {
   if ('preset' in rule.look) {
     const state = structuredClone(rule.look.state)
     return device.segmentMode === 'wled' ? withoutSegmentGeometry(state) : state
@@ -53,13 +59,13 @@ export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layou
   const look = {
     on: true,
     bri: 255,
-    col: [rgb(lookColor(rule.look, seat, layout))],
+    col: [rgb(lookColor(rule.look, seat, layout, seatColors))],
     fx: rule.look.fx,
     sx: rule.look.speed ?? DEFAULT_SPEED,
     ...reset,
   }
   const part = (i: number) =>
-    seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i))], fx: 0, sx: DEFAULT_SPEED, ...reset }
+    seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i, seatColors))], fx: 0, sx: DEFAULT_SPEED, ...reset }
   const clear = (from: number): WledSeg[] => Array.from({ length: MAX_SEGMENTS - from }, (_, k) => ({ id: from + k, stop: 0 }))
 
   if (device.segmentMode === 'whole') {

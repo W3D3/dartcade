@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { insertBoard } from './queries.js'
@@ -7,10 +8,12 @@ import { insertUsers } from '../test/fixtures.js'
 import {
   deleteWledDevice,
   getLightsEnabled,
+  getSeatColors,
   insertWledDevice,
   listWledDevices,
   rehostWledDevices,
   setLightsEnabled,
+  setSeatColors,
   updateWledDevice,
 } from './lights.js'
 
@@ -64,6 +67,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('wled lights', () => {
     expect(await getLightsEnabled(db, 'b1')).toBe(true)
     await setLightsEnabled(db, 'b1', false)
     expect(await getLightsEnabled(db, 'b1')).toBe(false)
+  })
+  it('a board has the built-in seat colours until it sets its own, and can go back', async () => {
+    const six = ['#010203', '#040506', '#070809', '#0a0b0c', '#0d0e0f', '#101112']
+    expect(await getSeatColors(db, 'b1')).toEqual(DEFAULT_SEAT_COLORS)
+    await setSeatColors(db, 'b1', six)
+    expect(await getSeatColors(db, 'b1')).toEqual(six)
+    await setSeatColors(db, 'b1', null)
+    expect(await getSeatColors(db, 'b1')).toEqual(DEFAULT_SEAT_COLORS)
   })
   it('deleting the board deletes its devices', async () => {
     await db.deleteFrom('boards').where('id', '=', 'b1').execute()

@@ -62,6 +62,8 @@ export interface BoardsTable {
   created_at: ColumnType<Date, never, never>
   /** Lights master switch for this board (migration 027). */
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
+  /** The seat colours of the board's light profile (written as JSON); null: the built-in ones (migration 061). */
+  light_seat_colors: ColumnType<string[] | null, string | null | undefined, string | null>
   /** Start the board's stopped Board Manager session with a lobby game (migration 042). */
   auto_start: ColumnType<boolean, boolean | undefined, boolean>
   /** Reset the board when a player presses Next player (migration 051). */

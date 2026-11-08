@@ -42,7 +42,8 @@ export type Rule = {
   holdMs?: number
 }
 
-export type Profile = { id: 'default'; name: string; rules: Rule[] }
+/** `seatColors`: one `#rrggbb` per seat from seat 1; a seat past the end wraps around (`seatColor`). */
+export type Profile = { id: 'default'; name: string; seatColors: readonly string[]; rules: Rule[] }
 
 export type SegmentMode = 'whole' | 'perSeat' | 'wled'
 

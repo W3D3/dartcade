@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, patchFor, type ColorLook, type Rule, type WledPresetState, type WledState } from './index.js'
+import {
+  DEFAULT_PROFILE,
+  DEFAULT_SEAT_COLORS,
+  patchFor,
+  type BoardTrigger,
+  type ColorLook,
+  type LightDevice,
+  type SeatLayout,
+  type Rule,
+  type WledPresetState,
+  type WledState,
+} from './index.js'
 import { PRESET_180, PRESET_BUSTED, PRESET_GAMESHOT, PRESET_MATCHSHOT } from './presets.js'
+
+/** patchFor in the built-in seat colours unless a test passes its own */
+const patch = (rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout, colors: readonly string[] = DEFAULT_SEAT_COLORS) =>
+  patchFor(rule, t, device, layout, colors)
 
 const turn = DEFAULT_PROFILE.rules[0] // seat colour, solid, 255
 const cyan = [86, 212, 232]
@@ -10,7 +25,7 @@ const layout = { seatCount: 2 }
 
 describe('patchFor', () => {
   it('whole strip: one segment over every LED, the rest removed', () => {
-    const s = patchFor(
+    const s = patch(
       turn,
       { kind: 'turn', seat: 0, local: true },
       { leds: 120, segmentMode: 'whole', segments: 1 },
@@ -37,7 +52,7 @@ describe('patchFor', () => {
     expect(s.seg.slice(1)).toEqual(Array.from({ length: 15 }, (_, i) => ({ id: i + 1, stop: 0 })))
   })
   it("resets the palette and other segment options, so a preset's leftovers on the device can't leak into a colour look", () => {
-    const preset = patchFor(
+    const preset = patch(
       DEFAULT_PROFILE.rules.find(r => r.when.trigger === 'visit') as Rule,
       { kind: 'visit', seat: 0, total: 180, local: true },
       device,
@@ -45,7 +60,7 @@ describe('patchFor', () => {
     )
     // Sanity: the "180" preset really does carry a non-zero palette, the leftover this guards against
     expect((preset as { seg: { pal?: number }[] }).seg[0].pal).not.toBe(0)
-    const s = patchFor(
+    const s = patch(
       turn,
       { kind: 'turn', seat: 0, local: true },
       { leds: 10, segmentMode: 'whole', segments: 1 },
@@ -54,7 +69,7 @@ describe('patchFor', () => {
     expect(s.seg[0]).toMatchObject({ pal: 0, ix: 128, grp: 1, spc: 0, of: 0, rev: false, mi: false })
   })
   it('one per seat: equal parts, remainder to the last, others dimmed in their own colour', () => {
-    const s = patchFor(
+    const s = patch(
       turn,
       { kind: 'turn', seat: 1, local: true },
       { leds: 145, segmentMode: 'perSeat', segments: 1 },
@@ -72,7 +87,7 @@ describe('patchFor', () => {
   })
   it('one per seat with a seatless trigger lights every part with the look', () => {
     const takeout = DEFAULT_PROFILE.rules.find(r => r.when.trigger === 'takeout.started') as Rule
-    const s = patchFor(
+    const s = patch(
       takeout,
       { kind: 'takeout.started', local: true },
       { leds: 60, segmentMode: 'perSeat', segments: 1 },
@@ -81,7 +96,7 @@ describe('patchFor', () => {
     expect(s.seg.slice(0, 2).every(g => g.bri === 255 && g.col?.[0].join() === '255,214,10')).toBe(true)
   })
   it('WLED segments: seat i is segment i, no layout changes, extra seats skipped', () => {
-    const s = patchFor(
+    const s = patch(
       turn,
       { kind: 'turn', seat: 0, local: true },
       { leds: 60, segmentMode: 'wled', segments: 2 },
@@ -92,7 +107,7 @@ describe('patchFor', () => {
   })
   it('team colour is the team’s first seat', () => {
     const r: Rule = { ...turn, look: { ...(turn.look as ColorLook), color: 'team' } }
-    const s = patchFor(
+    const s = patch(
       r,
       { kind: 'turn', seat: 3, local: true },
       { leds: 10, segmentMode: 'whole', segments: 1 },
@@ -109,7 +124,7 @@ describe('patchFor', () => {
   it('six seats have their own colour, then the colours cycle', () => {
     const colorOf = (seat: number) =>
       (
-        patchFor(turn, { kind: 'turn', seat, local: true }, { leds: 10, segmentMode: 'whole', segments: 1 }, { seatCount: 8 }) as WledState
+        patch(turn, { kind: 'turn', seat, local: true }, { leds: 10, segmentMode: 'whole', segments: 1 }, { seatCount: 8 }) as WledState
       ).seg[0].col?.[0].join()
     const six = [0, 1, 2, 3, 4, 5].map(colorOf)
     expect(new Set(six).size).toBe(6)
@@ -117,7 +132,7 @@ describe('patchFor', () => {
     expect(colorOf(7)).toBe(six[1])
   })
   it('a strip with fewer LEDs than seats still gets valid segments', () => {
-    const s = patchFor(
+    const s = patch(
       turn,
       { kind: 'turn', seat: 0, local: true },
       { leds: 3, segmentMode: 'perSeat', segments: 1 },
@@ -132,30 +147,30 @@ describe('patchFor a preset look', () => {
   const presetRule = (trigger: string) => DEFAULT_PROFILE.rules.find(r => r.when.trigger === trigger) as Rule
 
   it('the 180 flash sends the "180" preset verbatim', () => {
-    const s = patchFor(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, device, layout)
+    const s = patch(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, device, layout)
     expect(s).toEqual(PRESET_180)
     expect(s).not.toBe(PRESET_180)
   })
   it('a bust sends the "Busted" preset verbatim', () => {
-    const s = patchFor(presetRule('bust'), { kind: 'bust', seat: 0, local: true }, device, layout)
+    const s = patch(presetRule('bust'), { kind: 'bust', seat: 0, local: true }, device, layout)
     expect(s).toEqual(PRESET_BUSTED)
   })
   it('a leg checkout sends the "Gameshot" preset verbatim', () => {
-    const s = patchFor(presetRule('checkout'), { kind: 'checkout', seat: 0, local: true }, device, layout)
+    const s = patch(presetRule('checkout'), { kind: 'checkout', seat: 0, local: true }, device, layout)
     expect(s).toEqual(PRESET_GAMESHOT)
   })
   it('a match win sends the "Matchshot" preset verbatim', () => {
-    const s = patchFor(presetRule('game.won'), { kind: 'game.won', seat: 0, local: true }, device, layout)
+    const s = patch(presetRule('game.won'), { kind: 'game.won', seat: 0, local: true }, device, layout)
     expect(s).toEqual(PRESET_MATCHSHOT)
   })
   it('a perSeat device also gets the preset verbatim (its own restore resends the geometry)', () => {
     const perSeatDevice = { ...device, segmentMode: 'perSeat' as const }
-    const s = patchFor(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, perSeatDevice, layout)
+    const s = patch(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, perSeatDevice, layout)
     expect(s).toEqual(PRESET_180)
   })
   it("a wled device strips the preset's segment geometry, so it can't overwrite the user's own segment layout", () => {
     const wledDevice = { ...device, segmentMode: 'wled' as const, segments: 2 }
-    const s = patchFor(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, wledDevice, layout) as WledPresetState
+    const s = patch(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, wledDevice, layout) as WledPresetState
     const seg = s.seg as Record<string, unknown>[]
     // The two real segments survive; the stop:0 filler entries that delete every other segment don't
     expect(seg).toHaveLength(2)
@@ -178,5 +193,54 @@ describe('patchFor a preset look', () => {
         [0, 0, 0],
       ],
     })
+  })
+})
+
+describe('seat colours', () => {
+  const whole = { leds: 10, segmentMode: 'whole' as const, segments: 1 }
+  const colorOf = (seat: number, seatColors?: readonly string[]) =>
+    (patch(turn, { kind: 'turn', seat, local: true }, whole, { seatCount: 8 }, seatColors) as WledState).seg[0].col?.[0]
+
+  it('use the profile’s own colours when the layout has them', () => {
+    const colors = ['#010203', '#040506', '#070809']
+    expect(colorOf(0, colors)).toEqual([1, 2, 3])
+    expect(colorOf(2, colors)).toEqual([7, 8, 9])
+  })
+  it('wrap around when a game has more seats than colours', () => {
+    const colors = ['#010203', '#040506', '#070809']
+    expect([3, 4, 5, 7].map(seat => colorOf(seat, colors))).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+      [4, 5, 6],
+    ])
+  })
+  it('seven or eight seats wrap onto the first of the six built-in colours', () => {
+    expect(colorOf(6)).toEqual(colorOf(0))
+    expect(colorOf(7)).toEqual(colorOf(1))
+  })
+  it('a team takes the colour of its first seat in the profile’s colours', () => {
+    const team: Rule = { ...turn, look: { ...(turn.look as ColorLook), color: 'team' } }
+    const s = patch(
+      team,
+      { kind: 'turn', seat: 3, local: true },
+      whole,
+      {
+        seatCount: 4,
+        teams: [
+          [0, 2],
+          [1, 3],
+        ],
+      },
+      ['#010203', '#040506', '#070809', '#0a0b0c'],
+    ) as WledState
+    expect(s.seg[0].col).toEqual([[4, 5, 6]])
+  })
+  it('the other seats’ dimmed parts use the profile’s colours too', () => {
+    const s = patch(turn, { kind: 'turn', seat: 1, local: true }, { leds: 40, segmentMode: 'perSeat', segments: 1 }, { seatCount: 2 }, [
+      '#010203',
+      '#040506',
+    ]) as WledState
+    expect(s.seg[0].col).toEqual([[1, 2, 3]])
   })
 })
