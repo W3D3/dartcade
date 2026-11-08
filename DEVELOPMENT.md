@@ -287,6 +287,19 @@ controls on the match screen have the Start/Stop big screen button and an "Open 
 Machines that installed a bridge before this existed need the install command from the Boards
 page run once more: registration happens only at install.
 
+## Tailwind checks
+
+Two checks keep the utility classes on the theme tokens in `src/app.css`.
+
+- `npm run lint:tw` in `backend/frontend/` runs eslint-plugin-better-tailwindcss
+  (`eslint.tailwind.config.js`): arbitrary values that equal a token (`rounded-[9px]` → `rounded-key`),
+  deprecated classes, `w-4 h-4` → `size-4`, conflicting and duplicate classes. All are errors. Most are
+  fixable with `npm run lint:tw -- --fix`. It takes about 35 s on 10 cores because it reads the theme for every class.
+- `npm run lint` also runs `scripts/tw-ratchet.mjs`, which counts what the plugin cannot judge (`text-[Npx]`,
+  and the dead utilities `m-0`, `list-none`, `font-[inherit]`) and fails when a count is above
+  `scripts/tw-ratchet.baseline.json`. `node scripts/tw-ratchet.mjs --list` shows every match. After a PR removes
+  some, run `node scripts/tw-ratchet.mjs --update` and commit the lower baseline; `--update` never raises it.
+
 ## Regenerate types and clients from the schema
 
 `schema/` holds the hand-written contracts: the adbridge/v1 JSON Schema (bridge↔Board Manager),
