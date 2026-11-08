@@ -42,6 +42,7 @@
     keypad = false,
     onDart = () => {},
     turn = null,
+    viewOnly = false,
   }: {
     game: CricketGame
     players: { name: string }[]
@@ -64,6 +65,8 @@
     onDart?: (segment: Segment) => void
     /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
     turn?: TurnStatus | null
+    /** The big screen: no Undo or Next. */
+    viewOnly?: boolean
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -127,7 +130,7 @@
 {/snippet}
 
 {#snippet controls(compact: boolean)}
-  {#if !keypad}
+  {#if !keypad && !viewOnly}
     {#if turn}
       <TurnStatusBar status={turn} {compact} />
     {:else}
