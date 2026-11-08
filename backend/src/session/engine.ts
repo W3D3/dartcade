@@ -5,7 +5,7 @@ import type { GameConfig, RankedGame, Session, Player, Seat, FinishedSeat, UserA
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
 import { newSeed, seededRng, shuffle } from './rng.js'
-import { StoredConfigSchema, dartRows, newSession, prefetchShots, replay, results, type WarnFn } from './replay.js'
+import { StoredConfigSchema, dartRows, newSession, replay, resolveInputWork, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from './errors.js'
@@ -459,7 +459,7 @@ export class SessionEngine {
       return true
     }
     const at = new Date()
-    await prefetchShots(session, input, at)
+    await resolveInputWork(session, input, at)
     await this.logInput(session, input, raw, origin, at)
     const outcome = applyInput(session, input, at)
     // The held visit ends when it's committed, or once no darts are left in it (Undo, a resync)

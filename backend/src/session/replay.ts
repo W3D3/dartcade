@@ -7,11 +7,8 @@ import { newRankedClock } from './rankedClock.js'
 import { SystemActionSchema } from './systemInput.js'
 import { seededRng } from './rng.js'
 import { teamForfeitPlacements } from '../games/teams.js'
-import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
-import { simulateInPool } from '../games/minigolfPool.js'
-import type { ShotResult } from '../shared/minigolf/types.js'
 import type { NewGameDart } from '../db/queries.js'
-import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, RankedGame, Seat, Session } from './types.js'
+import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, RankedGame, ResolvedWork, Seat, Session } from './types.js'
 
 /** Reports data the engine had to skip (message, details). */
 export type WarnFn = (message: string, details: unknown) => void
@@ -112,38 +109,35 @@ export function replay(session: Session, rows: LoggedInput[], warn: WarnFn): { v
 }
 
 /**
- * Plays the input on a scratch copy of the session first: each 3D shot it needs runs in the worker
- * pool, so the real apply finds them stored and doesn't block the thread. They go in `shots` if
- * given, else in the shared cache. Any other error is left for the real apply to raise.
+ * Runs the off-thread work the game needs for this input (see GameModule.inputWork) on a scratch
+ * copy of the session, so the real apply finds the results ready and doesn't block the thread.
+ * They go in `work` if given, else in the game's shared cache.
  */
-export async function prefetchShots(session: Session, input: GameInput, at: Date, shots?: Map<string, ShotResult>): Promise<void> {
-  for (;;) {
+export async function resolveInputWork(session: Session, input: GameInput, at: Date, work?: ResolvedWork): Promise<void> {
+  await session.module.inputWork?.resolve(() => {
     const { openVisitEvents, openDarts, totalDarts, totalVisits } = session
-    const scratch = {
-      ...session,
-      openVisitEvents: [...openVisitEvents],
-      openDarts: [...openDarts],
-      totalDarts: [...totalDarts],
-      totalVisits: [...totalVisits],
-    }
-    try {
-      liveShots(() => applyInput(scratch, input, at), shots)
-      return
-    } catch (err) {
-      if (!(err instanceof ShotNeeded)) return
-      storeShot(err.inputs, await simulateInPool(err.inputs), shots)
-    }
-  }
+    applyInput(
+      {
+        ...session,
+        openVisitEvents: [...openVisitEvents],
+        openDarts: [...openDarts],
+        totalDarts: [...totalDarts],
+        totalVisits: [...totalVisits],
+      },
+      input,
+      at,
+    )
+  }, work)
 }
 
-/** replay(), for a request path: every 3D shot runs in the worker pool, never on this thread. */
+/** replay(), for a request path: a game's off-thread work (3D shots) runs off this thread, never on it. */
 export async function replayPooled(
   session: Session,
   rows: LoggedInput[],
   warn: WarnFn,
 ): Promise<{ visits: CommittedVisit<unknown>[]; won: boolean }> {
-  // This replay's own shots: a long game would evict its earlier ones from the shared cache
-  const shots = new Map<string, ShotResult>()
+  // This replay's own results: a long game would evict its earlier ones from the shared cache
+  const work: ResolvedWork = new Map()
   const visits: CommittedVisit<unknown>[] = []
   let won = false
   for (const row of rows) {
@@ -152,8 +146,9 @@ export async function replayPooled(
       warn('skipped a log entry that does not parse', { sessionId: session.id, seq: row.seq, kind: row.kind })
       continue
     }
-    await prefetchShots(session, input, row.created_at, shots)
-    const outcome = liveShots(() => applyInput(session, input, row.created_at), shots)
+    await resolveInputWork(session, input, row.created_at, work)
+    const apply = () => applyInput(session, input, row.created_at)
+    const outcome = session.module.inputWork ? session.module.inputWork.within(apply, work) : apply()
     if (outcome.reopened !== undefined) visits.pop()
     if (outcome.committed) visits.push(outcome.committed)
     if (outcome.won) won = true

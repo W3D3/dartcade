@@ -135,6 +135,27 @@ export type FinishedSeat = SeatResult & { throwPosition: number; forfeited: bool
 /** Counts the engine keeps per seat (bull off excluded). */
 export type SummaryContext = { totalDarts: number[]; totalVisits: number[] }
 
+/** What a game's off-thread work produced, keyed by the game; kept by one replay, so a long game's results aren't evicted from the game's shared cache. */
+export type ResolvedWork<R = unknown> = Map<string, R>
+
+/**
+ * Off-thread work a game's reducers need before they can run (Minigolf's 3D shots, which take tens
+ * of ms and would hold up every other game on this thread). The reducers stay pure and
+ * synchronous: while a fold runs inside `within`, a result that isn't ready throws instead of
+ * blocking, and `resolve` produces it off-thread first.
+ */
+export interface InputWork<R = unknown> {
+  /**
+   * Plays `play` (a throwaway fold of one input; it is called again after each round of work, so
+   * it must start from a fresh copy of the session each time) and runs, off-thread, whatever it
+   * finds missing. Results go in `into` if given, else in the game's shared cache. Any other error
+   * is left for the real fold to raise.
+   */
+  resolve(play: () => void, into?: ResolvedWork<R>): Promise<void>
+  /** Runs the real fold, finding what `resolve` stored (in `from` if given) and never blocking. */
+  within<T>(fn: () => T, from?: ResolvedWork<R>): T
+}
+
 /**
  * A game. `V` is what view() returns, `Id` the game's id (a literal for registered
  * games, so a session's module tells which snapshot shape it produces), `D` what
@@ -164,6 +185,8 @@ export interface GameModule<
   /** The visit that wins the game commits like any other, without waiting for a Finish button
    *  (see awaitsFinish): in Minigolf that button would give away that the putt drops. */
   noFinishHold?: true
+  /** Off-thread work its reducers need; the engine and replays run it before folding an input. */
+  inputWork?: InputWork
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
   /**

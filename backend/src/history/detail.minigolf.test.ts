@@ -2,6 +2,7 @@
 import { afterAll, expect, it, vi } from 'vitest'
 import { buildDetail } from './detail.js'
 import { newSession, replay, replayPooled, type LoggedInput } from '../session/replay.js'
+import { games } from '../games/index.js'
 import { minigolfModule as M, type MinigolfState } from '../games/minigolf.js'
 import { closePool, simulateInPool } from '../games/minigolfPool.js'
 import { simulateShot3d } from '../shared/minigolf/3d/physics3d.js'
@@ -17,6 +18,9 @@ vi.mock('../games/minigolfPool.js', async orig => {
 })
 afterAll(() => closePool())
 
+// The registered module, which carries the pool (minigolfModule alone replays inline)
+const registered = games.minigolf
+if (!registered) throw new Error('minigolf is not registered')
 const config = { ...M.defaultConfig, course: 'test' }
 const at = new Date('2026-10-01T10:00:00.000Z')
 const game: HistoryGame = {
@@ -61,7 +65,7 @@ const session = () =>
     id: game.id,
     ownerUserId: '',
     boardId: null,
-    module: M,
+    module: registered,
     config,
     seats: [{ name: 'A', userId: null, controllerUserId: '', boardId: null, boardName: null, bot: null }],
     seed: game.rng_seed,
