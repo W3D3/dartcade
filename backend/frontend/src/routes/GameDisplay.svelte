@@ -1,7 +1,6 @@
 <script lang="ts">
   import { deviceStore } from '$lib/storage'
   import { onMount, onDestroy, untrack } from 'svelte'
-  import { whoOf } from '$lib/face'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import ErrorText from '../lib/components/ErrorText.svelte'
@@ -9,15 +8,10 @@
   import { afterGameRoute, endControl, leaveRefused, winActions, type WinAction } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
-  import BullOffPanel from '../lib/components/BullOffPanel.svelte'
-  import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
-  import P121Match from '$lib/components/p121/P121Match.svelte'
-  import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
-  import CricketMatch from '$lib/components/cricket/CricketMatch.svelte'
+  import MatchScreen from '$lib/components/match/MatchScreen.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { snapshotStandings } from '$lib/p121/summary'
   import { pendingRoll } from '$lib/minigolf/match'
-  import ScoreMatch from '../lib/components/ScoreMatch.svelte'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { derived, get, readable } from 'svelte/store'
   import { accountSettings, writeThrough } from '$lib/accountSettings'
@@ -252,7 +246,6 @@
   const x01 = $derived(current.x01)
   const minigolf = $derived(current.minigolf)
   const p121 = $derived(current.p121)
-  const hilo = $derived(current.hilo)
   const cricket = $derived(current.cricket)
   const game = $derived(snapshot?.game ?? null)
   const isX01 = $derived(x01 !== null)
@@ -304,7 +297,6 @@
   const remote = $derived(centerState(snapshot, viewerId))
   // Someone else is up: their status stands in for Undo and Next (only that seat's controller may use them)
   const turn = $derived(turnStatus(remote))
-  const who = $derived(snapshot ? whoOf(snapshot) : [])
   // The keypad: picked with Enter on your turn (also while your board is offline: the drawn board
   // takes manual darts too). Someone else's turn always shows the board, live.
   // A ranked game can turn hand entry off (the server refuses it then): no keypad, no toggle
@@ -319,7 +311,6 @@
   const bullOff = $derived(bullOffOf(current))
   // The seats, the open visit and the board's highlights (X01 and Around the Clock): shared with the big screen
   const mv = $derived(matchView(snapshot, history, settings))
-  const checkout = $derived(mv.checkout)
   const teams = $derived(mv.teams)
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch, $isPortrait))
   // The live coach (solo X01, double out): loaded with its model only once it shows
@@ -546,108 +537,27 @@
           }}
           secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         />
-      {:else if bullOff}
-        <BullOffPanel {players} {who} {bullOff} manual={boardId === null} canThrow={myTurn} {send} />
-      {:else if minigolf}
-        <MinigolfMatch
-          {turn}
-          game={minigolf}
-          {players}
-          {darts}
-          {canThrow}
-          {locked}
-          {canUndo}
-          {next}
-          onUndo={undo}
-          onNext={advance}
-          onBoardClick={addBoardDart}
-          onrolled={minigolfRolledKey}
-          {settings}
-          host={snapshot?.ownerUserId === viewerId}
-          manual={boardId === null}
-          onNextHole={() => send({ type: 'minigolf_next_hole' })}
-        />
-      {:else if p121}
-        <P121Match
-          {turn}
-          game={p121}
-          {players}
-          {who}
-          {darts}
-          {layout}
-          {canThrow}
-          {locked}
-          {canUndo}
-          {next}
-          onUndo={undo}
-          onNext={advance}
-          onBoardClick={addBoardDart}
-          onCorrect={correct}
-          onDartMove={canThrow ? moveDart : undefined}
-          onGiveUp={() => send({ type: 'p121_give_up' })}
-          {settings}
-          {checkout}
-          {keypad}
-          onDart={canThrow ? addManualDart : () => {}}
-        />
-      {:else if hilo}
-        <HiloMatch
-          {turn}
-          game={hilo}
-          {who}
-          {darts}
-          {layout}
-          {canThrow}
-          {locked}
-          {canUndo}
-          {next}
-          onUndo={undo}
-          onNext={advance}
-          onBoardClick={addBoardDart}
-          onCorrect={correct}
-          onDartMove={canThrow ? moveDart : undefined}
-          {keypad}
-          onDart={canThrow ? addManualDart : () => {}}
-        />
-      {:else if cricket}
-        <CricketMatch
-          {turn}
-          game={cricket}
-          {players}
-          {who}
-          {darts}
-          {layout}
-          {canThrow}
-          {locked}
-          {canUndo}
-          {next}
-          onUndo={undo}
-          onNext={advance}
-          onBoardClick={addBoardDart}
-          onCorrect={correct}
-          onDartMove={canThrow ? moveDart : undefined}
-          {keypad}
-          onDart={canThrow ? addManualDart : () => {}}
-        />
-      {:else if !game}
-        <main class="flex-grow flex items-center justify-center">
-          <p class="text-text-muted">Unsupported game</p>
-        </main>
       {:else}
-        <ScoreMatch
+        <MatchScreen
           {snapshot}
           {mv}
           {layout}
           bind:settings
+          bind:correcting
+          viewOnly={false}
           {remote}
+          {turn}
           {keypad}
+          {myTurn}
           {canThrow}
           {locked}
           {canUndo}
           {next}
           {cameraSrc}
           {cameraVersions}
-          bind:correcting
+          host={snapshot.ownerUserId === viewerId}
+          manual={boardId === null}
+          {send}
           onUndo={undo}
           onNext={advance}
           onDart={addManualDart}
@@ -655,6 +565,7 @@
           onDartMove={canThrow ? moveDart : undefined}
           onBoardClick={addBoardDart}
           onabort={() => (showEndConfirm = true)}
+          onrolled={minigolfRolledKey}
           coach={liveCoachOn ? liveCoach : undefined}
         />
       {/if}

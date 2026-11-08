@@ -1,17 +1,10 @@
 <script lang="ts">
   // The live game: the match screen's own components, view only, under the big screen's header (minigolf: as it is).
   // Lives in the frame (routes/BigScreenFrame.svelte), so its media queries see the frame's window.
-  import { whoOf } from '$lib/face'
-  import BullOffPanel from '$lib/components/BullOffPanel.svelte'
-  import CricketMatch from '$lib/components/cricket/CricketMatch.svelte'
-  import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
-  import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
-  import P121Match from '$lib/components/p121/P121Match.svelte'
-  import ScoreMatch from '$lib/components/ScoreMatch.svelte'
-  import { noop, VIEW_ONLY } from '$lib/bigscreen/viewOnly'
+  import { viewOnlyProps } from '$lib/bigscreen/viewOnly'
+  import MatchScreen from '$lib/components/match/MatchScreen.svelte'
   import type { GameSettings } from '$lib/gameSettings'
   import { getGameView } from '$lib/gameViews'
-  import { bullOffOf, gameState } from '$lib/gameState'
   import { matchLayout } from '$lib/matchLayout'
   import { matchView } from '$lib/matchView'
   import { isNarrowMatch, isPhone, isPortrait } from '$lib/viewport'
@@ -20,7 +13,6 @@
   import type { Snapshot } from '$lib/ws'
   import BigHeader from './BigHeader.svelte'
   import type { BoardState } from '$lib/bigscreen/frame'
-  import FallbackCard from './FallbackCard.svelte'
 
   let {
     snapshot,
@@ -36,66 +28,14 @@
     onrolled?: (key: string) => void
   } = $props()
 
-  const current = $derived(gameState(snapshot))
-  const { x01, atc, p121, hilo, cricket, minigolf } = $derived(current)
   // The kiosk always shows the finish to aim at
   const shown = $derived({ ...settings, checkoutSuggestions: true })
   const mv = $derived(matchView(snapshot, history, shown))
   const layout = $derived(matchLayout(snapshot.players.length, $isPhone, mv.teams.length > 0, $isNarrowMatch, $isPortrait))
   const view = $derived(getGameView(snapshot.gameId))
-  const bullOff = $derived(bullOffOf(current))
 </script>
 
-{#if minigolf}
-  <MinigolfMatch
-    game={minigolf}
-    players={snapshot.players}
-    darts={minigolf.currentVisitDarts}
-    canThrow={false}
-    locked={true}
-    canUndo={false}
-    next={VIEW_ONLY.next}
-    onUndo={noop}
-    onNext={noop}
-    onBoardClick={noop}
-    host={false}
-    manual={false}
-    onNextHole={noop}
-    {onrolled}
-    settings={shown}
-  />
-{:else}
+{#if snapshot.gameId !== 'minigolf'}
   <BigHeader title={view.title} meta={view.meta(snapshot)} board={sharedBoard(snapshot)} bm={board} />
-  {#if bullOff}
-    <BullOffPanel players={snapshot.players} who={whoOf(snapshot)} {bullOff} manual={false} send={noop} viewOnly />
-  {:else if x01 || atc}
-    <ScoreMatch {snapshot} {mv} {layout} settings={shown} viewOnly />
-  {:else if p121}
-    <P121Match
-      {...VIEW_ONLY}
-      game={p121}
-      players={snapshot.players}
-      who={whoOf(snapshot)}
-      darts={p121.currentVisitDarts}
-      {layout}
-      locked={p121.visitLocked}
-      settings={shown}
-      checkout={mv.checkout}
-    />
-  {:else if hilo}
-    <HiloMatch {...VIEW_ONLY} game={hilo} who={whoOf(snapshot)} darts={hilo.currentVisitDarts} {layout} locked={hilo.visitLocked} />
-  {:else if cricket}
-    <CricketMatch
-      {...VIEW_ONLY}
-      game={cricket}
-      players={snapshot.players}
-      who={whoOf(snapshot)}
-      darts={cricket.currentVisitDarts}
-      {layout}
-      locked={cricket.visitLocked}
-      onCorrect={noop}
-    />
-  {:else}
-    <FallbackCard {snapshot} />
-  {/if}
 {/if}
+<MatchScreen {snapshot} {mv} {layout} settings={shown} {onrolled} {...viewOnlyProps(snapshot)} />
