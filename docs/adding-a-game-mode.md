@@ -115,8 +115,13 @@ doesn't compile until it has an entry:
 
 ### The match screen
 
-Write `lib/components/<id>/<Id>Match.svelte` and add an `{:else if <id>}` branch for it in
-`routes/GameDisplay.svelte`. Build it from the shared pieces:
+Write `lib/components/<id>/<Id>Match.svelte`, then a thin `lib/components/match/screens/<Id>Screen.svelte`
+that reads the game from `MatchProps` (`lib/components/match/types.ts`) and passes your component what
+it needs, and add that to `MATCH_SCREENS` in `lib/gameViews/match.ts`. The record has one entry per
+game id, so the compiler fails until you do. `MatchScreen` (`lib/components/match/`, the bull off first,
+then your screen) is what both `routes/GameDisplay.svelte` and the big screen's `Live.svelte` render, so
+your mode shows on both. Give the component a `viewOnly` prop that hides Undo, Next and any entry
+(`HiloMatch`, `CricketMatch`): the big screen passes it. Build the component from the shared pieces:
 
 - **`MatchFrame`** (`lib/components/match/`): the `<main>` for every layout that `matchLayout`
   chooses (phone, portrait, solo, duel, party, teams). You pass one snippet per layout; solo and
@@ -154,23 +159,23 @@ Write `lib/components/<id>/<Id>Match.svelte` and add an `{:else if <id>}` branch
 
 ## Checklist
 
-| Step                                  | File                                                                                                                                                                                     | Caught if forgotten     |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Module                                | `backend/src/games/<id>.ts`                                                                                                                                                              | —                       |
-| Register                              | `backend/src/games/index.ts`                                                                                                                                                             | contract tests          |
-| Name                                  | `backend/src/shared/gameNames.ts`                                                                                                                                                        | test, compiler          |
-| View type and union                   | `backend/src/session/views.ts`, `session/types.ts`                                                                                                                                       | compiler                |
-| Flag (two places)                     | `backend/src/flags/definitions.ts`                                                                                                                                                       | no                      |
-| Lights                                | `backend/src/lights/triggers/index.ts`, `backend/src/lights/service.ts` (their `GameId` comes from `gameNames.ts`)                                                                       | compiler (the switches) |
-| Snapshot schema                       | `schema/game-ws-v1.json`                                                                                                                                                                 | contract tests          |
-| Detail schema (`oneOf` and `mapping`) | `schema/api-v1.yaml`                                                                                                                                                                     | contract tests          |
-| Generated files                       | `npm run gen:api`                                                                                                                                                                        | CI (`check-generated`)  |
-| Client tables                         | `lib/gameViews/rules.ts`, `lib/gameViews/index.ts`, `lib/gameViews/settings.ts`, `lib/history.ts`, `lib/details/page.ts`, `lib/winScreen.ts`, `lib/dartEvents.ts`, `lib/caller/calls.ts` | compiler                |
-| Play page card                        | `lib/gameModes.ts`, `lib/assets/games/`                                                                                                                                                  | test                    |
-| Setup form                            | `lib/components/GameSettings.svelte`                                                                                                                                                     | no (placeholder)        |
-| Match screen                          | `lib/components/<id>/<Id>Match.svelte`, `routes/GameDisplay.svelte`                                                                                                                      | no                      |
-| Details sections                      | `routes/GameDetails.svelte`                                                                                                                                                              | no                      |
-| Tests, e2e, screenshot                | see above                                                                                                                                                                                | —                       |
+| Step                                  | File                                                                                                                                                                                                               | Caught if forgotten     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| Module                                | `backend/src/games/<id>.ts`                                                                                                                                                                                        | —                       |
+| Register                              | `backend/src/games/index.ts`                                                                                                                                                                                       | contract tests          |
+| Name                                  | `backend/src/shared/gameNames.ts`                                                                                                                                                                                  | test, compiler          |
+| View type and union                   | `backend/src/session/views.ts`, `session/types.ts`                                                                                                                                                                 | compiler                |
+| Flag (two places)                     | `backend/src/flags/definitions.ts`                                                                                                                                                                                 | no                      |
+| Lights                                | `backend/src/lights/triggers/index.ts`, `backend/src/lights/service.ts` (their `GameId` comes from `gameNames.ts`)                                                                                                 | compiler (the switches) |
+| Snapshot schema                       | `schema/game-ws-v1.json`                                                                                                                                                                                           | contract tests          |
+| Detail schema (`oneOf` and `mapping`) | `schema/api-v1.yaml`                                                                                                                                                                                               | contract tests          |
+| Generated files                       | `npm run gen:api`                                                                                                                                                                                                  | CI (`check-generated`)  |
+| Client tables                         | `lib/gameViews/rules.ts`, `lib/gameViews/index.ts`, `lib/gameViews/match.ts`, `lib/gameViews/settings.ts`, `lib/history.ts`, `lib/details/page.ts`, `lib/winScreen.ts`, `lib/dartEvents.ts`, `lib/caller/calls.ts` | compiler                |
+| Play page card                        | `lib/gameModes.ts`, `lib/assets/games/`                                                                                                                                                                            | test                    |
+| Setup form                            | `lib/components/GameSettings.svelte`                                                                                                                                                                               | no (placeholder)        |
+| Match screen                          | `lib/components/<id>/<Id>Match.svelte`, `lib/components/match/screens/<Id>Screen.svelte`, `lib/gameViews/match.ts`                                                                                                 | compiler                |
+| Details sections                      | `routes/GameDetails.svelte`                                                                                                                                                                                        | no                      |
+| Tests, e2e, screenshot                | see above                                                                                                                                                                                                          | —                       |
 
 ## Still per game
 
