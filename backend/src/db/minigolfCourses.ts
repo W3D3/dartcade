@@ -69,12 +69,15 @@ type DbRow = {
   published_at: Date | null
 }
 
-function toCourseRow(r: DbRow & { visibility?: string; author_name?: string | null }): CourseRow {
+/** A course row; `author_name` is there only on the reads that join the owner (listCourses, getCourse). */
+type CourseDbRow = DbRow & { visibility: CourseVisibility; author_name?: string | null }
+
+function toCourseRow(r: CourseDbRow): CourseRow {
   return {
     id: r.id,
     ownerUserId: r.owner_user_id,
-    visibility: r.visibility === 'public' || r.visibility === 'private' ? r.visibility : 'official',
-    authorName: r.author_name ?? null, // only the joined reads (listCourses, getCourse) know it
+    visibility: r.visibility,
+    authorName: r.author_name ?? null,
     published: parsedJson(CourseContentSchema, r.published),
     draft: parsedJson(CourseContentSchema, r.draft),
     version: r.version,
@@ -106,6 +109,17 @@ export function canReadCourse(row: Pick<CourseRow, 'ownerUserId' | 'published'>,
 export const canWriteCourse = (ownerUserId: string | null, v: CourseViewer): boolean =>
   v.admin || (v.userCourses && ownerUserId !== null && ownerUserId === v.id)
 
+/** Whether `v` may change the hole: the same rule as for a course of the same owner. */
+export const canWriteHole = (row: Pick<HoleRow, 'ownerUserId'>, v: CourseViewer): boolean => canWriteCourse(row.ownerUserId, v)
+
+/**
+ * Whether `v` may read the hole: an admin any, the flag's players their own, and anyone the
+ * published hole of a course they can read. Never more than the course rule gives.
+ */
+export async function canReadHole(db: Kysely<Database>, row: Pick<HoleRow, 'id' | 'ownerUserId'>, v: CourseViewer): Promise<boolean> {
+  return v.admin || (v.userCourses && row.ownerUserId === v.id) || (await holeInReadableCourse(db, row.id, v))
+}
+
 /** Whether `v` sees the course's draft (and its holes' drafts). */
 export const seesDraft = (ownerUserId: string | null, v: CourseViewer): boolean => v.admin || (ownerUserId !== null && ownerUserId === v.id)
 
@@ -116,13 +130,27 @@ export function visibleTo(row: CourseRow, v: CourseViewer): CourseRow {
   return seesDraft(row.ownerUserId, v) ? row : { ...row, draft: null }
 }
 
-/** The courses `v` may read, oldest first; a draft only for its owner and admins. */
+/** The courses `v` may read, oldest first; a draft only for its owner and admins. The SQL is `canReadCourse`. */
 export async function listCourses(db: Kysely<Database>, v: CourseViewer): Promise<CourseRow[]> {
-  const rows = await courseSelect(db).orderBy('c.created_at').execute()
-  return rows
-    .map(toCourseRow)
-    .filter(r => canReadCourse(r, v))
-    .map(r => visibleTo(r, v))
+  let q = courseSelect(db).orderBy('c.created_at')
+  if (!v.admin)
+    q = q.where(eb =>
+      eb.or([
+        eb.and([eb('c.owner_user_id', 'is', null), eb('c.published', 'is not', null)]),
+        ...(v.userCourses ? [eb('c.owner_user_id', '=', v.id), eb('c.published', 'is not', null)] : []),
+      ]),
+    )
+  return (await q.execute()).map(r => visibleTo(toCourseRow(r), v))
+}
+
+/** The published official courses (the game picker's list). */
+export async function listOfficialCourses(db: Kysely<Database>): Promise<CourseRow[]> {
+  const rows = await courseSelect(db)
+    .where('c.owner_user_id', 'is', null)
+    .where('c.published', 'is not', null)
+    .orderBy('c.created_at')
+    .execute()
+  return rows.map(toCourseRow)
 }
 
 /** The course, whoever it belongs to: callers check `canReadCourse` and use `visibleTo`. */
@@ -181,7 +209,7 @@ export async function createHole(db: Kysely<Database>, hole: Hole, ownerId: stri
   return toHoleRow(row)
 }
 
-/** How many courses, published ones among them, and holes `ownerId` has. */
+/** How many courses, published ones among them, and holes `ownerId` has. shortcut: callers count then insert, so concurrent creates can overshoot a cap by one; fine for soft caps. */
 export async function ownedCounts(db: Kysely<Database>, ownerId: string): Promise<{ courses: number; published: number; holes: number }> {
   const [courses, holes] = await Promise.all([
     db.selectFrom('minigolf_courses').select(['published']).where('owner_user_id', '=', ownerId).execute(),
@@ -194,10 +222,15 @@ export async function ownedCounts(db: Kysely<Database>, ownerId: string): Promis
   return { courses: courses.length, published: courses.filter(c => c.published !== null).length, holes: Number(holes.n) }
 }
 
-/** The ids among `holeIds` that don't exist or aren't `ownerId`'s: a player's course may only use their own holes. */
-export async function foreignHoleIds(db: Kysely<Database>, ownerId: string, holeIds: string[]): Promise<string[]> {
+/** The ids among `holeIds` that don't exist or aren't `ownerId`'s (null: official): a course only uses its owner's holes. */
+export async function foreignHoleIds(db: Kysely<Database>, ownerId: string | null, holeIds: string[]): Promise<string[]> {
   if (holeIds.length === 0) return []
-  const mine = await db.selectFrom('minigolf_holes').select('id').where('id', 'in', holeIds).where('owner_user_id', '=', ownerId).execute()
+  const mine = await db
+    .selectFrom('minigolf_holes')
+    .select('id')
+    .where('id', 'in', holeIds)
+    .where('owner_user_id', ownerId === null ? 'is' : '=', ownerId)
+    .execute()
   const own = new Set(mine.map(r => r.id))
   return holeIds.filter(id => !own.has(id))
 }
@@ -217,7 +250,7 @@ async function saveDraft(
   id: string,
   version: number,
   draft: CourseContent | Hole,
-): Promise<(DbRow & { visibility?: string }) | 'conflict' | 'missing'> {
+): Promise<DbRow | 'conflict' | 'missing'> {
   const row = await db
     .updateTable(table)
     .set({ draft: JSON.stringify(draft), version: sql<number>`version + 1`, updated_at: sql<Date>`now()` })
@@ -236,7 +269,8 @@ export async function saveCourseDraft(
   content: CourseContent,
 ): Promise<CourseRow | 'conflict' | 'missing'> {
   const row = await saveDraft(db, 'minigolf_courses', id, version, content)
-  return typeof row === 'string' ? row : toCourseRow(row)
+  // Read again for the author's name, which the update doesn't return
+  return typeof row === 'string' ? row : ((await getCourse(db, id)) ?? 'missing')
 }
 
 export async function saveHoleDraft(
@@ -277,8 +311,11 @@ export async function publishCourse(
         problems.push({ holeId, checks: [{ level: 'error', message: 'Hole no longer exists' }] })
         continue
       }
-      if (course.ownerUserId !== null && holeDbRow.owner_user_id !== course.ownerUserId) {
-        problems.push({ holeId, checks: [{ level: 'error', message: "A player's course can only use that player's own holes" }] })
+      if (holeDbRow.owner_user_id !== course.ownerUserId) {
+        problems.push({
+          holeId,
+          checks: [{ level: 'error', message: "A course can only use its owner's holes (official: admin-made ones)" }],
+        })
         continue
       }
       const holeRow = toHoleRow(holeDbRow)
@@ -373,7 +410,7 @@ export async function unpublishCourse(db: Kysely<Database>, id: string): Promise
     .set({
       draft: sql`COALESCE(draft, published)`,
       published: null,
-      visibility: sql<string>`CASE WHEN owner_user_id IS NULL THEN 'official' ELSE 'private' END`,
+      visibility: sql<CourseVisibility>`CASE WHEN owner_user_id IS NULL THEN 'official' ELSE 'private' END`,
       published_at: null,
       version: sql<number>`version + 1`,
       updated_at: sql<Date>`now()`,

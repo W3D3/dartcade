@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
 import { deletePairingCodesExpiredBefore, runMigrations } from './db/queries.js'
 import { pruneActivity } from './db/activity.js'
-import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
+import { listOfficialCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
 import { browserConnections, forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
@@ -57,11 +57,8 @@ await seedOfficialCourses(db)
 setCourseSource({
   course: id => publishedCourse(db, id),
   officialHoles: () => publishedOfficialHoles(db),
-  // userCourses off: only the official courses (the picker's groups for user courses are part C)
-  officialCourses: async () =>
-    (await listCourses(db, { id: '', admin: false, userCourses: false })).flatMap(c =>
-      c.published ? [{ id: c.id, name: c.published.name }] : [],
-    ),
+  // Official only; the picker's group for user courses is part C
+  officialCourses: async () => (await listOfficialCourses(db)).flatMap(c => (c.published ? [{ id: c.id, name: c.published.name }] : [])),
 })
 await seedDev()
 await bootstrapAdmin(db)

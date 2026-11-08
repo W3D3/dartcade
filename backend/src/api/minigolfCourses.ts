@@ -21,11 +21,12 @@ import {
   isBuiltInCourse,
   canReadCourse,
   canWriteCourse,
+  canReadHole,
+  canWriteHole,
   seesDraft,
   visibleTo,
   ownedCounts,
   foreignHoleIds,
-  holeInReadableCourse,
   listHoles,
   getHole,
   createHole,
@@ -88,20 +89,19 @@ async function writableCourse(db: Kysely<Database>, id: string, v: CourseViewer)
 /** A hole the viewer may write (same 404/403 split). */
 async function writableHole(db: Kysely<Database>, id: string, v: CourseViewer): Promise<HoleRow> {
   const row = await getHole(db, id)
-  if (!row || !(v.admin || row.ownerUserId === v.id || (await holeInReadableCourse(db, id, v)))) throw notFound()
-  if (!(v.admin || (v.userCourses && row.ownerUserId === v.id))) throw forbidden()
+  if (!row || !(await canReadHole(db, row, v))) throw notFound()
+  if (!canWriteHole(row, v)) throw forbidden()
   return row
 }
 
-/** A player's course uses only their own holes (so editing never changes someone else's course) and at most courseHoles of them. */
+/** A course uses only its owner's holes (so editing never changes someone else's course; official courses use admin-made ones); a player's has at most courseHoles. */
 async function checkCourseHoles(db: Kysely<Database>, ownerId: string | null, content: CourseContent): Promise<void> {
-  if (ownerId === null) return
-  if (content.holeIds.length > MINIGOLF_LIMITS.courseHoles) throw limitReached('courseHoles')
+  if (ownerId !== null && content.holeIds.length > MINIGOLF_LIMITS.courseHoles) throw limitReached('courseHoles')
   const foreign = await foreignHoleIds(db, ownerId, content.holeIds)
   if (foreign.length > 0)
     throw new ApiError(400, {
       error: 'invalid request',
-      details: [{ path: 'body/holeIds', message: "A player's course can only use that player's own holes; copy a hole to use it" }],
+      details: [{ path: 'body/holeIds', message: "A course can only use its owner's holes; copy a hole to use it" }],
     })
 }
 
@@ -290,7 +290,7 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
       let hole: Hole
       if ('copyOf' in req.body) {
         const source = await getHole(db, req.body.copyOf)
-        const mayCopy = source && (v.admin || source.ownerUserId === v.id || (await holeInReadableCourse(db, source.id, v)))
+        const mayCopy = source && (await canReadHole(db, source, v))
         const content = source && seesDraft(source.ownerUserId, v) ? (source.draft ?? source.published) : source?.published
         if (!mayCopy || !content) throw notFound()
         hole = { ...content, id: ulid(), name: `${content.name} (copy)` }
@@ -309,8 +309,7 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
       const v = await viewerOf(db, req.userId)
       const row = await getHole(db, req.params.id)
       if (!row) throw notFound()
-      const own = seesDraft(row.ownerUserId, v)
-      if (!(own || (await holeInReadableCourse(db, row.id, v)))) throw notFound()
+      if (!(await canReadHole(db, row, v))) throw notFound()
       return serializeHoleRow(row, v)
     },
   )

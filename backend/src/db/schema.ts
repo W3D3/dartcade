@@ -415,7 +415,12 @@ export interface MinigolfCoursesTable {
   id: string
   /** null for official courses. */
   owner_user_id: string | null
-  visibility: ColumnType<string, string | undefined, string>
+  /** official: admin-made. private: a player's draft or unpublished course. public: a player's published course (migration 058 checks it). */
+  visibility: ColumnType<
+    'official' | 'private' | 'public',
+    'official' | 'private' | 'public' | undefined,
+    'official' | 'private' | 'public'
+  >
   published: unknown
   draft: unknown
   version: ColumnType<number, number | undefined, number>
