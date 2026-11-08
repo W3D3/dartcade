@@ -29,14 +29,16 @@ export function marksFor(dart: Dart, targets: readonly number[]): { target: numb
   return { target, marks: multiplier }
 }
 
-/** `n` marks for `team` on `target`: they open it first, then score while an opponent hasn't opened it. */
+/** `n` marks for `team` on `target`: they open it first, then score while an opponent hasn't opened it.
+ *  `opened` is what this dart added to the team's marks (up to 3 in all); a dart with nothing opened
+ *  and nothing scored hit a dead number: every team has closed it. */
 export function applyMarks(
   b: Marks,
   team: number,
   target: number,
   n: number,
   mode: CricketMode,
-): { board: Marks; counted: number; scored: number } {
+): { board: Marks; counted: number; scored: number; opened: number } {
   const have = b.marks[team][target]
   const opening = Math.min(n, OPEN - have)
   const extra = n - opening
@@ -47,7 +49,7 @@ export function applyMarks(
     if (mode === 'standard') return t === team ? p + scored : p
     return stillOpen.includes(t) ? p + scored : p
   })
-  return { board: { ...b, marks, points }, counted: opening + (scored > 0 ? extra : 0), scored }
+  return { board: { ...b, marks, points }, counted: opening + (scored > 0 ? extra : 0), scored, opened: opening }
 }
 
 /** What a bot aims at next: the checkout-style label (`T20` … `T15`, `Bull`) for the target its

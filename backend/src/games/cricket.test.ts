@@ -346,3 +346,58 @@ describe('botTarget', () => {
     expect(mid).toBeGreaterThan(high)
   })
 })
+
+describe('cricket: darts on closed numbers', () => {
+  // The effects of the open visit's darts, read before the takeout commits it
+  const effects = (s: CricketState, ...darts: [number, number][]) => {
+    let t = cricketGame.onBoardEvent(s, opened).state
+    darts.forEach(([n, m], i) => (t = cricketGame.onBoardEvent(t, dart(n, m, i)).state))
+    return t.visitEffects
+  }
+  const open20 = (s: CricketState) => play(s, [T(20)], [T(20)])
+
+  it('a number every team has closed is dead: no marks, no points, not counted', () => {
+    const s = open20(duo())
+    const t = play(s, [[20, 1]])
+    expect(effects(s, [20, 3], MISS)).toEqual([
+      { marks: 0, points: 0 },
+      { marks: 0, points: 0 },
+    ])
+    expect(t.marksScored).toEqual(s.marksScored)
+    expect(t.board.points).toEqual([0, 0])
+  })
+  it('a number only the thrower has closed still scores in standard, as points and not marks', () => {
+    const s = play(duo(), [T(20)], [MISS])
+    expect(effects(s, [20, 3])).toEqual([{ marks: 0, points: 60 }])
+    expect(play(s, [[20, 3]]).marksScored[0]).toBe(6)
+  })
+  it('cut-throat: points given to the open opponent, none to the thrower', () => {
+    const s = play(duo({ mode: 'cutthroat' }), [T(20)], [MISS])
+    expect(effects(s, [20, 2])).toEqual([{ marks: 0, points: 40 }])
+    expect(play(s, [[20, 2]]).board.points).toEqual([0, 40])
+  })
+  it('a dart that opens and scores reports both', () => {
+    const s = play(duo(), [[20, 2]], [MISS])
+    expect(effects(s, [20, 3])).toEqual([{ marks: 1, points: 40 }])
+  })
+  it('the bull is dead once both teams closed it, however it arrives', () => {
+    const s = play(duo(), [BULL, BULL], [BULL, BULL])
+    expect(effects(s, [25, 2], BULL, [25, 1])).toEqual([
+      { marks: 0, points: 0 },
+      { marks: 0, points: 0 },
+      { marks: 0, points: 0 },
+    ])
+  })
+  it('a miss and a non-target are no effect, and the view carries the open visit', () => {
+    let s = cricketGame.onBoardEvent(duo(), opened).state
+    s = cricketGame.onBoardEvent(s, dart(0, 0, 0)).state
+    s = cricketGame.onBoardEvent(s, dart(14, 3, 1)).state
+    expect(cricketGame.view(s, []).currentVisitEffects).toEqual([
+      { marks: 0, points: 0 },
+      { marks: 0, points: 0 },
+    ])
+  })
+  it('the takeout clears the effects', () => {
+    expect(play(duo(), [T(20)]).visitEffects).toEqual([])
+  })
+})
