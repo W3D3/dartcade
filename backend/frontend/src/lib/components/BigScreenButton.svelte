@@ -57,7 +57,7 @@
     type="button"
     onclick={toggle}
     disabled={busy || waitingFor !== null || blocked || button.disabled}
-    class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-semibold
+    class="flex items-center justify-center gap-[6px] w-full h-9 rounded-sm text-[13px] font-semibold
  border border-transparent bg-big-screen text-white cursor-pointer transition-colors
  hover:bg-big-screen-hover disabled:opacity-35 disabled:cursor-not-allowed"
   >

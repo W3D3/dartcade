@@ -9,13 +9,13 @@
 </script>
 
 <span class="text-[12px] text-text-dim">Newest first · open since {feedTime(since)}</span>
-<ol class="p-0 pr-1 flex flex-col flex-grow min-h-0 overflow-y-auto scrollbar-themed">
+<ol class="p-0 pr-1 flex flex-col grow min-h-0 overflow-y-auto scrollbar-themed">
   {#each activity as a (a.id)}
     {@const game = a.kind === 'game_played'}
     <li class="grid grid-cols-[46px_28px_minmax(0,1fr)] items-center gap-[10px] min-h-10 border-b border-surface-paused last:border-b-0">
       <span class="font-mono text-[12px] text-text-dim">{feedTime(a.at)}</span>
       <span
-        class="w-7 h-7 rounded-full flex items-center justify-center {game
+        class="size-7 rounded-full flex items-center justify-center {game
           ? 'bg-accent-tint text-accent'
           : 'bg-surface-paused text-text-muted'}"
       >

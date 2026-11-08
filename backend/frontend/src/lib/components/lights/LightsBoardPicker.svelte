@@ -32,7 +32,7 @@
       >
         <span
           title={board.online ? 'Reachable' : 'Not answering'}
-          class="w-2 h-2 rounded-full shrink-0 {board.online ? 'bg-accent' : 'bg-live'}"
+          class="size-2 rounded-full shrink-0 {board.online ? 'bg-accent' : 'bg-live'}"
         ></span>
         {board.name}
         <span class="text-[12px] font-medium text-text-dim">

@@ -52,8 +52,8 @@
          bg-surface-panel border-r border-line [box-shadow:24px_0_60px_rgba(0,0,0,0.5)] outline-none"
       >
         <header class="shrink-0 flex items-center gap-[10px] pt-[22px] pb-[14px] pl-5 pr-4">
-          <div class="flex flex-col gap-[2px] flex-grow min-w-0">
-            <h2 class="font-display font-bold text-[30px] leading-none uppercase tracking-[0.02em]">Friends</h2>
+          <div class="flex flex-col gap-[2px] grow min-w-0">
+            <h2 class="font-display font-bold text-[30px] leading-none uppercase tracking-title">Friends</h2>
             <span class="text-[13px] text-text-muted"
               ><strong class="text-accent font-semibold">{counts.online} online</strong> · {counts.all}
               {counts.all === 1 ? 'friend' : 'friends'}</span
@@ -63,30 +63,30 @@
             href="#/friends"
             aria-label="Add a friend"
             title="Add a friend"
-            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] border border-line-chip text-ink-2 hover:text-text"
+            class="size-10 shrink-0 flex items-center justify-center rounded-md border border-line-chip text-ink-2 hover:text-text"
             ><UserPlus size={18} strokeWidth={1.8} /></a
           >
           <button
             type="button"
             aria-label="Close"
             onclick={close}
-            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] border-0 text-text-muted hover:text-text cursor-pointer"
+            class="size-10 shrink-0 flex items-center justify-center rounded-md border-0 text-text-muted hover:text-text cursor-pointer"
             ><X size={20} /></button
           >
         </header>
 
-        <div class="flex-grow min-h-0 overflow-y-auto scrollbar-themed px-3 pb-3 flex flex-col gap-4">
+        <div class="grow min-h-0 overflow-y-auto scrollbar-themed px-3 pb-3 flex flex-col gap-4">
           {#if actions.error}<div class="px-[6px]"><ErrorText>{actions.error}</ErrorText></div>{/if}
           {#if $me?.invites.length}<DrawerInvites invites={$me.invites} {now} />{/if}
           {#if hasRequests}
-            <details open class="requests rounded-[12px] border border-line bg-surface-1">
+            <details open class="requests rounded-lg border border-line bg-surface-1">
               <summary
                 aria-label={requestsLabel}
-                class="flex items-center gap-[10px] h-12 px-3 rounded-[12px] cursor-pointer list-none hover:bg-surface-inset"
+                class="flex items-center gap-[10px] h-12 px-3 rounded-lg cursor-pointer list-none hover:bg-surface-inset"
               >
                 <span class="text-[15px] font-semibold">Requests</span>
                 {#if list.incoming.length > 0}
-                  <span class="h-5 px-[7px] flex items-center rounded-[10px] bg-accent text-accent-fg text-[12px] font-bold"
+                  <span class="h-5 px-[7px] flex items-center rounded-md bg-accent text-accent-fg text-[12px] font-bold"
                     >{list.incoming.length} new</span
                   >
                 {/if}

@@ -54,7 +54,7 @@
 {#snippet sound(key: string, label: string)}
   {@const urls = clips && key in clips ? clips[key] : []}
   <li
-    class="flex items-center gap-1 min-h-9 pl-3 pr-1 rounded-[9px] border border-line text-[13px] {urls.length
+    class="flex items-center gap-1 min-h-9 pl-3 pr-1 rounded-key border border-line text-[13px] {urls.length
       ? 'bg-surface-row text-text'
       : 'text-text-dim opacity-60'}"
   >
@@ -64,7 +64,7 @@
         label="Play {label}{urls.length > 1 ? ` (${i + 1} of ${urls.length})` : ''}"
         onplay={() => play(key, url)}
         iconSize={12}
-        class="size-7 rounded-[7px]"
+        class="size-7 rounded-segment"
       />
     {/each}
   </li>

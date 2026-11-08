@@ -12,12 +12,12 @@
   {value}
   textValue={title}
   closeOnSelect={false}
-  class="w-full flex items-start gap-3 p-[10px] rounded-[10px] text-left cursor-pointer text-text outline-none
-         bg-transparent data-[highlighted]:bg-surface-hover data-[state=checked]:bg-surface-paused"
+  class="w-full flex items-start gap-3 p-[10px] rounded-md text-left cursor-pointer text-text outline-none
+         bg-transparent data-highlighted:bg-surface-hover data-[state=checked]:bg-surface-paused"
 >
   {#snippet children({ checked })}
     <StatusDot {kind} class="mt-1" />
-    <span class="flex flex-col gap-[2px] flex-grow">
+    <span class="flex flex-col gap-[2px] grow">
       <span class="text-[14px] font-semibold">{title}</span>
       <span class="text-[12px] leading-[1.35] text-text-muted">{text}</span>
     </span>

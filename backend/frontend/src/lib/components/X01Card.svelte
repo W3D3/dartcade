@@ -37,9 +37,8 @@
 
   <div class="flex items-end justify-between gap-3 min-w-0">
     <span
-      class="font-display font-bold text-[min(30cqi,9vh)] leading-[0.82] tracking-[-0.02em] tabular-nums {active
-        ? 'text-text'
-        : 'text-ink-3'}"><RollingNumber {...x01Roll(p)} /></span
+      class="font-display font-bold text-[min(30cqi,9vh)] leading-[0.82] tracking-score tabular-nums {active ? 'text-text' : 'text-ink-3'}"
+      ><RollingNumber {...x01Roll(p)} /></span
     >
     <span class="flex gap-4 lg:gap-[18px] pb-1">
       {#each stats as s (s.label)}

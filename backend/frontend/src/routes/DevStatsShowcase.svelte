@@ -50,7 +50,7 @@
 </script>
 
 <Layout title="Stats components">
-  <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-y-auto px-4 py-4 md:px-8 md:py-10 xl:px-11">
+  <main class="flex min-h-0 grow flex-col gap-6 overflow-y-auto p-4 md:px-8 md:py-10 xl:px-11">
     <h1 class="font-display text-[40px] font-bold uppercase leading-none">Stats components</h1>
 
     <h2 class="text-[18px] font-semibold">Range pickers</h2>

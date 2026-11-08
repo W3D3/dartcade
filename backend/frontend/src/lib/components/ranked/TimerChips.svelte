@@ -12,12 +12,12 @@
 {#if view.phase !== 'hidden'}
   <span class="flex flex-wrap items-center gap-2" role="timer" aria-label="Time left for this visit">
     <span class="{base} {view.phase === 'visit' ? 'border-accent-line-strong text-accent' : 'border-live bg-live-soft text-live-text'}">
-      <span class="text-[10px] font-semibold uppercase tracking-[0.1em]">Turn</span>
+      <span class="text-[10px] font-semibold label-caps">Turn</span>
       <span class="font-mono text-[15px] font-medium">{view.turn}</span>
     </span>
     {#if view.phase === 'reserve'}
       <span class="{base} border-live bg-live-soft text-live-text">
-        <span class="text-[10px] font-semibold uppercase tracking-[0.1em]">Reserve</span>
+        <span class="text-[10px] font-semibold label-caps">Reserve</span>
         <span class="font-mono text-[15px] font-medium">{view.reserve}</span>
       </span>
     {/if}

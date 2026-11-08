@@ -26,9 +26,9 @@
 {#if kind === 'loading'}
   <div class="flex flex-col gap-3" aria-busy="true" aria-label="Loading your stats">
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-      {#each { length: 5 } as _, i (i)}<Skeleton class="h-[132px] rounded-[14px] {i === 4 ? 'max-lg:col-span-2' : ''}" />{/each}
+      {#each { length: 5 } as _, i (i)}<Skeleton class="h-[132px] rounded-card {i === 4 ? 'max-lg:col-span-2' : ''}" />{/each}
     </div>
-    <Skeleton class="h-[280px] w-full rounded-[14px]" />
+    <Skeleton class="h-[280px] w-full rounded-card" />
   </div>
 {:else if kind === 'empty'}
   <EmptyState title={title ?? 'No stats yet'} text={text ?? 'Play a game and your numbers show up here.'} actions={action}>

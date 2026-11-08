@@ -32,7 +32,7 @@
 
 <PanelShell {who} {active} portrait {pill} {seat} pillInRow>
   <div class="flex items-end justify-between gap-3 min-w-0">
-    <span class="font-display font-bold text-[min(30cqi,9vh)] leading-[0.82] tracking-[-0.02em] {active ? 'text-accent' : 'text-ink-3'}"
+    <span class="font-display font-bold text-[min(30cqi,9vh)] leading-[0.82] tracking-score {active ? 'text-accent' : 'text-ink-3'}"
       ><RollingNumber value={p.target} normal="up" progress={p.done} /></span
     >
     <span class="flex gap-4 lg:gap-[18px] pb-1">

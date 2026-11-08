@@ -7,8 +7,8 @@
 </script>
 
 {#if $isPhone && !dismissed}
-  <div role="status" class="m-3 flex items-start gap-2 rounded-[10px] border border-warn-line bg-warn-soft p-3 text-[14px] text-warn">
-    <p class="flex-grow">The course editor isn't made for phones; you can still continue.</p>
+  <div role="status" class="m-3 flex items-start gap-2 rounded-md border border-warn-line bg-warn-soft p-3 text-[14px] text-warn">
+    <p class="grow">The course editor isn't made for phones; you can still continue.</p>
     <button type="button" aria-label="Dismiss" class="shrink-0 text-warn" onclick={() => (dismissed = true)}><X size={16} /></button>
   </div>
 {/if}

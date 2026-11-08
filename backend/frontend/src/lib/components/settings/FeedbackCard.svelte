@@ -15,7 +15,7 @@
     <button
       type="button"
       onclick={() => void openFeedback()}
-      class="self-start h-11 px-4 flex items-center gap-2 rounded-[10px] border border-line-3 text-text
+      class="self-start h-11 px-4 flex items-center gap-2 rounded-md border border-line-3 text-text
  text-[14px] font-semibold cursor-pointer transition-colors hover:bg-surface-active"
     >
       <Bug size={16} />Report a bug or give feedback

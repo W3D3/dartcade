@@ -15,7 +15,7 @@
   const defaults = $derived($gameModes.find(g => g.id === glance.nextGame?.gameId)?.defaultConfig)
 </script>
 
-<dl class="m-0 px-[14px] py-2 rounded-[12px] border border-line flex flex-col gap-[2px] {className}">
+<dl class="m-0 px-[14px] py-2 rounded-lg border border-line flex flex-col gap-[2px] {className}">
   <div class="row">
     <Target size={16} class="text-text-dim" aria-hidden="true" />
     <dt>Next game</dt>

@@ -49,10 +49,7 @@
       {@const hole = holeOf(r)}
       {@const name = hole?.name ?? ''}
       {@const added = inCourse.includes(r.id)}
-      <li
-        data-sortable-id="lib:{r.id}"
-        class="relative flex min-w-0 flex-col gap-[6px] rounded-[12px] border border-line-2 bg-surface-2 p-2"
-      >
+      <li data-sortable-id="lib:{r.id}" class="relative flex min-w-0 flex-col gap-[6px] rounded-lg border border-line-2 bg-surface-2 p-2">
         <HoleThumb {hole} class="w-full h-[72px]" />
         <div class="flex min-w-0 flex-col">
           <span class="truncate text-[14px] font-semibold">{name}</span>
@@ -68,7 +65,7 @@
               aria-label="Add {name} to the course"
               title="Add to the course"
               onclick={() => onadd(r.id)}
-              class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-line-3 text-text-muted hover:bg-surface-hover"
+              class="flex size-9 items-center justify-center rounded-sm border border-line-3 text-text-muted hover:bg-surface-hover"
               ><Plus size={16} /></button
             >
           {/if}
@@ -78,7 +75,7 @@
       <li class="col-span-2 text-[14px] text-text-muted">No holes match.</li>
     {/each}
   </ul>
-  <p class="text-[12px] leading-[1.5] text-text-muted">
+  <p class="text-caption/normal text-text-muted">
     Drag a hole into the course to reuse it. Holes are shared, so changing an official hole updates every course that uses it. Copy it first
     to make your own version.
   </p>

@@ -96,7 +96,7 @@
     <div class="fixed inset-0 z-40" onclick={() => (open = false)} aria-hidden="true"></div>
 
     <div
-      class="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-32px))] z-50 rounded-[14px] border border-line-3
+      class="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-32px))] z-50 rounded-card border border-line-3
                 bg-[#191c17] [box-shadow:0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden"
     >
       <!-- Header -->
@@ -105,7 +105,7 @@
           <BoardStatusDot status={bmStatus?.status ?? null} online={board.online} />
           <span class="font-semibold text-[14px] text-text truncate">{board.name}</span>
         </div>
-        <span class="text-[11px] font-medium tracking-[0.05em] uppercase shrink-0 {dotText}">
+        <span class="text-[11px] font-medium tracking-wider uppercase shrink-0 {dotText}">
           {bmLabel}
         </span>
       </div>
@@ -118,7 +118,7 @@
             type="button"
             onclick={() => runAction('start', 'start')}
             disabled={busy !== null || !board.online || isRunning}
-            class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
+            class="flex items-center justify-center gap-[6px] h-9 rounded-sm text-[13px] font-medium
  border border-line-3 cursor-pointer transition-colors
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
@@ -134,7 +134,7 @@
             type="button"
             onclick={() => runAction('stop', 'stop')}
             disabled={busy !== null || !board.online || !isRunning}
-            class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
+            class="flex items-center justify-center gap-[6px] h-9 rounded-sm text-[13px] font-medium
  border border-line-3 cursor-pointer transition-colors
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
@@ -152,7 +152,7 @@
           type="button"
           onclick={() => runAction('reset', 'reset')}
           disabled={busy !== null || !board.online}
-          class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
+          class="flex items-center justify-center gap-[6px] w-full h-9 rounded-sm text-[13px] font-medium
  border border-line-3 cursor-pointer transition-colors
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
@@ -169,7 +169,7 @@
           type="button"
           onclick={() => runAction('calibrate', 'calibrate')}
           disabled={busy !== null || !board.online}
-          class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
+          class="flex items-center justify-center gap-[6px] w-full h-9 rounded-sm text-[13px] font-medium
  border border-line-3 cursor-pointer transition-colors
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
@@ -183,7 +183,7 @@
 
         <BigScreenButton {board} blocked={busy !== null} />
         {#if $bigScreenOn}
-          <a href="#/big-screen/{board.id}" class="text-[13px] text-center !text-text-muted underline underline-offset-4 hover:!text-text">
+          <a href="#/big-screen/{board.id}" class="text-[13px] text-center text-text-muted! underline underline-offset-4 hover:text-text!">
             Open big screen here
           </a>
         {/if}

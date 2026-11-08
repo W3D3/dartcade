@@ -110,7 +110,7 @@
 {/snippet}
 
 <Layout title="Coach">
-  <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
+  <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     {#snippet breadcrumb()}
       <a href="#/coach" class="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold no-underline"
         ><ChevronLeft size={16} />Review</a
@@ -137,7 +137,7 @@
       <header class="flex flex-wrap items-end justify-between gap-x-5 gap-y-3">
         <div class="flex flex-col gap-1.5">
           {@render breadcrumb()}
-          <h1 class="font-display text-[30px] font-bold uppercase leading-none tracking-[0.02em] xl:text-[44px]">
+          <h1 class="font-display text-[30px] font-bold uppercase leading-none tracking-title xl:text-[44px]">
             {legHeading(review.leg, title.opponents)}
           </h1>
           <span class="text-[13px] text-text-muted xl:text-[15px]"

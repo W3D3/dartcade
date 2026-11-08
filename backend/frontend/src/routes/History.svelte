@@ -185,7 +185,7 @@
 <!-- Won (lime) or the placement -->
 {#snippet resultPill(result: { text: string; won: boolean }, className = '')}
   <span
-    class="{className} inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won
+    class="{className} inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-wordmark {result.won
       ? 'bg-accent text-accent-fg'
       : 'border border-line-strong text-ink-2'}">{result.text}</span
   >
@@ -195,7 +195,7 @@
 {#snippet invalidatedPill(className = '')}
   <span
     title="A moderator invalidated this game. It does not count in your stats or ratings."
-    class="{className} inline-flex h-7 items-center rounded-full bg-live-soft px-3 text-[13px] font-bold uppercase tracking-[0.06em] text-live-text"
+    class="{className} inline-flex h-7 items-center rounded-full bg-live-soft px-3 text-[13px] font-bold uppercase tracking-wordmark text-live-text"
     >Invalidated</span
   >
 {/snippet}
@@ -216,7 +216,7 @@
 {#snippet gameCell(g: GameSummary)}
   {@const rules = rulesLine(g)}
   <span class="flex min-w-0 flex-col gap-0.5" title={rules || undefined}>
-    <span class="truncate font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span>
+    <span class="truncate font-display text-[24px] font-bold uppercase leading-none tracking-title">{getGameView(g.mode).title}</span>
     <span class="truncate text-[13px] text-text-muted">{rules}</span>
   </span>
 {/snippet}
@@ -257,8 +257,7 @@
   <div class="flex flex-col gap-1 py-3 pl-4 pr-10 text-text">
     <div class="flex items-baseline justify-between gap-3">
       <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
-        <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span
-        >
+        <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-title">{getGameView(g.mode).title}</span>
         <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
       </span>
       {@render status(g, 'shrink-0')}
@@ -283,25 +282,25 @@
   <main
     bind:this={scroller}
     onscroll={saveScroll}
-    class="flex min-h-0 flex-grow flex-col gap-4 md:gap-6 overflow-auto px-4 py-4 md:px-8 xl:px-11 md:py-10"
+    class="flex min-h-0 grow flex-col gap-4 md:gap-6 overflow-auto p-4 md:px-8 xl:px-11 md:py-10"
   >
     <header class="flex flex-wrap items-end justify-between gap-6">
       <div class="hidden md:flex flex-col gap-1.5">
-        <h1 class="font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
+        <h1 class="font-display text-[48px] font-bold uppercase leading-none tracking-title">History</h1>
         <p class="text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
         {@render coachLink()}
       </div>
       <div
         role="group"
         aria-label="Game mode"
-        class="grid max-w-full auto-cols-max grid-flow-col gap-1 overflow-x-auto rounded-[10px] border border-line bg-surface-1 p-1"
+        class="grid max-w-full auto-cols-max grid-flow-col gap-1 overflow-x-auto rounded-md border border-line bg-surface-1 p-1"
       >
         {#each filters as f (f.id ?? 'all')}
           <button
             type="button"
             aria-pressed={f.id === mode}
             onclick={() => setParam('/history', $querystring, 'mode', f.id)}
-            class="h-10 whitespace-nowrap rounded-[7px] border-0 px-4 text-[15px] {f.id === mode
+            class="h-10 whitespace-nowrap rounded-segment border-0 px-4 text-[15px] {f.id === mode
               ? 'bg-line font-semibold text-text'
               : 'bg-transparent text-ink-2'}"
           >
@@ -318,7 +317,7 @@
       <dl
         aria-label={tilesLabel}
         tabindex="0"
-        class="grid flex-shrink-0 snap-x snap-mandatory auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-px overflow-x-auto rounded-[12px] border border-line-2 bg-line-2 [scrollbar-width:none] md:snap-none md:grid-flow-row md:grid-cols-2 md:overflow-hidden md:rounded-[14px] lg:grid-cols-4 [&::-webkit-scrollbar]:hidden"
+        class="grid shrink-0 snap-x snap-mandatory auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-px overflow-x-auto rounded-lg border border-line-2 bg-line-2 scrollbar-none md:snap-none md:grid-flow-row md:grid-cols-2 md:overflow-hidden md:rounded-card lg:grid-cols-4 [&::-webkit-scrollbar]:hidden"
       >
         {#each tiles as t (t.label)}
           <div class="flex min-w-[116px] snap-start flex-col gap-0.5 bg-surface-panel px-3 py-2.5 md:gap-1.5 md:px-[22px] md:py-[18px]">

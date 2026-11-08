@@ -82,16 +82,16 @@
           type="button"
           onclick={() => void acceptMatch(id)}
           aria-label="Match found: accept, {queue.clock} left"
-          class="flex h-16 w-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-0 bg-accent font-display text-[16px] font-bold uppercase text-accent-fg"
+          class="flex h-16 w-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-0 bg-accent font-display text-[16px] font-bold uppercase text-accent-fg"
           >Accept<span class="font-mono text-[12px] font-medium">{queue.clock}</span></button
         >
       {:else}
         <a
           href="#/matchmaking"
           aria-label="{queue.tag}, {queue.name}. {queue.clock}"
-          class="relative box-border flex h-16 w-[72px] flex-col items-center justify-center gap-1 rounded-[10px] border border-accent-line-strong bg-surface-active text-accent no-underline"
+          class="relative box-border flex h-16 w-[72px] flex-col items-center justify-center gap-1 rounded-md border border-accent-line-strong bg-surface-active text-accent no-underline"
         >
-          <span class="absolute top-2 right-[10px] h-2 w-2 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>
+          <span class="absolute top-2 right-[10px] size-2 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>
           <Swords size={22} strokeWidth={1.8} />
           <span class="font-mono text-[12px] text-text">{queue.clock}</span>
         </a>
@@ -103,7 +103,7 @@
         title={error || undefined}
         disabled={busy}
         onclick={() => void create()}
-        class="w-[72px] h-[60px] box-border flex flex-col items-center justify-center gap-1 rounded-[10px]
+        class="w-[72px] h-[60px] box-border flex flex-col items-center justify-center gap-1 rounded-md
  border border-dashed text-accent text-[11px] font-semibold
  cursor-pointer disabled:opacity-60 {error ? 'border-live' : 'border-accent-line-strong'}"
       >
@@ -118,11 +118,11 @@
         href={`#${lobbyLink.href}`}
         aria-label={lobbyLink.aria}
         aria-current={active ? 'page' : undefined}
-        class="relative w-[72px] h-16 box-border px-1 flex flex-col items-center justify-center gap-1 rounded-[10px]
+        class="relative w-[72px] h-16 box-border px-1 flex flex-col items-center justify-center gap-1 rounded-md
                no-underline text-[11px] font-semibold
                border text-text {active ? 'bg-surface-paused border-accent' : 'bg-surface-active border-accent-line'}"
       >
-        <span class="absolute top-2 right-[10px] w-2 h-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none" aria-hidden="true"
+        <span class="absolute top-2 right-[10px] size-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none" aria-hidden="true"
         ></span>
         <House size={22} strokeWidth={1.8} class="text-accent" />
         <span class="max-w-full truncate">{lobbyLink.label}</span>

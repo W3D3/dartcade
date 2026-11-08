@@ -22,7 +22,7 @@
     aria-label={label}
     class={trigger
       ? className
-      : `w-[18px] h-[18px] rounded-full border border-line-3 inline-flex items-center justify-center
+      : `size-[18px]  rounded-full border border-line-3 inline-flex items-center justify-center
          text-[11px] font-bold text-text-dim bg-transparent cursor-help leading-none ${className}`}
   >
     {#if trigger}{@render trigger()}{:else}?{/if}
@@ -32,7 +32,7 @@
       side="top"
       sideOffset={8}
       collisionPadding={8}
-      class="z-[60] w-[220px] px-3 py-2 rounded-[8px] text-[13px] leading-[1.45] text-text
+      class="z-60 w-[220px] px-3 py-2 rounded-sm text-[13px] leading-[1.45] text-text
              bg-[#1e211b] border border-line-3 shadow-tooltip whitespace-normal"
     >
       {#if lines}

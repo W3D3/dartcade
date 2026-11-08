@@ -34,7 +34,7 @@
 
 <li
   data-sortable-id={person.id}
-  class="relative grid items-center gap-[10px] min-h-[56px] box-border py-[6px] pr-1 md:pr-2 rounded-[10px] bg-surface-row
+  class="relative grid items-center gap-[10px] min-h-[56px] box-border py-[6px] pr-1 md:pr-2 rounded-md bg-surface-row
          {handle
     ? 'grid-cols-[32px_14px_36px_minmax(0,1fr)_auto] xl:grid-cols-[32px_14px_36px_minmax(0,1fr)_150px_148px] pl-0'
     : 'grid-cols-[14px_36px_minmax(0,1fr)_auto] xl:grid-cols-[14px_36px_minmax(0,1fr)_150px_148px] pl-[10px]'}"

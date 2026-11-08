@@ -18,9 +18,9 @@
 </script>
 
 <div
-  class="flex items-center md:items-stretch md:flex-col gap-[10px] p-[10px] pl-3 md:p-3 rounded-[12px] bg-surface-active border border-accent-line"
+  class="flex items-center md:items-stretch md:flex-col gap-[10px] p-[10px] pl-3 md:p-3 rounded-lg bg-surface-active border border-accent-line"
 >
-  <div class="flex items-center gap-[10px] md:gap-3 min-w-0 flex-grow">
+  <div class="flex items-center gap-[10px] md:gap-3 min-w-0 grow">
     <Avatar name={request.from.name} face={{ avatar: request.from.avatar, userId: request.from.id }} size={$isPhone ? 38 : 40} />
     <span class="flex flex-col gap-px md:gap-[2px] min-w-0">
       <span class="text-[14px] md:text-[15px] font-semibold truncate"
@@ -36,10 +36,10 @@
       disabled={busy}
       onclick={ondecline}
       aria-label="Decline {request.from.name}"
-      class="h-10 w-10 md:w-auto px-0 md:px-4 rounded-[9px] border-line-strong text-[14px] font-semibold"
+      class="size-10  md:w-auto px-0 md:px-4 rounded-key border-line-strong text-[14px] font-semibold"
     >
       <span class="md:hidden flex"><X size={18} /></span><span class="hidden md:inline">Decline</span>
     </Button>
-    <Button variant="accent" disabled={busy} onclick={onaccept} class="h-10 px-3 rounded-[9px] text-[14px]">Accept</Button>
+    <Button variant="accent" disabled={busy} onclick={onaccept} class="h-10 px-3 rounded-key text-[14px]">Accept</Button>
   </div>
 </div>

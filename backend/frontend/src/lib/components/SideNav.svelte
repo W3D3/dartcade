@@ -52,7 +52,7 @@
 
 <nav
   aria-label="Main"
-  class="hidden xl:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]"
+  class="hidden xl:flex w-[248px] shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]"
 >
   <!-- Logo -->
   <div class="px-2"><Wordmark report /></div>
@@ -93,18 +93,18 @@
             role="timer"
             aria-label="Searching for {queue.clock}"
           >
-            <span class="h-[6px] w-[6px] rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{queue.clock}
+            <span class="size-[6px] rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{queue.clock}
           </span>
         {/if}
         {#if link.icon === 'live' && !link.disabled}
-          <span class="ml-auto w-2 h-2 rounded-full bg-live" aria-hidden="true"></span>
+          <span class="ml-auto size-2 rounded-full bg-live" aria-hidden="true"></span>
         {/if}
         {#if link.badge}
           <NavBadge count={link.badge} label={link.badgeLabel ?? ''} class="ml-auto" />
         {/if}
         {#if link.soon}
           <span
-            class="ml-auto text-[11px] font-medium tracking-[0.06em] uppercase text-text-dim border border-line-3 rounded-[5px] px-[7px] py-[3px]"
+            class="ml-auto text-[11px] font-medium tracking-wordmark uppercase text-text-dim border border-line-3 rounded-[5px] px-[7px] py-[3px]"
           >
             Soon
           </span>

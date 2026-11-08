@@ -62,7 +62,7 @@
       autocomplete="off"
       oninput={e => (typed = e.currentTarget.value)}
       onclick={() => (open = true)}
-      class="h-[50px] w-full box-border rounded-[10px] border border-line-chip bg-bg pl-[50px] pr-11 text-[16px] text-text
+      class="h-[50px] w-full box-border rounded-md border border-line-chip bg-bg pl-[50px] pr-11 text-[16px] text-text
              placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none"
     />
     <Combobox.Trigger
@@ -77,12 +77,12 @@
     <Combobox.Content
       sideOffset={6}
       collisionPadding={8}
-      class="z-[60] box-border w-[var(--bits-floating-anchor-width)] min-w-[260px] rounded-[12px] border border-line-popover bg-surface-inset p-2
+      class="z-60 box-border w-(--bits-floating-anchor-width) min-w-[260px] rounded-lg border border-line-popover bg-surface-inset p-2
              outline-none shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
     >
       <Combobox.Viewport class="flex max-h-[min(440px,var(--bits-floating-available-height))] flex-col gap-px overflow-auto">
         {#if showNone}
-          <Combobox.Item value={NONE} label="Don’t show a country" class="{itemClass} !text-text-muted">
+          <Combobox.Item value={NONE} label="Don’t show a country" class="{itemClass} text-text-muted!">
             {#snippet children({ selected })}
               {@render placeholder()}
               <span class="flex-1">Don’t show a country</span>

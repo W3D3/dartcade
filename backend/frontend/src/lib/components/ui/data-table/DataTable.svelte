@@ -136,7 +136,7 @@
 
 {#snippet rowLink(row: TData)}
   {#if rowHref}
-    <a href={rowHref(row)} aria-label={rowLabel?.(row)} class="absolute inset-0 outline-offset-[-2px]"></a>
+    <a href={rowHref(row)} aria-label={rowLabel?.(row)} class="absolute inset-0 -outline-offset-2"></a>
   {/if}
 {/snippet}
 
@@ -159,7 +159,7 @@
                 {#if header.column.getCanSort()}
                   <button
                     type="button"
-                    class="inline-flex cursor-pointer items-center gap-1 text-text-muted outline-none hover:text-text focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]"
+                    class="inline-flex cursor-pointer items-center gap-1 text-text-muted outline-none hover:text-text focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:outline-offset-2"
                     onclick={header.column.getToggleSortingHandler()}
                   >
                     <FlexRender {header} />
@@ -219,7 +219,7 @@
             class="border-b border-line-3 last:border-0 outline-none {rowHref ? 'relative' : ''} {selected
               ? 'bg-surface-picked [box-shadow:inset_3px_0_0_var(--color-accent)]'
               : ''} {clickable
-              ? 'cursor-pointer hover:bg-surface-hover focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:-2px]'
+              ? 'cursor-pointer hover:bg-surface-hover focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:-outline-offset-2'
               : ''}"
             onclick={() => onrowclick?.(row.original)}
             onkeydown={e => {

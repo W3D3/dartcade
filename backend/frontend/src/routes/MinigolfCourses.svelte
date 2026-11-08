@@ -252,7 +252,7 @@
 <Layout title="Course editor">
   {#if allowed}
     <PhoneBanner />
-    <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
+    <main class="flex min-h-0 grow flex-col overflow-y-auto">
       <CourseHeader
         {area}
         {courseId}
@@ -273,14 +273,14 @@
         onreload={() => void store?.load()}
       />
       <div
-        class="grid flex-grow gap-6 p-4 md:p-5 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[268px_minmax(0,1fr)_356px]"
+        class="grid grow gap-6 p-4 md:p-5 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[268px_minmax(0,1fr)_356px]"
         use:sortable={{ ondrop, onkey, oncancel: () => moves.cancelled() }}
       >
         <!-- The courses -->
         <nav aria-label="Courses" class="flex flex-col gap-3">
           <Button variant="outline" disabled={busy} onclick={() => void newCourse()}><Plus size={16} />New course</Button>
           {#if listError}<ErrorText>{listError}</ErrorText>{/if}
-          {#if gone}<p role="status" class="rounded-[10px] border border-line-2 bg-surface-2 p-3 text-[14px]">
+          {#if gone}<p role="status" class="rounded-md border border-line-2 bg-surface-2 p-3 text-[14px]">
               {gone} is gone: someone deleted it.
             </p>{/if}
           <h2 class="text-[11px] label-caps text-text-dim">{area.admin ? 'Courses' : 'My courses'}</h2>
@@ -296,11 +296,11 @@
                   href="#{area.base}/courses/{c.id}"
                   aria-current={c.id === courseId ? 'page' : undefined}
                   onclick={() => (gone = null)}
-                  class="flex items-center gap-[10px] rounded-[12px] border p-2 text-text no-underline
+                  class="flex items-center gap-[10px] rounded-lg border p-2 text-text no-underline
                          {c.id === courseId ? 'border-accent bg-accent-tint' : 'border-line-2 bg-surface-2 hover:bg-surface-hover'}"
                 >
                   <HoleThumb hole={firstHole(c)} class="w-[52px] h-[40px]" />
-                  <span class="flex min-w-0 flex-grow flex-col">
+                  <span class="flex min-w-0 grow flex-col">
                     <span class="truncate text-[14px] font-semibold">{shown?.name ?? 'Untitled'}</span>
                     <span class="text-[12px] text-text-muted"
                       >{plural(shown?.holeIds.length ?? 0, 'hole')} · par {parOf(shown?.holeIds ?? [])}</span
@@ -330,7 +330,7 @@
             </div>
           {:else}
             {#if selected?.moderation}
-              <p role="status" class="rounded-[10px] border border-line-2 bg-warn-soft p-3 text-[14px] text-warn">
+              <p role="status" class="rounded-md border border-line-2 bg-warn-soft p-3 text-[14px] text-warn">
                 A moderator took this course out of play: {selected.moderation.reason}. You can't publish it until a moderator allows it
                 again.
               </p>
@@ -342,7 +342,7 @@
                   value={content.name}
                   maxlength={COURSE_TEXT_MAX.name}
                   oninput={e => edit({ name: e.currentTarget.value })}
-                  class="h-[46px] rounded-[10px] border border-line-3 bg-bg px-3 font-display text-[26px] font-bold uppercase text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
+                  class="h-[46px] rounded-md border border-line-3 bg-bg px-3 font-display text-[26px] font-bold uppercase text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
                 />
               </label>
               <input
@@ -351,7 +351,7 @@
                 oninput={e => edit({ description: e.currentTarget.value })}
                 aria-label="Short description"
                 placeholder="Short description"
-                class="h-[38px] rounded-[10px] border border-line-2 bg-bg px-3 text-[14px] text-ink-2 outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
+                class="h-[38px] rounded-md border border-line-2 bg-bg px-3 text-[14px] text-ink-2 outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
               />
             </div>
             <RadioGroup
@@ -370,8 +370,8 @@
                   value={String(d.value)}
                   aria-label={d.label}
                   title={d.label}
-                  class="flex h-6 w-6 items-center justify-center"
-                  ><span class="h-[10px] w-[10px] rounded-full {d.value <= content.difficulty ? 'bg-accent' : 'bg-line-3'}"
+                  class="flex size-6  items-center justify-center"
+                  ><span class="size-[10px] rounded-full {d.value <= content.difficulty ? 'bg-accent' : 'bg-line-3'}"
                   ></span></RadioGroupItem
                 >
               {/each}

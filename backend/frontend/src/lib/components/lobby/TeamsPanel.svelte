@@ -61,11 +61,11 @@
     role="group"
     aria-label="Team {team}"
     data-sortable-zone={team}
-    class="box-border p-3 rounded-[12px] bg-surface-row border border-line-2 flex flex-col gap-2 min-w-0"
+    class="box-border p-3 rounded-lg bg-surface-row border border-line-2 flex flex-col gap-2 min-w-0"
   >
     <span
-      class="inline-flex items-center self-start h-[26px] px-[10px] rounded-[7px] font-display font-bold
-                 text-[16px] tracking-[0.06em] uppercase
+      class="inline-flex items-center self-start h-[26px] px-[10px] rounded-segment font-display font-bold
+                 text-[16px] tracking-wordmark uppercase
                  {team === 'A' ? 'bg-accent text-accent-fg' : 'border-2 border-text text-text'}"
     >
       Team {team}
@@ -73,13 +73,13 @@
     {#each people as p (p.id)}
       <div
         data-sortable-id={p.id}
-        class="relative flex items-center {draggable ? 'gap-[6px]' : 'gap-[10px]'} min-h-12 pr-1 rounded-[9px] bg-surface-paused {draggable
+        class="relative flex items-center {draggable ? 'gap-[6px]' : 'gap-[10px]'} min-h-12 pr-1 rounded-key bg-surface-paused {draggable
           ? 'pl-0'
           : 'pl-2'}"
       >
         {#if draggable}<DragHandle name={p.name} describedby={hintId} />{/if}
         <Avatar name={p.name} guest={p.userId === null} face={p} size={30} />
-        <span class="flex flex-col gap-px min-w-0 flex-grow">
+        <span class="flex flex-col gap-px min-w-0 grow">
           <span class="text-[14px] font-semibold truncate">{p.name}</span>
           <span class="text-[12px] text-text-muted truncate"
             >{p.bot ? botLevelLabel(p.bot.level, lobby.nextGame?.gameId) : (p.boardName ?? 'Manual entry')}</span
@@ -90,7 +90,7 @@
             type="button"
             aria-label="Move {p.name} to Team {other(team)}"
             title="Move to Team {other(team)}"
-            class="w-8 h-10 shrink-0 flex items-center justify-center rounded-[8px] border-0
+            class="w-8 h-10 shrink-0 flex items-center justify-center rounded-sm border-0
  text-text-muted cursor-pointer"
             onclick={() => onmove?.(p.id, other(team))}
           >

@@ -11,7 +11,7 @@
   ])
 </script>
 
-<Tabs.List aria-label="Show" class="hidden md:inline-grid grid-flow-col gap-1 p-1 bg-surface-panel rounded-[10px] border border-line">
+<Tabs.List aria-label="Show" class="hidden md:inline-grid grid-flow-col gap-1 p-1 bg-surface-panel rounded-md border border-line">
   {#each tabs as t (t.id)}
     <Tabs.Trigger variant="pill" value={t.id} class="h-[38px] px-4 text-[14px]">{t.label}</Tabs.Trigger>
   {/each}

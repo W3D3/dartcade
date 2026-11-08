@@ -18,5 +18,5 @@
     ? 'text-warn'
     : 'text-text-muted'}"
 >
-  <span class="{compact ? 'w-[7px] h-[7px]' : 'w-2 h-2'} {DOT[caption.tone]}" aria-hidden="true"></span>{caption.text}
+  <span class="{compact ? 'size-[7px] ' : 'size-2 '} {DOT[caption.tone]}" aria-hidden="true"></span>{caption.text}
 </span>

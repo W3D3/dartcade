@@ -111,7 +111,7 @@
 {:else}
   <Layout title="Join lobby">
     <main
-      class="flex flex-grow min-h-0 flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
+      class="flex grow min-h-0 flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
     >
       <div class="flex flex-col gap-2">
         <h2 class="font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
@@ -127,7 +127,7 @@
           spellcheck="false"
           placeholder="K7Q4-MD"
           maxlength="12"
-          class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-[12px] text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
+          class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-lg text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
                {missing || failed ? 'border-live' : 'border-accent'}"
         />
         {#if missing}<ErrorText class="text-[13px]">No open lobby with that code. Check it with the host.</ErrorText>{/if}

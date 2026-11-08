@@ -15,7 +15,7 @@
 </script>
 
 <span
-  class="self-start shrink-0 inline-flex items-center gap-[6px] rounded-full uppercase tracking-[0.08em] whitespace-nowrap
+  class="self-start shrink-0 inline-flex items-center gap-[6px] rounded-full uppercase tracking-cta whitespace-nowrap
              {small ? 'h-[26px] px-[10px] text-[12px]' : 'h-7 px-3 text-[13px]'}
              {kind === 'throwing' || kind === 'winner'
     ? 'bg-accent text-accent-fg font-bold'

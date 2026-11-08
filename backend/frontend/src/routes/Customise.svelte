@@ -179,7 +179,7 @@
 
 <!-- The basics, compact above the finishes: never locked, so Hide locked leaves them be -->
 {#snippet basicsRow(selected: string | undefined, pick: (id: string) => void, preview: Snippet<[Item]>)}
-  <div class="flex flex-wrap items-center gap-2 px-3 py-[10px] rounded-[12px] bg-surface-1 border border-surface-paused">
+  <div class="flex flex-wrap items-center gap-2 px-3 py-[10px] rounded-lg bg-surface-1 border border-surface-paused">
     <span class="min-w-[52px] mr-1 text-[12px] font-semibold text-text-muted">Basics</span>
     {#each gridItems(rows.basics, hideLocked) as it (it.id)}
       <CustomiseTile name={it.name} open={it.open} selected={selected === it.id} unlock={it.unlock} compact onpick={() => pick(it.id)}
@@ -213,12 +213,12 @@
   {/if}
 {/snippet}
 {#snippet bannerPreview(it: Item)}
-  <span class="block w-full h-[58px] rounded-[8px] {bannerClass(it.id)}" style={bannerStyle(it.id, colors)}></span>
+  <span class="block w-full h-[58px] rounded-sm {bannerClass(it.id)}" style={bannerStyle(it.id, colors)}></span>
 {/snippet}
 {#snippet coloursPreview(it: Item)}
   {@const a = accentOf(cardColors(it.id))}
   <span
-    class="relative overflow-hidden flex items-center gap-2 w-full box-border h-[46px] px-[10px] rounded-[8px] {colorsClass(it.id)}"
+    class="relative overflow-hidden flex items-center gap-2 w-full box-border h-[46px] px-[10px] rounded-sm {colorsClass(it.id)}"
     style="background: color-mix(in srgb, {a} 12%, #181a16); border: 1px solid color-mix(in srgb, {a} 30%, #181a16)"
   >
     <span class="size-3 shrink-0 rounded-full" style="background: {a}"></span>
@@ -226,7 +226,7 @@
   </span>
 {/snippet}
 {#snippet namePreview(it: Item)}
-  <span class="flex items-center w-full box-border h-[46px] px-[10px] rounded-[8px] bg-surface-inset">
+  <span class="flex items-center w-full box-border h-[46px] px-[10px] rounded-sm bg-surface-inset">
     <span class="truncate text-[17px] font-semibold {nameClass(it.id)}" style="color: {accent}">{$profile?.name ?? 'Aa'}</span>
   </span>
 {/snippet}
@@ -253,11 +253,11 @@
 
 <Layout title="Customise" headerAction={phoneSave}>
   <main
-    class="flex flex-grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-3 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:pt-8 xl:pb-10"
+    class="flex grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-3 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:pt-8 xl:pb-10"
   >
     <Breadcrumb items={[{ label: 'Profile', href: '#/profile' }, { label: 'Customise' }]} />
     <div class="hidden md:flex items-center gap-4 -mt-3">
-      <h1 class="font-display font-bold text-[40px] leading-none uppercase tracking-[0.02em]">Customise</h1>
+      <h1 class="font-display font-bold text-[40px] leading-none uppercase tracking-title">Customise</h1>
       <div class="ml-auto flex gap-[10px]">
         <Button variant="outline" size="md" href="#/profile" class="px-5 text-[15px] font-semibold">Cancel</Button>
         {@render saveButton('h-11 px-5 font-semibold')}
@@ -271,7 +271,7 @@
       <PageLoading />
     {:else}
       <div class="flex items-center gap-4 min-w-0">
-        <nav aria-label="Customise" class="flex gap-1 lg:gap-[6px] min-w-0 overflow-x-auto [scrollbar-width:none]">
+        <nav aria-label="Customise" class="flex gap-1 lg:gap-[6px] min-w-0 overflow-x-auto scrollbar-none">
           {#each TABS as t (t)}
             <a
               href="#/profile/customise/{t}"
@@ -289,21 +289,21 @@
         <aside class="flex flex-col gap-4 lg:w-[360px] lg:shrink-0">
           <section
             aria-label="Your card"
-            class="flex flex-col items-center gap-4 lg:rounded-[18px] lg:border lg:border-line-2 lg:bg-surface-panel lg:px-6 lg:pt-6 lg:pb-5"
+            class="flex flex-col items-center gap-4 lg:rounded-panel lg:border lg:border-line-2 lg:bg-surface-panel lg:px-6 lg:pt-6 lg:pb-5"
           >
             <span class="hidden lg:block self-start {caps}">Your card</span>
             <div class="relative w-fit max-w-full">
               <ProfileCard profile={$profile} {look} avatar={avatar ?? undefined} status={status ? $status : null} />
               {#if party}
                 {#key party.run}
-                  <Celebration id={party.id} {colors} class="absolute -inset-8 w-[calc(100%+4rem)] h-[calc(100%+4rem)]" />
+                  <Celebration id={party.id} {colors} class="absolute -inset-8 size-[calc(100%+4rem)] " />
                 {/key}
               {/if}
             </div>
             {#if tab === 'picture'}
               <div class="w-full grid grid-cols-2 gap-2">
                 {#each [['Foreground', layers?.foreground], ['Background', layers?.background]] as [label, id] (label)}
-                  <div class="rounded-[10px] bg-surface-row px-3 py-[10px]">
+                  <div class="rounded-md bg-surface-row px-3 py-[10px]">
                     <div class="{caps} text-[10.5px]">{label}</div>
                     <div class="mt-[3px] text-[15px] font-semibold">
                       {layers ? finishName(id) : wornAvatar?.kind === 'upload' ? 'Your photo' : 'Initials'}
@@ -316,16 +316,16 @@
           </section>
           <section
             aria-label="How others see it"
-            class="hidden lg:flex flex-col gap-3 rounded-[18px] border border-line-2 bg-surface-panel px-[18px] py-4"
+            class="hidden lg:flex flex-col gap-3 rounded-panel border border-line-2 bg-surface-panel px-[18px] py-4"
           >
             <span class={caps}>How others see it</span>
-            <div class="flex items-center gap-[10px] rounded-[10px] bg-surface-row px-[10px] py-1">
+            <div class="flex items-center gap-[10px] rounded-md bg-surface-row px-[10px] py-1">
               <span class="relative m-[9px] flex shrink-0 rounded-full"
                 ><Avatar name={$profile.name} face={avatar ? { avatar, userId } : null} size={30} /><CardFrame frame={look.frame} /></span
               >
               <span class="flex flex-col flex-1 min-w-0">
                 <span class="truncate text-[14px] font-semibold {nameClass(look.name)}" style="color: {accent}">{$profile.name}</span>
-                <span class="truncate text-[11px] uppercase tracking-[0.08em] text-text-muted">{titleName(look)}</span>
+                <span class="truncate text-[11px] uppercase tracking-cta text-text-muted">{titleName(look)}</span>
               </span>
               <span class="text-[12px] text-text-muted">Lobby</span>
             </div>

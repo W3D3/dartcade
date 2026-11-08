@@ -17,10 +17,10 @@
 {/snippet}
 
 <Layout title={params.page === 'sandbox' ? 'Coach sandbox' : 'Coach'}>
-  <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
+  <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     {#if params.page === 'list'}
       <header class="flex flex-col gap-1.5">
-        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Coach</h1>
+        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-title md:block">Coach</h1>
         <p class="text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
       </header>
       <ListSkeleton />
@@ -29,9 +29,9 @@
     {:else}
       <div aria-busy="true" class="flex flex-col gap-4 md:gap-[22px]">
         <p role="status" class="sr-only">Loading…</p>
-        <Skeleton class="h-[34px] w-72 max-w-full md:h-12 md:w-[28rem]" />
+        <Skeleton class="h-[34px] w-72 max-w-full md:h-12 md:w-md" />
         <Skeleton class="h-4 w-full max-w-[900px]" />
-        <Skeleton class="h-64 w-full rounded-[18px]" />
+        <Skeleton class="h-64 w-full rounded-panel" />
       </div>
     {/if}
   </main>

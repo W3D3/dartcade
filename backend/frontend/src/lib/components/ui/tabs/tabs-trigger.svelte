@@ -12,7 +12,7 @@
       variant: {
         title:
           'bg-transparent p-0 pb-[6px] font-display text-[24px] font-bold uppercase leading-none text-text-dim hover:text-text data-[state=active]:text-text data-[state=active]:shadow-[inset_0_-3px_0_var(--color-accent)] md:text-[32px]',
-        pill: 'rounded-[7px] bg-transparent text-ink-2 hover:text-text data-[state=active]:bg-line data-[state=active]:text-text data-[state=active]:font-semibold',
+        pill: 'rounded-segment bg-transparent text-ink-2 hover:text-text data-[state=active]:bg-line data-[state=active]:text-text data-[state=active]:font-semibold',
       },
     },
   })

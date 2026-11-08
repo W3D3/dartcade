@@ -19,7 +19,7 @@
 <div class="flex h-dvh bg-bg text-text overflow-hidden">
   <SideNav />
   <NavRail />
-  <div class="flex flex-col flex-grow min-w-0 overflow-hidden">
+  <div class="flex flex-col grow min-w-0 overflow-hidden">
     {#if title}<PhoneHeader {title} action={headerAction} />{/if}
     <SessionBanner />
     {@render children()}

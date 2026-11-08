@@ -245,7 +245,7 @@
                       <span class="text-[15px] font-semibold">{when.day}</span>
                       <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
                     </span>
-                    <span class="w-[130px] shrink-0 font-display text-[20px] font-bold uppercase tracking-[0.02em]"
+                    <span class="w-[130px] shrink-0 font-display text-[20px] font-bold uppercase tracking-title"
                       >{getGameView(g.mode).title}</span
                     >
                     <span class="min-w-0 flex-1 basis-[220px] text-[14px] text-ink-2"

@@ -240,7 +240,7 @@
     {@render controls(false)}
     {#if remote.kind === 'waiting' && portraitCards}
       <!-- The cards have no room for it: the waiting card takes the board's place -->
-      <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
+      <div class="flex-1 min-h-0 flex rounded-popover bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
     {:else}
       {#if caption}<BoardCaption {caption} />{/if}
       {@render board('min-h-[200px]', '')}
@@ -254,7 +254,7 @@
   {@render rankedClock()}
   <!-- Phones: everything fits without scrolling; the board, keypad or waiting card takes what's left -->
   {#if remote.kind === 'waiting'}
-    <div class="flex-1 min-h-[160px] flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(true)}</div>
+    <div class="flex-1 min-h-[160px] flex rounded-popover bg-surface-panel border border-line-2">{@render waitingCard(true)}</div>
   {:else if !keypad}
     {#if caption}<BoardCaption {caption} compact />{/if}
     {@render board('min-h-[160px]', '')}
@@ -280,7 +280,7 @@
     {@render keypadView('min-h-0')}
   {:else if remote.kind === 'waiting' && variant === 'party'}
     <!-- Rows have no room for an overlay: the waiting card takes the board's place -->
-    <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
+    <div class="flex-1 min-h-0 flex rounded-popover bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
   {:else}
     {#if caption}<BoardCaption {caption} />{/if}
     {@render board('min-h-0', variant === 'duel' ? 'max-w-[400px] xl:max-w-none' : '')}

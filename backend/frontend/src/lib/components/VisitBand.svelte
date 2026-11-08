@@ -65,7 +65,7 @@
   bind:this={boxEl}
   role="status"
   aria-label="{band.eyebrow}: {band.sum}"
-  class="relative rounded-[12px] md:rounded-[14px] {compact
+  class="relative rounded-lg md:rounded-card {compact
     ? '@container h-[58px] md:h-[min(124px,14vh)] box-border'
     : 'px-[14px] md:px-4 xl:px-[18px] py-1 md:py-2 xl:py-[10px]'} {box}"
 >
@@ -76,12 +76,12 @@
   >
     <span
       class="uppercase leading-tight {compact
-        ? 'max-w-full truncate text-[8px] md:text-[13px] font-semibold tracking-[0.06em] @min-[190px]:w-min @min-[190px]:overflow-visible @min-[190px]:whitespace-normal @min-[190px]:text-[12px] @min-[190px]:tracking-[0.14em] @min-[260px]:text-[14px]'
+        ? 'max-w-full truncate text-[8px] md:text-[13px] font-semibold tracking-wordmark @min-[190px]:w-min @min-[190px]:overflow-visible @min-[190px]:whitespace-normal @min-[190px]:text-[12px] @min-[190px]:tracking-[0.14em] @min-[260px]:text-[14px]'
         : 'absolute left-[14px] md:left-4 xl:left-5 top-1/2 -translate-y-1/2 text-[11px] md:text-[12px] xl:text-[14px] tracking-[0.1em]'} {eyebrowColor}"
       >{band.eyebrow}</span
     >
     <span
-      class="sum font-display font-bold leading-[0.85] tracking-[-0.01em] tabular-nums {compact
+      class="sum font-display font-bold leading-[0.85] -tracking-hero tabular-nums {compact
         ? 'text-[28px] md:text-[80px] @min-[190px]:md:text-[64px] @min-[260px]:md:text-[80px]'
         : 'text-[48px] md:text-[72px] xl:text-[min(96px,11vh)]'} {sumColor}"
       class:fx-tick={band.bigDart}>{@render sum()}</span

@@ -41,7 +41,7 @@
 </script>
 
 {#if open}
-  <div class="p-[14px] rounded-[12px] bg-surface-panel border border-line-2 flex flex-col gap-[14px] {className}">
+  <div class="p-[14px] rounded-lg bg-surface-panel border border-line-2 flex flex-col gap-[14px] {className}">
     <GameSettings
       {gameId}
       {config}

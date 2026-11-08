@@ -9,7 +9,7 @@
 </script>
 
 <span
-  class="inline-flex h-6 max-w-full items-center self-start gap-[6px] whitespace-nowrap rounded-[6px] border border-line-chip bg-surface-inset pl-[5px] pr-2 text-[12px]"
+  class="inline-flex h-6 max-w-full items-center self-start gap-[6px] whitespace-nowrap rounded-chip border border-line-chip bg-surface-inset pl-[5px] pr-2 text-[12px]"
 >
   <RankBadge {rank} size={16} />
   <span class="font-semibold" style:color={rank ? TIER_TEXT[rank.tier] : undefined}>{rank?.name ?? 'Placement'}</span>

@@ -74,7 +74,7 @@
   )
 </script>
 
-<main class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-7 flex flex-col gap-[18px]">
+<main class="grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-7 flex flex-col gap-[18px]">
   {#if players.length > 1 || !detail}
     <ol aria-label="Standings" class="flex flex-wrap gap-2">
       {#each standings as s, i (i)}
@@ -102,7 +102,7 @@
 
   {#if data}
     <div class="flex flex-col xl:flex-row gap-6 min-w-0">
-      <div class="flex-grow min-w-0 flex flex-col gap-[18px]">
+      <div class="grow min-w-0 flex flex-col gap-[18px]">
         <div class="flex flex-col gap-[6px]">
           <span class="text-[12px] font-semibold label-caps text-accent"
             >Session complete · {plural(data.checkouts.tries, 'try', 'tries')}</span
@@ -112,7 +112,7 @@
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-[14px]">
           {#each tiles as t (t.k)}
-            <div class="box-border px-5 py-[18px] rounded-[14px] border border-line bg-surface-1 flex flex-col gap-[6px] min-w-0">
+            <div class="box-border px-5 py-[18px] rounded-card border border-line bg-surface-1 flex flex-col gap-[6px] min-w-0">
               <span class={label}>{t.k}</span>
               <span class="flex flex-wrap items-baseline gap-x-2">
                 <span class="font-display font-bold text-[40px] md:text-[56px] leading-none {t.accent ? 'text-accent' : ''}">{t.v}</span>
@@ -148,7 +148,7 @@
                 <div class="flex flex-col items-center gap-[6px] flex-1">
                   <span class="font-mono text-[12px] text-text-muted">{d.count || ''}</span>
                   <span
-                    class="w-full rounded-t-[6px] {d.count ? 'bg-accent' : 'bg-surface-paused'}"
+                    class="w-full rounded-t-chip {d.count ? 'bg-accent' : 'bg-surface-paused'}"
                     style:height="{d.count ? Math.round((d.count / maxCount) * 68) : 4}px"
                   ></span>
                   <span class="font-mono text-[12px] text-text-dim">{d.darts}</span>

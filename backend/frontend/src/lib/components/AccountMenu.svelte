@@ -95,10 +95,10 @@
     {#if placement === 'sidebar'}
       <DropdownMenu.Trigger
         aria-label={triggerLabel}
-        class="w-full box-border flex items-center gap-[10px] p-[6px] rounded-[9px] border-0 bg-transparent text-left text-text cursor-pointer hover:bg-surface-active"
+        class="w-full box-border flex items-center gap-[10px] p-[6px] rounded-key border-0 bg-transparent text-left text-text cursor-pointer hover:bg-surface-active"
       >
         {@render avatar(36)}
-        <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
+        <span class="flex flex-col gap-[2px] min-w-0 grow">
           <span class="text-[14px] font-semibold truncate">{name}</span>
           <span class="flex items-center gap-[5px] whitespace-nowrap text-[12px] text-text-muted"
             >{#if level !== null}<span class="font-medium text-accent">LV {level}</span><span aria-hidden="true">·</span>
@@ -110,8 +110,8 @@
       <DropdownMenu.Trigger
         aria-label={triggerLabel}
         class="{placement === 'rail'
-          ? 'w-14 h-14 rounded-[12px]'
-          : 'w-11 h-11'} relative flex items-center justify-center bg-transparent border-0 cursor-pointer"
+          ? 'size-14  rounded-lg'
+          : 'size-11 '} relative flex items-center justify-center bg-transparent border-0 cursor-pointer"
       >
         {@render avatar(placement === 'rail' ? 40 : 36)}
         {#if placement === 'header' && friends.requests > 0}
@@ -134,7 +134,7 @@
           e.preventDefault()
           menuEl?.querySelector<HTMLElement>('[role="menuitemradio"]')?.focus()
         }}
-        class="{position.width} z-[70] box-border p-3 rounded-[14px] bg-surface-2 border border-line-3 shadow-popover flex flex-col gap-2 outline-none"
+        class="{position.width} z-70 box-border p-3 rounded-card bg-surface-2 border border-line-3 shadow-popover flex flex-col gap-2 outline-none"
       >
         {#if profile && $profile}
           {@const p = $profile}
@@ -146,7 +146,7 @@
                 href="#/profile"
                 aria-label="Your profile: {p.name}"
                 style="background: {CARD_SURFACE}"
-                class="block overflow-hidden rounded-[12px] border border-line-popover text-text no-underline outline-none data-[highlighted]:border-accent hover:text-text {colorsClass(
+                class="block overflow-hidden rounded-lg border border-line-popover text-text no-underline outline-none data-highlighted:border-accent hover:text-text {colorsClass(
                   p.look.colors,
                 )}"
               >
@@ -182,7 +182,7 @@
                 {...props}
                 href="#/profile"
                 aria-label="Your profile: {name}"
-                class="block rounded-[10px] p-1 text-text no-underline outline-none data-[highlighted]:bg-surface-hover hover:text-text"
+                class="block rounded-md p-1 text-text no-underline outline-none data-highlighted:bg-surface-hover hover:text-text"
                 >{@render plainHeader()}</a
               >
             {/snippet}
@@ -251,7 +251,7 @@
         <DropdownMenu.Separator class="h-px bg-line-3" />
         <DropdownMenu.Item
           onSelect={() => void signOut()}
-          class="h-11 flex items-center gap-3 px-3 rounded-[10px] text-live-text text-[15px] font-medium cursor-pointer outline-none data-[highlighted]:bg-surface-hover"
+          class="h-11 flex items-center gap-3 px-3 rounded-md text-live-text text-[15px] font-medium cursor-pointer outline-none data-highlighted:bg-surface-hover"
         >
           <LogOut size={17} />
           Sign out

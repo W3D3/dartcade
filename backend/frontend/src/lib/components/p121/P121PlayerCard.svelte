@@ -95,7 +95,7 @@
 {#if phone}
   <section
     aria-label="Target {s.target}, {s.left} left, {used} of {game.cfg.dartsPerTry} darts used"
-    class="box-border rounded-[18px] flex flex-col min-w-0 px-4 py-3 gap-2 {playerCard(active)}"
+    class="box-border rounded-panel flex flex-col min-w-0 px-4 py-3 gap-2 {playerCard(active)}"
   >
     <div class="flex items-center justify-between">
       <span class={label}>Left</span>
@@ -104,7 +104,7 @@
         <span class="font-display font-bold text-[28px] leading-none text-accent">{s.target}</span>
       </span>
     </div>
-    <span class="font-display font-bold text-[120px] leading-[0.85] tracking-[-0.02em]">{s.left}</span>
+    <span class="font-display font-bold text-[120px] leading-[0.85] tracking-score">{s.left}</span>
     <div class="flex items-center justify-between gap-3">
       <span class={label}>{plural(game.cfg.dartsPerTry - used, 'dart')} left</span>
       {@render pipRow('w-[14px] h-[14px]')}
@@ -130,7 +130,7 @@
     <div class="flex flex-col">
       <span class={label}>Left</span>
       <span
-        class="font-display font-bold leading-[0.85] tracking-[-0.02em] {variant === 'solo'
+        class="font-display font-bold leading-[0.85] tracking-score {variant === 'solo'
           ? 'text-[150px] xl:text-[200px]'
           : 'text-[120px] xl:text-[160px]'} {active ? 'text-text' : 'text-ink-3'}">{s.left}</span
       >
@@ -141,15 +141,13 @@
     </div>
     {@render hintLine()}
     {#if rows.length}
-      <div class="mt-auto p-[10px] rounded-[12px] bg-surface-1 border border-line">
+      <div class="mt-auto p-[10px] rounded-lg bg-surface-1 border border-line">
         <div class="grid grid-cols-2 gap-5 px-3 pb-[6px] text-[11px] font-semibold label-caps text-text-dim">
           <span class="text-right">Scored</span><span>Left</span>
         </div>
         {#each rows as r, i (i)}
           <div
-            class="grid grid-cols-2 gap-5 px-3 py-[6px] rounded-[8px] font-display font-bold text-[30px] {r.open
-              ? 'bg-surface-active'
-              : ''}"
+            class="grid grid-cols-2 gap-5 px-3 py-[6px] rounded-sm font-display font-bold text-[30px] {r.open ? 'bg-surface-active' : ''}"
           >
             <span class="text-right {r.open ? 'text-accent' : 'text-text'}">{r.scored}</span>
             <span class={r.open ? 'text-text' : 'text-text-dim'}>{r.left}</span>

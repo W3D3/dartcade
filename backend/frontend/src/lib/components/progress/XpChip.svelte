@@ -29,7 +29,7 @@
     <!-- Floats above the chip so the result keeps its place -->
     <div
       id="xp-breakdown"
-      class="absolute inset-x-0 bottom-full mb-2 z-10 rounded-[14px] border border-line-popover bg-surface-2 px-[14px] pt-[6px] pb-3 shadow-popover"
+      class="absolute inset-x-0 bottom-full mb-2 z-10 rounded-card border border-line-popover bg-surface-2 px-[14px] pt-[6px] pb-3 shadow-popover"
     >
       {#each gain.lines as line, i (i)}
         <div class="flex justify-between gap-3 py-[9px] border-b border-line-2 text-[14px] text-ink-2">
@@ -37,7 +37,7 @@
         </div>
       {/each}
       <div class="flex justify-between items-baseline pt-[10px]">
-        <span class="font-display font-bold text-[18px] tracking-[0.08em] uppercase">Total</span>
+        <span class="font-display font-bold text-[18px] tracking-cta uppercase">Total</span>
         <b class="font-display font-bold text-[30px] leading-none text-accent tabular-nums">+{fmtXp(gain.total)}</b>
       </div>
       <div class="mt-2 flex justify-between text-[12px] text-text-muted">
@@ -69,7 +69,7 @@
           type="button"
           disabled={equipped}
           onclick={() => void wear()}
-          class="rounded-[8px] border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
+          class="rounded-sm border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
           >{equipped ? 'Equipped' : 'Equip'}</button
         >
       {/if}
@@ -82,11 +82,11 @@
     aria-label="Level {after.level}, +{gain.total} XP. Show the breakdown"
     onclick={() => (open = !open)}
     style="--from: {motion.from}%; --to: {motion.to}%"
-    class="chip w-full flex items-center gap-[10px] rounded-[12px] border bg-surface-inset px-3 py-[10px] text-left text-text cursor-pointer
+    class="chip w-full flex items-center gap-[10px] rounded-lg border bg-surface-inset px-3 py-[10px] text-left text-text cursor-pointer
  {motion.levelUp ? 'border-accent' : 'border-line-2 hover:border-line-strong'}"
   >
     <span
-      class="lv relative h-[22px] min-w-[54px] overflow-hidden whitespace-nowrap font-display font-bold text-[18px] leading-[22px] tracking-[0.06em]"
+      class="lv relative h-[22px] min-w-[54px] overflow-hidden whitespace-nowrap font-display font-bold text-[18px] leading-[22px] tracking-wordmark"
     >
       {#if motion.levelUp}<span class="o absolute inset-0" aria-hidden="true">LV {motion.levelBefore}</span>{/if}
       <span class="n block">LV {motion.levelAfter}</span>

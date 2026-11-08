@@ -289,7 +289,7 @@
   <div class="grid gap-2" style:grid-template-columns="repeat({slots.length}, minmax(0, 1fr))" aria-label="Tries">
     {#each slots as slot, i (i)}
       <div
-        class="flex flex-col rounded-[10px] border {compact ? 'px-2 py-1' : 'px-3 py-2'} {slot.state === 'kept'
+        class="flex flex-col rounded-md border {compact ? 'px-2 py-1' : 'px-3 py-2'} {slot.state === 'kept'
           ? 'border-accent text-text'
           : slot.state === 'replaced'
             ? 'border-line text-text-muted line-through decoration-1'
@@ -320,7 +320,7 @@
   {/if}
 {/snippet}
 
-<main class="relative flex-grow min-h-0 overflow-hidden">
+<main class="relative grow min-h-0 overflow-hidden">
   <!-- The hole: the whole stage, the panels float over it -->
   <section aria-label="Hole" class="absolute inset-0 bg-bg-deep" data-view={view3d ? '3d' : '2d'}>
     {#if view3d}
@@ -364,11 +364,11 @@
     aria-label="Players"
     bind:offsetWidth={playersW}
     bind:offsetHeight={playersH}
-    class="absolute left-3 right-3 top-3 z-10 flex gap-2 overflow-x-auto lg:right-auto lg:left-4 lg:top-4 lg:w-[250px] lg:max-h-[calc(100%-32px)] lg:flex-col lg:overflow-y-auto"
+    class="absolute inset-x-3 top-3 z-10 flex gap-2 overflow-x-auto lg:right-auto lg:left-4 lg:top-4 lg:w-[250px] lg:max-h-[calc(100%-32px)] lg:flex-col lg:overflow-y-auto"
   >
     {#each playerRows as r (r.seat)}
       <div
-        class="flex shrink-0 max-lg:max-w-[80%] items-center gap-3 rounded-[14px] border px-3 py-2 backdrop-blur-md lg:px-4 lg:py-3 {r.active
+        class="flex shrink-0 max-lg:max-w-[80%] items-center gap-3 rounded-card border px-3 py-2 backdrop-blur-md lg:px-4 lg:py-3 {r.active
           ? ''
           : 'border-line bg-surface-1/75'}"
         style:border-color={r.active ? seatColor(r.seat) : undefined}
@@ -385,11 +385,11 @@
         <div class="ml-auto flex items-baseline gap-3 text-right">
           <span class="flex flex-col">
             <strong class="font-display text-[22px] leading-none lg:text-[28px]" data-testid="hole-strokes">{r.strokes}</strong>
-            <span class="text-[10px] uppercase tracking-[0.08em] text-text-muted lg:text-[11px]">Strokes</span>
+            <span class="text-[10px] uppercase tracking-cta text-text-muted lg:text-[11px]">Strokes</span>
           </span>
           <span class="hidden flex-col lg:flex">
             <strong class="font-display text-[20px] leading-none">{r.total}</strong>
-            <span class="text-[11px] uppercase tracking-[0.08em] text-text-muted">{r.toPar}</span>
+            <span class="text-[11px] uppercase tracking-cta text-text-muted">{r.toPar}</span>
           </span>
         </div>
       </div>
@@ -403,18 +403,18 @@
     bind:offsetWidth={shotW}
     bind:offsetHeight={shotH}
     class="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 overflow-y-auto rounded-t-2xl border border-line bg-surface-1/85 p-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-md lg:inset-x-auto lg:right-4 lg:w-[360px] lg:rounded-2xl lg:p-4 {panelOpen
-      ? 'max-h-[62%] lg:top-4 lg:bottom-4 lg:max-h-none'
+      ? 'max-h-[62%] lg:inset-y-4  lg:max-h-none'
       : 'lg:bottom-4'}"
   >
     <div class="flex items-center gap-3">
       <span class="flex min-w-0 flex-col">
         <span class="text-[11px] uppercase tracking-[0.12em] text-text-muted">Hole {game.holeIdx + 1} of {game.holeCount}</span>
-        <span class="truncate font-display text-[20px] font-bold uppercase leading-tight lg:text-[24px]">{game.hole.name}</span>
+        <span class="truncate font-display text-cta/tight font-bold uppercase lg:text-[24px]">{game.hole.name}</span>
       </span>
       <span class="ml-auto font-display text-[20px] font-bold lg:text-[24px]">Par {game.hole.par}</span>
       <button
         type="button"
-        class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-line-2 bg-surface-2 text-text cursor-pointer hover:bg-surface-hover"
+        class="grid size-9 shrink-0 place-items-center rounded-md border border-line-2 bg-surface-2 text-text cursor-pointer hover:bg-surface-hover"
         aria-expanded={panelOpen}
         aria-label={panelOpen ? 'Hide the shot panel' : 'Show the shot panel'}
         title={panelOpen ? 'Hide the shot panel' : 'Show the shot panel'}

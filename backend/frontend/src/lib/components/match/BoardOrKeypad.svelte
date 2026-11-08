@@ -104,7 +104,7 @@
   </div>
 {:else}
   <!-- The board takes the height the column has left (capped by its width) -->
-  <div class="flex-1 {className} w-full [container-type:size] flex items-center justify-center">
+  <div class="flex-1 {className} w-full @container-size flex items-center justify-center">
     <div class="relative aspect-square {square}" style="width: min(100cqw, 100cqh)">
       <DartBoard
         {darts}

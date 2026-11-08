@@ -42,19 +42,19 @@
 
 <div class="flex flex-col gap-3">
   <div class="flex items-center justify-between gap-3 flex-wrap">
-    <span class="text-[12px] font-bold uppercase tracking-[0.1em] text-text-dim">Found on this board's network</span>
+    <span class="text-[12px] font-bold label-caps text-text-dim">Found on this board's network</span>
     {#if lastScanAt}
       <span class="inline-flex items-center gap-[6px] text-[12px] text-text-dim whitespace-nowrap">
-        <span class="w-[7px] h-[7px] rounded-full bg-accent"></span>Scanning · {since(lastScanAt, now)}
+        <span class="size-[7px] rounded-full bg-accent"></span>Scanning · {since(lastScanAt, now)}
       </span>
     {/if}
   </div>
   {#if scanError}<ErrorText>Couldn't scan this network: {scanError}</ErrorText>{/if}
   <ul class="flex flex-col gap-[6px]">
     {#each found as device (device.mac)}
-      <li class="flex items-center gap-3 min-h-[54px] py-2 px-3 rounded-[10px] border border-dashed border-line-chip">
+      <li class="flex items-center gap-3 min-h-[54px] py-2 px-3 rounded-md border border-dashed border-line-chip">
         <span class="flex text-text-dim shrink-0"><Lightbulb size={18} strokeWidth={1.8} /></span>
-        <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
+        <span class="flex flex-col gap-[2px] min-w-0 grow">
           <span class="text-[14px] font-semibold truncate">{device.name}</span>
           <span class="font-mono text-[12px] text-text-dim flex flex-col md:flex-row md:items-baseline gap-x-1.5 min-w-0">
             <span class="truncate">{device.host}</span>

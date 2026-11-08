@@ -30,7 +30,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <div
     bind:this={strip}
-    class="grow basis-auto min-w-0 overflow-y-auto snap-y snap-mandatory overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-pointer"
+    class="grow basis-auto min-w-0 overflow-y-auto snap-y snap-mandatory overscroll-y-contain scrollbar-none [&::-webkit-scrollbar]:hidden cursor-pointer"
     style="height: calc(var(--stat-label) * 1.25 + 3px + var(--stat-value))"
     onscroll={() => (page = pageAt(strip.scrollTop, strip.clientHeight, pages.length))}
     onclick={() => goTo(nextPage(page, pages.length))}
@@ -45,12 +45,11 @@
         {#each stats as s (s.label)}
           <span class="flex flex-col justify-between gap-[3px] min-w-0" data-stat title={s.title}>
             <span
-              class="text-[length:var(--stat-label)] leading-[1.15] whitespace-nowrap label-caps {active
-                ? 'text-text-muted'
-                : 'text-text-dim'}">{s.label}</span
+              class="text-(length:--stat-label) leading-[1.15] whitespace-nowrap label-caps {active ? 'text-text-muted' : 'text-text-dim'}"
+              >{s.label}</span
             >
             <span
-              class="font-display font-bold text-[length:var(--stat-value)] leading-none tabular-nums {s.dim
+              class="font-display font-bold text-(length:--stat-value) leading-none tabular-nums {s.dim
                 ? 'text-text-muted'
                 : active
                   ? 'text-text'

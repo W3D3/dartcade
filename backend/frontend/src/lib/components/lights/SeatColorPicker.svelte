@@ -24,10 +24,10 @@
   <Popover.Trigger
     {disabled}
     aria-label="Seat {seat} colour: {colorName(color)}. Change"
-    class="inline-flex items-center gap-2 h-[34px] pl-[6px] pr-[10px] rounded-[8px] border border-line-strong bg-bg
+    class="inline-flex items-center gap-2 h-[34px] pl-[6px] pr-[10px] rounded-sm border border-line-strong bg-bg
            text-[12px] text-ink-2 cursor-pointer disabled:opacity-50 disabled:cursor-default"
   >
-    <span class="w-[22px] h-[22px] rounded-full border border-line-strong" style="background: {color}"></span>
+    <span class="size-[22px] rounded-full border border-line-strong" style="background: {color}"></span>
     <span class="font-mono">{color.toLowerCase()}</span>
   </Popover.Trigger>
   <PopoverPanel label="Colour for seat {seat}" role="dialog" width={232}>
@@ -41,7 +41,7 @@
           aria-label={c.name}
           title={c.name}
           onclick={() => pick(c.hex)}
-          class="relative w-[30px] h-[30px] rounded-full border border-line-strong cursor-pointer grid place-items-center
+          class="relative size-[30px] rounded-full border border-line-strong cursor-pointer grid place-items-center
                  focus-visible:outline-2 focus-visible:outline-accent {selected
             ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-inset'
             : ''}"
@@ -58,7 +58,7 @@
         value={color.toLowerCase()}
         aria-label="Custom colour for seat {seat}"
         onchange={e => pick(e.currentTarget.value)}
-        class="w-[44px] h-[28px] p-0 border border-line-strong rounded-[6px] bg-transparent cursor-pointer"
+        class="w-[44px] h-[28px] p-0 border border-line-strong rounded-chip bg-transparent cursor-pointer"
       />
     </label>
   </PopoverPanel>

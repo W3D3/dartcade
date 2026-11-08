@@ -93,7 +93,7 @@
           <Lock size={16} aria-hidden="true" class="absolute right-3 top-[10px] text-ink-faint max-md:hidden" />
           <span class="{slotLabel} {slot.struck ? 'line-through text-text-muted' : 'text-text'}">{slot.label}</span>
           {#if latest}
-            <span class="text-[11px] md:text-[13px] font-bold uppercase tracking-[0.06em] text-accent whitespace-nowrap"
+            <span class="text-[11px] md:text-[13px] font-bold uppercase tracking-wordmark text-accent whitespace-nowrap"
               >{slot.points}<span class="max-md:hidden"> · just landed</span></span
             >
           {:else}
@@ -130,12 +130,12 @@
         >
           <span class="sr-only">{slot.aria}</span>
           {#if slot.kind === 'empty-next'}
-            <span aria-hidden="true" class="w-3 h-3 rounded-full bg-accent"></span>
+            <span aria-hidden="true" class="size-3 rounded-full bg-accent"></span>
           {:else if slot.label}
             <span aria-hidden="true" class="{slotLabel} text-text-dim">{slot.label}</span>
             <span
               aria-hidden="true"
-              class="text-[10px] md:text-[12px] leading-[1.15] font-semibold uppercase tracking-[0.06em] text-ink-faint text-center line-clamp-2 max-w-full shrink-0"
+              class="text-[10px] md:text-[12px] leading-[1.15] font-semibold uppercase tracking-wordmark text-ink-faint text-center line-clamp-2 max-w-full shrink-0"
               >{slot.foot}</span
             >
           {/if}
@@ -150,8 +150,8 @@
       role="dialog"
       aria-label="Correct dart {openDart + 1}"
       class="{popoverAbove
-        ? 'absolute left-0 right-0 bottom-full mb-2 z-30'
-        : 'w-full'} box-border px-3 pt-2 pb-3 rounded-[14px] bg-surface-inset border border-line-popover
+        ? 'absolute inset-x-0  bottom-full mb-2 z-30'
+        : 'w-full'} box-border px-3 pt-2 pb-3 rounded-card bg-surface-inset border border-line-popover
              flex flex-col gap-2 shadow-popover"
     >
       <div class="flex items-center gap-2 min-w-0">
@@ -160,7 +160,7 @@
             type="button"
             onclick={() => (mode = 'quick')}
             aria-label="Back to nearby segments"
-            class="w-9 h-9 -ml-2 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
+            class="size-9 -ml-2 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -173,7 +173,7 @@
           type="button"
           onclick={close}
           aria-label="Close"
-          class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
+          class="size-9 -mr-2 ml-auto shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
         >
           <X size={16} />
         </button>
@@ -185,7 +185,7 @@
             <button
               type="button"
               onclick={() => pick(label)}
-              class="h-11 flex flex-col items-center justify-center bg-surface-key border border-line-key rounded-[9px] text-text cursor-pointer"
+              class="h-11 flex flex-col items-center justify-center bg-surface-key border border-line-key rounded-key text-text cursor-pointer"
             >
               <span class="font-display font-bold text-[18px] leading-none">{label}</span>
               <span class="text-[10px] text-text-muted leading-tight">{parseLabel(label).score}</span>
@@ -194,18 +194,18 @@
           <button
             type="button"
             onclick={() => (mode = 'full')}
-            class="h-11 flex items-center justify-center border-[1.5px] border-dashed border-line-pip rounded-[9px]
+            class="h-11 flex items-center justify-center border-[1.5px] border-dashed border-line-pip rounded-key
  text-accent text-[13px] font-semibold cursor-pointer">Other…</button
           >
         </div>
       {:else}
-        <div class="grid grid-cols-3 gap-1 p-1 bg-bg rounded-[9px]">
+        <div class="grid grid-cols-3 gap-1 p-1 bg-bg rounded-key">
           {#each ['S', 'D', 'T'] as const as m (m)}
             <button
               type="button"
               onclick={() => (mult = m)}
               aria-pressed={mult === m}
-              class="h-9 border-0 rounded-[6px] text-[14px] cursor-pointer
+              class="h-9 border-0 rounded-chip text-[14px] cursor-pointer
                      {mult === m ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">{multNames[m]}</button
             >
           {/each}
@@ -216,7 +216,7 @@
               type="button"
               onclick={() => pick(`${mult}${n}`)}
               aria-label="{multNames[mult]} {n}"
-              class="h-10 bg-surface-key border border-line-key rounded-[8px] text-text font-display font-bold text-[18px] cursor-pointer"
+              class="h-10 bg-surface-key border border-line-key rounded-sm text-text font-display font-bold text-[18px] cursor-pointer"
               >{n}</button
             >
           {/each}
@@ -225,19 +225,19 @@
           <button
             type="button"
             onclick={() => pick('25')}
-            class="h-10 bg-[#1e3a2b] border border-[#2f5a42] rounded-[8px] text-text text-[14px] font-semibold cursor-pointer"
+            class="h-10 bg-[#1e3a2b] border border-[#2f5a42] rounded-sm text-text text-[14px] font-semibold cursor-pointer"
             >25 · Outer bull</button
           >
           <button
             type="button"
             onclick={() => pick('Bull')}
-            class="h-10 bg-[#4a1f1c] border border-[#6e2e2a] rounded-[8px] text-text text-[14px] font-semibold cursor-pointer"
+            class="h-10 bg-[#4a1f1c] border border-[#6e2e2a] rounded-sm text-text text-[14px] font-semibold cursor-pointer"
             >50 · Bull</button
           >
           <button
             type="button"
             onclick={() => pick('Miss')}
-            class="h-10 border border-line-key rounded-[8px] text-ink-2 text-[14px] font-semibold cursor-pointer">Miss · 0</button
+            class="h-10 border border-line-key rounded-sm text-ink-2 text-[14px] font-semibold cursor-pointer">Miss · 0</button
           >
         </div>
       {/if}

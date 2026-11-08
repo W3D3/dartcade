@@ -42,7 +42,7 @@
         {#if host}
           <button
             type="button"
-            class="ml-auto h-11 rounded-[10px] border-0 bg-accent px-5 font-display text-[18px] font-bold uppercase text-accent-fg cursor-pointer hover:bg-accent-hover"
+            class="ml-auto h-11 rounded-md border-0 bg-accent px-5 font-display text-[18px] font-bold uppercase text-accent-fg cursor-pointer hover:bg-accent-hover"
             onclick={onnext}>Next hole</button
           >
         {:else}

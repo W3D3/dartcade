@@ -350,7 +350,7 @@
 <svelte:window {onkeydown} />
 
 <div
-  class="h-full w-full {placing ? 'cursor-crosshair' : ''}"
+  class="size-full {placing ? 'cursor-crosshair' : ''}"
   role="application"
   aria-label="Hole canvas"
   {onpointerdown}

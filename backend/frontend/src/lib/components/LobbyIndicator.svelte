@@ -36,7 +36,7 @@
 </script>
 
 <!-- No overflow-hidden: the account menu opens upwards out of this box -->
-<div class="flex flex-col rounded-[12px] border bg-surface-1 {view || queue ? 'border-accent-line' : 'border-line'}">
+<div class="flex flex-col rounded-lg border bg-surface-1 {view || queue ? 'border-accent-line' : 'border-line'}">
   {#if queue}
     <QueueCard view={queue} />
   {:else if view}
@@ -48,11 +48,11 @@
       >
         <span class="flex items-center justify-between">
           <span class="inline-flex items-center gap-[7px] text-[11px] font-bold label-caps text-accent">
-            <span class="w-2 h-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none"></span>{view.tag}
+            <span class="size-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none"></span>{view.tag}
           </span>
           <ChevronRight size={16} class="text-text-muted" />
         </span>
-        <span class="font-display font-bold text-[22px] leading-none uppercase tracking-[0.02em] truncate">{view.name}</span>
+        <span class="font-display font-bold text-[22px] leading-none uppercase tracking-title truncate">{view.name}</span>
         <span class="flex items-center gap-2 min-w-0">
           {#if summary?.faces.length}<FaceStack faces={summary.faces} />{/if}
           <span class="text-[12px] text-text-muted truncate">{view.line}</span>
@@ -80,7 +80,7 @@
     </div>
   {/if}
   <div class="flex items-center gap-2 p-[8px_10px_8px_6px]">
-    <div class="flex-grow min-w-0"><AccountMenu placement="sidebar" /></div>
+    <div class="grow min-w-0"><AccountMenu placement="sidebar" /></div>
     <FriendsButton />
   </div>
 </div>

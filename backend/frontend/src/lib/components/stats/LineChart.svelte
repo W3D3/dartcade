@@ -60,11 +60,11 @@
   )
 </script>
 
-<div class="h-[200px] w-full sm:h-auto sm:aspect-[440/210]">
+<div class="h-[200px] w-full sm:h-auto sm:aspect-440/210">
   <Chart
     ssr
     bind:context
-    class="block h-full w-full"
+    class="block size-full "
     role="img"
     aria-label={label}
     tabindex={0}

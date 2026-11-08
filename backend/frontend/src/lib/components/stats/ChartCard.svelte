@@ -8,7 +8,7 @@
   const titleId = $derived(`${id ?? uid}-title`)
 </script>
 
-<section {id} aria-labelledby={titleId} class="card flex min-w-0 scroll-mt-4 flex-col gap-3 px-4 py-4 sm:px-5 sm:py-[18px]">
+<section {id} aria-labelledby={titleId} class="card flex min-w-0 scroll-mt-4 flex-col gap-3 p-4 sm:px-5 sm:py-[18px]">
   <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
     <h3 id={titleId} class="text-[15px] font-semibold">{title}</h3>
     {#if note}<span class="text-[12px] text-text-dim">{note}</span>{/if}

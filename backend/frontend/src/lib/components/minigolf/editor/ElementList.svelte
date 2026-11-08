@@ -28,7 +28,7 @@
           type="button"
           aria-current={isSelected(r.ref) || undefined}
           onclick={() => onselect(r.ref)}
-          class="flex w-full items-center justify-between gap-2 rounded-[8px] border-0 px-2 py-[6px] text-left text-[14px] text-text cursor-pointer
+          class="flex w-full items-center justify-between gap-2 rounded-sm border-0 px-2 py-[6px] text-left text-[14px] text-text cursor-pointer
                  {isSelected(r.ref) ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'}"
           ><span>{r.label}</span><span class="text-[13px] text-text-muted">{r.detail}</span></button
         >

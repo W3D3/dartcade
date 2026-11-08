@@ -6,4 +6,4 @@
   let { class: className = '' }: { class?: string } = $props()
 </script>
 
-<span aria-hidden="true" class={cn('block animate-pulse rounded-[8px] bg-surface-key motion-reduce:animate-none', className)}></span>
+<span aria-hidden="true" class={cn('block animate-pulse rounded-sm bg-surface-key motion-reduce:animate-none', className)}></span>

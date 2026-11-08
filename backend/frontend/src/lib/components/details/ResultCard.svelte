@@ -50,7 +50,7 @@
   aria-label="Result"
   class="grid {solo
     ? 'grid-cols-[1fr_auto]'
-    : 'grid-cols-2 md:grid-cols-[1fr_auto_1fr] max-md:items-start'} items-center gap-4 px-5 md:px-7 py-5 md:py-6 rounded-[18px] bg-surface-active border-2 border-accent"
+    : 'grid-cols-2 md:grid-cols-[1fr_auto_1fr] max-md:items-start'} items-center gap-4 p-5 md:px-7 md:py-6 rounded-panel bg-surface-active border-2 border-accent"
 >
   {@render side(sides[0], 'start')}
   <div class="flex flex-col items-center gap-2 {solo ? '' : 'max-md:order-last max-md:col-span-2'}">

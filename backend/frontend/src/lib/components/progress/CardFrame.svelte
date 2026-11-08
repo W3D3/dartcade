@@ -11,7 +11,7 @@
 {#if f}
   <span
     aria-hidden="true"
-    class="absolute -inset-[9px] rounded-full pointer-events-none {f.spin ? 'cos-spin' : ''}"
+    class="absolute inset-[-9px] rounded-full pointer-events-none {f.spin ? 'cos-spin' : ''}"
     style="background: {f.ring}; mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px))"
   ></span>
 {/if}

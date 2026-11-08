@@ -20,7 +20,7 @@
 
 <span class={cn(badgeVariants({ variant }), className)}>
   {#if variant === 'live'}
-    <span class="w-2 h-2 rounded-full bg-live shrink-0"></span>
+    <span class="size-2 rounded-full bg-live shrink-0"></span>
   {/if}
   {@render children?.()}
 </span>

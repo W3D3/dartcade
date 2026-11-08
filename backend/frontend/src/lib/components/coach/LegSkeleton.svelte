@@ -17,7 +17,7 @@
       <Skeleton class="h-4 w-72 max-w-full xl:w-96" />
       <Skeleton class="h-4 w-44" />
     </div>
-    <Skeleton class="h-11 w-36 rounded-[10px]" />
+    <Skeleton class="h-11 w-36 rounded-md" />
   </div>
 
   <div class="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(380px,40%)] xl:items-start xl:gap-5">
@@ -36,7 +36,7 @@
         <div class="mt-1 mb-2 flex flex-col gap-2"><Skeleton class="h-5 w-full" /><Skeleton class="h-5 w-3/4" /></div>
         {#each [0, 1, 2] as i (i)}
           <div class="flex items-center gap-3.5 border-t border-surface-paused py-3">
-            <Skeleton class="size-11 flex-none rounded-[10px]" />
+            <Skeleton class="size-11 flex-none rounded-md" />
             <span class="flex flex-1 flex-col gap-1.5"><Skeleton class="h-4 w-32" /><Skeleton class="h-3.5 w-2/3" /></span>
           </div>
         {/each}
@@ -48,7 +48,7 @@
         <div class="flex gap-1.5 xl:gap-2">
           {#each ['w-[58px]', 'w-[72px]', 'w-[60px]', 'w-[80px]'] as w (w)}<Skeleton class="h-8 rounded-full {w}" />{/each}
         </div>
-        {#each [0, 1, 2, 3, 4, 5] as i (i)}<Skeleton class="h-[62px] w-full rounded-[12px]" />{/each}
+        {#each [0, 1, 2, 3, 4, 5] as i (i)}<Skeleton class="h-[62px] w-full rounded-lg" />{/each}
       </div>
     </div>
 

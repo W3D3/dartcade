@@ -331,7 +331,7 @@
     type="button"
     onclick={() => runAction(action)}
     disabled={busy !== null || blocked}
-    class="flex items-center justify-center gap-[6px] h-11 rounded-[10px] text-[14px] font-semibold
+    class="flex items-center justify-center gap-[6px] h-11 rounded-md text-[14px] font-semibold
  border border-line-3 cursor-pointer transition-colors
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
   >
@@ -364,7 +364,7 @@
 {#snippet cell(label: string, value: import('svelte').Snippet)}
   <div class="bg-surface-1 px-4 py-[14px] flex flex-col gap-[6px] min-w-0">
     <dt class="text-[12px] label-caps text-text-dim">{label}</dt>
-    <dd class="text-[16px] font-semibold break-words">{@render value()}</dd>
+    <dd class="text-[16px] font-semibold wrap-break-word">{@render value()}</dd>
   </div>
 {/snippet}
 
@@ -374,8 +374,8 @@
       href={selected.bmUrl ?? `http://${selected.ip}`}
       target="_blank"
       rel="noopener noreferrer"
-      class="inline-flex items-center gap-[6px] font-mono text-[15px] !text-text underline decoration-line-3 underline-offset-4
-             transition-colors hover:!text-accent hover:decoration-accent"
+      class="inline-flex items-center gap-[6px] font-mono text-[15px] text-text! underline decoration-line-3 underline-offset-4
+             transition-colors hover:text-accent! hover:decoration-accent"
     >
       {bmHost(selected)}<ExternalLink size={12} />
     </a>
@@ -387,7 +387,7 @@
 {/snippet}
 {#snippet gamesCell()}—{/snippet}
 
-<div class="flex flex-grow flex-col gap-5 min-w-0">
+<div class="flex grow flex-col gap-5 min-w-0">
   {#if loaded && boards.length === 0}
     <BoardsEmpty
       onpair={(code: string) => {
@@ -410,7 +410,7 @@
       <!-- The selected board: its state and name, Play, and the facts about it -->
       <section
         aria-label="Selected board"
-        class="box-border p-[18px] md:p-6 rounded-[16px] bg-surface-panel border border-line flex flex-col gap-5"
+        class="box-border p-[18px] md:p-6 rounded-popover bg-surface-panel border border-line flex flex-col gap-5"
       >
         <div class="flex flex-wrap items-end gap-x-5 gap-y-4">
           <div class="flex flex-col gap-2 min-w-0 flex-1">
@@ -441,7 +441,7 @@
  font-display font-bold text-[36px] md:text-[52px] leading-[0.95] uppercase text-text"
               />
             {:else}
-              <h2 class="font-display font-bold text-[36px] md:text-[52px] leading-[0.95] tracking-[0.01em] uppercase truncate">
+              <h2 class="font-display font-bold text-[36px] md:text-[52px] leading-[0.95] tracking-hero uppercase truncate">
                 {selected.name}
               </h2>
             {/if}
@@ -450,7 +450,7 @@
             <button
               type="button"
               onclick={() => push(`/?board=${selectedId}`)}
-              class="flex-grow sm:flex-grow-0 h-[52px] px-5 whitespace-nowrap rounded-[12px] border-0 bg-text text-accent-fg text-[16px]
+              class="grow sm:grow-0 h-[52px] px-5 whitespace-nowrap rounded-lg border-0 bg-text text-accent-fg text-[16px]
  font-semibold cursor-pointer transition-opacity hover:opacity-90"
             >
               Play on this board
@@ -459,7 +459,7 @@
               type="button"
               onclick={startEdit}
               aria-label="Rename board"
-              class="size-[52px] shrink-0 flex items-center justify-center rounded-[12px] border border-line-3 bg-surface-panel
+              class="size-[52px] shrink-0 flex items-center justify-center rounded-lg border border-line-3 bg-surface-panel
                      text-text cursor-pointer transition-colors hover:bg-surface-active"
             >
               <Pencil size={16} />
@@ -468,13 +468,13 @@
         </div>
 
         {#if !selected.online}
-          <p class="px-[14px] py-3 rounded-[12px] bg-surface-inset text-[14px] leading-[1.45] text-ink-2">
+          <p class="px-[14px] py-3 rounded-lg bg-surface-inset text-[14px] leading-[1.45] text-ink-2">
             Bridge not reachable. Check that it is running on the computer next to the Board Manager. Settings below are saved and apply as
             soon as it is back.
           </p>
         {/if}
 
-        <dl class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-[12px] overflow-hidden">
+        <dl class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-lg overflow-hidden">
           {@render cell('Board Manager', bmCell)}
           {@render cell('Bridge', bridgeCell)}
           {@render cell('Games here', gamesCell)}
@@ -499,7 +499,7 @@
                     type="button"
                     onclick={updateBridge}
                     disabled={busy !== null}
-                    class="shrink-0 flex items-center gap-[6px] h-11 px-4 rounded-[10px] text-[14px] font-semibold border border-line-3
+                    class="shrink-0 flex items-center gap-[6px] h-11 px-4 rounded-md text-[14px] font-semibold border border-line-3
  text-text cursor-pointer transition-colors hover:bg-surface-active
  disabled:opacity-35 disabled:cursor-not-allowed"
                   >
@@ -537,7 +537,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {#each [0, 1, 2] as camIndex (camIndex)}
                 <figure
-                  class="relative aspect-[4/3] sm:aspect-auto sm:h-[150px] rounded-[12px] overflow-hidden border border-line bg-surface-inset"
+                  class="relative aspect-4/3 sm:aspect-auto sm:h-[150px] rounded-lg overflow-hidden border border-line bg-surface-inset"
                 >
                   {#if selected.online}
                     {#if camOk[camIndex] === undefined}
@@ -547,7 +547,7 @@
                     <img
                       src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
                       alt="Camera {camIndex + 1}"
-                      class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
+                      class="absolute inset-0 size-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
                       onload={() => {
                         camOk[camIndex] = true
                       }}
@@ -557,7 +557,7 @@
                     />
                   {/if}
                   <figcaption
-                    class="absolute left-[10px] bottom-[10px] flex items-center gap-[7px] px-[9px] py-1 rounded-[6px]
+                    class="absolute left-[10px] bottom-[10px] flex items-center gap-[7px] px-[9px] py-1 rounded-chip
                            font-mono text-[11px] text-ink-2 {camOk[camIndex] ? 'bg-bg/75' : ''}"
                   >
                     CAM {camIndex + 1}
@@ -586,7 +586,7 @@
               bind:this={eventsEl}
               role="log"
               aria-live="polite"
-              class="h-[236px] overflow-y-auto scrollbar-themed box-border px-4 py-[14px] rounded-[12px]
+              class="h-[236px] overflow-y-auto scrollbar-themed box-border px-4 py-[14px] rounded-lg
                      border border-line bg-bg-deep font-mono text-[13px] leading-[1.8]"
             >
               {#each events as ev, i (i)}
@@ -626,7 +626,7 @@
                 </p>
                 <a
                   href="#/settings/lights?board={selected.id}"
-                  class="self-start h-11 px-4 inline-flex items-center rounded-[10px] border border-line-3 text-text text-[14px]
+                  class="self-start h-11 px-4 inline-flex items-center rounded-md border border-line-3 text-text text-[14px]
                          font-semibold no-underline transition-colors hover:bg-surface-active">Add WLED lights</a
                 >
               {:else}
@@ -657,7 +657,7 @@
                 onclick={() => {
                   confirmUnpair = true
                 }}
-                class="h-11 px-5 rounded-[10px] border border-danger-line text-danger-text text-[15px]
+                class="h-11 px-5 rounded-md border border-danger-line text-danger-text text-[15px]
  font-semibold cursor-pointer transition-colors hover:bg-surface-active"
               >
                 Unpair

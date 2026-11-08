@@ -30,11 +30,11 @@
   aria-checked={checked}
   {onclick}
   {disabled}
-  class="min-h-11 disabled:opacity-50 disabled:cursor-default flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer
+  class="min-h-11 disabled:opacity-50 disabled:cursor-default flex items-center gap-[10px] px-[10px] border-0 rounded-sm text-left cursor-pointer
  {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
 >
   {@render leading?.()}
-  <span class="flex flex-col gap-px flex-grow">
+  <span class="flex flex-col gap-px grow">
     <span class="text-[14px] md:text-[15px] {detail ? 'font-semibold' : ''}">{label}</span>
     {#if detail}<span class="text-[12px] text-text-muted">{detail}</span>{/if}
   </span>

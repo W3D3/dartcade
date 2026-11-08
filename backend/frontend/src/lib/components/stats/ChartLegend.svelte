@@ -11,9 +11,9 @@
   {#each items as item (item.label)}
     <li class="flex items-center gap-1.5">
       {#if item.mark === 'box'}
-        <span class="h-3 w-3 rounded-[2px] {TONE_BG[item.tone]}" aria-hidden="true"></span>
+        <span class="size-3 rounded-bar {TONE_BG[item.tone]}" aria-hidden="true"></span>
       {:else if item.mark === 'line'}
-        <span class="h-[3px] w-3 rounded-[2px] {TONE_BG[item.tone]}" aria-hidden="true"></span>
+        <span class="h-[3px] w-3 rounded-bar {TONE_BG[item.tone]}" aria-hidden="true"></span>
       {:else}
         <span class="w-3 border-t-2 border-dashed border-text-muted" aria-hidden="true"></span>
       {/if}

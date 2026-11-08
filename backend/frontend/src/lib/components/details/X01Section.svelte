@@ -72,12 +72,12 @@
           {/if}
 
           {#if x01}
-            <div role="group" aria-label="Leg" class="flex flex-wrap gap-1 p-1 bg-bg rounded-[10px]">
+            <div role="group" aria-label="Leg" class="flex flex-wrap gap-1 p-1 bg-bg rounded-md">
               <button
                 type="button"
                 aria-pressed={legSel === null}
                 onclick={() => (legSel = null)}
-                class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-[7px] text-[15px] cursor-pointer
+                class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-segment text-[15px] cursor-pointer
  {legSel === null ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Match</button
               >
               {#each legs as l (l)}
@@ -85,7 +85,7 @@
                   type="button"
                   aria-pressed={l === legSel}
                   onclick={() => (legSel = l)}
-                  class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-[7px] text-[15px] cursor-pointer
+                  class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-segment text-[15px] cursor-pointer
  {l === legSel ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Leg {l + 1}</button
                 >
               {/each}
@@ -105,7 +105,7 @@
         {#if legSel === null}
           {#each legs as l (l)}
             <div class="flex flex-col gap-4 min-w-0">
-              <h3 class="font-display font-bold text-[14px] tracking-[0.06em] uppercase text-text-dim">Leg {l + 1}</h3>
+              <h3 class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-dim">Leg {l + 1}</h3>
               <X01Legs {detail} {party} leg={l} {highlight} />
             </div>
           {/each}
@@ -123,7 +123,7 @@
       {#if view === 'legs'}
         {#each legSel === null ? legs : [legSel] as l (l)}
           <div class="flex flex-col gap-4 min-w-0">
-            {#if legSel === null}<h3 class="font-display font-bold text-[14px] tracking-[0.06em] uppercase text-text-dim">
+            {#if legSel === null}<h3 class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-dim">
                 Leg {l + 1}
               </h3>{/if}
             <X01LegStats {detail} leg={l} />

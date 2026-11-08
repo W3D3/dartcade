@@ -41,7 +41,7 @@
       {#each MODES as m (m.value)}
         <RadioGroup.Item
           value={m.value}
-          class="flex flex-col gap-1 text-left p-[14px] rounded-[12px] border-[1.5px] border-line-2 bg-surface-panel cursor-pointer
+          class="flex flex-col gap-1 text-left p-[14px] rounded-lg border-[1.5px] border-line-2 bg-surface-panel cursor-pointer
                  transition-colors hover:border-line-popover
                  data-[state=checked]:border-accent data-[state=checked]:bg-card-active"
         >

@@ -20,7 +20,7 @@
 
 <aside
   aria-label="This session"
-  class="w-[280px] xl:w-[360px] shrink-0 box-border px-5 py-5 xl:px-6 xl:py-[22px] rounded-[18px] border border-line bg-surface-1 flex flex-col gap-[18px] min-h-0 overflow-y-auto"
+  class="w-[280px] xl:w-[360px] shrink-0 box-border p-5 xl:px-6 xl:py-[22px] rounded-panel border border-line bg-surface-1 flex flex-col gap-[18px] min-h-0 overflow-y-auto"
 >
   <div class="flex items-baseline justify-between">
     <h2 class="font-display font-bold text-[30px] uppercase">This session</h2>
@@ -43,7 +43,7 @@
     {#if after > 0}<span class="text-[12px] text-line-strong pt-[6px]">{plural(after, 'more try', 'more tries')} after this one</span>{/if}
   </div>
   {#if $best}
-    <div class="mt-auto px-4 py-[14px] rounded-[12px] bg-surface-active flex items-center justify-between">
+    <div class="mt-auto px-4 py-[14px] rounded-lg bg-surface-active flex items-center justify-between">
       <span class="text-[14px] text-ink-2">Highest target ever</span>
       <span class="font-display font-bold text-[30px]"
         >{$best.value} <span class="font-sans font-normal text-[13px] text-text-dim">· {dayMonth(new Date($best.finishedAt))}</span></span

@@ -11,10 +11,10 @@
 
 {#if game}
   <div
-    class="flex items-center gap-3 min-h-11 px-4 md:h-11 md:px-6 flex-shrink-0 border-b border-[#2a3a18]
+    class="flex items-center gap-3 min-h-11 px-4 md:h-11 md:px-6 shrink-0 border-b border-[#2a3a18]
               bg-[#161d10]"
   >
-    <span class="w-[7px] h-[7px] rounded-full bg-accent shrink-0 animate-pulse"></span>
+    <span class="size-[7px] rounded-full bg-accent shrink-0 animate-pulse"></span>
     <span class="text-[13px] text-text-muted shrink-0">Game in progress</span>
     {#if game.lobbyName}<span class="hidden sm:inline text-[13px] font-semibold text-text max-w-[220px] truncate">{game.lobbyName}</span
       >{/if}

@@ -77,7 +77,7 @@
         : portrait
           ? 'flex-1 p-[18px] gap-3 lg:p-7 lg:gap-[14px]'
           : 'flex-1 p-[18px] gap-3 xl:p-7 xl:gap-[14px]'
-    } min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden ${playerCard(active, tone)}`,
+    } min-w-0 min-h-0 box-border rounded-panel flex flex-col overflow-hidden ${playerCard(active, tone)}`,
     className,
   )}
 >

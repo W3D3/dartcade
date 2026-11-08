@@ -28,7 +28,7 @@
   aria-disabled={tab.disabled ? 'true' : undefined}
   aria-label={tab.aria}
   role={tab.disabled ? 'link' : undefined}
-  class="relative flex flex-col items-center justify-center gap-1 rounded-[10px] no-underline text-[11px]
+  class="relative flex flex-col items-center justify-center gap-1 rounded-md no-underline text-[11px]
          {on
     ? 'bg-surface-paused text-text font-semibold'
     : tab.disabled
@@ -36,7 +36,7 @@
       : 'text-text-muted font-medium'} {className}"
 >
   {#if tab.icon === 'live' && !tab.disabled}
-    <span class="absolute top-[10px] left-1/2 ml-[9px] w-[7px] h-[7px] rounded-full bg-live" aria-hidden="true"></span>
+    <span class="absolute top-[10px] left-1/2 ml-[9px] size-[7px] rounded-full bg-live" aria-hidden="true"></span>
   {/if}
   {#if tab.badge}
     <NavBadge count={tab.badge} label={tab.badgeLabel ?? ''} class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1" />

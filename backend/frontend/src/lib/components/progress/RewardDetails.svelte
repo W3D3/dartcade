@@ -92,8 +92,8 @@
     {#each perks as p (p.id)}
       {@const has = unlocked.includes(p.id)}
       {@const on = has && isWorn(p, worn)}
-      <li class="flex items-center gap-3 md:gap-4 rounded-[12px] border border-line-2 bg-bg/40 px-3 py-3 md:px-[14px]">
-        <div class="w-[84px] md:w-[120px] h-[60px] shrink-0 rounded-[8px] bg-bg flex items-center justify-center overflow-hidden">
+      <li class="flex items-center gap-3 md:gap-4 rounded-lg border border-line-2 bg-bg/40 p-3 md:px-[14px]">
+        <div class="w-[84px] md:w-[120px] h-[60px] shrink-0 rounded-sm bg-bg flex items-center justify-center overflow-hidden">
           <!-- Zoomed 1.5×: the cap is the box's width over 1.5, so a long title truncates instead of spilling out -->
           <div class="pv flex items-center justify-center max-w-[52px] md:max-w-[76px] {has ? '' : 'locked'}">
             <PerkPreview perk={p} {colors} />
@@ -101,7 +101,7 @@
         </div>
         <div class="flex-1 min-w-0 flex flex-col gap-[2px]">
           <span class="text-[15px] font-semibold truncate">{p.name}</span>
-          <span class="text-[12px] uppercase tracking-[0.06em] text-text-muted">{KIND_LABEL[p.kind].one}</span>
+          <span class="text-[12px] uppercase tracking-wordmark text-text-muted">{KIND_LABEL[p.kind].one}</span>
         </div>
         {#if on}
           <span

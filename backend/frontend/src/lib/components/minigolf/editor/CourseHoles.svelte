@@ -44,17 +44,14 @@
     <span class="text-[13px] text-text-muted">{plural(totals.holes, 'hole')} · par {totals.par} · ≈ {totals.minutes} min</span>
   </div>
   <ReorderStatus id={hintId} hint="Arrow up or down moves a hole one place." {announcement} />
-  <ol class="flex flex-col gap-[6px] min-h-[56px] rounded-[12px]" data-sortable-zone="course">
+  <ol class="flex flex-col gap-[6px] min-h-[56px] rounded-lg" data-sortable-zone="course">
     {#each items as item, i (item.id)}
       {@const hole = item.row && holeOf(item.row)}
-      <li
-        data-sortable-id={item.id}
-        class="relative flex items-center gap-3 py-2 pl-1 pr-2 rounded-[12px] bg-surface-2 border border-line-2"
-      >
+      <li data-sortable-id={item.id} class="relative flex items-center gap-3 py-2 pl-1 pr-2 rounded-lg bg-surface-2 border border-line-2">
         <DragHandle name={item.name} describedby={hintId} />
         <span class="w-6 text-center font-display font-bold text-[18px] text-text-muted">{i + 1}</span>
         <HoleThumb hole={hole ?? null} />
-        <div class="flex min-w-0 flex-grow flex-col">
+        <div class="flex min-w-0 grow flex-col">
           <span class="truncate text-[15px] font-semibold">{item.name}</span>
           <span class="truncate text-[12px] text-text-muted">{hole ? holeTags(hole) || 'flat' : 'This hole is gone'}</span>
         </div>
@@ -91,7 +88,7 @@
         </PopoverMenu>
       </li>
     {:else}
-      <li class="p-4 text-[14px] text-text-muted border border-dashed border-line-dashed rounded-[12px]">No holes yet.</li>
+      <li class="p-4 text-[14px] text-text-muted border border-dashed border-line-dashed rounded-lg">No holes yet.</li>
     {/each}
   </ol>
   <div class="flex flex-wrap items-center gap-3">

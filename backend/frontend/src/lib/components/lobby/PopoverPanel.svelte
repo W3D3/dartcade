@@ -46,8 +46,8 @@
     onOpenAutoFocus={noFocusMove}
     onCloseAutoFocus={noFocusMove}
     style="width: {align === 'stretch' ? 'var(--bits-popover-anchor-width)' : width ? `${width}px` : 'auto'}"
-    class="z-[60] box-border max-w-[calc(100vw-16px)] max-h-[var(--bits-popover-content-available-height)] p-[6px]
-           rounded-[12px] bg-surface-inset border border-line-popover overflow-y-auto
+    class="z-60 box-border max-w-[calc(100vw-16px)] max-h-(--bits-popover-content-available-height) p-[6px]
+           rounded-lg bg-surface-inset border border-line-popover overflow-y-auto
            shadow-[0_18px_48px_rgba(0,0,0,0.55)] flex flex-col gap-[2px] outline-none"
   >
     {@render children()}

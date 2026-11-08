@@ -172,7 +172,7 @@
       }}
       orientation="horizontal"
       aria-label={label}
-      class="flex gap-1 rounded-[10px] bg-surface-inset p-1"
+      class="flex gap-1 rounded-md bg-surface-inset p-1"
     >
       {#each items as it (it.value)}
         <RadioGroupItem value={it.value} variant="segment">{it.label}</RadioGroupItem>
@@ -192,7 +192,7 @@
         // A refused edit leaves the hole as it was: show its value, not what was typed
         e.currentTarget.value = String(Math.round(value))
       }}
-      class="h-9 w-full rounded-[8px] border border-line-2 bg-bg px-2 text-[14px] text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
+      class="h-9 w-full rounded-sm border border-line-2 bg-bg px-2 text-[14px] text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
     />
   </label>
 {/snippet}

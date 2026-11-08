@@ -16,7 +16,7 @@
   {onclick}
   disabled={busy || disabled}
   class="h-[52px] md:h-[60px] px-7 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
-         rounded-[10px] font-display font-bold text-[20px] md:text-[22px] tracking-[0.08em] uppercase
+         rounded-md font-display font-bold text-[20px] md:text-[22px] tracking-cta uppercase
          border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 >
   {busy ? 'Opening…' : label}

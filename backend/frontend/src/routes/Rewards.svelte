@@ -62,16 +62,16 @@
 
 <Layout title="Rewards">
   <main
-    class="flex flex-grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-6 pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
+    class="flex grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-6 pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
   >
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div>
         <a href="#/progress" class="text-[12px] label-caps text-text-dim no-underline hover:text-text">Progress</a>
-        <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Rewards</h1>
+        <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-title">Rewards</h1>
       </div>
       <a
         href="#/profile/customise"
-        class="order-last md:order-none rounded-[10px] border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-accent-fg no-underline hover:bg-accent-hover"
+        class="order-last md:order-0 rounded-md border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-accent-fg no-underline hover:bg-accent-hover"
         >Customise your card</a
       >
       <div class="flex flex-wrap items-center gap-x-[18px] gap-y-1 text-[13px] text-text-muted">
@@ -92,7 +92,7 @@
       <div class="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <section
           aria-label="Your level"
-          class="flex items-center gap-5 box-border rounded-[14px] border border-line-2 bg-surface-2 px-[22px] py-5"
+          class="flex items-center gap-5 box-border rounded-card border border-line-2 bg-surface-2 px-[22px] py-5"
         >
           <span class="font-display font-bold text-[72px] md:text-[88px] leading-[0.8]">{level}</span>
           <div class="flex-1 min-w-0 flex flex-col gap-[10px]">
@@ -110,7 +110,7 @@
         {#if next}
           <section
             aria-label="Next unlock"
-            class="flex flex-col gap-2 box-border rounded-[14px] border border-line-2 bg-surface-2 px-[22px] py-5"
+            class="flex flex-col gap-2 box-border rounded-card border border-line-2 bg-surface-2 px-[22px] py-5"
           >
             <span class="text-[12px] label-caps text-text-dim">Next · level {next.level}</span>
             <span class="font-display font-bold text-[28px] leading-[1.05] uppercase tracking-[0.03em]">{next.label}</span>
@@ -118,7 +118,7 @@
           </section>
         {/if}
         {#if big}
-          <section aria-label="Next big reward" class="tier-ten flex flex-col gap-2 box-border rounded-[14px] border px-[22px] py-5">
+          <section aria-label="Next big reward" class="tier-ten flex flex-col gap-2 box-border rounded-card border px-[22px] py-5">
             <span class="text-[12px] label-caps text-accent">Next big one · level {big.level}</span>
             <span class="font-display font-bold text-[28px] leading-[1.05] uppercase tracking-[0.03em]">{big.label}</span>
             <span class="text-[13px] text-text-muted">{big.kinds}</span>
@@ -129,7 +129,7 @@
       {#each tiers as tier (tier.label)}
         <section aria-label={tier.label} class="flex flex-col gap-[10px]">
           <div class="flex items-center gap-[14px]">
-            <h2 class="font-display font-bold text-[22px] uppercase tracking-[0.06em] whitespace-nowrap">{tier.label}</h2>
+            <h2 class="font-display font-bold text-[22px] uppercase tracking-wordmark whitespace-nowrap">{tier.label}</h2>
             <div aria-hidden="true" class="flex-1 h-1 rounded-full bg-surface-paused overflow-hidden">
               <div class="h-full bg-accent" style="width: {tier.got * 10}%"></div>
             </div>
@@ -146,7 +146,7 @@
                   onclick={() => openLevel(l)}
                   use:scrollTo={l.level === target}
                   aria-label="Level {l.level}: {l.label}, {stateOf(l.level)}"
-                  class="cell group relative box-border w-full min-w-0 text-left cursor-pointer flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 px-3 py-2
+                  class="cell group relative box-border w-full min-w-0 text-left cursor-pointer flex items-center gap-3 rounded-lg border border-line-2 bg-surface-2 px-3 py-2
                        sm:h-[162px] sm:flex-col sm:items-stretch sm:gap-[6px] sm:px-[10px] sm:pt-[10px] sm:pb-3
                        {tierCls ? `tier-${tierCls}` : ''} {l.level === level ? 'here' : ''} {l.level > level ? 'locked' : ''} {l.level ===
                   target
@@ -157,7 +157,7 @@
                     <span class="font-display font-bold text-[18px] leading-none">{l.level}</span>
                     <span class="ml-auto flex">
                       {#if l.level === level}
-                        <span class="rounded-full bg-accent px-[6px] py-[2px] text-[10px] font-bold tracking-[0.06em] text-accent-fg"
+                        <span class="rounded-full bg-accent px-[6px] py-[2px] text-[10px] font-bold tracking-wordmark text-accent-fg"
                           >YOU</span
                         >
                       {:else if l.level < level}
@@ -177,8 +177,8 @@
                       >{/if}
                   </span>
                   <span class="flex-1 min-w-0 flex flex-col gap-[2px] sm:contents">
-                    <span class="text-[13px] font-semibold leading-[1.25] line-clamp-2">{l.label}</span>
-                    <span class="block sm:mt-auto text-[11px] uppercase tracking-[0.06em] text-text-muted truncate">{l.kinds}</span>
+                    <span class="text-kicker/tight font-semibold line-clamp-2">{l.label}</span>
+                    <span class="block sm:mt-auto text-[11px] uppercase tracking-wordmark text-text-muted truncate">{l.kinds}</span>
                   </span>
                 </button>
               </li>
@@ -189,7 +189,7 @@
 
       <section aria-label="Off the track" class="flex flex-col gap-[10px]">
         <div class="flex flex-wrap items-baseline gap-x-[14px] gap-y-1">
-          <h2 class="font-display font-bold text-[22px] uppercase tracking-[0.06em]">Off the track</h2>
+          <h2 class="font-display font-bold text-[22px] uppercase tracking-wordmark">Off the track</h2>
           <span class="text-[13px] text-text-muted">Earned with your day streak and in ranked, not by level</span>
         </div>
         <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
@@ -200,7 +200,7 @@
                 type="button"
                 onclick={() => openOff(o, got)}
                 aria-label="{o.name}: {o.when}, {got ? 'unlocked' : 'locked'}"
-                class="cell group box-border w-full h-full text-left cursor-pointer flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 p-3 {got
+                class="cell group box-border size-full text-left cursor-pointer flex items-center gap-3 rounded-lg border border-line-2 bg-surface-2 p-3 {got
                   ? ''
                   : 'locked'}"
               >

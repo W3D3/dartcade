@@ -37,9 +37,7 @@
   {#each visits as v (v.n)}
     {@const sel = v.n === selected}
     <li
-      class="flex flex-col gap-3 rounded-[12px] border {sel
-        ? 'border-checkout-line bg-card-active'
-        : 'border-surface-paused bg-surface-panel'}"
+      class="flex flex-col gap-3 rounded-lg border {sel ? 'border-checkout-line bg-card-active' : 'border-surface-paused bg-surface-panel'}"
     >
       <button
         type="button"

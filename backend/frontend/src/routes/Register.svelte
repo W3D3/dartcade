@@ -62,7 +62,7 @@
   <AuthPanel variant="register" />
   <AuthHero />
 
-  <main class="flex flex-grow md:items-center md:justify-center">
+  <main class="flex grow md:items-center md:justify-center">
     <form
       onsubmit={e => {
         e.preventDefault()
@@ -72,7 +72,7 @@
     >
       <div class="flex flex-col gap-[14px]">
         <StepBars step={1} label="Account" />
-        <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+        <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
           Create account
         </h1>
       </div>

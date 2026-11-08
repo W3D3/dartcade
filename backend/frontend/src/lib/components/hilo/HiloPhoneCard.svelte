@@ -36,12 +36,12 @@
   <PhoneCardShell {who} label="{name}, throwing, {lives}" pill="throwing" seat={null} class="gap-[10px]">
     {#snippet aside()}<span class="ml-auto"><Hearts lives={s.lives} total={game.cfg.lives} size="w-[26px] h-[26px]" /></span>{/snippet}
     <div class="flex items-baseline justify-between gap-[10px]">
-      <span class="flex flex-col gap-[1px]">
+      <span class="flex flex-col gap-px">
         <span class="text-[10px] label-caps text-text-muted">Needs</span>
         <span class="font-display font-bold text-[26px] leading-none text-accent">{needsLine(game)}</span>
       </span>
       {#if last}
-        <span class="flex flex-col items-end gap-[1px] min-w-0">
+        <span class="flex flex-col items-end gap-px min-w-0">
           <span class="text-[10px] label-caps text-text-muted">Last visit</span>
           <span class="text-[13px] whitespace-nowrap {lost ? 'text-live-text' : 'text-accent'}">{outcomeText(last)}</span>
         </span>
@@ -51,7 +51,7 @@
 {:else}
   <section
     aria-label="{name}, {sub ? `${sub}, ` : ''}{lives}"
-    class="shrink-0 h-[58px] box-border px-[14px] rounded-[12px] flex items-center gap-[10px] {playerCard(
+    class="shrink-0 h-[58px] box-border px-[14px] rounded-lg flex items-center gap-[10px] {playerCard(
       false,
       justLost ? 'lost' : null,
     )} {s.out ? 'opacity-60' : ''}"

@@ -38,7 +38,7 @@
 {#if $hasBoards === false && !hidden}
   <aside
     aria-label="Connect a board"
-    class="relative box-border p-[14px] rounded-[12px] border border-accent-line-strong flex gap-[10px]
+    class="relative box-border p-[14px] rounded-lg border border-accent-line-strong flex gap-[10px]
            {compact ? 'flex-row flex-wrap items-center pr-10' : 'flex-col'}
            bg-[linear-gradient(160deg,var(--color-accent-tint)_0%,var(--color-surface-drop)_70%)]"
   >
@@ -47,17 +47,17 @@
       aria-label="Hide for now"
       title="Hide for now"
       onclick={hide}
-      class="absolute top-[6px] right-[6px] w-8 h-8 flex items-center justify-center rounded-sm border-0 text-text-dim cursor-pointer hover:text-text hover:bg-surface-hover"
+      class="absolute top-[6px] right-[6px] size-8 flex items-center justify-center rounded-sm border-0 text-text-dim cursor-pointer hover:text-text hover:bg-surface-hover"
     >
       <X size={14} strokeWidth={2.2} />
     </button>
     <span
-      class="w-[38px] h-[38px] shrink-0 box-border flex items-center justify-center rounded-[10px] bg-accent-tint border border-accent-line-strong"
+      class="size-[38px] shrink-0 box-border flex items-center justify-center rounded-md bg-accent-tint border border-accent-line-strong"
     >
       <Target size={22} strokeWidth={1.8} class="text-accent" />
     </span>
     <span class="flex flex-col gap-[10px] {compact ? 'flex-1 min-w-[200px] gap-1' : ''}">
-      <span class="font-display font-bold text-[21px] leading-none uppercase tracking-[0.02em]">Connect your board</span>
+      <span class="font-display font-bold text-[21px] leading-none uppercase tracking-title">Connect your board</span>
       <span class="text-[13px] leading-[1.45] text-ink-2"
         >Every dart scores itself. Play friends on their own boards and unlock ranked.</span
       >
@@ -66,7 +66,7 @@
       href="#/settings/boards?pair"
       class="{compact
         ? 'px-4 max-sm:w-full'
-        : ''} h-10 flex items-center justify-center gap-[6px] rounded-[10px] bg-accent text-accent-fg text-[14px] font-bold no-underline hover:bg-accent-hover"
+        : ''} h-10 flex items-center justify-center gap-[6px] rounded-md bg-accent text-accent-fg text-[14px] font-bold no-underline hover:bg-accent-hover"
     >
       Connect a board<ChevronRight size={15} strokeWidth={2.4} />
     </a>

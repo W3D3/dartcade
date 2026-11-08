@@ -60,7 +60,7 @@
 </script>
 
 <div
-  class="h-full min-h-0 grid grid-rows-[48px_minmax(0,1fr)_48px] md:grid-rows-[64px_minmax(0,1fr)_64px] gap-px bg-line-2 border border-line-2 rounded-[12px] md:rounded-[14px] overflow-hidden select-none"
+  class="h-full min-h-0 grid grid-rows-[48px_minmax(0,1fr)_48px] md:grid-rows-[64px_minmax(0,1fr)_64px] gap-px bg-line-2 border border-line-2 rounded-lg md:rounded-card overflow-hidden select-none"
 >
   <!-- Multiplier tabs, bull, outer bull -->
   <div class="grid grid-cols-5 gap-px">
@@ -72,7 +72,7 @@
         class="{cell} relative text-[14px] md:text-[17px] font-semibold {mult === o.m ? 'text-text' : 'text-text-muted'}"
       >
         {o.label}
-        {#if mult === o.m}<span class="absolute left-0 right-0 bottom-0 h-[3px] bg-accent" aria-hidden="true"></span>{/if}
+        {#if mult === o.m}<span class="absolute inset-x-0 bottom-0 h-[3px] bg-accent" aria-hidden="true"></span>{/if}
       </button>
     {/each}
     <button
@@ -132,7 +132,7 @@
       disabled={full}
       aria-label="Miss"
       onclick={() => special({ name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 })}
-      class="{cell} font-display font-bold text-[24px] md:text-[30px] uppercase tracking-[0.04em] text-text disabled:opacity-40"
+      class="{cell} font-display font-bold text-[24px] md:text-[30px] uppercase tracking-section text-text disabled:opacity-40"
     >
       Miss
     </button>

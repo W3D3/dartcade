@@ -84,7 +84,7 @@
           <ul>
             {#each searches as s (s.id)}
               <li class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-[22px] py-3 last:border-b-0">
-                <span class="w-[70px] shrink-0 font-display text-[20px] font-bold uppercase tracking-[0.02em]">{s.mode}</span>
+                <span class="w-[70px] shrink-0 font-display text-[20px] font-bold uppercase tracking-title">{s.mode}</span>
                 <span class="flex min-w-0 flex-1 basis-[200px] flex-col text-[14px]">
                   <span class="font-semibold text-text">{s.players.map(p => p.name).join(' + ')}</span>
                   <span class="text-[13px] text-text-muted">

@@ -63,7 +63,7 @@
   height={size}
   role="img"
   aria-label={rank ? rank.name : 'Placement'}
-  class="block flex-shrink-0 overflow-visible"
+  class="block shrink-0 overflow-visible"
   style:filter={glowFilter}
 >
   {#if !rank || !style}

@@ -491,8 +491,8 @@
   </div>
 {:else}
   <div
-    class="p-4 border border-dashed border-line-dashed rounded-[10px] text-[14px]
-              leading-[1.5] text-text-muted"
+    class="p-4 border border-dashed border-line-dashed rounded-md text-label/normal
+               text-text-muted"
   >
     [{GAME_MODES.find(m => m.id === gameId)?.name ?? gameId} options — rules and settings to be defined]
   </div>

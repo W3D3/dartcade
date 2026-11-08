@@ -24,7 +24,7 @@
 <div
   role="group"
   aria-label={label}
-  class="flex w-fit rounded-[10px] border border-line bg-surface-panel {size === 'sm' ? 'p-0.5' : 'p-[3px]'}"
+  class="flex w-fit rounded-md border border-line bg-surface-panel {size === 'sm' ? 'p-0.5' : 'p-[3px]'}"
 >
   {#each items as s (s.id)}
     {#if s.href}

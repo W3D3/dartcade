@@ -40,7 +40,7 @@
     class="grid gap-x-3 gap-y-[6px] items-end grid-cols-1 {chalkboard ? '[@media(min-height:741px)]:grid-cols-[minmax(0,1fr)_150px]' : ''}"
   >
     <div class="flex flex-col gap-[6px] min-w-0">
-      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-[-0.02em] tabular-nums"
+      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-score tabular-nums"
         ><RollingNumber {...x01Roll(p)} /></span
       >
       {#if !p.opened}<span class="text-[12px] label-caps text-text-muted">Needs to open</span>{/if}

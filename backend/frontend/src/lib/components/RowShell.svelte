@@ -46,7 +46,7 @@
 <div class="@container h-full min-h-0">
   <section
     aria-label={label ?? `${name}, ${active ? 'throwing' : 'waiting'}`}
-    class="h-full min-h-0 box-border rounded-[16px] px-[18px] gap-4 xl:px-6 xl:gap-5 grid items-center max-xl:content-center overflow-hidden
+    class="h-full min-h-0 box-border rounded-popover px-[18px] gap-4 xl:px-6 xl:gap-5 grid items-center max-xl:content-center overflow-hidden
          {className} {playerCard(active, tone)}"
   >
     <div class="flex flex-col gap-[10px] min-w-0">
@@ -55,7 +55,7 @@
           name={who.name}
           face={who.face}
           tone={active ? 'accent' : 'default'}
-          class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px] {tone === 'out' ? 'opacity-50' : ''}"
+          class="size-[34px]  text-[14px] xl:size-10  xl:text-[17px] {tone === 'out' ? 'opacity-50' : ''}"
         />
         <PlayerName {name} {seat} nameClass="text-[18px] xl:text-[21px] {nameTone(active, tone)}" youClass="text-[13px]" gap="gap-[2px]" />
       </span>

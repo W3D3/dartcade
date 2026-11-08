@@ -28,13 +28,13 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="font-display font-bold text-[24px] md:text-[32px] leading-none uppercase">Final marks</h2>
       {#if legs.length > 1}
-        <div role="group" aria-label="Leg" class="flex flex-wrap gap-1 p-1 bg-bg rounded-[10px]">
+        <div role="group" aria-label="Leg" class="flex flex-wrap gap-1 p-1 bg-bg rounded-md">
           {#each legs as l (l.leg)}
             <button
               type="button"
               aria-pressed={l.leg === current}
               onclick={() => (legSel = l.leg)}
-              class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-[7px] text-[15px] cursor-pointer
+              class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-segment text-[15px] cursor-pointer
  {l.leg === current ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Leg {l.leg + 1}</button
             >
           {/each}

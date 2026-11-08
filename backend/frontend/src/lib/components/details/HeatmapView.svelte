@@ -68,7 +68,7 @@
       {#each sides as side (side.key)}
         <div class="flex flex-wrap items-center gap-2">
           {#if x01.teams}
-            <span class="font-display font-bold text-[14px] tracking-[0.06em] uppercase text-text-muted whitespace-nowrap">{side.name}</span
+            <span class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-muted whitespace-nowrap">{side.name}</span
             >
           {/if}
           {#each side.seats as seat (seat)}
@@ -95,7 +95,7 @@
           <HeatBoard {darts} {name} />
         </div>
 
-        <div class="min-w-[11rem] flex flex-col gap-[18px] pt-1 @min-[34rem]:flex-[2_1_0%]">
+        <div class="min-w-44 flex flex-col gap-[18px] pt-1 @min-[34rem]:flex-[2_1_0%]">
           <p class="text-[15px] text-ink-2"><strong class="font-semibold text-text">{name}</strong>{summaryRest}</p>
 
           <div class="grid grid-cols-2 gap-x-4 gap-y-[18px]">

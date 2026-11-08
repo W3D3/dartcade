@@ -31,7 +31,7 @@
     type="button"
     onclick={onUndo}
     disabled={!canUndo}
-    class="{compact ? 'h-11 px-3' : 'h-12 px-4'} flex items-center gap-2 rounded-[10px] border border-line-strong text-text
+    class="{compact ? 'h-11 px-3' : 'h-12 px-4'} flex items-center gap-2 rounded-md border border-line-strong text-text
  text-[15px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-default"
   >
     <Undo2 size={18} />
@@ -42,9 +42,9 @@
     type="button"
     onclick={onNext}
     disabled={!enabled}
-    class="{compact ? 'h-11' : 'h-12'} flex items-center gap-1 rounded-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-default
+    class="{compact ? 'h-11' : 'h-12'} flex items-center gap-1 rounded-md cursor-pointer disabled:opacity-40 disabled:cursor-default
            {primary
-      ? 'px-6 border-0 bg-accent text-accent-fg hover:bg-accent-hover font-display font-bold text-[20px] uppercase tracking-[0.02em]'
+      ? 'px-6 border-0 bg-accent text-accent-fg hover:bg-accent-hover font-display font-bold text-[20px] uppercase tracking-title'
       : prominent
         ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
         : 'px-2 border-0 bg-transparent text-text-muted text-[14px]'}"

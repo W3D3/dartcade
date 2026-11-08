@@ -27,7 +27,7 @@
   <Select.Trigger
     aria-label={label}
     class={cn(
-      'h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-[10px] border border-line-3 bg-transparent px-3 text-[14px] text-text cursor-pointer focus-visible:outline-2 focus-visible:outline-accent',
+      'h-11 min-w-[150px] flex items-center justify-between gap-3 rounded-md border border-line-3 bg-transparent px-3 text-[14px] text-text cursor-pointer focus-visible:outline-2 focus-visible:outline-accent',
       className,
     )}
   >
@@ -38,8 +38,8 @@
     <Select.Content
       sideOffset={6}
       collisionPadding={8}
-      class="z-[60] box-border min-w-[var(--bits-select-anchor-width)] max-h-[var(--bits-select-content-available-height)] overflow-y-auto
-             p-[6px] rounded-[12px] bg-surface-inset border border-line-popover outline-none
+      class="z-60 box-border min-w-(--bits-select-anchor-width) max-h-(--bits-select-content-available-height) overflow-y-auto
+             p-[6px] rounded-lg bg-surface-inset border border-line-popover outline-none
              shadow-[0_18px_48px_rgba(0,0,0,0.55)]"
     >
       <Select.Viewport class="flex flex-col gap-[2px]">
@@ -47,8 +47,8 @@
           <Select.Item
             value={o.value}
             label={o.label}
-            class="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-[8px] px-3 text-[14px] text-text outline-none
-                   data-[highlighted]:bg-surface-key data-[selected]:text-accent"
+            class="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-sm px-3 text-[14px] text-text outline-none
+                   data-highlighted:bg-surface-key data-selected:text-accent"
           >
             {#snippet children({ selected })}
               {o.label}

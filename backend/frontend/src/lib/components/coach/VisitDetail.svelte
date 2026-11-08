@@ -16,7 +16,7 @@
   <table class="w-full border-collapse text-[13px] tabular-nums">
     <caption class="sr-only">Visit {visit.n}'s darts</caption>
     <thead>
-      <tr class="text-left text-[11px] uppercase tracking-[0.08em] text-text-muted">
+      <tr class="text-left text-[11px] uppercase tracking-cta text-text-muted">
         <th scope="col" class="py-1 pr-2 font-semibold">Dart</th>
         <th scope="col" class="py-1 pr-2 font-semibold">Classification</th>
         <th scope="col" class="py-1 text-right font-semibold">Distance</th>

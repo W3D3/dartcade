@@ -45,7 +45,7 @@
       interactOutsideBehavior="ignore"
       preventScroll={false}
       class={cn(
-        'relative w-full box-border p-5 md:p-8 rounded-t-[18px] md:rounded-[18px] bg-surface-1 border border-line-2',
+        'relative w-full box-border p-5 md:p-8 rounded-t-panel md:rounded-panel bg-surface-1 border border-line-2',
         'flex flex-col gap-5 max-h-[90dvh] md:max-h-[90vh] overflow-y-auto pb-[calc(20px+env(safe-area-inset-bottom))] md:pb-8',
         '[box-shadow:0_24px_60px_rgba(0,0,0,0.5)]',
         widthClass,

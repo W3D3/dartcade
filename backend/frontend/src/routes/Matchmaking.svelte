@@ -89,20 +89,18 @@
     <span
       class="inline-flex h-[30px] items-center gap-[7px] whitespace-nowrap rounded-full border border-line-chip px-3 text-[13px] font-medium text-ink-2"
       title={board.online ? 'Board connected' : 'Board offline'}
-      ><span class="h-2 w-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
+      ><span class="size-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
     >
   {/if}
 {/snippet}
 
 <Layout title="Ranked" headerAction={boardChip}>
   <main
-    class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
+    class="flex grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex items-end justify-between gap-6">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">
-          Matchmaking
-        </h1>
+        <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Matchmaking</h1>
         <p class="text-[15px] text-text-muted">
           Ranked X01 against players near your level. Wins and losses move your rating and rank.
           <a href="#/matchmaking/ranks" class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
@@ -157,7 +155,7 @@
         {:else}
           <section
             aria-label="Find a match"
-            class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:gap-4 md:px-6 md:py-5"
+            class="box-border flex flex-col gap-3 rounded-popover border border-line bg-surface-panel p-4 md:gap-4 md:px-6 md:py-5"
           >
             <div class="flex items-center justify-between gap-3">
               <h2 class="font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">Find a match</h2>
@@ -178,7 +176,7 @@
                 {@const needsLobby = opt.id === '2v2' && !duoReady}
                 <!-- The hint's link can't sit inside the option (a button), so it floats over the card's foot -->
                 <div class="relative flex min-w-0 flex-col">
-                  <RadioGroupItem value={opt.id} variant="card" class={needsLobby ? 'flex-grow pb-9' : 'flex-grow'}>
+                  <RadioGroupItem value={opt.id} variant="card" class={needsLobby ? 'grow pb-9' : 'grow'}>
                     <span class="flex items-center gap-[10px]">
                       <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
                         {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
@@ -226,17 +224,17 @@
             />
 
             <span class="flex items-center justify-center gap-2 text-[12px] text-ink-2 md:hidden"
-              ><Clock size={14} class="flex-shrink-0" />{visit} · {reserve}</span
+              ><Clock size={14} class="shrink-0" />{visit} · {reserve}</span
             >
-            <div class="hidden flex-col gap-2 rounded-[12px] border border-line bg-surface-1 px-[14px] py-3 text-[13px] text-ink-2 md:flex">
+            <div class="hidden flex-col gap-2 rounded-lg border border-line bg-surface-1 px-[14px] py-3 text-[13px] text-ink-2 md:flex">
               <span class="flex items-start gap-2"
-                ><Clock size={16} class="mt-px flex-shrink-0" /><span
+                ><Clock size={16} class="mt-px shrink-0" /><span
                   ><strong class="font-semibold whitespace-nowrap text-text">{visit}</strong>
                   <span class="text-text-dim">· starts once the board is clear</span></span
                 ></span
               >
               <span class="flex items-start gap-2"
-                ><Hourglass size={16} class="mt-px flex-shrink-0" /><span
+                ><Hourglass size={16} class="mt-px shrink-0" /><span
                   ><strong class="font-semibold whitespace-nowrap text-text">{reserve}</strong>
                   <span class="text-text-dim">· only used once a visit runs over; at 0:00 you forfeit</span></span
                 ></span
@@ -244,7 +242,7 @@
             </div>
 
             <div class="flex items-center gap-[10px] text-[12px] text-ink-2 md:text-[14px]">
-              <Search size={16} class="flex-shrink-0" />
+              <Search size={16} class="shrink-0" />
               <span
                 >Starts within <strong class="font-mono font-medium text-text">±75 RP</strong> of your rating
                 <span class="text-text-dim">· widens while you wait</span></span
@@ -252,11 +250,11 @@
             </div>
 
             <div class="hidden items-center gap-[10px] text-[14px] text-ink-2 md:flex">
-              <MonitorSmartphone size={16} class="flex-shrink-0" />
+              <MonitorSmartphone size={16} class="shrink-0" />
               {#if board}
                 Playing on
                 <span class="inline-flex items-center gap-[6px] font-semibold text-text"
-                  ><span class="h-2 w-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
+                  ><span class="size-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>{board.name}</span
                 >
                 <span class="text-text-dim">· {board.online ? 'auto-scoring' : 'offline, darts by hand'}</span>
               {:else}
@@ -269,7 +267,7 @@
               type="button"
               disabled={busy || paused !== null || (queue === '2v2' && !duoReady)}
               onclick={find}
-              class="mt-auto flex h-14 cursor-pointer items-center justify-center gap-3 rounded-[14px] border-0 bg-accent font-display text-[22px] font-bold md:h-16 md:text-[26px] uppercase tracking-[0.06em] text-accent-fg disabled:cursor-default disabled:opacity-40"
+              class="mt-auto flex h-14 cursor-pointer items-center justify-center gap-3 rounded-card border-0 bg-accent font-display text-[22px] font-bold md:h-16 md:text-[26px] uppercase tracking-wordmark text-accent-fg disabled:cursor-default disabled:opacity-40"
             >
               <Search size={24} />Find match
             </button>
@@ -284,7 +282,7 @@
 
         <section
           aria-label="Recent ranked matches"
-          class="box-border flex flex-col gap-[6px] rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:px-[22px] md:py-5"
+          class="box-border flex flex-col gap-[6px] rounded-popover border border-line bg-surface-panel p-4 md:px-[22px] md:py-5"
         >
           <div class="flex items-center justify-between">
             <h2 class="text-[15px] font-semibold md:text-[16px]">Recent ranked<span class="hidden md:inline">&nbsp;matches</span></h2>
@@ -300,12 +298,12 @@
                 <li class="flex min-h-14 items-center gap-3 border-b border-surface-paused last:border-b-0">
                   <span
                     aria-label={r.won ? 'Won' : 'Lost'}
-                    class="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-[7px] text-[13px] font-bold {r.won
+                    class="flex size-[26px] shrink-0 items-center justify-center rounded-segment text-[13px] font-bold {r.won
                       ? 'bg-accent-tint text-accent'
                       : 'bg-live-soft text-live-text'}">{r.won ? 'W' : 'L'}</span
                   >
                   <span class="hidden md:block"><Avatar name={r.name} face={r.opponent} size={30} /></span>
-                  <span class="flex min-w-0 flex-grow flex-col gap-px">
+                  <span class="flex min-w-0 grow flex-col gap-px">
                     <a href="#/history/{r.key}" class="truncate text-[14px] font-semibold text-text no-underline md:text-[15px]">{r.name}</a
                     >
                     <span class="flex items-center gap-1 truncate text-[11px] text-text-dim md:text-[12px]">
@@ -317,7 +315,7 @@
                   {#if r.score}<span class="whitespace-nowrap font-display text-[19px] font-bold text-ink-2 md:text-[22px]">{r.score}</span
                     >{/if}
                   <span
-                    class="min-w-9 flex-shrink-0 whitespace-nowrap text-right md:min-w-11 {r.placement
+                    class="min-w-9 shrink-0 whitespace-nowrap text-right md:min-w-11 {r.placement
                       ? 'text-[12px] text-text-dim'
                       : `font-mono text-[13px] font-medium md:text-[14px] ${r.won ? 'text-accent' : 'text-live-text'}`}">{r.change}</span
                   >

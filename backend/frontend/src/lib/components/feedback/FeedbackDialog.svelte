@@ -75,7 +75,7 @@
             rows="5"
             required
             placeholder={form.kind === 'bug' ? 'What did you do, what did you expect, what happened instead?' : 'Tell us more'}
-            class="resize-y rounded-[10px] border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
+            class="resize-y rounded-md border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
           <span class="self-end normal-case tracking-normal text-[12px]">{form.message.length} / {MESSAGE_MAX}</span>
         </label>
 
@@ -85,7 +85,7 @@
             Include a screenshot of this page
           </label>
           {#if form.includeScreenshot}
-            <img src={dialog.screenshot} alt="Screenshot of the page to send" class="w-full rounded-[10px] border border-line-2" />
+            <img src={dialog.screenshot} alt="Screenshot of the page to send" class="w-full rounded-md border border-line-2" />
           {/if}
         {:else if dialog.captureFailed}
           <p class="text-[13px] text-warn">Couldn't take a screenshot of this page; the report goes without one.</p>

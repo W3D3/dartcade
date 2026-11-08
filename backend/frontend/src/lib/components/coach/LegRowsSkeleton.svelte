@@ -22,7 +22,7 @@
         <Skeleton class="h-6 w-8 justify-self-end" />
         <Skeleton class="h-6 w-10 justify-self-end" />
         <Skeleton class="h-6 w-32 rounded-full" />
-        <Skeleton class="h-[38px] w-[104px] justify-self-end rounded-[10px]" />
+        <Skeleton class="h-[38px] w-[104px] justify-self-end rounded-md" />
       </div>
       <div class="flex flex-col gap-2 p-3 lg:hidden">
         <div class="flex items-start justify-between gap-3">
@@ -31,7 +31,7 @@
         </div>
         <div class="flex gap-4"><Skeleton class="h-[26px] w-16" /><Skeleton class="h-[26px] w-16" /></div>
         <div class="flex items-center justify-between gap-2">
-          <Skeleton class="h-6 w-32 rounded-full" /><Skeleton class="h-[38px] w-[104px] rounded-[10px]" />
+          <Skeleton class="h-6 w-32 rounded-full" /><Skeleton class="h-[38px] w-[104px] rounded-md" />
         </div>
       </div>
     </li>

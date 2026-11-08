@@ -33,7 +33,7 @@
 </script>
 
 <div
-  class="flex items-center gap-[10px] box-border px-[10px] rounded-[10px] border {compact ? 'h-10' : 'h-[46px]'}
+  class="flex items-center gap-[10px] box-border px-[10px] rounded-md border {compact ? 'h-10' : 'h-[46px]'}
             {throwing
     ? 'bg-surface-hover border-accent-line-strong'
     : member.role === 'up-next'

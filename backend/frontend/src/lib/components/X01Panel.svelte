@@ -58,7 +58,7 @@
 
   <div class="flex flex-col gap-[6px]">
     {#if solo}<span class="text-[12px] label-caps text-text-muted">Left</span>{/if}
-    <span class="font-display font-bold {scoreSize} leading-[0.8] tracking-[-0.02em] tabular-nums {active ? 'text-text' : 'text-ink-3'}"
+    <span class="font-display font-bold {scoreSize} leading-[0.8] tracking-score tabular-nums {active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber {...x01Roll(p)} /></span
     >
   </div>

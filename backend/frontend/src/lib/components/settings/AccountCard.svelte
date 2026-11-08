@@ -37,7 +37,7 @@
     <button
       type="button"
       onclick={() => void signOut()}
-      class="self-start h-11 px-4 flex items-center gap-2 rounded-[10px] border border-danger-line text-live-text
+      class="self-start h-11 px-4 flex items-center gap-2 rounded-md border border-danger-line text-live-text
  text-[14px] font-semibold cursor-pointer transition-colors hover:bg-live-soft"
     >
       <LogOut size={16} />Sign out

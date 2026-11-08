@@ -50,7 +50,7 @@
           ? `text-text ${phone ? 'shadow-[inset_0_-2px_0_var(--color-accent)]' : 'shadow-[inset_0_-3px_0_var(--color-accent)]'}`
           : 'text-ink-2'}"
       >
-        {#if isUp(s) && !phone}<span aria-hidden="true" class="w-[10px] h-[10px] rounded-full bg-accent"></span>{/if}{s.name}
+        {#if isUp(s) && !phone}<span aria-hidden="true" class="size-[10px] rounded-full bg-accent"></span>{/if}{s.name}
       </span>
     {/if}
   </th>
@@ -85,7 +85,7 @@
   >
     <div
       class="flex items-center justify-center mx-auto {rowH} {closed ? fade : ''} {score
-        ? `w-full ${phone ? 'max-w-[100px]' : 'max-w-[230px]'} rounded-[12px] bg-accent text-accent-fg`
+        ? `w-full ${phone ? 'max-w-[100px]' : 'max-w-[230px]'} rounded-lg bg-accent text-accent-fg`
         : ''}"
     >
       {#if m > 0}<Mark marks={m} from={from[s.seat]?.[i] ?? m} class="h-[86%] w-auto aspect-square" />{/if}
@@ -98,9 +98,9 @@
   <div aria-hidden="true" class="shrink-0 flex items-center justify-between gap-6 {phone ? 'px-[2px] pb-2' : 'pb-[14px]'}">
     <span class="{phone ? 'text-[11px]' : 'text-[13px]'} label-caps text-text-dim">{caption}</span>
     <span class="flex items-center gap-3 xl:gap-[18px] {phone ? 'text-[12px]' : 'text-[13px]'} text-text-muted">
-      <span class="inline-flex items-center gap-[7px]"><span class="w-[14px] h-[14px] rounded-[4px] bg-accent"></span>Can score</span>
+      <span class="inline-flex items-center gap-[7px]"><span class="size-[14px] rounded-[4px] bg-accent"></span>Can score</span>
       <span class="inline-flex items-center gap-[7px]"
-        ><span class="w-[14px] h-[14px] box-border rounded-[4px] border-[1.5px] border-line-pip"></span>Closed</span
+        ><span class="size-[14px] box-border rounded-[4px] border-[1.5px] border-line-pip"></span>Closed</span
       >
     </span>
   </div>

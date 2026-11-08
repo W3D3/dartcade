@@ -40,13 +40,7 @@
   </span>
 
   <div class="flex flex-col gap-3 min-w-0">
-    <AtcProgress
-      cells={p.cells}
-      {active}
-      layout="strip"
-      cellHeight={32}
-      class="max-xl:@lg:@max-2xl:grid-cols-[repeat(11,minmax(0,1fr))]!"
-    />
+    <AtcProgress cells={p.cells} {active} layout="strip" cellHeight={32} class="max-xl:@lg:@max-2xl:grid-cols-11!" />
     <span class="flex flex-wrap gap-x-4 gap-y-1 xl:gap-6 text-[13px] xl:text-[14px] {active ? 'text-text-muted' : 'text-text-dim'}">
       <span>Darts <strong class={active ? 'text-text' : 'text-ink-2'}>{p.darts}</strong></span>
       <span>Hit rate <strong class={active ? 'text-text' : 'text-ink-2'}>{p.hitRate}</strong></span>

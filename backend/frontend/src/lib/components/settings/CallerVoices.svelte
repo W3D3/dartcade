@@ -129,7 +129,7 @@
 <section id="caller-voices" aria-labelledby="cv-title" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
   <div class="flex flex-col gap-1">
     <h2 id="cv-title" class="font-display font-bold text-[26px] md:text-[28px] leading-none uppercase">Caller voices</h2>
-    <p class="text-[13px] md:text-[14px] leading-normal text-text-muted">
+    <p class="text-kicker/normal md:text-[14px] text-text-muted">
       <span class="md:hidden">On your account, ready on every board and device.</span>
       <span class="hidden md:inline"
         >Packs you import live on your account, so they're ready on every board and device. Pick one in a match from the game settings.</span
@@ -167,16 +167,16 @@
         <span class="text-[12px] font-semibold label-caps text-text-dim">Built-in · {lib.builtins.length}</span>
         <ul class="flex flex-col gap-[6px]">
           {#each lib.builtins as b (b.id)}
-            <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-[10px] bg-surface-row border border-line">
-              <span class="w-[38px] h-[38px] shrink-0 rounded-[9px] bg-surface-paused text-accent flex items-center justify-center">
+            <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-md bg-surface-row border border-line">
+              <span class="size-[38px] shrink-0 rounded-key bg-surface-paused text-accent flex items-center justify-center">
                 <Volume2 size={20} strokeWidth={1.8} />
               </span>
-              <span class="flex-grow min-w-0 truncate text-[15px] font-semibold text-text">{b.name}</span>
+              <span class="grow min-w-0 truncate text-[15px] font-semibold text-text">{b.name}</span>
               <Button
                 href="#/voice-packs/builtin:{b.id}"
                 variant="quiet"
                 aria-label="Details of {b.name}"
-                class="h-10 px-[10px] md:px-3 gap-[6px] rounded-[9px] border border-line-chip text-ink-2 text-[14px] font-semibold"
+                class="h-10 px-[10px] md:px-3 gap-[6px] rounded-key border border-line-chip text-ink-2 text-[14px] font-semibold"
               >
                 <ListMusic size={16} strokeWidth={1.8} />
                 <span class="hidden md:inline">Details</span>
@@ -192,11 +192,11 @@
       {#if lib.packs.length}
         <ul class="flex flex-col gap-[6px]">
           {#each lib.packs as p (p.id)}
-            <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-[10px] bg-surface-row border border-line">
-              <span class="w-[38px] h-[38px] shrink-0 rounded-[9px] bg-surface-paused text-accent flex items-center justify-center">
+            <li class="flex items-center gap-3 min-h-[60px] pl-3 pr-[6px] md:pr-2 rounded-md bg-surface-row border border-line">
+              <span class="size-[38px] shrink-0 rounded-key bg-surface-paused text-accent flex items-center justify-center">
                 <Volume2 size={20} strokeWidth={1.8} />
               </span>
-              <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
+              <span class="flex flex-col gap-[2px] min-w-0 grow">
                 {#if renaming?.id === p.id}
                   <form
                     class="flex items-center gap-2"
@@ -230,13 +230,13 @@
                 label="Play a sample of {p.name}"
                 onplay={() => sample(p.id)}
                 iconSize={14}
-                class="size-10 rounded-[9px] border border-line-chip text-ink-2"
+                class="size-10 rounded-key border border-line-chip text-ink-2"
               />
               <Button
                 variant="quiet"
                 size="icon-sm"
                 aria-label="Rename {p.name}"
-                class="size-10 rounded-[9px] border border-line-chip text-ink-2"
+                class="size-10 rounded-key border border-line-chip text-ink-2"
                 onclick={() => {
                   renameError = null
                   renaming = { id: p.id, value: p.name }
@@ -249,7 +249,7 @@
                   href="#/voice-packs/{p.id}"
                   variant="quiet"
                   aria-label="Details of {p.name}"
-                  class="h-10 px-[10px] md:px-3 gap-[6px] rounded-[9px] border border-line-chip text-ink-2 text-[14px] font-semibold"
+                  class="h-10 px-[10px] md:px-3 gap-[6px] rounded-key border border-line-chip text-ink-2 text-[14px] font-semibold"
                 >
                   <ListMusic size={16} strokeWidth={1.8} />
                   <span class="hidden md:inline">Details</span>
@@ -260,7 +260,7 @@
                 onclick={() => void remove(p.id)}
                 disabled={deleting === p.id}
                 aria-label="Delete {p.name}"
-                class="h-10 px-[10px] md:px-3 shrink-0 flex items-center gap-[6px] rounded-[9px] border border-danger-line
+                class="h-10 px-[10px] md:px-3 shrink-0 flex items-center gap-[6px] rounded-key border border-danger-line
  text-live-text text-[14px] font-semibold cursor-pointer disabled:opacity-50"
               >
                 {#if deleting === p.id}<LoaderCircle size={16} class="animate-spin" />{:else}<Trash size={16} strokeWidth={1.8} />{/if}
@@ -317,7 +317,7 @@
                 void startUpload(input.files?.[0])
                 input.value = ''
               }}
-              class="absolute w-px h-px opacity-0 pointer-events-none"
+              class="absolute size-px opacity-0 pointer-events-none"
             />
           </label>
         </div>
@@ -325,7 +325,7 @@
 
       {#if upload}
         {@const pct = Math.round(upload.progress * 100)}
-        <div class="flex flex-col gap-2 px-[14px] py-3 rounded-[10px] bg-surface-panel border border-line-2">
+        <div class="flex flex-col gap-2 px-[14px] py-3 rounded-md bg-surface-panel border border-line-2">
           <div class="flex items-center gap-[10px] min-w-0">
             <span class="font-mono text-[13px] text-text truncate">{upload.name}</span>
             <span class="text-[12px] text-text-dim whitespace-nowrap"
@@ -339,18 +339,13 @@
               >
             {/if}
           </div>
-          <Progress
-            aria-label="Uploading {upload.name}"
-            value={pct}
-            class="h-1 rounded-[2px] bg-line"
-            fill="bg-accent transition-[width]"
-          />
+          <Progress aria-label="Uploading {upload.name}" value={pct} class="h-1 rounded-bar bg-line" fill="bg-accent transition-[width]" />
           <span class="text-[12px] leading-[1.45] text-text-dim"
             >Only the audio clips are kept, so the voice will be smaller than the zip. You can leave this page; the import keeps going.</span
           >
         </div>
       {:else if result?.kind === 'done'}
-        <div role="status" class="flex items-center gap-[10px] min-w-0 px-[14px] py-3 rounded-[10px] bg-surface-panel border border-line-2">
+        <div role="status" class="flex items-center gap-[10px] min-w-0 px-[14px] py-3 rounded-md bg-surface-panel border border-line-2">
           <span class="font-mono text-[13px] text-text truncate">{result.name}</span>
           <span class="text-[12px] text-accent whitespace-nowrap">{result.text}</span>
         </div>
@@ -361,7 +356,7 @@
       {#if $autodartsOn}
         <div class="flex flex-col gap-2">
           <span class="text-[14px] font-semibold">Import Autodarts voices</span>
-          <ol class="pl-5 flex flex-col gap-1 text-[13px] leading-[1.5] text-text-muted">
+          <ol class="pl-5 flex flex-col gap-1 text-kicker/normal text-text-muted">
             <li>
               Drag
               <!-- A bookmarklet: dragged to the bookmarks bar, not clicked here -->
@@ -384,8 +379,8 @@
             <summary class="cursor-pointer min-h-10 flex items-center">Bookmarks blocked? Paste the code into the console instead</summary>
             <div class="flex flex-col gap-2">
               <pre
-                class="max-h-40 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
-              <Button type="button" variant="key" class="self-start h-10 px-4 rounded-[9px]" onclick={() => void clip.copy(consoleSnippet)}
+                class="max-h-40 overflow-auto p-3 rounded-key bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
+              <Button type="button" variant="key" class="self-start h-10 px-4 rounded-key" onclick={() => void clip.copy(consoleSnippet)}
                 >{clip.state === 'copied'
                   ? 'Copied'
                   : clip.state === 'failed'
@@ -400,7 +395,7 @@
         </div>
       {/if}
 
-      <p class="text-[12px] leading-normal text-text-dim">
+      <p class="text-caption/normal text-text-dim">
         A voice pack is a .zip of short .mp3, .ogg or .wav clips named by what they call:
         <span class="font-mono text-ink-2">180.mp3</span>, <span class="font-mono text-ink-2">gameshot.mp3</span>,
         <span class="font-mono text-ink-2">busted.mp3</span>, <span class="font-mono text-ink-2">require_121.mp3</span>. Missing clips fall

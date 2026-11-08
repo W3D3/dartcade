@@ -167,10 +167,10 @@
 {/snippet}
 
 <Layout title="Coach">
-  <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
+  <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
       <div class="flex flex-col gap-1.5">
-        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Coach</h1>
+        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-title md:block">Coach</h1>
         <p class="text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
       </div>
       {#if $enabled}
@@ -198,7 +198,7 @@
           class="-mb-px flex items-center gap-3 border-b-[3px] border-accent px-1.5 pb-3.5 text-text no-underline hover:text-text"
         >
           <Scan size={22} class="text-accent" />
-          <span class="font-display text-[28px] font-bold uppercase leading-none tracking-[0.02em] md:text-[34px]">Review</span>
+          <span class="font-display text-[28px] font-bold uppercase leading-none tracking-title md:text-[34px]">Review</span>
           {#if counts}
             <Pill label="{counts.legs} {counts.legs === 1 ? 'leg' : 'legs'}" tone="plain" />
           {/if}
@@ -259,7 +259,7 @@
               {#each legs as row, i (`${row.gameId}/${row.leg}`)}
                 {@const title = vsLine(row.opponents)}
                 {@const avg = row.average === null ? '–' : row.average.toFixed(1)}
-                <li class="border-t border-surface-inset first:border-transparent {i === 0 ? 'rounded-[12px] bg-surface-drop' : ''}">
+                <li class="border-t border-surface-inset first:border-transparent {i === 0 ? 'rounded-lg bg-surface-drop' : ''}">
                   <!-- Desktop: one grid row per leg -->
                   <div class="hidden items-center gap-3.5 px-3.5 py-3 lg:grid {COLUMNS}">
                     <span class="text-[13px] text-text-muted">{when(row.finishedAt)}</span>

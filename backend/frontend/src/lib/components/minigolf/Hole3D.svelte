@@ -535,6 +535,6 @@
   })
 </script>
 
-<div bind:this={host} class="h-full w-full" data-testid="hole-3d">
-  <canvas bind:this={canvas} hidden={failed} class="block h-full w-full"></canvas>
+<div bind:this={host} class="size-full" data-testid="hole-3d">
+  <canvas bind:this={canvas} hidden={failed} class="block size-full"></canvas>
 </div>

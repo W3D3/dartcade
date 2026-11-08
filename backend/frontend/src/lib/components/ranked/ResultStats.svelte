@@ -9,7 +9,7 @@
 <div class="grid w-full max-w-[560px] grid-cols-2 gap-3 self-center">
   {#each [{ label: 'Online average', value: extras.onlineAverage, line: extras.onlineLine }, { label: 'Record', value: extras.record, line: extras.recordLine }] as card (card.label)}
     <section
-      class="box-border flex flex-col gap-1 rounded-[14px] border border-line bg-surface-panel px-4 py-3"
+      class="box-border flex flex-col gap-1 rounded-card border border-line bg-surface-panel px-4 py-3"
       aria-label="{card.label}: {card.value}"
     >
       <span class="label-caps text-[11px] text-text-muted">{card.label}</span>

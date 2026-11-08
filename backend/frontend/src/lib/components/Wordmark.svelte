@@ -15,6 +15,6 @@
 
 <span class="relative flex items-center gap-[10px]">
   <BrandMark {size} />
-  <span class="font-display font-bold tracking-[0.06em] {text}">DARTCADE</span>
+  <span class="font-display font-bold tracking-wordmark {text}">DARTCADE</span>
   {#if badge}<AlphaBadge interactive={report} /><PreviewBadge />{/if}
 </span>

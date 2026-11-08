@@ -20,7 +20,7 @@
       <tr class="text-[12px] label-caps text-text-dim">
         {#if ranked}<th class="text-left font-normal px-4 py-3">Place</th>{/if}
         <th class="text-left font-normal {ranked ? 'px-2' : 'px-4'} py-3">Player</th>
-        {#each compact as row (row.key)}<th class="text-right font-normal px-3 py-3 whitespace-nowrap">{row.label}</th>{/each}
+        {#each compact as row (row.key)}<th class="text-right font-normal p-3 whitespace-nowrap">{row.label}</th>{/each}
       </tr>
     </thead>
     <tbody>
@@ -36,7 +36,7 @@
             ></td
           >
           {#each compact as row (row.key)}
-            <td class="px-3 py-3 text-right whitespace-nowrap {betterIndexes(row, all).has(s.index) ? 'text-accent font-bold' : ''}"
+            <td class="p-3 text-right whitespace-nowrap {betterIndexes(row, all).has(s.index) ? 'text-accent font-bold' : ''}"
               >{formatStat(row, s.values)}</td
             >
           {/each}

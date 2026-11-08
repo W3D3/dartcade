@@ -124,9 +124,7 @@
 
 <section
   aria-label="Level"
-  class="flex flex-col gap-5 box-border rounded-[14px] border bg-surface-2 p-[18px] md:p-[22px] {up
-    ? 'glow border-accent'
-    : 'border-line-2'}"
+  class="flex flex-col gap-5 box-border rounded-card border bg-surface-2 p-[18px] md:p-[22px] {up ? 'glow border-accent' : 'border-line-2'}"
 >
   <div class="flex items-baseline justify-between">
     <span class="text-[12px] label-caps text-text-dim">Level</span>
@@ -136,7 +134,7 @@
     {#key v.level}
       <span
         bind:this={levelNumber}
-        class="font-display font-bold text-[100px] md:text-[130px] leading-[0.8] tracking-[-0.01em] {popping ? 'pop' : ''}">{v.level}</span
+        class="font-display font-bold text-[100px] md:text-[130px] leading-[0.8] -tracking-hero {popping ? 'pop' : ''}">{v.level}</span
       >
     {/key}
     {#if title}
@@ -151,10 +149,10 @@
   {#if up}
     <div
       role="status"
-      class="levelup flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[12px] border border-accent px-4 py-3"
+      class="levelup flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-accent px-4 py-3"
       style="background: color-mix(in srgb, var(--color-accent) 10%, transparent)"
     >
-      <span class="font-display font-bold text-[24px] leading-none uppercase tracking-[0.06em] text-accent">Level {up.level}!</span>
+      <span class="font-display font-bold text-[24px] leading-none uppercase tracking-wordmark text-accent">Level {up.level}!</span>
       {#if up.perks.length}
         <span class="min-w-0 text-[14px] text-ink-2"
           >Unlocked: {up.perks.map(p => `${p.name} (${KIND_LABEL[p.kind].one.toLowerCase()})`).join(', ')}</span
@@ -166,7 +164,7 @@
             type="button"
             disabled={equipped}
             onclick={() => void wear()}
-            class="rounded-[8px] border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
+            class="rounded-sm border border-line-strong px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer disabled:cursor-default disabled:text-accent"
             >{equipped ? 'Equipped' : `Wear ${newTitle.name}`}</button
           >
         {/if}
@@ -175,7 +173,7 @@
           type="button"
           aria-label="Dismiss"
           onclick={() => (up = null)}
-          class="flex rounded-[6px] border-0 p-1 text-text-muted cursor-pointer hover:text-text"><X size={16} /></button
+          class="flex rounded-chip border-0 p-1 text-text-muted cursor-pointer hover:text-text"><X size={16} /></button
         >
       </span>
     </div>
@@ -185,7 +183,7 @@
       {#key rise}
         <span
           aria-hidden="true"
-          class="rise absolute -top-[30px] -translate-x-1/2 font-display font-bold text-[20px] text-accent whitespace-nowrap"
+          class="rise absolute top-[-30px] -translate-x-1/2 font-display font-bold text-[20px] text-accent whitespace-nowrap"
           style="left: {Math.min(92, Math.max(8, v.pct))}%">+{fmtXp(rise.total)} XP</span
         >
       {/key}
@@ -207,7 +205,7 @@
       aria-label="Next unlock at level {nextLevel}: {nextPerks
         .map(p => `${KIND_LABEL[p.kind].one} ${p.name}`)
         .join(', ')}. Show it on the rewards track"
-      class="flex flex-wrap items-center gap-x-[14px] gap-y-2 rounded-[10px] bg-surface-inset px-[14px] py-3 text-text no-underline hover:bg-surface-hover"
+      class="flex flex-wrap items-center gap-x-[14px] gap-y-2 rounded-md bg-surface-inset px-[14px] py-3 text-text no-underline hover:bg-surface-hover"
     >
       <span
         class="size-9 shrink-0 rounded-full border-2 border-dashed border-line-pip flex items-center justify-center font-display font-bold text-[16px] text-text-muted"
@@ -218,7 +216,7 @@
         {#each nextPerks as p (p.id)}
           <span class="whitespace-nowrap rounded-full border border-line-chip px-3 py-[7px]"
             ><span class="mr-[6px] text-[11px] text-text-muted">{KIND_LABEL[p.kind].one}</span><span
-              class="font-display font-bold text-[13px] uppercase tracking-[0.1em]">{p.name}</span
+              class="font-display font-bold text-[13px] label-caps">{p.name}</span
             ></span
           >
         {/each}
@@ -226,7 +224,7 @@
       <ChevronRight size={18} strokeWidth={2.2} class="shrink-0 text-accent" aria-hidden="true" />
     </a>
   {/if}
-  <a href="#/progress/rewards" class="-mt-[6px] self-start text-[14px] font-semibold no-underline">All rewards</a>
+  <a href="#/progress/rewards" class="mt-[-6px] self-start text-[14px] font-semibold no-underline">All rewards</a>
 </section>
 
 <style>

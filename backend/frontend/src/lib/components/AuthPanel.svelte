@@ -16,7 +16,7 @@
 </script>
 
 <div
-  class="relative hidden md:flex w-[clamp(320px,calc(100vw-460px),500px)] xl:w-[820px] flex-shrink-0 flex-col gap-10 xl:gap-0 xl:justify-between overflow-hidden
+  class="relative hidden md:flex w-[clamp(320px,calc(100vw-460px),500px)] xl:w-[820px] shrink-0 flex-col gap-10 xl:gap-0 xl:justify-between overflow-hidden
             bg-surface-1 border-r border-line box-border p-[40px_44px] xl:p-[48px_56px]"
 >
   <!-- Logo -->
@@ -27,7 +27,7 @@
     <div
       class="absolute pointer-events-none select-none font-display font-bold leading-none text-transparent uppercase
              right-[-24px] top-[16px] text-[320px] xl:right-[-40px] xl:top-[40px] xl:text-[520px]
-             [-webkit-text-stroke:2px_var(--color-surface-key)] [letter-spacing:-0.02em]"
+             [-webkit-text-stroke:2px_var(--color-surface-key)] tracking-score"
       aria-hidden="true"
     >
       180
@@ -62,8 +62,8 @@
 
     <!-- Headline -->
     <div class="relative flex flex-col gap-5 xl:gap-6 xl:w-[470px]">
-      <div class="font-mono text-[13px] tracking-[0.08em] text-accent">T20 · T20 · T20 — 180</div>
-      <h2 class="font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-[0.01em] uppercase">Step up to the oche.</h2>
+      <div class="font-mono text-[13px] tracking-cta text-accent">T20 · T20 · T20 — 180</div>
+      <h2 class="font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-hero uppercase">Step up to the oche.</h2>
       <p class="text-[17px] xl:text-[18px] leading-[1.55] text-text-muted max-w-[380px] xl:max-w-[430px]">
         Custom minigames, X01 and tournaments — scored live from your Autodarts board.
       </p>

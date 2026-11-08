@@ -20,15 +20,15 @@
 
     {#each toolGroupsFor($currentUser) as group (group.category)}
       <section class="flex flex-col gap-3">
-        <h2 class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">{group.category}</h2>
+        <h2 class="text-[11px] font-semibold label-caps text-text-muted">{group.category}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {#each group.tools as tool (tool.href)}
             {@const Icon = tool.icon}
-            <a href="#{tool.href}" class="flex items-center gap-[14px] p-4 card no-underline !text-text hover:bg-surface-active">
-              <span class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] bg-surface-active text-accent">
+            <a href="#{tool.href}" class="flex items-center gap-[14px] p-4 card no-underline text-text! hover:bg-surface-active">
+              <span class="size-10 shrink-0 flex items-center justify-center rounded-md bg-surface-active text-accent">
                 <Icon size={20} strokeWidth={1.8} />
               </span>
-              <span class="flex flex-col gap-[2px] flex-grow min-w-0">
+              <span class="flex flex-col gap-[2px] grow min-w-0">
                 <span class="text-[17px] font-semibold">{tool.title}</span>
                 <span class="text-[13px] text-text-muted truncate">{tool.desc}</span>
               </span>

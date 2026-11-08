@@ -26,7 +26,7 @@
       </li>
     {/each}
   </ul>
-  <p class="text-[15px] leading-normal">{take}</p>
+  <p class="text-body/normal">{take}</p>
 </div>
 
 <!-- Desktop -->
@@ -36,7 +36,7 @@
   {#each rows as r (r.name)}
     {@const t = tone(r.grade)}
     <div class="flex items-center gap-3.5 border-t border-surface-paused py-3">
-      <span class="flex size-11 flex-none items-center justify-center rounded-[10px] font-display text-[26px] font-bold {pillTone(t)}"
+      <span class="flex size-11 flex-none items-center justify-center rounded-md font-display text-[26px] font-bold {pillTone(t)}"
         >{r.grade ?? '–'}</span
       >
       <span class="flex flex-col gap-0.5">

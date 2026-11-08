@@ -83,7 +83,7 @@
   {#if bot}
     <BotIcon size="62%" />
   {:else if avatar?.kind === 'upload' && userId}
-    <img src="/api/users/{userId}/avatar?v={avatar.version}" alt="" class="w-full h-full object-cover" />
+    <img src="/api/users/{userId}/avatar?v={avatar.version}" alt="" class="size-full object-cover" />
   {:else if preset}
     <FinishPicture foreground={preset.foreground} background={preset.background} />
   {:else}

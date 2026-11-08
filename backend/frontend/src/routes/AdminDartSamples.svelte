@@ -91,19 +91,19 @@
 {#snippet row(name: string, value: string)}
   <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line last:border-b-0">
     <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">{name}</dt>
-    <dd class="min-w-0 break-words text-[14px] text-text">{value}</dd>
+    <dd class="min-w-0 wrap-break-word text-[14px] text-text">{value}</dd>
   </div>
 {/snippet}
 
 {#snippet still(s: DartSample, phase: 'before' | 'after', cam: number)}
-  <figure class="relative aspect-square overflow-hidden rounded-[8px] bg-bg border border-line">
+  <figure class="relative aspect-square overflow-hidden rounded-sm bg-bg border border-line">
     <img src={stillUrl(s.id, phase, cam)} alt="Camera {cam + 1}, {phase} the dart" loading="lazy" class="block size-full object-cover" />
     {#if phase === 'after'}
       {#if s.autodarts.coords}
         {@const m = markerAt(s.autodarts.coords)}
         <span
           title="Autodarts: {s.autodarts.segment}"
-          class="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-live"
+          class="absolute size-3 -translate-1/2 rounded-full border-2 border-white bg-live"
           style:left="{m.left}%"
           style:top="{m.top}%"
         ></span>
@@ -112,13 +112,13 @@
         {@const m = markerAt(s.final.coords)}
         <span
           title="Corrected: {s.final.segment}"
-          class="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-grade-good"
+          class="absolute size-4 -translate-1/2 rounded-full border-2 border-grade-good"
           style:left="{m.left}%"
           style:top="{m.top}%"
         ></span>
       {/if}
     {/if}
-    <figcaption class="absolute left-1 top-1 px-1 rounded bg-black/60 text-[11px] text-white">Cam {cam + 1}</figcaption>
+    <figcaption class="absolute left-1 top-1 px-1 rounded-[4px] bg-black/60 text-[11px] text-white">Cam {cam + 1}</figcaption>
   </figure>
 {/snippet}
 

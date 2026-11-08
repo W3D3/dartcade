@@ -23,7 +23,7 @@
   const modes = $derived($shownModes.filter(m => m.available || !open))
 </script>
 
-<div class="flex flex-col transition-[gap] duration-[450ms] {open ? 'gap-[14px]' : 'gap-5'}">
+<div class="flex flex-col transition-[gap] duration-450 {open ? 'gap-[14px]' : 'gap-5'}">
   {#each GAME_CATEGORIES as cat (cat.id)}
     {@const games = modes.filter(m => m.cat === cat.id)}
     {@const big = games.filter(m => !m.small)}
@@ -32,7 +32,7 @@
       <section aria-label={cat.name} class="flex flex-col {open ? 'gap-[6px]' : 'gap-2 md:gap-[10px]'}">
         <div class="flex items-baseline gap-2 md:gap-[10px] whitespace-nowrap">
           <h2
-            class="font-display font-bold leading-none uppercase tracking-[0.06em] transition-all duration-[450ms] {open
+            class="font-display font-bold leading-none uppercase tracking-wordmark transition-all duration-450 {open
               ? 'text-[15px] text-text-dim'
               : 'text-[18px] md:text-[22px] text-text'}"
           >

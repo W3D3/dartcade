@@ -198,12 +198,12 @@
               <DropdownMenu.Content
                 align="start"
                 sideOffset={6}
-                class="z-[60] box-border flex min-w-[180px] flex-col gap-[2px] rounded-xl border border-line-popover bg-surface-hover p-[6px] outline-none [box-shadow:0_18px_44px_rgba(0,0,0,0.55)]"
+                class="z-60 box-border flex min-w-[180px] flex-col gap-[2px] rounded-xl border border-line-popover bg-surface-hover p-[6px] outline-none [box-shadow:0_18px_44px_rgba(0,0,0,0.55)]"
               >
                 {#each roleActions(user.role) as action (action.role ?? 'none')}
                   <DropdownMenu.Item
                     onSelect={() => onrole(action.role)}
-                    class="flex h-10 cursor-pointer items-center rounded-sm px-[10px] text-[14px] outline-none data-[highlighted]:bg-surface-paused {action.role ===
+                    class="flex h-10 cursor-pointer items-center rounded-sm px-[10px] text-[14px] outline-none data-highlighted:bg-surface-paused {action.role ===
                     null
                       ? 'text-danger-text'
                       : 'text-text'}"

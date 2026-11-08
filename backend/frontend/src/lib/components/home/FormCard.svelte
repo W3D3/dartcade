@@ -37,8 +37,8 @@
   {/if}
   <div class="grid grid-cols-2 gap-[10px] md:grid-cols-4">
     {#each tiles as tile (tile.label)}
-      <div class="flex min-w-0 flex-col gap-1 rounded-[10px] border border-line bg-surface-1 px-3 py-[10px]">
-        <span class="truncate text-[11px] uppercase tracking-[0.1em] text-text-muted">{tile.label}</span>
+      <div class="flex min-w-0 flex-col gap-1 rounded-md border border-line bg-surface-1 px-3 py-[10px]">
+        <span class="truncate text-[11px] label-caps text-text-muted">{tile.label}</span>
         <span class="flex items-baseline gap-2 whitespace-nowrap">
           <span class="font-display text-[34px] font-bold leading-none">{tile.value}</span>
           {#if tile.label === '3-dart avg' && form?.trend && form.trend.dir !== 'flat'}

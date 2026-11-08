@@ -41,7 +41,7 @@
                   : c.state === 'ended'
                     ? `${c.darts} darts, not hit when the match ended`
                     : `hit with dart ${c.darts}`}"
-              class="h-8 flex items-center justify-center rounded-[6px] text-[13px] font-semibold
+              class="h-8 flex items-center justify-center rounded-chip text-[13px] font-semibold
                      {c.state === 'none'
                 ? 'border border-dashed border-line-dashed'
                 : c.state === 'ended'
@@ -57,13 +57,13 @@
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-text-muted">
       <span>Darts needed</span>
       {#each TONES as n (n)}<span class="inline-flex items-center gap-[6px]"
-          ><span class="w-4 h-4 rounded-[4px] {TONE[n]}"></span>{n === 4 ? '4+' : n}</span
+          ><span class="size-4 rounded-[4px] {TONE[n]}"></span>{n === 4 ? '4+' : n}</span
         >{/each}
       <span class="inline-flex items-center gap-[6px]"
-        ><span class="w-4 h-4 rounded-[4px] border-2 border-warn"></span>Target when it ended</span
+        ><span class="size-4 rounded-[4px] border-2 border-warn"></span>Target when it ended</span
       >
       <span class="inline-flex items-center gap-[6px]"
-        ><span class="w-4 h-4 rounded-[4px] border border-dashed border-line-dashed"></span>Not reached</span
+        ><span class="size-4 rounded-[4px] border border-dashed border-line-dashed"></span>Not reached</span
       >
     </div>
   </section>

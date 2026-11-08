@@ -169,7 +169,7 @@
 
 {#snippet madeCard()}
   {#if made}
-    <div role="status" class="rounded-[18px] border-2 border-accent bg-surface-picked px-6 py-4 flex items-center gap-5">
+    <div role="status" class="rounded-panel border-2 border-accent bg-surface-picked px-6 py-4 flex items-center gap-5">
       <span class="flex-1 min-w-0 flex flex-col gap-1">
         <span class="font-display font-bold text-[40px] leading-none text-accent">Checked out</span>
         <span class="text-[15px] text-text"
@@ -189,7 +189,7 @@
 
 {#snippet center(compact: boolean)}
   {@render board()}
-  <div class="h-[96px] shrink-0 box-border rounded-[14px] border border-line bg-surface-1 px-6 flex items-center justify-between">
+  <div class="h-[96px] shrink-0 box-border rounded-card border border-line bg-surface-1 px-6 flex items-center justify-between">
     <span class="text-[13px] font-semibold label-caps text-text-dim">This visit</span>
     <span class="font-display font-bold text-[84px] leading-none">{visitSum}</span>
     <span class="w-[70px]"></span>
@@ -229,7 +229,7 @@
   {/if}
   <div class="shrink-0 grid grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)] gap-[10px] items-start">
     <div
-      class="h-[58px] md:h-[min(124px,14vh)] box-border rounded-[14px] border border-line bg-surface-1 px-5 flex items-center justify-between"
+      class="h-[58px] md:h-[min(124px,14vh)] box-border rounded-card border border-line bg-surface-1 px-5 flex items-center justify-between"
     >
       <span class="text-[13px] font-semibold label-caps text-text-dim">This visit</span>
       <span class="font-display font-bold text-[min(84px,8vh)] leading-none">{visitSum}</span>

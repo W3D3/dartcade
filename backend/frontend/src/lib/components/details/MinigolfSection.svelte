@@ -28,14 +28,14 @@
     </Tabs.List>
 
     <Tabs.Content value="summary" class="flex min-w-0 flex-col gap-3">
-      <h3 class="font-display text-[14px] font-bold uppercase tracking-[0.06em] text-text-dim">Scorecard · {golf.course}</h3>
+      <h3 class="font-display text-[14px] font-bold uppercase tracking-wordmark text-text-dim">Scorecard · {golf.course}</h3>
       <Scorecard scores={golf.scores} pars={golf.holes.map(h => h.par)} {players} />
     </Tabs.Content>
 
     <Tabs.Content value="shots" class="flex min-w-0 flex-col gap-4">
       <Tabs.Root bind:value={hole} class="flex min-w-0 flex-col gap-4">
         <!-- Scrolls sideways on a phone rather than wrapping into a second row -->
-        <Tabs.List aria-label="Hole" class="scrollbar-themed flex max-w-full gap-1 self-start overflow-x-auto rounded-[10px] bg-bg p-1">
+        <Tabs.List aria-label="Hole" class="scrollbar-themed flex max-w-full gap-1 self-start overflow-x-auto rounded-md bg-bg p-1">
           {#each golf.holes as h, i (i)}
             <!-- The picked hole fills in the accent, like X01's leg selector -->
             <Tabs.Trigger

@@ -155,9 +155,9 @@
   </div>
 
   <header
-    class="relative z-[2] shrink-0 box-border h-14 md:h-16 px-4 md:px-7 flex items-center gap-3 md:gap-4 border-b border-line bg-surface-1"
+    class="relative z-2 shrink-0 box-border h-14 md:h-16 px-4 md:px-7 flex items-center gap-3 md:gap-4 border-b border-line bg-surface-1"
   >
-    <h1 class="font-display font-bold text-[22px] md:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
+    <h1 class="font-display font-bold text-[22px] md:text-[26px] uppercase tracking-section leading-none shrink-0">{title}</h1>
     <span class="hidden md:inline text-[14px] text-text-muted truncate">{meta}</span>
     {#if rankedGame}<RankedPill />{/if}
     {#if lobbyName && !rankedGame}
@@ -176,7 +176,7 @@
   </header>
 
   <main
-    class="relative z-[1] flex-1 min-h-0 overflow-y-auto box-border px-4 py-4 md:px-8 md:pt-5 md:pb-4 xl:px-14 xl:pt-7 xl:pb-6 flex flex-col gap-[22px]"
+    class="relative z-1 flex-1 min-h-0 overflow-y-auto box-border p-4 md:px-8 md:pt-5 md:pb-4 xl:px-14 xl:pt-7 xl:pb-6 flex flex-col gap-[22px]"
   >
     {#if view.layout === 'duel'}
       <!-- Centred: with only the stats we keep, the duel doesn't fill a tall screen -->
@@ -193,7 +193,8 @@
                 class="h-[30px] px-3 inline-flex items-center gap-[6px] rounded-full bg-accent text-accent-fg text-[13px] font-bold label-caps"
                 ><Trophy size={16} />Winner</span
               >
-              <span class="font-display font-bold text-[40px] md:text-[50px] xl:text-[64px] leading-[0.9] uppercase text-right break-words"
+              <span
+                class="font-display font-bold text-[40px] md:text-[50px] xl:text-[64px] leading-[0.9] uppercase text-right wrap-break-word"
                 >{winner.name}</span
               >
               {@render who(winner)}
@@ -216,7 +217,7 @@
             >
             {#if second}
               <span
-                class="font-display font-bold text-[96px] md:text-[132px] xl:text-[168px] leading-[0.82] tracking-[0.01em] whitespace-nowrap"
+                class="font-display font-bold text-[96px] md:text-[132px] xl:text-[168px] leading-[0.82] tracking-hero whitespace-nowrap"
               >
                 <span class="text-accent">{winner.score}</span><span class="text-line-chip text-[0.6em] align-[0.25em]"> – </span><span
                   class="text-text-dim">{second.score}</span
@@ -225,7 +226,7 @@
             {/if}
             <span
               class={second
-                ? 'text-[13px] tracking-[0.1em] uppercase text-text-dim'
+                ? 'text-[13px] label-caps  text-text-dim'
                 : 'font-display font-bold text-[56px] xl:text-[72px] leading-none uppercase'}>{view.scoreLabel}</span
             >
           </div>
@@ -244,7 +245,7 @@
                   >{ordinal(second.placement)}</span
                 >
                 <span
-                  class="font-display font-bold text-[32px] md:text-[38px] xl:text-[48px] leading-[0.9] uppercase text-ink-2 break-words"
+                  class="font-display font-bold text-[32px] md:text-[38px] xl:text-[48px] leading-[0.9] uppercase text-ink-2 wrap-break-word"
                   >{second.name}</span
                 >
                 {@render who(second)}
@@ -263,7 +264,7 @@
         {/if}
 
         {#if view.checkout}
-          <p class="rise r2 -mt-[6px] mb-0 text-center text-[16px] md:text-[18px] text-ink-2">
+          <p class="rise r2 mt-[-6px] mb-0 text-center text-[16px] md:text-[18px] text-ink-2">
             {view.checkout.name} checked out <strong class="text-text">{view.checkout.left}</strong> with
             <strong class="text-accent">{view.checkout.darts}</strong>
             {view.checkout.tail}
@@ -274,12 +275,12 @@
           <section aria-label="Legs" class="rise r3 grid grid-cols-2 md:flex gap-[10px]">
             {#each view.legs as leg (leg.n)}
               <div
-                class="md:flex-1 min-w-0 flex items-center gap-[10px] px-[14px] py-[10px] rounded-[12px] border
+                class="md:flex-1 min-w-0 flex items-center gap-[10px] px-[14px] py-[10px] rounded-lg border
                         {leg.byWinner ? 'bg-surface-active border-accent-line' : 'bg-surface-panel border-line-2'}"
               >
                 <Avatar name={leg.name} guest={leg.face?.userId === null} face={leg.face} class="size-[30px] text-[13px]" />
                 <span class="flex flex-col gap-px min-w-0">
-                  <span class="text-[12px] tracking-[0.08em] uppercase text-text-dim truncate">Leg {leg.n} · {leg.name}</span>
+                  <span class="text-[12px] tracking-cta uppercase text-text-dim truncate">Leg {leg.n} · {leg.name}</span>
                   <span class="text-[14px] truncate {leg.byWinner ? 'text-text' : 'text-ink-2'}">{leg.text}</span>
                 </span>
               </div>
@@ -290,7 +291,7 @@
         {#if view.cricketMarks}
           <section
             aria-label="Final marks"
-            class="rise r3 min-h-[360px] md:min-h-[420px] box-border rounded-[16px] bg-[rgba(21,23,19,0.88)] border border-line-2 px-3 md:px-5 pt-4 pb-2"
+            class="rise r3 min-h-[360px] md:min-h-[420px] box-border rounded-popover bg-[rgba(21,23,19,0.88)] border border-line-2 px-3 md:px-5 pt-4 pb-2"
           >
             <!-- The match just ended: nothing here should draw in, so `from` is `marks` itself -->
             <MarksGrid game={view.cricketMarks.game} sides={view.cricketMarks.sides} from={view.cricketMarks.game.marks} variant="duel" />
@@ -300,7 +301,7 @@
         {#if second && view.stats.length}
           <section
             aria-label="Match stats, {winner.name} against {second.name}"
-            class="rise r4 flex flex-col gap-[6px] px-4 md:px-7 py-[18px] rounded-[16px] bg-[rgba(21,23,19,0.88)] border border-line-2"
+            class="rise r4 flex flex-col gap-[6px] px-4 md:px-7 py-[18px] rounded-popover bg-[rgba(21,23,19,0.88)] border border-line-2"
           >
             <div class="w-full max-w-[760px] mx-auto flex justify-between mb-[6px] text-[13px] text-text-dim">
               <span>{winner.name}</span><span class="label-caps">Match stats</span><span>{second.name}</span>
@@ -313,7 +314,7 @@
                   >{@render statValue(row.values[0])}</span
                 >
                 <span class="flex flex-col gap-[5px]">
-                  <span class="text-center text-[12px] tracking-[0.08em] uppercase text-text-muted">{row.label}</span>
+                  <span class="text-center text-[12px] tracking-cta uppercase text-text-muted">{row.label}</span>
                   <span class="flex h-[6px] rounded-[3px] overflow-hidden bg-line">
                     <span class="bg-accent" style:width="{Math.round(row.share * 100)}%"></span>
                     <span class="grow bg-line-chip ml-[2px]"></span>
@@ -334,7 +335,7 @@
         <span class="text-[15px] md:text-[16px] text-text-muted">{view.note}</span>
       </div>
 
-      <div class="flex-grow min-h-0 flex flex-col md:flex-row gap-[22px] xl:gap-8 md:items-stretch">
+      <div class="grow min-h-0 flex flex-col md:flex-row gap-[22px] xl:gap-8 md:items-stretch">
         <section
           aria-label="Podium: {podium.map(p => `${ordinal(p.c.placement)} ${p.c.name}`).join(', ')}"
           class="flex-1 min-w-0 flex flex-col justify-end"
@@ -345,12 +346,12 @@
                 <span class="flex rounded-full {step[s].ring} {s === 'first' ? 'glow' : ''}">
                   <Avatar name={c.name} guest={c.face?.userId === null} face={c.face} class={step[s].avatar} />
                 </span>
-                <span class="max-w-full font-display font-bold leading-[0.9] uppercase text-center break-words {step[s].name}"
+                <span class="max-w-full font-display font-bold leading-[0.9] uppercase text-center wrap-break-word {step[s].name}"
                   >{c.name}</span
                 >
                 <span class="text-[13px] md:text-[14px] text-text-muted text-center">{c.sub}</span>
                 <div
-                  class="w-full box-border rounded-t-[14px] rounded-b-[4px] border border-b-0 flex items-start justify-center pt-3 {step[s]
+                  class="w-full box-border rounded-t-card rounded-b-[4px] border border-b-0 flex items-start justify-center pt-3 {step[s]
                     .block}"
                 >
                   <span class="font-display font-bold leading-[0.85] {step[s].num}">{c.placement}</span>
@@ -359,7 +360,7 @@
             {/each}
           </div>
           {#if rest.length}
-            <div class="rise r4 flex flex-col border-t-2 border-line-2 bg-surface-panel rounded-b-[12px]">
+            <div class="rise r4 flex flex-col border-t-2 border-line-2 bg-surface-panel rounded-b-lg">
               {#each rest as c (c.seats[0])}
                 <div class="flex items-center gap-[14px] h-[60px] px-[18px]">
                   <span class="w-11 font-display font-bold text-[30px] text-text-dim">{ordinal(c.placement)}</span>
@@ -373,10 +374,8 @@
         </section>
 
         <aside class="rise r3 md:w-[360px] xl:w-[420px] shrink-0 flex flex-col gap-[10px] xl:gap-[14px]">
-          <section aria-label="Final standings" class="px-[18px] py-[14px] rounded-[16px] bg-[rgba(21,23,19,0.9)] border border-line-2">
-            <div
-              class="grid grid-cols-[40px_minmax(0,1fr)_56px_56px_56px] gap-2 pb-[6px] text-[11px] tracking-[0.08em] uppercase text-text-dim"
-            >
+          <section aria-label="Final standings" class="px-[18px] py-[14px] rounded-popover bg-[rgba(21,23,19,0.9)] border border-line-2">
+            <div class="grid grid-cols-[40px_minmax(0,1fr)_56px_56px_56px] gap-2 pb-[6px] text-[11px] tracking-cta uppercase text-text-dim">
               <span></span><span>Player</span>
               {#each view.columns as col (col)}<span class="text-right">{col}</span>{/each}
             </div>
@@ -400,10 +399,10 @@
             <section aria-label="Highlights" class="flex flex-col gap-2">
               <span class="text-[12px] label-caps text-text-muted">Highlights</span>
               {#each view.highlights as h (h.label)}
-                <div class="flex items-center gap-3 px-[14px] py-3 rounded-[12px] bg-surface-panel border border-line-2">
+                <div class="flex items-center gap-3 px-[14px] py-3 rounded-lg bg-surface-panel border border-line-2">
                   <Avatar name={h.name} guest={h.face?.userId === null} face={h.face} class="size-9 text-[15px]" />
                   <span class="flex flex-col gap-[2px] min-w-0">
-                    <span class="text-[12px] tracking-[0.08em] uppercase text-accent">{h.label}</span>
+                    <span class="text-[12px] tracking-cta uppercase text-accent">{h.label}</span>
                     <span class="text-[14px] text-ink-2">{h.name}: {h.text}</span>
                   </span>
                 </div>
@@ -420,7 +419,7 @@
 
   {#if primary}
     <footer
-      class="rise r5 relative z-[2] shrink-0 box-border flex items-center gap-3 px-4 md:px-7 pt-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] border-t border-line bg-surface-1"
+      class="rise r5 relative z-2 shrink-0 box-border flex items-center gap-3 px-4 md:px-7 pt-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] border-t border-line bg-surface-1"
     >
       {#if saved && onhistory}
         <button
@@ -428,7 +427,7 @@
           onclick={onhistory}
           class="ml-auto h-14 px-[22px] {secondary
             ? 'hidden md:flex'
-            : 'flex'} items-center gap-[10px] rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+            : 'flex'} items-center gap-[10px] rounded-lg border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
         >
           <RotateCcwClock size={20} />History
         </button>
@@ -439,7 +438,7 @@
           onclick={secondary.onclick}
           class="{saved && onhistory
             ? 'max-md:ml-auto'
-            : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+            : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-lg border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
         >
           {secondary.label}
         </button>
@@ -449,7 +448,7 @@
         onclick={primary.onclick}
         class="{(saved && onhistory) || secondary
           ? ''
-          : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-[12px] border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-[0.06em] uppercase cursor-pointer hover:brightness-[1.08]"
+          : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-lg border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-wordmark uppercase cursor-pointer hover:brightness-[1.08]"
       >
         {#if primary.rematch}<RotateCcw size={20} strokeWidth={2.2} />{:else}<House size={20} strokeWidth={2.2} />{/if}{primary.label}
       </button>
