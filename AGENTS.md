@@ -91,6 +91,7 @@ corrected dart replays the open visit cleanly.
 | Architecture overview | `ARCHITECTURE.md`; the original research and Board Manager API findings in `docs/architecture.md` |
 | Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
 | Setup, tests, builds | `DEVELOPMENT.md`, `mise.toml` |
+| Shared backend test helpers (auth mock, `db` singleton mock, user/board/lobby inserts); use these in a new test, not a hand-written `vi.mock` or `insertInto('user')` | `backend/src/test/` (`authByHeader.ts`, `authAs.ts`, `db.ts`, `fixtures.ts`), on `openTestSchema` in `backend/src/db/testSchema.ts`; how to use them in `DEVELOPMENT.md` (Writing backend tests) |
 | Early experiments (not shipped) | `spike/` |
 
 ## Adding a game
