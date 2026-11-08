@@ -6737,6 +6737,7 @@
                                 "round",
                                 "winner",
                                 "visitLocked",
+                                "currentVisitEffects",
                                 "marksScored",
                                 "dartsThrown",
                                 "lastVisit",
@@ -6859,6 +6860,27 @@
                                 },
                                 "visitLocked": {
                                   "type": "boolean"
+                                },
+                                "currentVisitEffects": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "marks",
+                                      "points"
+                                    ],
+                                    "properties": {
+                                      "marks": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "points": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  "description": "The open visit's darts, in order: the marks each opened and the points it scored (cut-throat: gave). A dart on a target with both 0 hit a dead number."
                                 },
                                 "marksScored": {
                                   "type": "array",
@@ -13804,6 +13826,7 @@
                                 "round",
                                 "winner",
                                 "visitLocked",
+                                "currentVisitEffects",
                                 "marksScored",
                                 "dartsThrown",
                                 "lastVisit",
@@ -13926,6 +13949,27 @@
                                 },
                                 "visitLocked": {
                                   "type": "boolean"
+                                },
+                                "currentVisitEffects": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "marks",
+                                      "points"
+                                    ],
+                                    "properties": {
+                                      "marks": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "points": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  "description": "The open visit's darts, in order: the marks each opened and the points it scored (cut-throat: gave). A dart on a target with both 0 hit a dead number."
                                 },
                                 "marksScored": {
                                   "type": "array",
@@ -20942,6 +20986,7 @@
                                     "round",
                                     "winner",
                                     "visitLocked",
+                                    "currentVisitEffects",
                                     "marksScored",
                                     "dartsThrown",
                                     "lastVisit",
@@ -21064,6 +21109,27 @@
                                     },
                                     "visitLocked": {
                                       "type": "boolean"
+                                    },
+                                    "currentVisitEffects": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "marks",
+                                          "points"
+                                        ],
+                                        "properties": {
+                                          "marks": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          },
+                                          "points": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        }
+                                      },
+                                      "description": "The open visit's darts, in order: the marks each opened and the points it scored (cut-throat: gave). A dart on a target with both 0 hit a dead number."
                                     },
                                     "marksScored": {
                                       "type": "array",
@@ -28009,6 +28075,7 @@
                                     "round",
                                     "winner",
                                     "visitLocked",
+                                    "currentVisitEffects",
                                     "marksScored",
                                     "dartsThrown",
                                     "lastVisit",
@@ -28131,6 +28198,27 @@
                                     },
                                     "visitLocked": {
                                       "type": "boolean"
+                                    },
+                                    "currentVisitEffects": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "marks",
+                                          "points"
+                                        ],
+                                        "properties": {
+                                          "marks": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          },
+                                          "points": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        }
+                                      },
+                                      "description": "The open visit's darts, in order: the marks each opened and the points it scored (cut-throat: gave). A dart on a target with both 0 hit a dead number."
                                     },
                                     "marksScored": {
                                       "type": "array",

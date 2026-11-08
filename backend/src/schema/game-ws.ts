@@ -312,6 +312,13 @@ export type CricketGame = EngineGameFields & {
   winner: number | null
   visitLocked: boolean
   /**
+   * The open visit's darts, in order: the marks each opened and the points it scored (cut-throat: gave). A dart on a target with both 0 hit a dead number.
+   */
+  currentVisitEffects: {
+    marks: number
+    points: number
+  }[]
+  /**
    * Per seat: counted marks (MPR).
    */
   marksScored: number[]

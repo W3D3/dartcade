@@ -29,6 +29,10 @@ export type CricketConfig = {
   botSpeed: 'fast' | 'normal' | 'slow'
 } & TeamsConfig
 
+/** What one dart did: the marks it opened and the points it scored (cut-throat: gave). Both 0 on a
+ *  target is a dead number, 0 marks and points on a hit; on a miss nothing either. */
+export type CricketDartEffect = { marks: number; points: number }
+
 /** A committed visit: marks counted and points scored, for the chalkboard. */
 export type CricketVisitRecord = { seat: number; marks: number; points: number; darts: number }
 
@@ -62,6 +66,8 @@ export type CricketState = {
   visitMarks: number
   /** `scored` this visit. */
   visitPoints: number
+  /** The open visit's darts, in order: what each one opened and scored. */
+  visitEffects: CricketDartEffect[]
   /** Per seat, counted marks (MPR). */
   marksScored: number[]
   /** Per seat. */
@@ -77,7 +83,7 @@ export type CricketState = {
 // Ends the open visit for its thrower: its record and the per-player totals that count it
 function committedVisit(
   s: CricketState,
-): Pick<CricketState, 'dartsThrown' | 'legVisits' | 'lastVisit' | 'visitDarts' | 'visitMarks' | 'visitPoints'> {
+): Pick<CricketState, 'dartsThrown' | 'legVisits' | 'lastVisit' | 'visitDarts' | 'visitMarks' | 'visitPoints' | 'visitEffects'> {
   const cp = s.currentPlayer
   const record: CricketVisitRecord = { seat: cp, marks: s.visitMarks, points: s.visitPoints, darts: s.visitDarts }
   return {
@@ -87,6 +93,7 @@ function committedVisit(
     visitDarts: 0,
     visitMarks: 0,
     visitPoints: 0,
+    visitEffects: [],
   }
 }
 
@@ -163,7 +170,7 @@ export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStar
 /** Cricket without a bull off; `cricketModule` below adds it. */
 export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, 'cricket', CricketDetail> = {
   id: 'cricket',
-  version: 1,
+  version: 2,
   defaultConfig: {
     mode: 'standard',
     firstTo: 1,
@@ -202,6 +209,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       visitDarts: 0,
       visitMarks: 0,
       visitPoints: 0,
+      visitEffects: [],
       marksScored: Array<number>(n).fill(0),
       dartsThrown: Array<number>(n).fill(0),
       targetMarks: Array.from({ length: n }, () => TARGETS.map(() => 0)),
@@ -221,7 +229,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
   onBoardEvent(s: CricketState, e: BoardEvent): { state: CricketState } {
     switch (e.kind) {
       case 'visit.opened': {
-        return { state: { ...s, visitDarts: 0, visitMarks: 0, visitPoints: 0 } }
+        return { state: { ...s, visitDarts: 0, visitMarks: 0, visitPoints: 0, visitEffects: [] } }
       }
 
       case 'dart.detected': {
@@ -229,17 +237,18 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
 
         const thrown = { ...s, visitDarts: s.visitDarts + 1 }
         const m = marksFor(e.data.dart, s.board.targets)
-        if (!m) return { state: thrown }
+        if (!m) return { state: { ...thrown, visitEffects: [...s.visitEffects, { marks: 0, points: 0 }] } }
 
         const cp = s.currentPlayer
         const team = s.teamOf[cp]
-        const { board, counted, scored } = applyMarks(s.board, team, m.target, m.marks, s.cfg.mode)
+        const { board, counted, scored, opened } = applyMarks(s.board, team, m.target, m.marks, s.cfg.mode)
         return {
           state: {
             ...thrown,
             board,
             visitMarks: s.visitMarks + counted,
             visitPoints: s.visitPoints + scored,
+            visitEffects: [...s.visitEffects, { marks: opened, points: scored }],
             marksScored: s.marksScored.map((v, i) => (i === cp ? v + counted : v)),
             targetMarks: s.targetMarks.map((row, i) => (i === cp ? row.map((v, ti) => (ti === m.target ? v + counted : v)) : row)),
             legWonBy: legWinner(board, team, s.cfg.mode),
@@ -283,6 +292,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       round: s.round,
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       visitLocked: s.legWonBy !== null,
+      currentVisitEffects: s.visitEffects,
       marksScored: s.marksScored,
       dartsThrown: s.dartsThrown,
       lastVisit: s.lastVisit,

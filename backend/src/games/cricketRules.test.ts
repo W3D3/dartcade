@@ -54,7 +54,13 @@ describe('applyMarks', () => {
     )
     const r = applyMarks(b, 0, idx(20), 3, 'standard')
     expect(r.board.points).toEqual([0, 0])
-    expect(r).toMatchObject({ counted: 0, scored: 0 })
+    expect(r).toMatchObject({ counted: 0, scored: 0, opened: 0 })
+  })
+  it.each(['standard', 'cutthroat'] as const)('%s: reports what a dart opened apart from what it scored', mode => {
+    const b = board([[2, 0, 0, 0, 0, 0, 0], NONE], [0, 0])
+    expect(applyMarks(b, 0, idx(20), 3, mode)).toMatchObject({ opened: 1, scored: 40, counted: 3 })
+    const closed = board([[3, 0, 0, 0, 0, 0, 0], NONE], [0, 0])
+    expect(applyMarks(closed, 0, idx(20), 3, mode)).toMatchObject({ opened: 0, scored: 60, counted: 3 })
   })
   it('standard, 3 players: scores while any opponent is still open', () => {
     const b = board([[3, 0, 0, 0, 0, 0, 0], [3, 0, 0, 0, 0, 0, 0], NONE], [0, 0, 0])
