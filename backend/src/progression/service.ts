@@ -70,6 +70,14 @@ export function playerGame(game: XpGame, userId: string): Omit<PlayerGame, 'prev
   }
 }
 
+/** The X01 replay of a finished game: each visit's score and bust, who won each leg (the history's detail). */
+export async function x01DetailOf(db: Kysely<Database>, sessionId: string, warn: ProgressionDeps['warn']): Promise<X01Detail | null> {
+  const game = await getFinishedGame(db, sessionId)
+  if (!game) return null
+  const built = await storedDetail(db, game, warn)
+  return built?.detail.mode === 'x01' ? built.detail : null
+}
+
 export class ProgressionService {
   constructor(private readonly deps: ProgressionDeps) {}
 
@@ -100,12 +108,8 @@ export class ProgressionService {
     }
   }
 
-  // The X01 replay: each visit's score and bust, who won each leg (the history's detail)
-  private async x01Detail(sessionId: string): Promise<X01Detail | null> {
-    const game = await getFinishedGame(this.deps.db, sessionId)
-    if (!game) return null
-    const built = await storedDetail(this.deps.db, game, this.deps.warn)
-    return built?.detail.mode === 'x01' ? built.detail : null
+  private x01Detail(sessionId: string): Promise<X01Detail | null> {
+    return x01DetailOf(this.deps.db, sessionId, this.deps.warn)
   }
 
   private async awardPlayer(game: XpGame, userId: string, backfill: boolean, x01: X01Detail | null): Promise<XpGainedMessage | null> {
