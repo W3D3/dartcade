@@ -5,6 +5,8 @@
   import type { Lobby } from '$lib/api/lobby-ws'
   import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
   import { gameName, nextGameSummary } from '$lib/lobby/format'
+  import { withUserCourses } from '$lib/minigolf/editor/course'
+  import { userCourses } from '$lib/minigolf/userCourses'
   import { nextGameInTeams, teamRosters } from '$lib/lobby/rules'
 
   let { lobby, pickedBy, size = 'lg' }: { lobby: Lobby; pickedBy: string; size?: 'lg' | 'sm' } = $props()
@@ -34,6 +36,8 @@
     <h3 class="m-0 font-display font-bold leading-none uppercase {size === 'lg' ? 'text-[24px] md:text-[32px]' : 'text-[20px]'}">
       {game ? gameName(game.gameId) : 'No game yet'}
     </h3>
-    {#if game}<span class="text-[13px] md:text-[15px] text-ink-2">{nextGameSummary(game, defaults, teamSizes, info?.configMeta)}</span>{/if}
+    {#if game}<span class="text-[13px] md:text-[15px] text-ink-2"
+        >{nextGameSummary(game, defaults, teamSizes, withUserCourses(info?.configMeta ?? {}, $userCourses))}</span
+      >{/if}
   </div>
 </div>

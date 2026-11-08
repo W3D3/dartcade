@@ -10,6 +10,7 @@
   import Stepper from '$lib/components/Stepper.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import type { ConfigFieldMeta } from '$lib/api'
+  import { userCourses } from '$lib/minigolf/userCourses'
   import { GAME_MODES } from '$lib/gameModes'
 
   let {
@@ -73,7 +74,15 @@
   // Minigolf's courses as cards, as the server lists them (the published ones, plus the mixed
   // course); a course's holes are only known once a game copies them at start
   const courseSub = (id: unknown) => (id === 'mixed' ? '9 random holes from all courses' : '')
-  const courseCards = $derived((meta.course?.options ?? []).map(o => ({ id: o.value, name: o.label, sub: courseSub(o.value) })))
+  const officialCards = $derived((meta.course?.options ?? []).map(o => ({ id: o.value, name: o.label, sub: courseSub(o.value) })))
+  // Players' published courses, a separate group, when the flag lets this viewer see them
+  const courseGroups = $derived(
+    [
+      { label: 'Official', cards: officialCards },
+      { label: 'User courses', cards: $userCourses },
+    ].filter(g => g.cards.length > 0),
+  )
+  const courseCards = $derived(courseGroups.flatMap(g => g.cards))
   const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
   const setMaxStrokes = (n: number) => set('maxStrokes', clamp(n, 3, 10))
 
@@ -437,11 +446,14 @@
         aria-label="Course"
         class="grid gap-2"
       >
-        {#each courseCards as c, i (String(c.id))}
-          <RadioGroupItem value={String(i)} variant="course">
-            <span class="text-[15px] font-semibold">{c.name}</span>
-            {#if c.sub}<span class="text-[13px] text-text-muted">{c.sub}</span>{/if}
-          </RadioGroupItem>
+        {#each courseGroups as group (group.label)}
+          {#if courseGroups.length > 1}<h3 class="m-0 mt-1 text-[11px] label-caps text-text-dim">{group.label}</h3>{/if}
+          {#each group.cards as c (String(c.id))}
+            <RadioGroupItem value={String(courseCards.indexOf(c))} variant="course">
+              <span class="text-[15px] font-semibold">{c.name}</span>
+              {#if c.sub}<span class="text-[13px] text-text-muted">{c.sub}</span>{/if}
+            </RadioGroupItem>
+          {/each}
         {/each}
       </RadioGroup>
     </fieldset>

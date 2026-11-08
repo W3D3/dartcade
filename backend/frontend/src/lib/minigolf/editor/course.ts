@@ -3,6 +3,7 @@
 import type { components } from '$lib/api/schema'
 import type { DraftStatus, PublishProblem } from './store.svelte'
 import { plural } from '$lib/fmt'
+import type { ConfigFieldMeta } from '$lib/api'
 
 type ApiHole = components['schemas']['MinigolfHole']
 export type HoleRow = components['schemas']['MinigolfHoleRow']
@@ -95,3 +96,15 @@ export const userCourseCards = (courses: CourseRow[]): CourseCard[] =>
       ? [{ id: c.id, name: c.published.name, sub: `by ${c.authorName ?? 'a player'} · ${plural(c.published.holeIds.length, 'hole')}` }]
       : [],
   )
+
+/** A mode's field meta with the user courses added to the course options, so a rules line can name them. */
+export const withUserCourses = (
+  meta: Partial<Record<string, ConfigFieldMeta>>,
+  cards: CourseCard[],
+): Partial<Record<string, ConfigFieldMeta>> =>
+  meta.course
+    ? {
+        ...meta,
+        course: { ...meta.course, options: [...(meta.course.options ?? []), ...cards.map(c => ({ value: c.id, label: c.name }))] },
+      }
+    : meta
