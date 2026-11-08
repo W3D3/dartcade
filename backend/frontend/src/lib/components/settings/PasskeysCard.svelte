@@ -116,7 +116,7 @@
         <li class="flex items-center justify-between gap-3 min-h-14 border-t border-surface-paused">
           {#if renaming?.id === p.id}
             <form
-              class="flex flex-grow items-center gap-2"
+              class="flex grow items-center gap-2"
               onsubmit={e => {
                 e.preventDefault()
                 void rename()
@@ -136,7 +136,7 @@
                 type="button"
                 aria-label="Rename {passkeyName(p)}"
                 onclick={() => (renaming = { id: p.id, value: passkeyName(p) })}
-                class="size-11 flex items-center justify-center rounded-[10px] border-0 text-text-muted cursor-pointer hover:bg-surface-paused"
+                class="size-11 flex items-center justify-center rounded-md border-0 text-text-muted cursor-pointer hover:bg-surface-paused"
               >
                 <Pencil size={16} />
               </button>
@@ -145,7 +145,7 @@
                 aria-label="Remove {passkeyName(p)}"
                 disabled={busy}
                 onclick={() => void remove(p)}
-                class="size-11 flex items-center justify-center rounded-[10px] border-0 text-live-text cursor-pointer hover:bg-live-soft"
+                class="size-11 flex items-center justify-center rounded-md border-0 text-live-text cursor-pointer hover:bg-live-soft"
               >
                 <Trash size={16} />
               </button>

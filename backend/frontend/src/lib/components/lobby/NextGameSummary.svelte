@@ -31,7 +31,7 @@
 <div class="flex items-start gap-[14px] md:gap-[18px]">
   <span class="font-display font-bold leading-[0.85] text-accent {size === 'lg' ? 'text-[52px] md:text-[72px]' : 'text-[44px]'}">{big}</span
   >
-  <div class="flex flex-col gap-[2px] md:gap-1 flex-grow min-w-0">
+  <div class="flex flex-col gap-[2px] md:gap-1 grow min-w-0">
     <span class="text-[11px] md:text-[12px] label-caps text-text-muted">Next game · {pickedBy}</span>
     <h3 class="font-display font-bold leading-none uppercase {size === 'lg' ? 'text-[24px] md:text-[32px]' : 'text-[20px]'}">
       {game ? gameName(game.gameId) : 'No game yet'}

@@ -131,7 +131,7 @@
 <svg
   bind:this={svg}
   {viewBox}
-  class="block w-full h-full touch-none"
+  class="block size-full touch-none"
   role="img"
   aria-label="Hole {hole.name}, par {hole.par}"
   data-testid="hole-view"

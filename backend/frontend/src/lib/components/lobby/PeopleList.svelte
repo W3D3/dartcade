@@ -58,7 +58,7 @@
   }
 </script>
 
-<Panel title="People · {c.people}" label="People in this lobby" flat class="lg:flex-grow">
+<Panel title="People · {c.people}" label="People in this lobby" flat class="lg:grow">
   {#snippet note()}{#if locked}<span class="inline-flex items-center gap-[5px] text-text-dim"
         ><Lock size={13} aria-hidden="true" />Locked while searching</span
       >{:else}<ReadyCount {lobby} suffix={order} />{/if}{/snippet}
@@ -73,7 +73,7 @@
       ? 'xl:grid-cols-[32px_14px_36px_minmax(0,1fr)_150px_148px] pr-2'
       : 'xl:grid-cols-[14px_36px_minmax(0,1fr)_150px_148px] px-[10px]'}"
   >
-    <span class="col-start-[-4]">Player</span><span>Board</span><span class="text-right pr-[42px]">Status</span>
+    <span class="-col-start-4">Player</span><span>Board</span><span class="text-right pr-[42px]">Status</span>
   </div>
   <ol
     class="flex flex-col gap-[6px] lg:min-h-0 lg:overflow-y-auto"

@@ -27,12 +27,12 @@
 {/snippet}
 
 <div
-  class="relative mt-auto min-h-[120px] flex-1 max-h-[340px] flex flex-col box-border px-3 py-[10px] rounded-[12px] border border-line-2
+  class="relative mt-auto min-h-[120px] flex-1 max-h-[340px] flex flex-col box-border px-3 py-[10px] rounded-lg border border-line-2
             {active ? 'bg-surface-chip' : 'bg-surface-inset'}"
   role="region"
   aria-label={label}
 >
-  <span class="absolute left-1/2 top-[10px] bottom-[10px] w-px bg-line-chip" aria-hidden="true"></span>
+  <span class="absolute left-1/2 inset-y-[10px] w-px bg-line-chip" aria-hidden="true"></span>
   <div class="grid grid-cols-2 h-7 shrink-0 items-center text-[13px] label-caps text-text-dim">
     <span class="text-right pr-[14px]">Scored</span><span class="pl-[14px]">Left</span>
   </div>
@@ -55,7 +55,7 @@
     {/each}
     {#if current}
       <div
-        class="grid grid-cols-2 h-[46px] shrink-0 items-center rounded-[8px] bg-surface-key font-display font-bold text-[34px] leading-none tabular-nums"
+        class="grid grid-cols-2 h-[46px] shrink-0 items-center rounded-sm bg-surface-key font-display font-bold text-[34px] leading-none tabular-nums"
       >
         <span class="pr-[14px] flex items-baseline justify-end gap-[10px] {current.bust ? 'text-danger-text' : 'text-accent'}">
           {@render mark(currentMark, true)}<span>{current.bust ? 'Bust' : `${current.scored}…`}</span>

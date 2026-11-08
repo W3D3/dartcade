@@ -74,11 +74,11 @@
 <header class="flex flex-col gap-2 border-b border-line px-4 py-3 md:px-5">
   <Breadcrumb items={minigolfCoursesTrail(courseId ? courseName : null, area)} />
   <div class="flex flex-wrap items-center gap-3">
-    <h1 class="font-display font-bold text-[24px] uppercase tracking-[0.04em]">Course editor</h1>
+    <h1 class="font-display font-bold text-[24px] uppercase tracking-section">Course editor</h1>
     {#if area.admin}
       <span
         title="You can edit official courses"
-        class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
+        class="inline-flex h-6 items-center rounded-chip border border-warn-line bg-warn-soft px-2 text-[11px] font-bold label-caps text-warn"
         >Admin</span
       >
     {/if}
@@ -96,7 +96,7 @@
     {/if}
   </div>
   {#if problems.length > 0 || error}
-    <div role="alert" class="rounded-[10px] border border-live-text/50 bg-live-soft px-3 py-2 text-[14px]">
+    <div role="alert" class="rounded-md border border-live-text/50 bg-live-soft px-3 py-2 text-[14px]">
       {#if error}<p class="font-semibold text-live-text">{error}</p>{/if}
       {#if problems.length > 0}
         <p class="font-semibold text-live-text">Not published. Fix these first:</p>

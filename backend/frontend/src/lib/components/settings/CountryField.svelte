@@ -27,7 +27,7 @@
     >Country <span class="text-[13px] font-normal text-text-dim">· optional</span></span
   >
   <CountryPicker labelledby="settings-country" value={$currentUser?.country ?? null} onchange={(code: string | null) => void save(code)} />
-  <span class="text-[13px] leading-[1.5] text-text-dim"
+  <span class="text-kicker/normal text-text-dim"
     >A flag next to your name on your profile and on hover. Everyone who can see your profile sees it, not only friends. Saved as soon as
     you pick one.</span
   >

@@ -69,7 +69,7 @@
             {:else if f.relation === 'incoming'}
               <a href="#/friends" class="text-[13px] font-semibold text-accent no-underline">Wants to be friends</a>
             {:else if f.relation === 'none'}
-              <Button variant="outline" onclick={() => void add(f.name, f.id)} class="h-8 px-3 rounded-[9px] text-[13px] font-semibold"
+              <Button variant="outline" onclick={() => void add(f.name, f.id)} class="h-8 px-3 rounded-key text-[13px] font-semibold"
                 >Add friend</Button
               >
             {/if}

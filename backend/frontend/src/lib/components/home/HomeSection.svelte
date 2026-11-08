@@ -24,10 +24,10 @@
 
 <section
   aria-label={title}
-  class="box-border flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface-panel p-4 md:p-5 {className}"
+  class="box-border flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface-panel p-4 md:p-5 {className}"
 >
   <div class="flex items-center justify-between gap-3">
-    <h2 class="font-display text-[22px] font-bold uppercase leading-none tracking-[0.04em]">{title}</h2>
+    <h2 class="font-display text-[22px] font-bold uppercase leading-none tracking-section">{title}</h2>
     {#if link}<a href={link.href} class="text-[13px] font-semibold text-accent no-underline">{link.label}</a>{/if}
   </div>
   {#if error}

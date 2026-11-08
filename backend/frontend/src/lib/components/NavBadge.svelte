@@ -8,6 +8,6 @@
 <span
   aria-label={hidden ? undefined : label}
   aria-hidden={hidden ? 'true' : undefined}
-  class="h-[18px] min-w-[18px] box-border px-[5px] rounded-[9px] bg-live text-[#fff] text-[11px] font-bold flex items-center justify-center {className}"
+  class="h-[18px] min-w-[18px] box-border px-[5px] rounded-key bg-live text-white text-[11px] font-bold flex items-center justify-center {className}"
   >{count}</span
 >

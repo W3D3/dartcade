@@ -125,8 +125,8 @@
   }
 </script>
 
-<div class="flex min-h-0 flex-grow flex-col gap-4">
-  <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 [&>*]:shrink-0">
+<div class="flex min-h-0 grow flex-col gap-4">
+  <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 *:shrink-0">
     <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
     <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
     <button type="button" class={BUTTON} onclick={replay} disabled={bench.rolling || replaying || !bench.lastShot}>Replay</button>
@@ -134,7 +134,7 @@
       {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
     </span>
   </div>
-  <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:flex-grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+  <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
     <!-- On phones the hole and the board share the screen, so aiming and the roll both show -->
     <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
       {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}

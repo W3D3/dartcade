@@ -25,7 +25,7 @@
       guest={face.guest}
       face={{ avatar: face.avatar ?? { kind: 'none' }, userId: face.userId, bot: face.bot }}
       {size}
-      class="-ml-[6px] {face.guest ? 'bg-surface-active' : 'ring-2 ring-surface-active'}"
+      class="ml-[-6px] {face.guest ? 'bg-surface-active' : 'ring-2 ring-surface-active'}"
     />
   {/each}
 </span>

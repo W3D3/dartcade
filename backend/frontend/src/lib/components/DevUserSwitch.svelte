@@ -22,7 +22,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <span class="text-[12px] uppercase tracking-[0.08em] text-text-dim">{label}</span>
+  <span class="text-[12px] uppercase tracking-cta text-text-dim">{label}</span>
   <div class="flex flex-wrap gap-2">
     {#each DEV_USERS as user (user.email)}
       {@const current = markCurrent && $currentUser?.email === user.email}

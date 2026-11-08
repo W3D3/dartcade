@@ -70,25 +70,25 @@
       type="button"
       onclick={forfeits ? onend : onleave}
       aria-label={forfeits ? 'Forfeit game' : 'Leave game'}
-      class="w-11 h-11 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
+      class="size-11 shrink-0 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
     >
       <ChevronLeft size={18} />
     </button>
     <div class="flex flex-col gap-[3px] min-w-0">
       <span class="flex items-center gap-[6px] min-w-0">
-        <h1 class="font-display font-bold text-[20px] leading-none uppercase tracking-[0.04em] whitespace-nowrap">{title}</h1>
+        <h1 class="font-display font-bold text-[20px] leading-none uppercase tracking-section whitespace-nowrap">{title}</h1>
         {#if paused}
           <span
             class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full bg-surface-paused text-ink-2 text-[10px] font-bold tracking-[0.1em]"
           >
-            <span class="w-[6px] h-[6px] rounded-[1px] bg-text-muted"></span>PAUSED
+            <span class="size-[6px] rounded-[1px] bg-text-muted"></span>PAUSED
           </span>
         {:else if myBoard && !myBoard.online}
           <span
             role="status"
-            class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-[0.04em] whitespace-nowrap"
+            class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-section whitespace-nowrap"
           >
-            <span class="w-[6px] h-[6px] box-border rounded-full border-[1.5px] border-warn"></span>BOARD OFFLINE
+            <span class="size-[6px] box-border rounded-full border-[1.5px] border-warn"></span>BOARD OFFLINE
           </span>
         {:else if ranked}
           <RankedPill />
@@ -143,7 +143,7 @@
     </Button>
 
     <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
-      <h1 class="font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
+      <h1 class="font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-section leading-none shrink-0">{title}</h1>
       {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
       {#if ranked}
         <RankedPill />
@@ -154,7 +154,7 @@
     <div class="ml-auto flex items-center gap-3 xl:gap-4 shrink-0">
       {#if showViewToggle}
         <div
-          class="h-11 box-border flex items-center p-[3px] bg-bg rounded-[10px] border border-line-strong"
+          class="h-11 box-border flex items-center p-[3px] bg-bg rounded-md border border-line-strong"
           role="group"
           aria-label="Dart entry"
         >
@@ -163,7 +163,7 @@
               type="button"
               onclick={() => onviewmode(o.m)}
               aria-pressed={viewMode === o.m}
-              class="h-full px-3 rounded-[7px] text-[14px] font-medium border-0 cursor-pointer transition-colors
+              class="h-full px-3 rounded-segment text-[14px] font-medium border-0 cursor-pointer transition-colors
                    {viewMode === o.m ? 'bg-surface-key text-text' : 'bg-transparent text-text-dim hover:text-ink-2'}">{o.label}</button
             >
           {/each}
@@ -174,7 +174,7 @@
         <span
           class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px] inline-flex items-center gap-2 rounded-full bg-surface-paused text-ink-2 font-bold tracking-[0.1em]"
         >
-          <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
+          <span class="size-2 rounded-bar bg-text-muted"></span>PAUSED
         </span>
       {/if}
 

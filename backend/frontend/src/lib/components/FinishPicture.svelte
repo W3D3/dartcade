@@ -19,7 +19,7 @@
 <span
   aria-hidden="true"
   style={size == null ? undefined : `width: ${size}px; height: ${size}px;`}
-  class="relative block shrink-0 rounded-full overflow-hidden {background ? '' : 'bg-[#131511]'} {size == null && !className
+  class="relative block shrink-0 rounded-full overflow-hidden {background ? '' : 'bg-surface-1'} {size == null && !className
     ? 'size-full'
     : ''} {className}"
 >

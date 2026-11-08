@@ -9,6 +9,6 @@
 </script>
 
 <!-- pointer-events-none: HoleView's svg is touch-none, which would stop the list scrolling on touch -->
-<div class="shrink-0 overflow-hidden rounded-[6px] bg-surface-inset pointer-events-none {className}" aria-hidden="true">
+<div class="shrink-0 overflow-hidden rounded-chip bg-surface-inset pointer-events-none {className}" aria-hidden="true">
   {#if shown}<HoleView hole={shown} ball={shown.tee} halo={false} />{/if}
 </div>

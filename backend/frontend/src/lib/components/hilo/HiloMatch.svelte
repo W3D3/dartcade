@@ -119,23 +119,20 @@
 {#snippet band()}
   {#if banner}
     {@const [head, rest] = banner.split(' · ')}
-    <div role="alert" class="h-[72px] shrink-0 box-border px-5 flex items-center gap-4 rounded-[14px] bg-live-soft border-2 border-live">
+    <div role="alert" class="h-[72px] shrink-0 box-border px-5 flex items-center gap-4 rounded-card bg-live-soft border-2 border-live">
       <span class="font-display font-bold text-[40px] xl:text-[48px] leading-none text-live whitespace-nowrap">{head}</span>
       <span class="text-[16px] xl:text-[18px] text-[#ffd2cd] truncate">{rest}</span>
       <span class="ml-auto hidden xl:inline text-[14px] text-[#ffb4ad] whitespace-nowrap">Bars stay put</span>
     </div>
   {:else}
-    <div
-      role="status"
-      class="relative h-[72px] shrink-0 box-border flex items-center justify-center rounded-[14px] bg-surface-panel border border-line-2"
-    >
+    <div role="status" class="relative h-[72px] shrink-0 box-border flex items-center justify-center card">
       <span class="absolute left-5 top-1/2 -translate-y-1/2 text-[14px] label-caps text-text-muted">This visit</span>
       <span class="font-display font-bold text-[66px] leading-[0.85] {pill && !toGo ? (red ? 'text-live' : 'text-accent') : ''}"
         >{game.visitTotal}</span
       >
       {#if pill}
         <span
-          class="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center h-7 px-3 rounded-full text-[12px] font-bold uppercase tracking-[0.08em]
+          class="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center h-7 px-3 rounded-full text-[12px] font-bold uppercase tracking-cta
                  {red ? 'bg-live-soft text-live-text' : toGo ? 'bg-surface-2 text-text' : 'bg-accent-tint text-accent'}">{pill}</span
         >
       {/if}

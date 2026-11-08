@@ -38,7 +38,7 @@
   <AuthPanel />
   <AuthHero />
 
-  <main class="flex flex-grow md:items-center md:justify-center">
+  <main class="flex grow md:items-center md:justify-center">
     <div class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
       {#if !infoLoaded}
         <!-- avoid flashing the "isn't available" message before /api/auth-info has loaded -->
@@ -53,7 +53,7 @@
           class="flex flex-col gap-5 md:gap-7"
         >
           <div class="flex flex-col gap-2">
-            <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+            <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
               Reset password
             </h1>
             <p class="text-[16px] text-text-muted">Enter the email on your account and we'll send you a link.</p>
@@ -73,10 +73,8 @@
 
         {#if sent}
           <div class="h-px bg-line-2"></div>
-          <div class="p-4 rounded-[10px] bg-surface-inset border border-line-popover">
-            <p class="text-[15px] leading-[1.5] text-ink-soft">
-              If that address has an account, we've sent a link. It's valid for an hour.
-            </p>
+          <div class="p-4 rounded-md bg-surface-inset border border-line-popover">
+            <p class="text-body/normal text-ink-soft">If that address has an account, we've sent a link. It's valid for an hour.</p>
           </div>
         {/if}
 

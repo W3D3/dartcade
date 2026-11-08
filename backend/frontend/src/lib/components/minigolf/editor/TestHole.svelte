@@ -66,13 +66,7 @@
 <section aria-label="Test the hole" class="flex flex-col gap-2">
   {#if running}
     <span class="text-[14px] text-text-dim">Testing the hole · {done} of {ROUNDS}</span>
-    <Progress
-      aria-label="Testing the hole"
-      value={done}
-      max={ROUNDS}
-      class="h-1 rounded-[2px] bg-line"
-      fill="bg-accent transition-[width]"
-    />
+    <Progress aria-label="Testing the hole" value={done} max={ROUNDS} class="h-1 rounded-bar bg-line" fill="bg-accent transition-[width]" />
   {:else if result}
     <p class="text-[14px]" data-testid="bot-reached">
       {result.reached > 0 ? 'Cup reachable' : 'Cup not reached'} · {result.reached} of {result.rounds}

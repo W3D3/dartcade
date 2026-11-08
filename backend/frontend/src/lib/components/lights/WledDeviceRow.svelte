@@ -42,15 +42,15 @@
   }
 </script>
 
-<li class="flex flex-wrap items-center gap-[14px] p-3 rounded-[12px] bg-surface-active border border-line-2">
-  <span class="w-10 h-10 shrink-0 rounded-[10px] bg-accent-tint text-accent flex items-center justify-center">
+<li class="flex flex-wrap items-center gap-[14px] p-3 rounded-lg bg-surface-active border border-line-2">
+  <span class="size-10 shrink-0 rounded-md bg-accent-tint text-accent flex items-center justify-center">
     <Lightbulb size={20} strokeWidth={1.8} />
   </span>
-  <div class="flex flex-col gap-1 min-w-0 flex-grow">
+  <div class="flex flex-col gap-1 min-w-0 grow">
     <span class="flex items-center gap-2 min-w-0 text-[15px] font-semibold">
       <span
         title={device.reachable === false ? 'Not answering' : device.reachable === true ? 'Reachable' : 'Not checked yet'}
-        class="w-2 h-2 rounded-full shrink-0 {device.reachable === false
+        class="size-2 rounded-full shrink-0 {device.reachable === false
           ? 'bg-live'
           : device.reachable === true
             ? 'bg-accent'
@@ -90,11 +90,11 @@
           <div class="flex flex-col gap-2 p-2">
             <span class="text-[13px] text-text px-1">Remove {device.name}?</span>
             <div class="flex gap-2">
-              <Button variant="destructive" size="sm" class="flex-grow" disabled={removing} onclick={() => void remove()}>Remove</Button>
+              <Button variant="destructive" size="sm" class="grow" disabled={removing} onclick={() => void remove()}>Remove</Button>
               <Button
                 variant="outline"
                 size="sm"
-                class="flex-grow"
+                class="grow"
                 onclick={() => {
                   confirming = false
                 }}>Cancel</Button

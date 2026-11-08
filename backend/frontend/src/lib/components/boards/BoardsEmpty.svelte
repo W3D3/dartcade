@@ -41,16 +41,14 @@
     <div class="flex flex-col gap-2">
       <span class="text-[12px] font-bold label-caps tracking-[0.12em] text-accent">No board yet</span>
       <h2 class="font-display font-bold text-[34px] md:text-[44px] leading-[0.95] uppercase">Connect your first board</h2>
-      <p class="text-[15px] leading-[1.5] text-ink-2">
+      <p class="text-body/normal text-ink-2">
         Dartcade works with Autodarts. Pair your board once and it's ready on every device you sign in on.
       </p>
     </div>
     <ul class="flex flex-col gap-[18px]">
       {#each benefits as b (b.title)}
         <li class="flex gap-[14px]">
-          <span
-            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] bg-surface-active border border-line-2 text-accent"
-          >
+          <span class="size-10 shrink-0 flex items-center justify-center rounded-md bg-surface-active border border-line-2 text-accent">
             <b.icon size={20} strokeWidth={1.8} />
           </span>
           <span class="flex flex-col gap-[3px]">
@@ -67,8 +65,7 @@
     <ol class="flex flex-col gap-[14px]">
       {#each steps as step, i (step.title)}
         <li class="flex gap-3 items-start">
-          <span
-            class="w-[26px] h-[26px] shrink-0 flex items-center justify-center rounded-full bg-accent-tint text-accent text-[13px] font-bold"
+          <span class="size-[26px] shrink-0 flex items-center justify-center rounded-full bg-accent-tint text-accent text-[13px] font-bold"
             >{i + 1}</span
           >
           <span class="flex flex-col gap-[2px]">
@@ -81,8 +78,8 @@
     <button
       type="button"
       onclick={() => onpair('')}
-      class="h-[52px] px-[22px] self-start rounded-[10px] border-0 bg-accent text-accent-fg font-display font-bold text-[20px]
-             tracking-[0.06em] uppercase cursor-pointer transition-colors hover:bg-accent-hover">Set up a board</button
+      class="h-[52px] px-[22px] self-start rounded-md border-0 bg-accent text-accent-fg font-display font-bold text-[20px]
+             tracking-wordmark uppercase cursor-pointer transition-colors hover:bg-accent-hover">Set up a board</button
     >
     <a href={BRIDGE_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" class="self-start text-[14px] font-semibold no-underline"
       >More install options ›</a
@@ -111,16 +108,16 @@
           autocomplete="off"
           autocapitalize="characters"
           spellcheck="false"
-          class="flex-grow min-w-0 h-[52px] font-mono text-[18px] tracking-[0.12em]"
+          class="grow min-w-0 h-[52px] font-mono text-[18px] tracking-[0.12em]"
         />
         <button
           type="submit"
-          class="h-[52px] px-[22px] shrink-0 rounded-[10px] border-0 bg-accent text-accent-fg font-display font-bold text-[20px]
-                 tracking-[0.06em] uppercase cursor-pointer transition-colors hover:bg-accent-hover">Pair</button
+          class="h-[52px] px-[22px] shrink-0 rounded-md border-0 bg-accent text-accent-fg font-display font-bold text-[20px]
+                 tracking-wordmark uppercase cursor-pointer transition-colors hover:bg-accent-hover">Pair</button
         >
       </div>
     </form>
-    <p class="flex gap-[10px] px-[14px] py-3 rounded-[12px] bg-surface-1 border border-line text-[13px] leading-[1.5] text-text-muted">
+    <p class="flex gap-[10px] px-[14px] py-3 rounded-lg bg-surface-1 border border-line text-kicker/normal text-text-muted">
       <Calculator size={16} class="shrink-0 mt-[2px]" />
       <span
         ><strong class="text-text font-semibold">No Autodarts board?</strong> You can still play every game by typing your scores on the keypad.</span

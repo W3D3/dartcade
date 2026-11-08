@@ -16,7 +16,7 @@
         onclick={() => onpick(c.id)}
         class="h-8 px-3 flex items-center gap-[6px] rounded-full border border-line-chip bg-surface-chip text-text text-[13px] font-medium cursor-pointer"
       >
-        {#if c.online}<span class="w-2 h-2 rounded-full bg-accent" title="Online"></span>{/if}
+        {#if c.online}<span class="size-2 rounded-full bg-accent" title="Online"></span>{/if}
         + {c.name}
       </button>
     {/each}

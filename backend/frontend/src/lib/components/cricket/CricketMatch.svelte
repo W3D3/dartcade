@@ -120,10 +120,10 @@
   {#if legend && !keypad}
     <div class="shrink-0 flex flex-wrap justify-center gap-x-4 gap-y-[6px] text-[13px] text-text-muted">
       <span class="inline-flex items-center gap-[7px] min-w-0"
-        ><span class="w-3 h-3 shrink-0 rounded-[3px] bg-accent"></span><span class="truncate">{thrower.name} can score</span></span
+        ><span class="size-3 shrink-0 rounded-[3px] bg-accent"></span><span class="truncate">{thrower.name} can score</span></span
       >
       <span class="inline-flex items-center gap-[7px]"
-        ><span class="w-3 h-3 shrink-0 box-border rounded-[3px] bg-bg-deep border-[1.5px] border-line-pip"></span>Closed or not in play</span
+        ><span class="size-3 shrink-0 box-border rounded-[3px] bg-bg-deep border-[1.5px] border-line-pip"></span>Closed or not in play</span
       >
     </div>
   {/if}

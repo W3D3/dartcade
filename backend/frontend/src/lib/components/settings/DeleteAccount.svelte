@@ -91,13 +91,13 @@
 
 <div class="flex flex-col gap-[10px]">
   <h3 class="text-[14px] font-semibold text-live-text">Danger zone</h3>
-  <p class="text-[13px] leading-[1.5] text-text-dim">
+  <p class="text-kicker/normal text-text-dim">
     Deletes your profile, boards, friends and history. Your name stays in match history other players keep.
   </p>
   <button
     type="button"
     onclick={openModal}
-    class="self-start h-11 px-4 flex items-center gap-2 rounded-[10px] border border-danger-line text-live-text
+    class="self-start h-11 px-4 flex items-center gap-2 rounded-md border border-danger-line text-live-text
  text-[14px] font-semibold cursor-pointer transition-colors hover:bg-live-soft"
   >
     <Trash size={16} />Delete account
@@ -124,8 +124,8 @@
       >
         <div class="flex flex-col gap-[10px]">
           <h2 class="font-display font-bold text-[26px] uppercase leading-[1.1] text-live-text">Delete your account?</h2>
-          <p class="text-[14px] leading-[1.5] text-ink-2">This removes your profile, boards, friends, lobbies and game history.</p>
-          <p class="text-[14px] leading-[1.5] text-text-dim">Your name stays in match history other players keep.</p>
+          <p class="text-label/normal text-ink-2">This removes your profile, boards, friends, lobbies and game history.</p>
+          <p class="text-label/normal text-text-dim">Your name stays in match history other players keep.</p>
         </div>
         <div class="flex flex-col gap-2">
           <label for="delete-account-confirm" class="text-[14px] font-medium text-ink-soft">
@@ -150,7 +150,7 @@
         </div>
         {#if hasPasskey}
           <div class="flex items-center gap-3 text-[13px] text-text-dim" aria-hidden="true">
-            <span class="h-px flex-grow bg-surface-paused"></span>or<span class="h-px flex-grow bg-surface-paused"></span>
+            <span class="h-px grow bg-surface-paused"></span>or<span class="h-px grow bg-surface-paused"></span>
           </div>
           <Button
             type="button"

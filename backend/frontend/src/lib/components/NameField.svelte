@@ -60,7 +60,7 @@
       spellcheck="false"
       maxlength={64}
       {placeholder}
-      class="flex-grow min-w-0"
+      class="grow min-w-0"
     />
     {@render action?.()}
   </div>

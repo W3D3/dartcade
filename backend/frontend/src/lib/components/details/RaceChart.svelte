@@ -132,7 +132,7 @@
         <Chart
           ssr
           bind:context={chartContext}
-          class="block w-full h-full"
+          class="block size-full "
           role="img"
           aria-label="Targets hit against darts thrown"
           tabindex={0}

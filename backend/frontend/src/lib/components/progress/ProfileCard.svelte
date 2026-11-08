@@ -45,12 +45,12 @@
   role="dialog"
   aria-label="{profile.name}, profile"
   style="background: {CARD_SURFACE}"
-  class="w-[320px] max-w-full box-border overflow-hidden rounded-[16px] border border-line-popover text-text shadow-popover {colorsClass(
+  class="w-[320px] max-w-full box-border overflow-hidden rounded-popover border border-line-popover text-text shadow-popover {colorsClass(
     look.colors,
   )}"
 >
   <div class="h-[88px] {bannerClass(look.banner)}" style={bannerStyle(look.banner, colors)}></div>
-  <div class="-mt-[34px] flex flex-col px-[22px] pb-[22px]">
+  <div class="mt-[-34px] flex flex-col px-[22px] pb-[22px]">
     <span class="relative flex size-[68px] rounded-full" style="box-shadow: 0 0 0 4px {CARD_SURFACE}">
       <Avatar name={profile.name} face={{ avatar: avatar, userId: profile.id }} size={68} />
       <CardFrame frame={look.frame} />
@@ -78,17 +78,17 @@
     {#if profile.ban}<BanNotice ban={profile.ban} class="mt-4" />{/if}
     <dl class="m-0 mt-4 grid grid-cols-3 gap-2 border-t border-line-2 pt-[14px]">
       <div class="flex flex-col gap-[3px]">
-        <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">3-dart avg</dt>
+        <dt class="text-[11px] uppercase tracking-cta opacity-70">3-dart avg</dt>
         <dd class="font-display font-bold text-[26px] leading-none">{fmtAvg(profile.average ?? null)}</dd>
       </div>
       <div class="flex flex-col gap-[3px] min-w-0">
-        <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">Favourite</dt>
+        <dt class="text-[11px] uppercase tracking-cta opacity-70">Favourite</dt>
         <dd class="truncate font-display font-bold text-[26px] leading-none">
           {profile.favourite ? getGameView(profile.favourite).shortTitle : '—'}
         </dd>
       </div>
       <div class="flex flex-col gap-[3px]">
-        <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">{profile.relation === 'self' ? 'Matches' : 'You vs them'}</dt>
+        <dt class="text-[11px] uppercase tracking-cta opacity-70">{profile.relation === 'self' ? 'Matches' : 'You vs them'}</dt>
         <dd class="font-display font-bold text-[26px] leading-none">{profile.relation === 'self' ? profile.matches : (h2h ?? '—')}</dd>
       </div>
     </dl>

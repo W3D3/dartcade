@@ -26,7 +26,7 @@
   <span class="whitespace-nowrap font-display text-[35px] font-bold">{title}</span>
   <span class="min-w-0 truncate text-[24px] text-text-muted">{meta}</span>
   <span class="ml-auto flex items-center gap-4">
-    {#if board}<span class="whitespace-nowrap font-display text-[27px] font-bold uppercase tracking-[0.04em] text-ink-2">{board}</span>{/if}
+    {#if board}<span class="whitespace-nowrap font-display text-[27px] font-bold uppercase tracking-section text-ink-2">{board}</span>{/if}
     <span class="inline-flex items-center gap-2 whitespace-nowrap text-[19px] font-semibold text-ink-2">
       <BoardStatusDot status={bm.status ?? null} online={bm.online} size="lg" />
       {bmShortLabel(bm.status ?? null, bm.online)}

@@ -43,13 +43,13 @@
   <AuthPanel />
   <AuthHero />
 
-  <main class="flex flex-grow md:items-center md:justify-center">
+  <main class="flex grow md:items-center md:justify-center">
     <div class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
       {#if expired}
         <div class="flex flex-col gap-[10px]">
-          <span class="text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Invalid or used token</span>
-          <div class="flex flex-col gap-3 p-4 rounded-[10px] bg-surface-inset border border-danger-line">
-            <p class="text-[15px] leading-[1.5] text-danger-text">This link has expired or was already used.</p>
+          <span class="text-[12px] font-semibold label-caps text-text-dim">Invalid or used token</span>
+          <div class="flex flex-col gap-3 p-4 rounded-md bg-surface-inset border border-danger-line">
+            <p class="text-body/normal text-danger-text">This link has expired or was already used.</p>
             <a href="#/forgot" class="text-[14px] font-semibold no-underline">Request a new link</a>
           </div>
         </div>
@@ -61,7 +61,7 @@
           }}
           class="flex flex-col gap-5 md:gap-7"
         >
-          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
             New password
           </h1>
 

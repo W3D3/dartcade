@@ -60,7 +60,7 @@
 
 <!-- The code stays on one line; on a narrow card the buttons wrap under it -->
 <div
-  class="flex flex-wrap items-center gap-x-[10px] md:gap-x-3 gap-y-1 min-h-[46px] md:min-h-12 box-border py-[5px] md:py-[6px] pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-[10px] bg-surface-panel"
+  class="flex flex-wrap items-center gap-x-[10px] md:gap-x-3 gap-y-1 min-h-[46px] md:min-h-12 box-border py-[5px] md:py-[6px] pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-md bg-surface-panel"
 >
   <span class="flex items-center gap-[10px] md:gap-3 whitespace-nowrap">
     <span class="text-[12px] md:text-[13px] text-text-muted">Code</span>
@@ -83,7 +83,7 @@
         onclick={() => (qrSheetOpen = true)}
         aria-haspopup="dialog"
         aria-label="Show the QR code"
-        class="cursor-pointer w-9 h-9 shrink-0 flex items-center justify-center rounded-[8px] border-0 bg-surface-key text-text"
+        class="cursor-pointer size-9 shrink-0 flex items-center justify-center rounded-sm border-0 bg-surface-key text-text"
       >
         <QrIcon size={17} />
       </button>
@@ -127,14 +127,14 @@
 {#if qrSheetOpen}
   <Modal title="QR code" subtitle="Join {name}" onclose={closeQrSheet} dismissOnBackdrop={true} widthClass="max-w-[360px]" zClass="z-[200]">
     <div class="flex flex-col items-center gap-3">
-      <QrCode text={qrLink} size={240} class="w-[min(80vw,320px)] h-[min(80vw,320px)] max-w-full" />
+      <QrCode text={qrLink} size={240} class="size-[min(80vw,320px)]  max-w-full" />
       <p class="w-full max-w-[min(80vw,320px)] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
     </div>
     {#snippet footer()}
       <button
         type="button"
         onclick={closeQrSheet}
-        class="flex-1 h-12 rounded-[10px] border border-line-3 text-text
+        class="flex-1 h-12 rounded-md border border-line-3 text-text
  text-[15px] font-medium cursor-pointer"
       >
         Close

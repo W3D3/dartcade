@@ -21,16 +21,16 @@
   const leaving = $derived(leavingFor($me?.lobby, first))
 </script>
 
-<section aria-label="Lobby invites" class="rounded-[12px] border border-line-2 bg-surface-1 px-3 pb-3">
+<section aria-label="Lobby invites" class="rounded-lg border border-line-2 bg-surface-1 px-3 pb-3">
   <div class="flex items-center gap-[10px] h-12">
     <span class="text-[15px] font-semibold">Lobby invites</span>
     <NavBadge count={invites.length} label="{invites.length} pending" hidden />
   </div>
   <ul class="flex flex-col gap-2">
-    <li class="p-3 rounded-[12px] border border-accent-line bg-surface-picked flex flex-col gap-[10px]">
+    <li class="p-3 rounded-lg border border-accent-line bg-surface-picked flex flex-col gap-[10px]">
       <div class="flex items-center gap-[10px]">
         <InviteAvatar name={first.inviter?.name ?? first.lobbyName} face={first.inviter} size={36} offset="ring-offset-surface-picked" />
-        <span class="flex flex-col gap-[1px] min-w-0 flex-grow">
+        <span class="flex flex-col gap-px min-w-0 grow">
           <span class="font-display font-bold text-[19px] leading-none uppercase truncate">{first.lobbyName}</span>
           <span class="text-[12px] text-text-muted truncate">{[first.inviter?.name, inviteLine(first)].filter(Boolean).join(' · ')}</span>
         </span>
@@ -41,9 +41,9 @@
       <InviteAnswer invite={first} {actions} small />
     </li>
     {#each rest as inv (inv.id)}
-      <li class="flex items-center gap-[10px] px-3 py-[10px] rounded-[12px] border border-line-2">
+      <li class="flex items-center gap-[10px] px-3 py-[10px] rounded-lg border border-line-2">
         <Avatar name={inv.inviter?.name ?? inv.lobbyName} face={inv.inviter} size={36} />
-        <span class="flex flex-col gap-[1px] min-w-0 flex-grow">
+        <span class="flex flex-col gap-px min-w-0 grow">
           <span class="text-[14px] font-semibold truncate">{inv.lobbyName}</span>
           <span class="text-[12px] text-text-muted truncate"
             >{[inv.inviter?.name, inviteLine(inv), inviteTime(inv.createdAt, now)].filter(Boolean).join(' · ')}</span

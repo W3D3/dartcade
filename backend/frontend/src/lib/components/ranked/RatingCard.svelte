@@ -14,7 +14,7 @@
 
 <section
   aria-label="Rating, {outcome.mode}"
-  class="box-border flex w-full max-w-[560px] flex-col gap-3 self-center rounded-[16px] border px-5 py-4 {outcome.won
+  class="box-border flex w-full max-w-[560px] flex-col gap-3 self-center rounded-popover border px-5 py-4 {outcome.won
     ? 'border-accent-line-strong bg-surface-picked'
     : 'border-line-2 bg-surface-panel'}"
 >
@@ -23,7 +23,7 @@
     <span class="label-caps text-[13px] text-text-muted">Rating · {outcome.mode}</span>
     {#if outcome.change}
       <span
-        class="ml-auto inline-flex h-8 items-center rounded-[8px] px-3 font-mono text-[16px] font-semibold {outcome.won
+        class="ml-auto inline-flex h-8 items-center rounded-sm px-3 font-mono text-[16px] font-semibold {outcome.won
           ? 'bg-accent text-accent-fg'
           : 'bg-live-soft text-live-text'}">{outcome.change}</span
       >
@@ -48,7 +48,7 @@
     </div>
   {:else if outcome.after === null && rankAfter}
     <!-- The match that finished the placement: the rank is shown for the first time -->
-    <div class="flex items-center gap-3 rounded-[12px] border border-warn-line bg-warn-panel px-4 py-3">
+    <div class="flex items-center gap-3 rounded-lg border border-warn-line bg-warn-panel px-4 py-3">
       <RankBadge rank={rankAfter} size={52} />
       <span class="flex flex-col">
         <span class="text-[11px] font-bold uppercase tracking-[0.12em]" style:color={TIER_TEXT[rankAfter.tier]}>Placed</span>
@@ -59,7 +59,7 @@
   {:else if outcome.after !== null}
     {#if outcome.moved && rankBefore && rankAfter}
       <div
-        class="flex items-center gap-3 rounded-[12px] border px-4 py-3 {outcome.moved === 'promoted'
+        class="flex items-center gap-3 rounded-lg border px-4 py-3 {outcome.moved === 'promoted'
           ? 'border-warn-line bg-warn-panel'
           : 'border-line-2 bg-surface-inset'}"
       >

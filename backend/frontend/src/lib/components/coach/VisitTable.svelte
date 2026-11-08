@@ -29,7 +29,7 @@
           type="button"
           aria-pressed={sel}
           onclick={() => onselect(v.n)}
-          class="{COLUMNS} w-full cursor-pointer rounded-[12px] border py-3 text-left text-text {sel
+          class="{COLUMNS} w-full cursor-pointer rounded-lg border py-3 text-left text-text {sel
             ? 'border-checkout-line bg-card-active'
             : 'border-transparent bg-transparent hover:bg-surface-drop'}"
         >

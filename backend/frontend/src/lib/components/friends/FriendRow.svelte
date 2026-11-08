@@ -36,13 +36,13 @@
 </script>
 
 <li
-  class="flex items-center gap-3 md:gap-[14px] min-h-[58px] md:min-h-[68px] box-border pl-3 pr-1 md:pl-[14px] md:pr-2 rounded-[12px] bg-surface-panel border border-line"
+  class="flex items-center gap-3 md:gap-[14px] min-h-[58px] md:min-h-[68px] box-border pl-3 pr-1 md:pl-[14px] md:pr-2 rounded-lg bg-surface-panel border border-line"
 >
   <span class="relative shrink-0 flex m-1">
     <Avatar name={friend.name} face={{ avatar: friend.avatar, userId: friend.id }} size={$isPhone ? 38 : 44} />
     <StatusRing kind={friend.status.kind} />
   </span>
-  <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 flex-grow">
+  <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 grow">
     <span class="flex items-baseline gap-2 min-w-0">
       <ProfilePopover userId={friend.id} name={friend.name}>
         <span class="text-[15px] md:text-[16px] font-semibold truncate">{friend.name}</span>
@@ -58,19 +58,19 @@
       <span class="md:hidden">In lobby</span><span class="hidden md:inline">In your lobby</span>
     </span>
   {:else if action === 'join'}
-    <Button variant="accent" disabled={busy} onclick={onjoin} class="shrink-0 h-9 px-[14px] rounded-[9px] text-[14px]">Join</Button>
+    <Button variant="accent" disabled={busy} onclick={onjoin} class="shrink-0 h-9 px-[14px] rounded-key text-[14px]">Join</Button>
   {:else if action === 'invite'}
     <Button
       variant="outline"
       disabled={busy}
       onclick={oninvite}
-      class="shrink-0 h-9 px-3 md:px-[14px] rounded-[9px] border-line-strong text-[13px] md:text-[14px] font-semibold"
+      class="shrink-0 h-9 px-3 md:px-[14px] rounded-key border-line-strong text-[13px] md:text-[14px] font-semibold"
     >
       <span class="md:hidden">Invite</span><span class="hidden md:inline">Invite to lobby</span>
     </Button>
   {:else if action === 'invited'}
     <span
-      class="shrink-0 h-9 px-2 md:px-3 flex items-center gap-1 md:gap-[6px] rounded-[9px] md:bg-surface-paused text-ink-2 text-[13px] md:text-[14px]"
+      class="shrink-0 h-9 px-2 md:px-3 flex items-center gap-1 md:gap-[6px] rounded-key md:bg-surface-paused text-ink-2 text-[13px] md:text-[14px]"
     >
       <Check size={16} strokeWidth={3} class="text-accent" />Invited
     </span>
@@ -80,7 +80,7 @@
       variant="outline"
       onclick={() => void push(watch)}
       aria-label="Watch {friend.name}"
-      class="shrink-0 h-9 px-3 md:px-[14px] rounded-[9px] border-line-strong text-[13px] md:text-[14px] font-semibold"
+      class="shrink-0 h-9 px-3 md:px-[14px] rounded-key border-line-strong text-[13px] md:text-[14px] font-semibold"
       ><Eye size={15} />Watch</Button
     >
   {/if}

@@ -7,11 +7,11 @@
   {#each items as item (item.label)}
     <span class="flex items-center gap-2 min-w-0">
       {#if item.kind === 'current'}
-        <span class="w-3 h-3 shrink-0 rounded-[3px] bg-accent"></span>
+        <span class="size-3 shrink-0 rounded-[3px] bg-accent"></span>
       {:else if item.kind === 'next'}
-        <span class="w-3 h-3 shrink-0 rounded-[3px] border-2 border-dashed border-text"></span>
+        <span class="size-3 shrink-0 rounded-[3px] border-2 border-dashed border-text"></span>
       {:else}
-        <span class="w-[14px] h-[14px] shrink-0 rounded-full bg-text"></span>
+        <span class="size-[14px] shrink-0 rounded-full bg-text"></span>
       {/if}
       <span class="truncate">{item.label}</span>
     </span>

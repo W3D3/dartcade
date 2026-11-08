@@ -96,16 +96,16 @@
   <AuthPanel />
   <AuthHero />
 
-  <main class="flex flex-grow md:items-center md:justify-center">
+  <main class="flex grow md:items-center md:justify-center">
     <div class="flex w-full md:w-[440px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
       <div class="flex flex-col gap-2">
         {#if queryError}
-          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
             That link has expired
           </h1>
         {:else}
           <StepBars step={2} label="Verify email" />
-          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
+          <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
             Check your inbox
           </h1>
           {#if email}

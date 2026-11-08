@@ -29,11 +29,11 @@
       <div
         class="flex h-[200px] w-full items-end justify-center md:w-[380px] md:self-end {slides.length === 1
           ? '-mb-4 md:-mb-5'
-          : 'rounded-[12px]'}"
+          : 'rounded-lg'}"
         aria-hidden="true"
       >
         {#if current.img}
-          <img src={current.img} alt="" class="h-full w-full object-contain object-bottom" />
+          <img src={current.img} alt="" class="size-full object-contain object-bottom" />
         {:else if current.icon === 'lights'}
           <LightsBoard />
         {/if}

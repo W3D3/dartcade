@@ -14,7 +14,7 @@
   )
 </script>
 
-<div class="flex items-center gap-3 p-[14px] rounded-[12px] bg-surface-active border border-line-2">
+<div class="flex items-center gap-3 p-[14px] rounded-lg bg-surface-active border border-line-2">
   <Avatar name={hostName ?? name} face={host} size={40} />
   <div class="flex flex-col gap-[2px] min-w-0">
     <span class="text-[16px] font-semibold truncate">{name}</span>

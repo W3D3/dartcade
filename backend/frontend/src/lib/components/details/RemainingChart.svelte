@@ -84,7 +84,7 @@
   <Chart
     ssr
     bind:context={chartContext}
-    class="block w-full aspect-[720/200]"
+    class="block w-full aspect-720/200"
     role="img"
     aria-label="Points left after each visit"
     tabindex={0}

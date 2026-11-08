@@ -23,18 +23,18 @@
 
 {#if perk.kind === 'title'}
   <span
-    class="max-w-full truncate whitespace-nowrap rounded-full border border-line-key px-2 py-1 font-display font-bold text-[12px] uppercase tracking-[0.08em]"
+    class="max-w-full truncate whitespace-nowrap rounded-full border border-line-key px-2 py-1 font-display font-bold text-[12px] uppercase tracking-cta"
     >{short ? 'Title' : perk.name}</span
   >
 {:else if perk.kind === 'banner'}
   <span
-    class="block w-[46px] h-[26px] rounded-[6px] border border-line-key {bannerClass(perk.id)}"
+    class="block w-[46px] h-[26px] rounded-chip border border-line-key {bannerClass(perk.id)}"
     style={bannerStyle(perk.id, cardColors(colors))}
   ></span>
 {:else if perk.kind === 'colors'}
   {@const c = cardColors(perk.id)}
   <span
-    class="size-[30px] rounded-[7px] border border-line-key flex items-center justify-center font-display font-bold text-[15px] {colorsClass(
+    class="size-[30px] rounded-segment border border-line-key flex items-center justify-center font-display font-bold text-[15px] {colorsClass(
       perk.id,
     )}"
     style="background: {c.bg}; color: {c.fg}">Aa</span

@@ -34,7 +34,7 @@
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 items-start">
   <section aria-labelledby="during-games" class="box-border p-4 md:p-[22px] card flex flex-col">
     <h2 id="during-games" class="text-[17px] font-semibold">During games</h2>
-    <p class="m-0 mt-1 mb-[14px] text-[13px] leading-[1.5] text-text-dim">
+    <p class="m-0 mt-1 mb-[14px] text-kicker/normal text-text-dim">
       Your defaults on every board. Changing one in a game's settings applies to that board only.
     </p>
     {#each during as row (row.key)}

@@ -53,7 +53,7 @@
       {#each results as r, i (i)}
         <span
           title={r === 'W' ? 'Win' : 'Loss'}
-          class="inline-flex size-6 items-center justify-center rounded-[6px] text-[12px] font-bold {r === 'W'
+          class="inline-flex size-6 items-center justify-center rounded-chip text-[12px] font-bold {r === 'W'
             ? 'bg-accent-tint text-accent'
             : 'bg-surface-1 text-live-text'}">{r}</span
         >

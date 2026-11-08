@@ -232,9 +232,7 @@
 </script>
 
 <Layout title="New game">
-  <main
-    class="flex flex-grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[30px_36px] xl:p-[36px_44px]"
-  >
+  <main class="flex grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[30px_36px] xl:p-[36px_44px]">
     <!-- Phones and tablets: the way back to your invites once the toast is closed (desktops have Invites in the nav) -->
     {#if invites > 0}<div class="xl:hidden"><InvitesBanner count={invites} /></div>{/if}
     <!-- Phones and tablets have no side nav, where desktops get this card -->
@@ -243,7 +241,7 @@
     <!-- Header (phones: the title is in the phone header) -->
     <header class="flex items-end justify-between {showPanel ? 'max-md:hidden' : ''}">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="hidden md:block font-display font-bold text-[44px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">New game</h1>
+        <h1 class="hidden md:block font-display font-bold text-[44px] xl:text-[48px] leading-none uppercase tracking-title">New game</h1>
         <p class="text-[14px] md:text-[15px] text-text-muted">
           {#if !canEditGame}
             The host picks the game. You play it in the lobby.
@@ -257,12 +255,12 @@
     </header>
 
     <!-- Every game; once one is picked, a list beside its settings from lg (only the settings below) -->
-    <div class="flex flex-col lg:flex-row gap-[14px] md:gap-4 lg:gap-5 xl:gap-6 lg:flex-grow lg:min-h-0">
+    <div class="flex flex-col lg:flex-row gap-[14px] md:gap-4 lg:gap-5 xl:gap-6 lg:grow lg:min-h-0">
       <section
         aria-label="Games"
         bind:this={gamesEl}
-        class="flex flex-col gap-[14px] min-w-0 transition-[width] duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)] {showPanel
-          ? 'lg:w-[260px] xl:w-[300px] lg:flex-shrink-0'
+        class="flex flex-col gap-[14px] min-w-0 transition-[width] duration-450 ease-[cubic-bezier(.2,.8,.2,1)] {showPanel
+          ? 'lg:w-[260px] xl:w-[300px] lg:shrink-0'
           : 'w-full'}"
       >
         {#if showPanel && canEditGame}
@@ -275,7 +273,7 @@
               variant="ghost"
               size="sm"
               aria-label="All games"
-              class="flex-shrink-0 h-10 px-[10px] gap-1 text-[13px] font-semibold"
+              class="shrink-0 h-10 px-[10px] gap-1 text-[13px] font-semibold"
               onclick={allGames}
             >
               <ChevronLeft size={16} />All
@@ -286,7 +284,7 @@
                 variant="outline"
                 data-chip
                 aria-pressed={on}
-                class="flex-shrink-0 px-[14px] border-line-2 bg-surface-panel font-display font-bold text-[16px] uppercase {on
+                class="shrink-0 px-[14px] border-line-2 bg-surface-panel font-display font-bold text-[16px] uppercase {on
                   ? 'border-2 border-accent bg-surface-picked'
                   : ''}"
                 onclick={() => pick(m.id)}
@@ -305,7 +303,7 @@
         <section
           aria-label="Game settings"
           in:fly={{ x: 40, duration: 450 }}
-          class="w-full lg:flex-grow lg:max-w-[728px] xl:max-w-[780px] lg:min-w-0 box-border card md:rounded-[16px] flex flex-col lg:overflow-hidden"
+          class="w-full lg:grow lg:max-w-[728px] xl:max-w-[780px] lg:min-w-0 box-border card md:rounded-popover flex flex-col lg:overflow-hidden"
         >
           <!-- Scrollable body: the game + its settings -->
           <div
@@ -316,7 +314,7 @@
                 <!-- The art sits in the right half of the card illustration: zoom in a little and pin it right to centre it -->
                 <span
                   aria-hidden="true"
-                  class="w-14 h-[50px] md:w-20 md:h-[72px] flex-shrink-0 rounded-[9px] md:rounded-[10px] border border-line bg-size-[auto_112%] bg-right"
+                  class="w-14 h-[50px] md:w-20 md:h-[72px] shrink-0 rounded-key md:rounded-md border border-line bg-size-[auto_112%] bg-right"
                   style:background-image={`url("${shown.img}")`}
                 ></span>
                 <span class="flex flex-col gap-1 min-w-0">
@@ -344,7 +342,7 @@
                   wide
                 />
               {:else}
-                <p class="p-4 border border-line-2 rounded-[10px] bg-surface-2 text-[14px] leading-[1.5] text-text-muted">
+                <p class="p-4 border border-line-2 rounded-md bg-surface-2 text-label/normal text-text-muted">
                   {$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.
                 </p>
               {/if}
@@ -376,16 +374,16 @@
 
           <!-- Sticky bottom: the settings in one line, error + main button -->
           <div
-            class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[16px] px-4 pb-6 md:px-7 md:pb-[26px] pt-[10px] md:pt-[18px] flex flex-col md:flex-row md:items-center md:gap-4 border-t border-surface-paused"
+            class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-popover px-4 pb-6 md:px-7 md:pb-[26px] pt-[10px] md:pt-[18px] flex flex-col md:flex-row md:items-center md:gap-4 border-t border-surface-paused"
           >
-            <span class="flex flex-col gap-[3px] min-w-0 md:flex-grow">
+            <span class="flex flex-col gap-[3px] min-w-0 md:grow">
               {#if summary}<span class="hidden md:block text-[14px] font-semibold text-text">{summary}</span>{/if}
               <span class="hidden md:inline-flex items-center gap-[6px] text-[13px] text-text-dim">
                 <Users size={14} aria-hidden="true" />Players, teams and throw order come next, in the lobby
               </span>
               {#if error}<ErrorText class="mb-2 md:mb-0">{error}</ErrorText>{/if}
             </span>
-            <div class="flex flex-col gap-2 md:flex-shrink-0">
+            <div class="flex flex-col gap-2 md:shrink-0">
               <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
               {#if newLobby && !loading}
                 <Button variant="ghost" size="md" disabled={busy} onclick={() => void freshLobby()}>New lobby</Button>

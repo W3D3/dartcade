@@ -54,21 +54,18 @@
   const TONE = { ink: 'text-text-muted', playing: 'text-live-text', muted: 'text-text-dim' }
 </script>
 
-<section
-  aria-label="Friends and lobby history"
-  class="flex flex-col gap-[10px] flex-grow min-h-0 box-border px-4 py-4 md:px-5 md:py-[18px] card"
->
+<section aria-label="Friends and lobby history" class="flex flex-col gap-[10px] grow min-h-0 box-border p-4 md:px-5 md:py-[18px] card">
   <!-- contents: the tabs and the panel stay the section's own flex children -->
   <Tabs.Root value={tab} onValueChange={pickTab} class="contents">
-    <Tabs.List aria-label="Friends or lobby history" class="shrink-0 grid grid-flow-col auto-cols-fr gap-1 p-1 bg-bg rounded-[10px]">
+    <Tabs.List aria-label="Friends or lobby history" class="shrink-0 grid grid-flow-col auto-cols-fr gap-1 p-1 bg-bg rounded-md">
       {#each tabs as t (t.key)}
         <Tabs.Trigger variant="pill" value={t.key} class="h-[34px] px-3 text-[14px] truncate">{t.label}</Tabs.Trigger>
       {/each}
     </Tabs.List>
 
-    <Tabs.Content value="friends" class="flex flex-col gap-2 flex-grow min-h-0">
+    <Tabs.Content value="friends" class="flex flex-col gap-2 grow min-h-0">
       {#if tab === 'friends'}
-        <div class="flex flex-col gap-2 flex-grow min-h-0 overflow-y-auto scrollbar-themed pr-1">
+        <div class="flex flex-col gap-2 grow min-h-0 overflow-y-auto scrollbar-themed pr-1">
           {#if loaded && rows.length === 0}
             <p class="py-2 text-[14px] text-text-muted">
               No friends yet. <a href="#/friends" class="font-semibold no-underline">Add a friend</a> and they show up here to invite.
@@ -81,7 +78,7 @@
                     <Avatar name={r.friend.name} face={{ avatar: r.friend.avatar, userId: r.friend.id }} size={32} />
                     <StatusRing kind={r.friend.status.kind} />
                   </span>
-                  <span class="flex flex-col gap-px min-w-0 flex-grow">
+                  <span class="flex flex-col gap-px min-w-0 grow">
                     <span class="text-[15px] font-semibold truncate">{r.friend.name}</span>
                     <span class="text-[12px] truncate {TONE[r.tone]}">{r.line}</span>
                   </span>
@@ -101,7 +98,7 @@
                       disabled={inviting !== null}
                       aria-label="Invite {r.friend.name} to {lobby.name}"
                       onclick={() => void invite(r.friend.id)}
-                      class="shrink-0 h-9 px-[14px] rounded-[9px] border border-line-strong text-text text-[14px] font-semibold cursor-pointer hover:bg-surface-active disabled:opacity-60"
+                      class="shrink-0 h-9 px-[14px] rounded-key border border-line-strong text-text text-[14px] font-semibold cursor-pointer hover:bg-surface-active disabled:opacity-60"
                       >Invite</button
                     >
                   {/if}
@@ -121,7 +118,7 @@
         {/if}
       {/if}
     </Tabs.Content>
-    <Tabs.Content value="history" class="flex flex-col gap-2 flex-grow min-h-0">
+    <Tabs.Content value="history" class="flex flex-col gap-2 grow min-h-0">
       {#if tab === 'history'}
         <ActivityList activity={lobby.activity} {viewerId} since={lobby.createdAt} />
       {/if}

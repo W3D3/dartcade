@@ -140,7 +140,7 @@
     {#if pairing.step === 'check' && candidate}
       <div class="flex flex-col gap-3">
         <span class="text-[15px] font-semibold">Check it's the right one</span>
-        <div class="flex flex-col gap-2 p-3 rounded-[12px] bg-accent-tint border border-accent-line">
+        <div class="flex flex-col gap-2 p-3 rounded-lg bg-accent-tint border border-accent-line">
           <div class="flex items-center justify-between gap-3">
             <span class="flex flex-col gap-[2px] min-w-0">
               {#if blinkOk}
@@ -174,7 +174,7 @@
           <div class="flex flex-col gap-[5px]">
             <span id="pair-board" class="text-[12px] font-semibold text-text-dim">Board</span>
             {#if device}
-              <span class="h-10 px-3 flex items-center rounded-[9px] border border-line-3 bg-surface-inset text-[14px] text-text-dim">
+              <span class="h-10 px-3 flex items-center rounded-key border border-line-3 bg-surface-inset text-[14px] text-text-dim">
                 {boardName}
               </span>
             {:else}

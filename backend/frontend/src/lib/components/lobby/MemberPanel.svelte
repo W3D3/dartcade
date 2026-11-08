@@ -40,7 +40,7 @@
   let settingsOpen = $state(false)
 </script>
 
-<section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
+<section aria-label="Next game" class="p-[14px] md:p-5 rounded-card bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
   <NextGameSummary {lobby} pickedBy="{hostName}'s pick" size="sm" />
   {#if game}
     <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} />

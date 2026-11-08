@@ -59,17 +59,16 @@
 
 {#if orientation === 'vertical'}
   <div role="img" aria-label={label} class="relative h-full w-[150px] xl:w-[290px] shrink-0">
-    <div class="absolute inset-x-0 top-[10px] bottom-[10px]">
+    <div class="absolute inset-x-0 inset-y-[10px]">
       <span class="absolute top-[-6px] left-[26px] xl:left-[84px] w-9 text-right font-mono text-[12px] text-text-dim">180</span>
       <span class="absolute bottom-[-6px] left-[26px] xl:left-[84px] w-9 text-right font-mono text-[12px] text-text-dim">0</span>
-      <div class="absolute inset-y-0 left-[66px] xl:left-[128px] w-6 xl:w-10 rounded-[8px] xl:rounded-[10px] overflow-hidden flex flex-col">
+      <div class="absolute inset-y-0 left-[66px] xl:left-[128px] w-6 xl:w-10 rounded-sm xl:rounded-md overflow-hidden flex flex-col">
         <div class="bg-accent-line" style:flex-basis="{100 - hp}%"></div>
         <div class={danger} style:flex-basis="{hp - lp}%"></div>
         <div class="flex-1 bg-accent-line"></div>
       </div>
       {#each [hp, lp] as p (p)}
-        <span class="absolute left-[60px] xl:left-[120px] w-9 xl:w-14 h-1 rounded-[2px] bg-accent translate-y-1/2" style:bottom="{p}%"
-        ></span>
+        <span class="absolute left-[60px] xl:left-[120px] w-9 xl:w-14 h-1 rounded-bar bg-accent translate-y-1/2" style:bottom="{p}%"></span>
       {/each}
       <div class="absolute left-[100px] xl:left-[184px] flex flex-col" style:bottom="min(calc({hp}% + 6px), calc(100% - 56px))">
         <span class="text-[13px] font-bold label-caps text-accent">High</span>
@@ -89,7 +88,7 @@
         <span class="absolute left-[54px] xl:left-[114px] w-[42px] xl:w-[62px] h-[3px] translate-y-1/2 {markerLine}" style:bottom="{mp}%"
         ></span>
         <div
-          class="absolute left-0 w-14 xl:w-[116px] h-10 box-border px-2 xl:px-[10px] rounded-[10px] flex items-center gap-[6px] translate-y-1/2 {markerBox}"
+          class="absolute left-0 w-14 xl:w-[116px] h-10 box-border px-2 xl:px-[10px] rounded-md flex items-center gap-[6px] translate-y-1/2 {markerBox}"
           style:bottom="{mp}%"
         >
           <span class="font-display font-bold text-[24px] xl:text-[30px] leading-none">{marker.total}</span>
@@ -108,7 +107,7 @@
       <span class="text-[10px] font-bold label-caps text-accent">High</span>
       <span class="font-display font-bold text-[28px] leading-none">{game.high}</span>
     </div>
-    <div class="absolute top-[38px] inset-x-0 h-7 rounded-[8px] overflow-hidden flex">
+    <div class="absolute top-[38px] inset-x-0 h-7 rounded-sm overflow-hidden flex">
       <div class="bg-accent-line" style:flex-basis="{lp}%"></div>
       <div class={danger} style:flex-basis="{hp - lp}%"></div>
       <div class="flex-1 bg-accent-line"></div>
@@ -116,11 +115,11 @@
       <span class="absolute right-[6px] top-1/2 -translate-y-1/2 font-mono text-[10px] text-accent">180</span>
     </div>
     {#each [hp, lp] as p (p)}
-      <span class="absolute top-8 w-1 h-10 rounded-[2px] bg-accent -translate-x-1/2" style:left="{p}%"></span>
+      <span class="absolute top-8 w-1 h-10 rounded-bar bg-accent -translate-x-1/2" style:left="{p}%"></span>
     {/each}
     {#if marker && zone}
       <span class="absolute top-[34px] w-[3px] h-10 -translate-x-1/2 {markerLine}" style:left="{mp}%"></span>
-      <div class="absolute top-[76px] left-0 h-7 box-border px-[10px] rounded-[8px] flex items-center gap-[6px] {markerBox}">
+      <div class="absolute top-[76px] left-0 h-7 box-border px-[10px] rounded-sm flex items-center gap-[6px] {markerBox}">
         <span class="font-display font-bold text-[22px] leading-none">{marker.total}</span>
         <span class="text-[12px] whitespace-nowrap {markerNote}">· {note}</span>
       </div>

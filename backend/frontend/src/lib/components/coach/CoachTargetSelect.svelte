@@ -24,6 +24,6 @@
   {#if average !== undefined}
     <Select label="Coach me as" options={tierChoices(suggested)} value={shownTier($coachTarget, suggested)} onchange={pick} />
   {:else}
-    <span aria-hidden="true" class="h-11 w-[240px] rounded-[10px] border border-line-3 animate-pulse motion-reduce:animate-none"></span>
+    <span aria-hidden="true" class="h-11 w-[240px] rounded-md border border-line-3 animate-pulse motion-reduce:animate-none"></span>
   {/if}
 </div>

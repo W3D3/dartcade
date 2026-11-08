@@ -52,13 +52,13 @@
 
 <section
   aria-label="{team.name}, {status}, {team.remaining} left"
-  class="flex-1 min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden [container-type:inline-size]
+  class="flex-1 min-w-0 min-h-0 box-border rounded-panel flex flex-col overflow-hidden @container
          {compact ? 'px-[14px] py-3 gap-2' : 'px-[26px] py-6 gap-[14px]'}
          {playerCard(team.active)}"
 >
   <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
     <span
-      class="inline-flex items-center h-[30px] px-3 box-border rounded-[8px] font-display font-bold text-[18px] tracking-[0.06em] uppercase whitespace-nowrap
+      class="inline-flex items-center h-[30px] px-3 box-border rounded-sm font-display font-bold text-[18px] tracking-wordmark uppercase whitespace-nowrap
                  {team.active ? 'bg-accent text-accent-fg' : 'border-2 border-text text-text'}">{ranked?.label ?? team.name}</span
     >
     {#if ranked?.rating != null}<TeamRatingChip rating={ranked.rating} />{/if}
@@ -78,7 +78,7 @@
 
   <div class="relative flex-1 min-h-0 flex flex-col {compact ? 'gap-2' : 'gap-[14px]'}">
     <span
-      class="font-display font-bold leading-[0.8] tracking-[-0.02em] tabular-nums
+      class="font-display font-bold leading-[0.8] tracking-score tabular-nums
                  {compact ? 'text-[min(22cqw,104px,9vh)]' : 'text-[min(220px,24vh)]'} {team.active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber {...x01Roll(team)} /></span
     >
@@ -95,8 +95,8 @@
     {#if compact}
       <div class="flex flex-wrap gap-x-[14px] gap-y-1">
         {#each stats as s (s.label)}
-          <span class="flex flex-col gap-[1px]">
-            <span class="uppercase text-[10px] tracking-[0.08em] text-text-muted">{s.label}</span>
+          <span class="flex flex-col gap-px">
+            <span class="uppercase text-[10px] tracking-cta text-text-muted">{s.label}</span>
             <span
               class="font-display font-bold leading-none tabular-nums text-[22px] {s.dim
                 ? 'text-text-muted'
@@ -127,7 +127,7 @@
     {/if}
 
     {#if overlay}
-      <div class="absolute inset-0 rounded-[12px] bg-surface-panel/90 flex">{@render overlay()}</div>
+      <div class="absolute inset-0 rounded-lg bg-surface-panel/90 flex">{@render overlay()}</div>
     {/if}
   </div>
 </section>

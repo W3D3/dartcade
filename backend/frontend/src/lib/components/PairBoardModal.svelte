@@ -147,14 +147,14 @@
       {#if tokenFailed}
         <p class="text-[13px] text-live-text">Couldn't make an install command. Check your connection, or use a pairing code instead.</p>
       {:else}
-        <div class="rounded-[10px] bg-surface-2 border border-line-2 overflow-hidden">
+        <div class="rounded-md bg-surface-2 border border-line-2 overflow-hidden">
           <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
             <span class="text-[12px] text-text-dim">{OS_LABELS[os]}</span>
             <button type="button" onclick={copyCommand} disabled={!token} class="text-[12px] text-accent hover:underline">
               {clip.state === 'copied' ? 'Copied' : 'Copy command'}
             </button>
           </div>
-          <pre class="px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{token
+          <pre class="px-3 py-2 font-mono text-caption/relaxed text-text break-all whitespace-pre-wrap">{token
               ? command
               : 'Making your command…'}</pre>
         </div>
@@ -181,7 +181,7 @@
         <li class="flex gap-2 text-[14px]">
           <span class="text-accent font-mono">1</span>
           <span
-            >Run <code class="font-mono bg-surface-2 px-1 rounded">dartcade-bridge</code>
+            >Run <code class="font-mono bg-surface-2 px-1 rounded-[4px]">dartcade-bridge</code>
             on the machine next to your board.</span
           >
         </li>
@@ -190,14 +190,14 @@
           <span>Type the 8-character code it prints, then name the board.</span>
         </li>
       </ol>
-      <div class="rounded-[10px] bg-surface-2 border border-line-2 overflow-hidden">
+      <div class="rounded-md bg-surface-2 border border-line-2 overflow-hidden">
         <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
           <span class="text-[12px] text-text-dim">On the board's machine</span>
           <button type="button" onclick={copyCommand} class="text-[12px] text-accent hover:underline">
             {clip.state === 'copied' ? 'Copied' : 'Copy command'}
           </button>
         </div>
-        <pre class="px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
+        <pre class="px-3 py-2 font-mono text-caption/relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
             >$ dartcade-bridge</span
           >
 <span class="text-accent">✓</span> Board Manager found at 192.168.1.42
@@ -217,7 +217,7 @@
 
   <!-- Network error banner -->
   {#if errorKind === 'network'}
-    <div class="flex gap-2 px-3 py-2 rounded-[10px] bg-live/10 border border-live/40 text-[13px]">
+    <div class="flex gap-2 px-3 py-2 rounded-md bg-live/10 border border-live/40 text-[13px]">
       <span class="text-live-text">⚠</span>
       <span class="text-text-muted">
         <span class="text-live-text font-semibold">Couldn't reach Dartcade.</span>

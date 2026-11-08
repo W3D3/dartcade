@@ -29,7 +29,7 @@
       aria-pressed={tool === t.id}
       title="{t.label} ({t.key})"
       onclick={() => ontool(t.id)}
-      class="relative flex h-12 w-12 items-center justify-center rounded-[10px] border-0 cursor-pointer
+      class="relative flex size-12 items-center justify-center rounded-md border-0 cursor-pointer
              {tool === t.id ? 'bg-accent-tint text-accent' : 'bg-transparent text-ink-2 hover:bg-surface-hover'}"
     >
       <Icon size={20} />

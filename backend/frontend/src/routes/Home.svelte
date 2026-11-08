@@ -26,12 +26,12 @@
 
 <Layout title="Home">
   <main
-    class="flex flex-grow min-h-0 flex-col gap-[14px] [&>*]:shrink-0 md:gap-5 box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
+    class="flex grow min-h-0 flex-col gap-[14px] *:shrink-0 md:gap-5 box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex items-end justify-between gap-4">
       <div class="flex min-w-0 flex-col gap-1">
         <span class="text-[13px] text-text-muted">{longDate(now)}</span>
-        <h1 class="font-display text-[28px] font-bold uppercase leading-none tracking-[0.02em] md:text-[42px] xl:text-[48px]">
+        <h1 class="font-display text-[28px] font-bold uppercase leading-none tracking-title md:text-[42px] xl:text-[48px]">
           {greeting(now)}{#if $currentUser}, {$currentUser.name}{/if}
         </h1>
       </div>

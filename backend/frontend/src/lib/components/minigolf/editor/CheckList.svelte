@@ -18,12 +18,12 @@
 <section aria-label="Checks" class="flex flex-col gap-2">
   <h2 class="text-[11px] label-caps text-text-dim">Checks</h2>
   {#if shapeDropped}
-    <p role="status" class="rounded-[8px] border border-warn-line bg-warn-soft px-2 py-1 text-[14px] text-warn">
+    <p role="status" class="rounded-sm border border-warn-line bg-warn-soft px-2 py-1 text-[14px] text-warn">
       This hole's circles were changed elsewhere and are now plain corners.
     </p>
   {/if}
   {#if all.length === 0}
-    <p class="flex items-center gap-2 text-[14px]"><span class="h-2 w-2 rounded-full bg-accent"></span>No problems</p>
+    <p class="flex items-center gap-2 text-[14px]"><span class="size-2 rounded-full bg-accent"></span>No problems</p>
   {:else}
     <ul class="flex flex-col gap-1" aria-live="polite">
       {#each all as c, i (i)}
@@ -33,10 +33,10 @@
             type="button"
             disabled={!element}
             onclick={() => element && onselect(element)}
-            class="flex w-full items-center gap-2 rounded-[8px] border-0 px-1 py-1 text-left text-[14px] text-text enabled:cursor-pointer enabled:hover:bg-surface-hover"
+            class="flex w-full items-center gap-2 rounded-sm border-0 p-1 text-left text-[14px] text-text enabled:cursor-pointer enabled:hover:bg-surface-hover"
           >
             <span
-              class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[11px] font-bold {c.level === 'error'
+              class="flex size-4 shrink-0 items-center justify-center rounded-full text-[11px] font-bold {c.level === 'error'
                 ? 'bg-live-text text-bg'
                 : 'bg-warn text-bg'}"
               aria-label={c.level === 'error' ? 'Error' : 'Warning'}>!</span

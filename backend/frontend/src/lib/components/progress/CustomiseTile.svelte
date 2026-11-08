@@ -42,8 +42,8 @@
          {compact
     ? 'shrink-0 rounded-full p-[6px]'
     : row
-      ? 'w-full h-full rounded-[12px] flex-row items-center justify-between gap-2 px-3 py-[10px] text-left'
-      : 'w-full h-full rounded-[12px] flex-col items-center gap-[6px] px-2 pt-[10px] pb-2'}
+      ? 'size-full  rounded-lg flex-row items-center justify-between gap-2 px-3 py-[10px] text-left'
+      : 'size-full  rounded-lg flex-col items-center gap-[6px] px-2 pt-[10px] pb-2'}
          {!open
     ? 'cursor-default border-surface-inset bg-[#111310]'
     : selected
@@ -78,7 +78,7 @@
     {#if selected}
       <span
         class="absolute {compact
-          ? '-top-[3px] -right-[3px]'
+          ? 'top-[-3px] right-[-3px]'
           : 'top-[6px] right-[6px]'} size-[18px] rounded-full bg-accent text-accent-fg flex items-center justify-center"
         aria-hidden="true"><Check size={12} strokeWidth={3} /></span
       >

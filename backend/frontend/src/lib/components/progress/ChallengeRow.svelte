@@ -47,19 +47,19 @@
 </script>
 
 {#if item.claimed}
-  <li class="flex items-center gap-[14px] rounded-[12px] border border-line-2 bg-surface-row px-4 py-3 opacity-60">
+  <li class="flex items-center gap-[14px] rounded-lg border border-line-2 bg-surface-row px-4 py-3 opacity-60">
     <span
       class="size-[34px] shrink-0 rounded-full border-2 border-accent-line-strong text-accent flex items-center justify-center"
       aria-hidden="true"><Check size={16} strokeWidth={2.6} /></span
     >
     <div class="flex-1 min-w-0 text-[16px] font-medium text-ink-2">{item.title}</div>
     <span class="text-[13px] text-text-muted whitespace-nowrap">Claimed</span>
-    <span class="inline-flex items-center gap-[6px] font-display font-bold text-[20px] tracking-[0.04em] text-text-dim whitespace-nowrap"
+    <span class="inline-flex items-center gap-[6px] font-display font-bold text-[20px] tracking-section text-text-dim whitespace-nowrap"
       >+{item.xp}<XpBadge size={18} /></span
     >
   </li>
 {:else if item.completed}
-  <li class="done relative flex items-center gap-[14px] rounded-[12px] border px-4 py-3">
+  <li class="done relative flex items-center gap-[14px] rounded-lg border px-4 py-3">
     <span class="relative size-[34px] shrink-0 flex items-center justify-center" aria-hidden="true">
       <span class="ring absolute inset-0 rounded-full border-2 border-accent"></span>
       <span class="{fresh ? 'stamp' : ''} size-[34px] rounded-full bg-accent text-accent-fg flex items-center justify-center"
@@ -68,7 +68,7 @@
       {#if fresh}
         {#each BURST as [x, y, color, shape], i (i)}
           <span
-            class="piece absolute left-1/2 top-1/2 rounded-[2px] {shape === 'h' ? 'w-1 h-[9px]' : 'w-[6px] h-1'}"
+            class="piece absolute left-1/2 top-1/2 rounded-bar {shape === 'h' ? 'w-1 h-[9px]' : 'w-[6px] h-1'}"
             style="background: {color}; --x: {x}px; --y: {y}px"
           ></span>
         {/each}
@@ -83,8 +83,8 @@
       type="button"
       onclick={claim}
       disabled={claiming}
-      class="claim relative overflow-hidden shrink-0 inline-flex items-center gap-2 rounded-[10px] border-0 bg-accent px-4 py-[9px] text-accent-fg
-             font-display font-bold text-[20px] uppercase tracking-[0.06em] whitespace-nowrap cursor-pointer hover:bg-accent-hover disabled:cursor-default"
+      class="claim relative overflow-hidden shrink-0 inline-flex items-center gap-2 rounded-md border-0 bg-accent px-4 py-[9px] text-accent-fg
+             font-display font-bold text-[20px] uppercase tracking-wordmark whitespace-nowrap cursor-pointer hover:bg-accent-hover disabled:cursor-default"
     >
       {#if claiming}<LoaderCircle size={16} class="animate-spin" aria-hidden="true" />{/if}
       Claim +{item.xp}<XpBadge size={22} inverse />
@@ -92,14 +92,14 @@
     </button>
   </li>
 {:else}
-  <li class="flex flex-col gap-[10px] rounded-[12px] border bg-surface-row px-4 py-[14px] {close ? 'border-gold-line' : 'border-line-2'}">
+  <li class="flex flex-col gap-[10px] rounded-lg border bg-surface-row px-4 py-[14px] {close ? 'border-gold-line' : 'border-line-2'}">
     <div class="flex items-center gap-3">
       <div class="flex-1 min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-[16px] font-medium">{item.title}</span>
           {#if item.difficulty === 'hard'}
             <span
-              class="rounded-full border border-line-chip px-[9px] py-[5px] text-[11px] font-bold uppercase tracking-[0.08em] whitespace-nowrap"
+              class="rounded-full border border-line-chip px-[9px] py-[5px] text-[11px] font-bold uppercase tracking-cta whitespace-nowrap"
               >Hard</span
             >
           {/if}
@@ -116,7 +116,7 @@
         >
       {/if}
       <span
-        class="shrink-0 inline-flex items-center gap-[6px] whitespace-nowrap font-display font-bold text-[22px] tracking-[0.04em] text-accent"
+        class="shrink-0 inline-flex items-center gap-[6px] whitespace-nowrap font-display font-bold text-[22px] tracking-section text-accent"
         >+{item.xp}<XpBadge /></span
       >
     </div>

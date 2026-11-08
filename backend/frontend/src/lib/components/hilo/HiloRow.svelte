@@ -65,7 +65,7 @@
       {/if}
       {#if last}
         <div class="flex flex-col gap-1 min-w-0">
-          <span class="text-[12px] label-caps {s.out ? 'text-[#6d7066]' : 'text-text-dim'}"
+          <span class="text-[12px] label-caps {s.out ? 'text-text-faint' : 'text-text-dim'}"
             >{s.out ? `Went out in round ${s.outRound}` : 'Last visit'}</span
           >
           <span

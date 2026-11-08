@@ -8,6 +8,6 @@
 
 <svelte:element this={as} class="hidden md:flex flex-col gap-[6px]">
   {#if trail}<Breadcrumb items={trail} />{/if}
-  <h1 class="font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">{title}</h1>
+  <h1 class="font-display font-bold text-[48px] leading-none uppercase tracking-title">{title}</h1>
   <p class="text-[15px] text-text-muted">{sub}</p>
 </svelte:element>

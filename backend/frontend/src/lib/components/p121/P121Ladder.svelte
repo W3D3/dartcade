@@ -38,7 +38,7 @@
       <li class="grid grid-cols-[54px_30px_1fr_auto] items-center gap-[10px] min-h-[42px] border-b border-line">
         <span class="font-mono text-[12px] text-text-dim">Try {i + 1}</span>
         <span
-          class="w-6 h-6 rounded-full grid place-items-center {t.made ? 'bg-accent-tint text-accent' : 'bg-live-soft text-live'}"
+          class="size-6 rounded-full grid place-items-center {t.made ? 'bg-accent-tint text-accent' : 'bg-live-soft text-live'}"
           role="img"
           aria-label={t.made ? 'made' : 'missed'}
         >
@@ -50,11 +50,11 @@
     {/each}
     {#if open}
       <li
-        class="grid grid-cols-[54px_30px_1fr_auto] items-center gap-[10px] min-h-[46px] mt-1 -mx-[10px] px-[10px] rounded-[10px] bg-surface-picked ring-[1.5px] ring-inset ring-accent"
+        class="grid grid-cols-[54px_30px_1fr_auto] items-center gap-[10px] min-h-[46px] mt-1 mx-[-10px] px-[10px] rounded-md bg-surface-picked ring-[1.5px] ring-inset ring-accent"
         aria-current="step"
       >
         <span class="font-mono text-[12px] text-accent">Try {s.tries.length + 1}</span>
-        <span class="w-6 h-6 rounded-full border-2 border-accent box-border"></span>
+        <span class="size-6 rounded-full border-2 border-accent box-border"></span>
         <span class="font-display font-bold text-[26px] leading-none text-accent">{s.target}</span>
         <span class="text-[13px] text-text">{openNote}</span>
       </li>
@@ -64,9 +64,7 @@
   <div class="flex flex-wrap gap-[6px]" role="img" aria-label="Target ladder: {s.made} of {s.tries.length} made">
     {#each s.tries as t, i (i)}
       <span class="flex flex-col items-center gap-1">
-        <span
-          class="w-[30px] h-[30px] rounded-full grid place-items-center {t.made ? 'bg-accent-tint text-accent' : 'bg-live-soft text-live'}"
-        >
+        <span class="size-[30px] rounded-full grid place-items-center {t.made ? 'bg-accent-tint text-accent' : 'bg-live-soft text-live'}">
           {#if t.made}<Check size={14} strokeWidth={3} />{:else}<X size={14} strokeWidth={3} />{/if}
         </span>
         <span class="text-[11px] text-text-muted">{t.target}</span>
@@ -74,13 +72,13 @@
     {/each}
     {#if open}
       <span class="flex flex-col items-center gap-1">
-        <span class="w-[30px] h-[30px] rounded-full border-2 border-accent box-border"></span>
+        <span class="size-[30px] rounded-full border-2 border-accent box-border"></span>
         <span class="text-[11px] text-accent">{s.target}</span>
       </span>
     {/if}
     {#each Array.from({ length: later }, (_, i) => i) as i (i)}
       <span class="flex flex-col items-center gap-1">
-        <span class="w-[30px] h-[30px] rounded-full border-[1.5px] border-dashed border-line-chip box-border"></span>
+        <span class="size-[30px] rounded-full border-[1.5px] border-dashed border-line-chip box-border"></span>
         <span class="text-[11px] text-line-chip">·</span>
       </span>
     {/each}

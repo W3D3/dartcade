@@ -28,7 +28,7 @@
   {title}
   aria-expanded={expanded}
   {onclick}
-  class="w-9 h-9 shrink-0 flex items-center justify-center rounded-[8px] cursor-pointer
+  class="size-9 shrink-0 flex items-center justify-center rounded-sm cursor-pointer
          {tone === 'outline' ? 'bg-transparent border border-line-chip text-ink-2' : 'border-0 bg-surface-key text-text'}"
 >
   {@render children()}

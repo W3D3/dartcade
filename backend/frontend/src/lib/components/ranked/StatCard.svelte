@@ -15,9 +15,9 @@
 
 <section
   aria-label={aria}
-  class="relative box-border flex min-w-0 flex-col gap-1 md:gap-[6px] rounded-[12px] md:rounded-[14px] border border-line bg-surface-panel px-3 py-3 md:px-[18px] md:py-4"
+  class="relative box-border flex min-w-0 flex-col gap-1 md:gap-[6px] rounded-lg md:rounded-card border border-line bg-surface-panel p-3 md:px-[18px] md:py-4"
 >
-  <span class="truncate text-[10px] uppercase tracking-[0.1em] text-text-muted md:text-[12px] {corner ? 'pr-10 md:pr-14' : ''}"
+  <span class="truncate text-[10px] label-caps text-text-muted md:text-[12px] {corner ? 'pr-10 md:pr-14' : ''}"
     >{#if shortLabel}<span class="md:hidden">{shortLabel}</span><span class="hidden md:inline">{label}</span>{:else}{label}{/if}</span
   >
   <span class="flex items-baseline whitespace-nowrap">

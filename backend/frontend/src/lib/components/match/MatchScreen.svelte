@@ -29,7 +29,7 @@
 {:else if Screen}
   <Screen {...props} bind:settings bind:correcting />
 {:else}
-  <main class="flex-grow flex items-center justify-center">
+  <main class="grow flex items-center justify-center">
     <p class="text-text-muted">Unsupported game</p>
   </main>
 {/if}

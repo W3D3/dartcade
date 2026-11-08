@@ -34,7 +34,7 @@
           role={undefined}
           href="#/profile/{userId}"
           aria-label="{name}: profile"
-          class="min-w-0 max-w-full inline-flex items-center gap-[6px] no-underline !text-inherit [text-transform:inherit] {className}"
+          class="min-w-0 max-w-full inline-flex items-center gap-[6px] no-underline text-inherit! [text-transform:inherit] {className}"
         >
           {@render children()}
         </a>
@@ -45,7 +45,7 @@
         {#if $profile}
           <ProfileCard profile={$profile} status={status ? $status : null} />
         {:else}
-          <div class="w-[300px] h-[200px] rounded-[16px] border border-line-popover bg-surface-2"></div>
+          <div class="w-[300px] h-[200px] rounded-popover border border-line-popover bg-surface-2"></div>
         {/if}
       </LinkPreview.Content>
     </LinkPreview.Portal>

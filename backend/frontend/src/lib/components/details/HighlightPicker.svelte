@@ -9,7 +9,7 @@
   Highlight
   <Select
     label="Highlight a player"
-    class="h-9 rounded-[8px] border-line-strong bg-surface-inset"
+    class="h-9 rounded-sm border-line-strong bg-surface-inset"
     value={String(value)}
     options={options.map(o => ({ value: String(o.key), label: o.name }))}
     onchange={(v: string) => onpick(Number(v))}

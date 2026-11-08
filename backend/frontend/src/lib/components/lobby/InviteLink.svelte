@@ -46,7 +46,7 @@
       >Sign in</a
     >
   </header>
-  <main class="flex-grow flex md:items-center justify-center">
+  <main class="grow flex md:items-center justify-center">
     <section
       aria-labelledby="invite-link-title"
       class="w-full max-w-[480px] h-fit box-border flex flex-col gap-[18px] px-[18px] py-[22px] md:px-[34px] md:py-8 rounded-[20px] bg-surface-panel border border-line-2"
@@ -73,13 +73,12 @@
         </p>
       {/if}
       <div class="flex flex-col gap-[10px]">
-        <Button size="lg" class="h-[52px] rounded-[12px] text-[22px] tracking-[0.06em]" onclick={() => go('/login')}>Sign in to join</Button
-        >
-        <Button variant="outline" class="h-12 rounded-[12px] border-line-strong text-[15px] font-semibold" onclick={() => go('/register')}
+        <Button size="lg" class="h-[52px] rounded-lg text-[22px] tracking-wordmark" onclick={() => go('/login')}>Sign in to join</Button>
+        <Button variant="outline" class="h-12 rounded-lg border-line-strong text-[15px] font-semibold" onclick={() => go('/register')}
           >Create a free account</Button
         >
       </div>
-      <p class="text-[13px] leading-[1.5] text-text-dim">
+      <p class="text-kicker/normal text-text-dim">
         You'll come straight back to this lobby after signing in. To throw, you need an Autodarts board paired to Dartcade.
         {#if preview}The link works until {host} closes the lobby.{/if}
       </p>

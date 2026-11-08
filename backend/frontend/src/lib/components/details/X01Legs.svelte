@@ -21,7 +21,7 @@
   <div class="flex flex-col gap-4 min-w-0">
     <p class="text-[15px] text-text-muted">{legSummary(x01, leg, sides, nameOf, forfeitedBy)}</p>
     <div class="flex flex-col gap-4 {party ? 'xl:flex-row xl:items-start' : ''}">
-      <div class="min-w-0 {party ? 'xl:flex-grow' : ''}">
+      <div class="min-w-0 {party ? 'xl:grow' : ''}">
         <RemainingChart series={legSeries(x01, leg, sides, start)} {sides} {start} {highlight} />
       </div>
       <div class="min-w-0 {party ? 'xl:w-[560px] xl:shrink-0' : ''}">

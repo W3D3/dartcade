@@ -62,15 +62,14 @@
           <Button type="submit" variant="accent" disabled={busy || !changed || !nameSendable(status)}>Save</Button>
         {/snippet}
       </NameField>
-      <span class="text-[13px] leading-[1.5] text-text-dim">{NAME_HINT} You can change your name once every {NAME_COOLDOWN_DAYS} days.</span
-      >
+      <span class="text-kicker/normal text-text-dim">{NAME_HINT} You can change your name once every {NAME_COOLDOWN_DAYS} days.</span>
       {#if error}<ErrorText>{error}</ErrorText>{/if}
       {#if saved && !changed}<span role="status" class="text-[13px] text-accent">{saved}</span>{/if}
     </form>
     <CountryField />
   </div>
   {#if preview}
-    <div class="flex flex-col gap-2 px-4 py-[14px] rounded-[12px] bg-surface-1 border border-line">
+    <div class="flex flex-col gap-2 px-4 py-[14px] rounded-lg bg-surface-1 border border-line">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
       <div class="flex items-center gap-3 min-w-0">
         <Avatar
@@ -93,7 +92,5 @@
       </div>
     </div>
   {/if}
-  <span class="text-[13px] leading-[1.5] text-text-muted"
-    >Friends keep you on their list when you change it. They just see the new name.</span
-  >
+  <span class="text-kicker/normal text-text-muted">Friends keep you on their list when you change it. They just see the new name.</span>
 </section>

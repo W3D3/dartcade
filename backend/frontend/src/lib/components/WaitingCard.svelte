@@ -38,18 +38,15 @@
 
 <div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center overflow-hidden {compact ? 'gap-2 p-4' : 'gap-4 p-7'}">
   <span
-    class="shrink-0 rounded-full bg-surface-paused text-ink-2 flex items-center justify-center {compact
-      ? 'w-12 h-12'
-      : 'w-[72px] h-[72px]'}"
+    class="shrink-0 rounded-full bg-surface-paused text-ink-2 flex items-center justify-center {compact ? 'size-12 ' : 'size-[72px] '}"
     aria-hidden="true"
   >
     <Unplug size={compact ? 22 : 32} strokeWidth={1.8} />
   </span>
   <span
     role="status"
-    class="max-w-full [overflow-wrap:anywhere] font-display font-bold uppercase leading-[0.95] tracking-[0.01em] {compact
-      ? 'text-[28px]'
-      : 'text-[46px]'}">Waiting for {name}</span
+    class="max-w-full wrap-anywhere font-display font-bold uppercase leading-[0.95] tracking-hero {compact ? 'text-[28px]' : 'text-[46px]'}"
+    >Waiting for {name}</span
   >
   <!-- Outside the status region, so screen readers aren't told every second -->
   <span class="inline-flex items-baseline gap-[10px] text-ink-2 {compact ? 'text-[14px]' : 'text-[18px]'}">
@@ -59,7 +56,7 @@
       Not connected yet
     {/if}
   </span>
-  <p class="max-w-[300px] text-text-muted leading-[1.5] {compact ? 'text-[13px]' : 'text-[15px]'}">
+  <p class="max-w-[300px] text-text-muted leading-normal {compact ? 'text-[13px]' : 'text-[15px]'}">
     {#if forfeitLeft !== null}
       If {name} is not back in <span class="font-mono text-text tabular-nums">{forfeitLeft}</span>, you win by forfeit.
     {:else}
@@ -71,7 +68,7 @@
       <button
         type="button"
         onclick={onabort}
-        class="h-12 px-5 inline-flex items-center gap-2 rounded-[10px] border border-danger-line text-live-text text-[15px] font-semibold cursor-pointer"
+        class="h-12 px-5 inline-flex items-center gap-2 rounded-md border border-danger-line text-live-text text-[15px] font-semibold cursor-pointer"
       >
         <X size={16} />Abort game
       </button>

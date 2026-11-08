@@ -25,7 +25,7 @@
     <div class="h-[74px]">
       <Chart
         ssr
-        class="block h-full w-full"
+        class="block size-full "
         role="img"
         aria-label="3-dart average per day, from {points[0].avg.toFixed(0)} to {last.avg.toFixed(0)}"
         data={points}

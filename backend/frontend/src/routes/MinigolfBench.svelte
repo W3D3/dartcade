@@ -200,15 +200,13 @@
 
 <Layout title="Minigolf bench">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-4 box-border overflow-y-auto p-4 md:p-[28px_32px] lg:overflow-hidden">
+    <main class="flex min-h-0 grow flex-col gap-4 box-border overflow-y-auto p-4 md:p-[28px_32px] lg:overflow-hidden">
       <header class="flex flex-col gap-3">
         <!-- On phones the app's header already shows the title, same cutoff as it -->
         <div class="hidden md:block"><Breadcrumb items={minigolfBenchTrail()} /></div>
         <div class="flex flex-wrap items-center gap-3">
           <!-- On phones the app's header already shows the title -->
-          <h1 class="m-0 mr-2 hidden font-display font-bold text-[36px] leading-none uppercase tracking-[0.02em] md:block">
-            Minigolf bench
-          </h1>
+          <h1 class="m-0 mr-2 hidden font-display font-bold text-[36px] leading-none uppercase tracking-title md:block">Minigolf bench</h1>
           <div class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
             <span class="hidden md:inline" aria-hidden="true">Course</span>
             <Select
@@ -243,7 +241,7 @@
           {/if}
         </div>
         <!-- One row to swipe through on phones, wrapping on wider screens -->
-        <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 [&>*]:shrink-0">
+        <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 *:shrink-0">
           {#if !playtest}
             <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
             <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
@@ -299,7 +297,7 @@
       {#if playtest}
         <Playtest {hole} {physics} {assist} {felt} {shading} {freeCamera} {relief} />
       {:else}
-        <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:flex-grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <!-- On phones the hole and the board share the screen, so aiming and the roll both show -->
           <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
             {#if view3d}

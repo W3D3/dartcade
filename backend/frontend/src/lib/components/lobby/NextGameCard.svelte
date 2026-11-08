@@ -100,7 +100,7 @@
 
 <section
   aria-label="Next game"
-  class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]"
+  class="box-border p-4 md:px-6 md:py-[22px] rounded-card bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]"
 >
   <!-- Settings and Change game: stacked beside the game from md (Lobby board), in a row under it on phones -->
   {#snippet gameButtons(cls: string)}
@@ -112,7 +112,7 @@
     >
   {/snippet}
   <div class="flex items-start gap-[18px]">
-    <div class="flex-grow min-w-0"><NextGameSummary {lobby} pickedBy="picked by you" /></div>
+    <div class="grow min-w-0"><NextGameSummary {lobby} pickedBy="picked by you" /></div>
     <div class="hidden md:flex flex-col gap-2 shrink-0">{@render gameButtons('h-10 px-[14px]')}</div>
   </div>
   <div class="grid grid-cols-2 gap-2 md:hidden">{@render gameButtons('')}</div>

@@ -41,7 +41,7 @@
   <div class="h-[220px] md:h-[300px]">
     <Chart
       ssr
-      class="block w-full h-full"
+      class="block size-full "
       role="img"
       aria-label="Target per try: highest {high}, {made} of {tries.length} checkouts made"
       data={points}

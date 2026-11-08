@@ -24,7 +24,7 @@
       <thead>
         <tr class="text-[12px] label-caps text-text-dim">
           <th class="text-left font-normal px-4 py-3">Player</th><th class="text-left font-normal px-2 py-3">Team</th>
-          <th class="text-right font-normal px-3 py-3">Avg</th><th class="text-right font-normal px-4 py-3">Closed</th>
+          <th class="text-right font-normal p-3">Avg</th><th class="text-right font-normal px-4 py-3">Closed</th>
         </tr>
       </thead>
       <tbody>
@@ -33,7 +33,7 @@
             <td class="px-4 py-3 font-semibold"
               >{#if r.player}<ProfilePopover userId={profileId(r.player)} name={r.player.name}>{r.player.name}</ProfilePopover>{/if}</td
             ><td class="px-2 py-3 text-text-muted">{r.team}</td>
-            <td class="px-3 py-3 text-right">{Object.hasOwn(r.values, 'average') ? r.values.average.toFixed(1) : '—'}</td>
+            <td class="p-3 text-right">{Object.hasOwn(r.values, 'average') ? r.values.average.toFixed(1) : '—'}</td>
             <td class="px-4 py-3 text-right">{Object.hasOwn(r.values, 'legsClosed') ? r.values.legsClosed : 0}</td>
           </tr>
         {/each}

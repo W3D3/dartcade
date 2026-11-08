@@ -12,7 +12,7 @@
   <div class="h-[34px] w-[150px] max-w-full" aria-hidden="true">
     <Chart
       ssr
-      class="block h-full w-full"
+      class="block size-full "
       data={points}
       x="i"
       y="v"

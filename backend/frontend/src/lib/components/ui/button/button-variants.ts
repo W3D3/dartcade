@@ -3,20 +3,20 @@ import { type WithElementRef } from '$lib/utils.js'
 import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
 
 export const buttonVariants = tv({
-  base: 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-opacity outline-none select-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer [&_svg]:pointer-events-none [&_svg]:shrink-0 focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]',
+  base: 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-opacity outline-none select-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer [&_svg]:pointer-events-none [&_svg]:shrink-0 focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:outline-offset-2',
   variants: {
     variant: {
-      primary: 'h-[54px] px-6 rounded-[10px] bg-accent text-accent-fg font-display font-bold text-xl tracking-widest uppercase',
-      accent: 'h-11 px-4 rounded-[10px] bg-accent text-accent-fg text-[15px] font-bold',
+      primary: 'h-[54px] px-6 rounded-md bg-accent text-accent-fg font-display font-bold text-xl label-caps ',
+      accent: 'h-11 px-4 rounded-md bg-accent text-accent-fg text-[15px] font-bold',
       // accent's shape in red: the confirm button of something that can't be undone
-      danger: 'h-11 px-4 rounded-[10px] bg-live text-[#fff] text-[15px] font-bold',
-      secondary: 'h-[56px] px-6 rounded-[12px] bg-text text-accent-fg font-display font-bold text-xl uppercase tracking-widest',
-      ghost: 'h-10 px-[14px] rounded-[10px] border border-line-3 text-ink-2 text-sm',
-      outline: 'h-10 px-4 rounded-[10px] border border-line-3 text-text text-sm',
-      'accent-outline': 'h-10 px-4 rounded-[10px] border-2 border-accent text-accent text-[15px] font-bold',
+      danger: 'h-11 px-4 rounded-md bg-live text-white text-[15px] font-bold',
+      secondary: 'h-[56px] px-6 rounded-lg bg-text text-accent-fg font-display font-bold text-xl label-caps ',
+      ghost: 'h-10 px-[14px] rounded-md border border-line-3 text-ink-2 text-sm',
+      outline: 'h-10 px-4 rounded-md border border-line-3 text-text text-sm',
+      'accent-outline': 'h-10 px-4 rounded-md border-2 border-accent text-accent text-[15px] font-bold',
       // Filled, small: on the lobby code chip
-      key: 'h-9 px-3 rounded-[8px] border-0 bg-surface-key text-text text-[14px] font-semibold',
-      destructive: 'h-10 px-4 rounded-[10px] border border-live-text text-live-text text-sm',
+      key: 'h-9 px-3 rounded-sm border-0 bg-surface-key text-text text-[14px] font-semibold',
+      destructive: 'h-10 px-4 rounded-md border border-live-text text-live-text text-sm',
       // Borderless and dim, for an icon in a row of text; colour the hover with a class
       quiet: 'h-10 rounded-chip border-0 bg-transparent text-text-dim hover:text-text text-sm',
     },

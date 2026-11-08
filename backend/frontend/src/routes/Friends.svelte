@@ -63,13 +63,13 @@
 
 <Layout title="Friends" headerAction={onlineCount}>
   <main
-    class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
+    class="flex grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
   >
     <!-- contents: the header's tabs and the panel they control stay the page's own flex children -->
     <Tabs.Root value={tab} onValueChange={pickTab} class="contents">
       <header class="hidden md:flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div class="flex flex-col gap-[6px]">
-          <h1 class="font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Friends</h1>
+          <h1 class="font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Friends</h1>
           <p class="text-[15px] text-text-muted">
             <strong class="text-text font-semibold">{counts.online} online</strong> · {counts.all}
             {counts.all === 1 ? 'friend' : 'friends'} <span class="hidden xl:inline">· invite them to your lobby from here.</span>
@@ -85,12 +85,12 @@
       >
         <!-- One field for your friends and everyone else; on phones it sticks to the top of the page -->
         <div
-          class="order-first lg:order-none lg:col-start-1 max-md:sticky max-md:top-0 max-md:z-30 max-md:-mx-4 max-md:bg-bg max-md:px-4 max-md:py-2"
+          class="order-first lg:order-0 lg:col-start-1 max-md:sticky max-md:top-0 max-md:z-30 max-md:-mx-4 max-md:bg-bg max-md:px-4 max-md:py-2"
         >
           <FriendSearch {query} friends={list.friends} outgoing={list.outgoing} onquery={setQuery} />
         </div>
         <!-- One panel whatever the tab (phones show every list stacked); it follows the selected tab -->
-        <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-none lg:col-start-1 flex flex-col gap-[14px] md:gap-5 min-w-0">
+        <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-0 lg:col-start-1 flex flex-col gap-[14px] md:gap-5 min-w-0">
           {#if loaded && list.friends.length === 0}
             <div class={tab === 'requests' ? 'md:hidden' : ''}>
               <EmptyState
@@ -138,7 +138,7 @@
           {/if}
         </Tabs.Content>
 
-        <aside class="order-1 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 flex flex-col gap-[14px] md:gap-4 min-w-0">
+        <aside class="order-1 lg:order-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 flex flex-col gap-[14px] md:gap-4 min-w-0">
           <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
              Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
           <div class="order-first md:order-last">
@@ -150,7 +150,7 @@
           >
             <div class="flex items-baseline justify-between gap-3">
               <h2
-                class="text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
+                class="text-[12px] font-semibold label-caps text-text-muted md:text-[15px] md:normal-case md:tracking-normal md:text-text"
               >
                 Requests<span class="md:hidden">{` · ${list.incoming.length} for you · ${list.outgoing.length} sent`}</span>
               </h2>

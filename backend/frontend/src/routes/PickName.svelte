@@ -36,7 +36,7 @@
 <div class="flex flex-col md:flex-row min-h-dvh bg-bg">
   <AuthPanel />
   <AuthHero />
-  <main class="flex flex-grow md:items-center md:justify-center">
+  <main class="flex grow md:items-center md:justify-center">
     <form
       onsubmit={e => {
         e.preventDefault()
@@ -45,7 +45,7 @@
       class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
     >
       <div class="flex flex-col gap-2">
-        <h1 class="font-display font-bold text-[34px] md:text-[44px] uppercase tracking-[0.02em] leading-none">Pick your name</h1>
+        <h1 class="font-display font-bold text-[34px] md:text-[44px] uppercase tracking-title leading-none">Pick your name</h1>
         <p class="text-[16px] text-text-muted">
           Names are unique now, so friends can find you as @name. Yours ({$currentUser?.name}) is taken or uses characters names can't have.
           We suggested one; change it if you like.

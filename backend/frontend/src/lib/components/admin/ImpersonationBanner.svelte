@@ -45,7 +45,7 @@
   onpointermove={move}
   onpointerup={() => (drag = null)}
   onpointercancel={() => (drag = null)}
-  class="fixed bottom-4 left-1/2 z-[300] flex max-w-[calc(100vw-32px)] cursor-grab touch-none flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-warn-line bg-surface-hover px-4 py-2 text-[14px] text-text [box-shadow:0_10px_30px_rgba(0,0,0,0.5)]"
+  class="fixed bottom-4 left-1/2 z-300 flex max-w-[calc(100vw-32px)] cursor-grab touch-none flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-warn-line bg-surface-hover px-4 py-2 text-[14px] text-text [box-shadow:0_10px_30px_rgba(0,0,0,0.5)]"
 >
   <Eye size={16} class="shrink-0 text-warn" aria-hidden="true" />
   <span class="min-w-0 truncate">Viewing as <strong>{name}</strong></span>

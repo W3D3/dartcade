@@ -132,7 +132,7 @@
 
 {#snippet who(id: string, name: string, avatar: Friend['avatar'], note: string, wide = false)}
   <Avatar {name} face={{ avatar, userId: id }} size={40} />
-  <span class="flex min-w-0 flex-grow flex-col gap-[2px] {wide ? 'max-md:basis-[calc(100%-52px)]' : ''}">
+  <span class="flex min-w-0 grow flex-col gap-[2px] {wide ? 'max-md:basis-[calc(100%-52px)]' : ''}">
     <span class="flex items-baseline gap-2 text-[15px] font-semibold">
       <span class="truncate">{name}</span><span class="font-mono text-[12px] font-normal text-text-dim truncate">{`@${name}`}</span>
     </span>
@@ -148,7 +148,7 @@
     {@render who(p.id, p.name, p.avatar, note, wide)}
     {#if state.action}
       <span
-        class="shrink-0 h-11 md:h-9 min-w-[44px] px-4 max-md:ml-auto flex items-center justify-center rounded-[9px] bg-accent text-on-accent text-[14px] font-semibold"
+        class="shrink-0 h-11 md:h-9 min-w-[44px] px-4 max-md:ml-auto flex items-center justify-center rounded-key bg-accent text-on-accent text-[14px] font-semibold"
         >{state.action}</span
       >
     {:else if stateOf(p) === 'sent'}
@@ -165,8 +165,9 @@
   {#each [0, 1] as i (i)}
     <div aria-hidden="true" class="flex min-h-[64px] items-center gap-3 px-3 animate-pulse">
       <span class="size-10 rounded-full bg-surface-key"></span>
-      <span class="flex flex-grow flex-col gap-2"
-        ><span class="h-3 w-2/5 rounded bg-surface-key"></span><span class="h-[10px] w-1/4 rounded bg-surface-chip"></span></span
+      <span class="flex grow flex-col gap-2"
+        ><span class="h-3 w-2/5 rounded-[4px] bg-surface-key"></span><span class="h-[10px] w-1/4 rounded-[4px] bg-surface-chip"
+        ></span></span
       >
     </div>
   {/each}
@@ -178,7 +179,7 @@
     <span class="text-[15px] font-semibold text-text">{title}</span>
     <span class="text-[13px] leading-[1.45]">{body}</span>
     {#if retry}
-      <Button variant="outline" onclick={() => search.search(query)} class="h-11 md:h-9 rounded-[9px] border-line-strong px-4 text-[14px]"
+      <Button variant="outline" onclick={() => search.search(query)} class="h-11 md:h-9 rounded-key border-line-strong px-4 text-[14px]"
         >Retry</Button
       >
     {/if}
@@ -195,7 +196,7 @@
     items={[]}
   >
     <div
-      class="relative flex items-center h-[52px] md:h-12 box-border rounded-[12px] border bg-surface-card {open
+      class="relative flex items-center h-[52px] md:h-12 box-border rounded-lg border bg-surface-card {open
         ? 'border-accent ring-1 ring-accent'
         : 'border-line-strong'}"
     >
@@ -214,7 +215,7 @@
         onkeydown={e => {
           if (e.key === 'Escape' && !open) onquery('')
         }}
-        class="h-full min-w-0 flex-grow bg-transparent text-[16px] text-text outline-none placeholder:text-text-faint"
+        class="h-full min-w-0 grow bg-transparent text-[16px] text-text outline-none placeholder:text-text-faint"
       />
       {#if search.phase === 'loading'}
         <span aria-hidden="true" class="mr-3 size-4 shrink-0 animate-spin rounded-full border-2 border-line-chip border-t-accent"></span>
@@ -233,7 +234,7 @@
         customAnchor={anchor}
         sideOffset={8}
         collisionPadding={8}
-        class="z-[60] box-border w-[var(--bits-floating-anchor-width)] rounded-[16px] border border-line-popover bg-surface-inset outline-none shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+        class="z-60 box-border w-(--bits-floating-anchor-width) rounded-popover border border-line-popover bg-surface-inset outline-none shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
       >
         <Combobox.Viewport class="flex max-h-[min(560px,var(--bits-floating-available-height))] flex-col gap-1 overflow-auto p-[6px]">
           {#if showSuggestions}
@@ -260,7 +261,7 @@
               </div>
             {/if}
             {#if search.phase === 'short'}
-              <p class="px-3 py-3 text-[13px] leading-[1.45] text-text-muted">
+              <p class="p-3 text-[13px] leading-[1.45] text-text-muted">
                 Type {missing} more letter{missing === 1 ? '' : 's'} to search everyone on Dartcade.
               </p>
             {:else if search.phase === 'error'}

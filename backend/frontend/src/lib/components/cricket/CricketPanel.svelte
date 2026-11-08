@@ -62,14 +62,13 @@
   {#if compact}
     <!-- the pill sits by the name -->
   {:else if size === 'sm'}
-    {#if state}<span class="text-[11px] font-bold uppercase tracking-[0.08em] {active ? 'text-accent' : 'text-text-dim'}">{state}</span
-      >{/if}
+    {#if state}<span class="text-[11px] font-bold uppercase tracking-cta {active ? 'text-accent' : 'text-text-dim'}">{state}</span>{/if}
   {:else if active}<PlayerPill kind="throwing" small={size !== 'lg'} />{:else if upNext}<PlayerPill
       kind="up-next"
       small={size !== 'lg'}
     />{:else if size === 'head'}<span class="h-[26px]"></span>{/if}
   <div class="flex items-end justify-between gap-2">
-    <span class="font-display font-bold leading-[0.82] tracking-[-0.02em] tabular-nums {S.points} {active ? 'text-text' : 'text-ink-3'}"
+    <span class="font-display font-bold leading-[0.82] tracking-score tabular-nums {S.points} {active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber value={points} normal="up" reset={legNumber(game)} gain={game.config.mode === 'cutthroat' ? 'bad' : 'plain'} /></span
     >
     <span class="text-[13px] text-text-muted whitespace-nowrap"

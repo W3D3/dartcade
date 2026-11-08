@@ -394,11 +394,11 @@
       <PageTitle {trail} title="Feature flags" sub="Turn a flag on or off at runtime, no restart. Open tabs pick it up within 30s." />
 
       <!-- Every flag; once one is open, a column beside its card from lg (only the card below) -->
-      <div class="flex flex-col lg:flex-row gap-[14px] md:gap-4 lg:gap-5 xl:gap-6 {openFlag ? 'lg:flex-grow lg:min-h-0' : ''}">
+      <div class="flex flex-col lg:flex-row gap-[14px] md:gap-4 lg:gap-5 xl:gap-6 {openFlag ? 'lg:grow lg:min-h-0' : ''}">
         <section
           aria-label="Flags"
           class="flex min-w-0 flex-col gap-[14px] {openFlag
-            ? 'max-lg:hidden lg:[&>*]:shrink-0 lg:w-[320px] xl:w-[360px] lg:flex-shrink-0 lg:overflow-y-auto scrollbar-themed'
+            ? 'max-lg:hidden lg:*:shrink-0 lg:w-[320px] xl:w-[360px] lg:shrink-0 lg:overflow-y-auto scrollbar-themed'
             : 'w-full'}"
         >
           <div class="flex items-center gap-3">
@@ -479,7 +479,7 @@
                Save/Discard footer pinned under it -->
           <section
             aria-labelledby="flag-panel-title"
-            class="w-full lg:flex-grow lg:max-w-[728px] xl:max-w-[780px] lg:min-w-0 box-border card md:rounded-[16px] flex flex-col lg:overflow-hidden"
+            class="w-full lg:grow lg:max-w-[728px] xl:max-w-[780px] lg:min-w-0 box-border card md:rounded-popover flex flex-col lg:overflow-hidden"
           >
             <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-[26px_28px] pb-4 md:pb-4 flex flex-col gap-4">
               <Button variant="ghost" size="sm" class="lg:hidden self-start -ml-2 pl-2 pr-3 gap-[6px] font-semibold" onclick={tryClose}>
@@ -488,7 +488,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="flex min-w-0 flex-col gap-2">
                   {@render featureTag(featureOf(f.key))}
-                  <h2 id="flag-panel-title" class="break-all font-mono text-[18px] md:text-[20px] font-bold leading-tight">{f.key}</h2>
+                  <h2 id="flag-panel-title" class="break-all font-mono text-lead/tight md:text-[20px] font-bold">{f.key}</h2>
                   <p class="text-[14px] text-text-muted">{f.description}</p>
                   <div class="mt-1 flex flex-wrap items-center gap-2">
                     <Badge variant="pending">{flagStateText(f)}</Badge>
@@ -499,7 +499,7 @@
                   type="button"
                   onclick={tryClose}
                   aria-label="Close"
-                  class="hidden lg:flex -mr-2 -mt-1 h-11 w-11 shrink-0 items-center justify-center border-0 text-ink-2 cursor-pointer"
+                  class="hidden lg:flex -mr-2 -mt-1 size-11 shrink-0 items-center justify-center border-0 text-ink-2 cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -574,7 +574,7 @@
                         d.number = e.currentTarget.valueAsNumber
                       }}
                       disabled={panelBusy}
-                      class="h-11 w-28 rounded-[10px] border border-line-3 bg-surface-2 px-3 text-text outline-none disabled:opacity-50"
+                      class="h-11 w-28 rounded-md border border-line-3 bg-surface-2 px-3 text-text outline-none disabled:opacity-50"
                     />
                     <span class="text-[13px] text-text-muted">{f.range?.[0]}&ndash;{f.range?.[1]}, default {numberDefault(f)}</span>
                   </div>
@@ -591,7 +591,7 @@
             <!-- The footer: Save sends the draft (one request), Discard resets it. Below lg it sticks
                  to the bottom of the page's scroll (past main's padding), from lg it ends the card. -->
             <div
-              class="sticky -bottom-4 md:-bottom-[34px] lg:static z-10 shrink-0 flex flex-col gap-2 rounded-b-[16px] border-t border-line-2 bg-surface-panel px-4 md:px-7 py-4"
+              class="sticky -bottom-4 md:bottom-[-34px] lg:static z-10 shrink-0 flex flex-col gap-2 rounded-b-popover border-t border-line-2 bg-surface-panel p-4 md:px-7"
             >
               {#if saved}
                 <p class="text-[13px] text-accent">Live now. Open tabs update within half a minute.</p>

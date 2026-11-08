@@ -76,7 +76,7 @@
         type="button"
         onclick={onclose}
         aria-label="Close settings"
-        class="w-11 h-11 -mr-2 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
+        class="size-11 -mr-2 flex items-center justify-center border-0 text-ink-2 cursor-pointer"
       >
         <X size={18} />
       </button>

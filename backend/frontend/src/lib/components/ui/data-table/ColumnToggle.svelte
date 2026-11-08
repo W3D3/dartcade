@@ -36,7 +36,7 @@
     <DropdownMenu.Content
       align="end"
       sideOffset={6}
-      class="z-[60] min-w-[180px] box-border p-[6px] rounded-xl bg-surface-hover border border-line-popover
+      class="z-60 min-w-[180px] box-border p-[6px] rounded-xl bg-surface-hover border border-line-popover
              [box-shadow:0_18px_44px_rgba(0,0,0,0.55)] flex flex-col gap-[2px] outline-none"
     >
       {#each columns as col (col.id)}
@@ -44,7 +44,7 @@
           checked={isVisible(col.id)}
           onCheckedChange={v => setVisible(col.id, v)}
           class="flex h-10 items-center gap-[10px] rounded-sm px-[10px] text-[14px] text-text cursor-pointer outline-none
-                 data-[highlighted]:bg-surface-paused"
+                 data-highlighted:bg-surface-paused"
         >
           {#snippet children({ checked }: { checked: boolean })}
             <span class="w-4 flex shrink-0"

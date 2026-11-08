@@ -9,7 +9,7 @@
     target="_blank"
     rel="noopener noreferrer"
     title="Preview of pull request #{$preview.pr} (opens GitHub)"
-    class="h-[18px] px-[6px] shrink-0 inline-flex items-center rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-[0.04em] whitespace-nowrap no-underline hover:border-warn"
+    class="h-[18px] px-[6px] shrink-0 inline-flex items-center rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-section whitespace-nowrap no-underline hover:border-warn"
     >PR #{$preview.pr}</a
   >
 {/if}

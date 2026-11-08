@@ -125,7 +125,7 @@
       onkeydown={e => {
         if (e.key === 'Escape') open = false
       }}
-      class="flex-grow min-w-0 h-11 box-border px-3 md:px-[14px] bg-bg border border-line-chip rounded-[9px] text-text text-[15px]"
+      class="grow min-w-0 h-11 box-border px-3 md:px-[14px] bg-bg border border-line-chip rounded-key text-text text-[15px]"
     />
     <Button variant="outline" size="md" type="submit" class="bg-surface-key border-0 font-semibold">
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}

@@ -32,10 +32,10 @@
             aria-label="{showThrower ? `${nameOf(c.seat)}: ` : ''}{c.darts.join(', ')} = {c.scored}{c.out
               ? ', checkout'
               : `, ${c.left} left`}{c.bust ? ', bust' : ''}"
-            class="flex items-center gap-2 min-w-0 px-2 py-1 rounded-[8px] {c.tier === 'max' ? 'bg-accent text-accent-fg' : ''}"
+            class="flex items-center gap-2 min-w-0 px-2 py-1 rounded-sm {c.tier === 'max' ? 'bg-accent text-accent-fg' : ''}"
           >
             <span
-              class="w-[52px] h-7 shrink-0 box-border flex items-center justify-center rounded-[7px] font-display font-bold text-[20px]
+              class="w-[52px] h-7 shrink-0 box-border flex items-center justify-center rounded-segment font-display font-bold text-[20px]
                      {c.tier === 'max'
                 ? 'bg-bg text-accent'
                 : c.tier === 'ton'

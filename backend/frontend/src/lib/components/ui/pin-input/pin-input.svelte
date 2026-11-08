@@ -27,7 +27,7 @@
       {/if}
       <PinInput.Cell
         {cell}
-        class="flex-1 aspect-[3/4] max-w-[46px] flex items-center justify-center rounded-[10px]
+        class="flex-1 aspect-3/4 max-w-[46px] flex items-center justify-center rounded-md
                font-mono text-[24px] font-semibold border transition-colors text-text
                {invalid ? 'border-live bg-live/5' : cell.isActive ? 'border-accent bg-surface-2' : 'border-line-2 bg-surface-2'}"
       >

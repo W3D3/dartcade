@@ -26,7 +26,7 @@
 
 <section
   aria-label={period === 'daily' ? 'Daily challenges' : 'Weekly challenges'}
-  class="flex flex-col gap-[14px] box-border {bare ? '' : 'rounded-[14px] border border-line-2 bg-surface-2 p-[18px] md:p-[22px]'}"
+  class="flex flex-col gap-[14px] box-border {bare ? '' : 'rounded-card border border-line-2 bg-surface-2 p-[18px] md:p-[22px]'}"
 >
   {#if !bare}
     <div class="flex items-baseline justify-between gap-3">

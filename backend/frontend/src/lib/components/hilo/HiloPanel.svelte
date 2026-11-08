@@ -71,7 +71,7 @@
       <span class="text-[13px] label-caps text-text-muted">Last visit</span>
       {#if lostVisit(last.outcome)}
         <span
-          class="flex items-center gap-[10px] px-3 py-[10px] rounded-[10px] text-[15px] border
+          class="flex items-center gap-[10px] px-3 py-[10px] rounded-md text-[15px] border
                  {lit ? 'bg-[#24120f] border-[#6b2a24] text-[#ffb4ad]' : 'bg-[#1f1513] border-[#4a2420] text-[#e0a39d]'}"
         >
           <X size={16} strokeWidth={3} class="text-live shrink-0" />{outcomeText(last)}
@@ -86,14 +86,14 @@
     <div
       role="group"
       aria-label="{name}'s visits this game"
-      class="mt-auto min-h-0 overflow-hidden px-3 py-2 rounded-[12px] border flex flex-col justify-end
+      class="mt-auto min-h-0 overflow-hidden px-3 py-2 rounded-lg border flex flex-col justify-end
              {justLost ? 'bg-[#241a17] border-[#3a2420]' : active ? 'bg-surface-chip border-line-2' : 'bg-surface-inset border-line-2'}"
     >
       {#each s.visits as v, i (i)}
         {@const now = justLost && i === s.visits.length - 1}
         <div
           class="shrink-0 grid grid-cols-[28px_48px_1fr] xl:grid-cols-[40px_64px_1fr] items-center h-[42px] border-b border-line-2 last:border-b-0
-                 {now ? 'bg-live-soft rounded-[8px] -mx-[6px] px-[6px] border-b-0' : ''}"
+                 {now ? 'bg-live-soft rounded-sm mx-[-6px] px-[6px] border-b-0' : ''}"
         >
           <span class="font-mono text-[12px] {now ? 'text-live-text' : 'text-text-dim'}">R{v.round}</span>
           <span class="font-display font-bold text-[30px] {now ? 'text-live-text' : lit ? 'text-ink-soft' : 'text-ink-3'}">{v.total}</span>
@@ -104,7 +104,7 @@
       {/each}
       {#if throwing}
         <div
-          class="shrink-0 grid grid-cols-[28px_48px_1fr] xl:grid-cols-[40px_64px_1fr] items-center h-11 mt-1 -mx-[6px] px-[6px] rounded-[8px] bg-surface-key"
+          class="shrink-0 grid grid-cols-[28px_48px_1fr] xl:grid-cols-[40px_64px_1fr] items-center h-11 mt-1 mx-[-6px] px-[6px] rounded-sm bg-surface-key"
         >
           <span class="font-mono text-[12px] text-accent">R{game.round}</span>
           <span class="font-display font-bold text-[30px] text-accent">{game.visitTotal}…</span>

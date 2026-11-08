@@ -21,12 +21,12 @@
     <button
       type="button"
       onclick={() => onselect?.(mode.id)}
-      class="relative text-left box-border h-[92px] px-[14px] py-3 rounded-[12px] flex flex-col gap-[10px]
+      class="relative text-left box-border h-[92px] px-[14px] py-3 rounded-lg flex flex-col gap-[10px]
  overflow-hidden transition-colors cursor-pointer
  {active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
     >
       {#if active}
-        <span class="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+        <span class="absolute top-2 right-2 size-6 rounded-full bg-accent flex items-center justify-center">
           <Check size={16} strokeWidth={3} />
         </span>
       {/if}
@@ -37,7 +37,7 @@
       >
         {mode.glyph}
       </span>
-      <span class="mt-auto font-display font-bold text-[18px] uppercase tracking-[0.02em] text-text">
+      <span class="mt-auto font-display font-bold text-[18px] uppercase tracking-title text-text">
         {mode.name}
       </span>
     </button>

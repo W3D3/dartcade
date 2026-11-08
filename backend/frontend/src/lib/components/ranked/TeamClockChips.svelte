@@ -19,11 +19,11 @@
 
 <span class="flex items-center justify-end gap-[6px]">
   <span class={chip + ' ' + tone} role="timer" aria-label="Turn timer: {c.turn}{c.running ? '' : ', not running'}">
-    <span class="text-[11px] font-semibold uppercase tracking-[0.08em]">Turn</span>
+    <span class="text-[11px] font-semibold uppercase tracking-cta">Turn</span>
     <span class="font-display text-[20px] font-bold tabular-nums">{c.turn}</span>
   </span>
   <span class="{chip} border-line-chip text-text-muted" role="timer" aria-label="Reserve: {c.reserve}">
-    <span class="text-[11px] font-semibold uppercase tracking-[0.08em]">Reserve</span>
+    <span class="text-[11px] font-semibold uppercase tracking-cta">Reserve</span>
     <span class="font-display text-[20px] font-bold tabular-nums">{c.reserve}</span>
   </span>
 </span>

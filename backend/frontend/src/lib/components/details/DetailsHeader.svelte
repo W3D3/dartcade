@@ -23,7 +23,7 @@
   <div class="flex min-w-0 flex-col gap-1.5">
     <Breadcrumb items={trail} />
     <div class="flex items-baseline gap-3 min-w-0 flex-wrap">
-      <h1 class="font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">
+      <h1 class="font-display font-bold text-[24px] md:text-[26px] uppercase tracking-section">
         {getGameView(detail.game.mode).title}
       </h1>
       <span class="text-[13px] md:text-[14px] text-text-muted">{metaLine(detail)}</span>
@@ -31,7 +31,7 @@
   </div>
   {#if result.text}
     <span
-      class="ml-auto h-[30px] px-3 inline-flex items-center rounded-full text-[13px] font-bold tracking-[0.08em] uppercase
+      class="ml-auto h-[30px] px-3 inline-flex items-center rounded-full text-[13px] font-bold tracking-cta uppercase
              {result.won ? 'bg-accent text-accent-fg' : 'border border-line-chip text-ink-2'}">{result.text}</span
     >
   {/if}

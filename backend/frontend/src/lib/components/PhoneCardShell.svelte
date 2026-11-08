@@ -37,7 +37,7 @@
   const name = $derived(who.name)
 </script>
 
-<section aria-label={label} class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-[16px] {ACTIVE_CARD} flex flex-col {className}">
+<section aria-label={label} class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-popover {ACTIVE_CARD} flex flex-col {className}">
   <div class="flex items-center gap-2 min-w-0">
     <Avatar name={who.name} face={who.face} tone="accent" size={30} />
     <PlayerName {name} {seat} stacked nameClass="text-[16px]" youClass="text-[12px]" gap="gap-[1px]" seatSize="sm" />

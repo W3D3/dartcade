@@ -205,7 +205,7 @@
 {#snippet boardAndStatus()}
   <!-- The board takes the height left in the column (capped by its width);
        status and buttons sit below it at the bottom -->
-  <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
+  <div class="flex-1 min-h-0 w-full @container-size flex items-center justify-center">
     <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
       <DartBoard {zoom} overlay={marks} onBoardClick={manual && canThrow && !result && !currentThrow ? onBoardClick : undefined} />
       {#if canZoom && !viewOnly}
@@ -217,7 +217,7 @@
   </div>
 
   {#if result?.rethrow}
-    <div role="status" class="flex flex-col gap-2 px-5 py-4 rounded-[14px] bg-surface-2 border border-line-2">
+    <div role="status" class="flex flex-col gap-2 px-5 py-4 rounded-card bg-surface-2 border border-line-2">
       <span class="font-display font-bold text-[28px] uppercase leading-none text-accent">Throw again</span>
       <span class="text-[15px] text-text">{RETHROW_REASON[result.reason ?? 'tie']}</span>
       <span class="text-[14px] text-text-muted">
@@ -228,7 +228,7 @@
       <Button variant="primary" class="w-full" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
     {/if}
   {:else if result}
-    <div role="status" class="flex items-center justify-between gap-3 px-5 py-4 rounded-[14px] bg-surface-2 border border-line-2">
+    <div role="status" class="flex items-center justify-between gap-3 px-5 py-4 rounded-card bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-1 min-w-0">
         <span class="text-[12px] label-caps text-text-muted">{name(result.order[0])} throws first</span>
         <span class="text-[14px] text-text truncate">Order: {result.order.map(name).join(', ')}</span>
@@ -240,11 +240,11 @@
     {#if !viewOnly}
       <div class="flex gap-3">
         <Button variant="outline" class="h-[54px]" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
-        <Button variant="primary" class="flex-grow" onclick={() => send({ type: 'bulloff_start' })}>Start now</Button>
+        <Button variant="primary" class="grow" onclick={() => send({ type: 'bulloff_start' })}>Start now</Button>
       </div>
     {/if}
   {:else}
-    <div role="status" class="flex items-center justify-between gap-4 px-5 py-3 rounded-[14px] bg-surface-2 border border-line-2">
+    <div role="status" class="flex items-center justify-between gap-4 px-5 py-3 rounded-card bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-[2px]">
         <span class="text-[12px] label-caps text-text-muted">To beat</span>
         <span class="text-[13px] text-text-dim">{best ? `set by ${name(best.player)}` : 'No dart on the board yet'}</span>
@@ -259,13 +259,13 @@
       {#if !viewOnly && canThrow}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'undo_dart' })}>Undo</Button
         >{/if}
       {#if manual}
-        <span class="flex-grow text-center text-[14px] text-text-muted">
+        <span class="grow text-center text-[14px] text-text-muted">
           {currentThrow ? `${name(current)} has thrown` : `Click where ${name(current)}'s dart landed`}
         </span>
         {#if !viewOnly && canThrow}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'takeout' })}>Next</Button
           >{/if}
       {:else}
-        <span class="flex-grow text-center text-[14px] text-text-muted">
+        <span class="grow text-center text-[14px] text-text-muted">
           {currentThrow ? 'Pull the dart to continue' : `${name(current)}: one dart at the bull`}
         </span>
       {/if}
@@ -281,14 +281,14 @@
   {@const lead = throwing || pos === 0}
   <section
     aria-label={name(p)}
-    class="flex-1 min-w-0 box-border rounded-[18px] flex flex-col {compact ? 'p-5 gap-3' : 'p-7 gap-6'}
+    class="flex-1 min-w-0 box-border rounded-panel flex flex-col {compact ? 'p-5 gap-3' : 'p-7 gap-6'}
            {lead ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
       <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} size={40} />
       <span class="text-[22px] font-semibold truncate {lead ? 'text-text' : 'text-text-muted'}">{name(p)}</span>
       <span
-        class="ml-auto h-6 px-[10px] inline-flex items-center rounded-full text-[11px] font-bold tracking-[0.08em] uppercase whitespace-nowrap
+        class="ml-auto h-6 px-[10px] inline-flex items-center rounded-full text-[11px] font-bold tracking-cta uppercase whitespace-nowrap
                    {throwing || pos === 0 ? 'bg-accent text-accent-fg' : 'border border-line-3 text-text-dim'}"
       >
         {#if pos >= 0}Throws {ordinal(pos + 1)}{:else if throwing}Throwing{:else if t}Thrown{:else}Waiting{/if}
@@ -296,7 +296,7 @@
     </div>
     <span class="flex items-baseline gap-[10px] font-display font-bold">
       <span
-        class="{compact ? 'text-[104px]' : 'text-[150px]'} leading-[0.8] tracking-[-0.02em]
+        class="{compact ? 'text-[104px]' : 'text-[150px]'} leading-[0.8] tracking-score
                    {!t ? 'text-line-3' : pos === 0 && t.mm != null ? 'text-accent' : 'text-text'}">{fmtMm(t)}</span
       >
       {#if t?.mm != null}<span class="text-[48px] text-text-muted">mm</span>{/if}
@@ -307,7 +307,7 @@
 
 {#if duel && $isPortrait && !$isPhone}
   <!-- Portrait (a monitor or tablet turned upright): the two players side by side on top, the board fills the rest -->
-  <div class="flex-grow min-h-0 box-border p-5 flex flex-col gap-4">
+  <div class="grow min-h-0 box-border p-5 flex flex-col gap-4">
     <div class="shrink-0 flex gap-4">
       {@render duelCard(0, true)}
       {@render duelCard(1, true)}
@@ -317,15 +317,15 @@
     </aside>
   </div>
 {:else if duel && !$isPhone}
-  <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-6">
+  <div class="grow min-h-0 box-border p-[20px_24px] flex gap-6">
     {@render duelCard(0)}
-    <aside class="w-[min(40%,560px)] flex-shrink-0 flex flex-col gap-3" aria-label="Board">
+    <aside class="w-[min(40%,560px)] shrink-0 flex flex-col gap-3" aria-label="Board">
       {@render boardAndStatus()}
     </aside>
     {@render duelCard(1)}
   </div>
 {:else}
-  <div class="flex-grow min-h-0 box-border flex flex-col {$isPortrait ? 'p-5 gap-4' : 'p-4 md:p-[20px_24px] md:flex-row gap-3 md:gap-6'}">
+  <div class="grow min-h-0 box-border flex flex-col {$isPortrait ? 'p-5 gap-4' : 'p-4 md:p-[20px_24px] md:flex-row gap-3 md:gap-6'}">
     <!-- Players (phones: above the board, scrolling if many) -->
     <section
       class="shrink-0 max-h-[40%] overflow-y-auto min-w-0 flex flex-col gap-3
@@ -344,7 +344,7 @@
         {@const throwing = !result && p === current}
         {@const highlight = throwing || (ranked && pos === 0)}
         <div
-          class="grid grid-cols-[56px_minmax(0,1fr)_auto_auto] items-center gap-4 box-border px-5 py-4 rounded-[14px]
+          class="grid grid-cols-[56px_minmax(0,1fr)_auto_auto] items-center gap-4 box-border px-5 py-4 rounded-card
                   {highlight ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
         >
           {#if ranked}
@@ -352,7 +352,7 @@
               >{ordinal(pos + 1)}</span
             >
           {:else}
-            <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} class="w-10 h-10 text-[16px]" />
+            <Avatar name={name(p)} face={who.at(p)?.face ?? null} tone={throwing ? 'accent' : 'quiet'} class="size-10  text-[16px]" />
           {/if}
 
           <div class="flex flex-col gap-1 min-w-0">
@@ -372,14 +372,14 @@
 
           {#if ranked}
             <span
-              class="h-8 px-3 inline-flex items-center rounded-full text-[12px] font-bold tracking-[0.08em] uppercase
+              class="h-8 px-3 inline-flex items-center rounded-full text-[12px] font-bold tracking-cta uppercase
                        {pos === 0 ? 'bg-accent text-accent-fg' : 'border border-line-3 text-text-muted'}"
             >
               Throws {ordinal(pos + 1)}
             </span>
           {:else}
             <span
-              class="h-7 px-3 inline-flex items-center rounded-full text-[11px] font-bold tracking-[0.08em] uppercase
+              class="h-7 px-3 inline-flex items-center rounded-full text-[11px] font-bold tracking-cta uppercase
                        {throwing ? 'bg-accent text-accent-fg' : t ? 'border border-line-3 text-text-dim' : 'text-text-dim'}"
             >
               {throwing ? 'Throwing' : t ? 'Thrown' : 'Up next'}
@@ -398,7 +398,7 @@
     <!-- Board + status -->
     <aside
       class="flex-1 min-h-[220px] flex flex-col gap-3
-             {$isPortrait ? '' : 'md:min-h-0 md:flex-none md:w-[min(46%,560px)] md:flex-shrink-0'}"
+             {$isPortrait ? '' : 'md:min-h-0 md:flex-none md:w-[min(46%,560px)] md:shrink-0'}"
       aria-label="Board"
     >
       {@render boardAndStatus()}

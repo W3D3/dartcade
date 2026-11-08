@@ -11,12 +11,15 @@
   ])
 </script>
 
-<section class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-5 py-4" aria-label="What happens next">
+<section
+  class="box-border flex flex-col gap-3 rounded-popover border border-line bg-surface-panel px-5 py-4"
+  aria-label="What happens next"
+>
   <h3 class="text-[16px] font-semibold">What happens next</h3>
   <ol class="flex flex-col gap-3">
     {#each steps as step, i (step.title)}
       <li class="flex items-start gap-3">
-        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-line-strong text-[12px] text-text-muted"
+        <span class="flex size-6 shrink-0 items-center justify-center rounded-full border border-line-strong text-[12px] text-text-muted"
           >{i + 1}</span
         >
         <span class="flex flex-col gap-[2px]">

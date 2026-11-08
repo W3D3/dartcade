@@ -163,13 +163,13 @@
 
 <div class="flex flex-col items-center gap-3">
   <div bind:this={wrapEl} role="presentation" class="relative w-full max-w-[500px] aspect-square" onpointerdown={() => (hovered = null)}>
-    <MutedBoard {label} class="absolute inset-0 w-full h-full" />
+    <MutedBoard {label} class="absolute inset-0 size-full " />
 
-    <canvas bind:this={canvasEl} aria-hidden="true" class="absolute inset-0 w-full h-full"></canvas>
+    <canvas bind:this={canvasEl} aria-hidden="true" class="absolute inset-0 size-full"></canvas>
 
     <!-- Not aria-hidden: each dot's <title> is its accessible name and native-tooltip fallback.
          The dots themselves carry no tabindex, so they never become extra tab stops. -->
-    <svg {viewBox} class="absolute inset-0 w-full h-full">
+    <svg {viewBox} class="absolute inset-0 size-full">
       {#each dots as d, i (i)}
         <g
           role="img"

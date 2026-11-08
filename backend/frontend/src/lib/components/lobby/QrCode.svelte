@@ -17,7 +17,7 @@
   role="img"
   aria-label="QR code of the join link"
   shape-rendering="crispEdges"
-  class="block shrink-0 rounded-[8px] bg-[#efeee6] {className}"
+  class="block shrink-0 rounded-sm bg-text {className}"
 >
   {#each qr.data as row, y (y)}
     {#each row as on, x (x)}

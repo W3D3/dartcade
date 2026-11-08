@@ -230,7 +230,7 @@
   <div class="flex min-w-0 items-center gap-2">
     <button
       type="button"
-      class="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted outline-none hover:text-text focus-visible:[outline:2px_solid_var(--color-accent)]"
+      class="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-text-muted outline-none hover:text-text focus-visible:[outline:2px_solid_var(--color-accent)]"
       aria-expanded={expanded.has(user.id)}
       aria-label="Activity of {user.name}"
       onclick={() => toggleRow(user.id)}

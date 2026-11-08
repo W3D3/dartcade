@@ -217,7 +217,7 @@
 {/snippet}
 
 <Layout title="Lobby">
-  <main class="flex flex-grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-8">
+  <main class="flex grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-8 xl:px-11">
     {#if ended}
       <EmptyState
         title={ended === 'closed' ? 'The lobby was closed' : "You're no longer in the lobby"}
@@ -250,9 +250,9 @@
       <!-- Lobby board: people on the left; the next game, then friends and the history on the right.
            Two columns from lg (tablets: the right one 420 px wide); one below, as on phones -->
       <div
-        class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0"
+        class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:grow lg:min-h-0"
       >
-        <div class="order-2 lg:order-none flex flex-col gap-3 min-w-0 lg:min-h-0">
+        <div class="order-2 lg:order-0 flex flex-col gap-3 min-w-0 lg:min-h-0">
           <LobbyPeople
             lobby={l}
             {viewerId}
@@ -266,7 +266,7 @@
             onboardsopen={() => void reloadBoards()}
           />
         </div>
-        <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
+        <div class="order-1 lg:order-0 flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}
@@ -287,7 +287,7 @@
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
-          <div class="hidden lg:flex lg:flex-col lg:flex-grow lg:min-h-[280px]">{@render side()}</div>
+          <div class="hidden lg:flex lg:flex-col lg:grow lg:min-h-[280px]">{@render side()}</div>
         </div>
         <div class="order-3 lg:hidden flex flex-col max-h-[520px]">{@render side()}</div>
       </div>

@@ -66,10 +66,10 @@
 </script>
 
 <Layout title="Stats">
-  <main class="flex min-h-0 flex-grow flex-col gap-4 overflow-y-auto px-4 py-4 md:px-8 md:py-10 xl:px-11">
+  <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div class="flex flex-col gap-1.5">
-        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em] md:block">Stats</h1>
+        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-title md:block">Stats</h1>
         <p class="text-[15px] text-text-muted">How you’ve been playing, and whether it’s getting better.</p>
       </div>
       {#if $enabled}

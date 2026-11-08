@@ -33,7 +33,7 @@
     {#if justLost && i === lives}
       <span class="relative block shrink-0 {size}">
         <span class="ping absolute inset-[12.5%] box-border rounded-full border-2 border-live"></span>
-        <svg class="fade absolute inset-0 w-full h-full" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="fade absolute inset-0 size-full" viewBox="0 0 24 24" aria-hidden="true">
           <path d={HEART} fill="var(--color-live)" fill-opacity="0.3" stroke="var(--color-live)" stroke-width="1.6" />
           <path d={CRACK} fill="none" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>

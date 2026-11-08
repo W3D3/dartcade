@@ -106,7 +106,7 @@
 </script>
 
 <Layout title="Match details">
-  <div class="flex flex-col flex-grow min-h-0 min-w-0">
+  <div class="flex flex-col grow min-h-0 min-w-0">
     {#snippet errorCard(retry: () => void)}
       <div class="flex flex-col items-start gap-3 p-8">
         <ErrorText>Couldn't load the game.</ErrorText>
@@ -176,7 +176,7 @@
           />
         {:else}
           <main
-            class="relative flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
+            class="relative grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
           >
             <section
               aria-label="Result and statistics"
@@ -190,7 +190,7 @@
                 {#if layout === 'teams'}<TeamShares detail={d} />{/if}
               {/if}
             </section>
-            <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
+            <div class="grow min-w-0 flex flex-col gap-4 md:gap-6">
               {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
               {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
               {#if d.game.mode === 'cricket'}<CricketSection detail={d} />{/if}

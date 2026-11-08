@@ -80,7 +80,7 @@
 
 <Layout title="Profile">
   <main
-    class="flex flex-grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-5 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:py-9"
+    class="flex grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-5 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:py-9"
   >
     {#if !$progression}
       {#if banOnly}<BanNotice ban={banOnly} />{/if}
@@ -109,14 +109,14 @@
 
       <section
         aria-label="{p.name}'s card"
-        class="shrink-0 overflow-hidden rounded-[16px] border border-line-popover {colorsClass(p.look.colors)}"
+        class="shrink-0 overflow-hidden rounded-popover border border-line-popover {colorsClass(p.look.colors)}"
         style="background: {CARD_SURFACE}"
       >
         <div class="h-[110px] md:h-[200px] {bannerClass(p.look.banner)}" style={bannerStyle(p.look.banner, colors)}></div>
         <div class="flex flex-col gap-4 px-5 pb-5 md:px-7 md:pb-6">
           <!-- Only the avatar overlaps the banner -->
           <span
-            class="relative -mt-12 md:-mt-[68px] flex size-24 md:size-[136px] shrink-0 rounded-full"
+            class="relative -mt-12 md:mt-[-68px] flex size-24 md:size-[136px] shrink-0 rounded-full"
             style="box-shadow: 0 0 0 5px {CARD_SURFACE}"
           >
             <Avatar name={p.name} face={{ avatar: p.avatar, userId: p.id }} class="size-24 md:size-[136px] text-[40px] md:text-[56px]" />
@@ -127,7 +127,7 @@
             <div class="flex flex-col gap-2 min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1
-                  class="min-w-0 truncate font-display font-bold uppercase tracking-[0.02em] text-[32px] md:text-[38px] leading-[0.95] {nameClass(
+                  class="min-w-0 truncate font-display font-bold uppercase tracking-title text-[32px] md:text-[38px] leading-[0.95] {nameClass(
                     p.look.name,
                   )}"
                   style="color: {accentOf(colors)}"
@@ -155,7 +155,7 @@
             {#if watchHref}
               <a
                 href="#{watchHref}"
-                class="inline-flex items-center gap-2 rounded-[10px] border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-text no-underline"
+                class="inline-flex items-center gap-2 rounded-md border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-text no-underline"
                 ><Eye size={16} aria-hidden="true" />Watch</a
               >
             {/if}
@@ -163,12 +163,12 @@
               <div class="flex flex-wrap gap-2">
                 <a
                   href="#/profile/customise"
-                  class="rounded-[10px] border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-accent-fg no-underline"
+                  class="rounded-md border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-accent-fg no-underline"
                   >Customise</a
                 >
                 <a
                   href="#/settings/profile"
-                  class="rounded-[10px] border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-text no-underline"
+                  class="rounded-md border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-text no-underline"
                   >Edit in Settings</a
                 >
               </div>
@@ -186,7 +186,7 @@
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
               {#each p.ranked as r (r.mode)}
-                <div class="flex items-center gap-3 rounded-[12px] bg-surface-inset px-4 py-3">
+                <div class="flex items-center gap-3 rounded-lg bg-surface-inset px-4 py-3">
                   <RankBadge rank={r.rankIndex === null ? null : rank(r.rankIndex)} size={44} />
                   <div class="flex flex-col min-w-0">
                     <span class="text-[12px] text-text-muted">Rating · {r.mode}</span>

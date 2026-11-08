@@ -87,7 +87,7 @@
     {#if t.kind !== 'freeze'}
       {#each BURST as [x, y, color, shape], i (i)}
         <span
-          class="piece absolute left-1/2 top-1/2 rounded-[2px] {shape === 'h' ? 'w-1 h-[9px]' : 'w-[6px] h-1'}"
+          class="piece absolute left-1/2 top-1/2 rounded-bar {shape === 'h' ? 'w-1 h-[9px]' : 'w-[6px] h-1'}"
           style="background: {color}; --x: {(x * size) / 56}px; --y: {(y * size) / 56}px"
         ></span>
       {/each}
@@ -97,7 +97,7 @@
 
 {#snippet xpPill(xp: number, gold: boolean)}
   <span
-    class="shrink-0 inline-flex items-center gap-[6px] rounded-full py-[2px] pl-[10px] pr-[6px] font-display font-bold text-[18px] tracking-[0.04em] text-accent-fg
+    class="shrink-0 inline-flex items-center gap-[6px] rounded-full py-[2px] pl-[10px] pr-[6px] font-display font-bold text-[18px] tracking-section text-accent-fg
            {gold ? 'bg-gold' : 'bg-accent'}">+{fmtXp(xp)}<XpBadge inverse /></span
   >
 {/snippet}
@@ -106,8 +106,8 @@
   <!-- Yesterday's count rolls up to today's -->
   <span class="block h-11 overflow-hidden" aria-label="{days} days">
     <span class="roll flex flex-col" aria-hidden="true">
-      <span class="h-11 font-display font-bold text-[40px] leading-[44px] tracking-[0.01em] text-text-dim">{days - 1}</span>
-      <span class="h-11 font-display font-bold text-[40px] leading-[44px] tracking-[0.01em] text-accent">{days}</span>
+      <span class="h-11 font-display font-bold text-[40px] leading-[44px] tracking-hero text-text-dim">{days - 1}</span>
+      <span class="h-11 font-display font-bold text-[40px] leading-[44px] tracking-hero text-accent">{days}</span>
     </span>
   </span>
 {/snippet}
@@ -145,7 +145,7 @@
         role="status"
         aria-live="polite"
         class:milestone={t.kind === 'milestone'}
-        class="toast fixed z-50 top-4 left-4 right-4 md:left-auto md:right-5 md:top-5 md:w-[380px] box-border flex flex-col gap-[14px] rounded-[16px] border bg-surface-2 px-[18px] py-4
+        class="toast fixed z-50 top-4 inset-x-4 md:left-auto md:right-5 md:top-5 md:w-[380px] box-border flex flex-col gap-[14px] rounded-popover border bg-surface-2 px-[18px] py-4
                shadow-[0_18px_44px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(198,242,78,0.08)] {TONE[t.kind].border}"
       >
         <button
@@ -173,7 +173,7 @@
               <div class="font-display font-bold text-[34px] leading-[44px] text-ice">Streak saved</div>
             {:else if t.kind === 'challenge'}
               <div class="text-[12px] label-caps text-text-dim">Challenge complete</div>
-              <div class="text-[15px] font-semibold leading-snug">{t.title}</div>
+              <div class="text-body/snug font-semibold">{t.title}</div>
               <a href="#/progress" onclick={showNext} class="text-[13px] font-semibold no-underline">Claim +{fmtXp(t.xp)} XP on Progress</a>
             {/if}
           </div>
@@ -193,7 +193,7 @@
             {/each}
           </span>
         {:else if t.kind === 'milestone' && t.perks.length > 0}
-          <div class="flex items-center gap-3 rounded-[10px] bg-black/28 px-3 py-[10px]">
+          <div class="flex items-center gap-3 rounded-md bg-black/28 px-3 py-[10px]">
             <span class="text-[13px] text-ink-2">New {KIND_LABEL[t.perks[0].kind].one.toLowerCase()}</span>
             <span class="ml-auto flex flex-wrap justify-end gap-2">
               {#each t.perks as p (p.id)}

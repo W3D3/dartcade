@@ -68,7 +68,7 @@
 {#snippet row(label: string, value: string)}
   <div class="flex flex-col gap-[2px] sm:flex-row sm:items-baseline sm:gap-4 py-2 border-b border-line last:border-b-0">
     <dt class="sm:w-[190px] shrink-0 text-[13px] text-text-muted">{label}</dt>
-    <dd class="min-w-0 break-words text-[14px] text-text">{value}</dd>
+    <dd class="min-w-0 wrap-break-word text-[14px] text-text">{value}</dd>
   </div>
 {/snippet}
 
@@ -94,7 +94,7 @@
       {#if loadError}<ErrorText>{loadError}</ErrorText>{/if}
       {#if clip.state === 'failed' && system}
         <pre
-          class="max-h-60 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{debugMarkdown(
+          class="max-h-60 overflow-auto p-3 rounded-key bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{debugMarkdown(
             system,
             { userAgent: navigator.userAgent, spa: SPA_BUILD },
           )}</pre>

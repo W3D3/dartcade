@@ -34,7 +34,7 @@
       aria-haspopup="listbox"
       aria-label="Light profile: {profile.name}"
       disabled
-      class="flex-grow min-w-0 h-[42px] px-3 flex items-center gap-2 rounded-[10px] border border-line-strong
+      class="grow min-w-0 h-[42px] px-3 flex items-center gap-2 rounded-md border border-line-strong
              bg-bg text-text text-[14px] font-semibold whitespace-nowrap cursor-default disabled:opacity-100"
     >
       {profile.name}
@@ -55,7 +55,7 @@
     </div>
     <ul class="m-0 p-0 list-none flex flex-col gap-1">
       {#each profile.seatColors as color, i (i)}
-        <li class="flex items-center justify-between gap-[10px] min-h-11 px-[10px] py-1 rounded-[10px] bg-surface-active">
+        <li class="flex items-center justify-between gap-[10px] min-h-11 px-[10px] py-1 rounded-md bg-surface-active">
           <span class="text-[13px] font-semibold">Seat {i + 1}</span>
           <SeatColorPicker seat={i + 1} {color} onpick={(hex: string) => onseatcolor(i, hex)} />
         </li>
@@ -76,7 +76,7 @@
           <li
             class:opacity-60={!label.enabled}
             class="grid grid-cols-[18px_1fr_auto] md:grid-cols-[18px_minmax(130px,1fr)_52px_1.1fr_auto]
-                 items-center gap-[10px] min-h-11 px-[10px] py-2 md:py-0 rounded-[10px] bg-surface-active"
+                 items-center gap-[10px] min-h-11 px-[10px] py-2 md:py-0 rounded-md bg-surface-active"
           >
             <span class="col-start-1 row-start-1 font-mono text-[12px] text-line-strong">{i + 1}</span>
 
@@ -91,7 +91,7 @@
               {/if}
             </span>
             <span
-              class="hidden md:inline md:col-start-3 md:row-start-1 justify-self-start h-[22px] px-[7px] rounded-[6px] text-[11px] font-bold leading-[22px]
+              class="hidden md:inline md:col-start-3 md:row-start-1 justify-self-start h-[22px] px-[7px] rounded-chip text-[11px] font-bold leading-[22px]
                    {label.type === 'Scene' ? 'bg-accent-tint text-accent' : 'bg-[#2b2410] text-[#f2c94c]'}"
             >
               {label.type}
@@ -111,7 +111,7 @@
                 </span>
               {/if}
               <span
-                class="h-[22px] px-[7px] rounded-[6px] text-[11px] font-bold leading-[22px]
+                class="h-[22px] px-[7px] rounded-chip text-[11px] font-bold leading-[22px]
                      {label.type === 'Scene' ? 'bg-accent-tint text-accent' : 'bg-[#2b2410] text-[#f2c94c]'}"
               >
                 {label.type}

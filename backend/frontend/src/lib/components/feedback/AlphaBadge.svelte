@@ -17,7 +17,7 @@
     title="Report a bug or give feedback"
     aria-label="Alpha: report a bug or give feedback"
     class="shrink-0 inline-flex rounded-full cursor-pointer border-0 hover:brightness-125
- focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]"
+ focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:outline-offset-2"
   >
     <Badge variant="alpha">Alpha</Badge>
   </button>

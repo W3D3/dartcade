@@ -252,7 +252,7 @@
 <Layout title="Hole editor">
   {#if allowed}
     <PhoneBanner />
-    <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
+    <main class="flex min-h-0 grow flex-col overflow-y-auto">
       <header class="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 md:px-5">
         <!-- Replaces the old "back to the course" link: a breadcrumb would collide with the rest of
              this single-row toolbar, so it takes that link's spot instead of a line of its own. -->
@@ -278,7 +278,7 @@
             disabled={readOnly}
             onchange={e => commit({ ...hole, name: e.currentTarget.value })}
             aria-label="Hole name"
-            class="h-10 w-[200px] rounded-[10px] border border-line-3 bg-bg px-3 font-display text-[20px] font-bold uppercase text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
+            class="h-10 w-[200px] rounded-md border border-line-3 bg-bg px-3 font-display text-[20px] font-bold uppercase text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
           />
           <div class="flex items-center gap-1 text-[14px] text-text-muted" role="group" aria-label="Par">
             Par
@@ -302,7 +302,7 @@
         {#if area.admin}
           <span
             title="You can edit official holes"
-            class="inline-flex h-6 items-center rounded-[6px] border border-warn-line bg-warn-soft px-2 text-[11px] font-bold uppercase tracking-[0.1em] text-warn"
+            class="inline-flex h-6 items-center rounded-chip border border-warn-line bg-warn-soft px-2 text-[11px] font-bold label-caps text-warn"
             >Admin</span
           >
         {/if}
@@ -354,10 +354,7 @@
           <Button variant="outline" onclick={() => void load(s)}>Try again</Button>
         </div>
       {:else}
-        <div
-          class="grid flex-grow gap-4 p-4 md:grid-cols-[56px_minmax(0,1fr)] md:p-5 xl:grid-cols-[56px_minmax(0,1fr)_340px]"
-          inert={readOnly}
-        >
+        <div class="grid grow gap-4 p-4 md:grid-cols-[56px_minmax(0,1fr)] md:p-5 xl:grid-cols-[56px_minmax(0,1fr)_340px]" inert={readOnly}>
           <ToolRail {tool} ontool={pickTool} />
 
           <section aria-label="Canvas" class="flex min-w-0 flex-col gap-3">
@@ -389,10 +386,10 @@
                       href={holeHref(id)}
                       aria-current={id === holeId ? 'page' : undefined}
                       aria-label="Hole {i + 1}{h ? `: ${h.name}` : ''}"
-                      class="flex flex-col items-center gap-1 rounded-[10px] border-2 p-1 text-[11px] text-text-muted no-underline
+                      class="flex flex-col items-center gap-1 rounded-md border-2 p-1 text-[11px] text-text-muted no-underline
                              {id === holeId ? 'border-accent' : 'border-transparent hover:border-line-3'}"
                     >
-                      <span class="pointer-events-none block h-[44px] w-[64px] overflow-hidden rounded-[6px] bg-surface-inset">
+                      <span class="pointer-events-none block h-[44px] w-[64px] overflow-hidden rounded-chip bg-surface-inset">
                         {#if h}<HoleView hole={h} ball={h.tee} halo={false} />{/if}
                       </span>
                       {i + 1}{h ? ` · par ${h.par}` : ''}

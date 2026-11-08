@@ -47,18 +47,18 @@
 
 {#if layout === 'phone'}
   <main
-    class="flex-grow min-h-0 {phoneScroll
+    class="grow min-h-0 {phoneScroll
       ? 'overflow-y-auto'
       : 'overflow-hidden'} box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2"
   >
     {@render phone()}
   </main>
 {:else if layout === 'portrait'}
-  <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
+  <main class="grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
     {@render portrait()}
   </main>
 {:else}
-  <main class="flex-grow min-h-0 box-border {sideClass}">
+  <main class="grow min-h-0 box-border {sideClass}">
     {@render body()}
   </main>
 {/if}

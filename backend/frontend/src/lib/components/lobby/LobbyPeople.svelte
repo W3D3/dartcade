@@ -69,7 +69,7 @@
       </p>
     {:else}
       <div class="flex flex-col gap-2 md:flex-row md:items-start">
-        <div class="flex-grow min-w-0">
+        <div class="grow min-w-0">
           <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
         </div>
         {#if supportsBots}

@@ -82,7 +82,7 @@
   <PageMain>
     <header class="hidden md:flex flex-col gap-[18px]">
       <PageTitle as="div" title="Settings" sub="Account settings follow you to every board and device." />
-      <nav aria-label="Settings sections" class="flex gap-1 border-b border-line overflow-x-auto [scrollbar-width:none]">
+      <nav aria-label="Settings sections" class="flex gap-1 border-b border-line overflow-x-auto scrollbar-none">
         {#each visible as s (s.id)}
           {@const Icon = ICONS[s.id]}
           {@const on = s.id === shown}
@@ -91,8 +91,8 @@
             aria-current={on ? 'page' : undefined}
             class="h-[46px] px-4 -mb-px flex items-center gap-[9px] shrink-0 whitespace-nowrap text-[15px] no-underline border-b-2
                    transition-colors {on
-              ? 'border-accent !text-text font-semibold'
-              : 'border-transparent !text-text-muted font-medium hover:!text-text'}"
+              ? 'border-accent text-text! font-semibold'
+              : 'border-transparent text-text-muted! font-medium hover:text-text!'}"
           >
             <Icon size={18} strokeWidth={1.8} class={on ? 'text-accent' : ''} />{s.label}
           </a>
@@ -105,11 +105,11 @@
       <nav aria-label="Settings sections" class="md:hidden flex flex-col gap-[14px]">
         {#each visible as s (s.id)}
           {@const Icon = ICONS[s.id]}
-          <a href="#/settings/{s.id}" class="flex items-center gap-[14px] p-4 card no-underline !text-text hover:bg-surface-active">
-            <span class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[10px] bg-surface-active text-accent">
+          <a href="#/settings/{s.id}" class="flex items-center gap-[14px] p-4 card no-underline text-text! hover:bg-surface-active">
+            <span class="size-10 shrink-0 flex items-center justify-center rounded-md bg-surface-active text-accent">
               <Icon size={20} strokeWidth={1.8} />
             </span>
-            <span class="flex flex-col gap-[2px] flex-grow min-w-0">
+            <span class="flex flex-col gap-[2px] grow min-w-0">
               <span class="text-[17px] font-semibold">{s.label}</span>
               <span class="text-[13px] text-text-muted truncate">{SUBS[s.id]}</span>
             </span>
@@ -127,7 +127,7 @@
     {/if}
 
     <!-- Phones on the list see no section; larger screens open on Profile -->
-    <div class="{section === null ? 'hidden md:flex' : 'flex'} flex-col flex-grow">
+    <div class="{section === null ? 'hidden md:flex' : 'flex'} flex-col grow">
       {#if shown === 'profile'}
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-5 items-start">
           <div class="flex flex-col gap-4 md:gap-5">
@@ -166,7 +166,7 @@
             href={commitUrl($serverVersion.commit)}
             target="_blank"
             rel="noopener noreferrer"
-            class="font-mono !text-text-dim hover:!text-text-muted">{shortCommit($serverVersion.commit)}</a
+            class="font-mono text-text-dim! hover:text-text-muted!">{shortCommit($serverVersion.commit)}</a
           >{/if}
       </p>
     {/if}

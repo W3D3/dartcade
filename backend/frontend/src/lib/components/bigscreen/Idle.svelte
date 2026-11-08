@@ -34,7 +34,7 @@
     height="1500"
     viewBox="0 0 1500 1500"
     aria-hidden="true"
-    class="absolute -z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent"
+    class="absolute -z-10 left-1/2 top-1/2 -translate-1/2 text-accent"
   >
     <g class="spin" style="animation-duration: 90s">
       {#each outerRing as d, k (k)}<path {d} fill="currentColor" fill-opacity={k % 2 ? 0.12 : 0.04} />{/each}

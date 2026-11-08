@@ -30,7 +30,7 @@
   <div class="aspect-square w-full max-w-[280px]">
     <Chart
       ssr
-      class="block h-full w-full"
+      class="block size-full "
       role="img"
       aria-label="Double hit rate on the board: {summary}"
       padding={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -81,9 +81,9 @@
   </div>
   <div class="flex items-center gap-2 text-[11px] text-text-dim" aria-hidden="true">
     <span>0%</span>
-    <span class="h-2 w-24 rounded-full bg-gradient-to-r from-line-3 to-accent"></span>
+    <span class="h-2 w-24 rounded-full bg-linear-to-r from-line-3 to-accent"></span>
     <span>55%+</span>
-    <span class="ml-2 h-2.5 w-2.5 rounded-[3px] border border-line-2 bg-surface-1"></span>
+    <span class="ml-2 size-2.5 rounded-[3px] border border-line-2 bg-surface-1"></span>
     <span>not tried</span>
   </div>
 </div>
