@@ -10,6 +10,7 @@ import { seedOfficialCourses, createHole, createCourse, listCourses, canReadCour
 import { setupFlags } from '../flags/index.js'
 import { MINIGOLF_LIMITS } from '../shared/minigolf/limits.js'
 import type { Hole, Shape } from '../shared/minigolf/types.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const validHole = (id: string, overrides: Partial<Hole> = {}): Hole => ({
   id,
@@ -37,16 +38,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('minigolf_courses_api_test'))
     useDbSingleton(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: false, image: null, role: 'admin' },
-        { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: false, image: null, role: null },
-        { id: 'owner', name: 'Olive Owner', email: 'owner@example.com', emailVerified: false, image: null, role: null },
-        { id: 'other', name: 'Otto Other', email: 'other@example.com', emailVerified: false, image: null, role: null },
-        { id: 'mod', name: 'Mo Mod', email: 'mod@example.com', emailVerified: false, image: null, role: 'moderator' },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', role: 'admin' },
+      { id: 'player', name: 'Player' },
+      { id: 'owner', name: 'Olive Owner' },
+      { id: 'other', name: 'Otto Other' },
+      { id: 'mod', name: 'Mo Mod', role: 'moderator' },
+    ])
   })
   afterAll(async () => {
     await close()
@@ -671,10 +669,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
     })
 
     it("takes a deleted account's courses and holes with it", async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'gone-1', name: 'Gone', email: 'gone@example.com', emailVerified: false, image: null, role: null })
-        .execute()
+      await insertUsers(db, [{ id: 'gone-1', name: 'Gone', email: 'gone@example.com' }])
       const hole = await createHole(db, validHole('gh'), 'gone-1')
       await createCourse(db, content([hole.id]), 'gone-1')
       await db.deleteFrom('user').where('id', '=', 'gone-1').execute()

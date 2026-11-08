@@ -6,6 +6,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { adminRankedApiPlugin } from './adminRanked.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('admin ranked API', { timeout: 20_000 }, () => {
   let db: Kysely<Database>
@@ -46,14 +47,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin ranked API', { timeout: 2
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_ranked_api_test'))
     useDbSingleton(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'a@x', emailVerified: true, image: null, role: 'admin' },
-        { id: 'mod', name: 'Mod', email: 'm@x', emailVerified: true, image: null, role: 'moderator' },
-        { id: 'player', name: 'Player', email: 'p@x', emailVerified: true, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', email: 'a@x', emailVerified: true, role: 'admin' },
+      { id: 'mod', name: 'Mod', email: 'm@x', emailVerified: true, role: 'moderator' },
+      { id: 'player', name: 'Player', email: 'p@x', emailVerified: true },
+    ])
     await db
       .insertInto('game_sessions')
       .values({ id: 'run1', owner_user_id: null, board_db_id: null, game_id: 'x01', config: '{}', status: 'active' })

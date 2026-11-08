@@ -6,6 +6,7 @@ import { openTestSchema } from './testSchema.js'
 import type { Clip, ParsedPack } from '../caller/pack.js'
 import { sweepOrphanClips } from './voices.js'
 import { importPack, listPacks, packManifest, clipFor, deletePack, usage, VoiceLimitError } from '../caller/service.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const clip = (s: string, mime = 'audio/mpeg'): Clip => ({ bytes: new TextEncoder().encode(s), mime })
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -26,13 +27,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('voices_db_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'a', name: 'Anna', email: 'a@example.com', emailVerified: false, image: null },
-        { id: 'b', name: 'Ben', email: 'b@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'a', name: 'Anna' },
+      { id: 'b', name: 'Ben' },
+    ])
   })
   afterAll(async () => {
     await close()

@@ -6,6 +6,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { systemApiPlugin } from './system.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const SECRETS = {
   BETTER_AUTH_SECRET: 'secret-auth-value',
@@ -33,13 +34,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('GET /api/admin/system', { timeo
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_system_api_test'))
     useDbSingleton(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: true, image: null, role: 'admin' },
-        { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: true, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', emailVerified: true, role: 'admin' },
+      { id: 'player', name: 'Player', emailVerified: true },
+    ])
   })
   afterAll(async () => {
     await close()

@@ -28,6 +28,7 @@ import {
 import { PairingCodeClaimedError } from './errors.js'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/dartcade_test'
 
@@ -49,13 +50,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     await db.deleteFrom('boards').execute()
     // seed minimal user rows for FK
     await db.deleteFrom('user').execute()
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'u-test-1', name: 'Test', email: 'test@example.com', emailVerified: false, image: null },
-        { id: 'u-test-2', name: 'Test 2', email: 'test2@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'u-test-1', name: 'Test', email: 'test@example.com' },
+      { id: 'u-test-2', name: 'Test 2', email: 'test2@example.com' },
+    ])
   })
 
   afterAll(async () => {
@@ -352,10 +350,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     })
 
     it('deleting the creator keeps the game and nulls their seat', async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'u-gone', name: 'Gone', email: 'gone@example.com', emailVerified: false, image: null })
-        .execute()
+      await insertUsers(db, [{ id: 'u-gone', name: 'Gone', email: 'gone@example.com' }])
       await insertGameSession(db, {
         id: 'g-gone',
         owner_user_id: 'u-gone',
@@ -497,10 +492,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
 
   describe('users to play with', () => {
     it('finds the other account with exactly that name, any case, never yourself', async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'u-sam', name: 'sam.180', email: 'sam@example.com', emailVerified: false, image: null })
-        .execute()
+      await insertUsers(db, [{ id: 'u-sam', name: 'sam.180', email: 'sam@example.com' }])
       expect(await searchUsers(db, 'SAM.180', 'u-test-1')).toEqual([{ id: 'u-sam', name: 'sam.180' }])
       expect(await searchUsers(db, '@sam.180', 'u-test-1')).toEqual([{ id: 'u-sam', name: 'sam.180' }])
       expect(await searchUsers(db, 'sam', 'u-test-1')).toEqual([])

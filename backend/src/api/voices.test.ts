@@ -13,6 +13,7 @@ import { setupFlags } from '../flags/index.js'
 import { reserveImport, VoiceBusyError, type ImportSlot } from '../caller/service.js'
 import { createFastify } from './fastify.js'
 import { voicesApiPlugin } from './voices.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 // Three clips of 1000 bytes each, named by key; "murmel" isn't a caller key and is dropped
@@ -51,13 +52,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('voices_api_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'a', name: 'Anna', email: 'a@example.com', emailVerified: false, image: null },
-        { id: 'b', name: 'Ben', email: 'b@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'a', name: 'Anna' },
+      { id: 'b', name: 'Ben' },
+    ])
   })
   afterAll(async () => {
     await close()

@@ -8,6 +8,7 @@ import { createFastify } from './fastify.js'
 import { adminFlagsApiPlugin } from './adminFlags.js'
 import { ofrepApiPlugin } from './ofrep.js'
 import { setOverrides, setupFlags } from '../flags/index.js'
+import { insertUsers } from '../test/fixtures.js'
 
 // ofrep.ts reads the signed-in user through getAuthUser; map it to x-user the same way
 vi.mock('../auth/session.js', () => ({
@@ -22,14 +23,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     ;({ db, close } = await openTestSchema('admin_flags_api_test'))
     useDbSingleton(db)
     await setupFlags(new Set())
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: false, image: null, role: 'admin' },
-        { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: false, image: null, role: null },
-        { id: 'other', name: 'Other', email: 'other@example.com', emailVerified: false, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', role: 'admin' },
+      { id: 'player', name: 'Player' },
+      { id: 'other', name: 'Other' },
+    ])
   })
   afterAll(async () => {
     await close()

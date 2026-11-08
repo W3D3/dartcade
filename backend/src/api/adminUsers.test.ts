@@ -9,6 +9,7 @@ import { adminUsersApiPlugin } from './adminUsers.js'
 import { usersApiPlugin } from './users.js'
 import { BridgeConnections, type BridgeConn } from '../bridge-gw/connections.js'
 import { insertGameSession, finishGameSession, insertGameDarts } from '../db/queries.js'
+import { insertUsers } from '../test/fixtures.js'
 
 // users.ts's name check reads the session; signing in through better-auth isn't what's tested here
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
@@ -20,13 +21,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_users_api_test'))
     useDbSingleton(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: true, image: null, role: 'admin' },
-        { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: false, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', emailVerified: true, role: 'admin' },
+      { id: 'player', name: 'Player' },
+    ])
     await db
       .updateTable('user')
       .set({ last_login_at: new Date('2026-01-01T00:00:00Z') })
@@ -53,10 +51,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   describe('ranked rating adjustments', () => {
     const adjust = { mode: '1v1', rating: 1400, reason: 'seed fix' }
     it('403s a player and a moderator, 401s a signed-out caller', async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'rankmod', name: 'RankMod', email: 'rankmod@example.com', emailVerified: true, image: null, role: 'moderator' })
-        .execute()
+      await insertUsers(db, [{ id: 'rankmod', name: 'RankMod', emailVerified: true, role: 'moderator' }])
       for (const headers of [asPlayer, { 'x-user': 'rankmod' }]) {
         const res = await app().inject({ method: 'POST', url: '/api/admin/users/player/ranked/adjust', headers, payload: adjust })
         expect(res.statusCode).toBe(403)
@@ -162,13 +157,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   })
 
   it('lists users and filters by q, case-insensitive, matching name or email', async () => {
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'zeb', name: 'Zebra One', email: 'zebra1@example.com', emailVerified: false, image: null, role: null },
-        { id: 'oth', name: 'Other Two', email: 'other2@example.com', emailVerified: false, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'zeb', name: 'Zebra One', email: 'zebra1@example.com' },
+      { id: 'oth', name: 'Other Two', email: 'other2@example.com' },
+    ])
     try {
       const all = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
       expect(all.statusCode).toBe(200)
@@ -305,10 +297,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   })
 
   it('two admins demoting each other concurrently: one wins, the other is refused, one admin left', async () => {
-    await db
-      .insertInto('user')
-      .values({ id: 'admin2', name: 'Admin Two', email: 'admin2@example.com', emailVerified: false, image: null, role: 'admin' })
-      .execute()
+    await insertUsers(db, [{ id: 'admin2', name: 'Admin Two', role: 'admin' }])
     try {
       // One ready instance for both: two fresh apps would boot at slightly different times and
       // skew which request's queries actually run first, hiding the lock race this test is for.
@@ -350,14 +339,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
         .execute()
 
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values([
-          { id: 'mod', name: 'Mod', email: 'mod@example.com', emailVerified: true, image: null, role: 'moderator' },
-          { id: 'cheat', name: 'Cheat', email: 'cheat@example.com', emailVerified: true, image: null, role: null },
-          { id: 'admin3', name: 'Admin3', email: 'admin3@example.com', emailVerified: true, image: null, role: 'admin' },
-        ])
-        .execute()
+      await insertUsers(db, [
+        { id: 'mod', name: 'Mod', emailVerified: true, role: 'moderator' },
+        { id: 'cheat', name: 'Cheat', emailVerified: true },
+        { id: 'admin3', name: 'Admin3', emailVerified: true, role: 'admin' },
+      ])
     })
 
     it('is admin-only: a moderator and a player are refused, and nothing changes', async () => {
@@ -488,10 +474,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     })
 
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'owner', name: 'Owner', email: 'owner@example.com', emailVerified: true, image: null, role: null })
-        .execute()
+      await insertUsers(db, [{ id: 'owner', name: 'Owner', emailVerified: true }])
       await db
         .insertInto('boards')
         .values([

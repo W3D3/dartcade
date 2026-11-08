@@ -6,6 +6,7 @@ import { openTestSchema } from './testSchema.js'
 import { finishGameSession, insertGameSession } from './queries.js'
 import { countX01StatLegs, listX01StatGames, x01StatOptions, type X01StatFilter } from './history.js'
 import { invalidateGame } from './adminGames.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const config = { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 1, bullOff: 'off', bullValue: '25_50', maxRounds: 50 }
 const DOUBLE_501: X01StatFilter = { start: 501, out: 'double', kind: 'all' }
@@ -16,13 +17,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('X01 stat games', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('x01_stat_games'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'ann', name: 'Ann', email: 'ann@example.com', emailVerified: true, image: null },
-        { id: 'bob', name: 'Bob', email: 'bob@example.com', emailVerified: true, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'ann', name: 'Ann', emailVerified: true },
+      { id: 'bob', name: 'Bob', emailVerified: true },
+    ])
   })
   afterAll(async () => {
     await close()

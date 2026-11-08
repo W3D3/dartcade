@@ -8,6 +8,7 @@ import { getFinishedGame, getViewableGame } from '../db/history.js'
 import { deleteGame, invalidateGame } from '../db/adminGames.js'
 import { replayPooled } from '../session/replay.js'
 import { storedDetail, storedDetails } from './detail.js'
+import { insertUsers } from '../test/fixtures.js'
 
 vi.mock('../session/replay.js', async orig => {
   const m = await orig<typeof import('../session/replay.js')>()
@@ -22,7 +23,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('storedDetail', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('stored_detail'))
-    await db.insertInto('user').values({ id: 'ann', name: 'Ann', email: 'ann@example.com', emailVerified: true, image: null }).execute()
+    await insertUsers(db, [{ id: 'ann', name: 'Ann', emailVerified: true }])
   })
   afterAll(async () => {
     await close()

@@ -7,6 +7,7 @@ import { openTestSchema } from '../db/testSchema.js'
 import type { Mail } from '../mail/transport.js'
 import { createFastify } from './fastify.js'
 import { feedbackAddress, feedbackApiPlugin } from './feedback.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0xff, 0xd9])
 const context = {
@@ -34,13 +35,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('POST /api/feedback', { timeout:
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('feedback_api_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'lena', name: 'Lena <b>', email: 'lena@example.com', emailVerified: true, image: null, role: 'moderator' },
-        { id: 'max', name: 'Max', email: 'max@example.com', emailVerified: true, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'lena', name: 'Lena <b>', emailVerified: true, role: 'moderator' },
+      { id: 'max', name: 'Max', emailVerified: true },
+    ])
   })
   afterAll(async () => {
     await close()

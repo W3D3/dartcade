@@ -28,6 +28,7 @@ import {
   deletePeople,
 } from './lobbies.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
@@ -36,15 +37,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('lobbies_db_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'chris', name: 'Christoph', email: 'c@example.com', emailVerified: false, image: null },
-        { id: 'lena', name: 'Lena', email: 'l@example.com', emailVerified: false, image: null },
-        { id: 'max', name: 'Max', email: 'm@example.com', emailVerified: false, image: null },
-        { id: 'sam', name: 'Sam', email: 's@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'chris', name: 'Christoph', email: 'c@example.com' },
+      { id: 'lena', name: 'Lena', email: 'l@example.com' },
+      { id: 'max', name: 'Max', email: 'm@example.com' },
+      { id: 'sam', name: 'Sam', email: 's@example.com' },
+    ])
   })
   afterAll(async () => {
     await close()
