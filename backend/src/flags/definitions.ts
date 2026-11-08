@@ -43,6 +43,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Minigolf on the Play page, so players can start Minigolf games.',
     defaultRule: 'admins',
   },
+  'minigolf.userCourses.enabled': {
+    kind: 'boolean',
+    description: 'Lets players make, publish and play their own Minigolf courses (on top of the Minigolf game mode).',
+    defaultRule: 'admins',
+  },
   'gamemode.p121.enabled': {
     kind: 'boolean',
     description: 'Shows 121, the checkout drill, on the Play page.',
@@ -210,6 +215,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('gamemode.minigolf.enabled', isAdmin),
+    },
+    'minigolf.userCourses.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('minigolf.userCourses.enabled', isAdmin),
     },
     'gamemode.p121.enabled': {
       variants: { on: true, off: false },

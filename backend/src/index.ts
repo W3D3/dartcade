@@ -57,8 +57,11 @@ await seedOfficialCourses(db)
 setCourseSource({
   course: id => publishedCourse(db, id),
   officialHoles: () => publishedOfficialHoles(db),
+  // userCourses off: only the official courses (the picker's groups for user courses are part C)
   officialCourses: async () =>
-    (await listCourses(db, { drafts: false })).flatMap(c => (c.published ? [{ id: c.id, name: c.published.name }] : [])),
+    (await listCourses(db, { id: '', admin: false, userCourses: false })).flatMap(c =>
+      c.published ? [{ id: c.id, name: c.published.name }] : [],
+    ),
 })
 await seedDev()
 await bootstrapAdmin(db)
