@@ -123,7 +123,16 @@ pieces to reuse, and a checklist of every file a new mode touches. The short ver
 - Type checks: `cd backend && npm run typecheck`, `cd backend/frontend && npm run typecheck`.
 - Visual regression: `cd e2e && npm run visual` compares every game mode's match screen with `e2e/visual/__screenshots__` (CI job `test-visual`). A change that alters a screen on purpose commits `npm run visual:update`'s new images with it; see `DEVELOPMENT.md`.
 - Lint: `npm run lint` in `backend/` (oxlint, type-aware, config in `.oxlintrc.json`) and in `backend/frontend/` (ESLint: oxlint can't type-check `.svelte` files).
-- Formatting: oxfmt (Prettier-compatible) for TS, Svelte, JSON, YAML and Markdown, run from the repo root: `npm run format` (CI runs `npm run format:check`); config in `.oxfmtrc.json`; `gofmt -w .` in `bridge/`.
+- Formatting: see [Formatting](#formatting).
+
+## Formatting
+
+- oxfmt (Prettier-compatible, config in `.oxfmtrc.json`) formats TS, Svelte, JSON, YAML and Markdown. Run `npm ci` at the repo root first, then `npm run format` (fix) or `npm run format:check` (verify). Never `npx oxfmt`:
+  without the root install it downloads the latest oxfmt, which formats differently from the pinned one.
+- CI (`check-generated`, a required check) fails on any unformatted file; `gofmt -w .` in `bridge/` for Go.
+- Generated files (`backend/src/schema/`, the copies in `backend/frontend/src/lib/api/`, `*.gen.ts`) are in `.oxfmtrc.json`'s
+  `ignorePatterns`: regenerate them (`npm run gen:api`), never format them by hand.
+- Never reformat files you did not change. A new oxfmt version (Renovate bumps it) reformats the repo in its own `style:` commit.
 
 ## Libraries over hand-rolled code
 
