@@ -2380,6 +2380,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/minigolf/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The published user courses to browse, most played first, by name if searched
+         * @description Needs minigolf.userCourses.enabled (or an admin). A thumbnail is the course's first published hole; plays count the games started on the course.
+         */
+        get: operations["browseMinigolfCourses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/minigolf/courses/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report a published user course; once per person per course */
+        post: operations["reportMinigolfCourse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/minigolf/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published user courses with open reports, most reported first, and the moderated ones (admin or moderator) */
+        get: operations["listMinigolfReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/minigolf/courses/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a user course out of play, with a reason its author sees (admin or moderator)
+         * @description The course becomes a draft again and its author cannot publish it until it is allowed again. Closes its open reports. Writes a minigolf.unpublish audit entry.
+         */
+        post: operations["moderateUnpublishMinigolfCourse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/minigolf/courses/{id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a user course for good, with a reason kept in the audit log (admin or moderator)
+         * @description Writes a minigolf.remove audit entry. Official courses cannot be removed here.
+         */
+        post: operations["removeMinigolfCourse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/minigolf/courses/{id}/dismiss-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a course's open reports, leaving the course as it is (admin or moderator)
+         * @description Writes a minigolf.dismiss audit entry.
+         */
+        post: operations["dismissMinigolfReports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/minigolf/courses/{id}/allow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let the author publish a moderated course again (admin or moderator)
+         * @description Clears the moderation reason. Writes a minigolf.allow audit entry.
+         */
+        post: operations["allowMinigolfCoursePublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/minigolf/holes": {
         parameters: {
             query?: never;
@@ -4833,7 +4977,7 @@ export interface components {
             /** @description Playing order */
             holeIds: string[];
         };
-        /** @description A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin */
+        /** @description A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin */
         MinigolfCourse: {
             id: string;
             /** @description null for an official course */
@@ -4851,6 +4995,12 @@ export interface components {
             hasChanges?: boolean;
             /** @description Shipped with the code (seeded): it can be unpublished, not deleted */
             builtIn?: boolean;
+            /** @description Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only) */
+            moderation?: {
+                reason: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
             version: number;
             /** Format: date-time */
             updatedAt: string;
@@ -4864,6 +5014,48 @@ export interface components {
             /** @description The version this save started from */
             version: number;
             content: components["schemas"]["MinigolfCourseContent"];
+        };
+        MinigolfReasonRequest: {
+            /** @description The reason; blank counts as missing */
+            reason: string;
+        };
+        MinigolfBrowseCourse: {
+            id: string;
+            name: string;
+            description: string;
+            /** @enum {integer} */
+            difficulty: 1 | 2 | 3;
+            authorName: string | null;
+            ownerUserId?: string | null;
+            holeCount: number;
+            /** @description Games started on the course */
+            plays: number;
+            /** @description Its first published hole */
+            thumbnail: components["schemas"]["MinigolfHole"] | (null);
+        };
+        MinigolfBrowseList: {
+            courses: components["schemas"]["MinigolfBrowseCourse"][];
+        };
+        MinigolfReportedCourse: {
+            course: components["schemas"]["MinigolfBrowseCourse"];
+            reports: {
+                reporterName: string | null;
+                reason: string;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+        };
+        MinigolfReportList: {
+            courses: components["schemas"]["MinigolfReportedCourse"][];
+            /** @description Courses a moderator took out of play, still waiting to be allowed, newest first */
+            moderated: {
+                id: string;
+                name: string;
+                authorName: string | null;
+                reason: string;
+                /** Format: date-time */
+                at: string;
+            }[];
         };
         /** @description A hole row, as the hole library and the editor see it; `draft` is null for a viewer who is neither its owner nor an admin */
         MinigolfHoleRow: {
@@ -9115,6 +9307,200 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MinigolfCourse"];
                 };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    browseMinigolfCourses: {
+        parameters: {
+            query?: {
+                /** @description Part of the course name */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 100 courses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinigolfBrowseList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reportMinigolfCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MinigolfReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Reported */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description You reported this course already, or it is yours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMinigolfReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reported courses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinigolfReportList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    moderateUnpublishMinigolfCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MinigolfReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Unpublished */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeMinigolfCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MinigolfReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    dismissMinigolfReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dismissed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    allowMinigolfCoursePublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Allowed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

@@ -40069,7 +40069,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                        "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                         "required": [
                           "id",
                           "ownerUserId",
@@ -40201,6 +40201,25 @@
                           "builtIn": {
                             "type": "boolean",
                             "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                          },
+                          "moderation": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                            "required": [
+                              "reason",
+                              "at"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reason": {
+                                "type": "string"
+                              },
+                              "at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
                           },
                           "version": {
                             "type": "integer",
@@ -40357,7 +40376,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -40489,6 +40508,25 @@
                     "builtIn": {
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     },
                     "version": {
                       "type": "integer",
@@ -40730,7 +40768,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -40862,6 +40900,25 @@
                     "builtIn": {
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     },
                     "version": {
                       "type": "integer",
@@ -41069,7 +41126,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -41201,6 +41258,25 @@
                     "builtIn": {
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     },
                     "version": {
                       "type": "integer",
@@ -41724,7 +41800,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -41856,6 +41932,25 @@
                     "builtIn": {
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     },
                     "version": {
                       "type": "integer",
@@ -42189,7 +42284,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -42321,6 +42416,25 @@
                     "builtIn": {
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
                     },
                     "version": {
                       "type": "integer",
@@ -42524,7 +42638,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+                  "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
                   "required": [
                     "id",
                     "ownerUserId",
@@ -42657,6 +42771,25 @@
                       "type": "boolean",
                       "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                     },
+                    "moderation": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                      "required": [
+                        "reason",
+                        "at"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
                     "version": {
                       "type": "integer",
                       "minimum": 0
@@ -42674,6 +42807,2419 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/minigolf/browse": {
+      "get": {
+        "operationId": "browseMinigolfCourses",
+        "summary": "The published user courses to browse, most played first, by name if searched",
+        "description": "Needs minigolf.userCourses.enabled (or an admin). A thumbnail is the course's first published hole; plays count the games started on the course.",
+        "tags": [
+          "minigolf"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Part of the course name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 100 courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "courses"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "courses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "difficulty",
+                          "authorName",
+                          "holeCount",
+                          "plays",
+                          "thumbnail"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "difficulty": {
+                            "type": "integer",
+                            "enum": [
+                              1,
+                              2,
+                              3
+                            ]
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "ownerUserId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "holeCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "plays": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Games started on the course"
+                          },
+                          "thumbnail": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "par",
+                                  "outline",
+                                  "walls",
+                                  "bumpers",
+                                  "slopes",
+                                  "tee",
+                                  "cup"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "par": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "outline": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  },
+                                  "walls": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "points"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "points": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        },
+                                        "closed": {
+                                          "type": "boolean"
+                                        },
+                                        "restitution": {
+                                          "type": "number"
+                                        },
+                                        "thickness": {
+                                          "type": "number",
+                                          "description": "This wall only; the physics default (20 mm) otherwise"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "bumpers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "at",
+                                        "r"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "at": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        },
+                                        "r": {
+                                          "type": "number"
+                                        },
+                                        "restitution": {
+                                          "type": "number"
+                                        },
+                                        "kick": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "slopes": {
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "radial"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "radial": {
+                                              "type": "object",
+                                              "required": [
+                                                "center",
+                                                "radius",
+                                                "strength"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "center": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "radius": {
+                                                  "type": "number"
+                                                },
+                                                "strength": {
+                                                  "type": "number"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "bump"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "bump": {
+                                              "type": "object",
+                                              "required": [
+                                                "from",
+                                                "to",
+                                                "width",
+                                                "strength"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "from": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "to": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "width": {
+                                                  "type": "number"
+                                                },
+                                                "strength": {
+                                                  "type": "number"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "terrain": {
+                                    "type": "array",
+                                    "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "mesa"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "mesa": {
+                                          "type": "object",
+                                          "required": [
+                                            "from",
+                                            "to",
+                                            "height",
+                                            "edges"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "from": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "to": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "height": {
+                                              "type": "number"
+                                            },
+                                            "edges": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 4,
+                                              "maxItems": 4
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "shape": {
+                                    "type": "object",
+                                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                    "required": [
+                                      "corners",
+                                      "curves",
+                                      "circles"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "corners": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "curves": {
+                                        "type": "array",
+                                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                              "required": [
+                                                "c1",
+                                                "c2"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "c1": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "c2": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "string",
+                                              "nullable": true,
+                                              "enum": [
+                                                null
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "circles": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "center",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "center": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number",
+                                              "description": "The server refuses r <= 0 on save"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "tee": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "cup": {
+                                    "type": "object",
+                                    "required": [
+                                      "at",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "at": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "string",
+                                "nullable": true,
+                                "enum": [
+                                  null
+                                ]
+                              }
+                            ],
+                            "description": "Its first published hole"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/minigolf/courses/{id}/report": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reportMinigolfCourse",
+        "summary": "Report a published user course; once per person per course",
+        "tags": [
+          "minigolf"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "The reason; blank counts as missing"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reported"
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "You reported this course already, or it is yours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/reports": {
+      "get": {
+        "operationId": "listMinigolfReports",
+        "summary": "Published user courses with open reports, most reported first, and the moderated ones (admin or moderator)",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The reported courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "courses",
+                    "moderated"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "courses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "course",
+                          "reports"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "course": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "description",
+                              "difficulty",
+                              "authorName",
+                              "holeCount",
+                              "plays",
+                              "thumbnail"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "difficulty": {
+                                "type": "integer",
+                                "enum": [
+                                  1,
+                                  2,
+                                  3
+                                ]
+                              },
+                              "authorName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "ownerUserId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "holeCount": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "plays": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Games started on the course"
+                              },
+                              "thumbnail": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "par",
+                                      "outline",
+                                      "walls",
+                                      "bumpers",
+                                      "slopes",
+                                      "tee",
+                                      "cup"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "par": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "outline": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "walls": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "points"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "points": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "array",
+                                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                "items": {
+                                                  "type": "number"
+                                                },
+                                                "minItems": 2,
+                                                "maxItems": 2
+                                              }
+                                            },
+                                            "closed": {
+                                              "type": "boolean"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "thickness": {
+                                              "type": "number",
+                                              "description": "This wall only; the physics default (20 mm) otherwise"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "bumpers": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "at",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "at": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "kick": {
+                                              "type": "number"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "slopes": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "radial"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "radial": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "center",
+                                                    "radius",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "center": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "radius": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "bump"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "bump": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "from",
+                                                    "to",
+                                                    "width",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "from": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "to": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "width": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "terrain": {
+                                        "type": "array",
+                                        "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "mesa"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "mesa": {
+                                              "type": "object",
+                                              "required": [
+                                                "from",
+                                                "to",
+                                                "height",
+                                                "edges"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "from": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "to": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "height": {
+                                                  "type": "number"
+                                                },
+                                                "edges": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 4,
+                                                  "maxItems": 4
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "shape": {
+                                        "type": "object",
+                                        "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                        "required": [
+                                          "corners",
+                                          "curves",
+                                          "circles"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "corners": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            }
+                                          },
+                                          "curves": {
+                                            "type": "array",
+                                            "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                                  "required": [
+                                                    "c1",
+                                                    "c2"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "c1": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "c2": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "nullable": true,
+                                                  "enum": [
+                                                    null
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "circles": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "required": [
+                                                "center",
+                                                "r"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "center": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "r": {
+                                                  "type": "number",
+                                                  "description": "The server refuses r <= 0 on save"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "tee": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "cup": {
+                                        "type": "object",
+                                        "required": [
+                                          "at",
+                                          "r"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "at": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "r": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ],
+                                "description": "Its first published hole"
+                              }
+                            }
+                          },
+                          "reports": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "reporterName",
+                                "reason",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "reporterName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string"
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "moderated": {
+                      "type": "array",
+                      "description": "Courses a moderator took out of play, still waiting to be allowed, newest first",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "authorName",
+                          "reason",
+                          "at"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/unpublish": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "moderateUnpublishMinigolfCourse",
+        "summary": "Take a user course out of play, with a reason its author sees (admin or moderator)",
+        "description": "The course becomes a draft again and its author cannot publish it until it is allowed again. Closes its open reports. Writes a minigolf.unpublish audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "The reason; blank counts as missing"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Unpublished"
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/remove": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "removeMinigolfCourse",
+        "summary": "Delete a user course for good, with a reason kept in the audit log (admin or moderator)",
+        "description": "Writes a minigolf.remove audit entry. Official courses cannot be removed here.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "The reason; blank counts as missing"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/dismiss-reports": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "dismissMinigolfReports",
+        "summary": "Close a course's open reports, leaving the course as it is (admin or moderator)",
+        "description": "Writes a minigolf.dismiss audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Dismissed"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/minigolf/courses/{id}/allow": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "allowMinigolfCoursePublish",
+        "summary": "Let the author publish a moderated course again (admin or moderator)",
+        "description": "Clears the moderation reason. Writes a minigolf.allow audit entry.",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Allowed"
           },
           "401": {
             "description": "Not signed in",
@@ -71273,7 +73819,7 @@
       },
       "MinigolfCourse": {
         "type": "object",
-        "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+        "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
         "required": [
           "id",
           "ownerUserId",
@@ -71406,6 +73952,25 @@
             "type": "boolean",
             "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
           },
+          "moderation": {
+            "type": "object",
+            "nullable": true,
+            "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+            "required": [
+              "reason",
+              "at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "reason": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
           "version": {
             "type": "integer",
             "minimum": 0
@@ -71432,7 +73997,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "A course row; `draft`, `hasChanges` and `builtIn` are left out for a viewer who is neither its owner nor an admin",
+              "description": "A course row; `draft`, `hasChanges`, `builtIn` and `moderation` are left out for a viewer who is neither its owner nor an admin",
               "required": [
                 "id",
                 "ownerUserId",
@@ -71565,6 +74130,25 @@
                   "type": "boolean",
                   "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                 },
+                "moderation": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Why a moderator took the course out of play; the author cannot publish it again until it is allowed (owner and admins only)",
+                  "required": [
+                    "reason",
+                    "at"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
                 "version": {
                   "type": "integer",
                   "minimum": 0
@@ -71627,6 +74211,1882 @@
                   "type": "string"
                 },
                 "description": "Playing order"
+              }
+            }
+          }
+        }
+      },
+      "MinigolfReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The reason; blank counts as missing"
+          }
+        }
+      },
+      "MinigolfBrowseCourse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "difficulty",
+          "authorName",
+          "holeCount",
+          "plays",
+          "thumbnail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3
+            ]
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "holeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "plays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Games started on the course"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "type": "object",
+                "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                "required": [
+                  "id",
+                  "name",
+                  "par",
+                  "outline",
+                  "walls",
+                  "bumpers",
+                  "slopes",
+                  "tee",
+                  "cup"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "par": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "outline": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "walls": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "points"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "points": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        },
+                        "restitution": {
+                          "type": "number"
+                        },
+                        "thickness": {
+                          "type": "number",
+                          "description": "This wall only; the physics default (20 mm) otherwise"
+                        }
+                      }
+                    }
+                  },
+                  "bumpers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "at",
+                        "r"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "at": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "r": {
+                          "type": "number"
+                        },
+                        "restitution": {
+                          "type": "number"
+                        },
+                        "kick": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "slopes": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "radial"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "radial": {
+                              "type": "object",
+                              "required": [
+                                "center",
+                                "radius",
+                                "strength"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "center": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "radius": {
+                                  "type": "number"
+                                },
+                                "strength": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "bump"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "bump": {
+                              "type": "object",
+                              "required": [
+                                "from",
+                                "to",
+                                "width",
+                                "strength"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "from": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "to": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "width": {
+                                  "type": "number"
+                                },
+                                "strength": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "terrain": {
+                    "type": "array",
+                    "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "mesa"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "mesa": {
+                          "type": "object",
+                          "required": [
+                            "from",
+                            "to",
+                            "height",
+                            "edges"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "to": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "height": {
+                              "type": "number"
+                            },
+                            "edges": {
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 4,
+                              "maxItems": 4
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "shape": {
+                    "type": "object",
+                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                    "required": [
+                      "corners",
+                      "curves",
+                      "circles"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "corners": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "curves": {
+                        "type": "array",
+                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                              "required": [
+                                "c1",
+                                "c2"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "c1": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "c2": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "circles": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "center",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "center": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number",
+                              "description": "The server refuses r <= 0 on save"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "tee": {
+                    "type": "array",
+                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "cup": {
+                    "type": "object",
+                    "required": [
+                      "at",
+                      "r"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "at": {
+                        "type": "array",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "r": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ],
+            "description": "Its first published hole"
+          }
+        }
+      },
+      "MinigolfBrowseList": {
+        "type": "object",
+        "required": [
+          "courses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "description",
+                "difficulty",
+                "authorName",
+                "holeCount",
+                "plays",
+                "thumbnail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "authorName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "ownerUserId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "holeCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "plays": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Games started on the course"
+                },
+                "thumbnail": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                      "required": [
+                        "id",
+                        "name",
+                        "par",
+                        "outline",
+                        "walls",
+                        "bumpers",
+                        "slopes",
+                        "tee",
+                        "cup"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "par": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "outline": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "walls": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "points": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "restitution": {
+                                "type": "number"
+                              },
+                              "thickness": {
+                                "type": "number",
+                                "description": "This wall only; the physics default (20 mm) otherwise"
+                              }
+                            }
+                          }
+                        },
+                        "bumpers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "at",
+                              "r"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "at": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "r": {
+                                "type": "number"
+                              },
+                              "restitution": {
+                                "type": "number"
+                              },
+                              "kick": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        },
+                        "slopes": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "radial"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "radial": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "radius",
+                                      "strength"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "radius": {
+                                        "type": "number"
+                                      },
+                                      "strength": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "bump"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "bump": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "width",
+                                      "strength"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "to": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "width": {
+                                        "type": "number"
+                                      },
+                                      "strength": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "terrain": {
+                          "type": "array",
+                          "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "mesa"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mesa": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "height",
+                                  "edges"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "to": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "height": {
+                                    "type": "number"
+                                  },
+                                  "edges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 4,
+                                    "maxItems": 4
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "shape": {
+                          "type": "object",
+                          "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                          "required": [
+                            "corners",
+                            "curves",
+                            "circles"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "corners": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "curves": {
+                              "type": "array",
+                              "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                    "required": [
+                                      "c1",
+                                      "c2"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "c1": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "c2": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "circles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "center",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "center": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number",
+                                    "description": "The server refuses r <= 0 on save"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "tee": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "cup": {
+                          "type": "object",
+                          "required": [
+                            "at",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "at": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        null
+                      ]
+                    }
+                  ],
+                  "description": "Its first published hole"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MinigolfReportedCourse": {
+        "type": "object",
+        "required": [
+          "course",
+          "reports"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "course": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "description",
+              "difficulty",
+              "authorName",
+              "holeCount",
+              "plays",
+              "thumbnail"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "authorName": {
+                "type": "string",
+                "nullable": true
+              },
+              "ownerUserId": {
+                "type": "string",
+                "nullable": true
+              },
+              "holeCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "plays": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Games started on the course"
+              },
+              "thumbnail": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                    "required": [
+                      "id",
+                      "name",
+                      "par",
+                      "outline",
+                      "walls",
+                      "bumpers",
+                      "slopes",
+                      "tee",
+                      "cup"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "par": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "outline": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "walls": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "points"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "points": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "closed": {
+                              "type": "boolean"
+                            },
+                            "restitution": {
+                              "type": "number"
+                            },
+                            "thickness": {
+                              "type": "number",
+                              "description": "This wall only; the physics default (20 mm) otherwise"
+                            }
+                          }
+                        }
+                      },
+                      "bumpers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "at",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "at": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number"
+                            },
+                            "restitution": {
+                              "type": "number"
+                            },
+                            "kick": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      },
+                      "slopes": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "radial"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "radial": {
+                                  "type": "object",
+                                  "required": [
+                                    "center",
+                                    "radius",
+                                    "strength"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "center": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "radius": {
+                                      "type": "number"
+                                    },
+                                    "strength": {
+                                      "type": "number"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "bump"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "bump": {
+                                  "type": "object",
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "width",
+                                    "strength"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "from": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "to": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "width": {
+                                      "type": "number"
+                                    },
+                                    "strength": {
+                                      "type": "number"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "terrain": {
+                        "type": "array",
+                        "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "mesa"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mesa": {
+                              "type": "object",
+                              "required": [
+                                "from",
+                                "to",
+                                "height",
+                                "edges"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "from": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "to": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "height": {
+                                  "type": "number"
+                                },
+                                "edges": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 4,
+                                  "maxItems": 4
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "shape": {
+                        "type": "object",
+                        "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                        "required": [
+                          "corners",
+                          "curves",
+                          "circles"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "corners": {
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "curves": {
+                            "type": "array",
+                            "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                  "required": [
+                                    "c1",
+                                    "c2"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "c1": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "c2": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "circles": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "center",
+                                "r"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "center": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "r": {
+                                  "type": "number",
+                                  "description": "The server refuses r <= 0 on save"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "tee": {
+                        "type": "array",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "cup": {
+                        "type": "object",
+                        "required": [
+                          "at",
+                          "r"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "at": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "r": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      null
+                    ]
+                  }
+                ],
+                "description": "Its first published hole"
+              }
+            }
+          },
+          "reports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "reporterName",
+                "reason",
+                "createdAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "reporterName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MinigolfReportList": {
+        "type": "object",
+        "required": [
+          "courses",
+          "moderated"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "course",
+                "reports"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "course": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "difficulty",
+                    "authorName",
+                    "holeCount",
+                    "plays",
+                    "thumbnail"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "difficulty": {
+                      "type": "integer",
+                      "enum": [
+                        1,
+                        2,
+                        3
+                      ]
+                    },
+                    "authorName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "ownerUserId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "holeCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "plays": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Games started on the course"
+                    },
+                    "thumbnail": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
+                          "required": [
+                            "id",
+                            "name",
+                            "par",
+                            "outline",
+                            "walls",
+                            "bumpers",
+                            "slopes",
+                            "tee",
+                            "cup"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "par": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "outline": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "walls": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "points"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "points": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  },
+                                  "closed": {
+                                    "type": "boolean"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "thickness": {
+                                    "type": "number",
+                                    "description": "This wall only; the physics default (20 mm) otherwise"
+                                  }
+                                }
+                              }
+                            },
+                            "bumpers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "at",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "at": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "kick": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            },
+                            "slopes": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "radial"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "radial": {
+                                        "type": "object",
+                                        "required": [
+                                          "center",
+                                          "radius",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "center": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "radius": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "bump"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "bump": {
+                                        "type": "object",
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "width",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "to": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "width": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "terrain": {
+                              "type": "array",
+                              "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "mesa"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "mesa": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "height",
+                                      "edges"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "to": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "height": {
+                                        "type": "number"
+                                      },
+                                      "edges": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 4,
+                                        "maxItems": 4
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "tee": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "cup": {
+                              "type": "object",
+                              "required": [
+                                "at",
+                                "r"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "at": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "r": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ],
+                      "description": "Its first published hole"
+                    }
+                  }
+                },
+                "reports": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "reporterName",
+                      "reason",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "reporterName": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "moderated": {
+            "type": "array",
+            "description": "Courses a moderator took out of play, still waiting to be allowed, newest first",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "authorName",
+                "reason",
+                "at"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "authorName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
               }
             }
           }

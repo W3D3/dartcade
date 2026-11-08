@@ -427,6 +427,20 @@ export interface MinigolfCoursesTable {
   created_at: ColumnType<Date, never, never>
   updated_at: ColumnType<Date, never, Date>
   published_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+  /** Why a moderator unpublished the course; set, the author cannot publish it until it is allowed (migration 060). */
+  moderation_reason: ColumnType<string | null, never, string | null>
+  moderated_at: ColumnType<Date | null, never, Date | null>
+}
+
+/** A report on a published user course, one per reporter (migration 060). */
+export interface MinigolfCourseReportsTable {
+  id: string
+  course_id: string
+  /** null once the reporter's account is gone. */
+  reporter_user_id: string | null
+  reason: string
+  created_at: ColumnType<Date, never, never>
+  dismissed_at: ColumnType<Date | null, never, Date | null>
 }
 
 /** A flag's override, set at runtime (migration 025); no row for a key means today's default. */
@@ -584,6 +598,7 @@ export interface Database {
   ranked_adjustments: RankedAdjustmentsTable
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
+  minigolf_course_reports: MinigolfCourseReportsTable
   feature_flag_overrides: FeatureFlagOverridesTable
   wled_devices: WledDevicesTable
   admin_audit: AdminAuditTable

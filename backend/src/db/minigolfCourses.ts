@@ -28,6 +28,8 @@ export type CourseRow = {
   version: number
   updatedAt: Date
   publishedAt: Date | null
+  /** Why a moderator took the course out of play; while set, its author cannot publish it. */
+  moderation: { reason: string; at: Date } | null
 }
 export type HoleRow = {
   id: string
@@ -40,14 +42,14 @@ export type HoleRow = {
 }
 
 // JSON columns are read defensively: a value that doesn't parse reads as absent (lobbies.ts's pattern)
-const CourseContentSchema = z.object({
+export const CourseContentSchema = z.object({
   name: z.string(),
   description: z.string(),
   difficulty: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   holeIds: z.array(z.string()),
 }) satisfies z.ZodType<CourseContent>
 
-function parsedJson<T>(schema: z.ZodType<T>, value: unknown): T | null {
+export function parsedJson<T>(schema: z.ZodType<T>, value: unknown): T | null {
   if (value === null || value === undefined) return null
   const r = schema.safeParse(value)
   return r.success ? r.data : null
@@ -70,7 +72,12 @@ type DbRow = {
 }
 
 /** A course row; `author_name` is there only on the reads that join the owner (listCourses, getCourse). */
-type CourseDbRow = DbRow & { visibility: CourseVisibility; author_name?: string | null }
+type CourseDbRow = DbRow & {
+  visibility: CourseVisibility
+  author_name?: string | null
+  moderation_reason?: string | null
+  moderated_at?: Date | null
+}
 
 function toCourseRow(r: CourseDbRow): CourseRow {
   return {
@@ -83,10 +90,14 @@ function toCourseRow(r: CourseDbRow): CourseRow {
     version: r.version,
     updatedAt: r.updated_at,
     publishedAt: r.published_at,
+    moderation:
+      r.moderation_reason !== null && r.moderation_reason !== undefined && r.moderated_at
+        ? { reason: r.moderation_reason, at: r.moderated_at }
+        : null,
   }
 }
 
-function toHoleRow(r: DbRow): HoleRow {
+export function toHoleRow(r: DbRow): HoleRow {
   return {
     id: r.id,
     ownerUserId: r.owner_user_id,
@@ -403,8 +414,9 @@ export async function discardCourseDraft(db: Kysely<Database>, id: string): Prom
 }
 
 /** Takes the course out of play: its published content becomes its draft (unless it has one), so
- *  nothing is lost and Publish brings it back. Its holes stay as they are. */
-export async function unpublishCourse(db: Kysely<Database>, id: string): Promise<CourseRow | 'missing'> {
+ *  nothing is lost and Publish brings it back. Its holes stay as they are. A moderator's
+ *  `moderationReason` is kept on the course, and blocks Publish until it is allowed. */
+export async function unpublishCourse(db: Kysely<Database>, id: string, moderationReason?: string): Promise<CourseRow | 'missing'> {
   const row = await db
     .updateTable('minigolf_courses')
     .set({
@@ -412,6 +424,7 @@ export async function unpublishCourse(db: Kysely<Database>, id: string): Promise
       published: null,
       visibility: sql<CourseVisibility>`CASE WHEN owner_user_id IS NULL THEN 'official' ELSE 'private' END`,
       published_at: null,
+      ...(moderationReason !== undefined && { moderation_reason: moderationReason, moderated_at: sql<Date>`now()` }),
       version: sql<number>`version + 1`,
       updated_at: sql<Date>`now()`,
     })
