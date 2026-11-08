@@ -635,6 +635,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/lights/seat-colors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the board's seat colours (all six, from seat 1)
+         * @description Applies to the board's light profile and is not part of any device data. A game with more seats than colours wraps around.
+         */
+        put: operations["setBoardSeatColors"];
+        post?: never;
+        /** Go back to the built-in seat colours */
+        delete: operations["resetBoardSeatColors"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/lights/scan": {
         parameters: {
             query?: never;
@@ -4085,10 +4108,13 @@ export interface components {
             };
             holdMs?: number;
         };
+        /** @description One colour per seat from seat 1. A seat past the end wraps around to the first. */
+        LightSeatColors: string[];
         LightProfile: {
             id: string;
             name: string;
             builtIn: boolean;
+            seatColors: components["schemas"]["LightSeatColors"];
             rules: components["schemas"]["LightRule"][];
         };
         BoardLights: {
@@ -6370,6 +6396,61 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBoardSeatColors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    seatColors: components["schemas"]["LightSeatColors"];
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    resetBoardSeatColors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reset */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -4,6 +4,7 @@ import { createFastify } from './fastify.js'
 import { lightsApiPlugin } from './lights.js'
 import { LightsStore } from '../lights/store.js'
 import { setupFlags } from '../flags/index.js'
+import { DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn(),
@@ -16,6 +17,8 @@ vi.mock('../db/lights.js', () => ({
   deleteWledDevice: vi.fn(),
   getLightsEnabled: vi.fn(),
   setLightsEnabled: vi.fn(),
+  getSeatColors: vi.fn(),
+  setSeatColors: vi.fn(),
 }))
 // The route gate reads the flag user through here; a non-admin by default, like sessions.test.ts.
 vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }) }))
@@ -37,15 +40,21 @@ beforeEach(async () => {
   vi.mocked(dbLights.deleteWledDevice).mockReset()
   vi.mocked(dbLights.getLightsEnabled).mockReset().mockResolvedValue(true)
   vi.mocked(dbLights.setLightsEnabled).mockReset().mockResolvedValue(undefined)
+  vi.mocked(dbLights.getSeatColors).mockReset().mockResolvedValue(DEFAULT_SEAT_COLORS)
+  vi.mocked(dbLights.setSeatColors).mockReset().mockResolvedValue(undefined)
   // On for everyone by default, so the rest of this file can ignore the flag; the "flag off" test
   // below overrides it.
   await setupFlags(new Set(['lights.enabled']))
 })
 afterEach(() => vi.unstubAllEnvs())
 
+const SIX = ['#111111', '#222222', '#333333', '#444444', '#555555', '#666666']
+
 const LIGHTS_ROUTES: { method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE'; url: string; payload?: object }[] = [
   { method: 'GET', url: '/api/boards/board-1/lights' },
   { method: 'PUT', url: '/api/boards/board-1/lights', payload: { enabled: false } },
+  { method: 'PUT', url: '/api/boards/board-1/lights/seat-colors', payload: { seatColors: SIX } },
+  { method: 'DELETE', url: '/api/boards/board-1/lights/seat-colors' },
   { method: 'POST', url: '/api/boards/board-1/lights/scan' },
   { method: 'POST', url: '/api/boards/board-1/lights/probe', payload: { host: '192.168.1.80' } },
   { method: 'POST', url: '/api/boards/board-1/lights/blink', payload: { host: '192.168.1.80' } },
@@ -368,6 +377,70 @@ describe('PUT /api/boards/:id/lights', () => {
     const res = await app.inject({ method: 'PUT', url: '/api/boards/board-1/lights', payload: { enabled: false } })
     expect(res.statusCode).toBe(204)
     expect(dbLights.setLightsEnabled).toHaveBeenCalledWith(expect.anything(), 'board-1', false)
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+})
+
+describe('seat colours', () => {
+  it('GET shows the built-in colours until the board has its own, and never puts them on a device', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    const { app } = makeApp()
+    const builtIn = (await app.inject({ method: 'GET', url: '/api/boards/board-1/lights' })).json()
+    expect(builtIn.profile.seatColors).toEqual(['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f'])
+    vi.mocked(dbLights.getSeatColors).mockResolvedValue(SIX)
+    vi.mocked(dbLights.listWledDevices).mockResolvedValue([
+      {
+        id: 'd1',
+        board_id: 'board-1',
+        mac: 'aa',
+        name: 'Strip',
+        host: '192.168.1.2',
+        leds: 30,
+        version: '0.14.0',
+        segments: 1,
+        segment_mode: 'whole',
+        max_bri: 178,
+        created_at: new Date(),
+      },
+    ])
+    const own = (await app.inject({ method: 'GET', url: '/api/boards/board-1/lights' })).json()
+    expect(own.profile.seatColors).toEqual(SIX)
+    expect(own.devices[0]).not.toHaveProperty('seatColors')
+  })
+
+  it('PUT stores the six colours in lower case and notifies devicesChanged', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    const { app, lights } = makeApp()
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/boards/board-1/lights/seat-colors',
+      payload: { seatColors: ['#AABBCC', ...SIX.slice(1)] },
+    })
+    expect(res.statusCode).toBe(204)
+    expect(dbLights.setSeatColors).toHaveBeenCalledWith(expect.anything(), 'board-1', ['#aabbcc', ...SIX.slice(1)])
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+
+  it.each([
+    ['too few', SIX.slice(0, 5)],
+    ['too many', [...SIX, '#777777']],
+    ['not a hex colour', [...SIX.slice(0, 5), 'red']],
+    ['a short hex colour', [...SIX.slice(0, 5), '#fff']],
+    ['not strings', [...SIX.slice(0, 5), 7]],
+  ])('PUT 400s %s and stores nothing', async (_name, seatColors) => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'PUT', url: '/api/boards/board-1/lights/seat-colors', payload: { seatColors } })
+    expect(res.statusCode).toBe(400)
+    expect(dbLights.setSeatColors).not.toHaveBeenCalled()
+  })
+
+  it('DELETE goes back to the built-in colours and notifies devicesChanged', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    const { app, lights } = makeApp()
+    const res = await app.inject({ method: 'DELETE', url: '/api/boards/board-1/lights/seat-colors' })
+    expect(res.statusCode).toBe(204)
+    expect(dbLights.setSeatColors).toHaveBeenCalledWith(expect.anything(), 'board-1', null)
     expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
   })
 })

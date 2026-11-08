@@ -4,8 +4,14 @@ import type { BoardTrigger, GameId, Profile, Rule } from './types.js'
 /** The seats' colours; seat 7 on wraps around. Checked for colour blindness (normal, deuteranopia,
  *  protanopia: CIE76 distance 17+ between any two), and none is near the takeout yellow (28+ even
  *  with deuteranopia). Tritanopia cannot tell off-white from that yellow, which no white avoids. */
-export const SEAT_COLORS: readonly string[] = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']
-export const seatColor = (seat: number): string => SEAT_COLORS[((seat % SEAT_COLORS.length) + SEAT_COLORS.length) % SEAT_COLORS.length]
+export const DEFAULT_SEAT_COLORS: readonly string[] = ['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f']
+
+/** How many seat colours a profile has, and so how many a board can edit. */
+export const SEAT_COLOR_COUNT = DEFAULT_SEAT_COLORS.length
+
+/** The colour of a seat (0-based). A seat past the last colour wraps around to the first. */
+export const seatColor = (seat: number, colors: readonly string[]): string =>
+  colors[((seat % colors.length) + colors.length) % colors.length]
 
 // WLED effect ids
 const SOLID = 0,
@@ -28,6 +34,7 @@ const flash = (trigger: Rule['when']['trigger'], look: Rule['look'], holdMs: num
 export const DEFAULT_PROFILE: Profile = {
   id: 'default',
   name: 'Dartcade default',
+  seatColors: DEFAULT_SEAT_COLORS,
   rules: [
     { when: { trigger: 'turn', seats: 'mine' }, type: 'scene', enabled: true, look: { color: 'seat', fx: SOLID, bri: 255 } },
     { when: { trigger: 'turn', seats: 'other' }, type: 'scene', enabled: true, look: { color: '#ffffff', fx: SOLID, bri: 40 } },

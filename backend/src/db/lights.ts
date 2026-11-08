@@ -2,6 +2,7 @@
 import { type Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import type { Database } from './schema.js'
+import { DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
 import type { SegmentMode } from '../shared/lights/types.js'
 
 export type WledDeviceRow = {
@@ -75,6 +76,21 @@ export async function getLightsEnabled(db: Kysely<Database>, boardId: string): P
 
 export async function setLightsEnabled(db: Kysely<Database>, boardId: string, enabled: boolean): Promise<void> {
   await db.updateTable('boards').set({ lights_enabled: enabled }).where('id', '=', boardId).execute()
+}
+
+/** The board's seat colours: its own, or the built-in ones while it has none. */
+export async function getSeatColors(db: Kysely<Database>, boardId: string): Promise<readonly string[]> {
+  const row = await db.selectFrom('boards').select('light_seat_colors').where('id', '=', boardId).executeTakeFirst()
+  return row?.light_seat_colors ?? DEFAULT_SEAT_COLORS
+}
+
+/** Null goes back to the built-in colours. */
+export async function setSeatColors(db: Kysely<Database>, boardId: string, colors: string[] | null): Promise<void> {
+  await db
+    .updateTable('boards')
+    .set({ light_seat_colors: colors && JSON.stringify(colors) })
+    .where('id', '=', boardId)
+    .execute()
 }
 
 /** The owner of a board; null when the board is gone. */

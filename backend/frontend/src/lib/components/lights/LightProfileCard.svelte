@@ -1,15 +1,29 @@
 <script lang="ts">
   // Settings' Lights: the board's light profile (Settings-Lights board). Only the built-in
-  // "Dartcade default" exists today, so Duplicate/Import/Export are disabled; ▶ Test plays one
+  // "Dartcade default" exists today, so its effects are read-only and Duplicate/Import/Export are
+  // disabled; its seat colours are the one thing a board can change. ▶ Test plays one
   // rule on the board's devices now (disabled while lights are off, the bridge is offline, or
   // the bridge is outdated).
   import { ChevronDown } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
-  import { SEAT_COLORS } from '$shared/lights/index.js'
   import type { LightProfile } from '$lib/api'
   import { ruleLabel } from '$lib/lights/view'
+  import { isDefaultSeatColors } from '$lib/lights/seatColors'
+  import SeatColorPicker from './SeatColorPicker.svelte'
 
-  let { profile, canTest, ontest }: { profile: LightProfile; canTest: boolean; ontest: (rule: number) => void } = $props()
+  let {
+    profile,
+    canTest,
+    ontest,
+    onseatcolor,
+    onresetseatcolors,
+  }: {
+    profile: LightProfile
+    canTest: boolean
+    ontest: (rule: number) => void
+    onseatcolor: (seat: number, hex: string) => void
+    onresetseatcolors: () => void
+  } = $props()
 </script>
 
 <section aria-label="Light profile" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
@@ -32,16 +46,27 @@
     <Button variant="outline" size="md" disabled title="Coming soon">Export</Button>
   </div>
 
-  <div class="flex items-center gap-[14px] text-[12px] text-text-dim flex-wrap">
-    <span>Seat colours come from the game:</span>
-    {#each SEAT_COLORS as color, i (i)}
-      <span class="inline-flex items-center gap-[5px] text-[12px] text-ink-2">
-        <span class="w-[10px] h-[10px] rounded-full" style="background: {color}"></span>
-        Seat {i + 1}
-      </span>
-    {/each}
-  </div>
+  <section aria-label="Seat colours" class="flex flex-col gap-1">
+    <div class="flex items-center justify-between gap-2 min-h-8">
+      <h3 class="text-[13px] font-semibold">Seat colours</h3>
+      <Button variant="outline" size="sm" disabled={isDefaultSeatColors(profile.seatColors)} onclick={onresetseatcolors}>
+        Reset to defaults
+      </Button>
+    </div>
+    <ul class="m-0 p-0 list-none flex flex-col gap-1">
+      {#each profile.seatColors as color, i (i)}
+        <li class="flex items-center justify-between gap-[10px] min-h-11 px-[10px] py-1 rounded-[10px] bg-surface-active">
+          <span class="text-[13px] font-semibold">Seat {i + 1}</span>
+          <SeatColorPicker seat={i + 1} {color} onpick={(hex: string) => onseatcolor(i, hex)} />
+        </li>
+      {/each}
+    </ul>
+    <span class="text-[12px] text-text-dim">
+      A game with more than {profile.seatColors.length} seats starts over from seat 1's colour.
+    </span>
+  </section>
 
+  <h3 class="text-[13px] font-semibold">Effects</h3>
   <ol class="flex flex-col gap-1">
     {#each profile.rules as rule, i (i)}
       {@const label = ruleLabel(rule)}
@@ -106,7 +131,7 @@
   </ol>
 
   <span class="text-[12px] text-text-dim">
-    Lobby shows only while you are in a lobby with no game running, and is off by default. The built-in default can't be edited and never
-    touches your WLED presets. Duplicate it to make your own.
+    Lobby shows only while you are in a lobby with no game running, and is off by default. The built-in effects can't be edited and never
+    touch your WLED presets; the seat colours can. Duplicate it to make your own.
   </span>
 </section>

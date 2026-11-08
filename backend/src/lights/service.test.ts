@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Snapshot } from '../schema/game-ws.js'
+import { DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
 import { LightsService, type LightsDeps } from './service.js'
 
 type Sent = { board: string; msg: { kind: string; data: Record<string, unknown> } }
@@ -26,6 +27,7 @@ function setup(over: Partial<LightsDeps> = {}) {
     send: (board, msg) => (sent.push({ board, msg: msg as Sent['msg'] }), true),
     bridgeVersion: () => '0.4.0',
     devices: board => Promise.resolve([dev(`dev-${board}`, board)]),
+    seatColors: () => Promise.resolve(DEFAULT_SEAT_COLORS),
     enabled: () => Promise.resolve(true),
     getSession: id => sessions.get(id),
     getSnapshot: id => snaps.get(id),
@@ -86,6 +88,26 @@ describe('LightsService', () => {
     const b1 = applies(sent, 'b1')[0].state as { bri: number }
     expect(b1.bri).toBe(40) // waiting: the other board's turn
     expect(applies(sent, 'b2')[0].hold_ms).toBeUndefined()
+  })
+
+  it('a board’s own seat colours reach the strip, and a changed colour shows on the next fire', async () => {
+    let colors: readonly string[] = ['#010203', '#040506', '#070809', '#0a0b0c', '#0d0e0f', '#101112']
+    const { svc, sent, snaps, sessions } = setup({ seatColors: () => Promise.resolve(colors) })
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    const col = () => (applies(sent, 'b1').at(-1)?.state as { seg: { col: number[][] }[] }).seg[0].col
+    expect(col()).toEqual([[1, 2, 3]])
+    colors = ['#ff0000', ...colors.slice(1)]
+    sent.length = 0
+    await svc.devicesChanged('b1') // what saving a colour does: the remembered scene is sent again
+    expect(col()).toEqual([[255, 0, 0]])
+  })
+
+  it('test() uses the board’s seat colours too', async () => {
+    const { svc, sent } = setup({ seatColors: () => Promise.resolve(['#010203']) })
+    expect(await svc.test('b1', 0)).toBe(true) // turn scene, seat 1
+    expect((applies(sent, 'b1')[0].state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[1, 2, 3]])
   })
 
   it('takeout lights yellow, then the game scene comes back', async () => {

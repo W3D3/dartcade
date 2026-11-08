@@ -36,6 +36,7 @@
   // The most recent completed loadLights call for the selected board failed (any non-2xx or a
   // network error); a later successful poll clears it.
   let loadFailed = $state(false)
+  let seatColorError = $state<string | null>(null)
   const panelState = $derived(lightsLoadState(!!lights, loadFailed))
 
   let deviceError = $state<string | null>(null)
@@ -140,6 +141,37 @@
       lights = { ...current, enabled: prev }
       enabledError = 'Could not save that'
     }
+  }
+
+  /** Saves the board's seat colours and shows them at once; a failed save puts the old ones back. */
+  async function saveSeatColors(seatColors: string[]) {
+    if (!selectedId || !lights) return
+    const id = selectedId
+    const prev = lights.profile.seatColors
+    seatColorError = null
+    lights = { ...lights, profile: { ...lights.profile, seatColors } }
+    const { error } = await api
+      .PUT('/api/boards/{id}/lights/seat-colors', { params: { path: { id } }, body: { seatColors } })
+      .catch(() => ({ error: true }))
+    if (!error) return
+    if (id === selectedId) {
+      lights = { ...lights, profile: { ...lights.profile, seatColors: prev } }
+      seatColorError = 'Could not save the seat colours'
+    }
+  }
+
+  /** Back to the built-in colours: the server knows them, so show what it answers. */
+  async function resetSeatColors() {
+    if (!selectedId) return
+    const id = selectedId
+    seatColorError = null
+    const { error } = await api.DELETE('/api/boards/{id}/lights/seat-colors', { params: { path: { id } } }).catch(() => ({ error: true }))
+    if (error) seatColorError = 'Could not reset the seat colours'
+    else await loadLights(id)
+  }
+
+  function setSeatColor(seat: number, hex: string) {
+    if (lights) return saveSeatColors(lights.profile.seatColors.map((c, i) => (i === seat ? hex : c)))
   }
 
   async function rescan() {
@@ -272,7 +304,14 @@
 
         <div class="flex flex-col gap-3">
           {#if testError}<ErrorText>{testError}</ErrorText>{/if}
-          <LightProfileCard profile={lights.profile} {canTest} ontest={(rule: number) => void test(rule)} />
+          {#if seatColorError}<ErrorText>{seatColorError}</ErrorText>{/if}
+          <LightProfileCard
+            profile={lights.profile}
+            {canTest}
+            ontest={(rule: number) => void test(rule)}
+            onseatcolor={(seat: number, hex: string) => void setSeatColor(seat, hex)}
+            onresetseatcolors={() => void resetSeatColors()}
+          />
         </div>
       </div>
     {/if}
