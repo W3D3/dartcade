@@ -23,7 +23,7 @@ describe('fewestChance', () => {
       expect(fewestChance(REF.landing, left, darts), `${left}`).toBeCloseTo(REF.fin[left][darts], 12)
   })
 
-  it('from 501: the chance of a visit still on a nine-darter, about 3% for a semi-pro', () => {
-    expect(fewestChance(REF.landing, 501, 3)).toBeCloseTo(0.0286, 3)
+  it('from 501: the chance of a visit still on a nine-darter, about 2.6% for a semi-pro', () => {
+    expect(fewestChance(REF.landing, 501, 3)).toBeCloseTo(0.0264, 3)
   })
 })

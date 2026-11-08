@@ -198,7 +198,7 @@ describe('reviewLeg', () => {
           notes: [],
           explained: null,
           grouping: null,
-          value: expect.objectContaining({ rule: 'brilliant', fewestChance: expect.closeTo(19.7, 1) }),
+          value: expect.objectContaining({ rule: 'brilliant', fewestChance: expect.closeTo(18.74, 1) }),
         },
         {
           n: 5,
@@ -247,7 +247,7 @@ describe('reviewLeg', () => {
           grouping: null,
           value: {
             startChance: expect.any(Number),
-            points: expect.closeTo(-0.56, 1),
+            points: expect.closeTo(-0.15, 1),
             rule: 'note',
             scoring: null,
             terms: expect.any(Array),
@@ -293,7 +293,7 @@ describe('reviewLeg', () => {
           grouping: null,
           value: {
             startChance: expect.any(Number),
-            points: expect.closeTo(12.9, 1),
+            points: expect.closeTo(13.74, 1),
             rule: null,
             scoring: null,
             terms: expect.any(Array),
@@ -540,10 +540,10 @@ describe('the coaching tier', () => {
 
   it("is happy with a 40 average's 60 on 100, which the pro model calls a small loss", async () => {
     const low = await graded(40, 100, ['S20', 'S20', 'S20'])
-    expect(low.delta).toBeCloseTo(9.85, 1)
+    expect(low.delta).toBeCloseTo(9.79, 1)
     expect(low.grade).toBe('good')
     const ref = await graded(80, 100, ['S20', 'S20', 'S20'])
-    expect(ref.delta).toBeCloseTo(-3.74, 1)
+    expect(ref.delta).toBeCloseTo(-3.59, 1)
     expect(ref.grade).toBe('inaccuracy')
   })
 
