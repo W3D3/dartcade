@@ -19,7 +19,7 @@
 
 <div
   class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3
-         px-4 py-3 rounded-[12px] bg-surface-1 border border-line-2 shadow-xl max-w-[92vw]"
+         px-4 py-3 rounded-[12px] bg-surface-1 border border-line-2 shadow-xl w-max max-w-[92vw]"
   role="status"
 >
   {#if tone === 'success'}
