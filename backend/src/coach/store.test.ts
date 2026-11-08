@@ -15,7 +15,7 @@ import { createFastify } from '../api/fastify.js'
 import { coachApiPlugin } from '../api/coach.js'
 import { backfillCoachLegs, buildCoachLegs, COACH_VERSION, ensureCoachGame, ensureCoachLegs, pendingCoachGames } from './store.js'
 import { coachLegsPage, coachLegsSummary, getCoachLeg } from './legs.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertLobby, insertUsers } from '../test/fixtures.js'
 
 signInAs('ann')
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(() => Promise.resolve(true)), loadFlagUser: vi.fn(() => Promise.resolve(null)) }))
@@ -182,10 +182,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach_legs', () => {
 
   it('names the lobby or the ranked mode in the context', async () => {
     const game = await play()
-    await db
-      .insertInto('lobbies')
-      .values({ id: 'l1', name: 'Friday darts', host_user_id: 'ann', code: 'ABCDEF', next_game: '{}' })
-      .execute()
+    await insertLobby(db, { id: 'l1', name: 'Friday darts', host_user_id: 'ann', code: 'ABCDEF', next_game: '{}' })
     await db.updateTable('game_sessions').set({ lobby_id: 'l1' }).where('id', '=', game.id).execute()
     await buildCoachLegs(db, game, fail)
     expect((await rows())[0].context).toBe('301 · Friday darts · leg 1')

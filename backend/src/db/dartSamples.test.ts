@@ -13,7 +13,7 @@ import {
   setBoardShares,
 } from './dartSamples.js'
 import type { Database } from './schema.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
 const SCHEMA = 'dart_samples_test'
@@ -98,7 +98,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('dart sample queries', () => {
     await db.deleteFrom('game_sessions').execute()
     await db.deleteFrom('boards').execute()
     await db.deleteFrom('bridge_events').execute()
-    await db.insertInto('boards').values({ id: 'b1', owner_user_id: 'u1', name: 'Board', token_hash: 'h1', hardware_id: 'hw1' }).execute()
+    await insertBoard(db, { id: 'b1', owner_user_id: 'u1', name: 'Board', token_hash: 'h1', hardware_id: 'hw1' })
     for (const g of ['g1', 'g2']) {
       await insertGameSession(db, {
         id: g,

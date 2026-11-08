@@ -5,7 +5,7 @@ import { openTestSchema } from '../db/testSchema.js'
 import { FriendsService } from './service.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertLobby, insertUsers } from '../test/fixtures.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
@@ -217,10 +217,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       (await friends.request(a, (await db.selectFrom('user').select('name').where('id', '=', b).executeTakeFirstOrThrow()).name)).id,
     )
   async function openLobby(id: string, hostUserId: string, access: 'friends' | 'invite', members: string[]) {
-    await db
-      .insertInto('lobbies')
-      .values({ id, name: 'Friday darts', host_user_id: hostUserId, code: id.toUpperCase().padEnd(6, 'X'), access })
-      .execute()
+    await insertLobby(db, { id, name: 'Friday darts', host_user_id: hostUserId, access })
     for (const [i, userId] of members.entries()) {
       await db
         .insertInto('lobby_people')
