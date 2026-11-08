@@ -31,6 +31,7 @@ import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
 import { ProgressionService } from './progression/service.js'
+import { AchievementsService } from './achievements/service.js'
 import { getFinishedGame } from './db/history.js'
 import { gameDetailBody } from './api/games.js'
 import { backfillCoachLegs, buildCoachLegs } from './coach/store.js'
@@ -70,6 +71,17 @@ const progression = new ProgressionService({
   manualDarts: async userId => flagEnabled('progression.manualDarts', await loadFlagUser(db, userId)),
   push: (userId, msg) => {
     hub.sendXp(userId, msg)
+  },
+  warn: (message, details) => {
+    warn(message, details)
+  },
+})
+const achievements = new AchievementsService({
+  db,
+  enabled: async userId => flagEnabled('achievements.enabled', await loadFlagUser(db, userId)),
+  manualDarts: async userId => flagEnabled('progression.manualDarts', await loadFlagUser(db, userId)),
+  push: (userId, msg) => {
+    hub.sendAchievements(userId, msg)
   },
   warn: (message, details) => {
     warn(message, details)
@@ -144,6 +156,9 @@ const engine: SessionEngine = new SessionEngine(
     // Nor is XP: it reads the saved game, which finish() stored before this runs
     progression.onGameEnded(ended).catch((err: unknown) => {
       warn('xp for a finished game failed', { sessionId: ended.sessionId, error: String(err) })
+    })
+    achievements.onGameEnded(ended).catch((err: unknown) => {
+      warn('achievements for a finished game failed', { sessionId: ended.sessionId, error: String(err) })
     })
     // Nor is the details page, built now so no one's first load waits for the replay; the big screen shows it too
     const saved =
@@ -318,6 +333,15 @@ app.addHook('onClose', async () => {
   await closePool()
 })
 await app.listen({ port: PORT, host: '0.0.0.0' })
+// Games from before achievements existed are counted once, in the background
+achievements
+  .backfill()
+  .then(n => {
+    if (n > 0) app.log.info({ games: n }, 'achievements backfill done')
+  })
+  .catch((err: unknown) => {
+    warn('achievements backfill failed', { error: String(err) })
+  })
 // Games from before progression pay once, in the background
 progression
   .backfill()

@@ -9,6 +9,7 @@ import type {
   MatchmakingMessage,
   MeMessage,
   XpGainedMessage,
+  AchievementUnlockedMessage,
 } from '../schema/lobby-ws.js'
 
 /** Open lobby sockets (per lobby) and per-user sockets (/ws/me, per user). */
@@ -110,6 +111,10 @@ export class LobbyHub {
 
   /** Sends the user's /ws/me sockets the XP they just earned (never deduplicated: each is news). */
   sendXp(userId: string, msg: XpGainedMessage): void {
+    this.users.pushEach(userId, () => msg)
+  }
+
+  sendAchievements(userId: string, msg: AchievementUnlockedMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 
