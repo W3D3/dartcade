@@ -1,3 +1,4 @@
+import { withUserCourses } from '$lib/minigolf/editor/course'
 import { describe, it, expect } from 'vitest'
 import {
   accessHint,
@@ -61,6 +62,12 @@ describe('lobby text', () => {
     expect(line('01J9')).toBe('Canal Street · 3 tries per stroke')
     expect(line('test')).toBe('Test · 3 tries per stroke')
     expect(line('mixed')).toBe('Mixed course · 3 tries per stroke')
+    // A user course isn't in the server's options: withUserCourses adds it
+    const withUser = withUserCourses(meta, [{ id: 'u1', name: 'Luke’s links', sub: '' }])
+    expect(nextGameSummary({ gameId: 'minigolf', config: { course: 'u1', tries: 3 } }, {}, null, withUser)).toBe(
+      'Luke’s links · 3 tries per stroke',
+    )
+    expect(line('u1')).toBe('Course · 3 tries per stroke')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 2 } })).toBe(
       '501 · Double out · First to 2 legs',
     )

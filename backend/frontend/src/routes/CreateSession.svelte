@@ -19,6 +19,9 @@
   import { initialGameSelection } from '$lib/lobby/start'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
+  import { flag } from '$lib/flags'
+  import { withUserCourses } from '$lib/minigolf/editor/course'
+  import { userCourses } from '$lib/minigolf/userCourses'
   import {
     chosenGame as pickChosenGame,
     lobbyPath,
@@ -34,6 +37,7 @@
   import { GAME_CATEGORIES, GAME_MODES, gameModes, listedMode, shownModes, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
+  const userCoursesOn = flag('minigolf.userCourses.enabled')
   const X01_DEFAULTS: Record<string, unknown> = {
     format: 'singles',
     startScore: 501,
@@ -165,8 +169,13 @@
   const shownName = $derived(shown?.name ?? displayMode ?? 'No game yet')
   const summary = $derived(
     canEditGame
-      ? nextGameSummary({ gameId: selectedMode, config }, gameDefaults[selectedMode], null, selectedInfo?.configMeta)
-      : nextGameSummary(lobbyGame, lobbyGameDefaults, null, lobbyGameInfo?.configMeta),
+      ? nextGameSummary(
+          { gameId: selectedMode, config },
+          gameDefaults[selectedMode],
+          null,
+          withUserCourses(selectedInfo?.configMeta ?? {}, $userCourses),
+        )
+      : nextGameSummary(lobbyGame, lobbyGameDefaults, null, withUserCourses(lobbyGameInfo?.configMeta ?? {}, $userCourses)),
   )
   const invites = $derived($me?.invites.length ?? 0)
 
@@ -353,8 +362,12 @@
                 onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
               />
             {/if}
-            {#if canEditGame && selectedMode === 'minigolf' && $currentUser?.isAdmin}
-              <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
+            {#if canEditGame && selectedMode === 'minigolf'}
+              {#if $currentUser?.isAdmin}
+                <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
+              {:else if $userCoursesOn}
+                <a href="#/minigolf/courses" class="self-start text-[14px] font-semibold">My courses</a>
+              {/if}
             {/if}
             <!-- Phones: the rules line closes the settings; the bar below holds only the button -->
             {#if summary}<span class="md:hidden text-[12px] text-text-dim">{summary} · players next, in the lobby</span>{/if}
