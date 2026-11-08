@@ -10,7 +10,7 @@ services:
     environment:
       NODE_ENV: development
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:${SHOTS_FRONTEND_PORT:-5181}
-      FLAGS_ON: gamemode.minigolf.enabled,minigolf.userCourses.enabled,gamemode.p121.enabled,gamemode.cricket.enabled,matchmaking.enabled,caller.autodartsImport,progression.enabled,lights.enabled,coach.enabled,coach.live.enabled
+      FLAGS_ON: gamemode.minigolf.enabled,minigolf.userCourses.enabled,gamemode.p121.enabled,gamemode.cricket.enabled,matchmaking.enabled,caller.autodartsImport,progression.enabled,lights.enabled,coach.enabled,coach.live.enabled,watch.enabled
     ports: !override
       - '${SHOTS_BACKEND_PORT:-3021}:3000'
 
