@@ -130,6 +130,13 @@ password-reset mail on a small instance, not for high-volume sending.
 links are built from it, and a `localhost` or `http://` link mailed to a user is useless outside
 your machine.
 
+Passkeys (`auth.passkeys.enabled`, admins only until a flag override turns it on for more) tie to the host of
+`BETTER_AUTH_URL` (the WebAuthn relying party id) and accept ceremonies from its origin plus
+`BETTER_AUTH_TRUSTED_ORIGINS`, so no further setting is needed: `http://localhost:3000` with the Vite
+origin `http://localhost:5173` works in dev, `https://{hostname}` on a PR preview. WebAuthn needs https
+or `localhost`. Moving a deployment to another host makes its passkeys unusable (players sign in with
+their password and add new ones).
+
 Turning `SMTP_URL` on later turns email verification on by default too (see `EMAIL_VERIFICATION`
 above). Accounts created while it was off aren't retroactively verified: each has to verify at
 their next sign-in, which mails them a fresh link, unless you set `EMAIL_VERIFICATION=off` to
