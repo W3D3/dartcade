@@ -163,7 +163,7 @@ cd backend && npm install && npm test
 
 Shared helpers live in `backend/src/test/`. Use them instead of writing the mock or the insert again:
 
-- `import '../test/authByHeader.js'` first in an API test: the `x-user` header names the signed-in user, no header is a 401. `import '../test/authAs.js'` for a fixed user (`'user-1'`, or `signInAs('ann')` after the imports). Both register the `auth/middleware.js` mock themselves; the stubs are in `test/auth.ts`.
+- `import '../test/authByHeader.js'` first in an API test: the `x-user` header names the signed-in user, no header is a 401. `import '../test/authAs.js'` for a fixed user (`'user-1'`, or `signInAs('ann')` after the imports). Both register the `auth/middleware.js` mock themselves;.
 - `import { useDbSingleton } from '../test/db.js'` when the code under test reads the `db` singleton (`requireAdmin`) instead of a plugin option; call `useDbSingleton(db)` once `openTestSchema` has returned.
 - `test/fixtures.ts` on top of `openTestSchema`: `insertUser`/`insertUsers` (a bare string is an id; name, email, `emailVerified: false` follow from it), `insertBoard`, `insertLobby`. Pass only the fields the test is about.
 

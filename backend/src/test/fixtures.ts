@@ -3,7 +3,7 @@ import type { BoardsTable, Database, LobbiesTable, UserTable } from '../db/schem
 
 type NewUser = Pick<UserTable, 'id'> & Partial<Insertable<UserTable>>
 
-/** A user row named after its id (`ann` → Ann's `ann@example.com`); override whatever the test cares about. */
+/** A user row named after its id (`ann` → name `ann`, `ann@example.com`); override whatever the test cares about. */
 const userRow = ({ id, ...rest }: NewUser): Insertable<UserTable> => ({
   name: id,
   email: `${id}@example.com`,
