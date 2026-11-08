@@ -2,8 +2,9 @@
   // Settings' Account: the danger zone. Deletes the profile, boards, friends, lobbies and
   // history; the name stays in match history other players keep (see Settings-DeleteAccount
   // artboard). With mail on, better-auth mails a confirm link and nothing is deleted until it's
-  // opened; without mail the account goes at once.
-  import { Trash } from '@lucide/svelte'
+  // opened; without mail the account goes at once. A player with a passkey can confirm with it
+  // instead of the password: a fresh passkey prompt, checked by the server, deletes at once.
+  import { FingerprintPattern, Trash } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -11,7 +12,8 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
-  import { canConfirm } from '$lib/deleteAccount'
+  import { canConfirm, canConfirmWithPasskey } from '$lib/deleteAccount'
+  import { passkeyFailure } from '$lib/passkeys'
 
   const name = $derived($currentUser?.name ?? '')
 
@@ -21,8 +23,11 @@
   let error = $state('')
   let sent = $state(false)
   let busy = $state(false)
+  let hasPasskey = $state(false)
 
   function openModal() {
+    hasPasskey = false
+    void authClient.passkey.listUserPasskeys().then(({ data }) => (hasPasskey = Array.isArray(data) && data.length > 0))
     typed = ''
     password = ''
     error = ''
@@ -48,9 +53,36 @@
         sent = true
         return
       }
-      currentUser.set(null)
-      open = false
-      void push('/login?deleted=1')
+      deleted()
+    } finally {
+      busy = false
+    }
+  }
+
+  function deleted() {
+    currentUser.set(null)
+    open = false
+    void push('/login?deleted=1')
+  }
+
+  async function confirmWithPasskey() {
+    if (busy || !canConfirmWithPasskey(typed, name)) return
+    busy = true
+    error = ''
+    try {
+      // The passkey prompt, verified by the server, is what the delete call below spends
+      const { error: assertion } = await authClient.signIn.passkey()
+      if (assertion) {
+        const failure = passkeyFailure(assertion, 'Could not confirm with your passkey')
+        if (failure.kind === 'error') error = failure.text
+        return
+      }
+      const { error: err } = await authClient.$fetch('/delete-user/passkey', { method: 'POST' })
+      if (err) {
+        error = err.message ?? 'Could not delete your account'
+        return
+      }
+      deleted()
     } finally {
       busy = false
     }
@@ -116,6 +148,20 @@
           <Button type="button" variant="outline" onclick={close}>Cancel</Button>
           <Button type="submit" variant="danger" disabled={busy || !canConfirm(typed, name, password)}>Delete account</Button>
         </div>
+        {#if hasPasskey}
+          <div class="flex items-center gap-3 text-[13px] text-text-dim" aria-hidden="true">
+            <span class="h-px flex-grow bg-surface-paused"></span>or<span class="h-px flex-grow bg-surface-paused"></span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy || !canConfirmWithPasskey(typed, name)}
+            onclick={() => void confirmWithPasskey()}
+            class="w-full"
+          >
+            <FingerprintPattern size={16} />Confirm with a passkey
+          </Button>
+        {/if}
       </form>
     {/if}
   </Modal>

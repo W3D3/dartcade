@@ -10,6 +10,7 @@
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
+  import PasskeysCard from '$lib/components/settings/PasskeysCard.svelte'
   import FriendsPrivacyCard from '$lib/components/settings/FriendsPrivacyCard.svelte'
   import FeedbackCard from '$lib/components/settings/FeedbackCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
@@ -32,6 +33,7 @@
   let { params = {} }: { params?: { section?: string } } = $props()
 
   const lightsOn = flag('lights.enabled')
+  const passkeysOn = flag('auth.passkeys.enabled')
   // Sound packs are progression rewards
   const progression = flag('progression.enabled')
   const visible = $derived(SETTINGS_SECTIONS.filter(s => sectionVisible(s, { 'lights.enabled': $lightsOn })))
@@ -135,6 +137,7 @@
           </div>
           <div class="flex flex-col gap-4 md:gap-5">
             <AccountCard />
+            {#if $passkeysOn}<PasskeysCard />{/if}
             <FeedbackCard />
           </div>
         </div>

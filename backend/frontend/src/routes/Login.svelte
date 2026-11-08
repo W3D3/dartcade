@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import { FingerprintPattern } from '@lucide/svelte'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { push, querystring } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -8,6 +10,8 @@
   import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
+  import { flag } from '$lib/flags'
+  import { passkeyFailure, passkeysRemembered, passkeysSupported, rememberPasskeys } from '$lib/passkeys'
   import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
   import { verifyCallback, rememberCredentials } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
@@ -24,6 +28,44 @@
   let error = $state('')
   let ban = $state<Ban | null>(null)
   let loading = $state(false)
+
+  // The flag is off for signed-out visitors unless it is on for everyone; a device that has used a
+  // passkey keeps the button, so whoever has the flag can sign out and try it.
+  const passkeysOn = flag('auth.passkeys.enabled')
+  const showPasskey = $derived(passkeysSupported() && ($passkeysOn || passkeysRemembered()))
+  let passkeyBusy = $state(false)
+
+  async function passkeySignIn(autoFill: boolean) {
+    if (!autoFill) passkeyBusy = true
+    error = ''
+    ban = null
+    try {
+      const { error: err } = await authClient.signIn.passkey({ autoFill })
+      if (err) {
+        ban = banFromSignIn(err)
+        const failure = passkeyFailure(err, 'Could not sign in with a passkey')
+        if (!ban && failure.kind === 'error') error = failure.text
+        return
+      }
+      rememberPasskeys()
+      await currentUser.refresh()
+      void push(takeReturn(sessionStore()))
+    } finally {
+      if (!autoFill) passkeyBusy = false
+    }
+  }
+
+  // Conditional UI: the browser offers the account's passkeys in the email field's autofill
+  async function startAutofill() {
+    try {
+      if (await PublicKeyCredential.isConditionalMediationAvailable()) await passkeySignIn(true)
+    } catch {
+      // A browser without conditional UI: the button is still there
+    }
+  }
+  onMount(() => {
+    if (showPasskey) void startAutofill()
+  })
 
   async function submit() {
     loading = true
@@ -83,7 +125,14 @@
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
           <label for="login-email" class="field-label">Email</label>
-          <Input id="login-email" type="email" bind:value={email} autocomplete="username" placeholder="you@example.com" required />
+          <Input
+            id="login-email"
+            type="email"
+            bind:value={email}
+            autocomplete={showPasskey ? 'username webauthn' : 'username'}
+            placeholder="you@example.com"
+            required
+          />
         </div>
 
         <div class="flex flex-col gap-2">
@@ -129,6 +178,18 @@
         <Button type="submit" variant="primary" disabled={loading} class="w-full">
           {loading ? '…' : 'Sign in'}
         </Button>
+
+        {#if showPasskey}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={passkeyBusy || loading}
+            onclick={() => void passkeySignIn(false)}
+            class="w-full"
+          >
+            <FingerprintPattern size={18} />Sign in with a passkey
+          </Button>
+        {/if}
 
         {#if import.meta.env.DEV}
           <DevUserSwitch markCurrent={false} />
