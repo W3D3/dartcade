@@ -1,38 +1,16 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
+import '../test/authByHeader.js'
+import { useDbSingleton } from '../test/db.js'
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
+import { insertUsers } from '../test/fixtures.js'
 import { moderatorRemove, moderatorUnpublish } from '../db/minigolfModeration.js'
 import { createFastify } from './fastify.js'
 import { minigolfCoursesApiPlugin } from './minigolfCourses.js'
 import { minigolfModerationApiPlugin } from './minigolfModeration.js'
 import { setupFlags } from '../flags/index.js'
 import type { Hole } from '../shared/minigolf/types.js'
-
-// Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
-vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) {
-      reply.code(401).send({ error: 'unauthorized' })
-      return
-    }
-    req.userId = req.headers['x-user']
-    done()
-  }),
-}))
-
-// requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
-// redirect it to the test schema so a real `role` column decides who is an admin.
-const dbRef = vi.hoisted(() => ({ current: undefined as unknown }))
-vi.mock('../db/index.js', async importOriginal => {
-  const actual = await importOriginal<typeof import('../db/index.js')>()
-  return {
-    ...actual,
-    get db() {
-      return dbRef.current
-    },
-  }
-})
 
 const validHole = (id: string, overrides: Partial<Hole> = {}): Hole => ({
   id,
@@ -62,24 +40,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf user course browsing a
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('minigolf_moderation_api_test'))
-    dbRef.current = db
-    const user = (id: string, name: string, role: string | null) => ({
-      id,
-      name,
-      email: `${id}@example.com`,
-      emailVerified: false,
-      image: null,
-      role,
-    })
-    await db
-      .insertInto('user')
-      .values([
-        user('admin', 'Admin', 'admin'),
-        user('owner', 'Olive Owner', null),
-        user('other', 'Otto Other', null),
-        user('mod', 'Mo Mod', 'moderator'),
-      ])
-      .execute()
+    useDbSingleton(db)
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', role: 'admin' },
+      { id: 'owner', name: 'Olive Owner' },
+      { id: 'other', name: 'Otto Other' },
+      { id: 'mod', name: 'Mo Mod', role: 'moderator' },
+    ])
     await setupFlags(new Set(['minigolf.userCourses.enabled']))
   })
   afterAll(async () => {
