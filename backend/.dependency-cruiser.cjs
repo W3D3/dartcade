@@ -65,11 +65,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: '^src/session/',
-        pathNot: [
-          TEST,
-          // #550 (B2): minigolf's shots and pool move behind a GameModule hook
-          '^src/session/replay\\.ts$',
-        ],
+        pathNot: TEST,
       },
       to: { path: '^src/games/', pathNot: '^src/games/(index|teams|configMeta)\\.ts$' },
     },

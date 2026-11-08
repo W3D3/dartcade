@@ -4,11 +4,15 @@
 import { createHash } from 'node:crypto'
 import { afterAll, expect, it, vi } from 'vitest'
 import { newSession, replay, replayPooled, type LoggedInput } from './replay.js'
+import { games } from '../games/index.js'
 import { minigolfModule as M } from '../games/minigolf.js'
 import { closePool } from '../games/minigolfPool.js'
 
 afterAll(() => closePool())
 
+// The registered module, which carries the pool (minigolfModule alone replays inline)
+const registered = games.minigolf
+if (!registered) throw new Error('minigolf is not registered')
 const config = { ...M.defaultConfig, course: 'test' }
 const at = new Date('2026-10-01T10:00:00.000Z')
 const dart = (index: number, x: number, y: number) => ({
@@ -34,7 +38,7 @@ const fresh = () =>
     id: 'g-replay',
     ownerUserId: '',
     boardId: null,
-    module: M,
+    module: registered,
     config,
     seats: [
       { name: 'A', userId: null, controllerUserId: '', boardId: null, boardName: null, bot: null },

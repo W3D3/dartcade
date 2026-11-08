@@ -96,6 +96,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       bullOff: bullOffMeta,
     },
 
+    inputWork: game.inputWork,
     prepareConfig: game.prepareConfig?.bind(game),
     liveOptions: game.liveOptions?.bind(game),
 
