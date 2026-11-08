@@ -203,7 +203,7 @@
                 {#each roleActions(user.role) as action (action.role ?? 'none')}
                   <DropdownMenu.Item
                     onSelect={() => onrole(action.role)}
-                    class="flex h-10 cursor-pointer items-center rounded-lg px-[10px] text-[14px] outline-none data-[highlighted]:bg-surface-paused {action.role ===
+                    class="flex h-10 cursor-pointer items-center rounded-sm px-[10px] text-[14px] outline-none data-[highlighted]:bg-surface-paused {action.role ===
                     null
                       ? 'text-danger-text'
                       : 'text-text'}"

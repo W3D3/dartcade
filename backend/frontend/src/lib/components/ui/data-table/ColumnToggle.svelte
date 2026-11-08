@@ -43,7 +43,7 @@
         <DropdownMenu.CheckboxItem
           checked={isVisible(col.id)}
           onCheckedChange={v => setVisible(col.id, v)}
-          class="flex h-10 items-center gap-[10px] rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none
+          class="flex h-10 items-center gap-[10px] rounded-sm px-[10px] text-[14px] text-text cursor-pointer outline-none
                  data-[highlighted]:bg-surface-paused"
         >
           {#snippet children({ checked }: { checked: boolean })}

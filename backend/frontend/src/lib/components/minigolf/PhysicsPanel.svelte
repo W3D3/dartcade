@@ -52,7 +52,7 @@
     <svg
       viewBox="0 0 100 60"
       preserveAspectRatio="none"
-      class="h-[110px] w-full rounded-lg bg-bg-deep"
+      class="h-[110px] w-full rounded-sm bg-bg-deep"
       role="img"
       aria-label="Roll distance by distance from the bull"
     >

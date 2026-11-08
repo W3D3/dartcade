@@ -18,7 +18,7 @@ export const buttonVariants = tv({
       key: 'h-9 px-3 rounded-[8px] border-0 bg-surface-key text-text text-[14px] font-semibold',
       destructive: 'h-10 px-4 rounded-[10px] border border-live-text text-live-text text-sm',
       // Borderless and dim, for an icon in a row of text; colour the hover with a class
-      quiet: 'h-10 rounded-md border-0 bg-transparent text-text-dim hover:text-text text-sm',
+      quiet: 'h-10 rounded-chip border-0 bg-transparent text-text-dim hover:text-text text-sm',
     },
     // Heights only (each variant has its own default); icon: a square for one icon
     size: {

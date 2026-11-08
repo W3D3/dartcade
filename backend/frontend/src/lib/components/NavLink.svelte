@@ -7,14 +7,14 @@
 </script>
 
 {#if disabled}
-  <span aria-disabled="true" class="flex items-center gap-3 h-11 px-3 rounded-lg text-[15px] font-medium text-text-dim cursor-default">
+  <span aria-disabled="true" class="flex items-center gap-3 h-11 px-3 rounded-sm text-[15px] font-medium text-text-dim cursor-default">
     {@render children()}
   </span>
 {:else}
   <a
     {href}
     aria-current={active ? 'page' : undefined}
-    class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px] transition-colors
+    class="flex items-center gap-3 h-11 px-3 rounded-sm no-underline text-[15px] transition-colors
            {active ? 'bg-surface-paused text-text font-semibold' : 'text-ink-2 font-medium'}"
   >
     {@render children()}
