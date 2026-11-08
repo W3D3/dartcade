@@ -4,6 +4,7 @@ import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { grantXp, hasPerk, revokeGameXp, unlockedPerks, unlockedPictures } from './progression.js'
 import { levelPerks, xpForLevel } from '../shared/progression.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('unlocked perks', () => {
   let db: Kysely<Database>
@@ -11,13 +12,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('unlocked perks', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('progression_db_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'vet', name: 'Vet', email: 'vet@example.com', emailVerified: false, image: null },
-        { id: 'new', name: 'New', email: 'new@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'vet', name: 'Vet' },
+      { id: 'new', name: 'New' },
+    ])
     // Level 30 with a 30-day best streak, unlocked under the old catalogue: rows for retired perks only
     await db
       .insertInto('user_progress')
@@ -88,13 +86,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('grantXp', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('progression_grant_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: true, image: null, role: 'admin' },
-        { id: 'p', name: 'P', email: 'p@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', emailVerified: true, role: 'admin' },
+      { id: 'p', name: 'P' },
+    ])
   })
   afterAll(async () => {
     await close()

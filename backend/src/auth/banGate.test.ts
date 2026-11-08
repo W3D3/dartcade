@@ -5,6 +5,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { banUser } from '../db/adminUsers.js'
 import { authOptions } from './options.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('signing in while banned', () => {
   let db: Kysely<Database>
@@ -40,10 +41,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('signing in while banned', () =>
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('auth_ban_test'))
     auth = makeAuth()
-    await db
-      .insertInto('user')
-      .values({ id: 'admin', name: 'Admin', email: 'admin@x.org', emailVerified: true, image: null, role: 'admin' })
-      .execute()
+    await insertUsers(db, [{ id: 'admin', name: 'Admin', email: 'admin@x.org', emailVerified: true, role: 'admin' }])
   })
   afterAll(() => close())
 

@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { nameHooks } from './nameHooks.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => {
   let db: Kysely<Database>
@@ -11,7 +12,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => 
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('name_hooks_test'))
-    await db.insertInto('user').values({ id: 'luke', name: 'Luke', email: 'luke@example.com', emailVerified: false, image: null }).execute()
+    await insertUsers(db, [{ id: 'luke', name: 'Luke' }])
     hooks = nameHooks(db)
   })
   afterAll(async () => {

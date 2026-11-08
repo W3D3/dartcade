@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { getPreferences, updatePreferences } from './users.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('account preferences', () => {
   let db: Kysely<Database>
@@ -10,13 +11,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account preferences', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('preferences_db_test'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'a', name: 'Anna', email: 'a@example.com', emailVerified: false, image: null },
-        { id: 'b', name: 'Ben', email: 'b@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'a', name: 'Anna' },
+      { id: 'b', name: 'Ben' },
+    ])
   })
   afterAll(async () => {
     await close()

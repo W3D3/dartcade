@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { deleteOverride, loadOverrides, upsertOverride } from './flagOverrides.js'
+import { insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('flag overrides', () => {
   let db: Kysely<Database>
@@ -10,7 +11,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('flag overrides', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('flag_overrides_test'))
-    await db.insertInto('user').values({ id: 'admin1', name: 'Admin', email: 'admin1@x', emailVerified: false, image: null }).execute()
+    await insertUsers(db, [{ id: 'admin1', name: 'Admin', email: 'admin1@x' }])
   })
   afterAll(async () => {
     await close()

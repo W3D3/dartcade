@@ -7,6 +7,7 @@ import { insertActivity } from './activity.js'
 import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
 import type { Database } from './schema.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
 const SCHEMA = 'admin_games_test'
@@ -52,13 +53,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     await sql.raw(`CREATE SCHEMA ${SCHEMA}`).execute(admin)
     db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA}`)
     await runMigrations(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'u1', name: 'Ann', email: 'ann@example.com', emailVerified: true, image: null, role: null },
-        { id: 'u2', name: 'Bob', email: 'bob@example.com', emailVerified: true, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'u1', name: 'Ann', email: 'ann@example.com', emailVerified: true },
+      { id: 'u2', name: 'Bob', email: 'bob@example.com', emailVerified: true },
+    ])
     await game(
       'g1',
       'x01',
@@ -152,13 +150,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     const page = { limit: 25, after: null }
 
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values([
-          { id: 'u3', name: 'Cy', email: 'cy@example.com', emailVerified: true, image: null, role: null },
-          { id: 'u4', name: 'Di', email: 'di@example.com', emailVerified: true, image: null, role: null },
-        ])
-        .execute()
+      await insertUsers(db, [
+        { id: 'u3', name: 'Cy', email: 'cy@example.com', emailVerified: true },
+        { id: 'u4', name: 'Di', email: 'di@example.com', emailVerified: true },
+      ])
       for (const [id, min] of [
         ['r1', 100],
         ['r2', 110],
@@ -249,10 +244,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     })
 
     it('removes the friend activity of the game, and restoring it does not bring the events back', async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'ev1', name: 'Eve', email: 'eve@example.com', emailVerified: true, image: null, role: null })
-        .execute()
+      await insertUsers(db, [{ id: 'ev1', name: 'Eve', email: 'eve@example.com', emailVerified: true }])
       await game('ev-a', 'x01', [['Eve', 'ev1']], 'finished', 50)
       await game('ev-b', 'x01', [['Eve', 'ev1']], 'finished', 60)
       await insertActivity(db, [

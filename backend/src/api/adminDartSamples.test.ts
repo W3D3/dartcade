@@ -10,6 +10,7 @@ import { insertBridgeEvent } from '../db/queries.js'
 import { insertSample } from '../db/dartSamples.js'
 import { createFastify } from './fastify.js'
 import { adminDartSamplesApiPlugin } from './adminDartSamples.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const HOUR = 3_600_000
 
@@ -44,13 +45,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin dart samples API', { time
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('admin_dart_samples_api_test'))
     useDbSingleton(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: true, image: null, role: 'admin' },
-        { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: true, image: null, role: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'admin', name: 'Admin', emailVerified: true, role: 'admin' },
+      { id: 'player', name: 'Player', emailVerified: true },
+    ])
     await db
       .insertInto('boards')
       .values({ id: 'b1', owner_user_id: 'player', name: 'Board', token_hash: 'h1', hardware_id: 'hw1' })

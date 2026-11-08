@@ -4,6 +4,7 @@ import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession, insertBoard } from './queries.js'
 import { listFinishedGames, getStatRows, getViewableGame, getBestStat } from './history.js'
 import type { Database } from './schema.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
 // Own schema: Vitest runs test files in parallel, and queries.test.ts wipes the shared tables
@@ -55,13 +56,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     await sql.raw(`CREATE SCHEMA ${SCHEMA}`).execute(admin)
     db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA}`)
     await runMigrations(db)
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'u1', name: 'One', email: 'one@example.com', emailVerified: false, image: null },
-        { id: 'u2', name: 'Two', email: 'two@example.com', emailVerified: false, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'u1', name: 'One', email: 'one@example.com' },
+      { id: 'u2', name: 'Two', email: 'two@example.com' },
+    ])
     await insertBoard(db, { id: 'b1', owner_user_id: 'u1', name: 'Living room', token_hash: 'h-b1' })
     await game(
       'x-1',

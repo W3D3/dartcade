@@ -13,6 +13,7 @@ import {
   setBoardShares,
 } from './dartSamples.js'
 import type { Database } from './schema.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
 const SCHEMA = 'dart_samples_test'
@@ -90,10 +91,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('dart sample queries', () => {
     await sql.raw(`CREATE SCHEMA ${SCHEMA}`).execute(admin)
     db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA}`)
     await runMigrations(db)
-    await db
-      .insertInto('user')
-      .values({ id: 'u1', name: 'Ann', email: 'ann@example.com', emailVerified: true, image: null, role: null })
-      .execute()
+    await insertUsers(db, [{ id: 'u1', name: 'Ann', email: 'ann@example.com', emailVerified: true }])
   })
 
   beforeEach(async () => {

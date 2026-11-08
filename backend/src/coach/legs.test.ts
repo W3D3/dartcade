@@ -8,6 +8,7 @@ import type { LegReview } from '../shared/coach/review.js'
 import { COACH_VERSION } from './store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from './legs.js'
 import { decodeCoachCursor, encodeCoachCursor } from './cursor.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const review = (o: Partial<LegReview> = {}): LegReview => ({
   coachTier: 'semipro',
@@ -31,13 +32,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('coach legs reads', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('coach_legs_reads'))
-    await db
-      .insertInto('user')
-      .values([
-        { id: 'ann', name: 'Ann', email: 'ann@example.com', emailVerified: true, image: null },
-        { id: 'bob', name: 'Bob', email: 'bob@example.com', emailVerified: true, image: null },
-      ])
-      .execute()
+    await insertUsers(db, [
+      { id: 'ann', name: 'Ann', emailVerified: true },
+      { id: 'bob', name: 'Bob', emailVerified: true },
+    ])
   })
   afterAll(async () => {
     await close()

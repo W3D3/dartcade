@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { insertBoard } from './queries.js'
+import { insertUsers } from '../test/fixtures.js'
 import {
   deleteWledDevice,
   getLightsEnabled,
@@ -30,7 +31,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('wled lights', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('lights_db_test'))
-    await db.insertInto('user').values({ id: 'u1', name: 'One', email: 'one@example.com', emailVerified: false, image: null }).execute()
+    await insertUsers(db, [{ id: 'u1', name: 'One', email: 'one@example.com' }])
     await insertBoard(db, { id: 'b1', owner_user_id: 'u1', name: 'Living room', token_hash: 'h-b1' })
   })
   afterAll(async () => {

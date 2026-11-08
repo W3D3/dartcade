@@ -4,6 +4,7 @@ import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { exchangeBridgeInstallToken, getBoardByTokenHash, insertBridgeInstallToken } from './queries.js'
 import { hashBoardToken } from '../boards/token.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const minutes = (n: number) => new Date(Date.now() + n * 60_000)
 
@@ -13,7 +14,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('bridge install tokens', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('bridge_install_tokens_test'))
-    await db.insertInto('user').values({ id: 'u1', name: 'u1', email: 'u1@example.com', emailVerified: false, image: null }).execute()
+    await insertUsers(db, ['u1'])
   })
   afterAll(async () => {
     await close()
