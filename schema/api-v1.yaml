@@ -2477,6 +2477,68 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/achievements:
+    get:
+      operationId: getMyAchievements
+      summary: Your achievements (achievements.enabled)
+      description: What you have counted towards each achievement. The catalogue itself (names, tiers, thresholds) is shared code, not an API.
+      tags: [progress]
+      responses:
+        '200': { description: Your achievements, content: { application/json: { schema: { $ref: '#/components/schemas/Achievements' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/achievements/showcase:
+    put:
+      operationId: setAchievementShowcase
+      summary: Pick the earned achievements your profile shows, in order
+      tags: [progress]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              additionalProperties: false
+              properties:
+                ids: { type: array, maxItems: 5, items: { type: string, minLength: 1, maxLength: 64 } }
+      responses:
+        '200':
+          {
+            description: Your achievements after it,
+            content: { application/json: { schema: { $ref: '#/components/schemas/Achievements' } } },
+          }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/achievements/seen:
+    post:
+      operationId: markAchievementsSeen
+      summary: You have looked at everything earned so far (clears the "new" dots)
+      tags: [progress]
+      responses:
+        '204': { description: Done }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/users/{id}/achievements:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 64 } }
+    get:
+      operationId: getPlayerAchievements
+      summary: "A player's achievements, as the profile's Achievements tab shows them (achievements.enabled for you)"
+      tags: [progress]
+      responses:
+        '200': { description: Their achievements, content: { application/json: { schema: { $ref: '#/components/schemas/Achievements' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/challenges:
     get:
       operationId: getChallenges
@@ -5926,6 +5988,32 @@ components:
             name: { type: string }
             sound: { type: string }
             celebration: { type: string }
+    Achievements:
+      type: object
+      required: [achievements, showcase, unseen]
+      additionalProperties: false
+      properties:
+        achievements:
+          type: array
+          description: One entry per achievement with any count; the rest of the catalogue is not earned yet
+          items:
+            type: object
+            required: [id, count, tier, earnedAt, tierAt]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              count: { type: integer, minimum: 0 }
+              tier: { type: integer, minimum: 0, maximum: 5, description: '0 = counting, not earned yet' }
+              earnedAt: { type: string, format: date-time, nullable: true }
+              tierAt: { type: string, format: date-time, nullable: true, description: When the current tier was reached }
+        showcase: { type: array, maxItems: 5, items: { type: string }, description: 'The shown achievement ids, in order' }
+        unseen:
+          {
+            type: integer,
+            minimum: 0,
+            description: 'Achievements with a tier you have not looked at yet (yours only; 0 for another player)',
+          }
+
     Progress:
       type: object
       required: [xp, level, streak, challengesToClaim, perks]

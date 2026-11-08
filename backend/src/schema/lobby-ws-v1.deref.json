@@ -4411,6 +4411,74 @@
         }
       }
     },
+    "AchievementUnlockedMessage": {
+      "title": "AchievementUnlockedMessage",
+      "description": "Pushed on /ws/me when a finished game unlocks an achievement or raises its tier (achievements.enabled). Biggest tier first.",
+      "type": "object",
+      "required": [
+        "type",
+        "sessionId",
+        "unlocked",
+        "levelBefore",
+        "levelAfter"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "achievement.unlocked"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "The game that earned them."
+        },
+        "unlocked": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "tier",
+              "count",
+              "tierUp",
+              "xp"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "shared/achievements.ts id."
+              },
+              "tier": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "tierUp": {
+                "type": "boolean",
+                "description": "False for the first tier."
+              },
+              "xp": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "XP the tiers paid."
+              }
+            }
+          }
+        },
+        "levelBefore": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "levelAfter": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "BoardStatusMessage": {
       "title": "BoardStatusMessage",
       "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.",
@@ -6874,6 +6942,74 @@
                   "description": "The streak milestone reached (7, 14, …)."
                 }
               }
+            }
+          }
+        },
+        {
+          "title": "AchievementUnlockedMessage",
+          "description": "Pushed on /ws/me when a finished game unlocks an achievement or raises its tier (achievements.enabled). Biggest tier first.",
+          "type": "object",
+          "required": [
+            "type",
+            "sessionId",
+            "unlocked",
+            "levelBefore",
+            "levelAfter"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "achievement.unlocked"
+            },
+            "sessionId": {
+              "type": "string",
+              "description": "The game that earned them."
+            },
+            "unlocked": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "tier",
+                  "count",
+                  "tierUp",
+                  "xp"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "shared/achievements.ts id."
+                  },
+                  "tier": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "tierUp": {
+                    "type": "boolean",
+                    "description": "False for the first tier."
+                  },
+                  "xp": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "XP the tiers paid."
+                  }
+                }
+              }
+            },
+            "levelBefore": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "levelAfter": {
+              "type": "integer",
+              "minimum": 1
             }
           }
         },
