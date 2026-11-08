@@ -5,6 +5,7 @@ import { insertFriendRequest, acceptFriendRequest } from './friends.js'
 import { deleteActivityForGame, insertActivity, listFriendActivity, pruneActivity, type ActivityInsert } from './activity.js'
 import { openTestSchema } from './testSchema.js'
 import type { Database } from './schema.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const DAY = 86_400_000
 
@@ -50,19 +51,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('friend activity queries', () =>
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('home_activity_test'))
-    await db
-      .insertInto('user')
-      .values(
-        ['ann', 'bob', 'cy'].map(id => ({
-          id,
-          name: id,
-          email: `${id}@example.com`,
-          emailVerified: true,
-          image: null,
-          role: null,
-        })),
-      )
-      .execute()
+    await insertUsers(
+      db,
+      ['ann', 'bob', 'cy'].map(id => ({ id, emailVerified: true })),
+    )
     // ann and bob are friends, cy is a stranger to both
     await insertFriendRequest(db, { id: 'f1', requesterId: 'ann', addresseeId: 'bob' })
     await acceptFriendRequest(db, 'f1', now)
@@ -147,10 +139,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('activity written when a game fi
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('home_activity_finish_test'))
-    await db
-      .insertInto('user')
-      .values(['ann', 'bob'].map(id => ({ id, name: id, email: `${id}@example.com`, emailVerified: true, image: null, role: null })))
-      .execute()
+    await insertUsers(
+      db,
+      ['ann', 'bob'].map(id => ({ id, emailVerified: true })),
+    )
   })
   afterAll(async () => close())
 

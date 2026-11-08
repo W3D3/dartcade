@@ -5,17 +5,9 @@ import { openTestSchema } from '../db/testSchema.js'
 import { getAccount } from '../db/users.js'
 import { checkName, renameUser, suggestName } from './account.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
-
-const user = (id: string, name: string, flagged = false) => ({
-  id,
-  name,
-  email: `${id}@example.com`,
-  emailVerified: false,
-  image: null,
-  name_needs_change: flagged,
-})
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
   let db: Kysely<Database>
@@ -23,16 +15,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('account_names_test'))
-    await db
-      .insertInto('user')
-      .values([
-        user('luke', 'luke'),
-        user('jurgen', 'Jürgen'),
-        user('phil', 'Phil.Taylor'),
-        user('old', 'Phil Taylor', true),
-        user('dup', 'LUKE', true),
-      ])
-      .execute()
+    await insertUsers(db, [
+      'luke',
+      { id: 'jurgen', name: 'Jürgen' },
+      { id: 'phil', name: 'Phil.Taylor' },
+      { id: 'old', name: 'Phil Taylor', name_needs_change: true },
+      { id: 'dup', name: 'LUKE', name_needs_change: true },
+    ])
   })
   afterAll(async () => {
     await close()

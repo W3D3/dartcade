@@ -5,17 +5,9 @@ import { openTestSchema } from '../db/testSchema.js'
 import { FriendsService } from './service.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
-
-const user = (id: string, name: string, flagged = false) => ({
-  id,
-  name,
-  email: `${id}@example.com`,
-  emailVerified: false,
-  image: null,
-  name_needs_change: flagged,
-})
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   let db: Kysely<Database>
@@ -27,10 +19,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('friends_service_test'))
-    await db
-      .insertInto('user')
-      .values([user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'sam.180'), user('oldlena', 'LENA', true)])
-      .execute()
+    await insertUsers(db, [
+      { id: 'chris', name: 'Christoph' },
+      { id: 'lena', name: 'Lena' },
+      { id: 'max', name: 'Max' },
+      { id: 'sam', name: 'sam.180' },
+      { id: 'oldlena', name: 'LENA', name_needs_change: true },
+    ])
   })
   afterAll(async () => {
     await close()
@@ -74,10 +69,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     it('leaves out yourself and flagged names, and caps the list', async () => {
       expect(await names('chris', 'christoph')).toEqual([])
       expect(await names('chris', 'lena')).toEqual(['Lena']) // not the flagged LENA
-      await db
-        .insertInto('user')
-        .values(Array.from({ length: 12 }, (_, i) => user(`bulk${i}`, `bulk.${String(i).padStart(2, '0')}`)))
-        .execute()
+      await insertUsers(
+        db,
+        Array.from({ length: 12 }, (_, i) => ({ id: `bulk${i}`, name: `bulk.${String(i).padStart(2, '0')}` })),
+      )
       expect(await friends.search('chris', 'bulk')).toHaveLength(10)
       await db.deleteFrom('user').where('id', 'like', 'bulk%').execute()
     })

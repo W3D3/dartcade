@@ -19,6 +19,7 @@ import {
 } from './ranked.js'
 import { rankIndexFor, rankThreshold } from '../shared/ranked.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { insertUsers } from '../test/fixtures.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
@@ -72,40 +73,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('ranked_db_test'))
-    await db
-      .insertInto('user')
-      .values(
-        [
-          'chris',
-          'anna',
-          'lena',
-          'ben',
-          'tom',
-          'ida',
-          'sam',
-          'tim',
-          'ruth',
-          'sam2',
-          'tim2',
-          'ruth2',
-          'zoe',
-          'yan',
-          'eli',
-          'liv',
-          'cal',
-          'dee',
-          'mia',
-          'ola',
-          'pia',
-        ].map(id => ({
-          id,
-          name: id[0].toUpperCase() + id.slice(1),
-          email: `${id}@x`,
-          emailVerified: false,
-          image: null,
-        })),
-      )
-      .execute()
+    await insertUsers(
+      db,
+      [
+        'chris',
+        'anna',
+        'lena',
+        'ben',
+        'tom',
+        'ida',
+        'sam',
+        'tim',
+        'ruth',
+        'sam2',
+        'tim2',
+        'ruth2',
+        'zoe',
+        'yan',
+        'eli',
+        'liv',
+        'cal',
+        'dee',
+        'mia',
+        'ola',
+        'pia',
+      ].map(id => ({ id, name: id[0].toUpperCase() + id.slice(1) })),
+    )
   })
   afterAll(async () => {
     await close()
@@ -196,10 +189,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
   })
 
   it('two calls for one game at once: the second changes nothing and does not throw', async () => {
-    await db
-      .insertInto('user')
-      .values(['kai', 'max'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
-      .execute()
+    await insertUsers(db, ['kai', 'max'])
     await db
       .insertInto('ranked_ratings')
       .values(['kai', 'max'].map(user_id => ({ user_id, mode: '1v1' as const, rating: 1200 })))
@@ -429,10 +419,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
       const rand = rng(seed)
       const players = Array.from({ length: 7 }, (_, i) => `gen${seed}_${i}`)
       const twins = players.map(p => `${p}t`)
-      await db
-        .insertInto('user')
-        .values([...players, ...twins].map(id => ({ id, name: id, email: `${id}@gen`, emailVerified: false, image: null })))
-        .execute()
+      await insertUsers(db, [...players, ...twins])
       const sessions: string[] = []
       const dropped = new Set<string>()
       const twinSessions: string[] = []
@@ -474,10 +461,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
   describe('admin adjustments', () => {
     const users = ['ada', 'bob', 'cyd']
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values([...users, 'boss'].map(id => ({ id, name: id, email: `${id}@adj`, emailVerified: false, image: null })))
-        .execute()
+      await insertUsers(db, [...users, 'boss'])
     })
     const rating = async (u: string) => (await getRatings(db, u))['1v1']
     const audit = (action: string) =>
@@ -544,10 +528,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
   describe('recording a finished ranked game', () => {
     const users = ['rex', 'sue', 'tia', 'uma', 'vic', 'wes', 'xan', 'yul']
     beforeAll(async () => {
-      await db
-        .insertInto('user')
-        .values(users.map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
-        .execute()
+      await insertUsers(db, users)
     })
 
     // A finished ranked 1v1: seat 0 is `a`, seat 1 is `b`; `placements` and `forfeits` are what the engine saved
@@ -643,10 +624,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     })
 
     it('leaves out a game invalidated before it was recorded', async () => {
-      await db
-        .insertInto('user')
-        .values(['ann2', 'bob2'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
-        .execute()
+      await insertUsers(db, ['ann2', 'bob2'])
       await db
         .insertInto('ranked_ratings')
         .values(['ann2', 'bob2'].map(user_id => ({ user_id, mode: '1v1' as const, rating: 1200 })))
@@ -658,10 +636,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     })
 
     it('tells the friends nothing of a climb in a game invalidated before it was recorded', async () => {
-      await db
-        .insertInto('user')
-        .values(['cal2', 'dee2'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
-        .execute()
+      await insertUsers(db, ['cal2', 'dee2'])
       // One win from the next stage: counted, cal2 would climb and friends would hear of it
       const edge = { mode: '1v1' as const, rating: rankThreshold(5) - 1, rank_index: 4, matches: 10, wins: 5 }
       await db
@@ -678,10 +653,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     describe('with an admin adjustment', () => {
       const duo = ['adj1', 'adj2', 'adj3']
       beforeAll(async () => {
-        await db
-          .insertInto('user')
-          .values([...duo, 'adjboss'].map(id => ({ id, name: id, email: `${id}@adj2`, emailVerified: false, image: null })))
-          .execute()
+        await insertUsers(db, [...duo, 'adjboss'])
       })
       const rowOf = async (u: string) => (await getRatings(db, u))['1v1']
 

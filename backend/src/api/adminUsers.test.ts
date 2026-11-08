@@ -135,12 +135,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     const rows = Array.from({ length: 199 }, (_, i) => ({
       id: `bulk${i}`,
       name: `Bulk${i}`,
-      email: `bulk${i}@example.com`,
-      emailVerified: false,
-      image: null,
-      role: null,
     }))
-    await db.insertInto('user').values(rows).execute()
+    await insertUsers(db, rows)
     try {
       const res = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
       expect(res.json().users).toHaveLength(200)
