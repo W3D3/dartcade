@@ -8,7 +8,7 @@ export type { GameId }
 export type Trigger =
   | { kind: 'turn'; seat: number }
   | { kind: 'game.won'; seat: number }
-  | { kind: 'idle' }
+  | { kind: 'lobby' }
   | { kind: 'takeout.started' }
   | { kind: 'takeout.finished' }
   | { kind: 'calibration.started' }
@@ -16,7 +16,6 @@ export type Trigger =
   | { kind: 'visit'; seat: number; total: number }
   | { kind: 'bust'; seat: number }
   | { kind: 'checkout'; seat: number }
-  | { kind: 'atc.hit'; seat: number; target: number }
   | { kind: 'hilo.lifeLost'; seat: number }
   | { kind: 'golf.sunk'; seat: number; strokes: number }
   | { kind: 'bulloff.won'; seat: number }
@@ -37,6 +36,8 @@ export type Look = ColorLook | PresetLook
 export type Rule = {
   when: { trigger: TriggerKind; total?: { op: '=' | '>='; n: number }; seats: 'any' | 'mine' | 'other'; game?: GameId }
   type: 'scene' | 'flash'
+  /** A disabled rule never matches. */
+  enabled: boolean
   look: Look
   holdMs?: number
 }

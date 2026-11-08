@@ -12522,10 +12522,15 @@
         "required": [
           "when",
           "type",
+          "enabled",
           "look"
         ],
         "additionalProperties": false,
         "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "A disabled rule never triggers"
+          },
           "when": {
             "type": "object",
             "required": [

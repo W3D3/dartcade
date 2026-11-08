@@ -4,28 +4,49 @@ import { boardDeviceLabel, lightsLoadState, ruleLabel, sectionVisible, segmentHi
 
 describe('lights view', () => {
   it('labels the default rules like the design', () => {
-    expect(ruleLabel(DEFAULT_PROFILE.rules[0])).toEqual({ when: 'Turn changes', filter: null, type: 'Scene', look: 'seat colour · solid' })
+    const base = { filter: null, enabled: true, hint: null }
+    expect(ruleLabel(DEFAULT_PROFILE.rules[0])).toEqual({ ...base, when: 'Turn changes', type: 'Scene', look: 'seat colour · solid' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
     expect(ruleLabel(DEFAULT_PROFILE.rules[2])).toEqual({
+      ...base,
       when: 'Visit scored',
       filter: '= 180',
       type: 'Flash',
       look: '180 preset · 4 s',
     })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ when: 'Bust', filter: null, type: 'Flash', look: 'Busted preset · 1.5 s' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ when: 'Checkout', filter: null, type: 'Flash', look: 'Gameshot preset · 3 s' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[6])).toEqual({ when: 'Game won', filter: null, type: 'Flash', look: 'Matchshot preset · 5 s' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
+    expect(ruleLabel(DEFAULT_PROFILE.rules[3])).toEqual({
+      ...base,
+      when: 'Visit scored',
+      filter: '≥ 100',
+      type: 'Flash',
+      look: 'seat colour · pulse · 2 s',
+    })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ ...base, when: 'Bust', type: 'Flash', look: 'Busted preset · 1.5 s' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ ...base, when: 'Checkout', type: 'Flash', look: 'Gameshot preset · 3 s' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[6])).toEqual({ ...base, when: 'Game won', type: 'Flash', look: 'Matchshot preset · 5 s' })
     // The takeout scene is an amber pulse, so players see the board isn't ready
-    expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ when: 'Takeout', filter: null, type: 'Scene', look: 'amber · pulse' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[10])).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'amber · pulse' })
     // The calibration scene is a purple comet travelling around the strip
-    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({ when: 'Calibrating', filter: null, type: 'Scene', look: 'purple · comet' })
-    // The idle rule uses the lime seat-1 colour directly (not 'seat'); name it instead of the hex
-    expect(ruleLabel(DEFAULT_PROFILE.rules[13])).toEqual({ when: 'No game', filter: null, type: 'Scene', look: 'lime · pulse' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ ...base, when: 'Calibrating', type: 'Scene', look: 'purple · comet' })
+  })
+  it('the Lobby rule is off by default and says it shows only in a lobby', () => {
+    // It uses the lime colour directly (not 'seat'); name it instead of the hex
+    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({
+      when: 'Lobby',
+      filter: null,
+      type: 'Scene',
+      look: 'lime · pulse',
+      enabled: false,
+      hint: 'Shows only while you are in a lobby with no game running',
+    })
+  })
+  it('has no Target hit rule', () => {
+    expect(DEFAULT_PROFILE.rules.map(r => r.when.trigger)).not.toContain('atc.hit')
   })
   it('falls back to the hex for an unnamed colour', () => {
-    expect(ruleLabel({ when: { trigger: 'idle', seats: 'any' }, type: 'scene', look: { color: '#123456', fx: 0, bri: 1 } }).look).toBe(
-      '#123456 · solid',
-    )
+    expect(
+      ruleLabel({ when: { trigger: 'lobby', seats: 'any' }, type: 'scene', enabled: true, look: { color: '#123456', fx: 0, bri: 1 } }).look,
+    ).toBe('#123456 · solid')
   })
   it('segment hints', () => {
     expect(segmentHint(144, 'perSeat', 4, 1)).toBe('4 × 36 LEDs')

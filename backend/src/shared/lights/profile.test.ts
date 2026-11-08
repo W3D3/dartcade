@@ -21,6 +21,15 @@ describe('match', () => {
     expect(r?.type).toBe('scene')
     expect(r?.look).toEqual({ color: '#ffffff', fx: 0, bri: 40 })
   })
+  it('has no rule for a target hit', () => {
+    expect(DEFAULT_PROFILE.rules.map(r => r.when.trigger)).not.toContain('atc.hit')
+  })
+  it('keeps the lobby scene off by default and never matches a disabled rule', () => {
+    expect(DEFAULT_PROFILE.rules.find(r => r.when.trigger === 'lobby')?.enabled).toBe(false)
+    expect(rule({ kind: 'lobby', local: true }, null)).toBeNull()
+    const on = { ...DEFAULT_PROFILE, rules: DEFAULT_PROFILE.rules.map(r => ({ ...r, enabled: true })) }
+    expect(match(on, { kind: 'lobby', local: true }, null)?.look).toMatchObject({ bri: 60 })
+  })
   it('has no rule for takeout.finished (the service restores the game scene)', () => {
     expect(rule({ kind: 'takeout.finished', local: true }, null)).toBeNull()
   })

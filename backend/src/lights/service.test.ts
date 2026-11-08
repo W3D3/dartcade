@@ -235,22 +235,20 @@ describe('LightsService', () => {
     expect(sent[0].msg.data).toEqual({ devices: [{ id: 'dev-b1', mac: 'dev-b1', host: '192.168.1.2', max_bri: 178 }] })
   })
 
-  it('a board with no game goes idle on hello', async () => {
+  it('the Lobby scene is off by default: a board in a lobby with no game goes dark on hello', async () => {
     const { svc, sent } = setup()
     await svc.onBridgeHello('b1')
-    const state = applies(sent, 'b1')[0].state as { bri: number; seg: { fx: number }[] }
-    expect(state.bri).toBe(60)
-    expect(state.seg[0].fx).toBe(2)
+    expect(applies(sent, 'b1').map(a => a.state)).toEqual([{ on: false }])
   })
 
-  it('the game ending makes the board idle', async () => {
+  it('the game ending darkens the board', async () => {
     const { svc, sent, snaps, sessions } = setup()
     sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }] })
     snaps.set('s', x01({}))
     await svc.onPush('s')
     sent.length = 0
     await svc.onGameEnded('s')
-    expect((applies(sent, 'b1')[0].state as { bri: number }).bri).toBe(60)
+    expect(applies(sent, 'b1').map(a => a.state)).toEqual([{ on: false }])
   })
 
   it('a board no lobby uses goes off instead of idle (#291)', async () => {
@@ -266,14 +264,9 @@ describe('LightsService', () => {
     expect(applies(sent, 'b1').map(a => a.state)).toEqual([{ on: false }, { on: false }])
   })
 
-  it('a board leaving its lobby turns off, joining one glows idle, a board in a game is left alone', async () => {
-    let inLobby = true
+  it('a board joining or leaving a lobby goes dark, a board in a game is left alone', async () => {
     let session: string | null = null
-    const { svc, sent } = setup({ inLobby: () => Promise.resolve(inLobby), sessionOnBoard: () => session })
-    await svc.onLobbyBoards(['b1'])
-    expect((applies(sent, 'b1')[0].state as { bri: number }).bri).toBe(60)
-    sent.length = 0
-    inLobby = false
+    const { svc, sent } = setup({ sessionOnBoard: () => session })
     await svc.onLobbyBoards(['b1'])
     expect(applies(sent, 'b1')).toEqual([{ device_id: 'dev-b1', state: { on: false } }])
     sent.length = 0
@@ -357,7 +350,7 @@ describe('LightsService', () => {
       expect(cols).toEqual([[[198, 242, 78]], [[239, 238, 230]]]) // seat 0, then seat 1 — never reversed
     })
 
-    it('onGameEnded racing an in-flight scene fire still leaves idle as the last apply', async () => {
+    it('onGameEnded racing an in-flight scene fire still leaves the strip dark', async () => {
       let calls = 0
       const { svc, sent, snaps, sessions } = setup({
         devices: board => {
@@ -371,7 +364,7 @@ describe('LightsService', () => {
       const ended = svc.onGameEnded('s') // issued right behind it, not awaited first
       await Promise.all([pushed, ended])
       const last = applies(sent, 'b1').at(-1)
-      expect((last?.state as { bri: number }).bri).toBe(60) // idle, not the turn scene
+      expect(last?.state).toEqual({ on: false }) // dark, not the turn scene
     })
   })
 })
