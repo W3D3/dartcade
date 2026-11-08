@@ -1,7 +1,9 @@
 <script lang="ts">
   // Friends' lobbies (Home board): lobbies your friends host, open ones with a Join and running ones
-  // for show (Watch does not exist yet). Reloads when the friends list changes over /ws/me.
-  import { Users } from '@lucide/svelte'
+  // with a Watch (behind watch.enabled). Reloads when the friends list changes over /ws/me.
+  import { Eye, Users } from '@lucide/svelte'
+  import { push } from 'svelte-spa-router'
+  import { flag } from '$lib/flags'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
@@ -13,6 +15,7 @@
   import { me } from '$lib/lobby/sockets'
 
   const lobbies = new Loader(() => api.GET('/api/home/lobbies'))
+  const watchOn = flag('watch.enabled')
   const actions = createFriendActions(() => $me?.lobby?.id ?? null)
 
   // A new friends list is someone coming, going or opening a lobby. /ws/me also pushes invites, lobby
@@ -53,6 +56,10 @@
               disabled={actions.busy}
               aria-label="Join {lobby.name}"
               onclick={() => void actions.joinLobby(lobby.id, lobby.name)}>Join</Button
+            >
+          {:else if lobby.sessionId && $watchOn}
+            <Button variant="outline" size="sm" aria-label="Watch {lobby.name}" onclick={() => void push(`/watch/${lobby.sessionId}`)}
+              ><Eye size={14} />Watch</Button
             >
           {/if}
         </li>

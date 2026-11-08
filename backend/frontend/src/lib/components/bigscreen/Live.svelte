@@ -20,12 +20,15 @@
     settings,
     history,
     onrolled,
+    bigHeader = true,
   }: {
     snapshot: Snapshot
     board: BoardState
     settings: GameSettings
     history: VisitHistory
     onrolled?: (key: string) => void
+    /** Off: the page draws its own bar (Watch) instead of the big screen's. */
+    bigHeader?: boolean
   } = $props()
 
   // The kiosk always shows the finish to aim at
@@ -35,7 +38,7 @@
   const view = $derived(getGameView(snapshot.gameId))
 </script>
 
-{#if snapshot.gameId !== 'minigolf'}
+{#if bigHeader && snapshot.gameId !== 'minigolf'}
   <BigHeader title={view.title} meta={view.meta(snapshot)} board={sharedBoard(snapshot)} bm={board} />
 {/if}
 <MatchScreen {snapshot} {mv} {layout} settings={shown} {onrolled} {...viewOnlyProps(snapshot)} />

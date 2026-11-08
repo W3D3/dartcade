@@ -57,6 +57,11 @@ export function filterFriends(friends: Friend[], query: string): Friend[] {
   return q === '' ? friends : friends.filter(f => f.name.toLowerCase().includes(q))
 }
 
+/** Where Watch goes for a friend who is playing (and the flag is on); null for any other status. */
+export function watchPath(status: FriendStatus, flagOn: boolean): string | null {
+  return flagOn && status.kind === 'playing' ? `/watch/${status.sessionId}` : null
+}
+
 export function splitOnline(friends: Friend[]): { online: Friend[]; offline: Friend[] } {
   return { online: friends.filter(isOnline), offline: friends.filter(f => !isOnline(f)) }
 }

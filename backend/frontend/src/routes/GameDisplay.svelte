@@ -500,6 +500,7 @@
         compact={$isPhone}
         paused={remote.kind === 'waiting'}
         myBoard={myBoard(snapshot)}
+        watching={snapshot.spectators}
         ranked={snapshot.ranked ? { stakes: stakesLabel(snapshot.ranked.seats[snapshot.mySeats[0]]?.stakes ?? null) } : null}
         {canEnd}
         endMode={endKind ?? 'end'}
