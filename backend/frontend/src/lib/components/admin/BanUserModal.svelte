@@ -7,6 +7,7 @@
   import { DatePicker } from '$lib/components/ui/date-picker/index.js'
   import { Chip } from '$lib/components/ui/chip/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
+  import FieldLabel from '$lib/components/FieldLabel.svelte'
   import { BAN_CATEGORIES, BAN_CATEGORY_IDS, type BanCategory } from '$shared/bans.js'
   import { BAN_LENGTHS, banEnd, type BanLength } from '$lib/bans'
 
@@ -58,7 +59,7 @@
       options={BAN_CATEGORY_IDS.map(id => ({ value: id, label: BAN_CATEGORIES[id] }))}
     />
   </div>
-  <label class="flex flex-col gap-2 text-[13px] label-caps text-text-dim">
+  <FieldLabel>
     Note for admins (optional)
     <textarea
       bind:value={note}
@@ -66,7 +67,7 @@
       rows="3"
       placeholder="What happened? Only admins see this."
       class="resize-y rounded-md border border-line-3 px-3 py-2 text-[14px] normal-case tracking-normal text-text"></textarea>
-  </label>
+  </FieldLabel>
   <div class="flex flex-col gap-2">
     <span class="text-[13px] label-caps text-text-dim" id="ban-length">How long</span>
     <div class="flex flex-wrap gap-2" role="group" aria-labelledby="ban-length">

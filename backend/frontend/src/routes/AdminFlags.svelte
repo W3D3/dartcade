@@ -18,6 +18,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import PopoverPanel from '$lib/components/lobby/PopoverPanel.svelte'
   import MenuItem from '$lib/components/lobby/MenuItem.svelte'
   import { Chip } from '$lib/components/ui/chip/index.js'
@@ -506,7 +507,7 @@
               </div>
               {#if f.kind === 'boolean'}
                 <section class="flex flex-col gap-2 border-t border-line-2 pt-3">
-                  <h3 class="text-[12px] font-semibold label-caps text-text-dim">Global</h3>
+                  <SectionLabel as="h3">Global</SectionLabel>
                   <SegmentedControl
                     options={globalOptions(f)}
                     value={boolMode}
@@ -516,7 +517,7 @@
                   />
                 </section>
                 <section class="flex flex-col gap-2 border-t border-line-2 pt-3">
-                  <h3 class="text-[12px] font-semibold label-caps text-text-dim">Conditional</h3>
+                  <SectionLabel as="h3">Conditional</SectionLabel>
                   <SegmentedControl options={conditionalOptions} value={boolMode} disabled={panelBusy} onchange={v => pickMode(v)} />
                   {#if boolMode === 'users'}
                     <div class="flex flex-col gap-2">

@@ -16,6 +16,7 @@
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
   import { flag } from '$lib/flags'
   import { drawerRows } from '$lib/gameViews/settings.js'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
 
   let {
     settings = $bindable(),
@@ -83,7 +84,7 @@
     </div>
 
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-      <h3 class="text-[12px] font-semibold label-caps text-text-dim">Display</h3>
+      <SectionLabel as="h3">Display</SectionLabel>
       {#each rows as row (row.key)}
         <SettingSwitch id="setting-{row.key}" label={row.label} sub={row.sub} bind:checked={settings[row.key]} />
       {/each}
@@ -119,7 +120,7 @@
     </section>
 
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-      <h3 class="text-[12px] font-semibold label-caps text-text-dim">Sound effects</h3>
+      <SectionLabel as="h3">Sound effects</SectionLabel>
       <VolumeSlider bind:value={settings.effectsVolume} />
       <div class="grid grid-cols-2 gap-x-4">
         {#each sounds as row (row.key)}
@@ -133,7 +134,7 @@
 
     {#if scoreBased}
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-        <h3 class="text-[12px] font-semibold label-caps text-text-dim">Caller</h3>
+        <SectionLabel as="h3">Caller</SectionLabel>
         <SettingSwitch
           id="setting-callerOn"
           label="Caller"
@@ -179,7 +180,7 @@
 
     {#if bigScreenBoardId && $bigScreenOn}
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-3">
-        <h3 class="text-[12px] font-semibold label-caps text-text-dim">Big screen</h3>
+        <SectionLabel as="h3">Big screen</SectionLabel>
         <a
           href="#/big-screen/{bigScreenBoardId}"
           class="self-start min-h-10 inline-flex items-center gap-2 text-[14px] font-semibold no-underline"

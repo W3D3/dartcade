@@ -1,6 +1,7 @@
 <script lang="ts">
   // "What the coach detects" (Coach-Mistakes): every check this version runs, from lib/coach/checks.ts.
   import Layout from '$lib/components/Layout.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import { flag, flagsLoaded } from '$lib/flags'
   import { CHECK_GROUPS, GRADE_LEGEND, SOURCES, type CheckSource } from '$lib/coach/checks'
   import GradePill from '$lib/components/coach/GradePill.svelte'
@@ -38,7 +39,7 @@
     {:else}
       <div class="flex flex-wrap items-start gap-7">
         <div class="flex min-w-0 max-w-full flex-col gap-2">
-          <span id="checks-grades" class="text-[12px] font-semibold label-caps text-text-dim">Labels on a visit</span>
+          <SectionLabel id="checks-grades">Labels on a visit</SectionLabel>
           <div class="max-w-full overflow-x-auto">
             <table aria-labelledby="checks-grades" class="border-collapse text-[13px] tabular-nums">
               <thead>
@@ -67,7 +68,7 @@
           </div>
         </div>
         <div class="flex flex-col gap-2">
-          <span class="text-[12px] font-semibold label-caps text-text-dim">Source</span>
+          <SectionLabel>Source</SectionLabel>
           <div class="flex flex-wrap gap-[18px]">
             {#each sources as s (s)}
               <span class="flex flex-col gap-0.5">

@@ -16,6 +16,7 @@
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
   import RowShell from '$lib/components/RowShell.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import P121Ladder from '$lib/components/p121/P121Ladder.svelte'
   import P121PlayerCard from '$lib/components/p121/P121PlayerCard.svelte'
   import P121SessionPanel from '$lib/components/p121/P121SessionPanel.svelte'
@@ -206,7 +207,7 @@
   {@render madeCard()}
   <section class="shrink-0 flex flex-col gap-2" aria-label="Target ladder">
     <div class="flex items-center justify-between gap-2">
-      <span class="text-[12px] font-semibold label-caps text-text-dim">Target ladder · {cur.made} of {cur.tries.length} made</span>
+      <SectionLabel>Target ladder · {cur.made} of {cur.tries.length} made</SectionLabel>
       {@render giveUp()}
     </div>
     <P121Ladder {game} seat={cp} variant="dots" />

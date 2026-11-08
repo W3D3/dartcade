@@ -7,6 +7,7 @@
   import NameField from '$lib/components/NameField.svelte'
   import AvgBadge from '$lib/components/AvgBadge.svelte'
   import Flag from '$lib/components/Flag.svelte'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
   import CountryField from './CountryField.svelte'
   import { profileOf } from '$lib/progress/profiles'
   import { api } from '$lib/api'
@@ -70,7 +71,7 @@
   </div>
   {#if preview}
     <div class="flex flex-col gap-2 px-4 py-[14px] rounded-lg bg-surface-1 border border-line">
-      <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
+      <SectionLabel>Preview · how others see you</SectionLabel>
       <div class="flex items-center gap-3 min-w-0">
         <Avatar
           name={preview}

@@ -4,6 +4,7 @@
   import type { CoachLegCounts } from '$lib/api'
   import { TONE_TEXT } from '$lib/coach/tone'
   import { Skeleton } from '$lib/components/ui/skeleton'
+  import SectionLabel from '$lib/components/SectionLabel.svelte'
 
   let { counts }: { counts: CoachLegCounts | null } = $props()
 
@@ -18,7 +19,7 @@
 <dl class="grid grid-cols-2 gap-3 lg:grid-cols-4">
   {#each cards as c (c.label)}
     <div class="card flex min-w-0 flex-col gap-1 px-4 py-3.5">
-      <dt class="text-[12px] font-semibold label-caps text-text-dim">{c.label}</dt>
+      <SectionLabel as="dt">{c.label}</SectionLabel>
       {#if c.value === undefined}
         <dd><Skeleton class="h-8 w-10" /></dd>
       {:else}
