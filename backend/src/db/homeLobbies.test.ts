@@ -6,7 +6,7 @@ import { insertLobby, insertPerson } from './lobbies.js'
 import { homeLobbies } from './homeLobbies.js'
 import { openTestSchema } from './testSchema.js'
 import type { Database } from './schema.js'
-import { insertUser, insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertUser, insertUsers } from '../test/fixtures.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
   let db: Kysely<Database>
@@ -31,10 +31,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('home lobbies', () => {
       db,
       users.map(id => ({ id, emailVerified: true })),
     )
-    await db
-      .insertInto('boards')
-      .values(['b1', 'b2'].map(id => ({ id, owner_user_id: 'bob', name: id, token_hash: `hash-${id}` })))
-      .execute()
+    for (const id of ['b1', 'b2']) await insertBoard(db, { id, owner_user_id: 'bob', token_hash: `hash-${id}` })
     // ann is friends with bob, dan, eve and gus; fay is a stranger
     for (const friend of ['bob', 'dan', 'eve', 'gus']) {
       await insertFriendRequest(db, { id: `f-${friend}`, requesterId: 'ann', addresseeId: friend })

@@ -9,7 +9,7 @@ import { adminUsersApiPlugin } from './adminUsers.js'
 import { usersApiPlugin } from './users.js'
 import { BridgeConnections, type BridgeConn } from '../bridge-gw/connections.js'
 import { insertGameSession, finishGameSession, insertGameDarts } from '../db/queries.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertUsers } from '../test/fixtures.js'
 
 // users.ts's name check reads the session; signing in through better-auth isn't what's tested here
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
@@ -471,13 +471,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
 
     beforeAll(async () => {
       await insertUsers(db, [{ id: 'owner', name: 'Owner', emailVerified: true }])
-      await db
-        .insertInto('boards')
-        .values([
-          { id: 'b1', owner_user_id: 'owner', name: 'Garage', token_hash: 'h1', hardware_id: null },
-          { id: 'b2', owner_user_id: 'owner', name: 'Cellar', token_hash: 'h2', hardware_id: null },
-        ])
-        .execute()
+      await insertBoard(db, { id: 'b1', owner_user_id: 'owner', name: 'Garage', token_hash: 'h1' })
+      await insertBoard(db, { id: 'b2', owner_user_id: 'owner', name: 'Cellar', token_hash: 'h2' })
       const conn = { boardDbId: null, bridgeVersion: 'v0.5.0', connectedAt: new Date('2026-11-01T10:00:00Z') } as BridgeConn
       bridges.register(conn, 'b1')
       await insertGameSession(db, {

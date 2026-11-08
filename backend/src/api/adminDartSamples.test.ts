@@ -10,7 +10,7 @@ import { insertBridgeEvent } from '../db/queries.js'
 import { insertSample } from '../db/dartSamples.js'
 import { createFastify } from './fastify.js'
 import { adminDartSamplesApiPlugin } from './adminDartSamples.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertUsers } from '../test/fixtures.js'
 
 const HOUR = 3_600_000
 
@@ -49,10 +49,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin dart samples API', { time
       { id: 'admin', name: 'Admin', emailVerified: true, role: 'admin' },
       { id: 'player', name: 'Player', emailVerified: true },
     ])
-    await db
-      .insertInto('boards')
-      .values({ id: 'b1', owner_user_id: 'player', name: 'Board', token_hash: 'h1', hardware_id: 'hw1' })
-      .execute()
+    await insertBoard(db, { id: 'b1', owner_user_id: 'player', name: 'Board', token_hash: 'h1', hardware_id: 'hw1' })
     for (const seq of [1, 2]) {
       const { id } = await insertBridgeEvent(db, {
         bridge_id: 'br',
