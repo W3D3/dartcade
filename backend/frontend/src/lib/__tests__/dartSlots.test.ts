@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { aimById } from '$shared/coach/aims.js'
-import { x01Slots, atcSlots, boardCheckoutTargets } from '../dartSlots.js'
+import { x01Slots, atcSlots, boardCheckoutTargets, cricketSlots } from '../dartSlots.js'
 
 const d = (name: string, score: number) => ({ segment: { name }, score })
 const base = { outMode: 'double' as const, opened: true, bust: false, suggest: true }
@@ -139,5 +139,53 @@ describe('boardCheckoutTargets', () => {
   it("is empty in ATC: the target slot isn't a checkout", () => {
     const s = atcSlots({ darts: [], hits: [], target: '17' })
     expect(boardCheckoutTargets(s, false)).toEqual([])
+  })
+})
+
+describe('cricketSlots', () => {
+  const targets = [20, 19, 18, 17, 16, 15, 25]
+  const dart = (name: string, number: number, multiplier: number) => ({ segment: { name, number, multiplier } })
+  const slots = (darts: ReturnType<typeof dart>[], effects: { marks: number; points: number }[]) =>
+    cricketSlots({ darts, effects, targets, locked: false })
+
+  it('says marks for a dart that opened, points for one that only scored, both for one that did both', () => {
+    const s = slots(
+      [dart('T19', 19, 3), dart('S20', 20, 1), dart('T20', 20, 3)],
+      [
+        { marks: 3, points: 0 },
+        { marks: 0, points: 20 },
+        { marks: 1, points: 40 },
+      ],
+    )
+    expect(s.map(x => [x.kind, x.points, x.struck])).toEqual([
+      ['thrown', '3 marks', undefined],
+      ['thrown', '+20', undefined],
+      ['thrown', '1 mark +40', undefined],
+    ])
+    expect(s[1].aria).toBe('Dart 2: S20, +20')
+  })
+  it('crosses out a dart on a number every team has closed: no hit, no marks', () => {
+    const [dead, miss] = slots(
+      [dart('T20', 20, 3), dart('Miss', 0, 0)],
+      [
+        { marks: 0, points: 0 },
+        { marks: 0, points: 0 },
+      ],
+    )
+    expect(dead).toMatchObject({ kind: 'miss', label: 'T20', points: 'Closed', struck: true })
+    expect(dead.aria).toBe('Dart 1: T20, number already closed, no mark')
+    expect(miss).toMatchObject({ kind: 'miss', points: '0' })
+    expect(miss.struck).toBeUndefined()
+  })
+  it('does not cross out a dart thrown after the leg was won: it has no effect, the number is not closed', () => {
+    const s = cricketSlots({
+      darts: [dart('T20', 20, 3), dart('T19', 19, 3)],
+      effects: [{ marks: 3, points: 0 }],
+      targets,
+      locked: true,
+    })
+    expect(s[1]).toMatchObject({ kind: 'miss', label: 'T19', points: '0' })
+    expect(s[1].struck).toBeUndefined()
+    expect(s[1].aria).toBe('Dart 2: T19, did not count')
   })
 })

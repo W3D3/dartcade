@@ -7,7 +7,8 @@ import { dartMarks } from './cricket/view.js'
 import { plural } from './fmt.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
-export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
+/** `struck`: the label is drawn crossed out (Cricket: a dart on a number every team has closed). */
+export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string; struck?: boolean }
 export type ThrownDart = { segment?: { name?: string; number?: number; multiplier?: number }; score?: number }
 
 function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slot {
@@ -140,13 +141,35 @@ function notThrown(from: number): Slot[] {
   return openSlots(from, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${from + k + 1}: not thrown` }))
 }
 
-/** Cricket: the thrown darts with the marks each is worth ("3 marks"), then the next dart. A visit
- *  that won the leg is over: the slots left are not thrown. */
-export function cricketSlots(o: { darts: ThrownDart[]; targets: readonly number[]; locked: boolean }): Slot[] {
+/** Cricket: the thrown darts with what each did ("3 marks", "+57" when it only scored, "2 marks +40"
+ *  when it did both), then the next dart. A dart on a number every team has closed is dead: its
+ *  label is crossed out and it is no hit. A visit that won the leg is over: the slots left are not
+ *  thrown. */
+export function cricketSlots(o: {
+  darts: ThrownDart[]
+  effects: readonly { marks: number; points: number }[]
+  targets: readonly number[]
+  locked: boolean
+}): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i): Slot => {
-    const m = dartMarks(d.segment ?? {}, o.targets)
-    const marks = m ? plural(m, 'mark') : 'no mark'
-    return { ...thrownSlot(d, i, m > 0, m ? marks : '0'), aria: `Dart ${i + 1}: ${d.segment?.name || 'Miss'}, ${marks}` }
+    const label = d.segment?.name || 'Miss'
+    // No effect is kept for a dart thrown after the leg was won: it counted for nothing, it is no dead number
+    const effect = o.effects.at(i)
+    if (!effect) return { ...thrownSlot(d, i, false, '0'), aria: `Dart ${i + 1}: ${label}, did not count` }
+    const { marks, points } = effect
+    const onTarget = dartMarks(d.segment ?? {}, o.targets) > 0
+    if (onTarget && marks === 0 && points === 0) {
+      return {
+        kind: 'miss',
+        label,
+        points: 'Closed',
+        foot: '',
+        aria: `Dart ${i + 1}: ${label}, number already closed, no mark`,
+        struck: true,
+      }
+    }
+    const said = [marks ? plural(marks, 'mark') : '', points ? `+${points}` : ''].filter(Boolean).join(' ')
+    return { ...thrownSlot(d, i, marks > 0 || points > 0, said || '0'), aria: `Dart ${i + 1}: ${label}, ${said || 'no mark'}` }
   })
   return [...done, ...(o.locked ? notThrown(done.length) : openSlots(done.length, []))]
 }

@@ -33,10 +33,11 @@ function eventGame(s: Snapshot): EventGame {
       // Every dart is a putt
       return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(() => true) }
     case 'cricket': {
-      // A hit is a dart on one of the targets (the bullseye arrives as 50)
-      const targets = s.game.targets
-      const hit = (d: Dart) => d.segment.multiplier > 0 && targets.includes(d.segment.number === 50 ? 25 : d.segment.number)
-      return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(hit) }
+      // A hit is a dart that opened a number or scored on it; one on a number every team has
+      // closed is dead and sounds like a miss (so does a dart after the leg is won: no effect is kept)
+      const { currentVisitDarts, currentVisitEffects } = s.game
+      const hit = (i: number) => (currentVisitEffects[i]?.marks ?? 0) + (currentVisitEffects[i]?.points ?? 0) > 0
+      return { ...s.game, currentVisitHits: currentVisitDarts.map((_, i) => hit(i)) }
     }
   }
 }

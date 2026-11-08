@@ -34,6 +34,10 @@ const game = (o: Partial<CricketGame> = {}): CricketGame => ({
   lastVisit: [null, null],
   bullOff: null,
   currentVisitDarts: twoDarts,
+  currentVisitEffects: [
+    { marks: 0, points: 57 },
+    { marks: 0, points: 0 },
+  ],
   totalDarts: [44, 40],
   totalVisits: [15, 14],
   ...o,
@@ -101,11 +105,21 @@ describe('CricketMatch in a duel', () => {
     expect(body.match(/<th scope="row" class="([^"]*)"/g)?.map(struck)).toEqual([true, false, false, false, false, false, false])
   })
 
-  it("shows each dart's marks in the slots", () => {
+  it("shows each dart's marks or points in the slots", () => {
     const { body } = render(CricketMatch, { props: props(game()) })
-    expect(body).toContain('Dart 1: T19, 3 marks. Correct this dart')
+    // Lena has closed 19 and Tom hasn't: the treble scores, as in the Cricket-Duel artboard's "+57"
+    expect(body).toContain('Dart 1: T19, +57. Correct this dart')
     expect(body).toContain('Dart 2: S5, no mark. Correct this dart')
     expect(body).toContain('Dart 3: next')
+  })
+
+  it('crosses out a dart on a number everyone has closed', () => {
+    const dead = [{ segment: { name: 'T20', number: 20, multiplier: 3 }, score: 60 }] as never
+    const { body } = render(CricketMatch, {
+      props: props(game({ currentVisitDarts: dead, currentVisitEffects: [{ marks: 0, points: 0 }] }), { darts: dead }),
+    })
+    expect(body).toContain('Dart 1: T20, number already closed, no mark. Correct this dart')
+    expect(body).toMatch(/line-through[^>]*>T20</)
   })
 })
 

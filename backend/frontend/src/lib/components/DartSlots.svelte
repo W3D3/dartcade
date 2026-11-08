@@ -91,7 +91,7 @@
           class="{slotBox} relative bg-surface-hover {latest ? 'border-2 border-accent' : 'border border-line-chip'}"
         >
           <Lock size={16} aria-hidden="true" class="absolute right-3 top-[10px] text-ink-faint max-md:hidden" />
-          <span class="{slotLabel} text-text">{slot.label}</span>
+          <span class="{slotLabel} {slot.struck ? 'line-through text-text-muted' : 'text-text'}">{slot.label}</span>
           {#if latest}
             <span class="text-[11px] md:text-[13px] font-bold uppercase tracking-[0.06em] text-accent whitespace-nowrap"
               >{slot.points}<span class="max-md:hidden"> · just landed</span></span
@@ -112,7 +112,7 @@
                  {openDart === i ? '[box-shadow:0_0_0_3px_var(--color-bg),0_0_0_5px_var(--color-accent)]' : ''}"
           class:fx-pop={popIndex === i}
         >
-          <span class={slotLabel}>{slot.label}</span>
+          <span class="{slotLabel} {slot.struck ? 'line-through decoration-[3px] text-text-muted' : ''}">{slot.label}</span>
           <span
             class="font-display font-bold text-[14px] md:text-[30px] leading-none whitespace-nowrap {slot.kind === 'miss'
               ? 'text-text-muted'

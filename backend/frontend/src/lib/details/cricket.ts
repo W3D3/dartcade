@@ -60,6 +60,7 @@ export function legMarksGame(detail: CricketDetail, leg: CricketLeg): CricketGam
     nextPlayer: null,
     round: Math.max(0, ...countBySeat(leg.visits).values()),
     winner,
+    currentVisitEffects: [],
     visitLocked: false,
     marksScored: zeros(),
     dartsThrown: zeros(),

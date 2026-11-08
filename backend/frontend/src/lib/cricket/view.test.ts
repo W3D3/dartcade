@@ -25,6 +25,7 @@ const game = (o: Partial<CricketGame> = {}): CricketGame => ({
   lastVisit: [null, null],
   bullOff: null,
   currentVisitDarts: [],
+  currentVisitEffects: [],
   totalDarts: [0, 0],
   totalVisits: [0, 0],
   ...o,
