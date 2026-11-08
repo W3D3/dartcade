@@ -93,7 +93,7 @@ export class ProgressionService {
     if (!game) return
     // One account earns once per game, however many seats it holds
     const userIds = [...new Set(game.seats.flatMap(s => (s.userId !== null && !s.bot ? [s.userId] : [])))]
-    const x01 = !opts.backfill && game.gameId === 'x01' ? await this.x01Detail(game.id) : null
+    const x01 = !opts.backfill && game.gameId === 'x01' ? await x01DetailOf(this.deps.db, game.id, this.deps.warn) : null
     for (const userId of userIds) {
       // The backfill pays history for everyone, so turning the flag on later loses nothing
       if (!opts.backfill && !(await this.deps.enabled(userId))) continue
@@ -106,10 +106,6 @@ export class ProgressionService {
         }
       }
     }
-  }
-
-  private x01Detail(sessionId: string): Promise<X01Detail | null> {
-    return x01DetailOf(this.deps.db, sessionId, this.deps.warn)
   }
 
   private async awardPlayer(game: XpGame, userId: string, backfill: boolean, x01: X01Detail | null): Promise<XpGainedMessage | null> {
