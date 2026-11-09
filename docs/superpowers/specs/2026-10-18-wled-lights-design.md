@@ -93,6 +93,8 @@ caller's `callsFor`. Undo or a correction that reopens a visit must not fire the
 | `visit`                                       | `seat, total`   | X01: a visit was committed                                                                          |
 | `bust`                                        | `seat`          | X01                                                                                                 |
 | `checkout`                                    | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)                            |
+| `cricket.closed`                              | `seat`          | Cricket: the thrower's team gets its third mark on a number                                         |
+| `p121.made`                                   | `seat`          | 121 Checkout: a seat checks out its target                                                          |
 | `hilo.lifeLost`                               | `seat`          | Higher Lower                                                                                        |
 | `golf.sunk`                                   | `seat, strokes` | Minigolf                                                                                            |
 | `bulloff.won`                                 | `seat`          | bull off, in any game                                                                               |
@@ -125,21 +127,27 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 
 **Dartcade default** (WLED effect IDs: 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 20 Sparkle, 41 Lighthouse, 42 Fireworks):
 
-| #   | When                   | Type        | Look                               |
-| --- | ---------------------- | ----------- | ---------------------------------- |
-| 1   | `turn` · mine          | scene       | seat colour · solid · 255          |
-| 2   | `turn` · other         | scene       | white · solid · 40 ("Waiting")     |
-| 3   | `visit` = 180 · mine   | flash 4 s   | user preset "180"                  |
-| 4   | `visit` ≥ 100 · mine   | flash 2 s   | white · sparkle · 255              |
-| 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"               |
-| 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"             |
-| 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"            |
-| 8   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink                  |
-| 9   | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle              |
-| 10  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink                |
-| 11  | `takeout.started`      | scene       | `#ffd60a` (yellow) · breathe · 255 |
-| 12  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255       |
-| 13  | `lobby` · **off**      | scene       | `#c6f24e` · breathe · 60 · slow    |
+The rules come grouped by game, the order of the Effects list (`TRIGGER_GAME`, `GROUP_ORDER` in
+`shared/lights/groups.ts`; a game with no effect has no group; Around the Clock has none since Target hit
+was removed):
+
+| #   | Group        | When                    | Type        | Look                               |
+| --- | ------------ | ----------------------- | ----------- | ---------------------------------- |
+| 1   | General      | `turn` · mine           | scene       | seat colour · solid · 255          |
+| 2   | General      | `turn` · other          | scene       | white · solid · 40 ("Waiting")     |
+| 3   | General      | `game.won` · mine       | flash 5 s   | user preset "Matchshot"            |
+| 4   | General      | `bulloff.won` · mine    | flash 2 s   | seat colour · blink                |
+| 5   | General      | `takeout.started`       | scene       | `#ffd60a` (yellow) · breathe · 255 |
+| 6   | General      | `calibration.started`   | scene       | `#a855f7` · lighthouse · 255       |
+| 7   | General      | `lobby` · **off**       | scene       | `#c6f24e` · breathe · 60 · slow    |
+| 8   | X01          | `visit` = 180 · mine    | flash 4 s   | user preset "180"                  |
+| 9   | X01          | `visit` ≥ 100 · mine    | flash 2 s   | white · sparkle · 255              |
+| 10  | X01          | `bust` · mine           | flash 1.5 s | user preset "Busted"               |
+| 11  | X01          | `checkout` · mine       | flash 3 s   | user preset "Gameshot"             |
+| 12  | Cricket      | `cricket.closed` · mine | flash 1 s   | white · sparkle · 255              |
+| 13  | 121          | `p121.made` · mine      | flash 2 s   | white · fireworks · 255            |
+| 14  | Minigolf     | `golf.sunk` · mine      | flash 2 s   | seat colour · sparkle              |
+| 15  | Higher Lower | `hilo.lifeLost` · mine  | flash 1.5 s | `#ff3b30` · blink                  |
 
 `takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
 scene (see below). The Target hit flash was removed in #522 because it disturbed detection, and the
@@ -215,7 +223,8 @@ The page re-fetches `GET` every 3 s while it's open.
   at 192.168.1.80").
 - **Light profile:** "Dartcade default · built in". A **Seat colours** group on top of the list: one row per
   seat with its swatch and a picker (a bits-ui popover with a palette as a radio group plus a custom
-  colour field), and **Reset to defaults**. Below it **Effects**: the numbered read-only rule list
+  colour field), and **Reset to defaults**. Below it **Effects**, one list per group (General, then each game that has an effect: X01, Cricket, 121,
+  Minigolf, Higher Lower), numbered across the groups: the read-only rules
   (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. Duplicate, Import, Export shown disabled
   ("Coming soon").
 - **Pair dialog** (`ui/modal`): (1) blink check: "Blinking lime now", Blink again, "Yes, it blinked" /
