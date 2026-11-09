@@ -1,8 +1,10 @@
 import type { Snapshot } from '../../schema/game-ws.js'
 import type { Trigger } from '../../shared/lights/index.js'
+import { cricketTriggers } from './cricket.js'
 import { commonTriggers } from './common.js'
 import { hiloTriggers } from './hilo.js'
 import { minigolfTriggers } from './minigolf.js'
+import { p121Triggers } from './p121.js'
 import { x01Triggers } from './x01.js'
 
 /** What the lights react to between two snapshots of one game; `before` null: the game is new here. */
@@ -26,9 +28,11 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
       return hiloTriggers(before?.gameId === 'hilo' ? before.game : null, after.game)
     case 'minigolf':
       return minigolfTriggers(before?.gameId === 'minigolf' ? before.game : null, after.game)
-    case 'atc':
-    case 'p121':
     case 'cricket':
+      return cricketTriggers(before?.gameId === 'cricket' ? before.game : null, after.game)
+    case 'p121':
+      return p121Triggers(before?.gameId === 'p121' ? before.game : null, after.game)
+    case 'atc':
       return []
   }
 }

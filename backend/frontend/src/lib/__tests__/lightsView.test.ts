@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PROFILE } from '$shared/lights/index.js'
-import { boardDeviceLabel, lightsLoadState, ruleLabel, sectionVisible, segmentHint, since } from '$lib/lights/view'
+import { boardDeviceLabel, effectGroups, lightsLoadState, ruleLabel, sectionVisible, segmentHint, since } from '$lib/lights/view'
+
+/** The nth default rule for a trigger, so these checks don't depend on the list's order */
+const rule = (trigger: string, n = 0) => DEFAULT_PROFILE.rules.filter(r => r.when.trigger === trigger)[n]
 
 describe('lights view', () => {
   it('labels the default rules like the design', () => {
     const base = { filter: null, enabled: true, hint: null }
-    expect(ruleLabel(DEFAULT_PROFILE.rules[0])).toEqual({ ...base, when: 'Turn changes', type: 'Scene', look: 'seat colour · solid' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
-    expect(ruleLabel(DEFAULT_PROFILE.rules[2])).toEqual({
+    expect(ruleLabel(rule('turn'))).toEqual({ ...base, when: 'Turn changes', type: 'Scene', look: 'seat colour · solid' })
+    expect(ruleLabel(rule('turn', 1)).filter).toBe('other board')
+    expect(ruleLabel(rule('visit'))).toEqual({
       ...base,
       when: 'Visit scored',
       filter: '= 180',
@@ -15,24 +18,24 @@ describe('lights view', () => {
       look: '180 preset · 4 s',
     })
     // A big score sparkles white rather than flashing the player's colour
-    expect(ruleLabel(DEFAULT_PROFILE.rules[3])).toEqual({
+    expect(ruleLabel(rule('visit', 1))).toEqual({
       ...base,
       when: 'Visit scored',
       filter: '≥ 100',
       type: 'Flash',
       look: 'white · sparkle · 2 s',
     })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ ...base, when: 'Bust', type: 'Flash', look: 'Busted preset · 1.5 s' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ ...base, when: 'Checkout', type: 'Flash', look: 'Gameshot preset · 3 s' })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[6])).toEqual({ ...base, when: 'Game won', type: 'Flash', look: 'Matchshot preset · 5 s' })
+    expect(ruleLabel(rule('bust'))).toEqual({ ...base, when: 'Bust', type: 'Flash', look: 'Busted preset · 1.5 s' })
+    expect(ruleLabel(rule('checkout'))).toEqual({ ...base, when: 'Checkout', type: 'Flash', look: 'Gameshot preset · 3 s' })
+    expect(ruleLabel(rule('game.won'))).toEqual({ ...base, when: 'Game won', type: 'Flash', look: 'Matchshot preset · 5 s' })
     // The takeout scene is a yellow pulse, so players see the board isn't ready
-    expect(ruleLabel(DEFAULT_PROFILE.rules[10])).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'yellow · pulse' })
+    expect(ruleLabel(rule('takeout.started'))).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'yellow · pulse' })
     // The calibration scene is a purple comet travelling around the strip
-    expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ ...base, when: 'Calibrating', type: 'Scene', look: 'purple · comet' })
+    expect(ruleLabel(rule('calibration.started'))).toEqual({ ...base, when: 'Calibrating', type: 'Scene', look: 'purple · comet' })
   })
   it('the Lobby rule is off by default and says it shows only in a lobby', () => {
     // It uses the lime colour directly (not 'seat'); name it instead of the hex
-    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({
+    expect(ruleLabel(rule('lobby'))).toEqual({
       when: 'Lobby',
       filter: null,
       type: 'Scene',
@@ -40,6 +43,26 @@ describe('lights view', () => {
       enabled: false,
       hint: 'Shows only while you are in a lobby with no game running',
     })
+  })
+  it('labels the Cricket and 121 effects', () => {
+    expect(ruleLabel(rule('cricket.closed')).when).toBe('Number closed')
+    expect(ruleLabel(rule('p121.made')).when).toBe('Target made')
+  })
+  it('groups the effects by game, General first, keeping each rule’s place in the profile', () => {
+    const groups = effectGroups(DEFAULT_PROFILE.rules)
+    expect(groups.map(g => g.title)).toEqual(['General', 'X01', 'Cricket', '121', 'Minigolf', 'Higher Lower'])
+    expect(groups.find(g => g.game === 'minigolf')?.items.map(i => ruleLabel(i.rule).when)).toEqual(['Ball sunk'])
+    expect(groups.find(g => g.game === 'hilo')?.items.map(i => ruleLabel(i.rule).when)).toEqual(['Life lost'])
+    // Every rule is in exactly one group, and its index points back at it
+    expect(groups.flatMap(g => g.items).map(i => i.index)).toEqual(DEFAULT_PROFILE.rules.map((_, i) => i))
+    for (const { rule: r, index } of groups.flatMap(g => g.items)) expect(DEFAULT_PROFILE.rules[index]).toBe(r)
+  })
+  it('puts a trigger this build does not know under General and leaves out games with no effect', () => {
+    const groups = effectGroups([{ when: { trigger: 'future.thing' } }, { when: { trigger: 'golf.sunk' } }])
+    expect(groups.map(g => [g.title, g.items.length])).toEqual([
+      ['General', 1],
+      ['Minigolf', 1],
+    ])
   })
   it('has no Target hit rule', () => {
     expect(DEFAULT_PROFILE.rules.map(r => r.when.trigger)).not.toContain('atc.hit')

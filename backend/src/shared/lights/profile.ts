@@ -17,7 +17,8 @@ export const seatColor = (seat: number, colors: readonly string[]): string =>
 const SOLID = 0,
   BLINK = 1,
   BREATHE = 2,
-  SPARKLE = 20
+  SPARKLE = 20,
+  FIREWORKS = 42
 const RED = '#ff3b30'
 /** Hue 50: clearly yellow, apart from the orange seat colour (the old amber looked like it). */
 const TAKEOUT_YELLOW = '#ffd60a'
@@ -36,16 +37,10 @@ export const DEFAULT_PROFILE: Profile = {
   name: 'Dartcade default',
   seatColors: DEFAULT_SEAT_COLORS,
   rules: [
+    // General: every game
     { when: { trigger: 'turn', seats: 'mine' }, type: 'scene', enabled: true, look: { color: 'seat', fx: SOLID, bri: 255 } },
     { when: { trigger: 'turn', seats: 'other' }, type: 'scene', enabled: true, look: { color: '#ffffff', fx: SOLID, bri: 40 } },
-    flash('visit', { preset: '180', state: PRESET_180 }, 4000, { total: { op: '=', n: 180 } }),
-    // A big score sparkles white rather than flashing the player's colour
-    flash('visit', { color: '#ffffff', fx: SPARKLE, bri: 255 }, 2000, { total: { op: '>=', n: 100 } }),
-    flash('bust', { preset: 'Busted', state: PRESET_BUSTED }, 1500),
-    flash('checkout', { preset: 'Gameshot', state: PRESET_GAMESHOT }, 3000),
     flash('game.won', { preset: 'Matchshot', state: PRESET_MATCHSHOT }, 5000),
-    flash('hilo.lifeLost', { color: RED, fx: BLINK, bri: 255 }, 1500),
-    flash('golf.sunk', { color: 'seat', fx: SPARKLE, bri: 255 }, 2000),
     flash('bulloff.won', { color: 'seat', fx: BLINK, bri: 255 }, 2000),
     {
       when: { trigger: 'takeout.started', seats: 'any' },
@@ -67,6 +62,20 @@ export const DEFAULT_PROFILE: Profile = {
       enabled: false,
       look: { color: '#c6f24e', fx: BREATHE, bri: 60, speed: 40 },
     },
+    // X01
+    flash('visit', { preset: '180', state: PRESET_180 }, 4000, { total: { op: '=', n: 180 } }),
+    // A big score sparkles white rather than flashing the player's colour
+    flash('visit', { color: '#ffffff', fx: SPARKLE, bri: 255 }, 2000, { total: { op: '>=', n: 100 } }),
+    flash('bust', { preset: 'Busted', state: PRESET_BUSTED }, 1500),
+    flash('checkout', { preset: 'Gameshot', state: PRESET_GAMESHOT }, 3000),
+    // Cricket
+    flash('cricket.closed', { color: '#ffffff', fx: SPARKLE, bri: 255 }, 1000),
+    // 121 Checkout
+    flash('p121.made', { color: '#ffffff', fx: FIREWORKS, bri: 255 }, 2000),
+    // Minigolf
+    flash('golf.sunk', { color: 'seat', fx: SPARKLE, bri: 255 }, 2000),
+    // Higher Lower
+    flash('hilo.lifeLost', { color: RED, fx: BLINK, bri: 255 }, 1500),
   ],
 }
 

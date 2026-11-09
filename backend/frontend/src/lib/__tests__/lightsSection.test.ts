@@ -10,11 +10,11 @@ const handlers = { ontest: () => {}, onseatcolor: () => {}, onresetseatcolors: (
 const profile: LightProfile = { ...DEFAULT_PROFILE, seatColors: [...DEFAULT_PROFILE.seatColors], builtIn: true }
 
 describe('LightProfileCard', () => {
-  it("shows the built-in default's 13 rules, disabled Duplicate/Import/Export", () => {
+  it("shows the built-in default's 15 rules, disabled Duplicate/Import/Export", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: true, ...handlers } }).body
     expect(html).toContain('Dartcade default')
     expect(html).toContain('built in')
-    for (let i = 1; i <= 13; i++) expect(html).toContain(`>${i}<`)
+    for (let i = 1; i <= 15; i++) expect(html).toContain(`>${i}<`)
     for (const label of ['Duplicate', 'Import', 'Export']) {
       const attrs = new RegExp(`<button([^>]*)>(?:<!--[^>]*-->)*\\s*${label}`).exec(html)?.[1]
       expect(attrs).toBeDefined()
@@ -25,14 +25,14 @@ describe('LightProfileCard', () => {
   it("every ▶ Test button is disabled when lights can't be tested (bridge offline)", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: false, ...handlers } }).body
     const testButtons = [...html.matchAll(/<button([^>]*aria-label="Test rule \d+:[^"]*"[^>]*)>/g)]
-    expect(testButtons.length).toBe(13)
+    expect(testButtons.length).toBe(15)
     for (const [, attrs] of testButtons) expect(attrs).toContain('disabled')
   })
 
   it('names the rule in each Test button, including its filter chip', () => {
     const html = render(LightProfileCard, { props: { profile, canTest: true, ...handlers } }).body
-    expect(html).toContain('aria-label="Test rule 3: Visit scored = 180"')
-    expect(html).toContain('aria-label="Test rule 5: Bust"')
+    expect(html).toContain('aria-label="Test rule 8: Visit scored = 180"')
+    expect(html).toContain('aria-label="Test rule 10: Bust"')
   })
 
   it("truncates a long 'when' label instead of letting its filter chip overflow into the type badge", () => {
@@ -51,6 +51,18 @@ describe('LightProfileCard', () => {
     expect(html.indexOf('>1<')).toBeGreaterThan(effects) // the effect rows come after both
     for (const [i, name] of ['cyan', 'off-white', 'orange', 'pink', 'violet', 'green'].entries())
       expect(html).toContain(`aria-label="Seat ${i + 1} colour: ${name}. Change"`)
+  })
+
+  it('groups the effects by game, each group with its own heading and effects', () => {
+    const html = render(LightProfileCard, { props: { profile, canTest: true, ...handlers } }).body
+    const headings = ['General', 'X01', 'Cricket', '121', 'Minigolf', 'Higher Lower'].map(t => html.indexOf(`aria-label="${t} effects"`))
+    expect(headings.every(h => h > -1)).toBe(true)
+    expect(headings).toEqual([...headings].sort((a, b) => a - b)) // in the order of the groups
+    expect(html).not.toContain('Around the Clock effects') // no effect there since Target hit went
+    const minigolf = html.slice(headings[4], headings[5])
+    expect(minigolf).toContain('Ball sunk')
+    expect(minigolf).not.toContain('Life lost')
+    expect(html.slice(headings[5])).toContain('Life lost')
   })
 
   it('says what happens with more seats than colours', () => {
