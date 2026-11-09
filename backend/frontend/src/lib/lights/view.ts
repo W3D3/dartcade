@@ -1,5 +1,7 @@
 // Pure helpers for Settings' Lights section: formatting a light profile's rules, a device's
 // segment layout and "since" timestamps, and whether a flagged settings section shows.
+import { GROUP_ORDER, TRIGGER_GAME, type GameId, type TriggerKind } from '$shared/lights/index.js'
+import { gameTitle } from '$shared/gameNames.js'
 
 export type SegmentMode = 'whole' | 'perSeat' | 'wled'
 
@@ -19,6 +21,8 @@ const TRIGGER_LABELS: Record<string, string> = {
   bust: 'Bust',
   checkout: 'Checkout',
   'game.won': 'Game won',
+  'cricket.closed': 'Number closed',
+  'p121.made': 'Target made',
   'hilo.lifeLost': 'Life lost',
   'golf.sunk': 'Ball sunk',
   'bulloff.won': 'Bull off won',
@@ -122,4 +126,19 @@ export function boardDeviceLabel(online: boolean, count: number | undefined): st
  * first poll is still in flight. */
 export function lightsLoadState(hasLights: boolean, loadFailed: boolean): 'panel' | 'error' | 'loading' {
   return hasLights ? 'panel' : loadFailed ? 'error' : 'loading'
+}
+
+export type EffectGroup<R> = { game: GameId | null; title: string; items: { rule: R; index: number }[] }
+
+const isTriggerKind = (trigger: string): trigger is TriggerKind => Object.hasOwn(TRIGGER_GAME, trigger)
+
+/** The effects by game: General first, then each game that has an effect. `index` is the rule's place in the
+ *  profile, which Test and the numbering use. A trigger this build doesn't know goes under General. */
+export function effectGroups<R extends { when: { trigger: string } }>(rules: readonly R[]): EffectGroup<R>[] {
+  const gameOf = (r: R) => (isTriggerKind(r.when.trigger) ? TRIGGER_GAME[r.when.trigger] : null)
+  return GROUP_ORDER.map(game => ({
+    game,
+    title: game === null ? 'General' : gameTitle(game),
+    items: rules.flatMap((rule, index) => (gameOf(rule) === game ? [{ rule, index }] : [])),
+  })).filter(g => g.items.length > 0)
 }

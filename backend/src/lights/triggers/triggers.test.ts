@@ -149,6 +149,64 @@ describe('other games', () => {
       snap('atc', { currentPlayer: 0, winner: null, targets: [target, 1], currentVisitHits: hits })
     expect(triggersFor(g([false], 3), g([false, true], 4))).toEqual([])
   })
+  const cricket = (marks: number[][], currentPlayer = 0) => snap('cricket', { phase: 'game', currentPlayer, winner: null, marks })
+  it('cricket: the thrower closing a number', () => {
+    expect(
+      triggersFor(
+        cricket([
+          [2, 0],
+          [3, 0],
+        ]),
+        cricket([
+          [3, 0],
+          [3, 0],
+        ]),
+      ),
+    ).toEqual([{ kind: 'cricket.closed', seat: 0 }])
+  })
+  it('cricket: a mark that does not close, a number already closed and another seat’s marks fire nothing', () => {
+    expect(
+      triggersFor(
+        cricket([
+          [1, 0],
+          [3, 0],
+        ]),
+        cricket([
+          [2, 0],
+          [3, 0],
+        ]),
+      ),
+    ).toEqual([])
+    expect(
+      triggersFor(
+        cricket([
+          [3, 0],
+          [0, 0],
+        ]),
+        cricket([
+          [3, 1],
+          [0, 0],
+        ]),
+      ),
+    ).toEqual([])
+    expect(
+      triggersFor(
+        cricket([
+          [0, 0],
+          [2, 0],
+        ]),
+        cricket([
+          [0, 0],
+          [3, 0],
+        ]),
+      ),
+    ).toEqual([])
+  })
+  const p121 = (made: number[]) => snap('p121', { phase: 'game', currentPlayer: 0, winner: null, seats: made.map(m => ({ made: m })) })
+  it('121: checking out a target', () => {
+    expect(triggersFor(p121([0, 1]), p121([1, 1]))).toEqual([{ kind: 'p121.made', seat: 0 }])
+    expect(triggersFor(p121([1, 1]), p121([1, 1]))).toEqual([])
+  })
   it('hilo: a life lost', () => {
     const g = (lives: number) => snap('hilo', { phase: 'game', currentPlayer: 0, winner: null, seats: [{ lives }, { lives: 3 }] })
     expect(triggersFor(g(3), g(2))).toEqual([{ kind: 'hilo.lifeLost', seat: 0 }])

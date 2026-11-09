@@ -16,6 +16,8 @@ export type Trigger =
   | { kind: 'visit'; seat: number; total: number }
   | { kind: 'bust'; seat: number }
   | { kind: 'checkout'; seat: number }
+  | { kind: 'cricket.closed'; seat: number }
+  | { kind: 'p121.made'; seat: number }
   | { kind: 'hilo.lifeLost'; seat: number }
   | { kind: 'golf.sunk'; seat: number; strokes: number }
   | { kind: 'bulloff.won'; seat: number }
