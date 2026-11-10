@@ -7,7 +7,7 @@ import { limitMessage } from './area'
 import { api } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { holeSchema } from '$shared/minigolf/holeSchema'
-import type { Hole } from '$shared/minigolf/types'
+import type { Hole, Pt } from '$shared/minigolf/types'
 
 type ApiHole = components['schemas']['MinigolfHole']
 export type CourseContent = components['schemas']['MinigolfCourseContent']
@@ -28,11 +28,29 @@ export class HttpError extends Error {
 }
 
 // A Hole is the API's MinigolfHole with readonly points; the generated type has plain number[]
-// (the same JSON), so a hole comes in through holeSchema (which checks it) and goes out cast.
+// (the same JSON), so a hole comes in through holeSchema (which checks it) and goes out mapped.
 /** The API's hole as the editor's Hole (ops.ts, history.ts). */
 export const toHole = (h: ApiHole): Hole => holeSchema.parse(h)
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the same JSON, only Pt's readonly differs
-const fromHole = (h: Hole) => h as unknown as ApiHole
+const mut = (p: Pt): number[] => [p[0], p[1]]
+const fromHole = (h: Hole): ApiHole => ({
+  ...h,
+  outline: h.outline.map(mut),
+  shape: h.shape && {
+    corners: h.shape.corners.map(mut),
+    curves: h.shape.curves.map(c => c && { c1: mut(c.c1), c2: mut(c.c2) }),
+    circles: h.shape.circles.map(c => ({ ...c, center: mut(c.center) })),
+  },
+  walls: h.walls.map(w => ({ ...w, points: w.points.map(mut) })),
+  bumpers: h.bumpers.map(b => ({ ...b, at: mut(b.at) })),
+  slopes: h.slopes.map(s =>
+    'radial' in s
+      ? { radial: { ...s.radial, center: mut(s.radial.center) } }
+      : { bump: { ...s.bump, from: mut(s.bump.from), to: mut(s.bump.to) } },
+  ),
+  terrain: h.terrain?.map(t => ({ mesa: { ...t.mesa, from: mut(t.mesa.from), to: mut(t.mesa.to) } })),
+  tee: mut(h.tee),
+  cup: { ...h.cup, at: mut(h.cup.at) },
+})
 
 type Loaded<T> = { value: T; version: number; updatedAt: string }
 type Saved = { version: number; updatedAt: string }
