@@ -248,7 +248,7 @@ describe('minigolf match screen', () => {
         canThrow: true,
         locked: false,
         canUndo: false,
-        next: { prominent: false, enabled: true },
+        next: { label: 'Next', prominent: false, enabled: true },
         onUndo: () => {},
         onNext: () => {},
         onBoardClick: () => {},
