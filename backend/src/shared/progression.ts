@@ -1,6 +1,7 @@
 // Progression: XP, levels and the local day they are counted in. Shared by the backend, which pays
 // XP when a game ends (progression/rules.ts), and the frontend, which shows levels and bars.
 // Level measures effort, rank (shared/ranked.ts) measures skill: neither feeds the other.
+import { DAY_MS } from './time.js'
 
 /** What a finished game pays. Every number of the XP table lives here. */
 export const XP = {
@@ -139,7 +140,6 @@ export const MILESTONES: readonly Milestone[] = [
 
 export const nextMilestone = (streak: number): Milestone | null => MILESTONES.find(m => m.days > streak) ?? null
 
-const DAY_MS = 86_400_000
 /** Days from `from` to `to` (YYYY-MM-DD each): 1 for the next day. */
 export function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS)

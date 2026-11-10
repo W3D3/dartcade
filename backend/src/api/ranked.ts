@@ -6,10 +6,9 @@ import { getRatings, onlineAverage, ratingChangeSince, recentRanked } from '../d
 import { RANKED_MODES } from '../shared/ranked.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
+import { DAY_MS } from '../shared/time.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database>; now?: () => Date }
-
-const DAY = 24 * 60 * 60 * 1000
 
 /** Ranked matchmaking: your ratings, ranks and last ranked games. */
 export function rankedApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -19,7 +18,7 @@ export function rankedApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   app.get<Route<'getMyRanked'>>('/api/ranked/me', { preValidation: requireAuth, schema: fromSpec('getMyRanked') }, async req => {
     const [ratings, change, average, recent] = await Promise.all([
       getRatings(db, req.userId),
-      ratingChangeSince(db, req.userId, new Date(now().getTime() - 30 * DAY)),
+      ratingChangeSince(db, req.userId, new Date(now().getTime() - 30 * DAY_MS)),
       onlineAverage(db, req.userId),
       recentRanked(db, req.userId),
     ])

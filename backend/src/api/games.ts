@@ -13,11 +13,10 @@ import { fromSpec } from './spec.js'
 import { getAuthUser } from '../auth/session.js'
 import { loadFlagUser, modeAvailable } from '../flags/index.js'
 import type { Route } from './route.js'
+import { DAY_MS } from '../shared/time.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 type GameSummary = components['schemas']['GameSummary']
-
-const DAY_MS = 86_400_000
 
 /** The mode's configMeta, with each field's options read now where the mode has live ones (Minigolf's courses). */
 async function liveConfigMeta(m: AnyGameModule): Promise<NonNullable<AnyGameModule['configMeta']>> {
