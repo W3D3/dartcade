@@ -244,9 +244,7 @@
                   class="self-start h-[30px] px-3 inline-flex items-center rounded-full border border-line-chip text-text-muted text-[13px] font-bold label-caps"
                   >{ordinal(second.placement)}</span
                 >
-                <span class="font-display text-card-title md:text-[38px] xl:text-[48px] leading-[0.9] uppercase text-ink-2 wrap-break-word"
-                  >{second.name}</span
-                >
+                <span class="type-card-title md:text-[38px] xl:text-[48px] leading-[0.9] text-ink-2 wrap-break-word">{second.name}</span>
                 {@render who(second)}
                 {@render opponentRank(second)}
                 <span class="text-[15px] text-text-dim">{second.sub}</span>
