@@ -1,7 +1,7 @@
 <script lang="ts">
   // A team's Turn and Reserve chips (MM-Match-Teams board): the visit's time for the team that is up,
   // the full visit for the other, and the team's shared reserve. Red once the time is nearly gone.
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
   import { teamClocks, type TeamRanked } from '$lib/ranked/teams'
 
   let { team, seat, up }: { team: TeamRanked; seat: number; up: boolean } = $props()

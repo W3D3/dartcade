@@ -12,7 +12,7 @@
   import { createLobby } from '$lib/lobby/create'
   import { acceptMatch } from '$lib/ranked/queue'
   import { queueView } from '$lib/ranked/queueCard'
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
   import AlphaBadge from './feedback/AlphaBadge.svelte'
