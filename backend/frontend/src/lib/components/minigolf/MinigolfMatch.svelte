@@ -5,7 +5,7 @@
   landed for the shot delay.
 -->
 <script lang="ts">
-  import type { MatchProps, ShotControls } from '$lib/components/match/types'
+  import type { ShotControls } from '$lib/components/match/types'
   import { untrack } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import { ChevronDown, ChevronUp } from '@lucide/svelte'
@@ -73,9 +73,7 @@
     onrolled?: (key: string) => void
     /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
     settings: GameSettings
-  } & Omit<ShotControls, 'next'> & {
-      next: Pick<MatchProps['next'], 'prominent' | 'enabled'>
-    } = $props()
+  } & ShotControls = $props()
 
   // 3D where the device can draw it; else the flat view
   const webgl = webglAvailable()
