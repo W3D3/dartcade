@@ -19,7 +19,20 @@ import { validateOptions } from './configMeta.js'
 import { nextTurn, upNext } from './turns.js'
 import { cricketMatchStats } from './cricketStats.js'
 import { rankSeats } from './ranking.js'
-import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
+import {
+  FORMAT_OPTION,
+  legStart,
+  seatPlacements,
+  startTeam,
+  teamCount,
+  teamEntries,
+  teamOfSeats,
+  teamsApplyStartOrder,
+  turnOrder,
+  validateTwoTeams,
+  type TeamsConfig,
+} from './teams.js'
+import { BOT_SPEED_OPTION, BULL_OFF_OPTION } from './commonOptions.js'
 import { OPEN, TARGETS, cricketTarget, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
 
 export type CricketConfig = {
@@ -35,8 +48,6 @@ export type CricketDartEffect = { marks: number; points: number }
 
 /** A committed visit: marks counted and points scored, for the chalkboard. */
 export type CricketVisitRecord = { seat: number; marks: number; points: number; darts: number }
-
-const TEAM_IDS = ['A', 'B'] as const
 
 /**
  * `board` and `legs` are per team (index: `teamOf[seat]`); in singles every seat is its own
@@ -126,14 +137,7 @@ function commit(s: CricketState): CricketState {
 
 // `teams` and `teamStart` are set by the lobby, not the setup form
 export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStart'>, ConfigFieldMeta> = {
-  format: {
-    label: 'Format',
-    tooltip: 'Teams: Team A against Team B, each sharing one score. Players take turns across the teams.',
-    options: [
-      { value: 'singles', label: 'Singles' },
-      { value: 'teams', label: 'Teams' },
-    ],
-  },
+  format: FORMAT_OPTION,
   mode: {
     label: 'Mode',
     tooltip: "Standard: points go to you. Cut-throat: points go to every opponent who hasn't opened the number, and the lowest score wins.",
@@ -142,25 +146,8 @@ export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStar
       { value: 'cutthroat', label: 'Cut-throat' },
     ],
   },
-  bullOff: {
-    label: 'Bull off',
-    tooltip:
-      'Who throws first. Off: player 1 starts. One dart each, closest to the bull goes first. The same bull segment twice is thrown again. If nobody hits a bull, WDC measures the distance and PDC throws again.',
-    options: [
-      { value: 'off', label: 'Off' },
-      { value: 'wdc', label: 'WDC' },
-      { value: 'pdc', label: 'PDC' },
-    ],
-  },
-  botSpeed: {
-    label: 'Bot speed',
-    tooltip: 'How fast a bot seat throws its darts.',
-    options: [
-      { value: 'fast', label: 'Fast' },
-      { value: 'normal', label: 'Normal' },
-      { value: 'slow', label: 'Slow' },
-    ],
-  },
+  bullOff: BULL_OFF_OPTION,
+  botSpeed: BOT_SPEED_OPTION,
   firstTo: {
     label: 'First to',
     tooltip: 'Number of legs needed to win the match.',
@@ -191,8 +178,8 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
     const n = players.length
     const teamOf = teamOfSeats(cfg, n)
     const teams = teamCount(teamOf)
-    const startTeam = cfg.format === 'teams' && cfg.teamStart === 'random' && rng ? (rng() < 0.5 ? 0 : 1) : 0
-    const order = turnOrder(teamOf, startTeam)
+    const first = startTeam(cfg, rng)
+    const order = turnOrder(teamOf, first)
     return {
       cfg,
       teamOf,
@@ -298,10 +285,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       lastVisit: s.lastVisit,
     }
     if (s.cfg.format !== 'teams') return view
-    const teams = seatsByTeam(s.teamOf).map((seats, t) => ({
-      id: TEAM_IDS[t],
-      name: `Team ${TEAM_IDS[t]}`,
-      seats,
+    const teams = teamEntries(s.teamOf, t => ({
       points: s.board.points[t],
       legs: s.legs[t],
     }))
@@ -376,7 +360,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
     }
     const targets = [...final.board.targets]
     if (final.cfg.format !== 'teams') return { mode: 'cricket', targets, legs }
-    const teams = seatsByTeam(final.teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats }))
+    const teams = teamEntries(final.teamOf)
     return { mode: 'cricket', targets, teams, legs }
   },
 
@@ -386,9 +370,5 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
 /** Cricket with an optional bull off deciding the throwing order. */
 // In a team game the bull off winner throws first and the teams take turns
 export const cricketModule = withBullOff(cricketGame, {
-  applyStartOrder: (s, bullOffOrder) => {
-    const winner = bullOffOrder[0]
-    const order = s.cfg.format === 'teams' ? turnOrder(s.teamOf, s.teamOf[winner], winner) : bullOffOrder
-    return { ...s, order, turn: 0, currentPlayer: order[0] }
-  },
+  applyStartOrder: teamsApplyStartOrder,
 })
