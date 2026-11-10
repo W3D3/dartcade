@@ -7,6 +7,7 @@
   shows the red banner in place of This visit until the next dart.
 -->
 <script lang="ts">
+  import { DARTS_PER_VISIT } from '$shared/darts.js'
   import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { HiloGame } from '$lib/api/game-ws'
@@ -89,7 +90,7 @@
   const zone = $derived(zoneOf(game.visitTotal, game))
   const ZONE_PILL = { 'safe-high': 'Above HIGH', 'safe-low': 'Below LOW', danger: 'Between the bars' } as const
   // Below LOW isn't safe yet: a takeout now counts the darts not thrown as misses
-  const toGo = $derived(game.visitLocked || zone !== 'safe-low' ? 0 : Math.max(0, 3 - darts.length))
+  const toGo = $derived(game.visitLocked || zone !== 'safe-low' ? 0 : Math.max(0, DARTS_PER_VISIT - darts.length))
   const pill = $derived(
     darts.length === 0 ? null : game.visitLocked ? 'Missed · −1 life' : toGo > 0 ? `${ZONE_PILL[zone]} · ${toGo} to go` : ZONE_PILL[zone],
   )

@@ -7,6 +7,7 @@
   // SSR renderer. `Chart`'s `marks` is a plain optional-call snippet prop, unaffected.
   import { Chart, Spline, Tooltip } from 'layerchart/svg'
   import type { ChartState, AnyScale } from 'layerchart'
+  import { visitTier } from '$shared/darts.js'
   import { remainingTicks, type Side } from '$lib/details/x01'
   import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
   import { chartGrid, integerTicks } from '$lib/charts/grid'
@@ -117,13 +118,14 @@
     {#snippet aboveMarks({ context }: { context: PointChartState })}
       {#each series as s (s.key)}
         {#each s.points as p, i (i)}
-          {#if p.scored >= 100}
+          {@const tier = visitTier(p.scored)}
+          {#if tier}
             <circle
               cx={context.xScale(p.visit)}
               cy={context.yScale(p.left)}
-              r={p.scored === 180 ? 10 : 7}
+              r={tier === 'max' ? 10 : 7}
               fill="none"
-              stroke-width={p.scored === 180 ? 3 : 1.5}
+              stroke-width={tier === 'max' ? 3 : 1.5}
               style:stroke={colorOf(s.key)}
             />
           {/if}

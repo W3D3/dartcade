@@ -7,6 +7,7 @@ import type { RollOptions } from './rollingNumber.js'
 import type { Stat } from './statPages.js'
 
 import type { AtcGame, X01Game } from './api/game-ws'
+import { DARTS_PER_VISIT } from '$shared/darts.js'
 
 /** A 3-dart average to one decimal; a dash without darts. */
 export const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
@@ -65,7 +66,7 @@ export function x01Player(
   const remaining = game.scores.at(i) ?? 0
   const opened = game.opened.at(i) ?? true
   const running = o.active ? game.currentVisitDarts : []
-  const dartsLeft = 3 - running.length
+  const dartsLeft = DARTS_PER_VISIT - running.length
   const hint =
     o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0
       ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout)

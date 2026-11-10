@@ -1,4 +1,5 @@
 // What the visit band says, and how much it celebrates.
+import { visitTier } from '$shared/darts.js'
 import type { ThrownDart } from './dartSlots.js'
 
 export type VisitFx = 'none' | 'ton' | 'max'
@@ -10,7 +11,10 @@ export type BandData = {
   bust: boolean
 }
 
-export const visitFx = (sum: number): VisitFx => (sum === 180 ? 'max' : sum >= 100 ? 'ton' : 'none')
+export const visitFx = (sum: number): VisitFx => {
+  const tier = visitTier(sum)
+  return tier === 'max' ? 'max' : tier ? 'ton' : 'none'
+}
 export const isBigDart = (score: number): boolean => score >= 50
 
 const EYEBROW: Record<VisitFx, string> = { none: 'This visit', ton: 'Ton plus', max: 'Maximum' }

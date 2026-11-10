@@ -5,6 +5,7 @@ import type { Setup } from '$shared/coach/setup.js'
 import { nextTargetIndex } from '$shared/atc.js'
 import { dartMarks } from './cricket/view.js'
 import { plural } from './fmt.js'
+import { DARTS_PER_VISIT } from '$shared/darts.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 /** `struck`: the label is drawn crossed out (Cricket: a dart on a number every team has closed). */
@@ -25,7 +26,7 @@ function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slo
 /** Slots from `from` to the third: suggestions first, then empty ones. */
 function openSlots(from: number, suggestions: { label: string; foot: string }[]): Slot[] {
   const out: Slot[] = []
-  for (let i = from; i < 3; i++) {
+  for (let i = from; i < DARTS_PER_VISIT; i++) {
     const s = suggestions.at(i - from)
     const next = i === from
     out.push(
@@ -66,14 +67,14 @@ export function x01Slots(o: {
   /** The best setup dart for a score no finish is left for: shown in place of a finish route. Double out only. */
   setup?: (left: number, darts: number) => Setup | null
 }): Slot[] {
-  const done = o.darts.slice(0, 3).map((d, i) => {
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => {
     const score = d.score ?? 0
     return thrownSlot(d, i, score > 0, String(score))
   })
   if (o.bust) {
     return [
       ...done,
-      ...Array.from({ length: 3 - done.length }, (_, k): Slot => ({
+      ...Array.from({ length: DARTS_PER_VISIT - done.length }, (_, k): Slot => ({
         // Plain empty slots: the visit summary already says Bust
         kind: 'empty-later',
         label: '',
@@ -83,7 +84,7 @@ export function x01Slots(o: {
       })),
     ]
   }
-  const dartsLeft = 3 - done.length
+  const dartsLeft = DARTS_PER_VISIT - done.length
   const suggest = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0
   const hint = suggest ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
   const setup = suggest && !hint && o.outMode === 'double' ? o.setup?.(o.remaining, dartsLeft) : null
@@ -114,7 +115,7 @@ export function atcSlots(o: {
     at = nextTargetIndex(o.walk.sequence, from, n)
     return at - from
   }
-  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }
 
@@ -124,9 +125,9 @@ export function atcSlots(o: {
  * locked is over: the slots left are not thrown, with no next dart.
  */
 export function hiloSlots(o: { darts: ThrownDart[]; hint: { need: number; high: number } | null; locked?: boolean }): Slot[] {
-  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, (d.score ?? 0) > 0, String(d.score ?? 0)))
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => thrownSlot(d, i, (d.score ?? 0) > 0, String(d.score ?? 0)))
   if (o.locked) return [...done, ...notThrown(done.length)]
-  const left = 3 - done.length
+  const left = DARTS_PER_VISIT - done.length
   if (!o.hint || left === 0) return [...done, ...openSlots(done.length, [])]
   const { need, high } = o.hint
   const within = left > 1 ? `in ${left} darts` : ''
@@ -151,7 +152,7 @@ export function cricketSlots(o: {
   targets: readonly number[]
   locked: boolean
 }): Slot[] {
-  const done = o.darts.slice(0, 3).map((d, i): Slot => {
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i): Slot => {
     const label = d.segment?.name || 'Miss'
     // No effect is kept for a dart thrown after the leg was won: it counted for nothing, it is no dead number
     const effect = o.effects.at(i)
