@@ -777,6 +777,120 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/lights/profile:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    put:
+      operationId: selectBoardLightProfile
+      summary: Choose the light profile the board uses
+      description: "`default` is the built-in profile; any other id is one of the player's own profiles."
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profileId]
+              additionalProperties: false
+              properties:
+                profileId: { type: string }
+      responses:
+        '204': { description: Saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/profile/export:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    get:
+      operationId: exportBoardLightProfile
+      summary: The board's light profile as a file to download
+      description: Name, seat colours and effects with their settings and on/off state. Never a device address, id or token, and preset looks are names, not WLED state.
+      tags: [lights]
+      responses:
+        '200':
+          description: The profile file, as an attachment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightProfileFile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/profiles/duplicate:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: duplicateBoardLightProfile
+      summary: Copy the board's light profile into a new one of the player's own, and use it
+      description: Named "Copy of …" (numbered when that name is taken).
+      tags: [lights]
+      responses:
+        '201':
+          description: The copy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightProfileSummary' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/profiles/import:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: importBoardLightProfile
+      summary: Make a new light profile from a file, and use it
+      description: Never overwrites. The file is checked field by field; what it doesn't know is ignored and reported, numbers are moved into range, a taken name gets a number. 128 KB at most.
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '201':
+          description: The new profile and what was imported
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightProfileImport' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413':
+          description: The file is over 128 KB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/profiles/{profileId}:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+      - name: profileId
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: deleteBoardLightProfile
+      summary: Delete one of the player's light profiles (boards using it go back to the built-in one)
+      tags: [lights]
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights/seat-colors:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -5367,11 +5481,51 @@ components:
         rules:
           type: array
           items: { $ref: '#/components/schemas/LightRule' }
-    BoardLights:
+    LightProfileSummary:
       type: object
-      required: [enabled, bridgeOnline, bridgeOutdated, devices, found, lastScanAt, probe, profile, scanError]
+      required: [id, name, builtIn]
       additionalProperties: false
       properties:
+        id: { type: string, description: '`default` for the built-in profile' }
+        name: { type: string }
+        builtIn: { type: boolean }
+    LightProfileImport:
+      type: object
+      required: [id, name, imported, ignored, adjusted]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string, description: "The name it got: the file's, unless that was taken" }
+        imported: { type: integer, description: How many effects came through }
+        ignored:
+          {
+            type: array,
+            items: { type: string },
+            description: 'What the file had that was not used: an effect or field this server does not know',
+          }
+        adjusted:
+          { type: array, items: { type: string }, description: 'What was changed to fit: a number moved into range, a colour replaced' }
+    LightProfileFile:
+      type: object
+      required: [format, version, name, seatColors, effects]
+      additionalProperties: false
+      properties:
+        format: { type: string, enum: [dartcade-light-profile] }
+        version: { type: integer, enum: [1] }
+        name: { type: string }
+        seatColors: { $ref: '#/components/schemas/LightSeatColors' }
+        effects:
+          type: array
+          items: { type: object, additionalProperties: true }
+    BoardLights:
+      type: object
+      required: [enabled, bridgeOnline, bridgeOutdated, devices, found, lastScanAt, probe, profile, profiles, scanError]
+      additionalProperties: false
+      properties:
+        profiles:
+          type: array
+          description: The built-in profile, then the player's own
+          items: { $ref: '#/components/schemas/LightProfileSummary' }
         enabled: { type: boolean }
         bridgeOnline: { type: boolean }
         bridgeOutdated: { type: boolean }

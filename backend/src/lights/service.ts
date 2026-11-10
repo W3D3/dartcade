@@ -5,12 +5,12 @@
 import type { WledDeviceRow } from '../db/lights.js'
 import type { Snapshot } from '../schema/game-ws.js'
 import {
-  DEFAULT_PROFILE,
   match,
   patchFor,
   type BoardTrigger,
   type GameId,
   type LightDevice,
+  type Profile,
   type Rule,
   type SeatLayout,
   type Trigger,
@@ -23,8 +23,8 @@ export type LightsDeps = {
   send: (boardId: string, msg: object) => boolean
   bridgeVersion: (boardId: string) => string | null | undefined
   devices: (boardId: string) => Promise<WledDeviceRow[]>
-  /** The board's own seat colours, the built-in ones when it has none. */
-  seatColors: (boardId: string) => Promise<readonly string[]>
+  /** What the board's lights run: its selected profile, the built-in one when it has none. */
+  profile: (boardId: string) => Promise<Profile>
   enabled: (boardId: string) => Promise<boolean>
   getSession: (sessionId: string) => { boardId: string | null; seats: { boardId: string | null }[] } | undefined
   getSnapshot: (sessionId: string) => Snapshot | undefined
@@ -225,22 +225,21 @@ export class LightsService {
 
   /** Plays a profile rule for the API's Test button. False: no such rule, an unsupported/offline bridge, or nothing could be sent. */
   async test(boardId: string, ruleIndex: number): Promise<boolean> {
-    const rule = DEFAULT_PROFILE.rules.at(ruleIndex)
-    if (!rule) return false
     if (!supportsLights(this.deps.bridgeVersion(boardId))) return false
-    const t: BoardTrigger = { ...sampleTrigger(rule.when.trigger), local: true }
     let devices: WledDeviceRow[]
-    let seatColors: readonly string[]
+    let profile: Profile
     try {
       devices = await this.deps.devices(boardId)
-      seatColors = await this.deps.seatColors(boardId)
+      profile = await this.deps.profile(boardId)
     } catch (err) {
       this.deps.warn('lights test failed', err)
       return false
     }
-    if (devices.length === 0) return false
+    const rule = profile.rules.at(ruleIndex)
+    if (!rule || devices.length === 0) return false
+    const t: BoardTrigger = { ...sampleTrigger(rule.when.trigger), local: true }
     for (const device of devices)
-      this.send(boardId, device, rule, t, { seatCount: 1 }, seatColors, rule.type === 'flash' ? rule.holdMs : 3000)
+      this.send(boardId, device, rule, t, { seatCount: 1 }, profile.seatColors, rule.type === 'flash' ? rule.holdMs : 3000)
     return true
   }
 
@@ -338,10 +337,11 @@ export class LightsService {
       if (!supportsLights(this.deps.bridgeVersion(board))) return false
       const devices = await this.deps.devices(board)
       if (devices.length === 0) return false
-      const rule = match(DEFAULT_PROFILE, t, game)
+      const profile = await this.deps.profile(board)
+      const rule = match(profile, t, game)
       if (!rule) return false
-      const seatColors = await this.deps.seatColors(board)
-      for (const device of devices) this.send(board, device, rule, t, layout, seatColors, rule.type === 'flash' ? rule.holdMs : undefined)
+      for (const device of devices)
+        this.send(board, device, rule, t, layout, profile.seatColors, rule.type === 'flash' ? rule.holdMs : undefined)
       if (rule.type === 'scene' && t.kind !== 'takeout.started' && t.kind !== 'calibration.started')
         this.scene.set(board, { t, game, layout })
       return true

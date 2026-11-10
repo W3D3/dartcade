@@ -2,8 +2,8 @@
 import { type Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import type { Database } from './schema.js'
-import { DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
-import type { SegmentMode } from '../shared/lights/types.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
+import type { Profile, Rule, SegmentMode } from '../shared/lights/types.js'
 
 export type WledDeviceRow = {
   id: string
@@ -78,11 +78,10 @@ export async function setLightsEnabled(db: Kysely<Database>, boardId: string, en
   await db.updateTable('boards').set({ lights_enabled: enabled }).where('id', '=', boardId).execute()
 }
 
-/** The board's seat colours: its own, or the built-in ones while it has none. */
-export async function getSeatColors(db: Kysely<Database>, boardId: string): Promise<readonly string[]> {
-  const row = await db.selectFrom('boards').select('light_seat_colors').where('id', '=', boardId).executeTakeFirst()
-  return row?.light_seat_colors ?? DEFAULT_SEAT_COLORS
-}
+/** A profile as the lights use it: the built-in one, or one of the player's own. */
+export type BoardProfile = Profile & { builtIn: boolean }
+
+export const BUILT_IN_PROFILE_ID = DEFAULT_PROFILE.id
 
 /** Null goes back to the built-in colours. */
 export async function setSeatColors(db: Kysely<Database>, boardId: string, colors: string[] | null): Promise<void> {
@@ -90,6 +89,68 @@ export async function setSeatColors(db: Kysely<Database>, boardId: string, color
     .updateTable('boards')
     .set({ light_seat_colors: colors && JSON.stringify(colors) })
     .where('id', '=', boardId)
+    .execute()
+}
+
+/** What the board's lights run: the profile it selected, else the built-in one with the board's own seat colours. */
+export async function getBoardProfile(db: Kysely<Database>, boardId: string): Promise<BoardProfile> {
+  const row = await db
+    .selectFrom('boards')
+    .leftJoin('light_profiles', 'light_profiles.id', 'boards.light_profile_id')
+    .select([
+      'boards.light_seat_colors as boardColors',
+      'light_profiles.id as profileId',
+      'light_profiles.name as name',
+      'light_profiles.seat_colors as seatColors',
+      'light_profiles.rules as rules',
+    ])
+    .where('boards.id', '=', boardId)
+    .executeTakeFirst()
+  if (row?.profileId && row.name && row.seatColors && row.rules) {
+    return { id: row.profileId, name: row.name, seatColors: row.seatColors, rules: row.rules, builtIn: false }
+  }
+  return { ...DEFAULT_PROFILE, seatColors: row?.boardColors ?? DEFAULT_SEAT_COLORS, builtIn: true }
+}
+
+export type LightProfileRow = { id: string; owner_user_id: string; name: string; seat_colors: string[]; rules: Rule[] }
+
+export async function listLightProfiles(db: Kysely<Database>, userId: string): Promise<LightProfileRow[]> {
+  return db.selectFrom('light_profiles').selectAll().where('owner_user_id', '=', userId).orderBy('created_at').orderBy('id').execute()
+}
+
+export async function insertLightProfile(
+  db: Kysely<Database>,
+  p: { ownerUserId: string; name: string; seatColors: readonly string[]; rules: readonly Rule[] },
+): Promise<LightProfileRow> {
+  return db
+    .insertInto('light_profiles')
+    .values({
+      id: ulid(),
+      owner_user_id: p.ownerUserId,
+      name: p.name,
+      seat_colors: JSON.stringify(p.seatColors),
+      rules: JSON.stringify(p.rules),
+    })
+    .returning(['id', 'owner_user_id', 'name', 'seat_colors', 'rules'])
+    .executeTakeFirstOrThrow()
+}
+
+/** True if the player had such a profile. Boards using it go back to the built-in one (the FK). */
+export async function deleteLightProfile(db: Kysely<Database>, userId: string, profileId: string): Promise<boolean> {
+  const result = await db.deleteFrom('light_profiles').where('id', '=', profileId).where('owner_user_id', '=', userId).executeTakeFirst()
+  return result.numDeletedRows > 0n
+}
+
+/** Null selects the built-in profile. */
+export async function setBoardProfile(db: Kysely<Database>, boardId: string, profileId: string | null): Promise<void> {
+  await db.updateTable('boards').set({ light_profile_id: profileId }).where('id', '=', boardId).execute()
+}
+
+export async function setProfileSeatColors(db: Kysely<Database>, profileId: string, colors: readonly string[]): Promise<void> {
+  await db
+    .updateTable('light_profiles')
+    .set({ seat_colors: JSON.stringify(colors) })
+    .where('id', '=', profileId)
     .execute()
 }
 

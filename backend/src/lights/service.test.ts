@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Snapshot } from '../schema/game-ws.js'
-import { DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
+import { DEFAULT_PROFILE, type Profile } from '../shared/lights/index.js'
 import { LightsService, type LightsDeps } from './service.js'
 
 type Sent = { board: string; msg: { kind: string; data: Record<string, unknown> } }
@@ -27,7 +27,7 @@ function setup(over: Partial<LightsDeps> = {}) {
     send: (board, msg) => (sent.push({ board, msg: msg as Sent['msg'] }), true),
     bridgeVersion: () => '0.4.0',
     devices: board => Promise.resolve([dev(`dev-${board}`, board)]),
-    seatColors: () => Promise.resolve(DEFAULT_SEAT_COLORS),
+    profile: () => Promise.resolve(DEFAULT_PROFILE),
     enabled: () => Promise.resolve(true),
     getSession: id => sessions.get(id),
     getSnapshot: id => snaps.get(id),
@@ -92,7 +92,7 @@ describe('LightsService', () => {
 
   it('a board’s own seat colours reach the strip, and a changed colour shows on the next fire', async () => {
     let colors: readonly string[] = ['#010203', '#040506', '#070809', '#0a0b0c', '#0d0e0f', '#101112']
-    const { svc, sent, snaps, sessions } = setup({ seatColors: () => Promise.resolve(colors) })
+    const { svc, sent, snaps, sessions } = setup({ profile: () => Promise.resolve({ ...DEFAULT_PROFILE, seatColors: colors }) })
     sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
     snaps.set('s', x01({}))
     await svc.onPush('s')
@@ -105,9 +105,44 @@ describe('LightsService', () => {
   })
 
   it('test() uses the board’s seat colours too', async () => {
-    const { svc, sent } = setup({ seatColors: () => Promise.resolve(['#010203']) })
+    const { svc, sent } = setup({ profile: () => Promise.resolve({ ...DEFAULT_PROFILE, seatColors: ['#010203'] }) })
     expect(await svc.test('b1', 0)).toBe(true) // turn scene, seat 1
     expect((applies(sent, 'b1')[0].state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[1, 2, 3]])
+  })
+
+  it('a board runs its own profile: its rules decide what lights, and a disabled one never does', async () => {
+    const bust = DEFAULT_PROFILE.rules.find(r => r.when.trigger === 'bust')!
+    const own = (enabled: boolean): Profile => ({
+      id: 'p1',
+      name: 'Mine',
+      seatColors: DEFAULT_PROFILE.seatColors,
+      rules: [{ ...bust, enabled, holdMs: 777 }],
+    })
+    for (const [enabled, holds] of [
+      [true, [777]],
+      [false, []],
+    ] as const) {
+      const { svc, sent, snaps, sessions } = setup({ profile: () => Promise.resolve(own(enabled)) })
+      sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+      snaps.set('s', x01({ currentVisitDarts: [{}], scores: [30, 501], visitStartScores: [40, 501] }))
+      await svc.onPush('s')
+      snaps.set(
+        's',
+        x01({ currentVisitDarts: [{}, {}], scores: [40, 501], visitStartScores: [40, 501], bustThisVisit: true, visitLocked: true }),
+      )
+      await svc.onPush('s')
+      expect(applies(sent, 'b1').map(a => a.hold_ms)).toEqual(holds)
+    }
+  })
+
+  it('the Test button plays a rule of the board’s own profile', async () => {
+    const { svc, sent } = setup({
+      profile: () =>
+        Promise.resolve({ ...DEFAULT_PROFILE, rules: DEFAULT_PROFILE.rules.filter(r => r.when.trigger === 'takeout.started') }),
+    })
+    expect(await svc.test('b1', 0)).toBe(true) // its only rule is the takeout scene
+    expect(applies(sent, 'b1')[0].hold_ms).toBe(3000)
+    expect(await svc.test('b1', 1)).toBe(false)
   })
 
   it('takeout lights yellow, then the game scene comes back', async () => {

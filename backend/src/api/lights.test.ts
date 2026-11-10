@@ -4,7 +4,8 @@ import { createFastify } from './fastify.js'
 import { lightsApiPlugin } from './lights.js'
 import { LightsStore } from '../lights/store.js'
 import { setupFlags } from '../flags/index.js'
-import { DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
+import { exportProfile } from '../lights/profileFile.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn(),
@@ -17,8 +18,14 @@ vi.mock('../db/lights.js', () => ({
   deleteWledDevice: vi.fn(),
   getLightsEnabled: vi.fn(),
   setLightsEnabled: vi.fn(),
-  getSeatColors: vi.fn(),
   setSeatColors: vi.fn(),
+  getBoardProfile: vi.fn(),
+  listLightProfiles: vi.fn(),
+  insertLightProfile: vi.fn(),
+  deleteLightProfile: vi.fn(),
+  setBoardProfile: vi.fn(),
+  setProfileSeatColors: vi.fn(),
+  BUILT_IN_PROFILE_ID: 'default',
 }))
 // The route gate reads the flag user through here; a non-admin by default, like sessions.test.ts.
 vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }) }))
@@ -40,13 +47,24 @@ beforeEach(async () => {
   vi.mocked(dbLights.deleteWledDevice).mockReset()
   vi.mocked(dbLights.getLightsEnabled).mockReset().mockResolvedValue(true)
   vi.mocked(dbLights.setLightsEnabled).mockReset().mockResolvedValue(undefined)
-  vi.mocked(dbLights.getSeatColors).mockReset().mockResolvedValue(DEFAULT_SEAT_COLORS)
   vi.mocked(dbLights.setSeatColors).mockReset().mockResolvedValue(undefined)
+  vi.mocked(dbLights.getBoardProfile).mockReset().mockResolvedValue(builtInProfile())
+  vi.mocked(dbLights.listLightProfiles).mockReset().mockResolvedValue([])
+  vi.mocked(dbLights.insertLightProfile)
+    .mockReset()
+    .mockImplementation((_db, p) =>
+      Promise.resolve({ id: 'new-1', owner_user_id: p.ownerUserId, name: p.name, seat_colors: [...p.seatColors], rules: [...p.rules] }),
+    )
+  vi.mocked(dbLights.deleteLightProfile).mockReset().mockResolvedValue(true)
+  vi.mocked(dbLights.setBoardProfile).mockReset().mockResolvedValue(undefined)
+  vi.mocked(dbLights.setProfileSeatColors).mockReset().mockResolvedValue(undefined)
   // On for everyone by default, so the rest of this file can ignore the flag; the "flag off" test
   // below overrides it.
   await setupFlags(new Set(['lights.enabled']))
 })
 afterEach(() => vi.unstubAllEnvs())
+
+const builtInProfile = (seatColors: readonly string[] = DEFAULT_SEAT_COLORS) => ({ ...DEFAULT_PROFILE, seatColors, builtIn: true })
 
 const SIX = ['#111111', '#222222', '#333333', '#444444', '#555555', '#666666']
 
@@ -55,6 +73,11 @@ const LIGHTS_ROUTES: { method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE'; url:
   { method: 'PUT', url: '/api/boards/board-1/lights', payload: { enabled: false } },
   { method: 'PUT', url: '/api/boards/board-1/lights/seat-colors', payload: { seatColors: SIX } },
   { method: 'DELETE', url: '/api/boards/board-1/lights/seat-colors' },
+  { method: 'PUT', url: '/api/boards/board-1/lights/profile', payload: { profileId: 'default' } },
+  { method: 'GET', url: '/api/boards/board-1/lights/profile/export' },
+  { method: 'POST', url: '/api/boards/board-1/lights/profiles/duplicate' },
+  { method: 'POST', url: '/api/boards/board-1/lights/profiles/import', payload: {} },
+  { method: 'DELETE', url: '/api/boards/board-1/lights/profiles/p1' },
   { method: 'POST', url: '/api/boards/board-1/lights/scan' },
   { method: 'POST', url: '/api/boards/board-1/lights/probe', payload: { host: '192.168.1.80' } },
   { method: 'POST', url: '/api/boards/board-1/lights/blink', payload: { host: '192.168.1.80' } },
@@ -381,13 +404,136 @@ describe('PUT /api/boards/:id/lights', () => {
   })
 })
 
+const ownRow = (id: string, name: string) => ({
+  id,
+  owner_user_id: 'user-1',
+  name,
+  seat_colors: [...DEFAULT_SEAT_COLORS],
+  rules: DEFAULT_PROFILE.rules,
+})
+
+describe('light profiles', () => {
+  const url = '/api/boards/board-1/lights'
+  beforeEach(() => vi.mocked(queries.getBoardById).mockResolvedValue(board() as any))
+
+  it('GET lists the built-in profile first, then the player’s own', async () => {
+    vi.mocked(dbLights.listLightProfiles).mockResolvedValue([ownRow('p1', 'Mine')])
+    const { app } = makeApp()
+    const body = (await app.inject({ method: 'GET', url })).json()
+    expect(body.profiles).toEqual([
+      { id: 'default', name: 'Dartcade default', builtIn: true },
+      { id: 'p1', name: 'Mine', builtIn: false },
+    ])
+    expect(body.profile.builtIn).toBe(true)
+  })
+
+  it('selects the built-in profile or one of the player’s own, and 404s one that is not theirs', async () => {
+    vi.mocked(dbLights.listLightProfiles).mockResolvedValue([ownRow('p1', 'Mine')])
+    const { app, lights } = makeApp()
+    expect((await app.inject({ method: 'PUT', url: `${url}/profile`, payload: { profileId: 'p1' } })).statusCode).toBe(204)
+    expect(dbLights.setBoardProfile).toHaveBeenLastCalledWith(expect.anything(), 'board-1', 'p1')
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+    expect((await app.inject({ method: 'PUT', url: `${url}/profile`, payload: { profileId: 'default' } })).statusCode).toBe(204)
+    expect(dbLights.setBoardProfile).toHaveBeenLastCalledWith(expect.anything(), 'board-1', null)
+    expect((await app.inject({ method: 'PUT', url: `${url}/profile`, payload: { profileId: 'someone-elses' } })).statusCode).toBe(404)
+  })
+
+  it('duplicates the board’s profile as "Copy of …", numbered when taken, and uses the copy', async () => {
+    vi.mocked(dbLights.listLightProfiles).mockResolvedValue([ownRow('p1', 'Copy of Dartcade default')])
+    const { app, lights } = makeApp()
+    const res = await app.inject({ method: 'POST', url: `${url}/profiles/duplicate` })
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toEqual({ id: 'new-1', name: 'Copy of Dartcade default 2', builtIn: false })
+    const saved = vi.mocked(dbLights.insertLightProfile).mock.calls[0][1]
+    expect(saved.rules).toEqual(DEFAULT_PROFILE.rules)
+    expect(saved.seatColors).toEqual(DEFAULT_SEAT_COLORS)
+    expect(dbLights.setBoardProfile).toHaveBeenCalledWith(expect.anything(), 'board-1', 'new-1')
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+
+  it('409s a duplicate or import past the player’s profile limit', async () => {
+    vi.mocked(dbLights.listLightProfiles).mockResolvedValue(Array.from({ length: 20 }, (_, i) => ownRow(`p${i}`, `P${i}`)))
+    const { app } = makeApp()
+    expect((await app.inject({ method: 'POST', url: `${url}/profiles/duplicate` })).statusCode).toBe(409)
+    const file = exportProfile(DEFAULT_PROFILE)
+    expect((await app.inject({ method: 'POST', url: `${url}/profiles/import`, payload: file })).statusCode).toBe(409)
+    expect(dbLights.insertLightProfile).not.toHaveBeenCalled()
+  })
+
+  it('409s when a second request took the name first', async () => {
+    vi.mocked(dbLights.insertLightProfile).mockRejectedValue(Object.assign(new Error('dup'), { code: '23505' }))
+    const { app } = makeApp()
+    expect((await app.inject({ method: 'POST', url: `${url}/profiles/duplicate` })).statusCode).toBe(409)
+  })
+
+  it('exports the profile as a download with no device or id data', async () => {
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'GET', url: `${url}/profile/export` })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-disposition']).toBe('attachment; filename="dartcade-default.dartcade-lights.json"')
+    const body = res.json()
+    expect(Object.keys(body).sort()).toEqual(['effects', 'format', 'name', 'seatColors', 'version'])
+    expect(JSON.stringify(body)).not.toMatch(/host|mac|token|board-1|user-1|"id"|"state"/)
+  })
+
+  it('imports a file as a new profile (never overwriting), uses it and says what came through', async () => {
+    vi.mocked(dbLights.listLightProfiles).mockResolvedValue([ownRow('p1', 'Mine')])
+    const file = {
+      ...exportProfile(DEFAULT_PROFILE),
+      name: 'Mine',
+      effects: [...exportProfile(DEFAULT_PROFILE).effects, { trigger: 'nope', seats: 'any', type: 'flash', look: { preset: '180' } }],
+    }
+    const { app, lights } = makeApp()
+    const res = await app.inject({ method: 'POST', url: `${url}/profiles/import`, payload: file })
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ id: 'new-1', name: 'Mine 2', imported: DEFAULT_PROFILE.rules.length })
+    expect(res.json().ignored).toEqual(['effect 16: unknown effect "nope"'])
+    expect(dbLights.deleteLightProfile).not.toHaveBeenCalled()
+    expect(dbLights.setBoardProfile).toHaveBeenCalledWith(expect.anything(), 'board-1', 'new-1')
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+
+  it.each([
+    ['not a profile file', { hello: 'world' }],
+    ['another version', { ...exportProfile(DEFAULT_PROFILE), version: 2 }],
+    ['no usable effect', { ...exportProfile(DEFAULT_PROFILE), effects: [{ trigger: 'nope' }] }],
+  ])('400s an import that is %s and stores nothing', async (_name, payload) => {
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'POST', url: `${url}/profiles/import`, payload })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBeTruthy()
+    expect(dbLights.insertLightProfile).not.toHaveBeenCalled()
+  })
+
+  it('refuses an import file over 128 KB', async () => {
+    const { app } = makeApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: `${url}/profiles/import`,
+      payload: { ...exportProfile(DEFAULT_PROFILE), pad: 'x'.repeat(130 * 1024) },
+    })
+    expect(res.statusCode).toBe(413)
+    expect(dbLights.insertLightProfile).not.toHaveBeenCalled()
+  })
+
+  it('deletes one of the player’s profiles and 404s the built-in one or one that is not theirs', async () => {
+    const { app, lights } = makeApp()
+    expect((await app.inject({ method: 'DELETE', url: `${url}/profiles/p1` })).statusCode).toBe(204)
+    expect(dbLights.deleteLightProfile).toHaveBeenCalledWith(expect.anything(), 'user-1', 'p1')
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+    expect((await app.inject({ method: 'DELETE', url: `${url}/profiles/default` })).statusCode).toBe(404)
+    vi.mocked(dbLights.deleteLightProfile).mockResolvedValue(false)
+    expect((await app.inject({ method: 'DELETE', url: `${url}/profiles/p9` })).statusCode).toBe(404)
+  })
+})
+
 describe('seat colours', () => {
   it('GET shows the built-in colours until the board has its own, and never puts them on a device', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
     const { app } = makeApp()
     const builtIn = (await app.inject({ method: 'GET', url: '/api/boards/board-1/lights' })).json()
     expect(builtIn.profile.seatColors).toEqual(['#56d4e8', '#efeee6', '#ff5a1f', '#ff4fa3', '#7c5cff', '#2ecf8f'])
-    vi.mocked(dbLights.getSeatColors).mockResolvedValue(SIX)
+    vi.mocked(dbLights.getBoardProfile).mockResolvedValue(builtInProfile(SIX))
     vi.mocked(dbLights.listWledDevices).mockResolvedValue([
       {
         id: 'd1',
@@ -419,6 +565,17 @@ describe('seat colours', () => {
     expect(res.statusCode).toBe(204)
     expect(dbLights.setSeatColors).toHaveBeenCalledWith(expect.anything(), 'board-1', ['#aabbcc', ...SIX.slice(1)])
     expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+
+  it('on a profile of the player’s own, PUT and DELETE change that profile, not the board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    vi.mocked(dbLights.getBoardProfile).mockResolvedValue({ ...DEFAULT_PROFILE, id: 'p1', name: 'Mine', builtIn: false })
+    const { app } = makeApp()
+    await app.inject({ method: 'PUT', url: '/api/boards/board-1/lights/seat-colors', payload: { seatColors: SIX } })
+    expect(dbLights.setProfileSeatColors).toHaveBeenLastCalledWith(expect.anything(), 'p1', SIX)
+    await app.inject({ method: 'DELETE', url: '/api/boards/board-1/lights/seat-colors' })
+    expect(dbLights.setProfileSeatColors).toHaveBeenLastCalledWith(expect.anything(), 'p1', DEFAULT_SEAT_COLORS)
+    expect(dbLights.setSeatColors).not.toHaveBeenCalled()
   })
 
   it.each([

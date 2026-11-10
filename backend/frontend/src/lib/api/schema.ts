@@ -635,6 +635,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/lights/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose the light profile the board uses
+         * @description `default` is the built-in profile; any other id is one of the player's own profiles.
+         */
+        put: operations["selectBoardLightProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/profile/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The board's light profile as a file to download
+         * @description Name, seat colours and effects with their settings and on/off state. Never a device address, id or token, and preset looks are names, not WLED state.
+         */
+        get: operations["exportBoardLightProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/profiles/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy the board's light profile into a new one of the player's own, and use it
+         * @description Named "Copy of …" (numbered when that name is taken).
+         */
+        post: operations["duplicateBoardLightProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/profiles/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a new light profile from a file, and use it
+         * @description Never overwrites. The file is checked field by field; what it doesn't know is ignored and reported, numbers are moved into range, a taken name gets a number. 128 KB at most.
+         */
+        post: operations["importBoardLightProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/profiles/{profileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one of the player's light profiles (boards using it go back to the built-in one) */
+        delete: operations["deleteBoardLightProfile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/lights/seat-colors": {
         parameters: {
             query?: never;
@@ -4190,7 +4298,37 @@ export interface components {
             seatColors: components["schemas"]["LightSeatColors"];
             rules: components["schemas"]["LightRule"][];
         };
+        LightProfileSummary: {
+            /** @description `default` for the built-in profile */
+            id: string;
+            name: string;
+            builtIn: boolean;
+        };
+        LightProfileImport: {
+            id: string;
+            /** @description The name it got: the file's, unless that was taken */
+            name: string;
+            /** @description How many effects came through */
+            imported: number;
+            /** @description What the file had that was not used: an effect or field this server does not know */
+            ignored: string[];
+            /** @description What was changed to fit: a number moved into range, a colour replaced */
+            adjusted: string[];
+        };
+        LightProfileFile: {
+            /** @enum {string} */
+            format: "dartcade-light-profile";
+            /** @enum {integer} */
+            version: 1;
+            name: string;
+            seatColors: components["schemas"]["LightSeatColors"];
+            effects: {
+                [key: string]: unknown;
+            }[];
+        };
         BoardLights: {
+            /** @description The built-in profile, then the player's own */
+            profiles: components["schemas"]["LightProfileSummary"][];
             enabled: boolean;
             bridgeOnline: boolean;
             bridgeOutdated: boolean;
@@ -6489,6 +6627,158 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    selectBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    profileId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    exportBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile file, as an attachment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightProfileFile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    duplicateBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The copy */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightProfileSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    importBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description The new profile and what was imported */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightProfileImport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The file is over 128 KB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
