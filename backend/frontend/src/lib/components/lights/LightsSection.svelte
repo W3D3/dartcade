@@ -42,6 +42,7 @@
   let loadFailed = $state(false)
   let seatColorError = $state<string | null>(null)
   let profileError = $state<string | null>(null)
+  let effectError = $state<string | null>(null)
   let importResult = $state<{ name: string; imported: number; ignored: string[]; adjusted: string[] } | null>(null)
   let confirmDelete = $state(false)
   const panelState = $derived(lightsLoadState(!!lights, loadFailed))
@@ -237,6 +238,28 @@
     )
   }
 
+  /** Switches an effect on or off, showing it at once; a failed save puts the switch back. */
+  async function setEffect(index: number, enabled: boolean) {
+    if (!selectedId || !lights) return
+    const id = selectedId
+    const show = (on: boolean) => {
+      if (lights && id === selectedId)
+        lights = {
+          ...lights,
+          profile: { ...lights.profile, rules: lights.profile.rules.map((r, i) => (i === index ? { ...r, enabled: on } : r)) },
+        }
+    }
+    const prev = lights.profile.rules[index].enabled
+    effectError = null
+    show(enabled)
+    const { error } = await api
+      .PUT('/api/boards/{id}/lights/effects/{index}', { params: { path: { id, index } }, body: { enabled } })
+      .catch(() => ({ error: true }))
+    if (!error) return
+    show(prev)
+    if (id === selectedId) effectError = 'Could not switch that effect'
+  }
+
   function setSeatColor(seat: number, hex: string) {
     if (lights) return saveSeatColors(lights.profile.seatColors.map((c, i) => (i === seat ? hex : c)))
   }
@@ -373,6 +396,7 @@
           {#if testError}<ErrorText>{testError}</ErrorText>{/if}
           {#if seatColorError}<ErrorText>{seatColorError}</ErrorText>{/if}
           {#if profileError}<ErrorText>{profileError}</ErrorText>{/if}
+          {#if effectError}<ErrorText>{effectError}</ErrorText>{/if}
           <LightProfileCard
             profile={lights.profile}
             profiles={lights.profiles}
@@ -380,6 +404,7 @@
             ontest={(rule: number) => void test(rule)}
             onseatcolor={(seat: number, hex: string) => void setSeatColor(seat, hex)}
             onresetseatcolors={() => void resetSeatColors()}
+            onenabled={(index: number, enabled: boolean) => void setEffect(index, enabled)}
             onselect={(profileId: string) => void selectProfile(profileId)}
             onduplicate={() => void duplicateProfile()}
             onimport={(file: File) => void importProfile(file)}

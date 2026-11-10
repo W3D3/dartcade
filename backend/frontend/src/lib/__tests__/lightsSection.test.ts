@@ -11,6 +11,7 @@ const handlers = {
   ontest: () => {},
   onseatcolor: () => {},
   onresetseatcolors: () => {},
+  onenabled: () => {},
   onselect: () => {},
   onduplicate: () => {},
   onimport: () => {},
@@ -103,5 +104,30 @@ describe('LightProfileCard', () => {
       )?.[1]
     expect(reset(profile)).toMatch(DISABLED)
     expect(reset({ ...profile, seatColors: ['#ff0000', ...profile.seatColors.slice(1)] })).not.toMatch(DISABLED)
+  })
+
+  describe('the switches', () => {
+    const switches = (p: LightProfile) =>
+      [
+        ...render(LightProfileCard, { props: { profile: p, canTest: true, ...handlers } }).body.matchAll(
+          /<button([^>]*role="switch"[^>]*)>/g,
+        ),
+      ].map(m => m[1])
+
+    it('has one per effect, named after the effect, on for the effects that ship on', () => {
+      const all = switches(profile)
+      expect(all).toHaveLength(profile.rules.length)
+      expect(all.filter(a => a.includes('aria-checked="true"'))).toHaveLength(profile.rules.filter(r => r.enabled).length)
+      expect(all.some(a => a.includes('aria-label="Visit scored = 180 on"') && a.includes('aria-checked="true"'))).toBe(true)
+      expect(all.some(a => a.includes('aria-label="Lobby on"') && a.includes('aria-checked="false"'))).toBe(true)
+    })
+
+    it('shows an effect that was switched off as off, and keeps its Test button', () => {
+      const off: LightProfile = { ...profile, rules: profile.rules.map(r => (r.when.trigger === 'bust' ? { ...r, enabled: false } : r)) }
+      const all = switches(off)
+      expect(all.some(a => a.includes('aria-label="Bust on"') && a.includes('aria-checked="false"'))).toBe(true)
+      const html = render(LightProfileCard, { props: { profile: off, canTest: true, ...handlers } }).body
+      expect(html).toContain('aria-label="Test rule 10: Bust"')
+    })
   })
 })
