@@ -1,5 +1,6 @@
 <!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
+  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
@@ -160,11 +161,10 @@
     games = games.map(g => (g.id === game.id ? { ...g, invalidated: null } : g))
   }
 
-  let playerTimer: ReturnType<typeof setTimeout> | undefined
+  const reloadLater = debounced(() => void reload(), SEARCH_DEBOUNCE_MS)
   function onPlayerInput(value: string): void {
     filters.player = value
-    clearTimeout(playerTimer)
-    playerTimer = setTimeout(() => void reload(), 300)
+    reloadLater.call()
   }
 
   onMount(() => {

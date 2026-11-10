@@ -1,5 +1,6 @@
 <!-- Courses players made (`#/minigolf/browse`, behind minigolf.userCourses.enabled): search by name, play counts, and a way to report one. -->
 <script lang="ts">
+  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { Flag } from '@lucide/svelte'
@@ -26,7 +27,6 @@
   let notice = $state('')
   let reporting = $state<BrowseCourse | null>(null)
 
-  let timer: ReturnType<typeof setTimeout> | undefined
   async function refresh(): Promise<void> {
     const list = await loadBrowse(search)
     if (list === null) error = "Couldn't load the courses."
@@ -35,13 +35,13 @@
       error = ''
     }
   }
+  const refreshLater = debounced(() => void refresh(), SEARCH_DEBOUNCE_MS)
   function onSearch(): void {
-    clearTimeout(timer)
-    timer = setTimeout(() => void refresh(), 250)
+    refreshLater.call()
   }
   onMount(() => {
     void refresh()
-    return () => clearTimeout(timer)
+    return refreshLater.cancel
   })
 
   async function sendReport(reason: string): Promise<void> {
