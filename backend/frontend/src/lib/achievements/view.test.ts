@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ACHIEVEMENTS } from '$shared/achievements.js'
-import { badgeOf, badgesOf, byCategory, compare, filterBadges, progressLine, statusLine, summarize } from './view'
+import { modeNote, badgeOf, badgesOf, byCategory, compare, filterBadges, progressLine, statusLine, summarize } from './view'
 
 const def = ACHIEVEMENTS.find(a => a.id === 'x01.180')!
 const row = (count: number, tier: number) => ({
@@ -41,10 +41,17 @@ describe('collection', () => {
     expect(filterBadges(badges, 'earned').map(b => b.def.id)).toEqual(['x01.180'])
     expect(filterBadges(badges, 'notYet')).toHaveLength(ACHIEVEMENTS.length - 1)
     expect(summarize(badges)).toMatchObject({ earned: 1, tiers: 3, highest: 3, latest: { def: { id: 'x01.180' } } })
-    expect(byCategory(badges).map(g => g.category)).toEqual(['x01'])
+    expect(byCategory(badges).map(g => g.category)).toEqual(['countdown'])
   })
   it('compares two players', () => {
     const theirs = badgesOf({ achievements: [row(30, 4)], showcase: [], unseen: 0 })
     expect(compare(badges, theirs)).toEqual({ both: 1, ahead: [def.name], behind: [] })
+  })
+})
+
+describe('modeNote', () => {
+  it('names the modes of an achievement that narrows its category', () => {
+    expect(modeNote(def)).toBe('X01 only')
+    expect(modeNote(ACHIEVEMENTS.find(a => a.id === 'x01.bullseye')!)).toBeNull()
   })
 })

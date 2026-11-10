@@ -2,12 +2,12 @@ import { games } from '../games/index.js'
 import { noStats } from '../games/matchStats.js'
 import { newSession, replayPooled, StoredConfigSchema, type LoggedInput, type WarnFn } from '../session/replay.js'
 import type { AtcDetail, CricketDetail, HiloDetail, MatchStats, MinigolfDetail, P121Detail, X01Detail } from '../session/types.js'
-import { getGameDetails, saveGameDetail, type HistoryGame } from '../db/history.js'
+import { getFinishedGame, getGameDetails, saveGameDetail, type HistoryGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 
-type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | HiloDetail | CricketDetail
+export type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | HiloDetail | CricketDetail
 type Built = { detail: Detail; stats: MatchStats }
 
 // Bump when a mode's detail() or matchStats() output changes without its module version: every
@@ -24,6 +24,12 @@ const building = new Map<string, Promise<Built | null>>()
  */
 export async function storedDetail(db: Kysely<Database>, game: HistoryGame, warn: WarnFn): Promise<Built | null> {
   return (await storedDetails(db, [game], warn))[0]
+}
+
+/** The detail of a finished game by id (stored, else replayed once); null when it is not finished or has no module. */
+export async function finishedDetail(db: Kysely<Database>, sessionId: string, warn: WarnFn): Promise<Detail | null> {
+  const game = await getFinishedGame(db, sessionId)
+  return game ? ((await storedDetail(db, game, warn))?.detail ?? null) : null
 }
 
 /** storedDetail for each game, in order: the stored ones read in one query, the rest replayed one by one. */

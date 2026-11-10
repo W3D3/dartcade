@@ -6,9 +6,10 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/achievements.js'
 import * as xp from '../db/progression.js'
-import { playerGame, x01DetailOf } from '../progression/service.js'
-import { challengeGame } from '../progression/facts.js'
-import { xpForTiers } from '../shared/achievements.js'
+import { playerGame } from '../progression/service.js'
+import { finishedDetail } from '../history/detail.js'
+import { countdownGame } from './countdown.js'
+import { countsFor, xpForTiers } from '../shared/achievements.js'
 import { levelOf, localDate } from '../shared/progression.js'
 import type { AchievementUnlockedMessage } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
@@ -33,16 +34,16 @@ export class AchievementsService {
   /** Counts the game for every account seated in it; where the flag is on it also pays the tiers' XP and pushes what was unlocked. */
   async countGame(sessionId: string, opts: { backfill?: boolean } = {}): Promise<void> {
     const game = await xp.getXpGame(this.deps.db, sessionId)
-    if (!game || game.gameId !== 'x01') return
+    if (!game || !countsFor(game.gameId)) return
     const userIds = [...new Set(game.seats.flatMap(s => (s.userId !== null && !s.bot ? [s.userId] : [])))]
-    const x01 = await x01DetailOf(this.deps.db, game.id, this.deps.warn)
+    const detail = await finishedDetail(this.deps.db, game.id, this.deps.warn)
     for (const userId of userIds) {
       // Counts are kept for everyone (turning the flag on later loses nothing); XP and the push only where it is on
       const paying = !opts.backfill && (await this.deps.enabled(userId))
       const player = playerGame(game, userId)
       if (!player) continue
       const manual = (await this.deps.manualDarts?.(userId)) ?? false
-      const deltas = achievementDeltas(challengeGame(game, userId, player, x01, manual))
+      const deltas = achievementDeltas(countdownGame(game, userId, player, detail, manual))
       const msg = await this.deps.db.transaction().execute(async trx => {
         await xp.lockUser(trx, userId)
         if (!(await q.claimGame(trx, userId, game.id))) return null
@@ -96,12 +97,13 @@ export class AchievementsService {
     }
   }
 
-  /** Counts the finished games from before achievements existed, once; a restart resumes (counted games write nothing). Pays no XP. */
+  /**
+   * Counts the finished games nobody has counted yet (from before achievements, or of a mode added to
+   * them since), no XP, no push. A restart resumes: counted games are left out.
+   */
   async backfill(): Promise<number> {
-    if (await q.backfillDone(this.deps.db)) return 0
-    const ids = await xp.finishedGameIds(this.deps.db)
+    const ids = await q.uncountedGameIds(this.deps.db)
     for (const id of ids) await this.countGame(id, { backfill: true })
-    await q.markBackfillDone(this.deps.db)
     return ids.length
   }
 }

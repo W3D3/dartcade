@@ -1,13 +1,11 @@
 // What the Achievements screens show about one badge or about a player's collection. Pure: the
 // catalogue is shared (shared/achievements.ts), the counts come from GET /api/achievements.
 import { ACHIEVEMENTS, TIER_NAMES, type AchievementCategory, type AchievementDef } from '$shared/achievements.js'
+import { gameTitle } from '$shared/gameNames.js'
 import type { components } from '$lib/api/schema'
 
 export type Achievements = components['schemas']['Achievements']
 export type AchievementRow = Achievements['achievements'][number]
-
-export const CATEGORY_NAME: Record<AchievementCategory, string> = { x01: 'X01', minigolf: 'Minigolf', social: 'Social' }
-const CATEGORIES: AchievementCategory[] = ['x01', 'minigolf', 'social']
 
 export type Badge = {
   def: AchievementDef
@@ -82,12 +80,16 @@ export function summarize(badges: Badge[]): Summary {
   }
 }
 
-/** The badges of a category, for the page's sections; empty categories left out. */
+/** The badges of a category, for the page's sections, in catalogue order; categories without badges are left out. */
 export function byCategory(badges: Badge[]): { category: AchievementCategory; badges: Badge[] }[] {
-  return CATEGORIES.map(category => ({ category, badges: badges.filter(b => b.def.category === category) })).filter(
-    g => g.badges.length > 0,
-  )
+  return [...new Set(badges.map(b => b.def.category))].map(category => ({
+    category,
+    badges: badges.filter(b => b.def.category === category),
+  }))
 }
+
+/** "X01 only" for an achievement that narrows its category's game modes; null when all of them count. */
+export const modeNote = (def: AchievementDef): string | null => (def.modes ? `${def.modes.map(gameTitle).join(' · ')} only` : null)
 
 /** Profile compare line: how many both hold, and who leads where. */
 export function compare(mine: Badge[], theirs: Badge[]): { both: number; ahead: string[]; behind: string[] } {

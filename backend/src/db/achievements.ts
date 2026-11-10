@@ -1,6 +1,6 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
-import { achievement, tierOf } from '../shared/achievements.js'
+import { ACHIEVEMENTS, achievement, modesOf, tierOf } from '../shared/achievements.js'
 
 export type AchievementRow = {
   id: string
@@ -109,10 +109,37 @@ export async function markSeen(db: Kysely<Database>, userId: string): Promise<vo
     .execute()
 }
 
-export async function backfillDone(db: Kysely<Database>): Promise<boolean> {
-  return (await db.selectFrom('achievement_backfill').select('done_at').executeTakeFirst()) !== undefined
-}
-
-export async function markBackfillDone(db: Kysely<Database>): Promise<void> {
-  await db.insertInto('achievement_backfill').defaultValues().execute()
+/**
+ * Finished games of a mode that counts with an account seat not counted yet, oldest first. Per seat:
+ * a game of guests and bots only is never listed, and a game one of two accounts was counted in
+ * still is until the other is.
+ */
+export async function uncountedGameIds(db: Kysely<Database>): Promise<string[]> {
+  const modes = [...new Set(ACHIEVEMENTS.flatMap(modesOf))]
+  const rows = await db
+    .selectFrom('game_sessions as g')
+    .innerJoin('game_players as p', 'p.session_id', 'g.id')
+    .select(['g.id', 'g.finished_at'])
+    .distinct()
+    .where('g.status', '=', 'finished')
+    .where('g.invalidated_at', 'is', null)
+    .where('g.finished_at', 'is not', null)
+    .where('g.game_id', 'in', modes)
+    .where('p.user_id', 'is not', null)
+    .where('p.bot_level', 'is', null)
+    .where(eb =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom('achievement_games as a')
+            .select('a.game_id')
+            .whereRef('a.game_id', '=', 'g.id')
+            .whereRef('a.user_id', '=', 'p.user_id'),
+        ),
+      ),
+    )
+    .orderBy('g.finished_at')
+    .orderBy('g.id')
+    .execute()
+  return rows.map(r => r.id)
 }

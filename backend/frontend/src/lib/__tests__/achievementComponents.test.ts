@@ -62,7 +62,10 @@ describe('AchievementList and ShowcaseBar', () => {
   const badges = ACHIEVEMENTS.map(d => badgeOf(d, undefined))
   it('lists every badge under its category with the filter counts', () => {
     const body = render(AchievementList, { props: { badges } }).body
-    expect(body).toContain('X01')
+    expect(body).toContain('Countdown')
+    expect(body).toContain('games typed in by hand on the keypad don')
+    expect(body).not.toContain('Tiers go')
+    expect(body).toContain('X01 · 121')
     expect(body).toContain(`0 of ${badges.length} earned`)
     for (const d of ACHIEVEMENTS) expect(body).toContain(`aria-label="${d.name.replace('&', '&amp;')}"`)
   })
@@ -70,6 +73,7 @@ describe('AchievementList and ShowcaseBar', () => {
     const body = render(ShowcaseBar, { props: { slots: [at(10, 3)], max: 5, remove: () => undefined } }).body
     expect(body).toContain('>1 <span')
     expect(body.match(/Empty slot/g)).toHaveLength(4)
+    expect(body).toContain('w-min')
     expect(body).toContain('Remove ONE HUNDRED AND EIGHTYYY from the showcase')
   })
   it('says typed-in darts do not count, unless the flag lets them', () => {
