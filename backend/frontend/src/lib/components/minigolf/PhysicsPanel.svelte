@@ -3,6 +3,7 @@
   values to paste into backend/src/shared/minigolf/physics.ts.
 -->
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import { createCopy } from '$lib/clipboard.svelte'
   import { Slider } from '$lib/components/ui/slider/index.js'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
@@ -56,7 +57,7 @@
       role="img"
       aria-label="Roll distance by distance from the bull"
     >
-      <polyline points={curve} fill="none" stroke="#c6f24e" stroke-width="1.5" />
+      <polyline points={curve} fill="none" stroke={THEME.accent} stroke-width="1.5" />
       <line x1="0" y1="59.5" x2="100" y2="59.5" stroke="#2e322b" />
     </svg>
     <figcaption class="flex justify-between text-[12px] text-text-muted">

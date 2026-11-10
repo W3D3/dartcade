@@ -10,6 +10,7 @@
   heights go up in y.
 -->
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import * as THREE from 'three'
   import { onMount } from 'svelte'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -31,7 +32,7 @@
   let {
     hole,
     ball,
-    ballColor = '#c6f24e',
+    ballColor = THEME.accent,
     others = [],
     aim = null,
     aims = [],
@@ -159,7 +160,7 @@
         g.lineWidth = d * 0.07
         g.strokeStyle = '#0a0b09'
         g.strokeText(String(n), x, y)
-        g.fillStyle = '#efeee6'
+        g.fillStyle = THEME.text
         g.fillText(String(n), x, y)
       })
     }
@@ -253,7 +254,7 @@
     pole.castShadow = true
     g.add(pole)
     const flagShape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(170, -45), new THREE.Vector2(0, -90)])
-    const flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), toon('#c6f24e', THREE.DoubleSide))
+    const flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), toon(THEME.accent, THREE.DoubleSide))
     flag.position.set(cx + h.cup.r * 0.55, cupH + 520, cy)
     flag.castShadow = true
     g.add(flag)
@@ -313,7 +314,7 @@
     const AIM_DOTS = 120
     const AIM_GAP = 50
     const dotLine = (opacity: number) => {
-      const m = guide(new THREE.InstancedMesh(new THREE.CircleGeometry(9, 12), overlay({ color: '#c6f24e', opacity }), AIM_DOTS * 3))
+      const m = guide(new THREE.InstancedMesh(new THREE.CircleGeometry(9, 12), overlay({ color: THEME.accent, opacity }), AIM_DOTS * 3))
       m.frustumCulled = false
       scene.add(m)
       return m
@@ -338,7 +339,7 @@
 
     // The aim dial and the reach rings, laid on the ground around the ball
     const dialMat = overlay({ map: dialTexture() })
-    const ringMat = overlay({ color: '#efeee6', opacity: 0.45 })
+    const ringMat = overlay({ color: THEME.text, opacity: 0.45 })
     let aimGroup = new THREE.Group()
     function placeAim(): void {
       scene.remove(aimGroup)

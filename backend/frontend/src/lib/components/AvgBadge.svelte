@@ -86,7 +86,7 @@
   }
   .t45 {
     --tint: #a8d63a;
-    color: #c6f24e;
+    color: var(--color-accent);
   }
   :is(.t20, .t25, .t30, .t35, .t40, .t45) {
     background: color-mix(in srgb, var(--tint) 15%, #151713);
@@ -95,10 +95,10 @@
 
   /* Gradients: 50 to 89 */
   :is(.t50, .t55, .t60, .t65, .t70, .t75, .t80, .t85) {
-    color: #0f100e;
+    color: var(--color-bg);
   }
   .t50 {
-    background: linear-gradient(135deg, #c6f24e, #4fd1c5);
+    background: linear-gradient(135deg, var(--color-accent), #4fd1c5);
   }
   .t55 {
     background: linear-gradient(135deg, #4fd1c5, #3fb6e8);
@@ -145,7 +145,7 @@
 
   /* Holo: 100 */
   .t100 {
-    color: #0f100e;
+    color: var(--color-bg);
     background: linear-gradient(115deg, #ff8fb1, #ffd36e, #b6f36b, #6ee7e0, #8fb4ff, #d59bff, #ff8fb1);
     background-size: 200% 100%;
     animation: holo 4s linear infinite;

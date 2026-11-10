@@ -9,6 +9,7 @@
   preview's aim lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
 -->
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import type { Snippet } from 'svelte'
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { bounds } from '$shared/minigolf/geometry'
@@ -19,7 +20,7 @@
   let {
     hole,
     ball,
-    ballColor = '#c6f24e',
+    ballColor = THEME.accent,
     halo = true,
     wallThickness = DEFAULT_PHYSICS.wallThickness,
     onPlace,
@@ -155,26 +156,32 @@
     stroke-width={wallThickness + 16}
     stroke-linejoin="round"
   />
-  <polygon points={pts(hole.outline)} fill="url(#mg-felt)" stroke="#e9dfc4" stroke-width={wallThickness} stroke-linejoin="round" />
+  <polygon points={pts(hole.outline)} fill="url(#mg-felt)" stroke={THEME.boardCream} stroke-width={wallThickness} stroke-linejoin="round" />
   {@render underlay?.()}
   <!-- Terrain and slopes: lighter the higher (a plateau, a hill, a bump), darker the deeper (a pit, a bowl), fading into the felt at the edge and cut off at the rails -->
   {#each shaded as look, i (i)}
     <g pointer-events="none" clip-path="url(#{uid}-course)" data-testid={look.top ? 'mesa' : 'slope'}>
       {#each look.bands as d, k (k)}<path {d} fill={look.raised ? '#ffffff' : '#000000'} fill-opacity={look.raised ? 0.03 : 0.045} />{/each}
-      <g fill="none" stroke="#e9dfc4" stroke-opacity="0.2" stroke-width="5">
+      <g fill="none" stroke={THEME.boardCream} stroke-opacity="0.2" stroke-width="5">
         {#each look.contours as d, k (k)}<path {d} />{/each}
       </g>
-      {#if look.top}<path d={look.top} fill="none" stroke="#e9dfc4" stroke-opacity="0.45" stroke-width="6" />{/if}
+      {#if look.top}<path d={look.top} fill="none" stroke={THEME.boardCream} stroke-opacity="0.45" stroke-width="6" />{/if}
     </g>
   {/each}
   {#each hole.walls as w, i (i)}
     {#if w.closed}
-      <polygon points={pts(w.points)} fill="#e9dfc4" stroke="#e9dfc4" stroke-width={w.thickness ?? wallThickness} stroke-linejoin="round" />
+      <polygon
+        points={pts(w.points)}
+        fill={THEME.boardCream}
+        stroke={THEME.boardCream}
+        stroke-width={w.thickness ?? wallThickness}
+        stroke-linejoin="round"
+      />
     {:else}
       <polyline
         points={pts(w.points)}
         fill="none"
-        stroke="#e9dfc4"
+        stroke={THEME.boardCream}
         stroke-width={w.thickness ?? wallThickness}
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -182,7 +189,7 @@
     {/if}
   {/each}
   {#each hole.bumpers as b, i (i)}
-    <circle cx={b.at[0]} cy={b.at[1]} r={b.r} fill="#d23b36" stroke="#6e1b18" stroke-width="6" />
+    <circle cx={b.at[0]} cy={b.at[1]} r={b.r} fill={THEME.boardRed} stroke="#6e1b18" stroke-width="6" />
   {/each}
   <rect
     x={hole.tee[0] - 70}
@@ -191,7 +198,7 @@
     height="140"
     rx="14"
     fill="#1f5134"
-    stroke="#e9dfc4"
+    stroke={THEME.boardCream}
     stroke-opacity="0.35"
     stroke-dasharray="8 8"
   />
@@ -202,11 +209,11 @@
     y1={hole.cup.at[1]}
     x2={hole.cup.at[0]}
     y2={hole.cup.at[1] - 240}
-    stroke="#efeee6"
+    stroke={THEME.text}
     stroke-width="8"
     stroke-linecap="round"
   />
-  <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill="#c6f24e" stroke="#0a0b09" stroke-width="4" />
+  <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill={THEME.accent} stroke="#0a0b09" stroke-width="4" />
   {#if arrows.length}
     <g pointer-events="none" stroke="#4ec6f2" stroke-width="8" stroke-linecap="round" data-testid="force-arrows">
       {#each arrows as { at, end }, i (i)}
@@ -217,15 +224,15 @@
   {#if debug}
     <g pointer-events="none" data-testid="debug-overlay">
       {#each looks as look, i (i)}
-        <path d={look.bands[0]} fill="none" stroke="#e9dfc4" stroke-dasharray="16 12" stroke-width="4" />
+        <path d={look.bands[0]} fill="none" stroke={THEME.boardCream} stroke-dasharray="16 12" stroke-width="4" />
       {/each}
       {#each normals as n, i (i)}
         <line x1={n.mid[0]} y1={n.mid[1]} x2={n.end[0]} y2={n.end[1]} stroke="#4ec6f2" stroke-width="6" stroke-linecap="round" />
       {/each}
       <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r} fill="none" stroke="#4ec6f2" stroke-dasharray="8 6" stroke-width="4" />
       {#if lastPath}
-        <polyline points={pts(lastPath)} fill="none" stroke="#c6f24e" stroke-opacity="0.6" stroke-width="5" />
-        {#each lastPath as p, i (i)}<circle cx={p[0]} cy={p[1]} r="5" fill="#c6f24e" />{/each}
+        <polyline points={pts(lastPath)} fill="none" stroke={THEME.accent} stroke-opacity="0.6" stroke-width="5" />
+        {#each lastPath as p, i (i)}<circle cx={p[0]} cy={p[1]} r="5" fill={THEME.accent} />{/each}
       {/if}
     </g>
   {/if}
@@ -237,7 +244,7 @@
         y1={preview.from[1]}
         x2={end[0]}
         y2={end[1]}
-        stroke="#c6f24e"
+        stroke={THEME.accent}
         stroke-width="8"
         stroke-dasharray="18 12"
         stroke-linecap="round"
@@ -245,7 +252,7 @@
       <text
         x={end[0] + 24}
         y={end[1]}
-        fill="#efeee6"
+        fill={THEME.text}
         font-size="64"
         font-weight="700"
         stroke="#0a0b09"
@@ -258,11 +265,11 @@
   {/if}
   {#each others as o (o.seat)}
     <g opacity="0.8" pointer-events="none" data-testid="other-ball">
-      <circle cx={o.at[0]} cy={o.at[1]} r={BALL_R} fill={o.color ?? '#efeee6'} stroke="#0a0b09" stroke-width="5" />
+      <circle cx={o.at[0]} cy={o.at[1]} r={BALL_R} fill={o.color ?? THEME.text} stroke="#0a0b09" stroke-width="5" />
       <text
         x={o.at[0]}
         y={o.at[1] - BALL_R - 14}
-        fill="#efeee6"
+        fill={THEME.text}
         font-size="52"
         font-weight="700"
         text-anchor="middle"
@@ -279,7 +286,7 @@
       y1={line.from[1]}
       x2={end[0]}
       y2={end[1]}
-      stroke="#c6f24e"
+      stroke={THEME.accent}
       stroke-opacity={line.current ? 0.9 : 0.3}
       stroke-width={dial * 0.06}
       stroke-dasharray="{dial * 0.18} {dial * 0.12}"
@@ -297,28 +304,28 @@
           cy={aim.at[1]}
           r={ring.r}
           fill="none"
-          stroke="#efeee6"
+          stroke={THEME.text}
           stroke-opacity="0.32"
           stroke-width={dial * 0.03}
           stroke-dasharray="{dial * 0.12} {dial * 0.12}"
         />
-        <text x={tag[0]} y={tag[1]} fill="#efeee6" fill-opacity="0.75" font-size={dial * 0.24} font-weight="700" text-anchor="end"
+        <text x={tag[0]} y={tag[1]} fill={THEME.text} fill-opacity="0.75" font-size={dial * 0.24} font-weight="700" text-anchor="end"
           >{ring.label}</text
         >
       {/each}
       <!-- A dark ring under the spokes, clear in the middle so the ball shows -->
-      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial * 0.65} fill="none" stroke="#0f100e" stroke-opacity="0.62" stroke-width={dial * 0.7} />
-      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial} fill="none" stroke="#efeee6" stroke-opacity="0.55" stroke-width={dial * 0.03} />
+      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial * 0.65} fill="none" stroke={THEME.bg} stroke-opacity="0.62" stroke-width={dial * 0.7} />
+      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial} fill="none" stroke={THEME.text} stroke-opacity="0.55" stroke-width={dial * 0.03} />
       {#each SEGS as n, i (n)}
         {@const a = segAngle(i)}
         {@const from = toward(aim.at, a + HALF, dial * 0.3)}
         {@const to = toward(aim.at, a + HALF, dial)}
         {@const label = toward(aim.at, a, dial * 1.36)}
-        <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="#efeee6" stroke-opacity="0.35" stroke-width={dial * 0.02} />
+        <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke={THEME.text} stroke-opacity="0.35" stroke-width={dial * 0.02} />
         <text
           x={label[0]}
           y={label[1]}
-          fill="#efeee6"
+          fill={THEME.text}
           font-size={dial * 0.3}
           font-weight="700"
           text-anchor="middle"
@@ -335,9 +342,9 @@
       cx={ball[0]}
       cy={ball[1]}
       r={BALL_R * 3}
-      fill="#c6f24e"
+      fill={THEME.accent}
       fill-opacity="0.15"
-      stroke="#c6f24e"
+      stroke={THEME.accent}
       stroke-dasharray="10 8"
       stroke-width="4"
     />

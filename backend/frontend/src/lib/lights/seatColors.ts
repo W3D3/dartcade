@@ -1,6 +1,6 @@
 // The seat colours' palette and names for the picker in Settings' Lights. The first six are the
 // built-in defaults ($shared/lights/profile.ts); any other colour comes from the picker's custom field.
-import { DEFAULT_SEAT_COLORS } from '$shared/lights/index.js'
+import { DEFAULT_SEAT_COLORS, LIME } from '$shared/lights/index.js'
 
 export type PaletteColor = { hex: string; name: string }
 
@@ -12,7 +12,7 @@ export const SEAT_PALETTE: readonly PaletteColor[] = [
   { hex: '#ff3b30', name: 'red' },
   { hex: '#2f80ff', name: 'blue' },
   { hex: '#ffffff', name: 'white' },
-  { hex: '#c6f24e', name: 'lime' },
+  { hex: LIME, name: 'lime' },
   { hex: '#14b8a6', name: 'teal' },
   { hex: '#a855f7', name: 'purple' },
 ]
