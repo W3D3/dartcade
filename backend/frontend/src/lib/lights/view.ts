@@ -1,6 +1,7 @@
 // Pure helpers for Settings' Lights section: formatting a light profile's rules, a device's
 // segment layout and "since" timestamps, and whether a flagged settings section shows.
-import { GROUP_ORDER, TRIGGER_GAME, type GameId, type TriggerKind } from '$shared/lights/index.js'
+import { FX, GROUP_ORDER, TAKEOUT_YELLOW, TRIGGER_GAME, type GameId, type TriggerKind } from '$shared/lights/index.js'
+import { SEAT_PALETTE } from './seatColors.js'
 import { gameTitle } from '$shared/gameNames.js'
 
 export type SegmentMode = 'whole' | 'perSeat' | 'wled'
@@ -35,16 +36,13 @@ const TRIGGER_LABELS: Record<string, string> = {
 
 const TRIGGER_HINTS: Record<string, string> = { lobby: 'Shows only while you are in a lobby with no game running' }
 
+// The seat palette's names, plus the takeout yellow the palette does not offer
 const COLOR_NAMES: Record<string, string> = {
-  '#ffffff': 'white',
-  '#ff3b30': 'red',
-  '#c6f24e': 'lime',
-  '#ffd60a': 'yellow',
-  '#a855f7': 'purple',
+  ...Object.fromEntries(SEAT_PALETTE.map(c => [c.hex, c.name])),
+  [TAKEOUT_YELLOW]: 'yellow',
 }
 
-// WLED effect ids used by the built-in profile
-const FX_NAMES: Record<number, string> = { 0: 'solid', 1: 'blink', 2: 'pulse', 9: 'rainbow', 20: 'sparkle', 41: 'comet', 42: 'fireworks' }
+const FX_NAMES: Record<number, string> = Object.fromEntries(Object.entries(FX).map(([name, id]) => [id, name]))
 
 const colorLabel = (color: string): string =>
   color === 'seat' ? 'seat colour' : color === 'team' ? 'team colour' : (COLOR_NAMES[color] ?? color)
