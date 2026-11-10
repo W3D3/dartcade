@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { newLobbyCode, normalizeCode } from './code.js'
+import { newLobbyCode } from './code.js'
+import { normalizeCode } from '../shared/lobbyCode.js'
 
 describe('lobby codes', () => {
   it('are 6 characters without look-alikes (I, L, O, 0, 1)', () => {

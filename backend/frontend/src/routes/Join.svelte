@@ -15,7 +15,8 @@
   import InviteLink from '$lib/components/lobby/InviteLink.svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { formatCode, joinPath } from '$lib/lobby/format'
-  import { describeConflict, normalizeCode, type Refusal } from '$lib/lobby/input'
+  import { describeConflict, type Refusal } from '$lib/lobby/input'
+  import { normalizeCode } from '$shared/lobbyCode'
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { describeConflict, normalizeCode, parseAddInput } from '../lobby/input.js'
+import { describeConflict, parseAddInput } from '../lobby/input.js'
+import { normalizeCode } from '$shared/lobbyCode'
 
 describe('the "name or @username" field', () => {
   it('a plain name adds a guest; @ invites an account', () => {

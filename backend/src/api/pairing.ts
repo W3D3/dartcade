@@ -15,7 +15,7 @@ import {
 } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
-import { normalizeCode } from '../lobby/code.js'
+import { normalizeCode } from '../shared/lobbyCode.js'
 import { PairingCodeClaimedError } from '../db/errors.js'
 import { newBoardToken, hashBoardToken } from '../boards/token.js'
 
