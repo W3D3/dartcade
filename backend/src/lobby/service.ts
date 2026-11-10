@@ -1,7 +1,7 @@
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { LOBBY_IDLE_SHARED_MINUTES, LOBBY_IDLE_SOLO_MINUTES } from '../flags/definitions.js'
+import { LOBBY_IDLE_SHARED_MINUTES, LOBBY_IDLE_SOLO_MINUTES } from '../shared/flags.js'
 import { flagNumber } from '../flags/index.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'

@@ -6,17 +6,18 @@ import { isAdmin } from '../auth/admin.js'
 import type { Database } from '../db/schema.js'
 import { getRoleAndEmail } from '../db/users.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
+import { FLAG_META, type FlagKey } from '../shared/flags.js'
 import { flagDefinitions } from './definitions.js'
 
 export type FlagUser = { id: string; email: string; role: string | null } | null
 
-const DEFINITIONS: Record<string, { variants: Record<string, unknown>; defaultVariant: string }> = flagDefinitions(new Set())
-export const FLAG_KEYS: readonly string[] = Object.keys(DEFINITIONS)
+export const FLAG_KEYS: readonly string[] = Object.keys(FLAG_META)
 /** The flags whose value is a number rather than on/off. */
-export const NUMBER_FLAG_KEYS: readonly string[] = FLAG_KEYS.filter(k => {
-  const d = DEFINITIONS[k]
-  return typeof d.variants[d.defaultVariant] === 'number'
-})
+export const NUMBER_FLAG_KEYS: readonly string[] = Object.entries(FLAG_META)
+  .filter(([, meta]) => meta.kind === 'number')
+  .map(([key]) => key)
+
+const isFlagKey = (key: string): key is FlagKey => key in FLAG_META
 
 export function envFlagsOn(): Set<string> {
   return new Set(
@@ -76,12 +77,12 @@ export function contextFor(user: FlagUser): EvaluationContext {
   return user ? { targetingKey: user.id, email: user.email, admin: isAdmin(user) } : { targetingKey: 'anonymous' }
 }
 
-export async function flagEnabled(key: string, user: FlagUser): Promise<boolean> {
+export async function flagEnabled(key: FlagKey, user: FlagUser): Promise<boolean> {
   return OpenFeature.getClient().getBooleanValue(key, false, contextFor(user))
 }
 
 /** A number flag's value for this user. */
-export async function flagNumber(key: string, fallback: number, user: FlagUser): Promise<number> {
+export async function flagNumber(key: FlagKey, fallback: number, user: FlagUser): Promise<number> {
   return OpenFeature.getClient().getNumberValue(key, fallback, contextFor(user))
 }
 
@@ -99,9 +100,9 @@ export async function evaluateAll(user: FlagUser) {
 }
 
 /** The flag that gates a game mode, or null for a mode that isn't gated. */
-export function modeFlag(modeId: string): string | null {
+export function modeFlag(modeId: string): FlagKey | null {
   const key = `gamemode.${modeId}.enabled`
-  return FLAG_KEYS.includes(key) ? key : null
+  return isFlagKey(key) ? key : null
 }
 
 export async function loadFlagUser(db: Kysely<Database>, userId: string | null): Promise<FlagUser> {

@@ -3,6 +3,7 @@ import type { GameStats, GameSummary } from '$lib/api'
 import type { RankedGame } from '$lib/ranked/view'
 import { NEWS, visibleNews } from './news'
 import { visibleFeatured, type FeaturedSlide } from './featured'
+import type { FlagKey } from '$shared/flags'
 import { activityText, formForm, greeting, lastFive, lobbyLine, longDate, rankProgress, recentRow, relativeTime, trend } from './view'
 
 const at = (h: number, m = 0) => new Date(2026, 9, 27, h, m)
@@ -239,7 +240,7 @@ describe('recentRow', () => {
 })
 
 describe('visibleFeatured', () => {
-  const slide = (id: string, flag?: string): FeaturedSlide => ({
+  const slide = (id: string, flag?: FlagKey): FeaturedSlide => ({
     id,
     badge: 'NEW',
     title: id,
@@ -254,12 +255,12 @@ describe('visibleFeatured', () => {
   })
 
   it('is empty when nothing qualifies', () => {
-    expect(visibleFeatured([slide('a', 'x')], () => false)).toEqual([])
+    expect(visibleFeatured([slide('a', 'lights.enabled')], () => false)).toEqual([])
   })
 })
 
 describe('news', () => {
-  const item = (id: string, date: string, flag?: string) => ({ id, date, title: id, text: '', href: '#/', ...(flag ? { flag } : {}) })
+  const item = (id: string, date: string, flag?: FlagKey) => ({ id, date, title: id, text: '', href: '#/', ...(flag ? { flag } : {}) })
 
   it('is listed newest first', () => {
     const dates = NEWS.map(n => n.date)
@@ -267,7 +268,7 @@ describe('news', () => {
   })
 
   it('shows at most three, skipping items about features the player does not have', () => {
-    const items = [item('a', '4', 'off'), item('b', '3'), item('c', '2'), item('d', '1'), item('e', '0')]
+    const items = [item('a', '4', 'lights.enabled'), item('b', '3'), item('c', '2'), item('d', '1'), item('e', '0')]
     expect(visibleNews(items, () => false).map(n => n.id)).toEqual(['b', 'c', 'd'])
   })
 })
