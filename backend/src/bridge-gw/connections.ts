@@ -1,4 +1,5 @@
 import type { WebSocket } from 'ws'
+import { BridgeCloseCode } from '../schema/bridge-close.js'
 import type { components } from '../schema/api.js'
 import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
@@ -53,7 +54,7 @@ export class BridgeConnections {
   register(conn: BridgeConn, boardDbId: string): void {
     const existing = this.byBoard.get(boardDbId)
     if (existing && existing !== conn) {
-      existing.ws.close(1001, 'replaced by new connection')
+      existing.ws.close(BridgeCloseCode.GoingAway, 'replaced by new connection')
       this.all.delete(existing)
     }
     conn.boardDbId = boardDbId
