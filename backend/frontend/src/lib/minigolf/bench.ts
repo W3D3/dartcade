@@ -31,7 +31,6 @@ export const initBench = (hole: Hole): BenchState => ({
   history: [],
   lastShot: null,
 })
-export const resetBench = initBench
 /** Where the ball is drawn at rest, with its height for 3D: one radius above the ground, or where a
  *  3D shot left it in the cup. */
 export function benchBall(s: BenchState, hole: Hole): [number, number, number] {
