@@ -3,6 +3,7 @@
   // are: everyone has 10 s to accept, the other side stays hidden until all did. Once everyone
   // accepted the game starts, and the server's matchmaking.ended takes you to it.
   import { onDestroy } from 'svelte'
+  import { tick } from '$lib/now'
   import { push } from 'svelte-spa-router'
   import { Check, Lock, Swords } from '@lucide/svelte'
   import { Modal } from '$lib/components/ui/modal/index.js'
@@ -15,13 +16,9 @@
   /** How long the note about a match that fell through stays. */
   const NOTICE_MS = 8_000
 
-  let tick = $state(Date.now())
-  const ticker = setInterval(() => (tick = Date.now()), 250)
-  onDestroy(() => clearInterval(ticker))
-
   const matchmakingEnded = me.matchmakingEnded
   const match = $derived($me?.matchmaking?.match ?? null)
-  const left = $derived(match ? secondsLeft(match, tick) : 0)
+  const left = $derived(match ? secondsLeft(match, $tick) : 0)
   const accepted = $derived(match ? youAccepted(match) : false)
   const count = $derived(match ? acceptedLine(match) : null)
   const duo = $derived(match?.mode === '2v2')

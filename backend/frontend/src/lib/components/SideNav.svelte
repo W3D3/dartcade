@@ -26,7 +26,7 @@
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import { queueView } from '$lib/ranked/queueCard'
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
 
   const inviteCount = $derived($me?.invites.length ?? 0)
 

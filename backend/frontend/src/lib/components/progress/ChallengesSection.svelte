@@ -1,7 +1,7 @@
 <script lang="ts">
   // The Progress page's challenges: daily and weekly side by side; on the phone one at a time,
   // picked with a segmented control (Mobile-Progress board).
-  import { onMount } from 'svelte'
+  import { now } from '$lib/now'
   import ChallengeCard from './ChallengeCard.svelte'
   import { querystring } from 'svelte-spa-router'
   import { readParam, setParam } from '$lib/urlState'
@@ -21,11 +21,8 @@
   const period = $derived(readParam($querystring, 'period', ['weekly'] as const, 'daily'))
   let error = $state('')
   // The reset countdown moves on its own
-  let now = $state(new Date())
-  onMount(() => {
-    const t = setInterval(() => (now = new Date()), 60_000)
-    return () => clearInterval(t)
-  })
+  const clock = now(60_000)
+  const nowDate = $derived(new Date($clock))
 
   const onreroll = (id: string) => void reroll(id)
   // The ones already done when the page opened; any done after that celebrates
@@ -57,11 +54,11 @@
       value={period}
       onchange={v => setParam('/progress', $querystring, 'period', v === 'weekly' ? 'weekly' : null)}
     />
-    <ChallengeCard set={$challenges[period]} {period} {now} bare {fresh} {onreroll} {onclaim} />
+    <ChallengeCard set={$challenges[period]} {period} now={nowDate} bare {fresh} {onreroll} {onclaim} />
   {:else}
     <div class="grid gap-4 md:gap-6 lg:grid-cols-2">
-      <ChallengeCard set={$challenges.daily} period="daily" {now} {fresh} {onreroll} {onclaim} />
-      <ChallengeCard set={$challenges.weekly} period="weekly" {now} {fresh} {onreroll} {onclaim} />
+      <ChallengeCard set={$challenges.daily} period="daily" now={nowDate} {fresh} {onreroll} {onclaim} />
+      <ChallengeCard set={$challenges.weekly} period="weekly" now={nowDate} {fresh} {onreroll} {onclaim} />
     </div>
   {/if}
 {/if}

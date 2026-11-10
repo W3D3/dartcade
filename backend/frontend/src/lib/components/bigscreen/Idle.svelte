@@ -1,16 +1,13 @@
 <script lang="ts">
   // Nothing is being played: the clock, the date and the board's name.
-  import { onMount } from 'svelte'
+  import { now } from '$lib/now'
   import Wordmark from '$lib/components/Wordmark.svelte'
   import type { Orientation } from '$lib/bigscreen/stage'
 
   let { name, online, orientation }: { name: string; online: boolean; orientation: Orientation } = $props()
-  let now = $state(new Date())
-  onMount(() => {
-    const t = setInterval(() => (now = new Date()), 1000)
-    return () => clearInterval(t)
-  })
-  const time = $derived(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+  const clock = now(1000)
+  const at = $derived(new Date($clock))
+  const time = $derived(at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
   // Two slowly counter-rotating dartboard rings behind the clock (the Presenter-Idle design).
   const C = 750
   const pt = (r: number, deg: number) => {
@@ -25,7 +22,7 @@
     })
   const outerRing = segments(675, 645)
   const innerRing = segments(465, 412.5)
-  const date = $derived(now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }))
+  const date = $derived(at.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }))
 </script>
 
 <div class="relative isolate flex size-full flex-col items-center justify-center gap-10 overflow-hidden bg-big-glow text-center">

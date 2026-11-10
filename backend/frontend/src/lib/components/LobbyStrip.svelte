@@ -7,7 +7,7 @@
   import { indicatorView } from '$lib/lobby/format'
   import { acceptMatch } from '$lib/ranked/queue'
   import { queueView } from '$lib/ranked/queueCard'
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
   import { currentUser } from '$lib/auth'
 
   const view = $derived($me?.lobby ? indicatorView($me.lobby) : null)

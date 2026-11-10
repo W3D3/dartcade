@@ -9,7 +9,7 @@
   import { cancelSearch, searchView, startedLine } from '$lib/ranked/queue'
   import { fmtRp } from '$lib/ranked/view'
   import { stopLabel } from '$lib/ranked/queueCard'
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
   import { numberFlag } from '$lib/flags'
   import { ACCEPT_SECONDS } from '$shared/ranked.js'
 

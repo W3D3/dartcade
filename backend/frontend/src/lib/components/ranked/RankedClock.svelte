@@ -6,7 +6,7 @@
   import ReconnectBanner from './ReconnectBanner.svelte'
   import ReserveBanner from './ReserveBanner.svelte'
   import TimerChips from './TimerChips.svelte'
-  import { tick } from '$lib/ranked/tick'
+  import { tick } from '$lib/now'
   import { reconnectView } from '$lib/ranked/clock'
   import { disconnected, upClock, type RankedState } from '$lib/ranked/inGame'
 

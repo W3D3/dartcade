@@ -4,7 +4,8 @@
   // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
   import { fmtAvg } from '$lib/playerStats'
-  import { onDestroy, onMount } from 'svelte'
+  import { onMount } from 'svelte'
+  import { now as clockEvery } from '$lib/now'
   import { Check, Clock, Hourglass, MonitorSmartphone, Search, User, Users } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
@@ -50,12 +51,10 @@
   const duoReady = $derived(duoLobbyReady($me?.lobby ?? null))
 
   // The search runs on the server; its clock and range tick here
-  let tick = $state(Date.now())
-  const ticker = setInterval(() => (tick = Date.now()), 1000)
-  onDestroy(() => clearInterval(ticker))
+  const tick = clockEvery(1000)
 
   const search = $derived($me?.matchmaking?.search ?? null)
-  const paused = $derived(pausedFor($me?.matchmaking?.pausedUntil ?? null, tick))
+  const paused = $derived(pausedFor($me?.matchmaking?.pausedUntil ?? null, $tick))
   let busy = $state(false)
   let searchError = $state('')
 
