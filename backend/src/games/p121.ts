@@ -23,6 +23,7 @@ import { row, values } from './matchStats.js'
 import { validateOptions } from './configMeta.js'
 import { OUT_MODE_OPTION } from './commonOptions.js'
 import { nextTurn, upNext } from './turns.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 export type P121Config = {
   startTarget: number
@@ -75,7 +76,7 @@ export type P121State = {
 }
 
 export function nextTarget(t: { target: number; made: boolean; darts: number }, cfg: P121Config, floor: number) {
-  const lockedFloor = cfg.lock && t.made && t.darts <= 3 ? Math.max(floor, t.target) : floor
+  const lockedFloor = cfg.lock && t.made && t.darts <= DARTS_PER_VISIT ? Math.max(floor, t.target) : floor
   if (t.made) return { target: t.target + 1, floor: lockedFloor }
   const missed = cfg.missRule === 'reset' ? cfg.startTarget : cfg.missRule === 'down' ? t.target - 1 : t.target
   return { target: Math.max(missed, cfg.startTarget, floor), floor }
@@ -115,7 +116,7 @@ function finishTry(s: P121State, made: boolean, used: number): P121State {
 function endVisit(s: P121State, made: boolean): P121State {
   const cp = s.currentPlayer
   const seat = s.seats[cp]
-  const used = made ? seat.darts + s.visitDarts : seat.darts + 3
+  const used = made ? seat.darts + s.visitDarts : seat.darts + DARTS_PER_VISIT
   if (!(made || used >= s.cfg.dartsPerTry)) {
     const scored = s.visitStartLeft - seat.left
     return { ...s, seats: withSeat(s, cp, { darts: used, visits: [...seat.visits, scored] }) }

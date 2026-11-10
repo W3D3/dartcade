@@ -6,6 +6,7 @@ import { rankSeats } from './ranking.js'
 import { atcMatchStats, atcProgress } from './atcProgress.js'
 import { nextTargetIndex } from '../shared/atc.js'
 import { validateOptions } from './configMeta.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 // 2: a multiplier walks on to the bull instead of stopping before it (#343), and a reversed or
 // shuffled game ending on 20 can be won
@@ -142,7 +143,7 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
 // config allows a throw again, else the next seat.
 function nextSeat(s: ATCState): number {
   const hits = s.currentVisitHits
-  const stay = s.cfg.throwAgainOnAllHit && hits.length >= 3 && hits.every(Boolean)
+  const stay = s.cfg.throwAgainOnAllHit && hits.length >= DARTS_PER_VISIT && hits.every(Boolean)
   return stay ? s.currentPlayer : (s.currentPlayer + 1) % s.playerCount
 }
 

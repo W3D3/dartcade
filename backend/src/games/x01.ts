@@ -21,6 +21,7 @@ import {
 import { BOT_SPEED_OPTION, BULL_OFF_OPTION, OUT_MODE_OPTION } from './commonOptions.js'
 import { x01MatchStats } from './x01Stats.js'
 import { meetsMode, scoreDart } from './outRules.js'
+import { DARTS_PER_VISIT, MAX_VISIT } from '../shared/darts.js'
 
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
@@ -128,7 +129,7 @@ function committedVisit(
     dartsThrown: s.dartsThrown.map((d, i) => (i === cp ? d + s.visitDarts : d)),
     legVisits: [...s.legVisits, record],
     lastVisit: s.lastVisit.map((v, i) => (i === t ? record : v)),
-    count180: s.count180.map((c, i) => (i === cp && !record.bust && record.scored === 180 ? c + 1 : c)),
+    count180: s.count180.map((c, i) => (i === cp && !record.bust && record.scored === MAX_VISIT ? c + 1 : c)),
     visitDarts: 0,
   }
 }
@@ -424,9 +425,9 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   // without ever calling this (see backend/src/bots/scheduler.ts).
   botTarget(s: X01State, seatIndex: number, dartsThrown: number): Point | 'takeout' | null {
     const t = s.teamOf[seatIndex]
-    const visitOver = s.bustThisVisit || s.scores[t] === 0 || dartsThrown >= 3 || s.winner !== null
+    const visitOver = s.bustThisVisit || s.scores[t] === 0 || dartsThrown >= DARTS_PER_VISIT || s.winner !== null
     if (visitOver) return 'takeout'
-    return pickTarget(s.scores[t] ?? 0, 3 - dartsThrown, s.cfg.outMode, { opened: s.opened[t] ?? true, inMode: s.cfg.inMode })
+    return pickTarget(s.scores[t] ?? 0, DARTS_PER_VISIT - dartsThrown, s.cfg.outMode, { opened: s.opened[t] ?? true, inMode: s.cfg.inMode })
   },
 
   getLeg(s: X01State): number {
@@ -448,7 +449,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       return {
         placement,
         stats: {
-          average: darts > 0 ? (s.pointsScored[i] / darts) * 3 : 0,
+          average: darts > 0 ? (s.pointsScored[i] / darts) * DARTS_PER_VISIT : 0,
           dartsThrown: darts,
           legsWon: s.legs[s.teamOf[i]],
           pointsScored: s.pointsScored[i],

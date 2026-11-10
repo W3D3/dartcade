@@ -22,6 +22,7 @@ import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
 import { validateOptions } from './configMeta.js'
 import { nextTurn, upNext } from './turns.js'
+import { DARTS_PER_VISIT, MAX_VISIT } from '../shared/darts.js'
 
 export type HiloConfig = {
   startHigh: number
@@ -111,7 +112,7 @@ const MATCH_STATS_ROWS = [
 function endVisit(s: HiloState): HiloState {
   const cp = s.currentPlayer
   const safe = safeHigh(s.visitTotal, s.high, s.cfg.matchExtremes)
-  const outcome: HiloOutcome = s.missed || (s.visitDarts < 3 && !safe) ? 'miss' : judge(s.visitTotal, s.high, s.low, s.cfg)
+  const outcome: HiloOutcome = s.missed || (s.visitDarts < DARTS_PER_VISIT && !safe) ? 'miss' : judge(s.visitTotal, s.high, s.low, s.cfg)
 
   let high = s.high
   let low = s.low
@@ -190,8 +191,8 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
 
   validate(cfg: HiloConfig, players: Player[]): string | null {
     if (players.length < 2) return 'At least 2 players'
-    if (!isInt(cfg.startHigh) || cfg.startHigh < 0 || cfg.startHigh > 180) return 'High bar must be 0-180'
-    if (!isInt(cfg.startLow) || cfg.startLow < 0 || cfg.startLow > 180) return 'Low bar must be 0-180'
+    if (!isInt(cfg.startHigh) || cfg.startHigh < 0 || cfg.startHigh > MAX_VISIT) return `High bar must be 0-${MAX_VISIT}`
+    if (!isInt(cfg.startLow) || cfg.startLow < 0 || cfg.startLow > MAX_VISIT) return `Low bar must be 0-${MAX_VISIT}`
     if (cfg.startLow >= cfg.startHigh) return 'Low bar must be below the high bar'
     if (!isInt(cfg.lives) || cfg.lives < 1 || cfg.lives > 7) return 'Lives must be 1-7'
     // The bull off is checked by withBullOff
@@ -231,7 +232,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
         return { state: { ...s, visitTotal: 0, visitDarts: 0, missed: false } }
 
       case 'dart.detected': {
-        if (s.phase === 'finished' || s.missed || s.visitDarts >= 3) return { state: s }
+        if (s.phase === 'finished' || s.missed || s.visitDarts >= DARTS_PER_VISIT) return { state: s }
         const score = dartScore(e.data.dart, s.cfg)
         if (score === 'miss') {
           const harmless = safeHigh(s.visitTotal, s.high, s.cfg.matchExtremes)

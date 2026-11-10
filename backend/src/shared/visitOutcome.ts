@@ -2,6 +2,8 @@
 // turns it into words (frontend lib/caller/calls.ts), the lights into a trigger (lights/triggers/x01.ts).
 // A visit has one outcome, once it's over: three darts, or locked early (a bust, a checkout).
 
+import { DARTS_PER_VISIT } from './darts.js'
+
 /** What both readers need of a game: X01's own fields; other score-based modes are read into them. */
 export type VisitGame = {
   currentPlayer: number
@@ -28,7 +30,7 @@ export type VisitOutcome =
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0)
 
-export const visitOver = (locked: boolean, darts: number): boolean => locked || darts >= 3
+export const visitOver = (locked: boolean, darts: number): boolean => locked || darts >= DARTS_PER_VISIT
 export const isOver = (g: VisitGame): boolean => visitOver(g.visitLocked, g.currentVisitDarts.length)
 /** Whether `after` committed a visit `before` didn't have (the takeout). */
 export const committed = (before: VisitGame, after: VisitGame): boolean => sum(after.totalVisits) > sum(before.totalVisits)

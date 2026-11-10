@@ -4,6 +4,7 @@ import type { CommittedVisit, MatchStats } from '../session/types.js'
 import type { X01State } from './x01.js'
 import { row, values } from './matchStats.js'
 import { seatsByTeam } from './teams.js'
+import { visitTier } from '../shared/darts.js'
 
 const ROWS = [
   row('average', '3-dart average', 'decimal', 'higher'),
@@ -69,9 +70,9 @@ function groupValues(all: Visit[], seats: number[]): Record<string, number | und
     checkoutAttempts: sum(mine.map(v => v.atFinish)),
     highestFinish: maxOf(mine.filter(v => v.checkedOut).map(v => v.finish)),
     highestScore: maxOf(scores),
-    count180: scores.filter(s => s === 180).length,
-    count140: scores.filter(s => s >= 140 && s < 180).length,
-    count100: scores.filter(s => s >= 100 && s < 140).length,
+    count180: scores.filter(s => visitTier(s) === 'max').length,
+    count140: scores.filter(s => visitTier(s) === '140').length,
+    count100: scores.filter(s => visitTier(s) === 'ton').length,
     bestLegDarts: minOf(legDarts),
     dartsThrown: sum(mine.map(v => v.darts)),
   }
