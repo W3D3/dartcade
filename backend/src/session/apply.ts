@@ -3,6 +3,7 @@ import { manualDart } from './manualDart.js'
 import { chargeVisit, restartVisit } from './rankedClock.js'
 import type { SystemAction } from './systemInput.js'
 import type { BoardEvent, CommittedVisit, HistoryDart, Session, UserAction } from './types.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 /** One input to a game: a board event or a user action. */
 export type GameInput =
@@ -60,7 +61,7 @@ export function takeoutWins(session: Session): boolean {
 export function awaitsFinish(session: Session): boolean {
   const darts = dartEvents(session).length
   const view = session.module.view(session.currentState, session.players)
-  const over = darts >= 3 || ('visitLocked' in view && view.visitLocked) || view.winner !== null
+  const over = darts >= DARTS_PER_VISIT || ('visitLocked' in view && view.visitLocked) || view.winner !== null
   return over && takeoutWins(session)
 }
 
@@ -70,7 +71,7 @@ export function awaitsFinish(session: Session): boolean {
  */
 export function overflowsVisit(session: Session, event: BoardEvent): boolean {
   const darts = dartEvents(session).length
-  return (event.kind === 'visit.opened' && darts > 0) || (event.kind === 'dart.detected' && darts >= 3)
+  return (event.kind === 'visit.opened' && darts > 0) || (event.kind === 'dart.detected' && darts >= DARTS_PER_VISIT)
 }
 
 // Adds `delta` darts to the thrower in `state`, unless that's the bull off
@@ -220,7 +221,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
           })),
         ]
         session.openDarts = [0, 1, 2].map(() => ({ source: 'manual' as const, corrected: false, thrownAt: at }))
-        countDarts(session, session.currentState, 3)
+        countDarts(session, session.currentState, DARTS_PER_VISIT)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
       }
       if (session.openVisitEvents.length === 0) return NONE
@@ -231,7 +232,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
     case 'add_dart': {
       if (session.module.positionalDarts && !action.coords) return NONE
       const dartCount = dartEvents(session).length
-      if (dartCount >= 3) return NONE
+      if (dartCount >= DARTS_PER_VISIT) return NONE
       // A finished visit (bust, checkout, win) takes no more darts
       const now = session.module.view(session.currentState, session.players)
       if (('visitLocked' in now && now.visitLocked) || now.winner !== null) return NONE

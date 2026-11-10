@@ -34,6 +34,7 @@ import {
 } from './teams.js'
 import { BOT_SPEED_OPTION, BULL_OFF_OPTION } from './commonOptions.js'
 import { OPEN, TARGETS, cricketTarget, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 export type CricketConfig = {
   mode: CricketMode
@@ -294,7 +295,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
 
   // Reads state directly rather than going through view() — same reasoning as X01's botTarget.
   botTarget(s: CricketState, seatIndex: number, dartsThrown: number): Point | 'takeout' | null {
-    if (dartsThrown >= 3 || s.legWonBy !== null || s.winner !== null) return 'takeout'
+    if (dartsThrown >= DARTS_PER_VISIT || s.legWonBy !== null || s.winner !== null) return 'takeout'
     return pointFor(cricketTarget(s.board, s.teamOf[seatIndex], s.cfg.mode))
   },
 
@@ -324,7 +325,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       return {
         placement,
         stats: {
-          mpr: darts > 0 ? (s.marksScored[i] / darts) * 3 : 0,
+          mpr: darts > 0 ? (s.marksScored[i] / darts) * DARTS_PER_VISIT : 0,
           marksScored: s.marksScored[i],
           dartsThrown: darts,
           legsWon: s.legs[s.teamOf[i]],

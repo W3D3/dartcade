@@ -11,6 +11,7 @@ import type { BullOffViewField } from '../session/views.js'
 import { BULL, throwAt } from './accuracy.js'
 import { sigmaForLevel } from './levels.js'
 import { dartDelay, takeoutDelay, type BotSpeed } from './pacing.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 export type BotScheduler = {
   /** Call after every snapshot push: schedules the up seat's next dart if it's a bot and
@@ -115,7 +116,7 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     // The bull off decided (or needs a rethrow) but hasn't flipped stage yet — see act() —
     // is also "nothing to throw right now", paced like the end of a visit.
     const bullOffDecided = view.phase === 'bulloff' && view.bullOff?.result != null
-    const visitOver = bullOffDecided || view.visitLocked || dartsThrown >= 3 || view.winner !== null
+    const visitOver = bullOffDecided || view.visitLocked || dartsThrown >= DARTS_PER_VISIT || view.winner !== null
     const speed = view.config.botSpeed
     const delay = visitOver ? takeoutDelay(speed, session.rng) : dartDelay(speed, session.rng)
     schedule(session.id, delay, () => {
@@ -175,7 +176,7 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     }
 
     const dartsThrown = current.openVisitEvents.filter(e => e.kind === 'dart.detected').length
-    const visitOver = view.visitLocked || dartsThrown >= 3 || view.winner !== null
+    const visitOver = view.visitLocked || dartsThrown >= DARTS_PER_VISIT || view.winner !== null
 
     if (visitOver) {
       await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'takeout' })

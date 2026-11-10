@@ -5,6 +5,7 @@ import type { CoachModel, CoachModels } from './model.js'
 import { bestLeaveAim, bogeyChance, BOGEY_THRESHOLD } from './notes.js'
 import { reviewLeg, type ReviewVisit } from './review.js'
 import { dartPhase, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
+import { DARTS_PER_VISIT } from '../darts.js'
 
 export type OpenVisitInput = {
   /** The score left when the visit starts, 2–501 */
@@ -77,9 +78,9 @@ export function coachOpenVisit(input: OpenVisitInput, darts: readonly CoachDart[
   const visit =
     reviewLeg([leg], 0, 0, { startScore: input.start, average: input.average, models, opponentName: () => 'Opponent' })?.visits[0] ?? null
   const left = visit ? (visit.darts.at(-1)?.left ?? input.start) : input.start
-  const done = visit !== null && (visit.bust || visit.then === 0 || darts.length >= 3)
+  const done = visit !== null && (visit.bust || visit.then === 0 || darts.length >= DARTS_PER_VISIT)
   if (done) return { visit, left, done, next: [] }
 
   const w = input.opponent === null ? 1 : 1 - model.nextVisit(input.opponent)
-  return { visit, left, done, next: bestAims(model, input.start, left, 3 - darts.length, w, top) }
+  return { visit, left, done, next: bestAims(model, input.start, left, DARTS_PER_VISIT - darts.length, w, top) }
 }

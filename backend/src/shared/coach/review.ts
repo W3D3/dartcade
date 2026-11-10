@@ -13,6 +13,7 @@ import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
 import { tierOf, type CoachTierId } from './tiers.js'
 import { onFinish, throwsOf, type CoachLeg, type CoachVisit } from './walk.js'
+import { DARTS_PER_VISIT } from '../darts.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
@@ -88,7 +89,7 @@ export type ReviewContext = {
 /** Still being thrown: fewer than 3 darts, no checkout or bust yet. The fewest-darts floor/Brilliant
  *  rule (grade.ts OVERRIDES) must wait for the visit to be over, or a visit on pace reads as a made
  *  finish before the last dart is thrown (the live panel, the admin sandbox). */
-const isOpenVisit = (v: CoachVisit): boolean => !v.bust && v.remaining !== 0 && v.darts.length < 3
+const isOpenVisit = (v: CoachVisit): boolean => !v.bust && v.remaining !== 0 && v.darts.length < DARTS_PER_VISIT
 
 /** A Setup visit graded Bad as a setup: by its checkout chance or a note, not by a low score (a leave dart's visit, on the scoring scale) */
 const isBadSetup = (v: ReviewVisit) => v.grade === 'bad' && (v.value.scoring === null || v.notes.length > 0)
@@ -108,7 +109,7 @@ export const scoringLetter = (d: number): SkillGrade['grade'] => (d >= 10 ? 'A' 
 function gameAverage(legs: readonly CoachLeg[], seat: number): number {
   const visits = legs.flatMap(l => l.visits.filter(v => v.seat === seat))
   const darts = visits.reduce((s, v) => s + v.darts.length, 0)
-  return darts ? (visits.reduce((s, v) => s + v.scored, 0) / darts) * 3 : 0
+  return darts ? (visits.reduce((s, v) => s + v.scored, 0) / darts) * DARTS_PER_VISIT : 0
 }
 
 export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, ctx: ReviewContext): LegReview | null {
@@ -276,7 +277,7 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     seat,
     won,
     darts,
-    average: (mine.reduce((s, { v }) => s + v.scored, 0) / darts) * 3,
+    average: (mine.reduce((s, { v }) => s + v.scored, 0) / darts) * DARTS_PER_VISIT,
     visits,
     skills,
     take: take.join(' '),
