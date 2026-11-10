@@ -12,6 +12,10 @@
   import Flag from '$lib/components/Flag.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import ProfileOverview from '$lib/components/progress/ProfileOverview.svelte'
+  import ProfileShowcase from '$lib/components/achievements/ProfileShowcase.svelte'
+  import ProfileAchievements from '$lib/components/achievements/ProfileAchievements.svelte'
+  import { fetchAchievements } from '$lib/achievements/store'
+  import type { Achievements } from '$lib/achievements/view'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { LOCALE } from '$lib/fmt'
@@ -48,6 +52,17 @@
     const id = userId
     banOnly = null
     if (id && !$progression) void fetchBan(id).then(b => (banOnly = id === userId ? b : banOnly))
+  })
+
+  // Achievements (behind achievements.enabled): the showcase on the overview and a tab with them all
+  const achievementsOn = flag('achievements.enabled')
+  let tab = $state<'overview' | 'achievements'>('overview')
+  let shown = $state<Achievements | null>(null)
+  $effect(() => {
+    const id = userId
+    shown = null
+    tab = 'overview'
+    if (id && $achievementsOn) void fetchAchievements(id).then(a => (shown = id === userId ? a : shown))
   })
 
   const STATUS_TEXT = { online: 'Online', lobby: 'In a lobby', playing: 'Playing', offline: 'Offline' } as const
@@ -153,7 +168,30 @@
         </div>
       </section>
 
-      <ProfileOverview {p} {self} bind:lastSeen />
+      {#if shown}
+        <div role="tablist" aria-label="Profile" class="flex gap-1 border-b border-line">
+          {#each [['overview', 'Overview'], ['achievements', 'Achievements']] as const as [key, name] (key)}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onclick={() => (tab = key)}
+              class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2 text-body font-semibold
+                     {tab === key ? 'border-accent text-text' : 'border-transparent text-text-muted hover:text-text'}"
+              >{name}{#if key === 'achievements'}<span class="rounded-full bg-surface-chip px-[7px] text-caption tabular-nums"
+                  >{shown.achievements.filter(a => a.tier > 0).length}</span
+                >{/if}</button
+            >
+          {/each}
+        </div>
+      {/if}
+
+      {#if shown && tab === 'achievements'}
+        <ProfileAchievements data={shown} {self} name={p.name} />
+      {:else}
+        {#if shown}<ProfileShowcase data={shown} {self} name={p.name} seeAll={() => (tab = 'achievements')} />{/if}
+        <ProfileOverview {p} {self} bind:lastSeen />
+      {/if}
     {/if}
   </main>
 </Layout>
