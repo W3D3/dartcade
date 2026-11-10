@@ -109,7 +109,7 @@
             Check your inbox
           </h1>
           {#if email}
-            <p class="text-[16px] text-text-muted">
+            <p class="text-body-lg text-text-muted">
               We sent a link to <strong class="text-text font-semibold">{email}</strong>. Open it on any device to finish signing up; this
               page continues on its own.
             </p>

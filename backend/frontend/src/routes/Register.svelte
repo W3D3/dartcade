@@ -103,7 +103,7 @@
           />
           <PasswordStrength {password} />
         </div>
-        <label class="flex items-start gap-[10px] text-[15px] leading-[1.45] text-ink-2 min-h-[44px] cursor-pointer">
+        <label class="flex items-start gap-[10px] text-body text-ink-2 min-h-[44px] cursor-pointer">
           <Checkbox bind:checked={acceptTerms} class="mt-[2px]" />
           <span
             >I agree to the <a href="#/terms">Terms</a> and
@@ -126,7 +126,7 @@
         {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
       </Button>
 
-      <p class="text-[15px] text-text-muted text-center">
+      <p class="text-body text-text-muted text-center">
         Already have an account?
         <a href="#/login" class="font-semibold no-underline">Sign in</a>
       </p>

@@ -43,7 +43,7 @@
       {#if !infoLoaded}
         <!-- avoid flashing the "isn't available" message before /api/auth-info has loaded -->
       {:else if !$authInfo.mail}
-        <p class="text-[16px] text-text-muted">Password reset isn't available on this server. Ask whoever runs it.</p>
+        <p class="text-body-lg text-text-muted">Password reset isn't available on this server. Ask whoever runs it.</p>
       {:else}
         <form
           onsubmit={e => {
@@ -56,7 +56,7 @@
             <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">
               Reset password
             </h1>
-            <p class="text-[16px] text-text-muted">Enter the email on your account and we'll send you a link.</p>
+            <p class="text-body-lg text-text-muted">Enter the email on your account and we'll send you a link.</p>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -78,7 +78,7 @@
           </div>
         {/if}
 
-        <p class="text-[15px] text-text-muted text-center"><a href="#/login" class="font-semibold no-underline">Back to sign in</a></p>
+        <p class="text-body text-text-muted text-center"><a href="#/login" class="font-semibold no-underline">Back to sign in</a></p>
       {/if}
     </div>
   </main>
