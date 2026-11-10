@@ -215,12 +215,12 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
         const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
         session.openVisitEvents = [
           { kind: 'visit.opened', data: { visit_id: 'manual' } },
-          ...[0, 1, 2].map(index => ({
+          ...Array.from({ length: DARTS_PER_VISIT }, (_, index) => ({
             kind: 'dart.detected' as const,
             data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 },
           })),
         ]
-        session.openDarts = [0, 1, 2].map(() => ({ source: 'manual' as const, corrected: false, thrownAt: at }))
+        session.openDarts = Array.from({ length: DARTS_PER_VISIT }, () => ({ source: 'manual' as const, corrected: false, thrownAt: at }))
         countDarts(session, session.currentState, DARTS_PER_VISIT)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
       }

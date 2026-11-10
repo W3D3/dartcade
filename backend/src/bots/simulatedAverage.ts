@@ -1,5 +1,6 @@
 import { pickTarget, throwAt } from './accuracy.js'
 import { seededRng } from '../session/rng.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 /** The 501 three-dart average a bot of this aiming sigma throws over `legs` legs, seeded (a test helper) */
 export function simulatedAverage(sigma: number, legs: number): number {
@@ -27,5 +28,5 @@ export function simulatedAverage(sigma: number, legs: number): number {
     }
     visits501 += 501
   }
-  return (visits501 / darts) * 3
+  return (visits501 / darts) * DARTS_PER_VISIT
 }

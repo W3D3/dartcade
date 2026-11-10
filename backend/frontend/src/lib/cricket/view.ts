@@ -4,6 +4,7 @@
 import type { CricketGame } from '../api/game-ws'
 import { cricketRules } from '../gameViews/meta.js'
 import { plural } from '../fmt.js'
+import { perVisitAverage } from '$shared/darts.js'
 
 /** "2 players · Cut-throat · First to 3 · Round 4". */
 export function cricketMeta(game: CricketGame, players: number): string {
@@ -67,7 +68,7 @@ export function cricketSides(game: CricketGame, players: { name: string }[]): Cr
 export function cricketMpr(game: CricketGame, seats: number[]): string {
   const sum = (xs: number[]) => seats.reduce((n, s) => n + (xs[s] ?? 0), 0)
   const darts = sum(game.dartsThrown) + (seats.includes(game.currentPlayer) ? game.currentVisitDarts.length : 0)
-  return (darts ? (sum(game.marksScored) / darts) * 3 : 0).toFixed(1)
+  return (perVisitAverage(sum(game.marksScored), darts) ?? 0).toFixed(1)
 }
 
 /** The leg being played: 1 + the legs won so far. */

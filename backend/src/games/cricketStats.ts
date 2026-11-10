@@ -5,7 +5,7 @@ import type { CricketState } from './cricket.js'
 import { TARGETS } from './cricketRules.js'
 import { row, values } from './matchStats.js'
 import { seatsByTeam } from './teams.js'
-import { DARTS_PER_VISIT } from '../shared/darts.js'
+import { perVisitAverage } from '../shared/darts.js'
 
 const TARGET_KEYS = TARGETS.map(t => (t === 25 ? 'marksBull' : `marks${t}`))
 const TARGET_LABELS = TARGETS.map(t => (t === 25 ? 'Bulls' : `${t}s`))
@@ -42,7 +42,7 @@ function groupValues(all: Visit[], seats: number[]): Record<string, number | und
   const darts = sum(mine.map(v => v.darts))
   const targets = Object.fromEntries(TARGET_KEYS.map((key, i) => [key, sum(mine.map(v => v.targetMarks[i]))]))
   return {
-    mpr: darts > 0 ? (marks / darts) * DARTS_PER_VISIT : 0,
+    mpr: perVisitAverage(marks, darts) ?? 0,
     ...targets,
     visits5: mine.filter(v => v.marks >= 5).length,
     visits7: mine.filter(v => v.marks >= 7).length,

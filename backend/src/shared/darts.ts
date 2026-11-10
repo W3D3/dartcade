@@ -4,6 +4,9 @@ export const DARTS_PER_VISIT = 3
 /** The most a visit can score: three treble 20s. */
 export const MAX_VISIT = 180
 
+/** Points per three darts, or null before any dart. */
+export const perVisitAverage = (points: number, darts: number): number | null => (darts > 0 ? (points / darts) * DARTS_PER_VISIT : null)
+
 export type VisitTier = 'max' | '140' | 'ton'
 
 /** Bands a visit's score: 180, 140 to 179, 100 to 139. Anything lower (or a bust, scored as 0) is null. */

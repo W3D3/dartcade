@@ -13,7 +13,7 @@ import { deltasOf, visitValues } from './value.js'
 import { visitStart } from './visitStart.js'
 import { tierOf, type CoachTierId } from './tiers.js'
 import { onFinish, throwsOf, type CoachLeg, type CoachVisit } from './walk.js'
-import { DARTS_PER_VISIT } from '../darts.js'
+import { DARTS_PER_VISIT, perVisitAverage } from '../darts.js'
 
 /** `left`: the score after the dart; after a bust, the visit's start again. `bust`: this dart
  *  busted. The darts the game keeps after a bust aren't walked: `left` is the start, `bust` false,
@@ -109,7 +109,12 @@ export const scoringLetter = (d: number): SkillGrade['grade'] => (d >= 10 ? 'A' 
 function gameAverage(legs: readonly CoachLeg[], seat: number): number {
   const visits = legs.flatMap(l => l.visits.filter(v => v.seat === seat))
   const darts = visits.reduce((s, v) => s + v.darts.length, 0)
-  return darts ? (visits.reduce((s, v) => s + v.scored, 0) / darts) * DARTS_PER_VISIT : 0
+  return (
+    perVisitAverage(
+      visits.reduce((s, v) => s + v.scored, 0),
+      darts,
+    ) ?? 0
+  )
 }
 
 export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, ctx: ReviewContext): LegReview | null {
@@ -277,7 +282,11 @@ export function reviewLeg(legs: readonly CoachLeg[], leg: number, seat: number, 
     seat,
     won,
     darts,
-    average: (mine.reduce((s, { v }) => s + v.scored, 0) / darts) * DARTS_PER_VISIT,
+    average:
+      perVisitAverage(
+        mine.reduce((s, { v }) => s + v.scored, 0),
+        darts,
+      ) ?? 0,
     visits,
     skills,
     take: take.join(' '),
