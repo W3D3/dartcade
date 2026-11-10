@@ -13,15 +13,15 @@ export const SEAT_COLOR_COUNT = DEFAULT_SEAT_COLORS.length
 export const seatColor = (seat: number, colors: readonly string[]): string =>
   colors[((seat % colors.length) + colors.length) % colors.length]
 
-// WLED effect ids
-const SOLID = 0,
-  BLINK = 1,
-  BREATHE = 2,
-  SPARKLE = 20,
-  FIREWORKS = 42
+/** WLED effect ids used by the built-in profile, by the name the Effects list shows. */
+export const FX = { solid: 0, blink: 1, pulse: 2, rainbow: 9, sparkle: 20, comet: 41, fireworks: 42 } as const
+const { solid: SOLID, blink: BLINK, pulse: BREATHE, sparkle: SPARKLE, comet: COMET, fireworks: FIREWORKS } = FX
 const RED = '#ff3b30'
+const PURPLE = '#a855f7'
 /** Hue 50: clearly yellow, apart from the orange seat colour (the old amber looked like it). */
-const TAKEOUT_YELLOW = '#ffd60a'
+/** The lobby effect's colour, also a seat palette entry. Stored LED data, not the UI accent. */
+export const LIME = '#c6f24e'
+export const TAKEOUT_YELLOW = '#ffd60a'
 
 const flash = (trigger: Rule['when']['trigger'], look: Rule['look'], holdMs: number, extra: Partial<Rule['when']> = {}): Rule => ({
   when: { trigger, seats: 'mine', ...extra },
@@ -48,19 +48,19 @@ export const DEFAULT_PROFILE: Profile = {
       enabled: true,
       look: { color: TAKEOUT_YELLOW, fx: BREATHE, bri: 255, speed: 60 },
     },
-    // WLED fx 41 "Lighthouse": a comet travelling around the strip leaving a fading trail
+    // WLED "Lighthouse": a comet travelling around the strip leaving a fading trail
     {
       when: { trigger: 'calibration.started', seats: 'any' },
       type: 'scene',
       enabled: true,
-      look: { color: '#a855f7', fx: 41, bri: 255, speed: 128 },
+      look: { color: PURPLE, fx: COMET, bri: 255, speed: 128 },
     },
     // Lobby: only shows while someone sits at the board in a lobby with no game running; off unless switched on
     {
       when: { trigger: 'lobby', seats: 'any' },
       type: 'scene',
       enabled: false,
-      look: { color: '#c6f24e', fx: BREATHE, bri: 60, speed: 40 },
+      look: { color: LIME, fx: BREATHE, bri: 60, speed: 40 },
     },
     // X01
     flash('visit', { preset: '180', state: PRESET_180 }, 4000, { total: { op: '=', n: 180 } }),
