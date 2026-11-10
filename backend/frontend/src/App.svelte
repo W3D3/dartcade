@@ -40,6 +40,8 @@
   import AdminGames from './routes/AdminGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
   import FinishSprite from '$lib/components/FinishSprite.svelte'
+  import BadgeDefs from '$lib/components/achievements/BadgeDefs.svelte'
+  import AchievementToasts from '$lib/components/achievements/AchievementToasts.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminRanked from './routes/AdminRanked.svelte'
   import AdminMinigolfReports from './routes/AdminMinigolfReports.svelte'
@@ -262,13 +264,14 @@
 </script>
 
 <FinishSprite />
+<BadgeDefs />
 <Tooltip.Provider>
   {#if checked}
     {#if $currentUser?.nameNeedsChange && !bigScreen}
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser && !bigScreen}<ProgressToasts /><MatchFound />{/if}
+      {#if $currentUser && !bigScreen}<ProgressToasts /><AchievementToasts /><MatchFound />{/if}
     {/if}
   {/if}
   {#if $currentUser?.impersonating && !bigScreen}<ImpersonationBanner name={$currentUser.name} />{/if}

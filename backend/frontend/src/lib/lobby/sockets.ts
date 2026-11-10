@@ -19,6 +19,7 @@ import type {
   MeServerMessage,
   PendingInvite,
   XpGainedMessage,
+  AchievementUnlockedMessage,
   LobbyIdleClosedMessage,
 } from '../api/lobby-ws'
 
@@ -104,6 +105,7 @@ const EMPTY: MeState = { invites: [], lobby: null, game: null, friends: null, ma
 export function createMeStore(open?: OpenSocket) {
   const state = writable<MeState | null>(null)
   const xp = writable<XpGainedMessage | null>(null)
+  const achievements = writable<AchievementUnlockedMessage | null>(null)
   const boardStatus = writable<BoardStatusMessage | null>(null)
   const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
   const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
@@ -114,6 +116,8 @@ export function createMeStore(open?: OpenSocket) {
     subscribe: state.subscribe,
     /** The XP you last earned (xp.gained), as it arrives. */
     xp: { subscribe: xp.subscribe } satisfies Readable<XpGainedMessage | null>,
+    /** The achievements you last unlocked (achievement.unlocked), as they arrive. */
+    achievements: { subscribe: achievements.subscribe } satisfies Readable<AchievementUnlockedMessage | null>,
     /** One of your boards' bridges last connected or dropped (board.status), as it arrives. */
     boardStatus: { subscribe: boardStatus.subscribe } satisfies Readable<BoardStatusMessage | null>,
     /** The last time your ranked search or found match ended, and why (matchmaking.ended), as it arrives. */
@@ -136,6 +140,8 @@ export function createMeStore(open?: OpenSocket) {
               state.update(s => ({ ...(s ?? EMPTY), friends: list }))
             } else if (msg?.type === 'xp.gained') {
               xp.set(msg)
+            } else if (msg?.type === 'achievement.unlocked') {
+              achievements.set(msg)
             } else if (msg?.type === 'board.status') {
               boardStatus.set(msg)
             } else if (msg?.type === 'matchmaking.ended') {
@@ -162,6 +168,7 @@ export function createMeStore(open?: OpenSocket) {
       socket = null
       state.set(null)
       xp.set(null)
+      achievements.set(null)
       boardStatus.set(null)
       matchmakingEnded.set(null)
       idleClosed.set(null)
