@@ -170,6 +170,11 @@ func (t *Transport) Send(evs []differ.Event) uint64 {
 	return seq
 }
 
+const (
+	heartbeatEvery = 20 * time.Second
+	deadAfter      = 45 * time.Second // no message from the backend for this long ends the connection
+)
+
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
 func (t *Transport) Start(ctx context.Context) error {
 	u, err := url.Parse(t.cfg.BackendURL)
@@ -185,7 +190,7 @@ func (t *Transport) Start(ctx context.Context) error {
 	if t.cfg.OutboxPath != "" {
 		go t.runPersist(ctx)
 	}
-	delay := 500 * time.Millisecond
+	delay := backoff.Reconnect.Initial
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -197,19 +202,17 @@ func (t *Transport) Start(ctx context.Context) error {
 			log.Info("connected to backend")
 			// Only a connection that stayed up resets the backoff: a backend that closes right
 			// away (token rejected, database down) is redialled slower and slower too
-			stableAt := time.Now().Add(30 * time.Second)
+			connectedAt := time.Now()
 			t.runConn(ctx, conn)
 			conn.Close(websocket.StatusNormalClosure, "")
-			if time.Now().After(stableAt) {
-				delay = 500 * time.Millisecond
-			}
+			delay = backoff.Reconnect.Reset(delay, connectedAt)
 		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(delay):
 		}
-		delay = backoff.Next(delay, 30*time.Second)
+		delay = backoff.Reconnect.Next(delay)
 	}
 }
 
@@ -277,8 +280,8 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		}
 	}
 
-	heartbeat := time.NewTicker(20 * time.Second)
-	deadline := time.NewTimer(45 * time.Second)
+	heartbeat := time.NewTicker(heartbeatEvery)
+	deadline := time.NewTimer(deadAfter)
 	defer heartbeat.Stop()
 	defer deadline.Stop()
 
@@ -292,7 +295,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 				readErr <- err
 				return
 			}
-			deadline.Reset(45 * time.Second)
+			deadline.Reset(deadAfter)
 			t.handleMessage(msg)
 		}
 	}()

@@ -160,7 +160,7 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 }
 
 func (c *Client) wsLoop(ctx context.Context) {
-	delay := 500 * time.Millisecond
+	delay := backoff.Reconnect.Initial
 	var disconnectedAt time.Time
 	first := true
 	for {
@@ -175,7 +175,7 @@ func (c *Client) wsLoop(ctx context.Context) {
 				return
 			case <-time.After(delay):
 			}
-			delay = backoff.Next(delay, 30*time.Second)
+			delay = backoff.Reconnect.Next(delay)
 			continue
 		}
 		if first {
@@ -185,22 +185,20 @@ func (c *Client) wsLoop(ctx context.Context) {
 			gapMs := time.Since(disconnectedAt).Milliseconds()
 			c.emit(BMFrame{Kind: "bm_reconnect", GapMs: gapMs, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 		}
-		stableAt := time.Now().Add(30 * time.Second)
+		connectedAt := time.Now()
 		for {
 			_, msg, err := conn.Read(ctx)
 			if err != nil {
 				log.Warn("BM WS read error", "err", err)
 				break
 			}
-			if time.Now().After(stableAt) {
-				delay = 500 * time.Millisecond
-			}
+			delay = backoff.Reconnect.Reset(delay, connectedAt)
 			c.emitRawWS(msg)
 		}
 		conn.Close(websocket.StatusNormalClosure, "")
 		disconnectedAt = time.Now()
 		c.emit(BMFrame{Kind: "bm_disconnect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
-		delay = backoff.Next(delay, 30*time.Second)
+		delay = backoff.Reconnect.Next(delay)
 		select {
 		case <-ctx.Done():
 			return
