@@ -1,4 +1,5 @@
-import type { Player } from '../session/types.js'
+import type { Rng } from '../session/rng.js'
+import type { ConfigFieldMeta, Player } from '../session/types.js'
 import { forfeitPlacements } from './ranking.js'
 
 /** What a game that supports teams reads from its config (see the teams design). */
@@ -92,4 +93,39 @@ export function teamForfeitPlacements(teamOf: number[], placements: number[], fo
   const teamPlacements = seatsByTeam(teamOf).map(seats => placements[seats[0]])
   const forfeitedTeams = new Set([...forfeited].map(seat => teamOf[seat]))
   return seatPlacements(teamOf, forfeitPlacements(teamPlacements, forfeitedTeams))
+}
+
+const TEAM_IDS = ['A', 'B'] as const
+
+/** The setup form's Format option. */
+export const FORMAT_OPTION: ConfigFieldMeta = {
+  label: 'Format',
+  tooltip: 'Teams: Team A against Team B, each sharing one score. Players take turns across the teams.',
+  options: [
+    { value: 'singles', label: 'Singles' },
+    { value: 'teams', label: 'Teams' },
+  ],
+}
+
+/** The team that throws first: Team A, or a coin flip when the lobby asked for a random start. */
+export function startTeam(cfg: TeamsConfig, rng?: Rng): number {
+  return cfg.format === 'teams' && cfg.teamStart === 'random' && rng ? (rng() < 0.5 ? 0 : 1) : 0
+}
+
+type TeamEntry = { id: (typeof TEAM_IDS)[number]; name: string; seats: number[] }
+
+/** One entry per team (id, name, seats) for a snapshot or detail; `extra` adds the mode's per-team fields. */
+export function teamEntries(teamOf: number[]): TeamEntry[]
+export function teamEntries<E extends object>(teamOf: number[], extra: (team: number) => E): (TeamEntry & E)[]
+export function teamEntries(teamOf: number[], extra?: (team: number) => object): TeamEntry[] {
+  return seatsByTeam(teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats, ...extra?.(t) }))
+}
+
+/** A bull off's `applyStartOrder`: in a team game the winner throws first and the teams take turns. */
+export function teamsApplyStartOrder<
+  S extends { cfg: TeamsConfig; teamOf: number[]; order: number[]; turn: number; currentPlayer: number },
+>(s: S, bullOffOrder: number[]): S {
+  const winner = bullOffOrder[0]
+  const order = s.cfg.format === 'teams' ? turnOrder(s.teamOf, s.teamOf[winner], winner) : bullOffOrder
+  return { ...s, order, turn: 0, currentPlayer: order[0] }
 }

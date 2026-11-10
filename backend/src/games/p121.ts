@@ -21,6 +21,7 @@ import { checkoutHint } from '../shared/checkout.js'
 import { rankSeats } from './ranking.js'
 import { row, values } from './matchStats.js'
 import { validateOptions } from './configMeta.js'
+import { OUT_MODE_OPTION } from './commonOptions.js'
 import { nextTurn, upNext } from './turns.js'
 
 export type P121Config = {
@@ -250,13 +251,8 @@ export const configMeta: Record<Exclude<keyof P121Config, 'bullOff'>, ConfigFiel
     ],
   },
   outMode: {
-    label: 'Check-out',
+    ...OUT_MODE_OPTION,
     tooltip: 'How a try finishes. Straight: any dart on 0. Double: must finish on a double. Master: double or triple.',
-    options: [
-      { value: 'straight', label: 'Straight' },
-      { value: 'double', label: 'Double' },
-      { value: 'master', label: 'Master' },
-    ],
   },
   missRule: {
     label: 'Miss rule',

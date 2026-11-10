@@ -5,7 +5,20 @@ import type { Rng } from '../session/rng.js'
 import { pickTarget } from '../bots/accuracy.js'
 import { rankSeats } from './ranking.js'
 import { checkoutHint } from '../shared/checkout.js'
-import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
+import {
+  FORMAT_OPTION,
+  legStart,
+  seatPlacements,
+  startTeam,
+  teamCount,
+  teamEntries,
+  teamOfSeats,
+  teamsApplyStartOrder,
+  turnOrder,
+  validateTwoTeams,
+  type TeamsConfig,
+} from './teams.js'
+import { BOT_SPEED_OPTION, BULL_OFF_OPTION, OUT_MODE_OPTION } from './commonOptions.js'
 import { x01MatchStats } from './x01Stats.js'
 import { meetsMode, scoreDart } from './outRules.js'
 
@@ -176,18 +189,9 @@ function roundLimitWinner(scores: number[]): number {
   return scores.indexOf(Math.min(...scores))
 }
 
-const TEAM_IDS = ['A', 'B'] as const
-
 // `teams` and `teamStart` are set by the lobby, not the setup form
 export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>, ConfigFieldMeta> = {
-  format: {
-    label: 'Format',
-    tooltip: 'Teams: Team A against Team B, each sharing one score. Players take turns across the teams.',
-    options: [
-      { value: 'singles', label: 'Singles' },
-      { value: 'teams', label: 'Teams' },
-    ],
-  },
+  format: FORMAT_OPTION,
   startScore: {
     label: 'Start score',
     options: [
@@ -205,34 +209,9 @@ export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>,
       { value: 'master', label: 'Master' },
     ],
   },
-  outMode: {
-    label: 'Check-out',
-    tooltip: 'How a player finishes. Straight: any dart on 0. Double: must finish on a double. Master: double or triple.',
-    options: [
-      { value: 'straight', label: 'Straight' },
-      { value: 'double', label: 'Double' },
-      { value: 'master', label: 'Master' },
-    ],
-  },
-  bullOff: {
-    label: 'Bull off',
-    tooltip:
-      'Who throws first. Off: player 1 starts. One dart each, closest to the bull goes first. The same bull segment twice is thrown again. If nobody hits a bull, WDC measures the distance and PDC throws again.',
-    options: [
-      { value: 'off', label: 'Off' },
-      { value: 'wdc', label: 'WDC' },
-      { value: 'pdc', label: 'PDC' },
-    ],
-  },
-  botSpeed: {
-    label: 'Bot speed',
-    tooltip: 'How fast a bot seat throws its darts.',
-    options: [
-      { value: 'fast', label: 'Fast' },
-      { value: 'normal', label: 'Normal' },
-      { value: 'slow', label: 'Slow' },
-    ],
-  },
+  outMode: OUT_MODE_OPTION,
+  bullOff: BULL_OFF_OPTION,
+  botSpeed: BOT_SPEED_OPTION,
   bullValue: {
     label: 'Bull value',
     tooltip: 'Score of the outer bull (25). 50/50: both bulls score 50 points.',
@@ -276,9 +255,9 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     const n = players.length
     const teamOf = teamOfSeats(cfg, n)
     const teams = teamCount(teamOf)
-    const startTeam = cfg.format === 'teams' && cfg.teamStart === 'random' && rng ? (rng() < 0.5 ? 0 : 1) : 0
+    const first = startTeam(cfg, rng)
     // In singles: [0 … n-1]
-    const order = turnOrder(teamOf, startTeam)
+    const order = turnOrder(teamOf, first)
     return {
       cfg,
       phase: 'game',
@@ -431,10 +410,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       visitStartScores: s.teamOf.map(t => s.visitOpenedScores[t]),
     }
     if (s.cfg.format !== 'teams') return view
-    const teams = seatsByTeam(s.teamOf).map((seats, t) => ({
-      id: TEAM_IDS[t],
-      name: `Team ${TEAM_IDS[t]}`,
-      seats,
+    const teams = teamEntries(s.teamOf, t => ({
       score: s.scores[t],
       legs: s.legs[t],
     }))
@@ -512,7 +488,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       })
     }
     if (final.cfg.format !== 'teams') return { mode: 'x01', legs }
-    const teams = seatsByTeam(final.teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats }))
+    const teams = teamEntries(final.teamOf)
     return { mode: 'x01', teams, legs }
   },
 
@@ -522,11 +498,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
 /** X01 with an optional bull off deciding the throwing order. */
 // In a team game the bull off winner throws first and the teams take turns
 const withBullOffX01 = withBullOff(x01Game, {
-  applyStartOrder: (s, bullOffOrder) => {
-    const winner = bullOffOrder[0]
-    const order = s.cfg.format === 'teams' ? turnOrder(s.teamOf, s.teamOf[winner], winner) : bullOffOrder
-    return { ...s, order, turn: 0, currentPlayer: order[0] }
-  },
+  applyStartOrder: teamsApplyStartOrder,
 })
 
 // During the bull off nobody is up next in the game yet
