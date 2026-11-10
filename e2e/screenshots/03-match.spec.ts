@@ -16,6 +16,7 @@ import {
   openHash,
   type Who,
 } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 /** One visit on this page: its darts, then Next player (unless it's the visit still being thrown). */
 async function visit(page: Page, darts: string[], done = true): Promise<void> {
@@ -117,7 +118,7 @@ test('a remote game waiting for a player', async ({ browser }) => {
   await michael.ctx.close()
   await startLobbyGame(gerwyn.page, lobby)
   await visit(gerwyn.page, ['T20', 'T20', 'T20'])
-  await expect(gerwyn.page.getByText(/Waiting for Michael/i).first()).toBeVisible({ timeout: 20_000 })
+  await expect(gerwyn.page.getByText(/Waiting for Michael/i).first()).toBeVisible({ timeout: TIMEOUT.medium })
   await shot(gerwyn.page, 'tablet/remote-waiting-1024x730.png')
   await endGame(gerwyn.page)
   await leaveLobby(gerwyn.page)

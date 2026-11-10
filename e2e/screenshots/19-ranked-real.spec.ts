@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { BASE, VIEW, api, open, shot, leaveLobby } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // A real ranked match through the queue: nothing here is added to the sockets' messages, so what the
 // screens show is what the server's snapshot (`ranked`) and `matchmaking.ended` say. The visit and the
@@ -68,7 +69,7 @@ async function startMatch(a: Page, b: Page): Promise<string> {
       .getByRole('dialog')
       .getByRole('button', { name: /^Accept/ })
       .click()
-  for (const p of [a, b]) await p.waitForURL(/#\/session\//, { timeout: 30_000 })
+  for (const p of [a, b]) await p.waitForURL(/#\/session\//, { timeout: TIMEOUT.long })
   return a.url().split('/session/')[1]
 }
 
@@ -82,7 +83,7 @@ async function bullOff(pages: Record<string, Page>, id: string, winner: string) 
     await act(page, id, { type: 'takeout' })
   }
   // The screens start the game themselves a few seconds after the result
-  await expect.poll(async () => (await game(pages[winner], id)).game.bullOff, { timeout: 30_000 }).toBeNull()
+  await expect.poll(async () => (await game(pages[winner], id)).game.bullOff, { timeout: TIMEOUT.long }).toBeNull()
 }
 
 for (const [view, name] of [
@@ -118,7 +119,7 @@ for (const [view, name] of [
     const elsewhere = await luke.ctx.newPage()
     await elsewhere.goto('/#/')
     await act(elsewhere, id, { type: 'forfeit' })
-    await expect(admin.page.getByText(/Find next match|Back to Matchmaking/).first()).toBeVisible({ timeout: 20_000 })
+    await expect(admin.page.getByText(/Find next match|Back to Matchmaking/).first()).toBeVisible({ timeout: TIMEOUT.medium })
     await shot(admin.page, `${DIR}/result-${name}.png`, { settle: 1500 })
 
     await admin.ctx.close()

@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Browser, BrowserContext, Page } from '@playwright/test'
 import path from 'path'
 import { root } from './compose.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 export const BASE = `http://localhost:${process.env.SHOTS_FRONTEND_PORT ?? 5181}`
 
@@ -257,7 +258,7 @@ export async function shot(
   await page.evaluate(() => document.fonts.ready)
   await page.waitForLoadState('networkidle').catch(() => undefined)
   await expect(page.locator('[aria-busy="true"]'))
-    .toHaveCount(0, { timeout: 10_000 })
+    .toHaveCount(0, { timeout: TIMEOUT.short })
     .catch(() => undefined)
   await hideDevOnly(page)
   const vp = page.viewportSize()

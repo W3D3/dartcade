@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { VIEW, open, shot } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // Players make their own minigolf courses (minigolf.userCourses.enabled): the My courses list, a
 // refused publish, a published course in the Play page's course picker, and the phone banner
@@ -24,7 +25,7 @@ test('minigolf: my courses, a refused publish, the picker groups and the phone b
   for (let i = 0; i < 2; i++) {
     await page.getByRole('button', { name: 'New hole', exact: true }).click()
     await page.waitForURL(/\/minigolf\/holes\//)
-    await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
     await page.getByRole('link', { name: 'Done' }).click()
     await page.waitForURL(/\/minigolf\/courses\/[^/]+$/)
   }

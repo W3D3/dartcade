@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { VIEW, X01, open, shot, hostLobby, leaveLobby, startLobbyGame, endGame, dart, entryMode, openHash } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // The live coach beside a solo X01 game (coach.live.enabled, on in the screenshot stack)
 test('coach: live panel in solo x01', async ({ browser }) => {
@@ -7,7 +8,7 @@ test('coach: live panel in solo x01', async ({ browser }) => {
   const lobby = await hostLobby(phil.page, "Phil's lobby", X01({ startScore: 301 }))
   const session = await startLobbyGame(phil.page, lobby)
   const coach = phil.page.getByRole('complementary', { name: 'Coach' })
-  await expect(coach).toBeVisible({ timeout: 20_000 })
+  await expect(coach).toBeVisible({ timeout: TIMEOUT.medium })
 
   // Visit 1 scores 177 (124 left); the next visit opens with the last one's grade
   await entryMode(phil.page, 'Enter')
@@ -28,7 +29,7 @@ test('coach: live panel in solo x01', async ({ browser }) => {
   await openHash(phone.page, `/session/${session}`)
   // The folded panel, not its loading skeleton: a click on the skeleton opens nothing
   const folded = phone.page.getByRole('group', { name: 'Coach' })
-  await expect(folded).toBeVisible({ timeout: 20_000 })
+  await expect(folded).toBeVisible({ timeout: TIMEOUT.medium })
   await folded.getByText('Coach', { exact: true }).click()
   await expect(phone.page.getByRole('heading', { name: 'Aim now' })).toBeVisible()
   await shot(phone.page, 'coach/live-phone.png')

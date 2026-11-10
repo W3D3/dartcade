@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { VIEW, open, shot, hostLobby, leaveLobby, addBot, startLobbyGame, dart, entryMode, openHash, userId, X01 } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // Progression: the XP chip on the win screen, the Progress page (level, day streak, challenges,
 // your card) and a profile with its popup
@@ -19,8 +20,8 @@ test('progression: the win screen chip, the Progress page and a profile', async 
   await entryMode(admin.page, 'Enter')
   // The bot throws its visit in its own time: wait until it's Admin's turn again
   const myTurn = async () => {
-    await expect(admin.page.getByRole('region', { name: 'Admin, throwing' })).toBeHidden({ timeout: 10_000 })
-    await expect(admin.page.getByRole('region', { name: 'Admin, throwing' })).toBeVisible({ timeout: 30_000 })
+    await expect(admin.page.getByRole('region', { name: 'Admin, throwing' })).toBeHidden({ timeout: TIMEOUT.short })
+    await expect(admin.page.getByRole('region', { name: 'Admin, throwing' })).toBeVisible({ timeout: TIMEOUT.long })
   }
   await visit(admin.page, ['T20', 'T20', 'T20'])
   await myTurn()
