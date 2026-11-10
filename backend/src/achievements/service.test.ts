@@ -155,15 +155,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
       await service.countGame(await duel(6))
       const a = app()
       const mine = await a.inject({ method: 'GET', url: '/api/achievements' })
-      expect(mine.json()).toMatchObject({ achievements: [{ id: 'x01.bullseye', count: 12, tier: 1 }], showcase: [], unseen: 1 })
+      expect(mine.json()).toMatchObject({
+        achievements: [{ id: 'x01.bullseye', count: 12, tier: 1, isNew: true }],
+        showcase: [],
+        unseen: 1,
+      })
       const bad = await a.inject({ method: 'PUT', url: '/api/achievements/showcase', payload: { ids: ['x01.180'] } })
       expect(bad.statusCode).toBe(400)
       const ok = await a.inject({ method: 'PUT', url: '/api/achievements/showcase', payload: { ids: ['x01.bullseye'] } })
       expect(ok.json().showcase).toEqual(['x01.bullseye'])
       expect((await a.inject({ method: 'POST', url: '/api/achievements/seen' })).statusCode).toBe(204)
-      expect((await a.inject({ method: 'GET', url: '/api/achievements' })).json().unseen).toBe(0)
+      expect((await a.inject({ method: 'GET', url: '/api/achievements' })).json()).toMatchObject({
+        unseen: 0,
+        achievements: [{ isNew: false }],
+      })
       const theirs = await a.inject({ method: 'GET', url: '/api/users/ann/achievements' })
       expect(theirs.statusCode).toBe(200)
+      expect(theirs.json().achievements[0].isNew).toBe(false)
       expect((await a.inject({ method: 'GET', url: '/api/users/nobody/achievements' })).statusCode).toBe(404)
     })
   })

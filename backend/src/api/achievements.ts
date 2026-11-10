@@ -31,6 +31,7 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
           tier: r.tier,
           earnedAt: r.earnedAt?.toISOString() ?? null,
           tierAt: r.tierAt?.toISOString() ?? null,
+          isNew: self && r.tier > r.seenTier,
         })),
       showcase: rows
         .filter(r => r.showcaseSlot !== null && r.tier > 0)

@@ -4823,6 +4823,8 @@ export interface components {
                  * @description When the current tier was reached
                  */
                 tierAt: string | null;
+                /** @description A tier you have not looked at yet (yours only; false for another player) */
+                isNew: boolean;
             }[];
             /** @description The shown achievement ids, in order */
             showcase: string[];

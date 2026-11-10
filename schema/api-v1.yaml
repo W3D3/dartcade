@@ -6183,7 +6183,7 @@ components:
           description: One entry per achievement with any count; the rest of the catalogue is not earned yet
           items:
             type: object
-            required: [id, count, tier, earnedAt, tierAt]
+            required: [id, count, tier, earnedAt, tierAt, isNew]
             additionalProperties: false
             properties:
               id: { type: string }
@@ -6191,6 +6191,7 @@ components:
               tier: { type: integer, minimum: 0, maximum: 5, description: '0 = counting, not earned yet' }
               earnedAt: { type: string, format: date-time, nullable: true }
               tierAt: { type: string, format: date-time, nullable: true, description: When the current tier was reached }
+              isNew: { type: boolean, description: 'A tier you have not looked at yet (yours only; false for another player)' }
         showcase: { type: array, maxItems: 5, items: { type: string }, description: 'The shown achievement ids, in order' }
         unseen:
           {
