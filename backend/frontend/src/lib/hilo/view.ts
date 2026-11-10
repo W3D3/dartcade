@@ -3,6 +3,7 @@
 // docs/superpowers/specs/2026-10-17-higher-lower-design.md.
 import type { HiloGame, HiloResult } from '../api/game-ws'
 import { plural } from '../fmt.js'
+import { safeHigh, safeLow } from '$shared/hilo'
 
 export type HiloOutcome = HiloResult['outcome']
 
@@ -47,11 +48,11 @@ export function bannerText(r: NonNullable<HiloGame['lastResult']>): string | nul
   return null
 }
 
-/** Which zone a total sits in, by the same rule the engine judges a visit with (safeHigh/judge in backend/src/games/hilo.ts). */
+/** Which zone a total sits in, by the same rule the engine judges a visit with (safeHigh/safeLow in shared/hilo.ts). */
 export function zoneOf(total: number, game: HiloGame): 'safe-high' | 'safe-low' | 'danger' {
   const { high, low } = game
   const { matchExtremes } = game.cfg
-  if (total > high || (matchExtremes && high === 180 && total === 180)) return 'safe-high'
-  if (total < low || (matchExtremes && low === 0 && total === 0)) return 'safe-low'
+  if (safeHigh(total, high, matchExtremes)) return 'safe-high'
+  if (safeLow(total, low, matchExtremes)) return 'safe-low'
   return 'danger'
 }
