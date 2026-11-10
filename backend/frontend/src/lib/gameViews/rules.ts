@@ -9,21 +9,21 @@ import { atcRules, cricketRules, hiloRules, minigolfRules, p121Rules, x01Rules }
 const int = z.number().int()
 const ModeSchema = z.enum(['straight', 'double', 'master'])
 // Settings a saved lobby config may leave out read as what the game plays without them
-export const X01ConfigSchema = z.object({
+const X01ConfigSchema = z.object({
   startScore: int,
   inMode: ModeSchema.catch('straight'),
   outMode: ModeSchema.catch('straight'),
   firstTo: int.catch(3),
 })
-export const AtcConfigSchema = z.object({
+const AtcConfigSchema = z.object({
   order: z.enum(['asc', 'desc', 'random']),
   finishOn: z.enum(['twenty', 'single_bull', 'bull']),
   multiplierAdvances: z.boolean(),
 })
-export const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: int, outMode: ModeSchema.catch('double') })
-export const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
-export const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
-export const MinigolfConfigSchema = z.object({
+const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: int, outMode: ModeSchema.catch('double') })
+const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
+const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
+const MinigolfConfigSchema = z.object({
   course: z.string().catch(''),
   tries: int.catch(3),
   ballContact: z.boolean().catch(false),
@@ -36,7 +36,7 @@ export const MinigolfConfigSchema = z.object({
  * from the published course); a game from before courses moved to the database has only the
  * code course's id ("Mixed course": 9 of all its holes).
  */
-export function minigolfCourse(c: { course: string; courseName?: string; holes?: unknown[] }): { name: string; holes: number } {
+function minigolfCourse(c: { course: string; courseName?: string; holes?: unknown[] }): { name: string; holes: number } {
   const code = COURSES.find(x => x.id === c.course)
   const name = c.courseName ?? code?.name ?? (c.course === 'mixed' ? 'Mixed course' : 'Course')
   if (c.holes) return { name, holes: c.holes.length }

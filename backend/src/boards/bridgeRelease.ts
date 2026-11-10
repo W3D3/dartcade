@@ -3,7 +3,7 @@ import semver from 'semver'
 import { z } from 'zod'
 
 /** The repo the bridge downloads its releases from (bridge/internal/update builds the same URLs). */
-export const RELEASES_URL = 'https://api.github.com/repos/W3D3/dartcade/releases?per_page=100'
+const RELEASES_URL = 'https://api.github.com/repos/W3D3/dartcade/releases?per_page=100'
 
 // A release the bridge can verify publishes these (.github/workflows/release.yml)
 const SIGNED_ASSETS = ['SHA256SUMS', 'SHA256SUMS.sig']

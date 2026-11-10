@@ -109,7 +109,7 @@ type LabelledRow = {
 }
 
 /** A row of the join above as the export and the admin page show it; null if its dart doesn't parse. */
-export function toLabelled(r: LabelledRow): LabelledSample | null {
+function toLabelled(r: LabelledRow): LabelledSample | null {
   const detected = Detected.safeParse(r.detected)
   if (!detected.success) return null
   const autodarts = { segment: detected.data.dart.segment.name, coords: detected.data.dart.coords ?? null }

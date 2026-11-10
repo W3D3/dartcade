@@ -11,7 +11,7 @@ type Warn = (message: string, details: unknown) => void
 type Revoker = Pick<BigScreenService, 'revoke'>
 
 /** The page the bridge's helper opens: the public app URL with a fresh token for the board. */
-export function bigScreenUrl(boardId: string, token: string): string | null {
+function bigScreenUrl(boardId: string, token: string): string | null {
   const base = (process.env.PUBLIC_URL || process.env.BETTER_AUTH_URL || '').replace(/\/+$/, '')
   if (!base) return null
   return `${base}/#/big-screen/${boardId}?k=${token}`

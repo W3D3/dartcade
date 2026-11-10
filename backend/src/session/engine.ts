@@ -51,7 +51,7 @@ export type GameEnded = {
 export type EndedFn = (e: GameEnded) => void | Promise<void>
 
 /** How long a won game stays after it ends, so late watchers still get its final snapshot. */
-export const KEEP_FINISHED_MS = 10 * 60_000
+const KEEP_FINISHED_MS = 10 * 60_000
 
 export type EngineOptions = {
   /** How long a won game stays after it ends (default KEEP_FINISHED_MS). */

@@ -15,7 +15,7 @@ export function matchLayout(playerCount: number, phone: boolean, teams = false, 
 }
 
 /** The narrowest viewport (px) with room for a 300 px panel either side of the board. */
-export const DUEL_MIN_WIDTH = 1024
+const DUEL_MIN_WIDTH = 1024
 
 /** Below `DUEL_MIN_WIDTH`: two players stack as rows. */
 export const NARROW_MATCH_QUERY = `(max-width: ${DUEL_MIN_WIDTH - 0.02}px)`

@@ -7,7 +7,7 @@ import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw
 export const BM_TIMEOUT_MS = 12_000
 
 /** Board Manager's /api/state, as far as we pass it on: each field falls back on its own. */
-export const BmStateSchema = z
+const BmStateSchema = z
   .object({
     status: z.string().nullable().catch(null).default(null),
     running: z.boolean().catch(false).default(false),

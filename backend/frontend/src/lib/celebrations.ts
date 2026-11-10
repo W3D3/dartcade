@@ -50,7 +50,7 @@ export const CELEBRATIONS: Record<string, Recipe> = {
 }
 
 /** The colours a celebration is drawn in: the card's accent first (it reads on the dark screen), then the pair. */
-export const celebrationColors = (c: CardColors): string[] => [accentOf(c), accentOf(c), c.fg, c.bg]
+const celebrationColors = (c: CardColors): string[] => [accentOf(c), accentOf(c), c.fg, c.bg]
 
 /** Plays celebration `id` on `fire`'s canvas; returns what stops it (nothing to stop for an unknown one). */
 export function celebrate(fire: Fire, id: string, colors: CardColors): () => void {

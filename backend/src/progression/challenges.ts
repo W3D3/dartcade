@@ -11,7 +11,7 @@ export type Period = 'daily' | 'weekly'
 export type Difficulty = 'easy' | 'medium' | 'hard'
 
 /** What challenges pay, by period and difficulty. */
-export const CHALLENGE_XP: Record<Period, Record<Difficulty, number>> = {
+const CHALLENGE_XP: Record<Period, Record<Difficulty, number>> = {
   daily: { easy: 40, medium: 75, hard: 125 },
   weekly: { easy: 250, medium: 400, hard: 600 },
 }
@@ -134,7 +134,7 @@ export const legDartLimit = (average: number | null): number =>
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Try something": a mode you haven't played for 14 days. Its id is `d.try.<mode>`. */
-export const tryTemplate = (mode: string): Template => ({
+const tryTemplate = (mode: string): Template => ({
   id: `d.try.${mode}`,
   period: 'daily',
   difficulty: 'easy',

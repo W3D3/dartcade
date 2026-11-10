@@ -21,7 +21,7 @@ const PITCH = Math.PI / 4
 /** Room around the framed roll. */
 const MARGIN = 1.15
 /** How fast the chase camera eases toward its aim, per second (a ~0.6 s time constant). */
-export const CHASE_RATE = 1.6
+const CHASE_RATE = 1.6
 /** The fastest the chase camera closes in, mm/s. */
 const ZOOM_IN = 2000
 

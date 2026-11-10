@@ -79,7 +79,7 @@ export type TeamRanked = {
 }
 
 /** "Your duo" for the viewer's own team, the players' names for the other. */
-export function rankedTeamLabel(names: readonly string[], mine: boolean): string {
+function rankedTeamLabel(names: readonly string[], mine: boolean): string {
   return mine ? (names.length === 2 ? 'Your duo' : 'Your team') : andList(names)
 }
 

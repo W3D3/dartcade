@@ -14,7 +14,7 @@ const isRanked = sql.raw(
 )
 
 /** ranked_matches.void_reason of a running game a moderator ended without a result. */
-export const MODERATOR_VOID = 'moderator_void'
+const MODERATOR_VOID = 'moderator_void'
 
 export type AdminGameStatus = 'finished' | 'aborted' | 'active'
 

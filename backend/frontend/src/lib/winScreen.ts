@@ -92,7 +92,7 @@ export function sharedBoard(snapshot: Snapshot): string | null {
 }
 
 /** The server's place per seat, in seat order (a finished game's snapshot always carries them). */
-export const placesOf = (snapshot: Snapshot): number[] => snapshot.players.map((_, i) => snapshot.results?.[i]?.placement ?? i + 1)
+const placesOf = (snapshot: Snapshot): number[] => snapshot.players.map((_, i) => snapshot.results?.[i]?.placement ?? i + 1)
 
 /** One player's side (not a team): who they are and their place; the mode fills the rest. */
 function soloCompetitor(snapshot: Snapshot, seat: number, places: number[], c: Pick<Competitor, 'score' | 'sub' | 'cells'>): Competitor {
@@ -123,7 +123,7 @@ function duelRow(row: DetailRow, a: Record<string, number>, b: Record<string, nu
   }
 }
 
-export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetail | null): WinView {
+function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetail | null): WinView {
   const g = snapshot.game
   const who = whoOf(snapshot)
   const seatsOf: number[][] = g.teams ? g.teams.map(t => t.seats) : snapshot.players.map((_, i) => [i])
@@ -237,7 +237,7 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
   }
 }
 
-export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
+function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   const g = snapshot.game
   const views = snapshot.players.map((_, i) => atcPlayer(g, i))
   const places = placesOf(snapshot)
@@ -356,7 +356,7 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   }
 }
 
-export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
+function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
   const g = snapshot.game
   const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
   const places = placesOf(snapshot)

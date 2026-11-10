@@ -12,7 +12,7 @@ export function showEmailField(queryEmail: string): boolean {
   return !queryEmail
 }
 
-export const RESEND_COOLDOWN_S = 60
+const RESEND_COOLDOWN_S = 60
 
 /** Whole seconds left before a resend is allowed again; 0 once the cooldown is over (or never started). */
 export function cooldownLeft(lastSentAt: number | null, now: number): number {

@@ -4,7 +4,7 @@ import type { components } from '../api/schema'
 type LobbyConflict = components['schemas']['LobbyConflict']
 
 /** The longest guest name the server takes (AddGuestRequest in schema/api-v1.yaml). */
-export const GUEST_NAME_MAX = 32
+const GUEST_NAME_MAX = 32
 
 export type AddInput = { kind: 'guest'; name: string } | { kind: 'invite'; query: string } | { kind: 'invalid'; hint: string }
 

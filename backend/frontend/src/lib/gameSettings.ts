@@ -66,7 +66,7 @@ export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3', 'combined'] as const
 export type BoardView = (typeof BOARD_VIEWS)[number]
 
 /** A camera view, i.e. every board view but the drawn one. */
-export const CAMERA_VIEWS = BOARD_VIEWS.filter((v): v is CameraView => v !== 'svg')
+const CAMERA_VIEWS = BOARD_VIEWS.filter((v): v is CameraView => v !== 'svg')
 export type CameraView = Exclude<BoardView, 'svg'>
 
 /** Labels shown in the settings drawer and the board's own toggle; kept in one place so they

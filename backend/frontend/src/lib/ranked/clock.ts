@@ -35,7 +35,7 @@ export function clockView({ visitLeft, reserveLeft }: ClockInput): ClockView {
 }
 
 /** How long a disconnected player has to come back before their side forfeits. */
-export const RECONNECT_SECONDS = 120
+const RECONNECT_SECONDS = 120
 
 /** The opponent is gone: "1:42" until their side forfeits, and how much of the two minutes is left. */
 export function reconnectView(deadline: number, now: number): { left: string; drain: number } {

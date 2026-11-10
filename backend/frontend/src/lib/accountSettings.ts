@@ -39,7 +39,7 @@ const WRITE_DELAY_MS = 500
 type Api = Pick<typeof defaultApi, 'GET' | 'PUT'>
 type Store = Pick<Storage, 'getItem' | 'setItem'>
 
-export const accountPart = (s: GameSettings): AccountSettings => ({
+const accountPart = (s: GameSettings): AccountSettings => ({
   checkoutSuggestions: s.checkoutSuggestions,
   visitSum: s.visitSum,
   chalkboard: s.chalkboard,

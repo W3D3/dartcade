@@ -19,7 +19,7 @@ import { findMatches, matchFirstTo, rangeOf, type Entry, type FirstTo } from './
 /** How long declining (or letting the time run out) keeps you from searching again. */
 export const PAUSE_MS = 2 * 60_000
 /** How often the queue looks for matches and drops the ones nobody accepted in time. */
-export const TICK_MS = 1_000
+const TICK_MS = 1_000
 
 type ConflictCode = 'searching' | 'paused' | 'active_session' | 'not_duo'
 

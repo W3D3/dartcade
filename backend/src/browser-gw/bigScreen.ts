@@ -17,7 +17,7 @@ import { isOpen, onceGone } from '../util/socket.js'
 const QuerySchema = z.object({ boardId: z.string().min(1) })
 const AuthSchema = z.object({ type: z.literal('auth'), token: z.string().min(1) })
 
-export const AUTH_TIMEOUT_MS = 5000
+const AUTH_TIMEOUT_MS = 5000
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database>; service: BigScreenService; authTimeoutMs?: number }
 

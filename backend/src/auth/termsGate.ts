@@ -1,6 +1,6 @@
 import { createAuthMiddleware, APIError } from 'better-auth/api'
 
-export const TERMS_REQUIRED = 'Please accept the Terms and Privacy Policy'
+const TERMS_REQUIRED = 'Please accept the Terms and Privacy Policy'
 
 /** Sign-up must carry acceptTerms: true (Register's checkbox); nameHooks then records when. */
 // oxlint-disable-next-line typescript/require-await -- createAuthMiddleware's handler must return a Promise
