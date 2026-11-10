@@ -1,6 +1,7 @@
 // Daily and weekly challenges: the template catalogue (data), the seeded generator and the
 // progress a finished game makes. All pure; the service (service.ts) stores what they decide.
 // Concept: the Progression page's Challenges section.
+import { hash } from '../shared/hash.js'
 import { seededRng, type Rng } from '../shared/rng.js'
 import { addDays, daysBetween } from '../shared/progression.js'
 import { gameTitle } from '../shared/gameNames.js'
@@ -449,16 +450,6 @@ export function templateById(id: string): Template | undefined {
 
 /** One generated challenge: its slot (1-3), template, target, XP and starting state. */
 export type Challenge = { slot: number; templateId: string; difficulty: Difficulty; target: number; xp: number; state: ChallengeState }
-
-/** FNV-1a: a stable 32-bit seed from a string. */
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 0x01000193)
-  }
-  return h >>> 0
-}
 
 const pick = <T>(rng: Rng, xs: readonly T[]): T => xs[Math.floor(rng() * xs.length)]
 
