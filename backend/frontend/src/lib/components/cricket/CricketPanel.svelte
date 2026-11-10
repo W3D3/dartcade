@@ -36,12 +36,12 @@
   } = $props()
 
   const SIZES = {
-    lg: { card: 'px-[22px] py-4 xl:py-5 rounded-[18px] gap-3', name: 'text-[22px]', points: 'text-[clamp(56px,11vh,104px)]' },
-    md: { card: 'px-[22px] py-4 rounded-[18px] gap-3', name: 'text-[22px]', points: 'text-[clamp(40px,7vh,64px)]' },
-    head: { card: 'p-3 rounded-[14px] gap-2', name: 'text-[17px] xl:text-[20px]', points: 'text-[clamp(40px,6vh,56px)]' },
-    sm: { card: 'px-3 pt-2 pb-[10px] rounded-[12px] gap-1', name: 'text-[15px]', points: 'text-[40px]' },
+    lg: { card: 'px-[22px] py-4 xl:py-5 rounded-panel gap-3', name: 'text-[22px]', points: 'text-[clamp(56px,11vh,104px)]' },
+    md: { card: 'px-[22px] py-4 rounded-panel gap-3', name: 'text-[22px]', points: 'text-[clamp(40px,7vh,64px)]' },
+    head: { card: 'p-3 rounded-card gap-2', name: 'text-[17px] xl:text-[20px]', points: 'text-[clamp(40px,6vh,56px)]' },
+    sm: { card: 'px-3 pt-2 pb-[10px] rounded-lg gap-1', name: 'text-[15px]', points: 'text-[40px]' },
   }
-  const COMPACT = { card: 'px-4 py-3 rounded-[16px] gap-2', name: 'text-[19px]', points: 'text-[44px]' }
+  const COMPACT = { card: 'px-4 py-3 rounded-popover gap-2', name: 'text-[19px]', points: 'text-[44px]' }
   const S = $derived(compact ? COMPACT : SIZES[size])
   const duel = $derived((size === 'lg' || size === 'md') && !compact)
   const points = $derived(game.points[side.seat])
