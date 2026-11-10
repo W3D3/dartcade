@@ -1,5 +1,6 @@
 <!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP, ban and unban them. -->
 <script lang="ts">
+  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
@@ -72,11 +73,10 @@
     userSearch.search(query)
   }
 
-  let searchTimer: ReturnType<typeof setTimeout> | undefined
+  const searchLater = debounced(() => runSearch(q), SEARCH_DEBOUNCE_MS)
   function onSearchInput(value: string): void {
     q = value
-    clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => runSearch(value), 250)
+    searchLater.call()
   }
 
   $effect(() => {

@@ -3,6 +3,7 @@
   // friends whose name starts with it first, then whoever has exactly that name. Under it, your
   // friends as one-tap chips (online first) on phones; tablets and desktops have the lobby's
   // Friends tab instead.
+  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { Plus } from '@lucide/svelte'
   import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -33,7 +34,6 @@
   // The suggestions show until Escape, a click outside the field, or a pick
   let open = $state(false)
   let form: HTMLFormElement | undefined = $state()
-  let timer: ReturnType<typeof setTimeout> | undefined
   // The latest lookup, so Enter can wait for the one for what's typed now
   let pending: { q: string; result: Promise<Account[]> } | null = null
   const parsed = $derived(parseAddInput(text))
@@ -47,7 +47,7 @@
   ])
 
   function lookup(q: string): Promise<Account[]> {
-    clearTimeout(timer)
+    lookupLater.cancel()
     const result = api
       .GET('/api/users', { params: { query: { q } } })
       .then(({ data }) => (data?.users ?? []).filter(u => !exclude.includes(u.id)))
@@ -62,14 +62,15 @@
     return result
   }
 
+  const lookupLater = debounced(() => void lookup(query), SEARCH_DEBOUNCE_MS)
   // @name looks the name up (debounced); friends match at once
   $effect(() => {
     const q = query
-    clearTimeout(timer)
+    lookupLater.cancel()
     pending = null
     matches = []
     if (!q) return
-    timer = setTimeout(() => void lookup(q), 200)
+    lookupLater.call()
   })
 
   async function invite(u: Account) {

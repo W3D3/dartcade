@@ -45,6 +45,9 @@ export type WithElementRef<T, E extends Element = Element> = T & {
 
 export type WithoutChildrenOrChild<T> = Omit<T, 'children' | 'child'>
 
+/** How long a search box waits after the last keystroke before it asks the server. */
+export const SEARCH_DEBOUNCE_MS = 250
+
 /** Collapses a burst of calls into one, `ms` after the last; `cancel` drops a pending one. */
 export function debounced(fn: () => void, ms: number): { call: () => void; cancel: () => void } {
   let t: ReturnType<typeof setTimeout> | null = null

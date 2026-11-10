@@ -3,6 +3,7 @@
      details card, laid out like the Play page: from lg the table narrows to a column beside the
      card, below lg the card takes the page. The open flag is in the URL (?flag=<key>). -->
 <script lang="ts">
+  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
@@ -303,7 +304,7 @@
   let pickerResults = $state<AdminUser[]>([])
   let pickerOpen = $state(false)
   let pickerAnchor = $state<HTMLElement>()
-  let pickerTimer: ReturnType<typeof setTimeout> | undefined
+  const pickerLater = debounced(() => pickerSearch.search(pickerQuery), SEARCH_DEBOUNCE_MS)
   const pickerSearch = createUserSearch(result => {
     pickerResults = result ?? []
   })
@@ -311,12 +312,12 @@
   function onPickerInput(value: string): void {
     pickerQuery = value
     pickerOpen = true
-    clearTimeout(pickerTimer)
     if (!value) {
+      pickerLater.cancel()
       pickerResults = []
       return
     }
-    pickerTimer = setTimeout(() => pickerSearch.search(value), 200)
+    pickerLater.call()
   }
 
   /** The search's results, minus anyone already chosen in the draft. */
