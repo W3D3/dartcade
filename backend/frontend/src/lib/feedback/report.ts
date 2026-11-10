@@ -19,7 +19,7 @@ const MAX_SCREENSHOT = 2_800_000
 export const feedbackDialog = writable<{ screenshot: string | null; captureFailed: boolean } | null>(null)
 
 /** The page as a JPEG data URL, at most 1600 px wide. */
-export async function captureScreenshot(): Promise<string> {
+async function captureScreenshot(): Promise<string> {
   const url = await domToJpeg(document.body, {
     scale: Math.min(1, MAX_WIDTH / window.innerWidth),
     quality: 0.7,

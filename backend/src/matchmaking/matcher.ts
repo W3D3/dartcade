@@ -1,12 +1,12 @@
 import type { RankedMode } from '../shared/ranked.js'
 
 /** The rating range a search starts with, in RP either way. */
-export const START_RANGE = 75
+const START_RANGE = 75
 /** How much the range widens, and how often. */
-export const RANGE_STEP = 75
-export const RANGE_STEP_MS = 30_000
+const RANGE_STEP = 75
+const RANGE_STEP_MS = 30_000
 /** The range stops widening here. */
-export const MAX_RANGE = 600
+const MAX_RANGE = 600
 
 export type FirstTo = 2 | 3
 

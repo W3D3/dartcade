@@ -164,13 +164,13 @@ export async function applyDraft(key: string, draft: FlagDraft): Promise<string 
 }
 
 /** Set an on/off flag's mode ('users' needs at least one id). The refusal message, or null on success. */
-export async function setFlagMode(key: string, mode: Exclude<FlagMode, 'default'>, userIds: string[] = []): Promise<string | null> {
+async function setFlagMode(key: string, mode: Exclude<FlagMode, 'default'>, userIds: string[] = []): Promise<string | null> {
   const res = await api.PUT('/api/admin/flags/{key}', { params: { path: { key } }, body: modeBody(mode, userIds) })
   return res.error ? res.error.error : null
 }
 
 /** Set a number flag's value. The refusal message (out of range), or null on success. */
-export async function setFlagNumber(key: string, number: number): Promise<string | null> {
+async function setFlagNumber(key: string, number: number): Promise<string | null> {
   const res = await api.PUT('/api/admin/flags/{key}', { params: { path: { key } }, body: { number } })
   return res.error ? res.error.error : null
 }

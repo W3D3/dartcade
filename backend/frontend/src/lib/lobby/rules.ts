@@ -60,7 +60,7 @@ export type BoardChoice = { boardId: string | null; label: string; detail: strin
  * The boards the lobby shares, in lobby order: ones someone sits at whose owner is in the
  * lobby, with the owner's name. Anyone picks one for their own rows (the server's isSharedBoard).
  */
-export function sharedBoards(lobby: Lobby): { id: string; name: string; online: boolean; ownerName: string }[] {
+function sharedBoards(lobby: Lobby): { id: string; name: string; online: boolean; ownerName: string }[] {
   const out: { id: string; name: string; online: boolean; ownerName: string }[] = []
   for (const p of lobby.people) {
     if (p.boardId === null || out.some(b => b.id === p.boardId)) continue

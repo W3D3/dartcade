@@ -97,7 +97,7 @@ function toCourseRow(r: CourseDbRow): CourseRow {
   }
 }
 
-export function toHoleRow(r: DbRow): HoleRow {
+function toHoleRow(r: DbRow): HoleRow {
   return {
     id: r.id,
     ownerUserId: r.owner_user_id,
@@ -247,7 +247,7 @@ export async function foreignHoleIds(db: Kysely<Database>, ownerId: string | nul
 }
 
 /** Whether a published course `v` may read uses the hole (then `v` may read its published content). */
-export async function holeInReadableCourse(db: Kysely<Database>, holeId: string, v: CourseViewer): Promise<boolean> {
+async function holeInReadableCourse(db: Kysely<Database>, holeId: string, v: CourseViewer): Promise<boolean> {
   const rows = await courseSelect(db)
     .where(sql<boolean>`c.published->'holeIds' @> ${JSON.stringify([holeId])}::jsonb`)
     .execute()

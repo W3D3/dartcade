@@ -20,7 +20,7 @@ export const spectators = new BrowserConnections()
 
 /** Watchers per game, and sockets per watcher and game (a second tab); the next one is refused. */
 export const MAX_WATCHERS = 10
-export const MAX_SOCKETS_PER_WATCHER = 2
+const MAX_SOCKETS_PER_WATCHER = 2
 
 // Tolerant reader: the zod schema (generated from schema/game-ws-v1.json) strips fields a
 // newer or buggy client adds, at every level, before the action reaches the engine and

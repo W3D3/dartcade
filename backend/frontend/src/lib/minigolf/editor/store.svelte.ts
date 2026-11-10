@@ -63,7 +63,7 @@ export async function apiLoadHole(id: string): Promise<Loaded<Hole>> {
   return { value: toHole(content), version: res.data.version, updatedAt: res.data.updatedAt }
 }
 
-export async function apiSaveHole(id: string, version: number, hole: Hole): Promise<Saved> {
+async function apiSaveHole(id: string, version: number, hole: Hole): Promise<Saved> {
   const res = await api.PATCH('/api/minigolf/holes/{id}', { params: { path: { id } }, body: { version, hole: fromHole(hole) } })
   if (res.error) throw new HttpError(res.response.status)
   return { version: res.data.version, updatedAt: res.data.updatedAt }
@@ -77,14 +77,14 @@ export async function apiLoadCourse(id: string): Promise<Loaded<CourseContent>> 
   return { value: content, version: res.data.version, updatedAt: res.data.updatedAt }
 }
 
-export async function apiSaveCourse(id: string, version: number, content: CourseContent): Promise<Saved> {
+async function apiSaveCourse(id: string, version: number, content: CourseContent): Promise<Saved> {
   const res = await api.PATCH('/api/minigolf/courses/{id}', { params: { path: { id } }, body: { version, content } })
   if (res.error) throw new HttpError(res.response.status)
   return { version: res.data.version, updatedAt: res.data.updatedAt }
 }
 
 /** Publishes the course's current draft; the failing checks (or null on success). */
-export async function apiPublishCourse(id: string): Promise<PublishProblem[] | null> {
+async function apiPublishCourse(id: string): Promise<PublishProblem[] | null> {
   const res = await api.POST('/api/minigolf/courses/{id}/publish', { params: { path: { id } } })
   if (res.error && 'problems' in res.error) return res.error.problems
   // Over the published-courses limit: said like a failed check, on the course itself
@@ -94,17 +94,17 @@ export async function apiPublishCourse(id: string): Promise<PublishProblem[] | n
   return null
 }
 
-export async function apiDiscardCourse(id: string): Promise<void> {
+async function apiDiscardCourse(id: string): Promise<void> {
   const res = await api.POST('/api/minigolf/courses/{id}/discard', { params: { path: { id } } })
   if (res.error) throw new HttpError(res.response.status)
 }
 
-export async function apiUnpublishCourse(id: string): Promise<void> {
+async function apiUnpublishCourse(id: string): Promise<void> {
   const res = await api.POST('/api/minigolf/courses/{id}/unpublish', { params: { path: { id } } })
   if (res.error) throw new HttpError(res.response.status)
 }
 
-export async function apiDeleteCourse(id: string): Promise<void> {
+async function apiDeleteCourse(id: string): Promise<void> {
   const res = await api.DELETE('/api/minigolf/courses/{id}', { params: { path: { id } } })
   if (res.error) throw new HttpError(res.response.status)
 }

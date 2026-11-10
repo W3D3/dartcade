@@ -181,7 +181,7 @@ export function rollRate(at: PathPt, cup: number[]): number {
 /** Real balls roll too fast to follow on a zoomed-in screen. */
 export const PLAYBACK = 0.6
 /** Within this far of the cup (mm) a roll slows down, reaching SLOW_MO at half the distance. */
-export const SLOW_MO_RANGE = 300
+const SLOW_MO_RANGE = 300
 export const SLOW_MO = 0.25
 
 /** Whether the shot panel (board, tries, controls) starts open: as last left on this device, else

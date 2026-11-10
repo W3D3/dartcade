@@ -20,7 +20,7 @@ export type BrowseCourse = {
   thumbnail: Hole | null
 }
 
-export const BROWSE_LIMIT = 100
+const BROWSE_LIMIT = 100
 
 /** Published user courses (never the official ones), as cards: the most played first, then the newest. */
 async function browseRows(db: Kysely<Database>, filter: { search?: string; ids?: string[] }): Promise<BrowseCourse[]> {

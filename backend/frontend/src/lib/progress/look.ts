@@ -89,7 +89,7 @@ export const colorsClass = (id: string): string => {
  * Every frame round the picture, by perk id: a metallic ring (a conic gradient) outside the
  * online-status ring, never in its place. `spin` turns it, so the shine runs round. No frame: absent.
  */
-export const FRAMES: Record<string, { ring: string; spin?: true }> = {
+const FRAMES: Record<string, { ring: string; spin?: true }> = {
   'frame.bronze': { ring: 'conic-gradient(from 30deg, #6b3f1d, #d9925a, #7a4520, #eab07a, #6b3f1d)' },
   'frame.silver': { ring: 'conic-gradient(from 30deg, #747a82, #eef2f6, #868c94, #fafcfe, #747a82)' },
   'frame.gold': { ring: 'conic-gradient(from 30deg, #8a6a1c, #f7d774, #9a7420, #ffeaa6, #8a6a1c)' },

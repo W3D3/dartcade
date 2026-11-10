@@ -10,7 +10,7 @@ export type X01Rules = { startScore: number; inMode: Mode; outMode: Mode; firstT
 export type AtcRules = { order: 'asc' | 'desc' | 'random'; finishOn: 'twenty' | 'single_bull' | 'bull'; multiplierAdvances: boolean }
 
 /** The X01 rules as parts, e.g. ["501", "Double out", "First to 3 legs"]; a team game leads with its teams ("Teams 2v2"). The last part is the match format. */
-export function x01RuleParts(r: X01Rules, playerCount: number, teams?: string): string[] {
+function x01RuleParts(r: X01Rules, playerCount: number, teams?: string): string[] {
   const parts: string[] = []
   if (teams) parts.push(teams)
   else if (playerCount > 2) parts.push(`${playerCount} players`)
@@ -54,7 +54,7 @@ export function atcRules(r: AtcRules, playerCount: number): string {
 }
 
 /** The X01 header line in parts: the rules, the match format (their last part) and the leg. */
-export function x01MetaParts(game: X01Game, playerCount: number): { rules: string; format: string; leg: string } {
+function x01MetaParts(game: X01Game, playerCount: number): { rules: string; format: string; leg: string } {
   const { legs, firstTo, winner } = game
   // Every seat shows its team's legs: count each team once
   const played = (game.teams?.map(t => t.legs) ?? legs).reduce((a, b) => a + b, 0)

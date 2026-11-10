@@ -40,7 +40,7 @@ export function parseNotice(m: unknown): NoticeMessage | null {
 }
 
 /** An action of this viewer was refused by the server (e.g. a forfeit it couldn't apply), or null. */
-export function parseError(m: unknown): ErrorMessage | null {
+function parseError(m: unknown): ErrorMessage | null {
   const r = ErrorMessageSchema.safeParse(m)
   return r.success ? r.data : null
 }

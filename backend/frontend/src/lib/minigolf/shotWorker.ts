@@ -18,7 +18,7 @@ const ready = initPhysics3d()
 
 /** Simulates one putt; a throw is posted as an error, since an async handler's rejection never
  *  reaches the page's Worker `error` event. */
-export async function runShot({ id, hole, physics, from, shot }: ShotRequest, post: (r: ShotReply) => void): Promise<void> {
+async function runShot({ id, hole, physics, from, shot }: ShotRequest, post: (r: ShotReply) => void): Promise<void> {
   try {
     await ready
     post({ id, result: simulateShot3d(hole, physics, from, shot) })

@@ -3,7 +3,7 @@ import { join } from 'path'
 import { fileURLToPath } from 'url'
 import { marked } from 'marked'
 
-export const LEGAL_DOCS = ['terms', 'privacy', 'imprint'] as const
+const LEGAL_DOCS = ['terms', 'privacy', 'imprint'] as const
 export type LegalDoc = (typeof LEGAL_DOCS)[number]
 
 export type LegalValues = { operatorName?: string; address?: string; contactEmail?: string; updated?: string }

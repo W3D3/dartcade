@@ -12,7 +12,7 @@ const UNREACHABLE = new Set([163, 166, 169, 172, 173, 175, 176, 178, 179])
 const reachable = (from: number, to: number) => range(from, to).filter(n => !UNREACHABLE.has(n))
 
 /** The leg numbers the caller says after a leg win; a longer match has its legs called by the voice if it has them. */
-export const LEG_KEYS = 20
+const LEG_KEYS = 20
 
 export const CATALOGUE: CatalogueGroup[] = [
   {

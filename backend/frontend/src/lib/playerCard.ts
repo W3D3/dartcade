@@ -4,13 +4,13 @@
 export const ACTIVE_CARD = 'bg-surface-active border-2 border-accent'
 
 /** Everyone else: the panel surface with a hairline. */
-export const IDLE_CARD = 'bg-surface-panel border border-line-2'
+const IDLE_CARD = 'bg-surface-panel border border-line-2'
 
 /** A player who just lost (a Higher Lower life): a dark red card with a 2 px red border. */
-export const LOST_CARD = 'bg-[#1d1513] border-2 border-live'
+const LOST_CARD = 'bg-[#1d1513] border-2 border-live'
 
 /** A player who is out of the game (Higher Lower): a dimmer card with a dashed hairline. */
-export const OUT_CARD = 'bg-[#121411] border border-dashed border-line-2'
+const OUT_CARD = 'bg-[#121411] border border-dashed border-line-2'
 
 /** A card's state beyond throwing or waiting. */
 export type CardTone = 'lost' | 'out' | null
