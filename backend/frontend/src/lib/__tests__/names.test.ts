@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
-import { createNameCheck, nameHint, nameSendable, nameStatusText, normalizeName } from '../names.js'
+import { createNameCheck, nameHint, nameSendable, nameStatusText } from '../names.js'
+import { normalizeName } from '$shared/names'
 
 beforeEach(() => {
   vi.useFakeTimers()

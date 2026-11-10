@@ -41,7 +41,7 @@ import {
 import { COURSE_TEXT_MAX, MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/minigolf/limits.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import type { Hole } from '../shared/minigolf/types.js'
-import { normalizeName } from '../users/names.js'
+import { normalizeName } from '../shared/names.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'

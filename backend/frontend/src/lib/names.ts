@@ -1,24 +1,20 @@
-// Names are handles (backend src/users/names.ts): instant hints while typing, then the server's
+// Names are handles (rules in backend src/shared/names.ts): instant hints while typing, then the server's
 // availability check. The server decides; this only saves round trips for obvious mistakes.
 import { writable, type Readable } from 'svelte/store'
 import { api } from './api'
+import { NAME_ALLOWED, NAME_MAX, NAME_MIN, NAME_RULE, normalizeName } from '$shared/names'
 
-export const NAME_RULE = '2–20 letters, digits, . _ or -, no spaces'
 /** The same rules in a sentence, under the name field in Settings. */
-export const NAME_HINT =
-  '2 to 20 characters: letters, digits, dot, underscore and hyphen, no spaces. Friends find and add you by this name.'
-const ALLOWED = /^[\p{L}\p{Nd}._-]+$/u
-
-export const normalizeName = (raw: string): string => raw.trim().normalize('NFC')
+export const NAME_HINT = `${NAME_MIN} to ${NAME_MAX} characters: letters, digits, dot, underscore and hyphen, no spaces. Friends find and add you by this name.`
 
 /** What's wrong with a name, as a hint under the field; null when it follows the rules. */
 export function nameHint(raw: string): string | null {
   const name = normalizeName(raw)
   const length = Array.from(name).length
   if (/\s/u.test(name)) return 'No spaces: try a . or _ instead'
-  if (length < 2) return 'At least 2 characters'
-  if (length > 20) return '20 characters at most'
-  if (!ALLOWED.test(name)) return 'Only letters, digits, . _ and -'
+  if (length < NAME_MIN) return `At least ${NAME_MIN} characters`
+  if (length > NAME_MAX) return `${NAME_MAX} characters at most`
+  if (!NAME_ALLOWED.test(name)) return 'Only letters, digits, . _ and -'
   return null
 }
 

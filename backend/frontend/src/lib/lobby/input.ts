@@ -20,11 +20,6 @@ export function parseAddInput(raw: string): AddInput {
   return { kind: 'guest', name: s }
 }
 
-/** Case, dashes and spaces don't matter (the server does the same: backend src/lobby/code.ts). */
-export function normalizeCode(raw: string): string {
-  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
-}
-
 /** An error body from the lobby API: a plain `{ error }`, or a 409 with its code. */
 export type Refusal = Pick<LobbyConflict, 'error'> &
   Partial<Pick<LobbyConflict, 'code' | 'notReady' | 'offlineBoards' | 'sessionId' | 'lobbyId'>>

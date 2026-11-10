@@ -1,24 +1,5 @@
-// Names are handles: unique ignoring case, 2–20 letters, digits, '.', '_' and '-'; no spaces.
-// Spec: docs/superpowers/specs/2026-10-04-friends-design.md ("Names are unique"). The frontend
-// mirrors the rules for instant hints (backend/frontend/src/lib/names.ts); the server decides.
-
-export const NAME_MIN = 2
-export const NAME_MAX = 20
-/** The rules as screens and errors say them. */
-export const NAME_RULE = '2–20 letters, digits, . _ or -, no spaces'
-
-const ALLOWED = /^[\p{L}\p{Nd}._-]+$/u
-
-/** As names are compared and stored: trimmed, Unicode NFC (a decomposed "ü" is the same name). */
-export function normalizeName(raw: string): string {
-  return raw.trim().normalize('NFC')
-}
-
-/** Whether a normalized name follows the rules; length counts characters, not UTF-16 units. */
-export function isValidName(name: string): boolean {
-  const length = Array.from(name).length
-  return length >= NAME_MIN && length <= NAME_MAX && ALLOWED.test(name)
-}
+// Server-side name clean-up; the rules themselves are in shared/names.ts.
+import { NAME_MAX, NAME_MIN, normalizeName } from '../shared/names.js'
 
 /** An old name cut down to the rules: spaces become '.', other characters go; "player" if too little is left. */
 export function cleanName(raw: string): string {
