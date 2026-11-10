@@ -1,9 +1,10 @@
 // "What the coach detects" shows every check of every group, at any width: a group card clipped to the
 // scrolling page's height (overflow-hidden on a shrinking flex child) hid most of its rows. Runs on the visual stack.
 import { test, expect } from '@playwright/test'
+import { E2E_ORIGIN } from '../fixtures/origin.js'
 
 const ACCOUNT = { email: 'visual@test.local', password: 'VisualPass1!' }
-const HEADERS = { Origin: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}` }
+const HEADERS = { Origin: E2E_ORIGIN }
 const SIZES = [
   [360, 740],
   [390, 844],

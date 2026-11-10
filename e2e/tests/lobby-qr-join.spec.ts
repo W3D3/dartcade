@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
+import { E2E_ORIGIN, E2E_WS_ORIGIN } from '../fixtures/origin.js'
 
-const ORIGIN = 'http://localhost:5174'
-const headers = { Origin: ORIGIN }
+const headers = { Origin: E2E_ORIGIN }
 
 async function signedIn(browser: Browser, who: string): Promise<{ page: Page; name: string }> {
   const page = await (await browser.newContext()).newPage()
@@ -10,22 +10,25 @@ async function signedIn(browser: Browser, who: string): Promise<{ page: Page; na
   const name = `${who}${ts}`
   const email = `e2e-${who}-${ts}@test.local`
   const password = 'TestPass1!'
-  const up = await page.request.post(`${ORIGIN}/api/auth/sign-up/email`, { data: { name, email, password, acceptTerms: true }, headers })
+  const up = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, {
+    data: { name, email, password, acceptTerms: true },
+    headers,
+  })
   expect(up.ok(), `sign-up failed: ${up.status()}`).toBeTruthy()
-  const signIn = await page.request.post(`${ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
+  const signIn = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
   expect(signIn.ok(), `sign-in failed: ${signIn.status()}`).toBeTruthy()
   return { page, name }
 }
 
 async function pairBoard(page: Page, name: string): Promise<string> {
-  const res = await page.request.post(`${ORIGIN}/api/boards`, { data: { name }, headers })
+  const res = await page.request.post(`${E2E_ORIGIN}/api/boards`, { data: { name }, headers })
   expect(res.ok(), `create board failed: ${res.status()}`).toBeTruthy()
   return ((await res.json()) as { token: string }).token
 }
 
 /** A bridge for the board: the board is online while the socket is open. */
 async function connectBridge(token: string): Promise<WebSocket> {
-  const ws = new WebSocket(`ws://localhost:5174/bridge?token=${token}`)
+  const ws = new WebSocket(`${E2E_WS_ORIGIN}/bridge?token=${token}`)
   await new Promise((resolve, reject) => {
     ws.onopen = resolve
     ws.onerror = reject
@@ -43,7 +46,7 @@ test('joining by the QR code puts the guest on the host board, and both sides ca
   // The guest owns a board too, at home (offline): joining by link would put them there
   await pairBoard(guest.page, 'Home board')
 
-  const created = await host.page.request.post(`${ORIGIN}/api/lobbies`, { headers })
+  const created = await host.page.request.post(`${E2E_ORIGIN}/api/lobbies`, { headers })
   expect(created.ok()).toBeTruthy()
   await host.page.goto('/#/lobby')
   await expect(boardChip(host.page, host.name)).toContainText('Clubhouse')

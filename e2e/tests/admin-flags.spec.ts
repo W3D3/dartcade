@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { makeAdmin } from '../fixtures/auth.js'
+import { E2E_ORIGIN } from '../fixtures/origin.js'
 
 // Two concurrent identities (admin + a non-admin player) need two browser contexts: the
 // fixtures/auth.ts `adminPage`/`authedPage` fixtures both key off the single `page` fixture, so
@@ -8,19 +9,18 @@ import { makeAdmin } from '../fixtures/auth.js'
 //
 // This flips FLAG_KEY for everyone on the shared e2e backend while it runs (cleared after): other
 // specs running in parallel mustn't assert what 121 looks like by default for a non-admin.
-const ORIGIN = 'http://localhost:5174'
 const FLAG_KEY = 'gamemode.p121.enabled'
 
 async function signIn(page: Page, email: string, name: string, password = 'TestPass1!'): Promise<void> {
-  const headers = { Origin: ORIGIN }
+  const headers = { Origin: E2E_ORIGIN }
   // The admin account may already exist from an earlier run/worker: only the sign-in must succeed
-  await page.request.post(`${ORIGIN}/api/auth/sign-up/email`, { data: { name, email, password, acceptTerms: true }, headers })
-  const res = await page.request.post(`${ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
+  await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, { data: { name, email, password, acceptTerms: true }, headers })
+  const res = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
   expect(res.ok(), `sign-in failed for ${email}: ${res.status()} ${await res.text()}`).toBeTruthy()
 }
 
 async function clearOverride(admin: Page): Promise<void> {
-  await admin.request.delete(`${ORIGIN}/api/admin/flags/${FLAG_KEY}`, { headers: { Origin: ORIGIN } })
+  await admin.request.delete(`${E2E_ORIGIN}/api/admin/flags/${FLAG_KEY}`, { headers: { Origin: E2E_ORIGIN } })
 }
 
 let admin: Page
