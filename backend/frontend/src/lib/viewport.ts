@@ -49,8 +49,6 @@ export const isWide: Readable<boolean> = mediaStore(WIDE_QUERY, browserMatchMedi
 /** The tablet band, Tailwind's `md` up to `xl` (768 to 1279.98 px): the icon rail and the tablet sizes. */
 export const TABLET_QUERY = '(min-width: 768px) and (max-width: 1279.98px)'
 
-export const isTablet: Readable<boolean> = mediaStore(TABLET_QUERY, browserMatchMedia)
-
 /** Too narrow for a player panel either side of the board (`NARROW_MATCH_QUERY`): two players stack as rows. */
 export const isNarrowMatch: Readable<boolean> = mediaStore(NARROW_MATCH_QUERY, browserMatchMedia)
 
