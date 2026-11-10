@@ -5,6 +5,7 @@
   // Rules: shared/progression.ts, backend progression/.
   import ChallengesSection from '$lib/components/progress/ChallengesSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import ProgressTabs from '$lib/components/achievements/ProgressTabs.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import type { LevelGain } from '$lib/progress/view'
@@ -36,6 +37,7 @@
       <div class="text-[12px] label-caps text-text-dim">Your progress</div>
       <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-title">Progress</h1>
     </header>
+    <ProgressTabs />
 
     {#if !$progression}
       <p class="text-[15px] text-text-muted">Progress isn't on for your account yet.</p>

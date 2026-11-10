@@ -7,6 +7,7 @@
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { Check, Lock } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import ProgressTabs from '$lib/components/achievements/ProgressTabs.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import PerkPreview from '$lib/components/progress/PerkPreview.svelte'
   import RewardDetails from '$lib/components/progress/RewardDetails.svelte'
@@ -83,6 +84,7 @@
         >
       </div>
     </header>
+    <ProgressTabs />
 
     {#if !$progression}
       <p class="text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
