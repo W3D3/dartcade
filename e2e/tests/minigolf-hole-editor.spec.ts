@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures/auth.js'
 import { LOADS_3D } from '../fixtures/minigolf.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 const lane = {
   id: 'new',
@@ -72,7 +73,7 @@ test('an admin draws on a hole, undoes, and test-putts it', async ({ adminPage: 
   await page.keyboard.press('Control+z')
   await expect(elements.getByText('Hill')).toHaveCount(0)
   await expect(elements.getByText('Bumper 1')).toBeVisible()
-  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
   await page.screenshot({ path: testInfo.outputPath('hole-editor-undone.png') })
 
   await page.getByRole('button', { name: 'Test putt' }).click()
@@ -97,7 +98,7 @@ test('an admin draws on a hole, undoes, and test-putts it', async ({ adminPage: 
   await expect(page.getByTestId('par')).toHaveText('1')
 
   // The draft survives a reload, once the par edits are saved
-  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
   await page.reload()
   await expect(elements.getByText('Wall 1')).toBeVisible()
   await expect(elements.getByText('Bumper 1')).toBeVisible()

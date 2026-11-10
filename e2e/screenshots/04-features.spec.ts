@@ -2,6 +2,7 @@ import { test, expect, type Locator } from '@playwright/test'
 import { VIEW, X01, open, shot, hostLobby, leaveLobby, addGuest, startLobbyGame, endGame, dart, entryMode, openHash } from './helpers.js'
 import { makeZip } from '../../backend/src/caller/zipFixture.js'
 import { makeMp3 } from '../../backend/src/caller/mp3Fixture.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // The features that shipped after the first screenshots: Minigolf, 121, match details, matchmaking, the caller
 
@@ -22,7 +23,7 @@ test('minigolf: a hole in 3D, and the course editor', async ({ browser }) => {
   const lobby = await hostLobby(phil.page, "Phil's lobby", { gameId: 'minigolf', config: {} })
   await addGuest(phil.page, lobby, 'Lena')
   const session = await startLobbyGame(phil.page, lobby)
-  await expect(phil.page.locator('[data-testid=hole-3d] canvas')).toBeVisible({ timeout: 30_000 })
+  await expect(phil.page.locator('[data-testid=hole-3d] canvas')).toBeVisible({ timeout: TIMEOUT.long })
 
   // Phil putts: a dart in the 20, halfway out; shot, rolled, and Lena is up
   const board = phil.page.locator('[aria-label="Dartboard"]')
@@ -38,7 +39,7 @@ test('minigolf: a hole in 3D, and the course editor', async ({ browser }) => {
 
   const phone = await open(browser, 'phil', VIEW.phone)
   await openHash(phone.page, `/session/${session}`)
-  await expect(phone.page.locator('[data-testid=hole-3d] canvas')).toBeVisible({ timeout: 30_000 })
+  await expect(phone.page.locator('[data-testid=hole-3d] canvas')).toBeVisible({ timeout: TIMEOUT.long })
   await shot(phone.page, 'minigolf/hole-3d-phone.png', { settle: 4000 })
   await phone.ctx.close()
 
@@ -58,7 +59,7 @@ test('minigolf: a hole in 3D, and the course editor', async ({ browser }) => {
   await shot(admin.page, 'minigolf/course-editor-desktop.png', { settle: 2000 })
   await admin.page.getByRole('link', { name: 'Edit', exact: true }).nth(2).click()
   await admin.page.waitForURL(/\/admin\/minigolf\/holes\//)
-  await expect(admin.page.locator('[aria-label="Hole canvas"]')).toBeVisible({ timeout: 20_000 })
+  await expect(admin.page.locator('[aria-label="Hole canvas"]')).toBeVisible({ timeout: TIMEOUT.medium })
   await shot(admin.page, 'minigolf/hole-editor-desktop.png', { settle: 3000 })
   await admin.ctx.close()
 })
@@ -252,7 +253,7 @@ test('the caller: settings, voices, checkout calls and the Autodarts guide, in-g
   const desk = await open(browser, 'phil', VIEW.desktopTall)
   await desk.page.goto('/#/settings/caller')
   await desk.page.locator('#v-zip').setInputFiles({ name: 'Studio Caller (en).zip', mimeType: 'application/zip', buffer: Buffer.from(zip) })
-  await expect(desk.page.getByText(/Kept \d+ of/).first()).toBeVisible({ timeout: 30_000 })
+  await expect(desk.page.getByText(/Kept \d+ of/).first()).toBeVisible({ timeout: TIMEOUT.long })
   await shot(desk.page, 'caller/link-import.png')
   await desk.page.reload()
   await expect(desk.page.getByText('Studio Caller').first()).toBeVisible()

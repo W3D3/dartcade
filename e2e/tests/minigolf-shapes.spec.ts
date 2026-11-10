@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures/auth.js'
 import { endAnyRunningGame, startGame } from '../fixtures/lobby.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 /** A course point (mm) on the editor canvas, in page pixels. */
 async function onCanvas(page: Page, x: number, y: number): Promise<{ x: number; y: number }> {
@@ -63,13 +64,13 @@ test('an admin draws a keyhole, curves a rail, publishes and plays it', async ({
   await expect(page.getByText('From corner 2 to corner 3.')).toBeVisible()
   await page.getByRole('button', { name: 'Curve', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Straighten', exact: true })).toBeVisible()
-  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
 
   // Back, publish
   await page.getByRole('link', { name: 'Done' }).click()
   await page.waitForURL(/\/admin\/minigolf\/courses\/[^/]+$/)
   await page.getByRole('button', { name: 'Publish changes' }).click()
-  await expect(page.getByText('Published · no changes')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('Published · no changes')).toBeVisible({ timeout: TIMEOUT.short })
   await expect(page.getByRole('alert')).toHaveCount(0)
 
   // A full reload so the Play page's game modes (and the course list in them) are fetched fresh

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { VIEW, open, shot } from './helpers.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // Player-made minigolf courses, part C: browsing them, reporting one, a moderator unpublishing it
 // with a reason, and the author reading that reason
@@ -16,7 +17,7 @@ test('minigolf: browse, report, moderate and the author sees why', async ({ brow
   for (let i = 0; i < 2; i++) {
     await lp.getByRole('button', { name: 'New hole', exact: true }).click()
     await lp.waitForURL(/\/minigolf\/holes\//)
-    await expect(lp.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+    await expect(lp.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
     await lp.getByRole('link', { name: 'Done' }).click()
     await lp.waitForURL(/\/minigolf\/courses\/[^/]+$/)
   }

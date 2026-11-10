@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/auth.js'
 import { endAnyRunningGame, startGame } from '../fixtures/lobby.js'
+import { TIMEOUT } from '../fixtures/timeouts.js'
 
 // A fresh course, not a shared seeded one: this spec publishes a change, and the
 // other Minigolf specs (the bench, game-minigolf) must keep working no matter the run order.
@@ -32,13 +33,13 @@ test('an admin edits a hole, publishes a course, and a new game plays it', async
   await raisePar.click()
   await raisePar.click()
   await expect(page.getByTestId('par')).toHaveText('4')
-  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: TIMEOUT.short })
 
   // Back, Publish changes
   await page.getByRole('link', { name: 'Done' }).click()
   await page.waitForURL(/\/admin\/minigolf\/courses\/[^/]+$/)
   await page.getByRole('button', { name: 'Publish changes' }).click()
-  await expect(page.getByText('Published · no changes')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('Published · no changes')).toBeVisible({ timeout: TIMEOUT.short })
   await expect(page.getByRole('alert')).toHaveCount(0)
 
   // A full reload so the Play page's game modes (and the course list in them) are fetched fresh
