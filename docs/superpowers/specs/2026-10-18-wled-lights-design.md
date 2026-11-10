@@ -20,7 +20,7 @@ patches to the bridge.
 and brightness cap per device; the per-board master switch; the read-only built-in profile
 "Dartcade default" with ▶ Test per rule; triggers for every game.
 
-**v2 (follow-up issue):** custom profiles (Duplicate, Import, Export), the rule editor and drag to
+**v2 (follow-up issue):** custom profiles (Duplicate, Import, Export: part 4 of #522), the rule editor and drag to
 reorder, preset / playlist / raw JSON looks, bridge-side matching of board events for latency.
 
 ## Decisions
@@ -185,7 +185,8 @@ A won X01 match plays only the game.won look, on the winning dart.
   `version`, `segments`, `segment_mode` (`whole` | `perSeat` | `wled`), `max_bri` (1–255, default 178 = 70%),
   `created_at`; unique `(board_id, mac)`.
 - `boards.lights_enabled boolean not null default true`.
-- `boards.light_seat_colors jsonb` (migration 061): the board's six seat colours, null for the built-in ones. Only the built-in profile exists, so this is the one editable part of it; with stored profiles (duplicate, part 4 of #522) the colours move into the profile.
+- `boards.light_seat_colors jsonb` (migration 061): the board's six seat colours for the built-in profile, null for the defaults.
+- `light_profiles` (migration 063): a player's own profiles, made by Duplicate or Import: `id` (ulid), `owner_user_id` (FK, `on delete cascade`), `name` (unique per player), `seat_colors` and `rules` (jsonb, the profile's own copy, so later changes to the built-in rules don't move it), `created_at`. `boards.light_profile_id` (FK, `on delete set null`) selects one for a board; null is the built-in profile. A board's seat colours edit whichever profile it uses: the built-in one's live on the board (`light_seat_colors`), a profile of the player's own has them itself. At most 20 profiles a player.
 - Found devices and live status: in memory per board (`backend/src/lights/store.ts`), like the camera
   store.
 
@@ -195,13 +196,32 @@ Under `/api/boards/{id}/lights`:
 
 - `GET` → `{enabled, bridgeOnline, bridgeOutdated, devices: [device + {reachable, error?}], found: [...], lastScanAt, profile}`
 - `PUT` `{enabled}`
+- `PUT profile {profileId}` (`default` is the built-in one; 404 for another player's), `POST profiles/duplicate` (copies the profile in use as "Copy of …", numbered when taken, and uses it), `POST profiles/import` (a file, below; 201 `{id, name, imported, ignored[], adjusted[]}`, uses it), `GET profile/export` (the file, as an attachment), `DELETE profiles/{profileId}` (boards using it go back to the built-in one). 409 past the limit. All behind the same owner check as the rest.
 - `PUT seat-colors {seatColors: [six #rrggbb]}` (stored lower case; 400 for any other count or format), `DELETE seat-colors` (back to the built-in colours). Both resend the scene, so the strip shows the change at once.
 - `POST scan`, `POST probe {host}`, `POST blink {host} | {deviceId}`
 - `POST devices {mac, host, name, segment_mode, max_bri}` (the MAC must be in `found`), `PATCH devices/{deviceId}`, `DELETE devices/{deviceId}`
-- `POST test {rule: number}`: plays that default-profile rule as a flash (scenes too, held 3 s) for
+- `POST test {rule: number}`: plays that rule of the board's profile as a flash (scenes too, held 3 s) for
   seat 1 on every device of the board.
 
 A device found by another of the user's boards is returned with `onBoard: <board name>`.
+
+### Profile file (`backend/src/lights/profileFile.ts`)
+
+`{format: "dartcade-light-profile", version: 1, name, seatColors: [six #rrggbb], effects: [...]}`, an effect being
+`{trigger, seats, total?, game?, type, enabled, look, holdMs?}` with `look` a colour look (`{color, fx, bri, speed?}`) or
+`{preset: "<name>"}`. It carries nothing private: no device address, MAC, id, token or WLED state (a preset is one of the
+built-in names `180`, `Busted`, `Gameshot`, `Matchshot`, and import takes the state from the server's own copy, so a file
+can't make the bridge send arbitrary WLED JSON). Import is a trust boundary and makes a **new** profile, never overwriting:
+
+- the body is at most 128 KB (413), `format` and `version` must match (400 with the reason), at most 100 effects are read;
+- every effect is checked with zod; one with an unknown trigger or game, an unknown preset, or a bad field is ignored
+  and reported ("effect 4: unknown effect "atc.hit""); unknown fields on the file, an effect or a look are dropped and
+  reported;
+- numbers are moved into range (brightness and effect id 0 to 255, speed 0 to 255, hold time 100 ms to 60 s, a visit
+  total 0 to 180) and reported under `adjusted`; a colour is `seat`, `team` or `#rrggbb` or the effect is ignored;
+- seat colours: a bad or missing one is replaced by the default for that seat, extras past six are dropped;
+- the name is trimmed, cleaned of control characters and cut to 60; a taken name (or the built-in one's) becomes "Name 2";
+- a file with no usable effect is a 400. The result reads "Imported 14 effects, ignored 2".
 
 ### Flag
 
@@ -225,8 +245,10 @@ The page re-fetches `GET` every 3 s while it's open.
   seat with its swatch and a picker (a bits-ui popover with a palette as a radio group plus a custom
   colour field), and **Reset to defaults**. Below it **Effects**, one list per group (General, then each game that has an effect: X01, Cricket, 121,
   Minigolf, Higher Lower), numbered across the groups: the read-only rules
-  (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. Duplicate, Import, Export shown disabled
-  ("Coming soon").
+  (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. A **profile menu** (bits-ui select) lists the
+  built-in profile and the player's own; **Duplicate**, **Import** (a file picker, then a result dialog with the
+  summary and what was ignored or changed) and **Export** (a download) work on the profile in use, and **Delete**
+  (with a confirmation) shows for the player's own.
 - **Pair dialog** (`ui/modal`): (1) blink check: "Blinking lime now", Blink again, "Yes, it blinked" /
   "No, show me another" (next found device); (2) name (prefilled) and board; (3) segments: Whole strip /
   One per seat / Use WLED segments, with the hint "4 × 36 LEDs"; (4) max brightness, default 70%.
