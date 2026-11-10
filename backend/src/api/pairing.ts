@@ -13,6 +13,7 @@ import {
   insertBridgeInstallToken,
   exchangeBridgeInstallToken,
 } from '../db/queries.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { normalizeCode } from '../shared/lobbyCode.js'
@@ -36,7 +37,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   app.post<Route<'requestPairing'>>(
     '/api/pairing/request',
     {
-      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+      config: { rateLimit: RATE.strict },
       schema: fromSpec('requestPairing'),
     },
     async (_req, reply) => {
@@ -53,7 +54,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
       // A paired bridge polls this every 2s (~30/min), so the cap has to sit
       // above that. Brute-forcing is still futile: the code space is 32^8 and
       // the token is consumed on first delivery.
-      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      config: { rateLimit: RATE.poll },
       schema: fromSpec('getPairingToken'),
     },
     async (req, reply) => {
@@ -110,7 +111,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   app.post<Route<'createBridgeInstallToken'>>(
     '/api/bridge-install-tokens',
     {
-      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      config: { rateLimit: RATE.issue },
       preValidation: requireAuth,
       schema: fromSpec('createBridgeInstallToken'),
     },
@@ -124,7 +125,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
 
   app.post<Route<'exchangeBridgeInstallToken'>>(
     '/api/bridge-install-tokens/exchange',
-    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } }, schema: fromSpec('exchangeBridgeInstallToken') },
+    { config: { rateLimit: RATE.strict }, schema: fromSpec('exchangeBridgeInstallToken') },
     async (req, reply) => {
       const token = await exchangeBridgeInstallToken(db, hashBoardToken(req.body.token))
       if (!token) return reply.code(404).send({ error: 'not found' })

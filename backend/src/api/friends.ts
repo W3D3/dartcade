@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { requireAuth } from '../auth/middleware.js'
 import type { FriendsService } from '../friends/service.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -19,7 +20,7 @@ export function friendsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
 
   app.get<Route<'searchFriendCandidates'>>(
     '/api/friends/search',
-    { ...auth, schema: fromSpec('searchFriendCandidates'), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    { ...auth, schema: fromSpec('searchFriendCandidates'), config: { rateLimit: RATE.lookup } },
     async req => ({
       users: await friends.search(req.userId, req.query.q),
     }),
@@ -27,7 +28,7 @@ export function friendsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
 
   app.get<Route<'friendSuggestions'>>(
     '/api/friends/suggestions',
-    { ...auth, schema: fromSpec('friendSuggestions'), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    { ...auth, schema: fromSpec('friendSuggestions'), config: { rateLimit: RATE.lookup } },
     async req => ({ users: await friends.suggestions(req.userId) }),
   )
 

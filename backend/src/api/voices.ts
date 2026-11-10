@@ -19,6 +19,7 @@ import {
   VoiceBusyError,
   type ImportSlot,
 } from '../caller/service.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -83,7 +84,7 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     onRequestAbort: (req: FastifyRequest, done: HookHandlerDoneFunction) => {
       freeUnlessImporting(req, null, done)
     },
-    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    config: { rateLimit: RATE.strict },
   })
 
   /** Reads and stores a pack in the request's slot; the reply says how many files the source had. */
