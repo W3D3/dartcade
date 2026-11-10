@@ -2,6 +2,7 @@
   // Checkout (Stats.dc.html): from 170 down to the double. Your doubles as a list or on the board,
   // how often each range finishes, and your highest checkouts.
   import type { X01Stats } from '$lib/api'
+  import { visitTier } from '$shared/darts.js'
   import { dayMonth } from '$lib/fmt'
   import { dec1, pct, trendOf } from '$lib/stats/trend'
   import { doubleTotals, refHref, refLine } from '$lib/stats/view'
@@ -126,7 +127,7 @@
     <ChartCard title="Top checkouts" note="Tap one to open the game">
       <div class="flex flex-col">
         {#each c.top as t (`${t.ref.gameId}-${t.ref.leg}-${t.ref.visit}`)}
-          <LinkRow href={refHref(t.ref)} sub={refLine(t.ref)} tag={t.value >= 100 ? 'TON+' : undefined}>
+          <LinkRow href={refHref(t.ref)} sub={refLine(t.ref)} tag={visitTier(t.value) ? 'TON+' : undefined}>
             {#snippet title()}{t.value} <span class="font-normal text-text-muted">· {(t.darts ?? []).join(' ')}</span>{/snippet}
           </LinkRow>
         {:else}

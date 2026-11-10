@@ -7,6 +7,7 @@ import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModels } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart, dartPhase } from '$shared/coach/walk'
+import { DARTS_PER_VISIT } from '$shared/darts.js'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
 export type LiveCoach = {
@@ -37,7 +38,7 @@ function leaves(left: number, a: Aim): string {
  *  (loadCoachModels). Solo: no opponent, w = 1. */
 export function liveCoach(models: CoachModels, start: number, darts: readonly Dart[], average: number | null): LiveCoach {
   const r = coachOpenVisit({ start, opponent: null, average }, darts.map(coachDart), models, TOP)
-  const scoring = dartPhase({ left: r.left, darts: 3 - darts.length }) === 'scoring'
+  const scoring = dartPhase({ left: r.left, darts: DARTS_PER_VISIT - darts.length }) === 'scoring'
   const aims = r.done
     ? []
     : scoring
