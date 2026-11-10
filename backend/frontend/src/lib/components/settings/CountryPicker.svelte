@@ -36,7 +36,7 @@
   // "Don't show a country" heads the full list only
   const showNone = $derived(typed.trim() === '')
   const itemClass =
-    'flex min-h-11 w-full items-center gap-3 rounded-[9px] px-3 text-left text-[15px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-key'
+    'flex min-h-11 w-full items-center gap-3 rounded-key px-3 text-left text-[15px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-key'
 </script>
 
 {#snippet placeholder()}
