@@ -14,7 +14,8 @@
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { NAME_COOLDOWN_DAYS } from '$shared/nameCooldown'
-  import { NAME_HINT, nameSendable, normalizeName, type NameStatus } from '$lib/names'
+  import { NAME_HINT, nameSendable, type NameStatus } from '$lib/names'
+  import { normalizeName } from '$shared/names'
 
   const own = $derived($currentUser?.name ?? null)
   let value = $state($currentUser?.name ?? '')

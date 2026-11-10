@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { cleanName, isValidName, normalizeName, numbered } from './names.js'
+import { isValidName, normalizeName } from '../shared/names.js'
+import { cleanName, numbered } from './names.js'
 
 describe('name rules', () => {
   it('takes letters (umlauts too), digits, dots, underscores and dashes, 2–20 long', () => {

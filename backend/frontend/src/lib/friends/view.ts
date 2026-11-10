@@ -5,7 +5,7 @@ import type { Friend, FriendStatus, IncomingFriendRequest, OutgoingFriendRequest
 import type { FriendList } from '../lobby/sockets'
 import { gameName, inviteTime } from '../lobby/format.js'
 import { describeConflict, type Refusal } from '../lobby/input.js'
-import { normalizeName } from '../names.js'
+import { normalizeName } from '$shared/names'
 
 export type DotKind = FriendStatus['kind']
 export type FriendsTab = 'all' | 'online' | 'requests'

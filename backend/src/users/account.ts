@@ -4,7 +4,8 @@ import { ApiError } from '../api/errors.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { getNameState, isNameTaken, setName } from '../db/users.js'
 import { NAME_COOLDOWN_DAYS } from '../shared/nameCooldown.js'
-import { NAME_RULE, cleanName, isValidName, normalizeName, numbered } from './names.js'
+import { NAME_RULE, isValidName, normalizeName } from '../shared/names.js'
+import { cleanName, numbered } from './names.js'
 import { DAY_MS } from '../shared/time.js'
 
 const SUGGESTION_TRIES = 50

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import NameField from '../components/NameField.svelte'
-import { NAME_RULE, nameHint } from '../names'
+import { nameHint } from '../names'
+import { NAME_RULE } from '$shared/names'
 
 describe('NameField', () => {
   it('links the input to its status line, for screen readers', () => {

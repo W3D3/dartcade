@@ -3,7 +3,7 @@ import { APIError } from 'better-auth/api'
 import type { GenericEndpointContext } from '@better-auth/core'
 import type { Database } from '../db/schema.js'
 import { NAME_TAKEN, checkName } from '../users/account.js'
-import { NAME_RULE } from '../users/names.js'
+import { NAME_RULE } from '../shared/names.js'
 
 /**
  * better-auth's user hooks. Sign-up follows the name rules, stores the name normalized, and
