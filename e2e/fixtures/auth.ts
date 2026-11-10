@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { execFileSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { E2E_ORIGIN } from './origin.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -19,7 +20,6 @@ export function makeAdmin(email: string): void {
   psql(`UPDATE "user" SET role = 'admin' WHERE email = '${email}'`)
 }
 
-const origin = `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`
 
 export { expect }
 
@@ -31,16 +31,16 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
     const name = `e2e${testInfo.workerIndex}-${ts.toString(36)}`
 
     // Register via API (Origin header satisfies better-auth CSRF check)
-    const signUp = await page.request.post(`${origin}/api/auth/sign-up/email`, {
+    const signUp = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, {
       data: { name, email, password, acceptTerms: true },
-      headers: { Origin: `${origin}` },
+      headers: { Origin: E2E_ORIGIN },
     })
     expect(signUp.ok(), `sign-up failed: ${signUp.status()} ${await signUp.text()}`).toBeTruthy()
 
     // Sign in — session cookie is set for localhost:5173 via Vite proxy
-    const signIn = await page.request.post(`${origin}/api/auth/sign-in/email`, {
+    const signIn = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, {
       data: { email, password },
-      headers: { Origin: `${origin}` },
+      headers: { Origin: E2E_ORIGIN },
     })
     expect(signIn.ok(), `sign-in failed: ${signIn.status()} ${await signIn.text()}`).toBeTruthy()
 
@@ -51,11 +51,11 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
   adminPage: async ({ page }, use, testInfo) => {
     const email = `e2e-admin-${testInfo.parallelIndex}@test.local`
     const password = 'TestPass1!'
-    const headers = { Origin: `${origin}` }
+    const headers = { Origin: E2E_ORIGIN }
     // Signing up again in a later test fails (the user exists): only the sign-in must succeed
-    await page.request.post(`${origin}/api/auth/sign-up/email`, { data: { name: `e2eadmin${testInfo.parallelIndex}`, email, password, acceptTerms: true }, headers })
+    await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, { data: { name: `e2eadmin${testInfo.parallelIndex}`, email, password, acceptTerms: true }, headers })
     makeAdmin(email)
-    const signIn = await page.request.post(`${origin}/api/auth/sign-in/email`, { data: { email, password }, headers })
+    const signIn = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
     expect(signIn.ok(), `admin sign-in failed: ${signIn.status()}`).toBeTruthy()
     await use(page)
   },

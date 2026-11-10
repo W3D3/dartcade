@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { E2E_ORIGIN } from '../fixtures/origin.js'
 
 function uniqueUser(seed: string) {
   return {
@@ -32,9 +33,9 @@ test('login with wrong password shows error', async ({ page }) => {
 test('login then sign out lands on login page', async ({ page }) => {
   // Register a fresh user
   const u = uniqueUser('logout')
-  await page.request.post('http://localhost:5174/api/auth/sign-up/email', {
+  await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, {
     data: { name: u.name, email: u.email, password: u.password, acceptTerms: true },
-    headers: { Origin: 'http://localhost:5174' },
+    headers: { Origin: E2E_ORIGIN },
   })
 
   // Log in via UI

@@ -1,9 +1,10 @@
 // No player card lets its content (the stat row above all) leave the card, at any real viewport width,
 // with real numbers in it (averages, darts, checkout). Runs on the visual stack (scripts/visual.sh).
 import { test, expect } from '@playwright/test'
+import { E2E_ORIGIN } from '../fixtures/origin.js'
 
 const ACCOUNT = { email: 'visual@test.local', password: 'VisualPass1!' }
-const HEADERS = { Origin: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}` }
+const HEADERS = { Origin: E2E_ORIGIN }
 const SIZES = [
   [320, 568],
   [320, 640],

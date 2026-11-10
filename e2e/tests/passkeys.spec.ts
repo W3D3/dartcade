@@ -1,9 +1,9 @@
 import { test, expect, makeAdmin } from '../fixtures/auth.js'
 import type { Page } from '@playwright/test'
+import { E2E_ORIGIN } from '../fixtures/origin.js'
 
 // Passkeys are behind auth.passkeys.enabled, admins only by default: the account is made an admin.
 // Chromium's virtual authenticator (CDP WebAuthn) stands in for the fingerprint reader.
-const origin = `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`
 
 async function withAuthenticator(page: Page) {
   const cdp = await page.context().newCDPSession(page)
@@ -23,11 +23,14 @@ async function withAuthenticator(page: Page) {
 async function signedUpAdmin(page: Page, seed: string) {
   const ts = Date.now()
   const user = { name: `pk${seed}${ts.toString(36)}`, email: `e2e-passkey-${seed}-${ts}@test.local`, password: 'TestPass1!' }
-  const headers = { Origin: origin }
-  const up = await page.request.post(`${origin}/api/auth/sign-up/email`, { data: { ...user, acceptTerms: true }, headers })
+  const headers = { Origin: E2E_ORIGIN }
+  const up = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-up/email`, { data: { ...user, acceptTerms: true }, headers })
   expect(up.ok(), `sign-up failed: ${up.status()}`).toBeTruthy()
   makeAdmin(user.email)
-  const inn = await page.request.post(`${origin}/api/auth/sign-in/email`, { data: { email: user.email, password: user.password }, headers })
+  const inn = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, {
+    data: { email: user.email, password: user.password },
+    headers,
+  })
   expect(inn.ok(), `sign-in failed: ${inn.status()}`).toBeTruthy()
   return user
 }
@@ -49,7 +52,7 @@ test('add a passkey, sign in with it, then delete the account with it', async ({
   await page.addInitScript(() => {
     PublicKeyCredential.isConditionalMediationAvailable = () => Promise.resolve(false)
   })
-  await page.request.post(`${origin}/api/auth/sign-out`, { headers: { Origin: origin } })
+  await page.request.post(`${E2E_ORIGIN}/api/auth/sign-out`, { headers: { Origin: E2E_ORIGIN } })
   await page.goto('/#/login')
   await page.reload()
   await page.getByRole('button', { name: 'Sign in with a passkey' }).click()
@@ -64,9 +67,9 @@ test('add a passkey, sign in with it, then delete the account with it', async ({
   await expect(page.getByText('Your account was deleted.')).toBeVisible()
 
   // The account is gone: its password no longer signs in
-  const again = await page.request.post(`${origin}/api/auth/sign-in/email`, {
+  const again = await page.request.post(`${E2E_ORIGIN}/api/auth/sign-in/email`, {
     data: { email: user.email, password: user.password },
-    headers: { Origin: origin },
+    headers: { Origin: E2E_ORIGIN },
   })
   expect(again.ok()).toBeFalsy()
 })
@@ -91,7 +94,7 @@ test('the sign-in page signs in by itself through the browser’s autofill', asy
   await withAuthenticator(page)
   await signedUpAdmin(page, 'auto')
   await addPasskey(page, 'Laptop')
-  await page.request.post(`${origin}/api/auth/sign-out`, { headers: { Origin: origin } })
+  await page.request.post(`${E2E_ORIGIN}/api/auth/sign-out`, { headers: { Origin: E2E_ORIGIN } })
   await page.goto('/#/login')
   await page.reload()
   await page.waitForURL('**/#/')

@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { E2E_ORIGIN } from './fixtures/origin.js'
 
 // The visual regression check (scripts/visual.sh): every game mode's match screen compared with the
 // images in visual/__screenshots__. Not part of `npm test`: it runs inside the pinned Playwright image
@@ -11,7 +12,7 @@ export default defineConfig({
   retries: 0,
   timeout: 60_000,
   use: {
-    baseURL: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`,
+    baseURL: E2E_ORIGIN,
     locale: 'en-GB',
     timezoneId: 'Europe/Vienna',
     deviceScaleFactor: 1,

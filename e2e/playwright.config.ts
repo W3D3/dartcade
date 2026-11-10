@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test'
 import { existsSync } from 'fs'
+import { E2E_ORIGIN } from './fixtures/origin.js'
 
 // On NixOS, system libs aren't at standard paths so the downloaded Chromium won't
 // link. Use the system-installed Chrome when available; fall back to the env var
@@ -24,7 +25,7 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
   use: {
-    baseURL: `http://localhost:${process.env.E2E_FRONTEND_PORT ?? 5174}`,
+    baseURL: E2E_ORIGIN,
     trace: 'on-first-retry',
     launchOptions: {
       executablePath: resolveExecutablePath(),
