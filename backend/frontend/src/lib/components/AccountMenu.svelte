@@ -55,7 +55,7 @@
   } as const
   const position = $derived(POSITION[placement])
   const ITEM =
-    'h-11 flex items-center gap-3 px-3 rounded-[10px] text-text no-underline text-[15px] font-medium outline-none cursor-pointer data-[highlighted]:bg-surface-hover hover:text-text'
+    'h-11 flex items-center gap-3 px-3 rounded-md text-text no-underline text-[15px] font-medium outline-none cursor-pointer data-[highlighted]:bg-surface-hover hover:text-text'
 
   async function pick(next: boolean) {
     if (next === invisible) return

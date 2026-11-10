@@ -33,7 +33,7 @@
     label="Choose a board for {person.name}"
     {onopen}
     triggerLabel="Board for {person.name}: {person.boardName ?? 'manual entry'}. Change board"
-    triggerClass="max-w-full h-[30px] md:h-[34px] box-border inline-flex items-center gap-[6px] pl-[10px] pr-2 rounded-[8px] border bg-surface-paused text-ink-soft text-[13px] font-semibold
+    triggerClass="max-w-full h-[30px] md:h-[34px] box-border inline-flex items-center gap-[6px] pl-[10px] pr-2 rounded-sm border bg-surface-paused text-ink-soft text-[13px] font-semibold
                   {person.boardMovedBy !== null ? 'border-accent-line-strong' : 'border-line-chip'}"
   >
     {#snippet trigger()}<BoardLabel {person} {gameId} /><ChevronDown size={14} class="shrink-0" />{/snippet}

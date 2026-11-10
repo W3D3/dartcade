@@ -244,8 +244,7 @@
                   class="self-start h-[30px] px-3 inline-flex items-center rounded-full border border-line-chip text-text-muted text-[13px] font-bold label-caps"
                   >{ordinal(second.placement)}</span
                 >
-                <span
-                  class="font-display font-bold text-[32px] md:text-[38px] xl:text-[48px] leading-[0.9] uppercase text-ink-2 wrap-break-word"
+                <span class="font-display text-card-title md:text-[38px] xl:text-[48px] leading-[0.9] uppercase text-ink-2 wrap-break-word"
                   >{second.name}</span
                 >
                 {@render who(second)}

@@ -18,7 +18,7 @@
     /** Where there is no room for a title's name: the chip just says Title */
     short?: boolean
   } = $props()
-  const ICON_BOX = 'size-8 rounded-[8px] bg-surface-paused flex items-center justify-center text-accent'
+  const ICON_BOX = 'size-8 rounded-sm bg-surface-paused flex items-center justify-center text-accent'
 </script>
 
 {#if perk.kind === 'title'}

@@ -126,7 +126,7 @@
   }
 
   const itemClass =
-    'flex min-h-[64px] w-full items-center gap-3 rounded-[10px] px-3 py-[10px] text-left cursor-pointer outline-none data-[highlighted]:bg-surface-nav-active data-[highlighted]:ring-2 data-[highlighted]:ring-inset data-[highlighted]:ring-accent'
+    'flex min-h-[64px] w-full items-center gap-3 rounded-md px-3 py-[10px] text-left cursor-pointer outline-none data-[highlighted]:bg-surface-nav-active data-[highlighted]:ring-2 data-[highlighted]:ring-inset data-[highlighted]:ring-accent'
   const groupLabel = 'px-3 pt-[10px] pb-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim'
 </script>
 

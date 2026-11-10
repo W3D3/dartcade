@@ -6,7 +6,7 @@
 
   let { view }: { view: ClockView } = $props()
 
-  const base = 'inline-flex h-7 items-center gap-[6px] rounded-[6px] border px-[9px] whitespace-nowrap'
+  const base = 'inline-flex h-7 items-center gap-[6px] rounded-chip border px-[9px] whitespace-nowrap'
 </script>
 
 {#if view.phase !== 'hidden'}

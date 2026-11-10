@@ -22,7 +22,7 @@
     onchange: (n: number) => void
   } = $props()
   const step =
-    'w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer'
+    'w-11 h-11 border border-line-3 rounded-sm bg-transparent text-text text-[20px] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer'
 </script>
 
 <div class="flex items-center gap-1">

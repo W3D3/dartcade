@@ -13,7 +13,7 @@
     $props()
 
   const chip =
-    'h-12 px-4 inline-flex items-center gap-[10px] rounded-[12px] text-text text-[15px] font-semibold cursor-pointer transition-colors'
+    'h-12 px-4 inline-flex items-center gap-[10px] rounded-lg text-text text-[15px] font-semibold cursor-pointer transition-colors'
 </script>
 
 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
