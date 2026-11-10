@@ -3,14 +3,11 @@
   // (User-Badge). It opens the Friends drawer.
   // Its label says friends online and requests, so the badge is decoration.
   import { UsersRound } from '@lucide/svelte'
-  import { location } from 'svelte-spa-router'
   import NavBadge from '../NavBadge.svelte'
-  import { friendsEntry } from '$lib/nav'
-  import { friendsDrawerOpen } from '$lib/friends/drawer'
-  import { me } from '$lib/lobby/sockets'
+  import { friendsDrawerOpen, friendsNav } from '$lib/friends/drawer'
 
-  const entry = $derived(friendsEntry($me?.friends ?? null))
-  const active = $derived($friendsDrawerOpen || $location === '/friends')
+  const entry = $derived($friendsNav.entry)
+  const active = $derived($friendsNav.active)
 </script>
 
 <button
