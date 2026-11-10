@@ -2,6 +2,7 @@
 // to players who have what it advertises (its flag is on for them), so nobody is sent to a page
 // they can't open. Slides for Cricket and Stats from the design are left out: neither has a page yet.
 import minigolfImg from '$lib/assets/games/minigolf-featured.webp'
+import type { FlagKey } from '$shared/flags'
 
 export type FeaturedSlide = {
   id: string
@@ -10,7 +11,7 @@ export type FeaturedSlide = {
   text: string
   primary: { label: string; href: string }
   /** The feature flag that has to be on; none: everyone. */
-  flag?: string
+  flag?: FlagKey
   /** An illustration; without one the banner shows `icon`. */
   img?: string
   icon?: 'lights'
@@ -38,6 +39,6 @@ export const FEATURED: FeaturedSlide[] = [
 ]
 
 /** The items whose flag is on (or that have none), in their order. */
-export function visibleFeatured<T extends { flag?: string }>(items: readonly T[], isOn: (flag: string) => boolean): T[] {
+export function visibleFeatured<T extends { flag?: FlagKey }>(items: readonly T[], isOn: (flag: FlagKey) => boolean): T[] {
   return items.filter(i => i.flag === undefined || isOn(i.flag))
 }

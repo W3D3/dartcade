@@ -7,11 +7,14 @@ import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import { getUsersByIds } from '../db/queries.js'
 import { deleteOverride, loadOverrides, upsertOverride, type FlagOverride } from '../db/flagOverrides.js'
-import { FLAG_META, type FlagMeta } from '../flags/definitions.js'
+import { FLAG_META as TYPED_FLAG_META, type FlagMeta } from '../shared/flags.js'
 import { currentOverrides, envFlagValues, envFlagsOn, evaluateAll, loadFlagUser, setOverrides } from '../flags/index.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
+
+// The admin API takes keys from the URL, so it looks them up by plain string.
+const FLAG_META: Record<string, FlagMeta> = TYPED_FLAG_META
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database>; onFlagChanged?: (key: string) => void }
 type StoredOverride = FlagOverride & { updatedBy: string | null; updatedAt: Date }

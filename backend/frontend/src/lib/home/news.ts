@@ -1,8 +1,9 @@
 // Home's What's new: hand-edited, newest first. Like the Featured banners, an item about a feature
 // behind a flag shows only to players who have it.
 import { visibleFeatured } from './featured'
+import type { FlagKey } from '$shared/flags'
 
-export type NewsItem = { id: string; date: string; title: string; text: string; href: string; flag?: string }
+export type NewsItem = { id: string; date: string; title: string; text: string; href: string; flag?: FlagKey }
 
 export const NEWS: NewsItem[] = [
   {
@@ -31,6 +32,6 @@ export const NEWS: NewsItem[] = [
 ]
 
 /** The newest three that the player has. */
-export function visibleNews(items: readonly NewsItem[], isOn: (flag: string) => boolean): NewsItem[] {
+export function visibleNews(items: readonly NewsItem[], isOn: (flag: FlagKey) => boolean): NewsItem[] {
   return visibleFeatured(items, isOn).slice(0, 3)
 }

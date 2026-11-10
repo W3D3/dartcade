@@ -3,6 +3,7 @@
 import { api, type GameInfo } from '$lib/api'
 import { derived } from 'svelte/store'
 import { flag } from './flags.js'
+import type { FlagKey } from '$shared/flags'
 import { loadOnce } from './loadOnce.js'
 import { GAME_NAMES } from '$shared/gameNames'
 
@@ -42,7 +43,7 @@ export type GameMode = {
   img: string
   available: boolean
   small?: boolean
-  flag?: string
+  flag?: FlagKey
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -160,7 +161,7 @@ export const GAME_MODES: GameMode[] = [
 ]
 
 /** The modes to show: those without a flag, and those whose flag is on. */
-export function visibleModes(modes: readonly GameMode[], isOn: (flag: string) => boolean): GameMode[] {
+export function visibleModes(modes: readonly GameMode[], isOn: (flag: FlagKey) => boolean): GameMode[] {
   return modes.filter(m => m.flag === undefined || isOn(m.flag))
 }
 

@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
+import type { FlagKey } from '../shared/flags.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { ensureCoachGame, ensureCoachLegs, pendingCoachGames } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
@@ -19,7 +20,7 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  const requireFlag = async (key: 'coach.enabled' | 'coach.live.enabled', userId: string) => {
+  const requireFlag = async (key: FlagKey, userId: string) => {
     if (!(await flagEnabled(key, await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
   }
   const requireCoach = (userId: string) => requireFlag('coach.enabled', userId)

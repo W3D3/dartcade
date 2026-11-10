@@ -3,6 +3,7 @@
 // signed-in user changes. Design: docs/superpowers/specs/2026-10-12-feature-flags-design.md
 import { OpenFeature, ProviderEvents } from '@openfeature/web-sdk'
 import { OFREPWebProvider } from '@openfeature/ofrep-web-provider'
+import type { FlagKey } from '$shared/flags'
 import { readable, writable, type Readable } from 'svelte/store'
 
 const contextOf = (userId: string | null) => ({ targetingKey: userId ?? 'anonymous' })
@@ -40,13 +41,13 @@ export async function refreshFlags(): Promise<void> {
 }
 
 /** A flag's value, kept up to date; `fallback` (off) until the flags have loaded. */
-export function flag(key: string, fallback = false): Readable<boolean> {
+export function flag(key: FlagKey, fallback = false): Readable<boolean> {
   const client = OpenFeature.getClient()
   return watch(() => client.getBooleanValue(key, fallback))
 }
 
 /** A number flag's value (matchmaking.visitSeconds), kept up to date; `fallback` until the flags have loaded. */
-export function numberFlag(key: string, fallback: number): Readable<number> {
+export function numberFlag(key: FlagKey, fallback: number): Readable<number> {
   const client = OpenFeature.getClient()
   return watch(() => client.getNumberValue(key, fallback))
 }
