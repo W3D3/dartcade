@@ -112,7 +112,7 @@
     <div class="fixed inset-0 flex items-center justify-center text-[40px] text-text-muted" role="status">Stopped</div>
   {:else if !$connected}<Reconnecting />{/if}
   {#if asleep}
-    <div class="fixed bottom-6 left-6 rounded-full bg-surface-panel/90 px-4 py-1.5 text-[16px] text-text-muted" role="status">
+    <div class="fixed bottom-6 left-6 rounded-full bg-surface-panel/90 px-4 py-1.5 text-body-lg text-text-muted" role="status">
       Click or tap to enable sound
     </div>
   {/if}

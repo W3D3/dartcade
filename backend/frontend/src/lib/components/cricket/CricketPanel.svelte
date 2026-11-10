@@ -39,7 +39,7 @@
     lg: { card: 'px-[22px] py-4 xl:py-5 rounded-panel gap-3', name: 'text-[22px]', points: 'text-[clamp(56px,11vh,104px)]' },
     md: { card: 'px-[22px] py-4 rounded-panel gap-3', name: 'text-[22px]', points: 'text-[clamp(40px,7vh,64px)]' },
     head: { card: 'p-3 rounded-card gap-2', name: 'text-[17px] xl:text-[20px]', points: 'text-[clamp(40px,6vh,56px)]' },
-    sm: { card: 'px-3 pt-2 pb-[10px] rounded-lg gap-1', name: 'text-[15px]', points: 'text-[40px]' },
+    sm: { card: 'px-3 pt-2 pb-[10px] rounded-lg gap-1', name: 'text-body', points: 'text-[40px]' },
   }
   const COMPACT = { card: 'px-4 py-3 rounded-popover gap-2', name: 'text-[19px]', points: 'text-[44px]' }
   const S = $derived(compact ? COMPACT : SIZES[size])
@@ -58,7 +58,7 @@
     {#if compact && state}<PlayerPill kind={active ? 'throwing' : 'up-next'} small />{/if}
     <span class="ml-auto"><LegPips total={game.firstTo} won={game.legs[side.seat]} {active} /></span>
   </div>
-  {#if side.members}<span class="text-[12px] text-text-muted truncate">{side.members}</span>{/if}
+  {#if side.members}<span class="text-caption text-text-muted truncate">{side.members}</span>{/if}
   {#if compact}
     <!-- the pill sits by the name -->
   {:else if size === 'sm'}
@@ -71,7 +71,7 @@
     <span class="font-display font-bold leading-[0.82] tracking-score tabular-nums {S.points} {active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber value={points} normal="up" reset={legNumber(game)} gain={game.config.mode === 'cutthroat' ? 'bad' : 'plain'} /></span
     >
-    <span class="text-[13px] text-text-muted whitespace-nowrap"
+    <span class="text-small text-text-muted whitespace-nowrap"
       >MPR <strong class="font-semibold {active ? 'text-text' : 'text-ink-2'}">{cricketMpr(game, side.seats)}</strong></span
     >
   </div>

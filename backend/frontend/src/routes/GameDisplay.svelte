@@ -446,7 +446,7 @@
 
 <!-- The live coach's panel or its models didn't load -->
 {#snippet coachFailed()}
-  <p class="text-[13px] text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
+  <p class="text-small text-text-muted" role="status">The coach couldn't load. Reload to try again.</p>
 {/snippet}
 
 {#snippet liveCoach(compact: boolean)}
@@ -511,7 +511,7 @@
       />
 
       {#if snapshot.voided}
-        <div role="status" class="shrink-0 box-border px-7 py-3 border-b border-line bg-surface-1 text-[15px] text-text">
+        <div role="status" class="shrink-0 box-border px-7 py-3 border-b border-line bg-surface-1 text-body text-text">
           This game was voided by a moderator. It has no result and nobody's rating changed.
         </div>
       {/if}

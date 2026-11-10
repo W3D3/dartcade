@@ -118,7 +118,7 @@
     keypadClass="min-w-0 {variant === 'duel' ? 'min-h-[300px]' : 'min-h-0'}"
   />
   {#if legend && !keypad}
-    <div class="shrink-0 flex flex-wrap justify-center gap-x-4 gap-y-[6px] text-[13px] text-text-muted">
+    <div class="shrink-0 flex flex-wrap justify-center gap-x-4 gap-y-[6px] text-small text-text-muted">
       <span class="inline-flex items-center gap-[7px] min-w-0"
         ><span class="size-3 shrink-0 rounded-[3px] bg-accent"></span><span class="truncate">{thrower.name} can score</span></span
       >
