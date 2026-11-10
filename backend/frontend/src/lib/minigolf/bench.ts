@@ -207,4 +207,4 @@ export function playReplay(
 
 /** The bench's and Playtest's shared button style. */
 export const BUTTON =
-  'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[15px] font-medium cursor-pointer hover:bg-surface-hover disabled:opacity-50 disabled:cursor-default'
+  'h-9 rounded-md border border-line-2 bg-surface-2 px-3 text-text text-[15px] font-medium cursor-pointer hover:bg-surface-hover disabled:opacity-50 disabled:cursor-default'

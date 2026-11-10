@@ -36,7 +36,7 @@
   const clip = createCopy()
 
   const BUTTON =
-    'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium cursor-pointer hover:bg-surface-hover'
+    'h-9 rounded-md border border-line-2 bg-surface-2 px-3 text-text text-[14px] font-medium cursor-pointer hover:bg-surface-hover'
 </script>
 
 <section class="flex flex-col gap-3" aria-label="Physics">

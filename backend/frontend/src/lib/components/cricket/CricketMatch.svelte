@@ -151,7 +151,7 @@
   <div class="shrink-0 grid grid-cols-2 gap-2">
     {#each sides as s (s.seat)}<CricketPanel {game} side={s} face={faceOf(s)} active={isUp(s)} upNext={upNext(s)} size="sm" />{/each}
   </div>
-  {@render table('shrink-0 rounded-[14px] px-2 pt-[10px] pb-1')}
+  {@render table('shrink-0 rounded-card px-2 pt-[10px] pb-1')}
   {@render board(false)}
   <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
   {@render controls(true)}
@@ -165,14 +165,14 @@
     {@render board(true)}
   </div>
   <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
-    {@render table('flex-1 min-h-0 overflow-y-auto rounded-[18px] px-5 pt-4 pb-2')}
+    {@render table('flex-1 min-h-0 overflow-y-auto rounded-panel px-5 pt-4 pb-2')}
     <DartSlots {slots} {onCorrect} bind:openDart />
     {@render controls(false)}
   </div>
 {/snippet}
 
 {#snippet partyLayout()}
-  {@render table('flex-1 min-w-0 min-h-0 overflow-auto rounded-[18px] px-3 xl:px-5 pt-4 pb-2')}
+  {@render table('flex-1 min-w-0 min-h-0 overflow-auto rounded-panel px-3 xl:px-5 pt-4 pb-2')}
   <aside aria-label="Board" class="w-[280px] xl:w-[420px] shrink-0 min-h-0 flex flex-col gap-3">
     {@render board(true)}
     <DartSlots {slots} {onCorrect} bind:openDart />

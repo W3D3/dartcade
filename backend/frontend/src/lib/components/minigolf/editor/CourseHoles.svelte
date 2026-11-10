@@ -64,7 +64,7 @@
           triggerLabel="More for {item.name}"
           align="right"
           width={200}
-          triggerClass="w-9 h-9 shrink-0 flex items-center justify-center bg-transparent border-0 rounded-[8px] text-text-muted hover:bg-surface-hover"
+          triggerClass="w-9 h-9 shrink-0 flex items-center justify-center bg-transparent border-0 rounded-sm text-text-muted hover:bg-surface-hover"
         >
           {#snippet trigger()}<Ellipsis size={18} />{/snippet}
           {#snippet children(close: () => void)}
