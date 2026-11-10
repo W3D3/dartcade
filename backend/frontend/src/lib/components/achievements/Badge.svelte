@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // One achievement badge (Badges board): the same picture in every tier with a rim that climbs
   // Dark, Silver, Gold, Platinum, Dartcade; dots on top count the tier and a pill shows the count the
   // tier took. A one-off keeps the dark rim with no dots or pill. Not earned: greyed with a lock. With
@@ -15,7 +16,7 @@
     !badge.oneOff && !locked && size >= 44 ? `×${badge.def.thresholds[badge.tier - 1].toLocaleString('en-GB').replace(/,/g, '')}` : null,
   )
   const pillWidth = $derived(pill ? Math.max(30, 14 + 5.9 * pill.length) : 0)
-  const PILL_TEXT = ['', '#c6f24e', '#14171b', '#2a1d05', '#0b2a32', '#14210a']
+  const PILL_TEXT = ['', THEME.accent, '#14171b', '#2a1d05', '#0b2a32', '#14210a']
   // Dots along the top of the rim, 11° apart, centred
   const dots = $derived(
     badge.oneOff || locked
@@ -45,7 +46,7 @@
       cy="60"
       r="58.5"
       fill="none"
-      stroke="#c6f24e"
+      stroke={THEME.accent}
       stroke-width="3"
       stroke-linecap="round"
       stroke-dasharray="{CIRC * badge.fraction} {CIRC}"
@@ -84,7 +85,7 @@
   </g>
   {#if locked}
     <g transform="translate(60 60)">
-      <circle r="13" fill="#0f100e" stroke="#65685f" stroke-width="1.5" />
+      <circle r="13" fill={THEME.bg} stroke="#65685f" stroke-width="1.5" />
       <rect x="-6" y="-2" width="12" height="9" rx="2" fill="#a3a498" />
       <path d="M-3.8 -2v-3a3.8 3.8 0 0 1 7.6 0v3" fill="none" stroke="#a3a498" stroke-width="2" />
     </g>

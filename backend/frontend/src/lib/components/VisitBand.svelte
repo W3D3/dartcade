@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // The visit sum under the board (or a compact tile beside the slots), with the
   // VisitFX celebrations: ton plus, maximum, and a tick for a big dart. The sum rolls (ScoreCount).
   import RollingNumber from './RollingNumber.svelte'
@@ -33,7 +34,7 @@
     for (const el of els) el.style.animation = ''
   }
 
-  const CONFETTI = ['#e9dfc4', '#c6f24e', '#d23b36', '#1e7a4f', '#dcff7a', '#efeee6']
+  const CONFETTI = [THEME.boardCream, THEME.accent, THEME.boardRed, THEME.boardGreen, THEME.accentHover, THEME.text]
   // Scattered all round the sum, mostly upwards, each a moment apart (as on the canvas)
   const confetti = Array.from({ length: 34 }, (_, i) => ({
     c: CONFETTI[i % CONFETTI.length],

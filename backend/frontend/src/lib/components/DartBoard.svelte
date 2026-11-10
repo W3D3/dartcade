@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import {
     AIM_EDGE_SPEED,
     AIM_HOLD_MS,
@@ -112,8 +113,8 @@
 
   function ringColor(i: number, ring: string) {
     const ev = i % 2 === 0
-    if (ring === 'tr' || ring === 'db') return ev ? '#d23b36' : '#1e7a4f'
-    return ev ? '#1a1a17' : '#e9dfc4'
+    if (ring === 'tr' || ring === 'db') return ev ? THEME.boardRed : THEME.boardGreen
+    return ev ? '#1a1a17' : THEME.boardCream
   }
 
   const sectors = SEGS.map((num, i) => {
@@ -351,7 +352,7 @@
   <animate attributeName="stroke-width" values="0.012;0.034;0.012" dur="1.2s" repeatCount="indefinite" />
 {/snippet}
 {#snippet checkoutLineAnim()}
-  <animate attributeName="stroke" values="#c6f24e;#dcff7a;#c6f24e" dur="1.2s" repeatCount="indefinite" />
+  <animate attributeName="stroke" values="{THEME.accent};{THEME.accentHover};{THEME.accent}" dur="1.2s" repeatCount="indefinite" />
 {/snippet}
 
 <div class="relative w-full">
@@ -455,7 +456,7 @@
           cx="0"
           cy="0"
           r={R.bull25}
-          fill={photo ? 'transparent' : '#1e7a4f'}
+          fill={photo ? 'transparent' : THEME.boardGreen}
           stroke="#8d8e84"
           stroke-width="1.2"
           stroke-opacity={wireOpacity}
@@ -466,7 +467,7 @@
           cx="0"
           cy="0"
           r={R.bull50}
-          fill={photo ? 'transparent' : '#d23b36'}
+          fill={photo ? 'transparent' : THEME.boardRed}
           stroke="#8d8e84"
           stroke-width="1.2"
           stroke-opacity={wireOpacity}

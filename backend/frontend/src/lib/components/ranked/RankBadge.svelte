@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // A rank's insignia (Rank insignia board): the shape and colour are the tier, gaining corners as
   // you climb; the numeral is the stage, with ticks filling up towards the next tier. Silver and up
   // get a gradient, Gold and up a shadow and glow that scale with the size, Diamond and Elite a
@@ -107,7 +108,7 @@
         <polygon
           points="64.5,14.9 85.1,35.5 85.1,64.5 64.5,85.1 35.5,85.1 14.9,64.5 14.9,35.5 35.5,14.9"
           fill="none"
-          stroke="#0f100e"
+          stroke={THEME.bg}
           stroke-width="4"
           stroke-linejoin="round"
         />
@@ -123,7 +124,7 @@
       {/if}
     {/if}
     {#if small}
-      <text x="50" y="65" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="44" fill="#0f100e"
+      <text x="50" y="65" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="44" fill={THEME.bg}
         >{rank.numeral}</text
       >
     {:else}

@@ -8,6 +8,7 @@
   its reason instead.
 -->
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import HoleView from '../HoleView.svelte'
   import { heightAt } from '$shared/minigolf/3d/ground'
   import type { ElementRef } from '$shared/minigolf/checks'
@@ -344,7 +345,7 @@
   const uid = $props.id()
 
   const placing = $derived(tool !== 'select' && tool !== 'outline')
-  const SELECTION = '#c6f24e'
+  const SELECTION = THEME.accent
 </script>
 
 <svelte:window {onkeydown} />
@@ -359,7 +360,7 @@
   onpointercancel={cancel}
   onpointerleave={() => !drag && (pointer = null)}
 >
-  <HoleView hole={shown} ball={shown.tee} ballColor="#efeee6" halo={false} frame={drag ? hole.outline : undefined}>
+  <HoleView hole={shown} ball={shown.tee} ballColor={THEME.text} halo={false} frame={drag ? hole.outline : undefined}>
     {#snippet underlay()}
       {#if cells.length}
         <clipPath id="{uid}-felt"><polygon points={pts(shown.outline)} /></clipPath>
@@ -386,7 +387,7 @@
 
       <!-- The shape's guides: the corners' polygon and the circles merged into the outline -->
       {#if (tool === 'outline' || tool === 'circle') && shown.shape}
-        <g fill="none" stroke="#efeee6" stroke-opacity="0.6" stroke-width={unit * 0.15} pointer-events="none" data-testid="shape-guides">
+        <g fill="none" stroke={THEME.text} stroke-opacity="0.6" stroke-width={unit * 0.15} pointer-events="none" data-testid="shape-guides">
           <path d={shapePath(shown)} stroke-dasharray="{unit * 0.8} {unit * 0.5}" />
           {#each shown.shape.circles as c, i (i)}<circle cx={c.center[0]} cy={c.center[1]} r={c.r} />{/each}
         </g>
@@ -395,7 +396,7 @@
       <!-- A selected circle's handles: drag the centre to move it, the rim to resize it -->
       {#if selection?.kind === 'circle' && circlesOf(shown)[selection.index]}
         {@const c = circlesOf(shown)[selection.index]}
-        <g fill="#efeee6" stroke="#0a0b09" stroke-width={unit * 0.2} class="cursor-move">
+        <g fill={THEME.text} stroke="#0a0b09" stroke-width={unit * 0.2} class="cursor-move">
           <circle data-circle={selection.index} data-part="centre" cx={c.center[0]} cy={c.center[1]} r={unit * 0.9} />
           <rect
             data-circle={selection.index}
@@ -431,7 +432,7 @@
             {#if curve}
               {@const a = corners[i]}
               {@const b = corners[(i + 1) % corners.length]}
-              <g stroke="#efeee6" stroke-width={unit * 0.15} pointer-events="none">
+              <g stroke={THEME.text} stroke-width={unit * 0.15} pointer-events="none">
                 <line x1={a[0]} y1={a[1]} x2={curve.c1[0]} y2={curve.c1[1]} />
                 <line x1={b[0]} y1={b[1]} x2={curve.c2[0]} y2={curve.c2[1]} />
               </g>
@@ -443,7 +444,7 @@
                   cy={curve[which][1]}
                   r={unit * 0.8}
                   fill="#0a0b09"
-                  stroke="#efeee6"
+                  stroke={THEME.text}
                   stroke-width={unit * 0.25}
                   class="cursor-move"
                 />
@@ -459,7 +460,7 @@
               cx={m[0]}
               cy={m[1]}
               r={unit * 0.7}
-              fill="#efeee6"
+              fill={THEME.text}
               stroke="#0a0b09"
               stroke-width={unit * 0.2}
               class="cursor-copy"
@@ -474,7 +475,7 @@
             y={c[1] - unit}
             width={unit * 2}
             height={unit * 2}
-            fill={on ? SELECTION : '#efeee6'}
+            fill={on ? SELECTION : THEME.text}
             stroke="#0a0b09"
             stroke-width={unit * 0.25}
             class="cursor-move"
@@ -485,9 +486,9 @@
       <!-- A refused drag: the circle or point it tried, in red -->
       {#if refused}
         <g
-          fill="#d23b36"
+          fill={THEME.boardRed}
           fill-opacity="0.25"
-          stroke="#d23b36"
+          stroke={THEME.boardRed}
           stroke-width={unit * 0.35}
           pointer-events="none"
           data-testid="refused-preview"
@@ -509,7 +510,7 @@
             cy={at[1]}
             r={BUMPER_R[options.bumperSize]}
             fill="none"
-            stroke="#d23b36"
+            stroke={THEME.boardRed}
             stroke-width={unit * 0.35}
             stroke-dasharray="{unit} {unit * 0.6}"
             pointer-events="none"
@@ -521,7 +522,7 @@
             cy={at[1]}
             r={options.brushSize}
             fill="none"
-            stroke="#efeee6"
+            stroke={THEME.text}
             stroke-opacity="0.7"
             stroke-width={unit * 0.3}
             stroke-dasharray="{unit} {unit * 0.6}"
@@ -535,7 +536,7 @@
         <text
           x={drawing.to[0] + unit * 1.5}
           y={drawing.to[1] - unit * 1.5}
-          fill="#efeee6"
+          fill={THEME.text}
           font-size={unit * 2.4}
           font-weight="700"
           stroke="#0a0b09"

@@ -18,12 +18,7 @@
 </script>
 
 {#if last}
-  <div
-    class="fixed inset-0 z-40 flex items-center justify-center bg-[#0f100ee6] p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Scorecard"
-  >
+  <div class="fixed inset-0 z-40 flex items-center justify-center bg-bg/90 p-4" role="dialog" aria-modal="true" aria-label="Scorecard">
     <div class="flex max-h-full w-full max-w-[1100px] flex-col gap-5 overflow-y-auto rounded-2xl border border-line bg-surface-1 p-6">
       <header class="flex flex-wrap items-baseline justify-between gap-3">
         <h2 class="font-display text-[32px] font-bold uppercase">Hole {last.index + 1} · {last.hole.name} · done</h2>

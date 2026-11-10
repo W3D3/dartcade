@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // Strength meter under a new-password field, shared by Register and Reset.
   let { password }: { password: string } = $props()
 
@@ -13,7 +14,7 @@
   })
 
   const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong']
-  const strengthColors = ['', '#ff5a4f', '#f59e0b', '#84cc16', '#c6f24e']
+  const strengthColors = ['', '#ff5a4f', '#f59e0b', '#84cc16', THEME.accent]
 </script>
 
 {#if password}

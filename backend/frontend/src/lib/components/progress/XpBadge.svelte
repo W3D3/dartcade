@@ -7,7 +7,7 @@
 <span
   class="inline-flex shrink-0 items-center justify-center rounded-full font-display font-bold leading-none tracking-normal
          {inverse
-    ? 'bg-accent-fg text-accent shadow-[inset_0_0_0_1.5px_#c6f24e33]'
-    : 'bg-accent text-accent-fg shadow-[inset_0_0_0_1.5px_#0f100e33]'}"
+    ? 'bg-accent-fg text-accent inset-ring-[1.5px] inset-ring-accent/20'
+    : 'bg-accent text-accent-fg inset-ring-[1.5px] inset-ring-bg/20'}"
   style="width: {size}px; height: {size}px; font-size: {size / 2}px">XP</span
 >

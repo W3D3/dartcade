@@ -3,6 +3,7 @@
   each player's score. Shown between holes (ScorecardOverlay) and on the match details page.
 -->
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   import { seatColor } from '$lib/details/chartColors'
   import { bounds } from '$shared/minigolf/geometry'
   import type { Pt } from '$shared/minigolf/types'
@@ -39,15 +40,21 @@
 
 <figure class="flex flex-col gap-2">
   <svg {viewBox} class="{height} w-full rounded-xl bg-bg-deep" role="img" aria-label={label}>
-    <polygon points={pts(hole.outline)} fill="#2a7045" stroke="#e9dfc4" stroke-width="20" stroke-linejoin="round" />
+    <polygon points={pts(hole.outline)} fill="#2a7045" stroke={THEME.boardCream} stroke-width="20" stroke-linejoin="round" />
     {#each hole.walls as w, i (i)}
       {#if w.closed}
-        <polygon points={pts(w.points)} fill="#e9dfc4" stroke="#e9dfc4" stroke-width={w.thickness ?? 20} stroke-linejoin="round" />
+        <polygon
+          points={pts(w.points)}
+          fill={THEME.boardCream}
+          stroke={THEME.boardCream}
+          stroke-width={w.thickness ?? 20}
+          stroke-linejoin="round"
+        />
       {:else}
         <polyline
           points={pts(w.points)}
           fill="none"
-          stroke="#e9dfc4"
+          stroke={THEME.boardCream}
           stroke-width={w.thickness ?? 20}
           stroke-linecap="round"
           stroke-linejoin="round"

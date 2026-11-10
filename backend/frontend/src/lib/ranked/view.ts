@@ -1,3 +1,4 @@
+import { THEME } from '$lib/theme'
 // What the Matchmaking and Ranks pages show for a ranked profile (MM-Home, MM-Ranks boards).
 // The rank maths lives in $shared/ranked, shared with the server.
 import type { components } from '$lib/api/schema'
@@ -30,7 +31,7 @@ export const TIER_TEXT: Record<Tier, string> = {
   Silver: '#cfd5dd',
   Gold: '#f2c94c',
   Diamond: '#7fd6f5',
-  Elite: '#c6f24e',
+  Elite: THEME.accent,
 }
 
 /** The tint a tier's column fades in from at the top (MM-Ranks board). */
@@ -50,7 +51,7 @@ export const TIER_COLOR: Record<Tier, string> = {
   Silver: '#c9d0d8',
   Gold: '#eac24f',
   Diamond: '#74d2f2',
-  Elite: '#c6f24e',
+  Elite: THEME.accent,
 }
 
 /** Where a rating stands between its stage and the next (the Ranks page's progress bar). */

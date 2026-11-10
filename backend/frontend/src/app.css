@@ -58,6 +58,10 @@
   --color-ink-3: #b4b5aa;
   --color-ink-faint: #828379;
   --color-accent-hover: #dcff7a;
+  /* The dartboard's rings and the minigolf course's markers (also in lib/theme.ts) */
+  --color-board-red: #d23b36;
+  --color-board-green: #1e7a4f;
+  --color-board-cream: #e9dfc4;
   --color-live-soft: #3a1a17;
   --color-danger-text: #ff7a70;
   --color-danger-line: #4a2e2b;

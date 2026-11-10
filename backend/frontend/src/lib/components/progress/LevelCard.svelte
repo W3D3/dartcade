@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // The Progress page's level card (Progress board): the level, the XP bar and what's left to go,
   // and everything the next level unlocks, which opens the rewards track at that level.
   // New XP plays in: a claim's "+N XP" flies from its button into the bar, then the total counts
@@ -86,7 +87,7 @@
     const r = levelNumber?.getBoundingClientRect()
     if (!r) return
     const origin = { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }
-    const colors = ['#c6f24e', '#f2c14e', '#efeee6']
+    const colors = [THEME.accent, '#f2c14e', THEME.text]
     void confetti({ particleCount: 70, spread: 75, startVelocity: 38, origin, colors, disableForReducedMotion: true })
     void confetti({ particleCount: 40, spread: 120, startVelocity: 26, decay: 0.92, origin, colors, disableForReducedMotion: true })
   }

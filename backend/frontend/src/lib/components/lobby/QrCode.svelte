@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // The join link as a QR code: people point their phone's camera at it (no in-app scanner).
   import { encode } from 'uqr'
 
@@ -21,7 +22,7 @@
 >
   {#each qr.data as row, y (y)}
     {#each row as on, x (x)}
-      {#if on}<rect {x} {y} width="1" height="1" fill="#0f100e" />{/if}
+      {#if on}<rect {x} {y} width="1" height="1" fill={THEME.bg} />{/if}
     {/each}
   {/each}
 </svg>

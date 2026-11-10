@@ -1,5 +1,6 @@
 // How a player's equipped perks look: the card colours, the banner and the title's name.
 // The perks themselves (and what unlocks them) are shared: $shared/progression.js.
+import { THEME } from '$lib/theme'
 import { CARD_COLORS, DEFAULT_EQUIPPED, perk, type Equipped, type PerkKind } from '$shared/progression.js'
 
 export type CardColors = (typeof CARD_COLORS)[string]
@@ -94,7 +95,7 @@ const FRAMES: Record<string, { ring: string; spin?: true }> = {
   'frame.silver': { ring: 'conic-gradient(from 30deg, #747a82, #eef2f6, #868c94, #fafcfe, #747a82)' },
   'frame.gold': { ring: 'conic-gradient(from 30deg, #8a6a1c, #f7d774, #9a7420, #ffeaa6, #8a6a1c)' },
   'frame.platinum': { ring: 'conic-gradient(from 30deg, #8fa5bd, #f4fbff, #aebfd2, #ffffff, #8fa5bd)' },
-  'frame.legend': { ring: 'conic-gradient(#f2c14e, #fff3c4, #c6f24e, #f2c14e, #ff9f43, #fff3c4, #f2c14e)', spin: true },
+  'frame.legend': { ring: `conic-gradient(#f2c14e, #fff3c4, ${THEME.accent}, #f2c14e, #ff9f43, #fff3c4, #f2c14e)`, spin: true },
 }
 export const frameOf = (id: string): (typeof FRAMES)[string] | null => (id in FRAMES ? FRAMES[id] : null)
 

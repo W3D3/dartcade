@@ -1,20 +1,21 @@
 <script lang="ts">
+  import { THEME } from '$lib/theme'
   // The dartboard illustration of the sign-in screens.
   let { size }: { size: number } = $props()
 </script>
 
 <svg viewBox="-200 -200 400 400" width={size} height={size} aria-hidden="true">
   <circle r="199" fill="var(--color-bg-deep)" />
-  <circle r="166" fill="none" stroke="#1e7a4f" stroke-width="8" />
-  <circle r="166" fill="none" stroke="#d23b36" stroke-width="8" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
-  <circle r="134.5" fill="none" stroke="#e9dfc4" stroke-width="55" />
+  <circle r="166" fill="none" stroke={THEME.boardGreen} stroke-width="8" />
+  <circle r="166" fill="none" stroke={THEME.boardRed} stroke-width="8" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
+  <circle r="134.5" fill="none" stroke={THEME.boardCream} stroke-width="55" />
   <circle r="134.5" fill="none" stroke="#1a1a17" stroke-width="55" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
-  <circle r="103" fill="none" stroke="#1e7a4f" stroke-width="8" />
-  <circle r="103" fill="none" stroke="#d23b36" stroke-width="8" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
-  <circle r="57.5" fill="none" stroke="#e9dfc4" stroke-width="83" />
+  <circle r="103" fill="none" stroke={THEME.boardGreen} stroke-width="8" />
+  <circle r="103" fill="none" stroke={THEME.boardRed} stroke-width="8" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
+  <circle r="57.5" fill="none" stroke={THEME.boardCream} stroke-width="83" />
   <circle r="57.5" fill="none" stroke="#1a1a17" stroke-width="83" pathLength="20" stroke-dasharray="1 1" transform="rotate(-99)" />
-  <circle r="16" fill="#1e7a4f" />
-  <circle r="6.35" fill="#d23b36" />
+  <circle r="16" fill={THEME.boardGreen} />
+  <circle r="6.35" fill={THEME.boardRed} />
   <g fill="none" stroke="#8d8e84" stroke-width="0.8" opacity="0.7">
     <circle r="170" /><circle r="162" /><circle r="107" /><circle r="99" /><circle r="16" />
     {#each Array.from({ length: 20 }, (_, i) => i) as i (i)}
