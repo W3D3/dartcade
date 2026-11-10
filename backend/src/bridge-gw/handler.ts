@@ -1,3 +1,4 @@
+import { log, warn } from '../log.js'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
 import type { WebSocket } from 'ws'
@@ -68,7 +69,7 @@ export function parseEnvelope(msg: unknown): z.output<typeof EnvelopeSchema> | n
   if (r.success) return r.data
   // Not acked, so the bridge's next (cumulative) ack covers it: this warning is the only trace
   const id = EventIdSchema.parse(msg)
-  console.warn('Ignoring a bridge event whose envelope does not match the schema', { ...id, issues: r.error.issues })
+  warn('Ignoring a bridge event whose envelope does not match the schema', { ...id, issues: r.error.issues })
   return null
 }
 
@@ -121,14 +122,14 @@ const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).part
 function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCameraStill?: OnCameraStill, samples?: SampleCollector): void {
   const r = CameraStillMessageSchema.safeParse(msg)
   if (!r.success) {
-    console.warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) })
+    warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) })
     return
   }
   const { cam, captured_at: capturedAt, content_type: contentType, data } = r.data.data
   const bytes = Buffer.from(data, 'base64')
   const version = stills.put(boardId, cam, { bytes, contentType, capturedAt })
   if (version === null) {
-    console.warn('Ignoring a camera still over 1 MiB', { boardId, cam })
+    warn('Ignoring a camera still over 1 MiB', { boardId, cam })
     return
   }
   onCameraStill?.(boardId, cam, version)
@@ -140,9 +141,9 @@ function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCamera
 function callHook(name: string, boardId: string, run: () => unknown): void {
   try {
     const result = run()
-    if (result instanceof Promise) result.catch((err: unknown) => console.error('lights hook failed', { hook: name, boardId }, err))
+    if (result instanceof Promise) result.catch((err: unknown) => log.error({ hook: name, boardId, err }, 'lights hook failed'))
   } catch (err: unknown) {
-    console.error('lights hook failed', { hook: name, boardId }, err)
+    log.error({ hook: name, boardId, err }, 'lights hook failed')
   }
 }
 
@@ -379,14 +380,14 @@ export function handleBridgeConnection(
         try {
           await engine.onBridgeEvent(boardDbId, kind, data, id)
         } catch (err: unknown) {
-          console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
+          log.error({ boardDbId, kind, seq, bridgeEventId: id, err }, 'Bridge event not applied to the game')
           return
         }
         callHook('onBoardEvent', boardDbId, () => opts.onBoardEvent?.(boardDbId, kind, data))
       })
       .catch((err: unknown) => {
         failed = true
-        console.error('Bridge event processing error, closing so the bridge replays it:', { boardDbId: conn.boardDbId }, err)
+        log.error({ boardDbId: conn.boardDbId, err }, 'Bridge event processing error, closing so the bridge replays it')
         // The bridge reconnects and resends everything unacked
         socket.close(1011, 'internal error')
       })

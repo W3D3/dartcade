@@ -14,6 +14,8 @@ import { bootstrapAdmin } from './auth/bootstrap.js'
 import { mailConfig } from './auth/index.js'
 import { setAccountCleanup, cleanUpAccount } from './auth/cleanup.js'
 import { buildApp } from './app.js'
+import { log, warn } from './log.js'
+import { every } from './periodic.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
@@ -45,10 +47,10 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10)
 // shortcut: lobby start serialization, one game per user/lobby/board and presence live in this
 // process's memory, so one backend per database; move them to Postgres before running replicas
 if (!(await takeInstanceLock(dbUrl))) {
-  console.error('Another dartcade backend is already running on this database. Stop it first: only one may run at a time.')
+  log.error('Another dartcade backend is already running on this database. Stop it first: only one may run at a time.')
   process.exit(1)
 }
-console.info(`mail: ${mailConfig.smtpUrl ? 'on' : 'off'}, email verification: ${mailConfig.verification ? 'required' : 'off'}`)
+log.info(`mail: ${mailConfig.smtpUrl ? 'on' : 'off'}, email verification: ${mailConfig.verification ? 'required' : 'off'}`)
 
 // Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
 await initPhysics3d()
@@ -72,9 +74,7 @@ const progression = new ProgressionService({
   push: (userId, msg) => {
     hub.sendXp(userId, msg)
   },
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
 })
 const achievements = new AchievementsService({
   db,
@@ -83,15 +83,8 @@ const achievements = new AchievementsService({
   push: (userId, msg) => {
     hub.sendAchievements(userId, msg)
   },
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
 })
-// The rebuild below can already warn (a log entry that won't parse), before the app and its
-// logger exist: until then warnings go to the console
-let warn = (message: string, details: unknown) => {
-  console.warn(message, details)
-}
 // Lights (#135): reads engine lazily, the same way the push closure below does
 const lights: LightsService = new LightsService({
   send: (b, m) => bridgeConnections.send(b, m),
@@ -109,9 +102,7 @@ const lights: LightsService = new LightsService({
   getSnapshot: id => engine.getSnapshot(id),
   sessionOnBoard: b => engine.getSessionByBoard(b)?.id ?? null,
   inLobby: b => boardInOpenLobby(db, b),
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
 })
 // Big screen: follows boards for /ws/board; reads the engine lazily like lights
 const bigScreen = new BigScreenService({
@@ -201,9 +192,7 @@ const friends = new FriendsService({
   db,
   hub,
   gameOf: userId => seatedGame(engine.getSessionByUser(userId), userId),
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
 })
 const lobbies: LobbyService = new LobbyService({
   db,
@@ -212,9 +201,7 @@ const lobbies: LobbyService = new LobbyService({
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
   autoStartBoards: boardIds => autoStartBoards(db, boardIds, warn),
   gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
   onStatusChange: userIds => {
     friends.touch(userIds)
   },
@@ -234,9 +221,7 @@ const matchmaking = new MatchmakingService({
   ended: (userId, msg) => {
     hub.sendMatchmakingEnded(userId, msg)
   },
-  warn: (message, details) => {
-    warn(message, details)
-  },
+  warn,
 })
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
@@ -245,12 +230,7 @@ await lobbies.settleAll()
 await matchmaking.settleAll()
 matchmaking.start()
 // A rating write that failed is tried again every minute, not only at the next start
-const settleRanked = setInterval(() => {
-  matchmaking.settleAll().catch((err: unknown) => {
-    warn('ranked settle failed', { error: String(err) })
-  })
-}, 60_000)
-settleRanked.unref()
+const timers = [every(60_000, 'ranked settle', () => matchmaking.settleAll())]
 // Pairing codes go an hour after they expired, friend activity after a month.
 const HOUR_MS = 60 * 60 * 1000
 const sweeps: [what: string, run: () => Promise<unknown>][] = [
@@ -273,32 +253,15 @@ const samples =
           )
         },
         save: sample => insertSample(db, sample),
-        warn: (message, details) => {
-          warn(message, details)
-        },
+        warn,
       })
     : undefined
 if (samples) sweeps.push(['dart sample', () => pruneSamples(db, sampleBytes)])
 // Lobbies close after minutes without activity (10 with one real user, 20 with several: the
 // lobby.idleMinutes.* flags); one whose unranked game had no event for that long is closed too, its
 // game aborted. So they are swept every minute, apart from the rest
-const idleLobbySweep = setInterval(() => {
-  lobbies.closeIdleLobbies().catch((err: unknown) => {
-    warn('idle lobby sweep failed', { error: String(err) })
-  })
-}, 60 * 1000)
-idleLobbySweep.unref()
-const idleSweep = setInterval(
-  () => {
-    for (const [what, run] of sweeps) {
-      run().catch((err: unknown) => {
-        warn(`${what} sweep failed`, { error: String(err) })
-      })
-    }
-  },
-  5 * 60 * 1000,
-)
-idleSweep.unref()
+timers.push(every(60 * 1000, 'idle lobby sweep', () => lobbies.closeIdleLobbies()))
+for (const [what, run] of sweeps) timers.push(every(5 * 60 * 1000, `${what} sweep`, run))
 
 const app = await buildApp({
   engine,
@@ -314,9 +277,6 @@ const app = await buildApp({
 })
 // buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
 await setOverrides(await loadOverrides(db))
-warn = (message, details) => {
-  app.log.warn({ details }, message)
-}
 // Reviews for the games finished before the coach stored them (or by an older COACH_VERSION); not
 // awaited, it yields between games
 backfillCoachLegs(db, warn).catch((err: unknown) => {
@@ -324,9 +284,7 @@ backfillCoachLegs(db, warn).catch((err: unknown) => {
 })
 // Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
-  clearInterval(idleSweep)
-  clearInterval(idleLobbySweep)
-  clearInterval(settleRanked)
+  for (const t of timers) clearInterval(t)
   matchmaking.close()
   bigScreen.close()
   await friends.close()

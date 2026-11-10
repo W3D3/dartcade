@@ -1,5 +1,6 @@
 // Asking a board's bridge to make a Board Manager call (the backend never calls a board itself), and
 // Board Manager's /api/state as we pass it on. Shared by the REST routes and the big screen service.
+import { warn } from '../log.js'
 import { z } from 'zod'
 import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw/connections.js'
 
@@ -24,7 +25,7 @@ export async function askBoard(id: string, req: BmRequest, timeoutMs: number): P
   if (!res) return { ok: false, code: 503, error: 'board did not answer (update its bridge)' }
   if (res.status === undefined) {
     // Kept to the log: the bridge's error names hosts on the board's network
-    console.warn('Board Manager call failed', { boardId: id, op: req.op, error: res.error })
+    warn('Board Manager call failed', { boardId: id, op: req.op, error: res.error })
     return { ok: false, code: 502, error: 'Board Manager request failed' }
   }
   return { ok: true, res: { ...res, status: res.status } }

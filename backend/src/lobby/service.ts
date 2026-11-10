@@ -1,3 +1,4 @@
+import { warn } from '../log.js'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -144,8 +145,7 @@ export class LobbyService {
   }
 
   private warn(message: string, details: unknown = {}): void {
-    if (this.deps.warn) this.deps.warn(message, details)
-    else console.warn(message, details)
+    ;(this.deps.warn ?? warn)(message, details)
   }
 
   // When each open lobby last had a change through this service or a lobby socket (see closeIdleLobbies)

@@ -1,3 +1,4 @@
+import { log } from '../log.js'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
 import type { RawData, WebSocket } from 'ws'
@@ -177,7 +178,7 @@ export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
     const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
     if (snap && !checked) {
       checked = true
-      checkSnapshot(snap, msg => console.error(msg))
+      checkSnapshot(snap, msg => log.error(msg))
     }
     return snap ?? null
   }

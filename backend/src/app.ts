@@ -51,6 +51,7 @@ import { authInfoApiPlugin } from './api/authInfo.js'
 import { feedbackAddress, feedbackApiPlugin } from './api/feedback.js'
 import { legalApiPlugin } from './api/legal.js'
 import { loadLegal, legalValues } from './legal/load.js'
+import { warn } from './log.js'
 import { createFastify } from './api/fastify.js'
 import { auth, mailConfig, mailer } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
@@ -205,10 +206,7 @@ export async function buildApp({
     onBoardStatus: (ownerUserId, boardId, online) => {
       hub.sendBoardStatus(ownerUserId, boardId, online)
     },
-    onBigScreenStartup: boardId =>
-      autoOpenBigScreen(db, boardId, bigScreen, (message, details) => {
-        app.log.warn({ details }, message)
-      }),
+    onBigScreenStartup: boardId => autoOpenBigScreen(db, boardId, bigScreen, warn),
     onCameraStill: (boardId, cam, version) => {
       pushCamera(engine, boardId, cam, version)
     },

@@ -1,3 +1,4 @@
+import { warn } from '../log.js'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -126,8 +127,7 @@ export class MatchmakingService {
   }
 
   private warn(message: string, details: unknown = {}): void {
-    if (this.deps.warn) this.deps.warn(message, details)
-    else console.warn(message, details)
+    ;(this.deps.warn ?? warn)(message, details)
   }
 
   // Some changes don't touch the database: they run in the queue all the same

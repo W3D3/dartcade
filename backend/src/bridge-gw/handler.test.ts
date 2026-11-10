@@ -6,6 +6,7 @@ import Fastify from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 // Node's own WebSocket can't send headers
 import { WebSocket as WsClient } from 'ws'
+import { log } from '../log.js'
 import { BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 import { LightsStore } from '../lights/store.js'
@@ -310,7 +311,7 @@ describe('handleBridgeConnection', () => {
 
   it('answers the bridge heartbeat ping with a pong, without a warning', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-3', hardware_id: null } as any)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
     const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
     const socket = new FakeSocket()
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
@@ -328,7 +329,7 @@ describe('handleBridgeConnection', () => {
 
   it('warns about an event whose envelope does not match the schema, and does not ack it', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-2', hardware_id: null } as any)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
     const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
     const socket = new FakeSocket()
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
@@ -351,7 +352,10 @@ describe('handleBridgeConnection', () => {
     await flush()
 
     // The next ack would silently cover it on the bridge side: the warning is the only trace
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('envelope'), expect.objectContaining({ kind: 'dart.detected', seq: 5 }))
+    expect(warn).toHaveBeenCalledWith(
+      { details: expect.objectContaining({ kind: 'dart.detected', seq: 5 }) },
+      expect.stringContaining('envelope'),
+    )
     expect(socket.send).not.toHaveBeenCalledWith(JSON.stringify({ ack: 5, boot_id: 'boot' }))
     warn.mockRestore()
   })
@@ -359,7 +363,7 @@ describe('handleBridgeConnection', () => {
   it('closes the socket when storing an event fails, and acks nothing after it', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-11', hardware_id: null } as any)
     vi.mocked(queries.insertBridgeEvent).mockRejectedValueOnce(new Error('db down'))
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = vi.spyOn(log, 'error').mockImplementation(() => undefined)
     const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
     const socket = new FakeSocket()
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
@@ -484,7 +488,7 @@ describe('camera stills from the bridge', () => {
 
   it('keeps the still for its board and camera and tells the games, without storing or acking an event', async () => {
     const { engine, stills, onCameraStill, socket } = await connect('board-c1')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
     socket.emit('message', stillMsg(2))
     await flush()
     await flush()
@@ -537,7 +541,7 @@ describe('camera stills from the bridge', () => {
 
   it('drops a still over 1 MiB, and a malformed one', async () => {
     const { stills, onCameraStill, socket } = await connect('board-c2')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
     socket.emit('message', stillMsg(0, Buffer.alloc(MAX_STILL_BYTES + 1, 0xff)))
     socket.emit('message', stillMsg(4))
     await flush()
@@ -716,7 +720,7 @@ describe('wled telemetry from the bridge', () => {
     const onLightsFound = vi.fn().mockImplementation(() => {
       throw new Error('boom')
     })
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = vi.spyOn(log, 'error').mockImplementation(() => undefined)
     const socket = new FakeSocket()
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, lights, onLightsFound })
     socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
@@ -730,7 +734,7 @@ describe('wled telemetry from the bridge', () => {
 
     expect(onLightsFound).toHaveBeenCalledWith('board-w7', [device('aa')])
     expect(socket.close).not.toHaveBeenCalled()
-    expect(error).toHaveBeenCalledWith('lights hook failed', { hook: 'onLightsFound', boardId: 'board-w7' }, expect.any(Error))
+    expect(error).toHaveBeenCalledWith({ hook: 'onLightsFound', boardId: 'board-w7', err: expect.any(Error) }, 'lights hook failed')
 
     // the connection keeps processing later messages even though the hook keeps throwing
     socket.emit(
@@ -896,7 +900,7 @@ describe('bridge message parsing', () => {
 
   it('envelope is null when a field the event is stored by is missing or wrong', () => {
     // An event that still says which one it is gets a warning: it's never acked, so that's its only trace
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
     for (const bad of [
       { ...envelope, v: 2 },
       { ...envelope, seq: '7' },
@@ -908,8 +912,8 @@ describe('bridge message parsing', () => {
       expect(parseEnvelope(bad)).toBeNull()
     }
     expect(warn).toHaveBeenCalledWith(
+      { details: expect.objectContaining({ kind: 'dart.detected' }) },
       'Ignoring a bridge event whose envelope does not match the schema',
-      expect.objectContaining({ kind: 'dart.detected' }),
     )
     warn.mockRestore()
   })
