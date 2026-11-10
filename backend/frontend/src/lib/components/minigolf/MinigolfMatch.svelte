@@ -5,6 +5,7 @@
   landed for the shot delay.
 -->
 <script lang="ts">
+  import type { MatchProps, ShotControls } from '$lib/components/match/types'
   import { untrack } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import { ChevronDown, ChevronUp } from '@lucide/svelte'
@@ -13,7 +14,6 @@
   import type { MinigolfGame, Segment } from '$lib/api'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
-  import type { TurnStatus } from '$lib/remote'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
@@ -63,13 +63,6 @@
     players: { name: string }[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
-    canThrow: boolean
-    locked: boolean
-    canUndo: boolean
-    next: { prominent: boolean; enabled: boolean }
-    onUndo: () => void
-    onNext: () => void
-    onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** The viewer is the host: they start the next hole (the game waits between holes). */
     host: boolean
     /** Darts come in by hand (no board scores): the shot panel with the board starts open. */
@@ -80,9 +73,9 @@
     onrolled?: (key: string) => void
     /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
     settings: GameSettings
-    /** Someone else is up (remote game): their status stands in for Undo and Shoot, which only that seat's controller may use. */
-    turn?: TurnStatus | null
-  } = $props()
+  } & Omit<ShotControls, 'next'> & {
+      next: Pick<MatchProps['next'], 'prominent' | 'enabled'>
+    } = $props()
 
   // 3D where the device can draw it; else the flat view
   const webgl = webglAvailable()

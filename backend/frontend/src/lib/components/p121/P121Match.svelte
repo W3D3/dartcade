@@ -5,13 +5,13 @@
   Phones: the compact card, the slots, the board and the dot ladder.
 -->
 <script lang="ts">
+  import type { MatchControls } from '$lib/components/match/types'
   import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { P121Game } from '$lib/api/game-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
-  import type { TurnStatus } from '$lib/remote'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
@@ -23,7 +23,6 @@
   import { boardCheckoutTargets, x01Slots } from '$lib/dartSlots'
   import { plural } from '$lib/fmt'
   import type { GameSettings } from '$lib/gameSettings'
-  import type { MatchLayout } from '$lib/matchLayout'
   import type { CheckoutPrefs } from '$shared/checkout.js'
 
   let {
@@ -55,27 +54,10 @@
     who: Who[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
-    layout: MatchLayout
-    canThrow: boolean
-    locked: boolean
-    canUndo: boolean
-    next: { label: string; prominent: boolean; enabled: boolean }
-    onUndo: () => void
-    onNext: () => void
-    onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    onCorrect?: (dartIndex: number, label: string) => void
-    onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     onGiveUp: () => void
     settings: GameSettings
     checkout?: CheckoutPrefs
-    /** The header's Enter view: the keypad takes the board's place. */
-    keypad?: boolean
-    onDart?: (segment: Segment) => void
-    /** The big screen: no Undo, Next or Give up, nothing to tap. */
-    viewOnly?: boolean
-    /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
-    turn?: TurnStatus | null
-  } = $props()
+  } & MatchControls = $props()
 
   const cp = $derived(game.currentPlayer)
   const cur = $derived(game.seats[cp])
