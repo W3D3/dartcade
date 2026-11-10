@@ -14447,7 +14447,8 @@
                 "count",
                 "tier",
                 "earnedAt",
-                "tierAt"
+                "tierAt",
+                "isNew"
               ],
               "additionalProperties": false,
               "properties": {
@@ -14474,6 +14475,10 @@
                   "format": "date-time",
                   "nullable": true,
                   "description": "When the current tier was reached"
+                },
+                "isNew": {
+                  "type": "boolean",
+                  "description": "A tier you have not looked at yet (yours only; false for another player)"
                 }
               }
             }
