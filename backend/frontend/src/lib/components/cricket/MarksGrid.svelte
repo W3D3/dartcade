@@ -96,8 +96,8 @@
 <!-- The visible caption sits outside the table, so the table can stretch its rows to fill the card -->
 <div class="flex flex-col {phone ? '' : 'h-full'}">
   <div aria-hidden="true" class="shrink-0 flex items-center justify-between gap-6 {phone ? 'px-[2px] pb-2' : 'pb-[14px]'}">
-    <span class="{phone ? 'text-[11px]' : 'text-[13px]'} label-caps text-text-dim">{caption}</span>
-    <span class="flex items-center gap-3 xl:gap-[18px] {phone ? 'text-[12px]' : 'text-[13px]'} text-text-muted">
+    <span class="{phone ? 'text-[11px]' : 'text-small'} label-caps text-text-dim">{caption}</span>
+    <span class="flex items-center gap-3 xl:gap-[18px] {phone ? 'text-caption' : 'text-small'} text-text-muted">
       <span class="inline-flex items-center gap-[7px]"><span class="size-[14px] rounded-[4px] bg-accent"></span>Can score</span>
       <span class="inline-flex items-center gap-[7px]"
         ><span class="size-[14px] box-border rounded-[4px] border-[1.5px] border-line-pip"></span>Closed</span
@@ -122,7 +122,7 @@
           >
           {@render head(sides[1])}
         {:else}
-          <th scope="col" class="px-2 xl:px-4 pb-3 text-left text-[12px] font-normal label-caps text-text-dim align-bottom">Target</th>
+          <th scope="col" class="px-2 xl:px-4 pb-3 text-left text-caption label-caps text-text-dim align-bottom">Target</th>
           {#each sides as s (s.seat)}{@render head(s)}{/each}
         {/if}
       </tr>
