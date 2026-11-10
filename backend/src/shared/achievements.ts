@@ -10,7 +10,17 @@ export const TIER_XP = [100, 150, 300, 500, 1000] as const
 /** The most achievements a player shows on their profile. */
 export const SHOWCASE_SIZE = 5
 
-export type AchievementCategory = 'x01' | 'minigolf' | 'social'
+export type AchievementCategory = 'countdown' | 'minigolf' | 'social'
+
+/**
+ * Each category's heading and the game modes whose games count towards it. The one place to list a
+ * mode: adding a countdown game is one entry here (an achievement can still narrow it with `modes`).
+ */
+export const CATEGORIES: Record<AchievementCategory, { name: string; modes: readonly string[] }> = {
+  countdown: { name: 'Countdown', modes: ['x01', 'p121'] },
+  minigolf: { name: 'Minigolf', modes: ['minigolf'] },
+  social: { name: 'Social', modes: [] },
+}
 
 export type AchievementDef = {
   id: string
@@ -21,6 +31,8 @@ export type AchievementDef = {
   thresholds: readonly number[]
   /** What the count counts, for the progress line ("180s"). */
   unit: string
+  /** Only these game modes count, where the category's are too many (a 180 needs X01's visit scores). */
+  modes?: readonly string[]
 }
 
 const five = (n: [number, number, number, number, number]) => n
@@ -30,15 +42,16 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'x01.180',
     name: 'ONE HUNDRED AND EIGHTYYY',
     description: 'Throw a 180 in any X01 game.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([1, 5, 10, 20, 100]),
     unit: '180s',
+    modes: ['x01'],
   },
   {
     id: 'x01.bigFish',
     name: 'Big Fish',
     description: 'Check out 170: T20 · T20 · Bull.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([1, 3, 5, 10, 25]),
     unit: '170 checkouts',
   },
@@ -46,15 +59,16 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'x01.tonPlus',
     name: 'TON PLUS',
     description: 'Score 100 or more in one visit.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([10, 100, 500, 1000, 5000]),
     unit: 'visits of 100+',
+    modes: ['x01'],
   },
   {
     id: 'x01.tonPlusOut',
     name: 'TON PLUS OUT',
     description: 'Check out on 100 or more.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([1, 10, 25, 50, 100]),
     unit: '100+ checkouts',
   },
@@ -62,15 +76,16 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'x01.bedAndBreakfast',
     name: 'Bed & Breakfast',
     description: 'Score exactly 26 in a visit. The classic S20 · S5 · S1.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([26, 52, 104, 260, 520]),
     unit: 'visits of 26',
+    modes: ['x01'],
   },
   {
     id: 'x01.bullseye',
     name: 'Bullseye',
     description: 'Hit the bullseye (inner bull, 50) with any dart.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([10, 50, 100, 250, 1000]),
     unit: 'bullseyes',
   },
@@ -78,15 +93,15 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'x01.bullFinish',
     name: 'Bull Finish',
     description: 'Check out on the bullseye.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([1, 5, 10, 25, 50]),
     unit: 'checkouts on the bull',
   },
   {
     id: 'x01.doubleTheDoubles',
     name: 'Double the Doubles',
-    description: 'Check out with the last two darts both on a double, like D10 · D20.',
-    category: 'x01',
+    description: 'Check out with the last two darts both on a double, like D16 · D20.',
+    category: 'countdown',
     thresholds: five([1, 5, 10, 25, 50]),
     unit: 'two-double checkouts',
   },
@@ -94,7 +109,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'x01.madhouse',
     name: 'Madhouse',
     description: 'Win a leg on D1, the double nobody wants.',
-    category: 'x01',
+    category: 'countdown',
     thresholds: five([1, 3, 5, 10, 25]),
     unit: 'legs finished on D1',
   },
@@ -112,3 +127,9 @@ export function tierOf(def: Pick<AchievementDef, 'thresholds'>, count: number): 
 export function xpForTiers(from: number, to: number): number {
   return TIER_XP.slice(from, to).reduce((a, b) => a + b, 0)
 }
+
+/** The game modes whose games count for `def`. */
+export const modesOf = (def: AchievementDef): readonly string[] => def.modes ?? CATEGORIES[def.category].modes
+
+/** Whether a finished game of `mode` can move any achievement. */
+export const countsFor = (mode: string): boolean => ACHIEVEMENTS.some(a => modesOf(a).includes(mode))

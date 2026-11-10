@@ -4,7 +4,8 @@
   // marks a tier you have not looked at yet.
   import { Check, Plus } from '@lucide/svelte'
   import Badge from './Badge.svelte'
-  import { CATEGORY_NAME, progressLine, statusLine, type Badge as BadgeData } from '$lib/achievements/view'
+  import { CATEGORIES } from '$shared/achievements.js'
+  import { modeNote, progressLine, statusLine, type Badge as BadgeData } from '$lib/achievements/view'
 
   type Showcase = { shown: boolean; full: boolean; toggle: () => void }
   let { badge, isNew = false, showcase = null }: { badge: BadgeData; isNew?: boolean; showcase?: Showcase | null } = $props()
@@ -17,7 +18,10 @@
   {#if isNew}<span class="absolute right-3 top-3 size-2 rounded-full bg-accent" title="New" aria-label="New"></span>{/if}
   <Badge {badge} size={96} fraction={!badge.oneOff && badge.next !== null} />
   <div class="flex min-w-0 flex-1 flex-col gap-[6px]">
-    <span class="text-caption label-caps text-text-dim">{CATEGORY_NAME[badge.def.category]} · {kind}</span>
+    <span class="text-caption label-caps text-text-dim"
+      >{CATEGORIES[badge.def.category].name}{#if modeNote(badge.def)}
+        · {modeNote(badge.def)}{/if} · {kind}</span
+    >
     <h3 class="font-display font-bold text-player-name leading-none uppercase tracking-title {badge.tier === 0 ? 'text-text-muted' : ''}">
       {badge.def.name}
     </h3>

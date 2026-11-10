@@ -41,11 +41,17 @@ describe('achievementDeltas', () => {
       },
       { 'x01.bedAndBreakfast': 1, 'x01.bullseye': 2, 'x01.tonPlus': 1 },
     ],
-    ['D10 D20 out', { checkouts: [checkout(60, D(20), D(10))] }, { 'x01.doubleTheDoubles': 1 }],
+    ['D16 D20 out', { checkouts: [checkout(72, D(20), D(16))] }, { 'x01.doubleTheDoubles': 1 }],
     ['a double after a single is not two doubles', { checkouts: [checkout(41, D(20), { n: 1, m: 1 })] }, {}],
     ['a leg won on D1', { checkouts: [checkout(2, D(1), { n: 1, m: 1 })] }, { 'x01.madhouse': 1 }],
     ['a game that does not qualify', { qualifies: false, visits: [visit(180)] }, {}],
     ['another mode', { mode: 'atc', visits: [visit(180)] }, {}],
+    [
+      '121 counts checkouts and bulls',
+      { mode: 'p121', checkouts: [checkout(121, BULL, T20)], visits: [visit(0, [BULL])] },
+      { 'x01.tonPlusOut': 1, 'x01.bullFinish': 1, 'x01.bullseye': 1 },
+    ],
+    ['121 has no visit scores: no 180, ton or 26', { mode: 'p121', visits: [visit(180, [T20, T20, T20]), visit(26)] }, {}],
   ]
   it.each(cases)('%s', (_name, over, expected) => {
     expect(Object.fromEntries(achievementDeltas(game(over)))).toEqual(expected)

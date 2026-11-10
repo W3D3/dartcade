@@ -11,8 +11,7 @@ import { levelOf, localDate, stepStreak } from '../shared/progression.js'
 import type { XpGainedMessage, XpLine } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
 import type { X01Detail } from '../session/types.js'
-import { getFinishedGame } from '../db/history.js'
-import { storedDetail } from '../history/detail.js'
+import { finishedDetail } from '../history/detail.js'
 import { progressChallenges } from './challengeSets.js'
 import { challengeGame } from './facts.js'
 
@@ -70,14 +69,6 @@ export function playerGame(game: XpGame, userId: string): Omit<PlayerGame, 'prev
   }
 }
 
-/** The X01 replay of a finished game: each visit's score and bust, who won each leg (the history's detail). */
-export async function x01DetailOf(db: Kysely<Database>, sessionId: string, warn: ProgressionDeps['warn']): Promise<X01Detail | null> {
-  const game = await getFinishedGame(db, sessionId)
-  if (!game) return null
-  const built = await storedDetail(db, game, warn)
-  return built?.detail.mode === 'x01' ? built.detail : null
-}
-
 export class ProgressionService {
   constructor(private readonly deps: ProgressionDeps) {}
 
@@ -93,7 +84,8 @@ export class ProgressionService {
     if (!game) return
     // One account earns once per game, however many seats it holds
     const userIds = [...new Set(game.seats.flatMap(s => (s.userId !== null && !s.bot ? [s.userId] : [])))]
-    const x01 = !opts.backfill && game.gameId === 'x01' ? await x01DetailOf(this.deps.db, game.id, this.deps.warn) : null
+    const detail = !opts.backfill && game.gameId === 'x01' ? await finishedDetail(this.deps.db, game.id, this.deps.warn) : null
+    const x01 = detail?.mode === 'x01' ? detail : null
     for (const userId of userIds) {
       // The backfill pays history for everyone, so turning the flag on later loses nothing
       if (!opts.backfill && !(await this.deps.enabled(userId))) continue

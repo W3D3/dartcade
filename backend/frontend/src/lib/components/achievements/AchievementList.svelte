@@ -3,7 +3,9 @@
   // shared by the Achievements page (with the showcase buttons) and a profile's Achievements tab.
   import AchievementCard from './AchievementCard.svelte'
   import { flag } from '$lib/flags'
-  import { byCategory, CATEGORY_NAME, filterBadges, type Badge, type Filter } from '$lib/achievements/view'
+  import { CATEGORIES } from '$shared/achievements.js'
+  import { gameTitle } from '$shared/gameNames.js'
+  import { byCategory, filterBadges, type Badge, type Filter } from '$lib/achievements/view'
 
   let {
     badges,
@@ -49,13 +51,20 @@
         >
       {/each}
     </div>
-    {#if !$typedCount}<span class="text-small text-text-muted">Only games thrown at a board count; games typed in by hand on the keypad don't.</span>{/if}
+    {#if !$typedCount}<span class="text-small text-text-muted"
+        >Only games thrown at a board count; games typed in by hand on the keypad don't.</span
+      >{/if}
   </div>
 
   {#each groups as g (g.category)}
-    <section aria-label={CATEGORY_NAME[g.category]} class="flex flex-col gap-3">
+    <section aria-label={CATEGORIES[g.category].name} class="flex flex-col gap-3">
       <div class="flex items-baseline justify-between">
-        <h2 class="type-section-title font-bold tracking-section">{CATEGORY_NAME[g.category]}</h2>
+        <h2 class="type-section-title font-bold tracking-section">
+          {CATEGORIES[g.category].name}
+          {#if CATEGORIES[g.category].modes.length > 1}<span class="ml-2 text-label font-normal normal-case tracking-normal text-text-dim"
+              >{CATEGORIES[g.category].modes.map(gameTitle).join(' · ')}</span
+            >{/if}
+        </h2>
         <span class="text-small text-text-muted">{earnedIn(g.category)} of {totalIn(g.category)} earned</span>
       </div>
       <div class="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-3">

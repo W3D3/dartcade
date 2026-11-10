@@ -43,18 +43,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
       push: (userId, msg) => void (userId === 'ann' && pushed.push(msg)),
       warn: () => undefined,
     })
-    await sql`TRUNCATE user_achievements, achievement_games, achievement_backfill, xp_ledger, user_progress, game_sessions CASCADE`.execute(
-      db,
-    )
+    await sql`TRUNCATE user_achievements, achievement_games, xp_ledger, user_progress, game_sessions CASCADE`.execute(db)
   })
 
   /** A finished 1v1 where ann throws `bulls` bullseyes and fills the rest of her visits with singles. */
-  async function duel(bulls: number): Promise<string> {
+  async function duel(bulls: number, mode = 'x01'): Promise<string> {
     const id = `g${++n}`
     const at = new Date('2026-10-21T12:00:00Z')
     await db
       .insertInto('game_sessions')
-      .values({ id, owner_user_id: 'ann', board_db_id: null, game_id: 'x01', config: '{}', status: 'finished', finished_at: at })
+      .values({ id, owner_user_id: 'ann', board_db_id: null, game_id: mode, config: '{}', status: 'finished', finished_at: at })
       .execute()
     await db
       .insertInto('game_players')
@@ -132,15 +130,61 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     expect((await getProgress(db, 'ann')).xp).toBe(0)
   })
 
-  it('backfills finished games once, with no XP, and resumes after a partial run', async () => {
+  it('counts 121 Checkout with X01 as one countdown group, and no other mode', async () => {
+    await service.countGame(await duel(10, 'p121'))
+    expect(await row()).toMatchObject({ count: 10, tier: 1 })
+    await service.countGame(await duel(10, 'atc'))
+    expect((await row())?.count).toBe(10)
+  })
+
+  it('backfills the games nobody has counted, once, with no XP, and picks up a mode left out before', async () => {
     const a = await duel(6)
     await duel(6)
+    await duel(6, 'p121')
     await service.countGame(a, { backfill: true })
     expect(await service.backfill()).toBe(2)
     expect(await service.backfill()).toBe(0)
-    expect(await row()).toMatchObject({ count: 12, tier: 1 })
+    expect(await row()).toMatchObject({ count: 18, tier: 1 })
     expect((await getProgress(db, 'ann')).xp).toBe(0)
     expect(pushed).toEqual([])
+  })
+
+  it('does not list a game of guests and bots again and again', async () => {
+    const id = `g${++n}`
+    await db
+      .insertInto('game_sessions')
+      .values({ id, owner_user_id: 'ann', board_db_id: null, game_id: 'x01', config: '{}', status: 'finished', finished_at: new Date() })
+      .execute()
+    await db
+      .insertInto('game_players')
+      .values([
+        { session_id: id, seat: 0, name: 'Guest', user_id: null, controller_user_id: 'ann', placement: 1, stats: '{}', throw_position: 0 },
+        {
+          session_id: id,
+          seat: 1,
+          name: 'Bot',
+          user_id: null,
+          controller_user_id: 'ann',
+          placement: 2,
+          stats: '{}',
+          throw_position: 1,
+          bot_level: 5,
+        },
+      ])
+      .execute()
+    expect(await service.backfill()).toBe(0)
+  })
+
+  it('finishes a game only one of its accounts was counted in', async () => {
+    const id = await duel(6)
+    // ann was counted (the run failed before bob's turn): bob still is not
+    await db.insertInto('achievement_games').values({ user_id: 'ann', game_id: id }).execute()
+    expect(await service.backfill()).toBe(1)
+    const claimed = await db.selectFrom('achievement_games').select('user_id').where('game_id', '=', id).orderBy('user_id').execute()
+    expect(claimed.map(r => r.user_id)).toEqual(['ann', 'bob'])
+    // ann's count is not doubled by the second pass: her claim already stood
+    expect((await row()) ?? null).toBeNull()
+    expect(await service.backfill()).toBe(0)
   })
 
   describe('API', () => {

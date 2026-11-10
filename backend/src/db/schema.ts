@@ -549,10 +549,6 @@ export interface AchievementGamesTable {
   game_id: string
 }
 
-export interface AchievementBackfillTable {
-  done_at: ColumnType<Date, Date | undefined, never>
-}
-
 export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
@@ -632,7 +628,6 @@ export interface Database {
   user_unlocks: UserUnlocksTable
   user_achievements: UserAchievementsTable
   achievement_games: AchievementGamesTable
-  achievement_backfill: AchievementBackfillTable
   ranked_matches: RankedMatchesTable
   coach_legs: CoachLegsTable
   coach_games: CoachGamesTable

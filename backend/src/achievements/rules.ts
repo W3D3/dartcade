@@ -1,12 +1,14 @@
 // What one finished game adds to each achievement's count. Pure: it reads the same ChallengeGame
-// the challenges do (progression/facts.ts), so typed-in darts count for neither.
+// the challenges do (progression/facts.ts), so typed-in darts count for neither. Which modes count
+// for an achievement is shared/achievements.ts (`modesOf`); a counter only says how.
 import type { ChallengeGame, Seg } from '../progression/challenges.js'
 import { visitTier } from '../shared/darts.js'
+import { achievement, modesOf } from '../shared/achievements.js'
 
 const isBull = (s: Seg) => s.n === 25 && s.m === 2
 const isDouble = (s: Seg) => s.m === 2
 
-const x01Counters: Record<string, (g: ChallengeGame) => number> = {
+const counters: Record<string, (g: ChallengeGame) => number> = {
   'x01.180': g => g.visits.filter(v => !v.bust && visitTier(v.scored ?? 0) === 'max').length,
   'x01.bigFish': g => g.checkouts.filter(c => c.value === 170).length,
   'x01.tonPlus': g => g.visits.filter(v => !v.bust && visitTier(v.scored ?? 0) !== null).length,
@@ -21,8 +23,10 @@ const x01Counters: Record<string, (g: ChallengeGame) => number> = {
 /** The achievement ids this game moved, with how much each count grows. Nothing for a game that doesn't qualify. */
 export function achievementDeltas(g: ChallengeGame): Map<string, number> {
   const deltas = new Map<string, number>()
-  if (!g.qualifies || g.mode !== 'x01') return deltas
-  for (const [id, count] of Object.entries(x01Counters)) {
+  if (!g.qualifies) return deltas
+  for (const [id, count] of Object.entries(counters)) {
+    const def = achievement(id)
+    if (!def || !modesOf(def).includes(g.mode)) continue
     const n = count(g)
     if (n > 0) deltas.set(id, n)
   }
