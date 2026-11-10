@@ -1,3 +1,4 @@
+import { warn } from '../log.js'
 import { betterAuth } from 'better-auth'
 import { db } from '../db/index.js'
 import { resolveMailConfig } from '../mail/config.js'
@@ -11,7 +12,7 @@ const trustedOrigins =
     .filter(Boolean) ?? []
 
 export const mailConfig = resolveMailConfig(process.env)
-export const mailer = createMailer(mailConfig, (message, details) => console.warn(message, details))
+export const mailer = createMailer(mailConfig, warn)
 
 export const auth = betterAuth(
   authOptions({

@@ -1,4 +1,5 @@
 // Which bridge release this backend offers to its boards (the Boards page's Update bridge button).
+import { warn } from '../log.js'
 import semver from 'semver'
 import { z } from 'zod'
 
@@ -65,7 +66,7 @@ export function bridgeReleases(backendVersion: string, fetchReleases: () => Prom
         nextAt = Date.now() + FRESH_MS
       })
       .catch((err: unknown) => {
-        console.warn('Could not fetch the bridge releases from GitHub', err)
+        warn('Could not fetch the bridge releases from GitHub', err)
         nextAt = Date.now() + RETRY_MS
       })
       .finally(() => {

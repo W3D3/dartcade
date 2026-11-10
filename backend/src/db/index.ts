@@ -1,3 +1,4 @@
+import { log } from '../log.js'
 import { Kysely, PostgresDialect } from 'kysely'
 import pg from 'pg'
 import type { Database } from './schema.js'
@@ -26,7 +27,7 @@ export async function takeInstanceLock(url: string): Promise<pg.Client | null> {
   const client = new pg.Client({ connectionString: url })
   // Postgres restarting drops the lock: keep serving, but say so
   client.on('error', err => {
-    console.error('Lost the lock that keeps a second backend off the database', err)
+    log.error({ err }, 'Lost the lock that keeps a second backend off the database')
   })
   await client.connect()
   const { rows } = await client.query<{ ok: boolean }>(

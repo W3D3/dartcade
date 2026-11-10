@@ -1,4 +1,5 @@
 import Fastify, { errorCodes, type FastifyInstance, type FastifyRequest } from 'fastify'
+import { logOptions } from '../log.js'
 import { registerErrorHandler } from './errors.js'
 import { registerResponseValidation } from './responseValidation.js'
 
@@ -9,7 +10,7 @@ export function createFastify(): FastifyInstance {
   // Behind a reverse proxy every request comes from the proxy: TRUST_PROXY makes rate limits count
   // the client's address from X-Forwarded-For instead (true, a hop count, or the proxy's addresses)
   const app = Fastify({
-    logger: process.env.NODE_ENV !== 'test' && { serializers: { req: logRequest } },
+    logger: { ...logOptions, serializers: { ...logOptions.serializers, req: logRequest } },
     trustProxy: trustProxy(process.env.TRUST_PROXY),
   })
   registerErrorHandler(app)
