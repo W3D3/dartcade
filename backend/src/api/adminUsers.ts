@@ -19,7 +19,7 @@ import {
 import { bridgeConnections as liveBridges, type BridgeConnections } from '../bridge-gw/connections.js'
 import { adjustRating } from '../db/ranked.js'
 import { grantXp } from '../db/progression.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -82,7 +82,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: adminOnly, schema: fromSpec('getUserActivity') },
     async req => {
       const activity = await getUserActivity(db, req.params.id)
-      if (!activity) throw new ApiError(404, { error: 'not found' })
+      if (!activity) throw notFound()
       const boardNames = new Map(activity.account.boards.map(b => [b.id, b.name]))
       return {
         bridges: live.connectedFor([...boardNames.keys()]).map(({ boardDbId, conn }) => ({
@@ -100,10 +100,10 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
 
   app.put<Route<'setUserRole'>>('/api/admin/users/:id/role', { preValidation: adminOnly, schema: fromSpec('setUserRole') }, async req => {
     const result = await setRole(db, req.params.id, req.body.role)
-    if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+    if (result === 'not-found') throw notFound()
     if (result === 'last-admin') throw new ApiError(409, { error: 'There must be at least one admin' })
     const user = await getUser(db, req.params.id)
-    if (!user) throw new ApiError(404, { error: 'not found' })
+    if (!user) throw notFound()
     return presentOne(user)
   })
 
@@ -112,9 +112,9 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: adminOnly, schema: fromSpec('setUserVerified') },
     async req => {
       const result = await setVerified(db, req.params.id, req.body.verified)
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       const user = await getUser(db, req.params.id)
-      if (!user) throw new ApiError(404, { error: 'not found' })
+      if (!user) throw notFound()
       req.log.info({ targetId: req.params.id, verified: req.body.verified, adminId: req.userId }, 'admin set user verified')
       return presentOne(user)
     },
@@ -122,7 +122,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
 
   app.post<Route<'grantUserXp'>>('/api/admin/users/:id/xp', { preValidation: adminOnly, schema: fromSpec('grantUserXp') }, async req => {
     const result = await grantXp(db, req.userId, req.params.id, req.body.amount)
-    if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+    if (result === 'not-found') throw notFound()
     req.log.info({ targetId: req.params.id, amount: req.body.amount, adminId: req.userId }, 'admin granted user xp')
     return result
   })
@@ -133,7 +133,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     async req => {
       const { mode, rating, reason } = req.body
       const result = await adjustRating(db, req.userId, req.params.id, { kind: 'set', mode, rating, reason: reason.trim() })
-      if (!result) throw new ApiError(404, { error: 'not found' })
+      if (!result) throw notFound()
       req.log.info({ targetId: req.params.id, mode, rating, adminId: req.userId }, 'admin adjusted ranked rating')
       return result
     },
@@ -145,7 +145,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     async req => {
       const { mode, reason } = req.body
       const result = await adjustRating(db, req.userId, req.params.id, { kind: 'reset', mode, reason: reason.trim() })
-      if (!result) throw new ApiError(404, { error: 'not found' })
+      if (!result) throw notFound()
       req.log.info({ targetId: req.params.id, mode, adminId: req.userId }, 'admin reset ranked rating')
       return result
     },
@@ -156,21 +156,21 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     if (until && until.getTime() <= Date.now()) throw new ApiError(400, { error: 'A ban must end in the future' })
     const note = req.body.note?.trim() || null
     const result = await banUser(db, req.userId, req.params.id, { category: req.body.category, note, until })
-    if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+    if (result === 'not-found') throw notFound()
     if (result === 'self') throw new ApiError(409, { error: "You can't ban yourself" })
     if (result === 'admin') throw new ApiError(409, { error: "Admins can't be banned" })
     req.log.info({ targetId: req.params.id, category: req.body.category, until, adminId: req.userId }, 'admin banned user')
     await opts.onBanned?.(req.params.id)
     const user = await getUser(db, req.params.id)
-    if (!user) throw new ApiError(404, { error: 'not found' })
+    if (!user) throw notFound()
     return presentOne(user)
   })
 
   app.delete<Route<'unbanUser'>>('/api/admin/users/:id/ban', { preValidation: adminOnly, schema: fromSpec('unbanUser') }, async req => {
-    if ((await unbanUser(db, req.userId, req.params.id)) === 'not-found') throw new ApiError(404, { error: 'not found' })
+    if ((await unbanUser(db, req.userId, req.params.id)) === 'not-found') throw notFound()
     req.log.info({ targetId: req.params.id, adminId: req.userId }, 'admin unbanned user')
     const user = await getUser(db, req.params.id)
-    if (!user) throw new ApiError(404, { error: 'not found' })
+    if (!user) throw notFound()
     return presentOne(user)
   })
 

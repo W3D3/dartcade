@@ -14,7 +14,7 @@ import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
 import { dayStreak } from '../progression/view.js'
 import { challengesView, claim, ensureSets, reroll } from '../progression/challengeSets.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -51,7 +51,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   app.get<Route<'getGameXp'>>('/api/progress/games/:id', { preValidation: requireAuth, schema: fromSpec('getGameXp') }, async req => {
     await requireProgression(req.userId)
     const rows = await gameLines(db, req.userId, req.params.id)
-    if (rows.length === 0) throw new ApiError(404, { error: 'not found' })
+    if (rows.length === 0) throw notFound()
     const { xp } = await getProgress(db, req.userId)
     return {
       lines: rows.filter(r => r.amount > 0).map(xpLine),
@@ -86,7 +86,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       await requireProgression(req.userId)
       const id = req.params.id
       const user = await profileUser(db, id)
-      if (!user) throw new ApiError(404, { error: 'not found' })
+      if (!user) throw notFound()
       const self = id === req.userId
       const friend = !self && (await areFriends(db, req.userId, id))
       const [{ xp }, streak, modes, ratings, average, h2h, recent, unlocked, zone] = await Promise.all([
@@ -146,7 +146,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         await lockUser(trx, req.userId)
         return reroll(trx, req.userId, req.params.id, today)
       })
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       if (result === 'not-allowed') throw new ApiError(409, { error: 'this challenge cannot be rerolled' })
       return challengesView(db, req.userId, today, zone)
     },
@@ -160,7 +160,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       const zone = await userTimeZone(db, req.userId)
       const today = localDate(new Date(), zone)
       const result = await claim(db, req.userId, req.params.id, today)
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       if (result === 'not-done') throw new ApiError(409, { error: 'this challenge is not finished yet' })
       const [challenges, { xp }] = await Promise.all([challengesView(db, req.userId, today, zone), getProgress(db, req.userId)])
       return { challenges, xp, level: levelOf(xp).level }

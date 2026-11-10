@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js'
 import { listAchievements, markSeen, setShowcase } from '../db/achievements.js'
 import { profileUser } from '../db/profile.js'
 import { achievement, SHOWCASE_SIZE } from '../shared/achievements.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -77,7 +77,7 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
     { preValidation: requireAuth, schema: fromSpec('getPlayerAchievements') },
     async req => {
       await requireAchievements(req.userId)
-      if (!(await profileUser(db, req.params.id))) throw new ApiError(404, { error: 'not found' })
+      if (!(await profileUser(db, req.params.id))) throw notFound()
       return view(req.params.id, req.params.id === req.userId)
     },
   )

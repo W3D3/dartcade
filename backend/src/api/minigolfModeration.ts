@@ -18,13 +18,12 @@ import {
   reportCourse,
 } from '../db/minigolfModeration.js'
 import { toApiHole, viewerOf } from './minigolfCourses.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
-const notFound = () => new ApiError(404, { error: 'not found' })
 const missing = (r: 'ok' | 'missing') => {
   if (r === 'missing') throw notFound()
 }

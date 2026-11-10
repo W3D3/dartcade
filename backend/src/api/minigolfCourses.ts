@@ -42,7 +42,7 @@ import { COURSE_TEXT_MAX, MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import type { Hole } from '../shared/minigolf/types.js'
 import { normalizeName } from '../shared/names.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import type { components } from '../schema/api.js'
@@ -76,7 +76,6 @@ export async function viewerOf(db: Kysely<Database>, userId: string): Promise<Co
 }
 
 const forbidden = () => new ApiError(403, { error: 'forbidden' })
-const notFound = () => new ApiError(404, { error: 'not found' })
 const limitReached = (limit: MinigolfLimit) => new ApiError(409, { error: 'limit reached', limit, max: MINIGOLF_LIMITS[limit] })
 
 /** A course the viewer may write; 404 for one they can't read at all, 403 for one they can only read. */
