@@ -12,10 +12,16 @@ import {
   insertWledDevice,
   updateWledDevice as updateWledDeviceRow,
   deleteWledDevice as deleteWledDeviceRow,
+  getBoardProfile,
   getLightsEnabled,
-  getSeatColors,
+  deleteLightProfile,
+  insertLightProfile,
+  listLightProfiles,
+  setBoardProfile,
   setLightsEnabled,
+  setProfileSeatColors,
   setSeatColors,
+  BUILT_IN_PROFILE_ID,
   type WledDeviceRow,
 } from '../db/lights.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
@@ -23,7 +29,8 @@ import { bridgeConnections } from '../bridge-gw/connections.js'
 import { lightsStore, type LightsStore } from '../lights/store.js'
 import type { LightsService } from '../lights/service.js'
 import { supportsLights } from '../lights/version.js'
-import { DEFAULT_PROFILE } from '../shared/lights/index.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, profileFileName, type Rule } from '../shared/lights/index.js'
+import { exportProfile, importProfile, MAX_LIGHT_PROFILES, MAX_NAME, MAX_PROFILE_FILE_BYTES, uniqueName } from '../lights/profileFile.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -133,9 +140,10 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
 
-      const [enabled, seatColors, devices, otherBoards] = await Promise.all([
+      const [enabled, profile, own, devices, otherBoards] = await Promise.all([
         getLightsEnabled(db, id),
-        getSeatColors(db, id),
+        getBoardProfile(db, id),
+        listLightProfiles(db, req.userId),
         listWledDevices(db, id),
         getBoardsByOwner(db, req.userId),
       ])
@@ -158,11 +166,46 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           .map(d => ({ ...d, ...(macToBoardName.has(d.mac) && { onBoard: macToBoardName.get(d.mac) }) })),
         lastScanAt: found.scannedAt ? found.scannedAt.toISOString() : null,
         probe: found.probe,
-        profile: { ...DEFAULT_PROFILE, seatColors: [...seatColors], builtIn: true },
+        profile: { ...profile, seatColors: [...profile.seatColors] },
+        profiles: [
+          { id: BUILT_IN_PROFILE_ID, name: DEFAULT_PROFILE.name, builtIn: true },
+          ...own.map(p => ({ id: p.id, name: p.name, builtIn: false })),
+        ],
         scanError: found.scanError ?? null,
       })
     },
   )
+
+  /** Saves a new profile under a name nobody of the player's has, and makes the board use it. Null if a second request took
+   *  the name first (the unique index decides). */
+  async function addProfile(
+    userId: string,
+    boardId: string,
+    name: string,
+    own: { name: string }[],
+    from: { seatColors: readonly string[]; rules: readonly Rule[] },
+  ) {
+    try {
+      const made = await insertLightProfile(db, {
+        ownerUserId: userId,
+        name: uniqueName(name, [DEFAULT_PROFILE.name, ...own.map(p => p.name)]),
+        seatColors: from.seatColors,
+        rules: from.rules,
+      })
+      await setBoardProfile(db, boardId, made.id)
+      return made
+    } catch (err) {
+      if (pgErrorCode(err) === UNIQUE_VIOLATION) return null
+      throw err
+    }
+  }
+
+  /** The built-in profile keeps the colours on the board; a profile of the player's own has its own. Null: the defaults. */
+  async function saveSeatColors(boardId: string, colors: string[] | null) {
+    const profile = await getBoardProfile(db, boardId)
+    if (profile.builtIn) await setSeatColors(db, boardId, colors)
+    else await setProfileSeatColors(db, profile.id, colors ?? DEFAULT_SEAT_COLORS)
+  }
 
   app.put<Route<'setBoardLights'>>(
     '/api/boards/:id/lights',
@@ -177,6 +220,86 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     },
   )
 
+  app.put<Route<'selectBoardLightProfile'>>(
+    '/api/boards/:id/lights/profile',
+    { preValidation: requireAuth, schema: fromSpec('selectBoardLightProfile') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      const { profileId } = req.body
+      if (profileId !== BUILT_IN_PROFILE_ID && !(await listLightProfiles(db, req.userId)).some(p => p.id === profileId)) {
+        return reply.code(404).send({ error: 'not found' })
+      }
+      await setBoardProfile(db, id, profileId === BUILT_IN_PROFILE_ID ? null : profileId)
+      notifyChanged(id, req.log)
+      return reply.code(204).send()
+    },
+  )
+
+  app.get<Route<'exportBoardLightProfile'>>(
+    '/api/boards/:id/lights/profile/export',
+    { preValidation: requireAuth, schema: fromSpec('exportBoardLightProfile') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      const file = exportProfile(await getBoardProfile(db, id))
+      reply.header('Content-Disposition', `attachment; filename="${profileFileName(file.name)}"`)
+      return reply.send(file)
+    },
+  )
+
+  app.post<Route<'duplicateBoardLightProfile'>>(
+    '/api/boards/:id/lights/profiles/duplicate',
+    { preValidation: requireAuth, schema: fromSpec('duplicateBoardLightProfile') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      const [profile, own] = await Promise.all([getBoardProfile(db, id), listLightProfiles(db, req.userId)])
+      if (own.length >= MAX_LIGHT_PROFILES) return reply.code(409).send({ error: 'limit reached' })
+      const copy = await addProfile(req.userId, id, `Copy of ${profile.name}`.slice(0, MAX_NAME), own, profile)
+      if (!copy) return reply.code(409).send({ error: 'name taken, try again' })
+      notifyChanged(id, req.log)
+      return reply.code(201).send({ id: copy.id, name: copy.name, builtIn: false })
+    },
+  )
+
+  app.post<Route<'importBoardLightProfile'>>(
+    '/api/boards/:id/lights/profiles/import',
+    { preValidation: requireAuth, schema: fromSpec('importBoardLightProfile'), bodyLimit: MAX_PROFILE_FILE_BYTES },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      const result = importProfile(req.body)
+      if (!result.ok) return reply.code(400).send({ error: result.error })
+      const own = await listLightProfiles(db, req.userId)
+      if (own.length >= MAX_LIGHT_PROFILES) return reply.code(409).send({ error: 'limit reached' })
+      const made = await addProfile(req.userId, id, result.name, own, result)
+      if (!made) return reply.code(409).send({ error: 'name taken, try again' })
+      notifyChanged(id, req.log)
+      return reply
+        .code(201)
+        .send({ id: made.id, name: made.name, imported: result.imported, ignored: result.ignored, adjusted: result.adjusted })
+    },
+  )
+
+  app.delete<Route<'deleteBoardLightProfile'>>(
+    '/api/boards/:id/lights/profiles/:profileId',
+    { preValidation: requireAuth, schema: fromSpec('deleteBoardLightProfile') },
+    async (req, reply) => {
+      const { id, profileId } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      if (profileId === BUILT_IN_PROFILE_ID) return reply.code(404).send({ error: 'not found' })
+      if (!(await deleteLightProfile(db, req.userId, profileId))) return reply.code(404).send({ error: 'not found' })
+      notifyChanged(id, req.log)
+      return reply.code(204).send()
+    },
+  )
+
   app.put<Route<'setBoardSeatColors'>>(
     '/api/boards/:id/lights/seat-colors',
     { preValidation: requireAuth, schema: fromSpec('setBoardSeatColors') },
@@ -184,8 +307,7 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { id } = req.params
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
-      await setSeatColors(
-        db,
+      await saveSeatColors(
         id,
         req.body.seatColors.map(c => c.toLowerCase()),
       )
@@ -201,7 +323,7 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { id } = req.params
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
-      await setSeatColors(db, id, null)
+      await saveSeatColors(id, null)
       notifyChanged(id, req.log)
       return reply.code(204).send()
     },

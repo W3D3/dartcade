@@ -1,6 +1,6 @@
 import type { ColumnType, Generated, RawBuilder } from 'kysely'
 import type { components } from '../schema/api.js'
-import type { SegmentMode } from '../shared/lights/types.js'
+import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
 import type { RankedRules } from '../session/rankedClock.js'
 import type { RankedEntry } from '../session/types.js'
@@ -64,6 +64,8 @@ export interface BoardsTable {
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
   /** The seat colours of the board's light profile (written as JSON); null: the built-in ones (migration 061). */
   light_seat_colors: ColumnType<string[] | null, string | null | undefined, string | null>
+  /** The light profile the board uses (migration 063); null: the built-in one. */
+  light_profile_id: string | null
   /** Start the board's stopped Board Manager session with a lobby game (migration 042). */
   auto_start: ColumnType<boolean, boolean | undefined, boolean>
   /** Reset the board when a player presses Next player (migration 051). */
@@ -461,6 +463,18 @@ export interface FeatureFlagOverridesTable {
   updated_at: ColumnType<Date, Date | undefined, Date>
 }
 
+/** A light profile a player made by duplicating or importing one (migration 063). */
+export interface LightProfilesTable {
+  id: string
+  owner_user_id: string
+  name: string
+  /** One #rrggbb per seat (written as JSON). */
+  seat_colors: ColumnType<string[], string, string>
+  /** The profile's rules (written as JSON). */
+  rules: ColumnType<Rule[], string, string>
+  created_at: ColumnType<Date, never, never>
+}
+
 /** WLED devices paired to a board (migration 027). */
 export interface WledDevicesTable {
   id: string
@@ -624,6 +638,7 @@ export interface Database {
   minigolf_course_reports: MinigolfCourseReportsTable
   feature_flag_overrides: FeatureFlagOverridesTable
   wled_devices: WledDevicesTable
+  light_profiles: LightProfilesTable
   admin_audit: AdminAuditTable
   xp_ledger: XpLedgerTable
   user_progress: UserProgressTable

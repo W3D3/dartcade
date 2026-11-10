@@ -11796,10 +11796,36 @@
                     "lastScanAt",
                     "probe",
                     "profile",
+                    "profiles",
                     "scanError"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "profiles": {
+                      "type": "array",
+                      "description": "The built-in profile, then the player's own",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "builtIn"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "`default` for the built-in profile"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "builtIn": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
                     "enabled": {
                       "type": "boolean"
                     },
@@ -12319,6 +12345,1264 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/lights/profile": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "put": {
+        "operationId": "selectBoardLightProfile",
+        "summary": "Choose the light profile the board uses",
+        "description": "`default` is the built-in profile; any other id is one of the player's own profiles.",
+        "tags": [
+          "lights"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profileId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "profileId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Saved"
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/lights/profile/export": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "exportBoardLightProfile",
+        "summary": "The board's light profile as a file to download",
+        "description": "Name, seat colours and effects with their settings and on/off state. Never a device address, id or token, and preset looks are names, not WLED state.",
+        "tags": [
+          "lights"
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile file, as an attachment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "format",
+                    "version",
+                    "name",
+                    "seatColors",
+                    "effects"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "dartcade-light-profile"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "seatColors": {
+                      "type": "array",
+                      "description": "One colour per seat from seat 1. A seat past the end wraps around to the first.",
+                      "minItems": 6,
+                      "maxItems": 6,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^#[0-9a-fA-F]{6}$"
+                      }
+                    },
+                    "effects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/lights/profiles/duplicate": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "duplicateBoardLightProfile",
+        "summary": "Copy the board's light profile into a new one of the player's own, and use it",
+        "description": "Named \"Copy of …\" (numbered when that name is taken).",
+        "tags": [
+          "lights"
+        ],
+        "responses": {
+          "201": {
+            "description": "The copy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "builtIn"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "`default` for the built-in profile"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "builtIn": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/lights/profiles/import": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "importBoardLightProfile",
+        "summary": "Make a new light profile from a file, and use it",
+        "description": "Never overwrites. The file is checked field by field; what it doesn't know is ignored and reported, numbers are moved into range, a taken name gets a number. 128 KB at most.",
+        "tags": [
+          "lights"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new profile and what was imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "imported",
+                    "ignored",
+                    "adjusted"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The name it got: the file's, unless that was taken"
+                    },
+                    "imported": {
+                      "type": "integer",
+                      "description": "How many effects came through"
+                    },
+                    "ignored": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "What the file had that was not used: an effect or field this server does not know"
+                    },
+                    "adjusted": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "What was changed to fit: a number moved into range, a colour replaced"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The file is over 128 KB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/lights/profiles/{profileId}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        {
+          "name": "profileId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "deleteBoardLightProfile",
+        "summary": "Delete one of the player's light profiles (boards using it go back to the built-in one)",
+        "tags": [
+          "lights"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
           },
           "401": {
             "description": "Not signed in",
@@ -69282,6 +70566,110 @@
           }
         }
       },
+      "LightProfileSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "builtIn"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "`default` for the built-in profile"
+          },
+          "name": {
+            "type": "string"
+          },
+          "builtIn": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LightProfileImport": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "imported",
+          "ignored",
+          "adjusted"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name it got: the file's, unless that was taken"
+          },
+          "imported": {
+            "type": "integer",
+            "description": "How many effects came through"
+          },
+          "ignored": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the file had that was not used: an effect or field this server does not know"
+          },
+          "adjusted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What was changed to fit: a number moved into range, a colour replaced"
+          }
+        }
+      },
+      "LightProfileFile": {
+        "type": "object",
+        "required": [
+          "format",
+          "version",
+          "name",
+          "seatColors",
+          "effects"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "dartcade-light-profile"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "seatColors": {
+            "type": "array",
+            "description": "One colour per seat from seat 1. A seat past the end wraps around to the first.",
+            "minItems": 6,
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
       "BoardLights": {
         "type": "object",
         "required": [
@@ -69293,10 +70681,36 @@
           "lastScanAt",
           "probe",
           "profile",
+          "profiles",
           "scanError"
         ],
         "additionalProperties": false,
         "properties": {
+          "profiles": {
+            "type": "array",
+            "description": "The built-in profile, then the player's own",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "builtIn"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "`default` for the built-in profile"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "builtIn": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
           "enabled": {
             "type": "boolean"
           },

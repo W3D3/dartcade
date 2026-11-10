@@ -19,7 +19,7 @@ import { every } from './periodic.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
-import { boardOwner, getLightsEnabled, getSeatColors, listWledDevices } from './db/lights.js'
+import { boardOwner, getBoardProfile, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
@@ -90,7 +90,7 @@ const lights: LightsService = new LightsService({
   send: (b, m) => bridgeConnections.send(b, m),
   bridgeVersion: b => bridgeConnections.get(b)?.bridgeVersion,
   devices: b => listWledDevices(db, b),
-  seatColors: b => getSeatColors(db, b),
+  profile: b => getBoardProfile(db, b),
   // The lights.enabled flag is checked for the board's owner (like the API), so turning the flag
   // off stops sends and darkens the strips, not only hides the UI
   enabled: async b => {

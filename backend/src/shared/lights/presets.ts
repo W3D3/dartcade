@@ -294,3 +294,11 @@ export const PRESET_MATCHSHOT: WledPresetState = {
     { stop: 0 },
   ],
 }
+
+/** The presets by the name a profile file gives them: a file never carries WLED state, only one of these names. */
+export const PRESETS: Readonly<Record<string, WledPresetState>> = {
+  '180': PRESET_180,
+  Busted: PRESET_BUSTED,
+  Gameshot: PRESET_GAMESHOT,
+  Matchshot: PRESET_MATCHSHOT,
+}
