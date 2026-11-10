@@ -16,6 +16,7 @@ import type {
 } from '../session/types.js'
 import type { HiloView } from '../session/views.js'
 import { withBullOff } from '../session/withBullOff.js'
+import { safeHigh, safeLow } from '../shared/hilo.js'
 import { effectiveDartScore } from './outRules.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
@@ -60,15 +61,9 @@ export type HiloState = {
   lastResult: HiloResult | null
 }
 
-/** A total that can take any further dart (it's a miss-proof position): above the high bar,
- *  or already matching a 180 high bar with the extremes option. */
-export function safeHigh(total: number, high: number, cfg: HiloConfig): boolean {
-  return total > high || (cfg.matchExtremes && high === 180 && total === 180)
-}
-
 export function judge(total: number, high: number, low: number, cfg: HiloConfig): 'high' | 'low' | 'between' {
-  if (safeHigh(total, high, cfg)) return 'high'
-  if (total < low || (cfg.matchExtremes && low === 0 && total === 0)) return 'low'
+  if (safeHigh(total, high, cfg.matchExtremes)) return 'high'
+  if (safeLow(total, low, cfg.matchExtremes)) return 'low'
   return 'between'
 }
 
@@ -115,7 +110,7 @@ const MATCH_STATS_ROWS = [
 // records lastResult (the bars before it). Doesn't advance the turn — see advance().
 function endVisit(s: HiloState): HiloState {
   const cp = s.currentPlayer
-  const safe = safeHigh(s.visitTotal, s.high, s.cfg)
+  const safe = safeHigh(s.visitTotal, s.high, s.cfg.matchExtremes)
   const outcome: HiloOutcome = s.missed || (s.visitDarts < 3 && !safe) ? 'miss' : judge(s.visitTotal, s.high, s.low, s.cfg)
 
   let high = s.high
@@ -239,7 +234,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
         if (s.phase === 'finished' || s.missed || s.visitDarts >= 3) return { state: s }
         const score = dartScore(e.data.dart, s.cfg)
         if (score === 'miss') {
-          const harmless = safeHigh(s.visitTotal, s.high, s.cfg)
+          const harmless = safeHigh(s.visitTotal, s.high, s.cfg.matchExtremes)
           return { state: { ...s, missed: !harmless, visitDarts: s.visitDarts + 1, lastResult: null } }
         }
         return { state: { ...s, visitTotal: s.visitTotal + score, visitDarts: s.visitDarts + 1, lastResult: null } }
