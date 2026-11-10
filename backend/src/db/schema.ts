@@ -64,6 +64,8 @@ export interface BoardsTable {
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
   /** The seat colours of the board's light profile (written as JSON); null: the built-in ones (migration 061). */
   light_seat_colors: ColumnType<string[] | null, string | null | undefined, string | null>
+  /** Effects of the built-in light profile the board switched on or off, by `ruleKey` (migration 065); null: as shipped. */
+  light_effect_overrides: ColumnType<Record<string, boolean> | null, string | null | undefined, RawBuilder<unknown> | string | null>
   /** The light profile the board uses (migration 063); null: the built-in one. */
   light_profile_id: string | null
   /** Start the board's stopped Board Manager session with a lobby game (migration 042). */
@@ -471,7 +473,7 @@ export interface LightProfilesTable {
   /** One #rrggbb per seat (written as JSON). */
   seat_colors: ColumnType<string[], string, string>
   /** The profile's rules (written as JSON). */
-  rules: ColumnType<Rule[], string, string>
+  rules: ColumnType<Rule[], string, string | RawBuilder<unknown>>
   created_at: ColumnType<Date, never, never>
 }
 

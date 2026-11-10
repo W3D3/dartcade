@@ -35,6 +35,9 @@ export type LightsDeps = {
   warn: (msg: string, details?: unknown) => void
 }
 
+/** What a fire came to: sent to the strips, nothing to show for it, or no way to send. */
+type Fired = 'sent' | 'no-rule' | 'unavailable'
+
 type SessionLike = { boardId: string | null; seats: { boardId: string | null }[] }
 /** The scene last shown on a board, remembered so a reconnect or a takeout can bring it back. */
 type RememberedScene = { t: BoardTrigger; game: GameId | null; layout: SeatLayout }
@@ -258,9 +261,20 @@ export class LightsService {
   }
 
   private async resendOrIdle(boardId: string): Promise<void> {
+    if (!(await this.resendScene(boardId))) await this.idle(boardId)
+  }
+
+  /** Shows the scene remembered for the board again. False if there is none. If its effect has been switched off since, it is
+   *  forgotten and the strip goes dark instead of keeping a scene the player turned off; any other failure (lights off, an old
+   *  bridge, no devices, an error) leaves the strip and the scene as they were. */
+  private async resendScene(boardId: string): Promise<boolean> {
     const remembered = this.scene.get(boardId)
-    if (remembered) await this.fire(boardId, remembered.t, remembered.game, remembered.layout)
-    else await this.idle(boardId)
+    if (!remembered) return false
+    if ((await this.fire(boardId, remembered.t, remembered.game, remembered.layout)) === 'no-rule') {
+      this.scene.delete(boardId)
+      await this.turnOff(boardId)
+    }
+    return true
   }
 
   private async sendDevicesAndScene(boardId: string): Promise<void> {
@@ -274,19 +288,15 @@ export class LightsService {
     } catch (err) {
       this.deps.warn('lights devices send failed', err)
     }
-    const remembered = this.scene.get(boardId)
-    if (remembered) {
-      await this.fire(boardId, remembered.t, remembered.game, remembered.layout)
-      return
-    }
+    if (await this.resendScene(boardId)) return
     const sessionId = this.deps.sessionOnBoard(boardId)
     const session = sessionId ? this.deps.getSession(sessionId) : undefined
     const snapshot = sessionId ? this.deps.getSnapshot(sessionId) : undefined
     const turn = snapshot ? triggersFor(null, snapshot).find(isTurn) : undefined
     if (session && snapshot && turn) {
       const layout = layoutFor(session, snapshot)
-      await this.fire(boardId, { ...turn, local: isLocal(session, turn.seat, boardId) }, snapshot.gameId, layout)
-      return
+      if ((await this.fire(boardId, { ...turn, local: isLocal(session, turn.seat, boardId) }, snapshot.gameId, layout)) !== 'no-rule')
+        return
     }
     await this.idle(boardId)
   }
@@ -296,7 +306,8 @@ export class LightsService {
   private async idle(boardId: string): Promise<void> {
     try {
       const inLobby = await this.deps.inLobby(boardId)
-      if (!inLobby || !(await this.fire(boardId, { kind: 'lobby', local: true }, null, { seatCount: 1 }))) await this.turnOff(boardId)
+      if (!inLobby || (await this.fire(boardId, { kind: 'lobby', local: true }, null, { seatCount: 1 })) !== 'sent')
+        await this.turnOff(boardId)
     } catch (err) {
       this.deps.warn('lights idle failed', err)
     }
@@ -330,24 +341,26 @@ export class LightsService {
     }
   }
 
-  /** Lights off, an unsupported/offline bridge or no devices: nothing to send. Otherwise sends the matching rule to every device. */
-  private async fire(board: string, t: BoardTrigger, game: GameId | null, layout: SeatLayout): Promise<boolean> {
+  /** Lights off, an unsupported/offline bridge, no devices or an error: nothing to send ('unavailable'). Otherwise sends the
+   *  matching rule to every device ('sent'), or 'no-rule' when the board's profile has none for the trigger (its effect is
+   *  switched off, or it has none). */
+  private async fire(board: string, t: BoardTrigger, game: GameId | null, layout: SeatLayout): Promise<Fired> {
     try {
-      if (!(await this.deps.enabled(board))) return false
-      if (!supportsLights(this.deps.bridgeVersion(board))) return false
+      if (!(await this.deps.enabled(board))) return 'unavailable'
+      if (!supportsLights(this.deps.bridgeVersion(board))) return 'unavailable'
       const devices = await this.deps.devices(board)
-      if (devices.length === 0) return false
+      if (devices.length === 0) return 'unavailable'
       const profile = await this.deps.profile(board)
       const rule = match(profile, t, game)
-      if (!rule) return false
+      if (!rule) return 'no-rule'
       for (const device of devices)
         this.send(board, device, rule, t, layout, profile.seatColors, rule.type === 'flash' ? rule.holdMs : undefined)
       if (rule.type === 'scene' && t.kind !== 'takeout.started' && t.kind !== 'calibration.started')
         this.scene.set(board, { t, game, layout })
-      return true
+      return 'sent'
     } catch (err) {
       this.deps.warn('lights fire failed', err)
-      return false
+      return 'unavailable'
     }
   }
 

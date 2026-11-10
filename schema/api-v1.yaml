@@ -891,6 +891,37 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/lights/effects/{index}:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+      - name: index
+        in: path
+        required: true
+        description: The effect's place in the profile the board uses, as `GET .../lights` lists them
+        schema: { type: integer, minimum: 0 }
+    put:
+      operationId: setBoardLightEffect
+      summary: Switch one effect of the board's light profile on or off
+      description: A switched-off effect never lights the strip. For the built-in profile this is kept on the board; for a profile of the player's own, in the profile.
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              additionalProperties: false
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '204': { description: Saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/boards/{id}/lights/seat-colors:
     parameters:
       - $ref: '#/components/parameters/BoardId'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, match } from './index.js'
+import { DEFAULT_PROFILE, match, ruleKey } from './index.js'
 import { PRESET_180 } from './presets.js'
 
 const rule = (t: Parameters<typeof match>[1], game: Parameters<typeof match>[2] = 'x01') => match(DEFAULT_PROFILE, t, game)
@@ -45,5 +45,12 @@ describe('match', () => {
     }
     expect(match(p, { kind: 'turn', seat: 0, local: true }, 'x01')).toBeNull()
     expect(match(p, { kind: 'turn', seat: 0, local: true }, 'atc')).not.toBeNull()
+  })
+  it('gives every built-in effect its own key, which does not depend on its place in the list', () => {
+    const keys = DEFAULT_PROFILE.rules.map(ruleKey)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect([...DEFAULT_PROFILE.rules].reverse().map(ruleKey)).toEqual([...keys].reverse())
+    expect(keys).toContain('visit|mine||>=100')
+    expect(keys).toContain('turn|other||')
   })
 })

@@ -25,6 +25,7 @@ vi.mock('../db/lights.js', () => ({
   deleteLightProfile: vi.fn(),
   setBoardProfile: vi.fn(),
   setProfileSeatColors: vi.fn(),
+  setEffectEnabled: vi.fn(),
   BUILT_IN_PROFILE_ID: 'default',
 }))
 // The route gate reads the flag user through here; a non-admin by default, like sessions.test.ts.
@@ -58,6 +59,7 @@ beforeEach(async () => {
   vi.mocked(dbLights.deleteLightProfile).mockReset().mockResolvedValue(true)
   vi.mocked(dbLights.setBoardProfile).mockReset().mockResolvedValue(undefined)
   vi.mocked(dbLights.setProfileSeatColors).mockReset().mockResolvedValue(undefined)
+  vi.mocked(dbLights.setEffectEnabled).mockReset().mockResolvedValue(true)
   // On for everyone by default, so the rest of this file can ignore the flag; the "flag off" test
   // below overrides it.
   await setupFlags(new Set(['lights.enabled']))
@@ -74,6 +76,7 @@ const LIGHTS_ROUTES: { method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE'; url:
   { method: 'PUT', url: '/api/boards/board-1/lights/seat-colors', payload: { seatColors: SIX } },
   { method: 'DELETE', url: '/api/boards/board-1/lights/seat-colors' },
   { method: 'PUT', url: '/api/boards/board-1/lights/profile', payload: { profileId: 'default' } },
+  { method: 'PUT', url: '/api/boards/board-1/lights/effects/0', payload: { enabled: false } },
   { method: 'GET', url: '/api/boards/board-1/lights/profile/export' },
   { method: 'POST', url: '/api/boards/board-1/lights/profiles/duplicate' },
   { method: 'POST', url: '/api/boards/board-1/lights/profiles/import', payload: {} },
@@ -410,6 +413,38 @@ const ownRow = (id: string, name: string) => ({
   name,
   seat_colors: [...DEFAULT_SEAT_COLORS],
   rules: DEFAULT_PROFILE.rules,
+})
+
+describe('PUT /api/boards/:id/lights/effects/:index', () => {
+  const url = (i: number | string) => `/api/boards/board-1/lights/effects/${i}`
+  beforeEach(() => vi.mocked(queries.getBoardById).mockResolvedValue(board() as any))
+
+  it('switches an effect off or on and tells the strips', async () => {
+    const { app, lights } = makeApp()
+    expect((await app.inject({ method: 'PUT', url: url(3), payload: { enabled: false } })).statusCode).toBe(204)
+    expect(dbLights.setEffectEnabled).toHaveBeenLastCalledWith(expect.anything(), 'board-1', 3, false)
+    expect((await app.inject({ method: 'PUT', url: url(3), payload: { enabled: true } })).statusCode).toBe(204)
+    expect(dbLights.setEffectEnabled).toHaveBeenLastCalledWith(expect.anything(), 'board-1', 3, true)
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+  })
+
+  it('404s an effect the profile does not have, and tells nothing', async () => {
+    vi.mocked(dbLights.setEffectEnabled).mockResolvedValue(false)
+    const { app, lights } = makeApp()
+    expect((await app.inject({ method: 'PUT', url: url(99), payload: { enabled: false } })).statusCode).toBe(404)
+    expect(lights.devicesChanged).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a negative index', -1, { enabled: false }],
+    ['an index that is not a number', 'x', { enabled: false }],
+    ['no enabled', 0, {}],
+    ['an enabled that is not a boolean', 0, { enabled: 'yes' }],
+  ])('400s %s and stores nothing', async (_n, index, payload) => {
+    const { app } = makeApp()
+    expect((await app.inject({ method: 'PUT', url: url(index), payload })).statusCode).toBe(400)
+    expect(dbLights.setEffectEnabled).not.toHaveBeenCalled()
+  })
 })
 
 describe('light profiles', () => {

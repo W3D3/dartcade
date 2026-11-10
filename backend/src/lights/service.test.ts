@@ -135,6 +135,69 @@ describe('LightsService', () => {
     }
   })
 
+  it('switching the scene on the strip off darkens it, and switching it on shows it again', async () => {
+    let off = false
+    const profile = (): Profile => ({
+      ...DEFAULT_PROFILE,
+      rules: DEFAULT_PROFILE.rules.map(r => (r.when.trigger === 'turn' ? { ...r, enabled: !off } : r)),
+    })
+    const { svc, sent, snaps, sessions } = setup({ profile: () => Promise.resolve(profile()), sessionOnBoard: () => 's' })
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    expect(applies(sent, 'b1')).toHaveLength(1) // the turn scene
+    sent.length = 0
+    off = true
+    await svc.devicesChanged('b1') // what saving the switch does
+    expect(applies(sent, 'b1').map(a => a.state)).toEqual([{ on: false }])
+    sent.length = 0
+    off = false
+    snaps.set('s', x01({ currentPlayer: 1 }))
+    await svc.onPush('s') // the next turn shows again
+    expect(applies(sent, 'b1')).toHaveLength(1)
+    expect((applies(sent, 'b1')[0].state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[239, 238, 230]])
+  })
+
+  describe('a failure that is not a switched-off effect leaves the strip and its scene alone', () => {
+    const cases: [string, Partial<LightsDeps>][] = [
+      ['the profile cannot be read', { profile: () => Promise.reject(new Error('db down')) }],
+      ['lights cannot be checked', { enabled: () => Promise.reject(new Error('db down')) }],
+      ['the devices cannot be read', { devices: () => Promise.reject(new Error('db down')) }],
+    ]
+    it.each(cases)('when %s: a takeout, a calibration and a bridge hello send nothing and keep the scene', async (_name, broken) => {
+      let working = true
+      const { svc, sent, snaps, sessions } = setup({
+        sessionOnBoard: () => 's',
+        profile: () => (working ? Promise.resolve(DEFAULT_PROFILE) : (broken.profile?.('b1') ?? Promise.resolve(DEFAULT_PROFILE))),
+        enabled: () => (working ? Promise.resolve(true) : (broken.enabled?.('b1') ?? Promise.resolve(true))),
+        devices: board =>
+          working
+            ? Promise.resolve([dev(`dev-${board}`, board)])
+            : (broken.devices?.(board) ?? Promise.resolve([dev(`dev-${board}`, board)])),
+      })
+      sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+      snaps.set('s', x01({}))
+      await svc.onPush('s') // the turn scene is remembered
+      working = false
+      sent.length = 0
+      await svc.onBoardEvent('b1', 'takeout.finished')
+      await svc.onBridgeHello('b1')
+      expect(applies(sent, 'b1')).toEqual([]) // no off sent for a hiccup
+      working = true
+      await svc.onBoardEvent('b1', 'takeout.finished')
+      expect(applies(sent, 'b1')).toHaveLength(1) // the scene was kept, and shows again
+      expect((applies(sent, 'b1')[0].state as { bri?: number }).bri).toBe(255)
+    })
+
+    it('an old bridge, and lights switched off, send nothing either', async () => {
+      for (const over of [{ bridgeVersion: () => '0.3.1' }, { enabled: () => Promise.resolve(false) }]) {
+        const { svc, sent } = setup({ sessionOnBoard: () => 's', ...over })
+        await svc.onBoardEvent('b1', 'takeout.finished')
+        expect(applies(sent, 'b1')).toEqual([])
+      }
+    })
+  })
+
   it('the Test button plays a rule of the board’s own profile', async () => {
     const { svc, sent } = setup({
       profile: () =>
