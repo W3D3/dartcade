@@ -7,6 +7,7 @@ import type { SessionEngine } from '../session/engine.js'
 import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { BridgeCloseCode } from '../schema/bridge-close.js'
 import { z } from 'zod'
 import {
   BaseEnvelopeSchema,
@@ -227,7 +228,7 @@ export function handleBridgeConnection(
       // for good (the close handler already ran, before the connection had a board)
       if (socket.readyState !== socket.OPEN) return false
       if (!board) {
-        socket.close(4401, 'unauthorized')
+        socket.close(BridgeCloseCode.Unauthorized, 'unauthorized')
         return false
       }
       conn.hardwareBoardId = board.hardware_id ?? null
@@ -238,7 +239,7 @@ export function handleBridgeConnection(
       return true
     })
     .catch(() => {
-      socket.close(4500, 'internal error')
+      socket.close(BridgeCloseCode.InternalError, 'internal error')
       return false
     })
 
@@ -267,7 +268,7 @@ export function handleBridgeConnection(
         if (!conn.helloReceived) {
           const first = MessageKindSchema.safeParse(parsed)
           if (!first.success || first.data.kind !== 'bridge.hello') {
-            socket.close(4400, 'expected bridge.hello')
+            socket.close(BridgeCloseCode.BadHello, 'expected bridge.hello')
             return
           }
           const hello = parseHello(first.data.data)
@@ -389,7 +390,7 @@ export function handleBridgeConnection(
         failed = true
         log.error({ boardDbId: conn.boardDbId, err }, 'Bridge event processing error, closing so the bridge replays it')
         // The bridge reconnects and resends everything unacked
-        socket.close(1011, 'internal error')
+        socket.close(BridgeCloseCode.ServerError, 'internal error')
       })
   })
 

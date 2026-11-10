@@ -6,7 +6,7 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import openapiTS, { astToString } from 'openapi-typescript'
-import { compileFromFile } from 'json-schema-to-typescript'
+import { compile, compileFromFile } from 'json-schema-to-typescript'
 import $RefParser from '@apidevtools/json-schema-ref-parser'
 import { jsonSchemaToZod } from 'json-schema-to-zod'
 
@@ -56,6 +56,17 @@ async function genWsFile(name) {
   copyFileSync(join(BACKEND_SCHEMA, `${name}.ts`), join(FRONTEND_API, `${name}.ts`))
   const deref = await $RefParser.dereference(src)
   writeFileSync(join(BACKEND_SCHEMA, `${name}-v1.deref.json`), JSON.stringify(deref, null, 2) + '\n')
+}
+
+// adbridge-v1.json's types come from `npm run gen:types`, which only emits what the envelope reaches, so the close code enum is compiled on its own
+async function genBridgeCloseCode() {
+  const { BridgeCloseCode } = JSON.parse(readFileSync(r('schema/adbridge-v1.json'), 'utf8')).$defs
+  const ts = await compile(BridgeCloseCode, 'BridgeCloseCode', {
+    bannerComment: '',
+    enableConstEnums: false, // must exist at runtime
+    style: { singleQuote: true, semi: false },
+  })
+  writeTs(join(BACKEND_SCHEMA, 'bridge-close.ts'), 'schema/adbridge-v1.json', ts)
 }
 
 async function genWs() {
@@ -126,5 +137,6 @@ function genGo() {
 
 await genHttp()
 await genWs()
+await genBridgeCloseCode()
 await genZod()
 genGo()

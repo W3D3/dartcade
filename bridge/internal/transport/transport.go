@@ -29,7 +29,7 @@ const (
 	schemaVersion = "adbridge/1.0"
 	// How long one write to the backend may take before the connection is dropped
 	writeTimeout = 10 * time.Second
-	// The close status the backend sends when it doesn't know the bridge's token
+	// BridgeCloseCode.Unauthorized in schema/adbridge-v1.json: the backend does not know the bridge's token (pinned by a test)
 	statusUnauthorized websocket.StatusCode = 4401
 )
 

@@ -524,6 +524,36 @@ func (j *BoardStatusData) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
+type BridgeCloseCode int
+
+var enumValues_BridgeCloseCode = []interface{}{
+	1001,
+	1011,
+	4400,
+	4401,
+	4500,
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BridgeCloseCode) UnmarshalJSON(value []byte) error {
+	var v int
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_BridgeCloseCode {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_BridgeCloseCode, v)
+	}
+	*j = BridgeCloseCode(v)
+	return nil
+}
+
 // Sent once on connect, before any seq-numbered events.
 type BridgeHelloData struct {
 	// Arch corresponds to the JSON schema field "arch".

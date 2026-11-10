@@ -5,6 +5,13 @@
   "description": "Every message the autodarts-bridge sends to the backend over WSS. The `kind` field is the discriminator; `data` shape depends on it. Raw BM frames are forwarded separately as bm.frame. See diff-rules.md for how the bridge derives dart/takeout/visit events from consecutive BM state snapshots.",
 
   "$defs": {
+    "BridgeCloseCode": {
+      "title": "BridgeCloseCode",
+      "description": "WebSocket close codes the backend sends on the bridge connection. The bridge stops retrying on Unauthorized (the backend does not know its token) and reconnects on the rest.",
+      "type": "integer",
+      "enum": [1001, 1011, 4400, 4401, 4500],
+      "tsEnumNames": ["GoingAway", "ServerError", "BadHello", "Unauthorized", "InternalError"]
+    },
     "Segment": {
       "title": "Board Manager segment",
       "description": "Exactly as Board Manager sends it. For Outside throws, multiplier=0 and score will be 0. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50 (unverified on hardware). Near-miss: name=M<n>, number=n, bed=Outside. Bounce-out: name=Miss, number=0, bed=Outside.",
