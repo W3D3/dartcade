@@ -18,6 +18,7 @@ import {
   insertLightProfile,
   listLightProfiles,
   setBoardProfile,
+  setEffectEnabled,
   setLightsEnabled,
   setProfileSeatColors,
   setSeatColors,
@@ -295,6 +296,19 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!board) return reply
       if (profileId === BUILT_IN_PROFILE_ID) return reply.code(404).send({ error: 'not found' })
       if (!(await deleteLightProfile(db, req.userId, profileId))) return reply.code(404).send({ error: 'not found' })
+      notifyChanged(id, req.log)
+      return reply.code(204).send()
+    },
+  )
+
+  app.put<Route<'setBoardLightEffect'>>(
+    '/api/boards/:id/lights/effects/:index',
+    { preValidation: requireAuth, schema: fromSpec('setBoardLightEffect') },
+    async (req, reply) => {
+      const { id, index } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      if (!(await setEffectEnabled(db, id, index, req.body.enabled))) return reply.code(404).send({ error: 'not found' })
       notifyChanged(id, req.log)
       return reply.code(204).send()
     },

@@ -1,8 +1,8 @@
 // WLED devices paired to a board, and the board's lights master switch (#135).
-import { type Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import type { Database } from './schema.js'
-import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, ruleKey } from '../shared/lights/profile.js'
 import type { Profile, Rule, SegmentMode } from '../shared/lights/types.js'
 
 export type WledDeviceRow = {
@@ -99,6 +99,7 @@ export async function getBoardProfile(db: Kysely<Database>, boardId: string): Pr
     .leftJoin('light_profiles', 'light_profiles.id', 'boards.light_profile_id')
     .select([
       'boards.light_seat_colors as boardColors',
+      'boards.light_effect_overrides as overrides',
       'light_profiles.id as profileId',
       'light_profiles.name as name',
       'light_profiles.seat_colors as seatColors',
@@ -109,7 +110,38 @@ export async function getBoardProfile(db: Kysely<Database>, boardId: string): Pr
   if (row?.profileId && row.name && row.seatColors && row.rules) {
     return { id: row.profileId, name: row.name, seatColors: row.seatColors, rules: row.rules, builtIn: false }
   }
-  return { ...DEFAULT_PROFILE, seatColors: row?.boardColors ?? DEFAULT_SEAT_COLORS, builtIn: true }
+  const overrides = row?.overrides ?? {}
+  return {
+    ...DEFAULT_PROFILE,
+    seatColors: row?.boardColors ?? DEFAULT_SEAT_COLORS,
+    rules: DEFAULT_PROFILE.rules.map(r => ({ ...r, enabled: overrides[ruleKey(r)] ?? r.enabled })),
+    builtIn: true,
+  }
+}
+
+/** Switches the effect at `index` of the profile the board runs on or off: for the built-in profile as an override on the
+ *  board, for one of the player's own in its rules. False if the profile has no such effect. */
+export async function setEffectEnabled(db: Kysely<Database>, boardId: string, index: number, enabled: boolean): Promise<boolean> {
+  const profile = await getBoardProfile(db, boardId)
+  if (!Number.isInteger(index) || index < 0 || index >= profile.rules.length) return false
+  if (profile.builtIn) {
+    const shipped = DEFAULT_PROFILE.rules[index]
+    const key = ruleKey(shipped)
+    // Only a difference from the shipped default is kept, so a later change of a default still reaches a board that
+    // switched the effect and switched it back; no overrides left is null
+    const overrides =
+      enabled === shipped.enabled
+        ? sql`nullif(coalesce(light_effect_overrides, '{}'::jsonb) - ${key}::text, '{}'::jsonb)`
+        : sql`coalesce(light_effect_overrides, '{}'::jsonb) || ${JSON.stringify({ [key]: enabled })}::jsonb`
+    await db.updateTable('boards').set({ light_effect_overrides: overrides }).where('id', '=', boardId).execute()
+  } else {
+    await db
+      .updateTable('light_profiles')
+      .set({ rules: sql`jsonb_set(rules, ARRAY[${String(index)}, 'enabled'], to_jsonb(${enabled}::boolean))` })
+      .where('id', '=', profile.id)
+      .execute()
+  }
+  return true
 }
 
 export type LightProfileRow = { id: string; owner_user_id: string; name: string; seat_colors: string[]; rules: Rule[] }

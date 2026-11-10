@@ -743,6 +743,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/lights/effects/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                /** @description The effect's place in the profile the board uses, as `GET .../lights` lists them */
+                index: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch one effect of the board's light profile on or off
+         * @description A switched-off effect never lights the strip. For the built-in profile this is kept on the board; for a profile of the player's own, in the profile.
+         */
+        put: operations["setBoardLightEffect"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/lights/seat-colors": {
         parameters: {
             query?: never;
@@ -6779,6 +6803,39 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBoardLightEffect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                /** @description The effect's place in the profile the board uses, as `GET .../lights` lists them */
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

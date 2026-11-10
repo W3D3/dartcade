@@ -79,6 +79,10 @@ export const DEFAULT_PROFILE: Profile = {
   ],
 }
 
+/** An effect's identity in the built-in profile, stable when the list is reordered: its trigger, seats, game and total filter. */
+export const ruleKey = (r: Rule): string =>
+  [r.when.trigger, r.when.seats, r.when.game ?? '', r.when.total ? `${r.when.total.op}${r.when.total.n}` : ''].join('|')
+
 const seatsFit = (seats: Rule['when']['seats'], local: boolean) => seats === 'any' || (seats === 'mine') === local
 
 const totalFits = (total: Rule['when']['total'], t: BoardTrigger) =>

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS } from '../shared/lights/profile.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, ruleKey } from '../shared/lights/profile.js'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { insertBoard } from './queries.js'
@@ -12,6 +12,7 @@ import {
   insertLightProfile,
   listLightProfiles,
   setBoardProfile,
+  setEffectEnabled,
   setProfileSeatColors,
   getLightsEnabled,
   insertWledDevice,
@@ -96,6 +97,71 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('wled lights', () => {
     await setSeatColors(db, 'b1', null)
     await setBoardProfile(db, 'b1', null)
     expect((await getBoardProfile(db, 'b1')).builtIn).toBe(true)
+  })
+
+  describe('switching effects on and off', () => {
+    const turnOther = DEFAULT_PROFILE.rules.findIndex(r => ruleKey(r) === 'turn|other||')
+    const lobby = DEFAULT_PROFILE.rules.findIndex(r => r.when.trigger === 'lobby')
+    const enabledOf = async () => (await getBoardProfile(db, 'b1')).rules.map(r => r.enabled)
+
+    it('on the built-in profile it is kept on the board, both ways, and only for that effect', async () => {
+      const shipped = DEFAULT_PROFILE.rules.map(r => r.enabled)
+      expect(await enabledOf()).toEqual(shipped)
+      expect(await setEffectEnabled(db, 'b1', turnOther, false)).toBe(true)
+      expect(await setEffectEnabled(db, 'b1', lobby, true)).toBe(true) // Lobby ships off
+      expect(await enabledOf()).toEqual(shipped.map((on, i) => (i === turnOther ? false : i === lobby ? true : on)))
+      expect(await setEffectEnabled(db, 'b1', turnOther, true)).toBe(true)
+      expect((await enabledOf())[turnOther]).toBe(true)
+      // The shipped profile itself is untouched
+      expect(DEFAULT_PROFILE.rules.map(r => r.enabled)).toEqual(shipped)
+      await db.updateTable('boards').set({ light_effect_overrides: null }).where('id', '=', 'b1').execute()
+    })
+
+    it('keeps only what differs from the shipped default: off then on leaves nothing behind', async () => {
+      const overrides = async () =>
+        (await db.selectFrom('boards').select('light_effect_overrides').where('id', '=', 'b1').executeTakeFirstOrThrow())
+          .light_effect_overrides
+      await setEffectEnabled(db, 'b1', turnOther, false)
+      await setEffectEnabled(db, 'b1', lobby, true)
+      expect(await overrides()).toEqual({
+        [ruleKey(DEFAULT_PROFILE.rules[turnOther])]: false,
+        [ruleKey(DEFAULT_PROFILE.rules[lobby])]: true,
+      })
+      await setEffectEnabled(db, 'b1', turnOther, true) // back to the default: its key goes, the other stays
+      expect(await overrides()).toEqual({ [ruleKey(DEFAULT_PROFILE.rules[lobby])]: true })
+      await setEffectEnabled(db, 'b1', lobby, false) // the last one: no overrides at all
+      expect(await overrides()).toBeNull()
+      await setEffectEnabled(db, 'b1', lobby, false) // already the default, and nothing to remove
+      expect(await overrides()).toBeNull()
+    })
+
+    it('on a profile of the player’s own it is kept in the profile, not on the board', async () => {
+      const own = await insertLightProfile(db, {
+        ownerUserId: 'u1',
+        name: 'Toggles',
+        seatColors: DEFAULT_SEAT_COLORS,
+        rules: DEFAULT_PROFILE.rules,
+      })
+      await setBoardProfile(db, 'b1', own.id)
+      expect(await setEffectEnabled(db, 'b1', 2, false)).toBe(true)
+      expect((await getBoardProfile(db, 'b1')).rules.map(r => r.enabled)).toEqual(
+        DEFAULT_PROFILE.rules.map((r, i) => (i === 2 ? false : r.enabled)),
+      )
+      expect(
+        (await db.selectFrom('boards').select('light_effect_overrides').where('id', '=', 'b1').executeTakeFirstOrThrow())
+          .light_effect_overrides,
+      ).toBeNull()
+      // back on the built-in profile the player's own switch is not there
+      await setBoardProfile(db, 'b1', null)
+      expect(await enabledOf()).toEqual(DEFAULT_PROFILE.rules.map(r => r.enabled))
+      await deleteLightProfile(db, 'u1', own.id)
+    })
+
+    it('says no to an effect the profile does not have', async () => {
+      for (const index of [-1, DEFAULT_PROFILE.rules.length, 1.5, Number.NaN])
+        expect(await setEffectEnabled(db, 'b1', index, false)).toBe(false)
+      expect(await setEffectEnabled(db, 'nope', 0, false)).toBe(true) // a board that is gone reads as the built-in profile; the update matches no row
+    })
   })
 
   it('a player’s profile names are unique to them, and others cannot delete them', async () => {
