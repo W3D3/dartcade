@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { gameLines, getProgress, getStreak, lockUser, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
 import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
 import { getRatings, x01AverageSince } from '../db/ranked.js'
@@ -16,6 +15,7 @@ import { addDays, levelOf, localDate } from '../shared/progression.js'
 import { dayStreak } from '../progression/view.js'
 import { challengesView, claim, ensureSets, reroll } from '../progression/challengeSets.js'
 import { ApiError } from './errors.js'
+import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -25,9 +25,7 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  const requireProgression = async (userId: string) => {
-    if (!(await flagEnabled('progression.enabled', await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
-  }
+  const requireProgression = (userId: string) => requireFlag(db, 'progression.enabled', userId)
 
   app.get<Route<'getMyProgress'>>('/api/progress/me', { preValidation: requireAuth, schema: fromSpec('getMyProgress') }, async req => {
     await requireProgression(req.userId)

@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import type { FlagKey } from '../shared/flags.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { ensureCoachGame, ensureCoachLegs, pendingCoachGames } from '../coach/store.js'
 import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
@@ -10,6 +9,7 @@ import { decodeCoachCursor, encodeCoachCursor } from '../coach/cursor.js'
 import { x01AverageSince } from '../db/ranked.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { ApiError } from './errors.js'
+import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -20,10 +20,7 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  const requireFlag = async (key: FlagKey, userId: string) => {
-    if (!(await flagEnabled(key, await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
-  }
-  const requireCoach = (userId: string) => requireFlag('coach.enabled', userId)
+  const requireCoach = (userId: string) => requireFlag(db, 'coach.enabled', userId)
 
   // The live coach's average: the one a stored review of a game finished now would grade with
   // (store.ts); also what the Coach page suggests a tier from

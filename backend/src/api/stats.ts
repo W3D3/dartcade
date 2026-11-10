@@ -3,11 +3,10 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { countX01StatLegs, listX01StatGames, x01StatOptions } from '../db/history.js'
-import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { storedDetails } from '../history/detail.js'
 import { isOutMode, x01Legs } from '../stats/x01Legs.js'
 import { gamesFor, x01Report } from '../stats/x01Stats.js'
-import { ApiError } from './errors.js'
+import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -19,7 +18,7 @@ export function statsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   const { db } = opts
 
   app.get<Route<'getX01Stats'>>('/api/stats/x01', { preValidation: requireAuth, schema: fromSpec('getX01Stats') }, async (req, reply) => {
-    if (!(await flagEnabled('stats.enabled', await loadFlagUser(db, req.userId)))) throw new ApiError(404, { error: 'not found' })
+    await requireFlag(db, 'stats.enabled', req.userId)
     const { range = 'legs50', kind = 'all' } = req.query
     const now = new Date()
     const played = await x01StatOptions(db, req.userId)

@@ -2,11 +2,11 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { listAchievements, markSeen, setShowcase } from '../db/achievements.js'
 import { profileUser } from '../db/profile.js'
 import { achievement, SHOWCASE_SIZE } from '../shared/achievements.js'
 import { ApiError } from './errors.js'
+import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -16,9 +16,7 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  const requireAchievements = async (userId: string) => {
-    if (!(await flagEnabled('achievements.enabled', await loadFlagUser(db, userId)))) throw new ApiError(404, { error: 'not found' })
-  }
+  const requireAchievements = (userId: string) => requireFlag(db, 'achievements.enabled', userId)
 
   const view = async (userId: string, self: boolean) => {
     const rows = await listAchievements(db, userId)
