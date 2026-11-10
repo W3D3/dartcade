@@ -51,7 +51,7 @@
           <SectionLabel>Invalid or used token</SectionLabel>
           <div class="flex flex-col gap-3 p-4 rounded-md bg-surface-inset border border-danger-line">
             <p class="text-body/normal text-danger-text">This link has expired or was already used.</p>
-            <a href="#/forgot" class="text-[14px] font-semibold no-underline">Request a new link</a>
+            <a href="#/forgot" class="text-label font-semibold no-underline">Request a new link</a>
           </div>
         </div>
       {:else}

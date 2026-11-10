@@ -47,7 +47,7 @@
         {/each}
       </nav>
       {#if updated}
-        <span class="text-[12px] md:text-[13px] text-text-dim">Last updated {updated}</span>
+        <span class="text-caption md:text-[13px] text-text-dim">Last updated {updated}</span>
       {/if}
     </div>
 
@@ -57,7 +57,7 @@
         {@html html}
       </div>
     {:else}
-      <p class="m-0 text-[15px] text-text-muted">Loading…</p>
+      <p class="m-0 text-body text-text-muted">Loading…</p>
     {/if}
   </div>
 </div>

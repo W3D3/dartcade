@@ -110,7 +110,7 @@
     >
       <div class="flex flex-col gap-2">
         <h1 class="font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-title leading-none">Sign in</h1>
-        <p class="hidden md:block text-[16px] text-text-muted">Welcome back. Your boards are waiting.</p>
+        <p class="hidden md:block text-body-lg text-text-muted">Welcome back. Your boards are waiting.</p>
       </div>
 
       {#if justReset}
@@ -162,7 +162,7 @@
           {/if}
         </div>
 
-        <label class="hidden md:flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
+        <label class="hidden md:flex items-center gap-[10px] text-body text-ink-2 min-h-[44px] cursor-pointer">
           <Checkbox bind:checked={keepSignedIn} />
           Keep me signed in on this device
         </label>
@@ -196,7 +196,7 @@
         {/if}
       </div>
 
-      <p class="text-[15px] text-text-muted text-center">
+      <p class="text-body text-text-muted text-center">
         New to Dartcade?
         <a href="#/register" class="font-semibold no-underline">Create an account</a>
       </p>

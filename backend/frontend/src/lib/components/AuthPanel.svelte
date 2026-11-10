@@ -62,7 +62,7 @@
 
     <!-- Headline -->
     <div class="relative flex flex-col gap-5 xl:gap-6 xl:w-[470px]">
-      <div class="font-mono text-[13px] tracking-cta text-accent">T20 · T20 · T20 — 180</div>
+      <div class="font-mono text-kicker text-accent">T20 · T20 · T20 — 180</div>
       <h2 class="font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-hero uppercase">Step up to the oche.</h2>
       <p class="text-[17px] xl:text-[18px] leading-[1.55] text-text-muted max-w-[380px] xl:max-w-[430px]">
         Custom minigames, X01 and tournaments — scored live from your Autodarts board.
