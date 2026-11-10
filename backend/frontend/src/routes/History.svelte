@@ -286,7 +286,7 @@
   >
     <header class="flex flex-wrap items-end justify-between gap-6">
       <div class="hidden md:flex flex-col gap-1.5">
-        <h1 class="font-display text-page-title uppercase">History</h1>
+        <h1 class="type-page-title">History</h1>
         <p class="text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
         {@render coachLink()}
       </div>
