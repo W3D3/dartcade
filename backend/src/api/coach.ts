@@ -8,7 +8,7 @@ import { coachLegsSummary, coachLegsPage, getCoachLeg } from '../coach/legs.js'
 import { decodeCoachCursor, encodeCoachCursor } from '../coach/cursor.js'
 import { x01AverageSince } from '../db/ranked.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
-import { ApiError } from './errors.js'
+import { notFound } from './errors.js'
 import { requireFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -29,8 +29,7 @@ export function coachApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     { preValidation: requireAuth, schema: fromSpec('getCoachAverage') },
     async (req, reply) => {
       const flagUser = await loadFlagUser(db, req.userId)
-      if (!(await flagEnabled('coach.enabled', flagUser)) && !(await flagEnabled('coach.live.enabled', flagUser)))
-        throw new ApiError(404, { error: 'not found' })
+      if (!(await flagEnabled('coach.enabled', flagUser)) && !(await flagEnabled('coach.live.enabled', flagUser))) throw notFound()
       return reply.send({ average: await x01AverageSince(db, req.userId, PROFILE_AVERAGE_DAYS) })
     },
   )

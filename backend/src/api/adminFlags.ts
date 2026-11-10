@@ -9,7 +9,7 @@ import { getUsersByIds } from '../db/queries.js'
 import { deleteOverride, loadOverrides, upsertOverride, type FlagOverride } from '../db/flagOverrides.js'
 import { FLAG_META as TYPED_FLAG_META, type FlagMeta } from '../shared/flags.js'
 import { currentOverrides, envFlagValues, envFlagsOn, evaluateAll, loadFlagUser, setOverrides } from '../flags/index.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -101,7 +101,7 @@ export function adminFlagsApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: adminOnly, schema: fromSpec('setFlagOverride') },
     async req => {
       const { key } = req.params
-      if (!(key in FLAG_META)) throw new ApiError(404, { error: 'not found' })
+      if (!(key in FLAG_META)) throw notFound()
       const meta = FLAG_META[key]
 
       const body = req.body

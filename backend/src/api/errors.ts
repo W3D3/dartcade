@@ -17,6 +17,9 @@ export class ApiError extends Error {
   }
 }
 
+/** The 404 every missing or hidden resource answers with. */
+export const notFound = () => new ApiError(404, { error: 'not found' })
+
 /** All errors leave as ErrorResponse: { error, details? } (schema/common-v1.json). */
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((err, req, reply) => {

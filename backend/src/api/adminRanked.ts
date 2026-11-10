@@ -7,7 +7,7 @@ import { requireAuth } from '../auth/middleware.js'
 import { recordVoid } from '../db/adminGames.js'
 import type { MatchmakingService } from '../matchmaking/service.js'
 import type { SessionEngine } from '../session/engine.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -27,7 +27,7 @@ export function adminRankedApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     { preValidation: moderatorOnly, schema: fromSpec('voidAdminGame') },
     async (req, reply) => {
       const session = engine.getSession(req.params.id)
-      if (!session) throw new ApiError(404, { error: 'not found' })
+      if (!session) throw notFound()
       if (!session.ranked || session.status !== 'active') throw new ApiError(409, { error: 'Only a running ranked game can be voided' })
       // False when the game finished or ended first, behind the input that did it: nothing to void
       if (!(await engine.voidSession(session.id))) throw new ApiError(409, { error: 'Only a running ranked game can be voided' })

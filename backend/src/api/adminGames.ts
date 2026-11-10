@@ -16,7 +16,7 @@ import {
 import { getFinishedGame } from '../db/history.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
 import { storedDetail } from '../history/detail.js'
-import { ApiError } from './errors.js'
+import { ApiError, notFound } from './errors.js'
 import { toSummary } from './games.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -78,11 +78,11 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
 
   app.get<Route<'getAdminGame'>>('/api/admin/games/:id', { preValidation: moderatorOnly, schema: fromSpec('getAdminGame') }, async req => {
     const game = await getFinishedGame(db, req.params.id)
-    if (!game) throw new ApiError(404, { error: 'not found' })
+    if (!game) throw notFound()
     const built = await storedDetail(db, game, (message, details) => {
       req.log.warn({ details }, message)
     })
-    if (!built) throw new ApiError(404, { error: 'not found' })
+    if (!built) throw notFound()
     return {
       game: toSummary(game, true),
       detail: built.detail,
@@ -97,7 +97,7 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     async req => {
       const reason = req.body.reason?.trim() || null
       const result = await invalidateGame(db, req.params.id, req.userId, reason)
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       if (result === 'not-finished') throw new ApiError(409, { error: 'Only a finished game can be invalidated' })
       if (result === 'already-invalidated') throw new ApiError(409, { error: 'This game is already invalidated' })
       req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator invalidated game')
@@ -110,7 +110,7 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: moderatorOnly, schema: fromSpec('restoreAdminGame') },
     async req => {
       const result = await restoreGame(db, req.params.id, req.userId)
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       if (result === 'not-invalidated') throw new ApiError(409, { error: 'This game is not invalidated' })
       req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator restored game')
       return result
@@ -122,7 +122,7 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: adminOnly, schema: fromSpec('deleteAdminGame') },
     async req => {
       const result = await deleteGame(db, req.params.id, req.userId)
-      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-found') throw notFound()
       if (result === 'active') throw new ApiError(409, { error: 'A game in progress cannot be deleted' })
       req.log.info({ gameId: req.params.id, adminId: req.userId, recalculated: result.recalculated }, 'admin deleted game')
       return result
