@@ -179,6 +179,19 @@ export async function getInvalidation(db: Kysely<Database>, id: string): Promise
   return row ? toInvalidation(row) : null
 }
 
+/** A game's seats and the ranked modes it was rated in, for the audit row and the ratings replay. */
+async function seatsAndRatedModes(trx: Kysely<Database>, id: string) {
+  const players = await trx
+    .selectFrom('game_players')
+    .select(['seat', 'name', 'user_id'])
+    .where('session_id', '=', id)
+    .orderBy('seat')
+    .execute()
+  const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
+  const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+  return { players, modes }
+}
+
 /**
  * Invalidates a finished game: it stays, but no longer counts in history, stats or best values, and
  * the ranked ratings of every mode it was rated in are replayed without it (recalculateRatings).
@@ -200,14 +213,7 @@ export async function invalidateGame(
     if (!game) return 'not-found'
     if (game.status !== 'finished') return 'not-finished'
     if (game.invalidated_at !== null) return 'already-invalidated'
-    const players = await trx
-      .selectFrom('game_players')
-      .select(['seat', 'name', 'user_id'])
-      .where('session_id', '=', id)
-      .orderBy('seat')
-      .execute()
-    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
-    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    const { players, modes } = await seatsAndRatedModes(trx, id)
     await trx
       .updateTable('game_sessions')
       .set({ invalidated_at: new Date(), invalidated_by: moderatorUserId, invalidation_reason: reason })
@@ -250,14 +256,7 @@ export async function restoreGame(
       .executeTakeFirst()
     if (!game) return 'not-found'
     if (game.invalidated_at === null) return 'not-invalidated'
-    const players = await trx
-      .selectFrom('game_players')
-      .select(['seat', 'name', 'user_id'])
-      .where('session_id', '=', id)
-      .orderBy('seat')
-      .execute()
-    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
-    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    const { players, modes } = await seatsAndRatedModes(trx, id)
     await trx
       .updateTable('game_sessions')
       .set({ invalidated_at: null, invalidated_by: null, invalidation_reason: null })
@@ -304,14 +303,7 @@ export async function deleteGame(
       .executeTakeFirst()
     if (!game) return 'not-found'
     if (game.status === 'active') return 'active'
-    const players = await trx
-      .selectFrom('game_players')
-      .select(['seat', 'name', 'user_id'])
-      .where('session_id', '=', id)
-      .orderBy('seat')
-      .execute()
-    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
-    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    const { players, modes } = await seatsAndRatedModes(trx, id)
     await trx.deleteFrom('game_sessions').where('id', '=', id).execute()
     await revokeGameXp(trx, id)
     for (const mode of modes) await recalculateRatings(trx, mode)
