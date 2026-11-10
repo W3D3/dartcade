@@ -6,11 +6,21 @@ import LightProfileCard from '../components/lights/LightProfileCard.svelte'
 
 // The attribute, not the `disabled:` classes every button carries
 const DISABLED = /\sdisabled(?:=|\s|$)/
-const handlers = { ontest: () => {}, onseatcolor: () => {}, onresetseatcolors: () => {} }
+const handlers = {
+  profiles: [{ id: 'default', name: 'Dartcade default', builtIn: true }],
+  ontest: () => {},
+  onseatcolor: () => {},
+  onresetseatcolors: () => {},
+  onselect: () => {},
+  onduplicate: () => {},
+  onimport: () => {},
+  onexport: () => {},
+  ondelete: () => {},
+}
 const profile: LightProfile = { ...DEFAULT_PROFILE, seatColors: [...DEFAULT_PROFILE.seatColors], builtIn: true }
 
 describe('LightProfileCard', () => {
-  it("shows the built-in default's 15 rules, disabled Duplicate/Import/Export", () => {
+  it("shows the built-in default's 15 rules, and Duplicate, Import and Export are on", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: true, ...handlers } }).body
     expect(html).toContain('Dartcade default')
     expect(html).toContain('built in')
@@ -18,8 +28,24 @@ describe('LightProfileCard', () => {
     for (const label of ['Duplicate', 'Import', 'Export']) {
       const attrs = new RegExp(`<button([^>]*)>(?:<!--[^>]*-->)*\\s*${label}`).exec(html)?.[1]
       expect(attrs).toBeDefined()
-      expect(attrs).toContain('disabled')
+      expect(attrs).not.toMatch(DISABLED)
     }
+    expect(html).toContain('aria-label="Light profile file to import"')
+  })
+
+  it('offers Delete only for a profile of the player’s own, and shows its name', () => {
+    expect(render(LightProfileCard, { props: { profile, canTest: true, ...handlers } }).body).not.toContain('>Delete<')
+    const own: LightProfile = { ...profile, id: 'p1', name: 'My lights', builtIn: false }
+    const html = render(LightProfileCard, {
+      props: {
+        profile: own,
+        canTest: true,
+        ...handlers,
+        profiles: [...handlers.profiles, { id: 'p1', name: 'My lights', builtIn: false }],
+      },
+    }).body
+    expect(html).toContain('My lights')
+    expect(html).toContain('Delete')
   })
 
   it("every ▶ Test button is disabled when lights can't be tested (bridge offline)", () => {

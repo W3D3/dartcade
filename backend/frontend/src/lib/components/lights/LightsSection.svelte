@@ -13,7 +13,11 @@
   import FoundDevices from './FoundDevices.svelte'
   import LightProfileCard from './LightProfileCard.svelte'
   import PairWledDialog from './PairWledDialog.svelte'
+  import ImportResultDialog from './ImportResultDialog.svelte'
+  import DeleteProfileDialog from './DeleteProfileDialog.svelte'
   import { api, type Board, type BoardLights, type FoundWledDevice, type WledDevice } from '$lib/api'
+  import { downloadJson } from '$lib/lights/download'
+  import { profileFileName } from '$shared/lights/index.js'
   import { lightsLoadState } from '$lib/lights/view'
 
   let boards = $state<Board[]>([])
@@ -37,6 +41,9 @@
   // network error); a later successful poll clears it.
   let loadFailed = $state(false)
   let seatColorError = $state<string | null>(null)
+  let profileError = $state<string | null>(null)
+  let importResult = $state<{ name: string; imported: number; ignored: string[]; adjusted: string[] } | null>(null)
+  let confirmDelete = $state(false)
   const panelState = $derived(lightsLoadState(!!lights, loadFailed))
 
   let deviceError = $state<string | null>(null)
@@ -168,6 +175,66 @@
     const { error } = await api.DELETE('/api/boards/{id}/lights/seat-colors', { params: { path: { id } } }).catch(() => ({ error: true }))
     if (error) seatColorError = 'Could not reset the seat colours'
     else await loadLights(id)
+  }
+
+  const noAnswer: { data?: undefined; error: true } = { error: true }
+
+  /** Runs a profile call; on failure shows `fallback` (or the server's own reason, for a bad file), else reloads what the board shows. */
+  async function profileCall<T>(call: Promise<{ data?: T; error?: { error: string } }>, fallback: string): Promise<T | null> {
+    if (!selectedId) return null
+    const id = selectedId
+    profileError = null
+    const res = await call.catch(() => noAnswer)
+    if (res.error) {
+      profileError = typeof res.error === 'object' ? res.error.error : fallback
+      return null
+    }
+    await loadLights(id)
+    return res.data ?? null
+  }
+
+  const boardPath = (id: string) => ({ params: { path: { id } } })
+
+  const selectProfile = (profileId: string) =>
+    selectedId &&
+    profileCall(api.PUT('/api/boards/{id}/lights/profile', { ...boardPath(selectedId), body: { profileId } }), 'Could not switch profile')
+
+  const duplicateProfile = () =>
+    selectedId &&
+    profileCall(api.POST('/api/boards/{id}/lights/profiles/duplicate', boardPath(selectedId)), 'Could not duplicate the profile')
+
+  async function importProfile(file: File) {
+    let body: Record<string, unknown>
+    try {
+      const parsed: unknown = JSON.parse(await file.text())
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('not an object')
+      body = Object.fromEntries(Object.entries(parsed))
+    } catch {
+      profileError = 'That file is not a Dartcade light profile (it is not JSON).'
+      return
+    }
+    if (!selectedId) return
+    const made = await profileCall(
+      api.POST('/api/boards/{id}/lights/profiles/import', { ...boardPath(selectedId), body }),
+      'Could not import that file',
+    )
+    if (made) importResult = made
+  }
+
+  async function exportProfile() {
+    if (!selectedId || !lights) return
+    const res = await api.GET('/api/boards/{id}/lights/profile/export', boardPath(selectedId)).catch(() => null)
+    if (!res?.data) profileError = 'Could not export the profile'
+    else downloadJson(profileFileName(lights.profile.name), res.data)
+  }
+
+  async function deleteProfile() {
+    confirmDelete = false
+    if (!selectedId || !lights || lights.profile.builtIn) return
+    await profileCall(
+      api.DELETE('/api/boards/{id}/lights/profiles/{profileId}', { params: { path: { id: selectedId, profileId: lights.profile.id } } }),
+      'Could not delete the profile',
+    )
   }
 
   function setSeatColor(seat: number, hex: string) {
@@ -305,17 +372,30 @@
         <div class="flex flex-col gap-3">
           {#if testError}<ErrorText>{testError}</ErrorText>{/if}
           {#if seatColorError}<ErrorText>{seatColorError}</ErrorText>{/if}
+          {#if profileError}<ErrorText>{profileError}</ErrorText>{/if}
           <LightProfileCard
             profile={lights.profile}
+            profiles={lights.profiles}
             {canTest}
             ontest={(rule: number) => void test(rule)}
             onseatcolor={(seat: number, hex: string) => void setSeatColor(seat, hex)}
             onresetseatcolors={() => void resetSeatColors()}
+            onselect={(profileId: string) => void selectProfile(profileId)}
+            onduplicate={() => void duplicateProfile()}
+            onimport={(file: File) => void importProfile(file)}
+            onexport={() => void exportProfile()}
+            ondelete={() => (confirmDelete = true)}
           />
         </div>
       </div>
     {/if}
   </div>
+  {#if importResult}
+    <ImportResultDialog result={importResult} onclose={() => (importResult = null)} />
+  {/if}
+  {#if confirmDelete && lights}
+    <DeleteProfileDialog name={lights.profile.name} onconfirm={() => void deleteProfile()} onclose={() => (confirmDelete = false)} />
+  {/if}
   {#if dialog && selectedId}
     {@const id = selectedId}
     <PairWledDialog

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PROFILE } from '$shared/lights/index.js'
-import { boardDeviceLabel, effectGroups, lightsLoadState, ruleLabel, sectionVisible, segmentHint, since } from '$lib/lights/view'
+import {
+  boardDeviceLabel,
+  effectGroups,
+  importSummary,
+  lightsLoadState,
+  ruleLabel,
+  sectionVisible,
+  segmentHint,
+  since,
+} from '$lib/lights/view'
 
 /** The nth default rule for a trigger, so these checks don't depend on the list's order */
 const rule = (trigger: string, n = 0) => DEFAULT_PROFILE.rules.filter(r => r.when.trigger === trigger)[n]
@@ -102,5 +111,14 @@ describe('lights view', () => {
     expect(lightsLoadState(false, true)).toBe('error')
     expect(lightsLoadState(true, true)).toBe('panel')
     expect(lightsLoadState(true, false)).toBe('panel')
+  })
+})
+
+describe('profile files', () => {
+  it('sums up an import: how many effects came through and what was ignored or changed', () => {
+    expect(importSummary({ imported: 14, ignored: ['a', 'b'], adjusted: [] })).toBe('Imported 14 effects, ignored 2')
+    expect(importSummary({ imported: 1, ignored: [], adjusted: ['x'] })).toBe('Imported 1 effect, adjusted 1')
+    expect(importSummary({ imported: 3, ignored: ['a'], adjusted: ['x', 'y'] })).toBe('Imported 3 effects, ignored 1, adjusted 2')
+    expect(importSummary({ imported: 15, ignored: [], adjusted: [] })).toBe('Imported 15 effects')
   })
 })
