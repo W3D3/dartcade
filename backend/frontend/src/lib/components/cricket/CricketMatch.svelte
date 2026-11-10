@@ -7,12 +7,12 @@
   Portrait screens keep the duel or party layout.
 -->
 <script lang="ts">
+  import type { MatchControls } from '$lib/components/match/types'
   import type { Who } from '$lib/face'
   import type { Segment } from '$lib/api'
   import type { CricketGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
-  import type { TurnStatus } from '$lib/remote'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
@@ -21,7 +21,6 @@
   import { markDeltas } from '$lib/cricket/animate'
   import { cricketSides, targetState, type CricketSide } from '$lib/cricket/view'
   import { cricketSlots } from '$lib/dartSlots'
-  import type { MatchLayout } from '$lib/matchLayout'
   import { isNarrowMatch } from '$lib/viewport'
 
   let {
@@ -50,24 +49,7 @@
     who: Who[]
     /** The open visit's darts, drawn where they landed. */
     darts: { segment: Segment; score: number; coords?: { x: number; y: number } }[]
-    layout: MatchLayout
-    canThrow: boolean
-    locked: boolean
-    canUndo: boolean
-    next: { label: string; prominent: boolean; enabled: boolean }
-    onUndo: () => void
-    onNext: () => void
-    onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    onCorrect?: (dartIndex: number, label: string) => void
-    onDartMove?: (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    /** The header's Enter view: the keypad takes the board's place. */
-    keypad?: boolean
-    onDart?: (segment: Segment) => void
-    /** Someone else is up (remote game): their status stands in for Undo and Next, which only that seat's controller may use. */
-    turn?: TurnStatus | null
-    /** The big screen: no Undo or Next. */
-    viewOnly?: boolean
-  } = $props()
+  } & MatchControls = $props()
 
   const cp = $derived(game.currentPlayer)
   const sides = $derived(cricketSides(game, players))

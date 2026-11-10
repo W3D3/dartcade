@@ -55,3 +55,12 @@ export type MatchProps = {
   /** The live coach (solo X01 only). */
   coach?: Snippet<[compact: boolean]>
 }
+
+/** The Undo / Next / board controls every mode's screen takes from MatchProps. */
+export type ShotControls = Pick<MatchProps, 'canThrow' | 'locked' | 'canUndo' | 'next' | 'onUndo' | 'onNext' | 'onBoardClick'> &
+  Partial<Pick<MatchProps, 'turn'>>
+
+/** ShotControls plus what the dartboard modes add: layout, corrections and the keypad. */
+export type MatchControls = ShotControls &
+  Pick<MatchProps, 'layout' | 'onCorrect' | 'onDartMove'> &
+  Partial<Pick<MatchProps, 'keypad' | 'onDart' | 'viewOnly'>>
