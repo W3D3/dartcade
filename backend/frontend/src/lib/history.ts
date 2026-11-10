@@ -3,14 +3,13 @@ import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
 import { rulesOf } from './gameViews/rules.js'
 import { isGameId, type GameId } from '$shared/gameNames'
-import { dayMonth, ordinal, startOfDay } from './fmt.js'
+import { LOCALE, calendarDaysAgo, dayMonth, ordinal } from './fmt.js'
 
-const DAY_MS = 86_400_000
 /** "Today" / "Yesterday" / "24 Sep", and the time, in the viewer's time zone. */
 export function formatWhen(iso: string, now: Date): { day: string; time: string } {
   const d = new Date(iso)
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
-  const ago = Math.round((startOfDay(now) - startOfDay(d)) / DAY_MS)
+  const time = d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })
+  const ago = calendarDaysAgo(d, now)
   const day = ago === 0 ? 'Today' : ago === 1 ? 'Yesterday' : dayMonth(d)
   return { day, time }
 }
@@ -120,7 +119,7 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
     return [
       plain(`Matches · ${s.days} days`, String(s.matches)),
       won(s.wins, s.contested),
-      plain('Darts thrown', s.matches > 0 ? darts.toLocaleString('en-GB') : NONE),
+      plain('Darts thrown', s.matches > 0 ? darts.toLocaleString(LOCALE) : NONE),
       most
         ? plain('Most played', title(most[0]), `${most[1].matches} ${most[1].matches === 1 ? 'match' : 'matches'}`)
         : plain('Most played', NONE),

@@ -2,6 +2,7 @@
 import { api, type AdminUser, type AdminUserActivity, type UserAuditEntry } from '$lib/api'
 import type { BanCategory } from '$shared/bans.js'
 import { banLine } from '$lib/bans'
+import { LOCALE } from '$lib/fmt'
 import { isBanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 import { xpForLevel } from '$shared/progression.js'
@@ -223,7 +224,7 @@ export function joinedDate(iso: string): string {
   const d = new Date(iso)
   return isNaN(d.getTime())
     ? ''
-    : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 /** The last login column's text: the joined-style date and time, or "—" for a user who never signed back in. */

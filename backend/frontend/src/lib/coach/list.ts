@@ -1,7 +1,7 @@
 // The Coach page's leg list (Coach-Review): its filters, each leg's title, when it finished and what
 // the coach found in it.
 import type { CoachLegRow } from '$lib/api'
-import { startOfDay } from '$lib/fmt'
+import { calendarDaysAgo, weekday } from '$lib/fmt'
 import { formatWhen } from '$lib/history'
 import type { PillView } from './tone'
 
@@ -50,6 +50,6 @@ export function legWhen(iso: string, now: Date): string {
   const { day, time } = formatWhen(iso, now)
   if (day === 'Today') return `Today ${time}`
   const d = new Date(iso)
-  const ago = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000)
-  return ago >= 2 && ago <= 6 ? d.toLocaleDateString('en-GB', { weekday: 'short' }) : day
+  const ago = calendarDaysAgo(d, now)
+  return ago >= 2 && ago <= 6 ? weekday(d) : day
 }

@@ -6,12 +6,13 @@
   import DeleteAccount from './DeleteAccount.svelte'
   import TimeZoneField from './TimeZoneField.svelte'
   import { flag } from '$lib/flags'
+  import { LOCALE } from '$lib/fmt'
 
   const progression = flag('progression.enabled')
 
   const user = $derived($currentUser)
   const joined = $derived(new Date(user?.createdAt ?? NaN))
-  const since = $derived(isNaN(joined.getTime()) ? '' : joined.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }))
+  const since = $derived(isNaN(joined.getTime()) ? '' : joined.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' }))
 </script>
 
 {#if user}

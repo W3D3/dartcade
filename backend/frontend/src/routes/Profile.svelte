@@ -17,6 +17,8 @@
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { fmtAvg } from '$lib/playerStats'
+  import { DAY_MS } from '$shared/time'
+  import { LOCALE } from '$lib/fmt'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
   import {
     CARD_SURFACE,
@@ -68,13 +70,13 @@
   })
 
   const STATUS_TEXT = { online: 'Online', lobby: 'In a lobby', playing: 'Playing', offline: 'Offline' } as const
-  const since = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const since = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })
   const day = (iso: string) => {
     const d = new Date(iso)
-    const days = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+    const days = Math.floor((Date.now() - d.getTime()) / DAY_MS)
     if (days < 1 && d.getDate() === new Date().getDate()) return 'Today'
     if (days < 2) return 'Yesterday'
-    return d.toLocaleDateString('en-GB', days < 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' })
+    return d.toLocaleDateString(LOCALE, days < 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' })
   }
 </script>
 

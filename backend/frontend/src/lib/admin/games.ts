@@ -1,5 +1,7 @@
 // Admin game list: every game on the platform, for admins and moderators to investigate and invalidate (schema/api-v1.yaml, tag admin).
 import { api, type AdminGameSummary, type QueuedSearch } from '$lib/api'
+import { DAY_MS } from '$shared/time'
+import { LOCALE } from '$lib/fmt'
 
 export type { AdminGameSummary }
 
@@ -26,8 +28,6 @@ export const STATUS_OPTIONS: { id: GameStatus; label: string }[] = [
   { id: 'active', label: 'Active' },
   { id: 'invalidated', label: 'Invalidated' },
 ]
-
-const DAY_MS = 86_400_000
 
 /** Midnight (local) at the start of a yyyy-mm-dd date; null if it isn't one. */
 function startOfDate(s: string): Date | null {
@@ -105,7 +105,7 @@ export async function restoreGame(id: string): Promise<{ recalculated: string[] 
 
 /** "by Mo on 2 Oct 2026: Board was misreading": who, when and (if given) why; the account may be gone. */
 export function invalidationText(i: NonNullable<Invalidation>): string {
-  const when = new Date(i.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const when = new Date(i.at).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' })
   const who = i.by ? ` by ${i.by.name}` : ''
   return `Invalidated${who} on ${when}${i.reason ? `: ${i.reason}` : ''}`
 }

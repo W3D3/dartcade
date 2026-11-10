@@ -1,10 +1,21 @@
 // Small formatting helpers shared across the app.
+import { DAY_MS } from '$shared/time'
+
+/** The locale every date and number in the app is formatted in. */
+export const LOCALE = 'en-GB'
 
 // Fixed 3-letter abbreviations: Intl's "short" month can render "Sept" depending on ICU data/locale.
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /** Midnight of the date's day, local time, in ms. */
 export const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+
+/** Whole calendar days from `d`'s day to `now`'s day: 0 today, 1 yesterday (rounded, so a DST day is still one). */
+export const calendarDaysAgo = (d: Date, now: Date): number => Math.round((startOfDay(now) - startOfDay(d)) / DAY_MS)
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+/** "Mon". Fixed like MONTHS, so ICU data can't change it. */
+export const weekday = (d: Date): string => WEEKDAYS[d.getDay()]
 
 /** "24 Sep". */
 export const dayMonth = (d: Date): string => `${d.getDate()} ${MONTHS[d.getMonth()]}`

@@ -1,12 +1,14 @@
 // A banned player's public ban (category and end): its line on the profile and at sign-in, and
 // the lengths the admin ban dialog offers. The note an admin writes never comes here.
 import { api } from '$lib/api'
+import { DAY_MS } from '$shared/time'
+import { LOCALE } from './fmt'
 import { BAN_CATEGORIES, isBanCategory, type BanCategory } from '$shared/bans.js'
 
 export type Ban = { category: BanCategory; until: string | null }
 
 /** "1 Nov 2026" */
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const day = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** "Closed for cheating until 1 Nov 2026", or just the category's line for a permanent ban. */
 export function banLine(ban: Ban): string {
@@ -47,7 +49,7 @@ export const BAN_LENGTHS: { value: BanLength; label: string }[] = [
  */
 export function banEnd(length: BanLength, customDate: string, now = new Date()): { until: string | null } | { error: string } {
   if (length === 'permanent') return { until: null }
-  if (length !== 'custom') return { until: new Date(now.getTime() + Number(length) * 86_400_000).toISOString() }
+  if (length !== 'custom') return { until: new Date(now.getTime() + Number(length) * DAY_MS).toISOString() }
   const end = new Date(`${customDate}T00:00:00`)
   if (!customDate || isNaN(end.getTime())) return { error: 'Pick the day the ban ends.' }
   if (end.getTime() <= now.getTime()) return { error: 'The ban must end in the future.' }

@@ -3,7 +3,7 @@
 import type { GameStats, GameSummary } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { GAME_MODES } from '$lib/gameModes'
-import { dayMonth, plural, startOfDay } from '$lib/fmt'
+import { LOCALE, calendarDaysAgo, dayMonth, plural } from '$lib/fmt'
 import { playerBadges, resultLabel } from '$lib/history'
 import type { RankedGame, RankedRating } from '$lib/ranked/view'
 import { nextStage, rank } from '$shared/ranked.js'
@@ -12,7 +12,6 @@ export type HomeEvent = components['schemas']['HomeEvent']
 export type HomeLobby = components['schemas']['HomeLobbies']['lobbies'][number]
 
 const NONE = '–'
-const DAY_MS = 86_400_000
 
 /** "Good morning" from 05:00, "Good afternoon" from 12:00, "Good evening" from 18:00 until 05:00. */
 export function greeting(now: Date): string {
@@ -22,7 +21,7 @@ export function greeting(now: Date): string {
 
 /** "Friday, 16 October". */
 export function longDate(now: Date): string {
-  return `${now.toLocaleDateString('en-GB', { weekday: 'long' })}, ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`
+  return `${now.toLocaleDateString(LOCALE, { weekday: 'long' })}, ${now.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' })}`
 }
 
 export type Trend = { dir: 'up' | 'down' | 'flat'; delta: number }
@@ -95,7 +94,7 @@ export function relativeTime(then: Date, now: Date): string {
   const minutes = Math.floor((now.getTime() - then.getTime()) / 60_000)
   if (minutes < 1) return 'just now'
   if (minutes < 60) return `${minutes} min`
-  const days = Math.round((startOfDay(now) - startOfDay(then)) / DAY_MS)
+  const days = calendarDaysAgo(then, now)
   if (days <= 0) return `${Math.floor(minutes / 60)} h`
   if (days === 1) return 'yesterday'
   return days < 7 ? `${days} d` : dayMonth(then)

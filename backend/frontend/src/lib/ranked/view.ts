@@ -2,7 +2,7 @@
 // The rank maths lives in $shared/ranked, shared with the server.
 import type { components } from '$lib/api/schema'
 import { PLACEMENT_MATCHES, RANK_COUNT, TIERS, nextStage, rank, rankThreshold, type Rank, type Tier } from '$shared/ranked.js'
-import { MONTHS, pad2, startOfDay } from '$lib/fmt'
+import { MONTHS, calendarDaysAgo, pad2, weekday } from '$lib/fmt'
 
 export type RankedRating = components['schemas']['RankedRating']
 export type RankedGame = components['schemas']['RankedGame']
@@ -130,10 +130,10 @@ export function record(ratings: RankedRating[]): { score: string; line: string; 
 
 /** "Today, 20:14", "Yesterday", "Mon", "3 Oct". */
 export function whenPlayed(at: Date, now: Date): string {
-  const days = Math.round((startOfDay(now) - startOfDay(at)) / 86_400_000)
+  const days = calendarDaysAgo(at, now)
   if (days <= 0) return `Today, ${pad2(at.getHours())}:${pad2(at.getMinutes())}`
   if (days === 1) return 'Yesterday'
-  if (days < 7) return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][at.getDay()]
+  if (days < 7) return weekday(at)
   return `${at.getDate()} ${MONTHS[at.getMonth()]}`
 }
 
