@@ -186,6 +186,7 @@ A won X01 match plays only the game.won look, on the winning dart.
   `created_at`; unique `(board_id, mac)`.
 - `boards.lights_enabled boolean not null default true`.
 - `boards.light_seat_colors jsonb` (migration 061): the board's six seat colours for the built-in profile, null for the defaults.
+- `boards.light_effect_overrides jsonb` (migration 065): which effects of the built-in profile the board switched on or off, by the effect's key (`ruleKey` in `shared/lights/profile.ts`: trigger, seats, game and total filter, so it survives a reordered list), only where it differs from the shipped default; null for none. A profile of the player's own keeps `enabled` in its rules.
 - `light_profiles` (migration 063): a player's own profiles, made by Duplicate or Import: `id` (ulid), `owner_user_id` (FK, `on delete cascade`), `name` (unique per player), `seat_colors` and `rules` (jsonb, the profile's own copy, so later changes to the built-in rules don't move it), `created_at`. `boards.light_profile_id` (FK, `on delete set null`) selects one for a board; null is the built-in profile. A board's seat colours edit whichever profile it uses: the built-in one's live on the board (`light_seat_colors`), a profile of the player's own has them itself. At most 20 profiles a player.
 - Found devices and live status: in memory per board (`backend/src/lights/store.ts`), like the camera
   store.
@@ -196,6 +197,7 @@ Under `/api/boards/{id}/lights`:
 
 - `GET` → `{enabled, bridgeOnline, bridgeOutdated, devices: [device + {reachable, error?}], found: [...], lastScanAt, profile}`
 - `PUT` `{enabled}`
+- `PUT effects/{index} {enabled}`: switches the effect at that place in the board's profile (as `GET` lists them) on or off, for the built-in profile as an override on the board, for one of the player's own in its rules; 404 for an index it doesn't have. Resends the scene, and a strip still showing a scene whose effect was just switched off goes dark.
 - `PUT profile {profileId}` (`default` is the built-in one; 404 for another player's), `POST profiles/duplicate` (copies the profile in use as "Copy of …", numbered when taken, and uses it), `POST profiles/import` (a file, below; 201 `{id, name, imported, ignored[], adjusted[]}`, uses it), `GET profile/export` (the file, as an attachment), `DELETE profiles/{profileId}` (boards using it go back to the built-in one). 409 past the limit. All behind the same owner check as the rest.
 - `PUT seat-colors {seatColors: [six #rrggbb]}` (stored lower case; 400 for any other count or format), `DELETE seat-colors` (back to the built-in colours). Both resend the scene, so the strip shows the change at once.
 - `POST scan`, `POST probe {host}`, `POST blink {host} | {deviceId}`
@@ -244,8 +246,9 @@ The page re-fetches `GET` every 3 s while it's open.
 - **Light profile:** "Dartcade default · built in". A **Seat colours** group on top of the list: one row per
   seat with its swatch and a picker (a bits-ui popover with a palette as a radio group plus a custom
   colour field), and **Reset to defaults**. Below it **Effects**, one list per group (General, then each game that has an effect: X01, Cricket, 121,
-  Minigolf, Higher Lower), numbered across the groups: the read-only rules
-  (trigger, filter, Scene/Flash, look summary, an "Off" mark on a disabled rule) with **▶ Test**. A **profile menu** (bits-ui select) lists the
+  Minigolf, Higher Lower), numbered across the groups: the rules
+  (trigger, filter, Scene/Flash, look summary) with an **on/off switch** each (a switched-off effect is dimmed, its
+  switch is not) and **▶ Test**, which still plays a switched-off effect. The effects themselves are not editable yet. A **profile menu** (bits-ui select) lists the
   built-in profile and the player's own; **Duplicate**, **Import** (a file picker, then a result dialog with the
   summary and what was ignored or changed) and **Export** (a download) work on the profile in use, and **Delete**
   (with a confirmation) shows for the player's own.

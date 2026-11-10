@@ -103,3 +103,37 @@ test('light profiles: the profile menu, a duplicate, an import with its result, 
     await ctx.close()
   }
 })
+
+test('light effects: switching single effects off and on, kept after a reload', async ({ browser }) => {
+  for (const [view, name] of [
+    [{ width: 1440, height: 1750, scale: 2 }, 'desktop'],
+    [{ width: 390, height: 2400, scale: 2 }, 'phone'],
+  ] as const) {
+    const { ctx, page } = await open(browser, 'admin', view)
+    await page.goto('/#/settings/lights')
+    await expect(page.getByRole('region', { name: 'Light profile' })).toBeVisible()
+    const bigScore = page.getByRole('switch', { name: 'Visit scored ≥ 100 on' })
+    const lobby = page.getByRole('switch', { name: 'Lobby on' })
+    const turnOther = page.getByRole('switch', { name: 'Turn changes other board on' })
+    await expect(bigScore).toBeChecked()
+    await expect(lobby).not.toBeChecked() // ships off
+
+    await bigScore.click()
+    await turnOther.click()
+    await lobby.click()
+    await expect(bigScore).not.toBeChecked()
+    await expect(lobby).toBeChecked()
+    await page.reload()
+    await expect(page.getByRole('switch', { name: 'Visit scored ≥ 100 on' })).not.toBeChecked()
+    await expect(page.getByRole('switch', { name: 'Lobby on' })).toBeChecked()
+    await shot(page, `lights/switches-${name}.png`)
+
+    // Back to how it ships, so the next run and the other screenshots start clean
+    await page.getByRole('switch', { name: 'Visit scored ≥ 100 on' }).click()
+    await page.getByRole('switch', { name: 'Turn changes other board on' }).click()
+    await page.getByRole('switch', { name: 'Lobby on' }).click()
+    await expect(page.getByRole('switch', { name: 'Lobby on' })).not.toBeChecked()
+    await expect(page.getByRole('switch', { name: 'Visit scored ≥ 100 on' })).toBeChecked()
+    await ctx.close()
+  }
+})
