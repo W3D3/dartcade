@@ -5,10 +5,9 @@ import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { getNameState, isNameTaken, setName } from '../db/users.js'
 import { NAME_COOLDOWN_DAYS } from '../shared/nameCooldown.js'
 import { NAME_RULE, cleanName, isValidName, normalizeName, numbered } from './names.js'
+import { DAY_MS } from '../shared/time.js'
 
 const SUGGESTION_TRIES = 50
-
-const DAY_MS = 86_400_000
 
 export const NAME_TAKEN = 'That name is taken'
 

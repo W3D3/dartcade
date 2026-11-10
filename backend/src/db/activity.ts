@@ -3,8 +3,7 @@ import { z } from 'zod'
 import type { Database } from './schema.js'
 import { friendIdsOf } from './friends.js'
 import { toAvatar, type Avatar } from './users.js'
-
-const DAY_MS = 86_400_000
+import { DAY_MS } from '../shared/time.js'
 
 /**
  * What a friend's feed can tell about someone (see docs/superpowers/specs/2026-10-27-home-page-design.md):

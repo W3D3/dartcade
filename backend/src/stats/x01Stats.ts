@@ -4,6 +4,7 @@ import type { components } from '../schema/api.js'
 import { canCheckOut } from '../shared/checkout.js'
 import { groupBy } from '../util/groupBy.js'
 import type { StatLeg, StatVisit } from './x01Legs.js'
+import { DAY_MS } from '../shared/time.js'
 
 type Schemas = components['schemas']
 type X01Stats = Schemas['X01Stats']
@@ -13,7 +14,6 @@ type StatMetric = Schemas['StatMetric']
 type StatCount = Schemas['StatCount']
 export type StatsRange = Schemas['StatsRange']
 
-const DAY_MS = 86_400_000
 const RANGES: Record<StatsRange, { legs: number } | { days: number } | null> = {
   legs20: { legs: 20 },
   legs50: { legs: 50 },

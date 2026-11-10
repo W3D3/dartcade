@@ -1,4 +1,5 @@
 import type { components } from '../schema/api.js'
+import { DAY_MS } from '../shared/time.js'
 
 type GameStats = components['schemas']['GameStats']
 type ModeStats = components['schemas']['ModeStats']
@@ -7,7 +8,6 @@ type StatAggregate = components['schemas']['StatAggregate']
 /** My seat in one finished game. */
 export type StatRow = { mode: string; finishedAt: Date; placement: number; seats: number; stats: Record<string, number> }
 
-const DAY_MS = 86_400_000
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 
 function counts(rows: StatRow[]) {

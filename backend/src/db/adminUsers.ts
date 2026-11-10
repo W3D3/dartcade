@@ -5,6 +5,7 @@ import { toAvatar, type Avatar } from './users.js'
 import { counts } from './ranked.js'
 import { getProgress } from './progression.js'
 import { activeBan, type BanCategory, type PublicBan } from '../shared/bans.js'
+import { DAY_MS } from '../shared/time.js'
 
 export type AdminUserRow = {
   id: string
@@ -223,7 +224,7 @@ export interface UserActivity {
 
 /** What an account has done, aggregated in SQL; games that were invalidated or aborted don't count. Null: no such account. */
 export async function getUserActivity(db: Kysely<Database>, userId: string): Promise<UserActivity | null> {
-  const since = new Date(Date.now() - 30 * 86_400_000)
+  const since = new Date(Date.now() - 30 * DAY_MS)
   const [boards, friends, user, progress, byMode, ranked, ratings, darts] = await Promise.all([
     db.selectFrom('boards').select(['id', 'name']).where('owner_user_id', '=', userId).orderBy('created_at').execute(),
     db

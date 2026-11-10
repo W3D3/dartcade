@@ -23,10 +23,9 @@ import { inviteView, lobbyGlance, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
 import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
+import { MINUTE_MS } from '../shared/time.js'
 
 const CODE_ATTEMPTS = 5
-
-const MINUTE_MS = 60 * 1000
 
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string } & ReturnType<typeof lobbyGlance>
