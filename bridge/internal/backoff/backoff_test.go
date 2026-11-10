@@ -15,3 +15,13 @@ func TestNextDoublesWithJitterUpToMax(t *testing.T) {
 		}
 	}
 }
+
+func TestPolicyResetsOnlyAfterStable(t *testing.T) {
+	p := Policy{Initial: time.Second, Max: 30 * time.Second, StableAfter: 30 * time.Second}
+	if d := p.Reset(8*time.Second, time.Now().Add(-time.Second)); d != 8*time.Second {
+		t.Fatalf("short connection reset the delay to %v", d)
+	}
+	if d := p.Reset(8*time.Second, time.Now().Add(-31*time.Second)); d != time.Second {
+		t.Fatalf("stable connection left the delay at %v", d)
+	}
+}
