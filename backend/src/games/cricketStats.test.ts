@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { cricketMatchStats } from './cricketStats.js'
 import { cricketGame, type CricketConfig, type CricketState } from './cricket.js'
 import type { BoardEvent, CommittedVisit, HistoryDart, Segment } from '../session/types.js'
 
@@ -146,5 +147,26 @@ describe('cricket matchStats', () => {
     // Leg 1 scored 120 (the overkill), leg 2 scored 0 (plain sweep): the board's own total at
     // the end is only leg 2's, but the match total is both.
     expect(seatValues(r, 0).points).toBe(120)
+  })
+})
+
+describe('cricketMatchStats', () => {
+  it('is what the game module reports', () => {
+    const r = play(cfg(), ['A', 'B'], [[T20, T20, S20], [MISS]])
+    expect(cricketMatchStats(r.visits, r.final)).toEqual(statsOf(r))
+  })
+
+  it('counts a nine-mark round in every high-mark row', () => {
+    const r = play(cfg(), ['A', 'B'], [[T20, T20, T20], [MISS]])
+    const a = cricketMatchStats(r.visits, r.final).seats[0].values
+    expect([a.visits5, a.visits7, a.visits9]).toEqual([1, 1, 1])
+    expect(a.dartsThrown).toBe(3)
+  })
+
+  it('has no team rows in singles and one per team in teams', () => {
+    const singles = play(cfg(), ['A', 'B'], [])
+    expect(cricketMatchStats(singles.visits, singles.final).teams).toBeUndefined()
+    const teams = play({ ...cfg(), format: 'teams', teams: [0, 1, 0, 1] }, ['A1', 'B1', 'A2', 'B2'], [])
+    expect(cricketMatchStats(teams.visits, teams.final).teams?.map(t => t.index)).toEqual([0, 1])
   })
 })
