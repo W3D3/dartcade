@@ -7,6 +7,7 @@ import { feedbackMail } from '../mail/templates.js'
 import type { Mailer } from '../mail/transport.js'
 import { ApiError } from './errors.js'
 import { looksLikeJpeg } from './me.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -31,7 +32,7 @@ export function feedbackApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       schema: fromSpec('sendFeedback'),
       bodyLimit: FEEDBACK_BODY_LIMIT,
       // After auth, so it counts per user, not per address
-      config: { rateLimit: { max: 5, timeWindow: '1 hour', hook: 'preHandler', keyGenerator: req => req.userId } },
+      config: { rateLimit: RATE.feedback },
     },
     async (req, reply) => {
       if (!mailer || !to) throw new ApiError(503, { error: 'reporting is unavailable on this server' })

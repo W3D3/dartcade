@@ -21,6 +21,7 @@ import { AVATAR_FINISHES, isAvatarFinish } from '../shared/avatarFinishes.js'
 import { isCountryCode } from '../shared/countries.js'
 import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -118,7 +119,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         preValidation: requireAuth,
         schema: fromSpec('uploadAvatar'),
         bodyLimit: AVATAR_UPLOAD_LIMIT,
-        config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+        config: { rateLimit: RATE.strict },
       },
       async req => {
         if (!(await flagEnabled('avatar.upload.enabled', await loadFlagUser(db, req.userId))))

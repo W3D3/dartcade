@@ -8,6 +8,7 @@ import { getAvatarUpload } from '../db/users.js'
 import { checkName } from '../users/account.js'
 import { profileUser } from '../db/profile.js'
 import { ApiError } from './errors.js'
+import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -48,7 +49,7 @@ export function usersApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     '/api/users/name-available',
     {
       schema: fromSpec('checkNameAvailable'),
-      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      config: { rateLimit: RATE.poll },
     },
     async req => {
       const self = await getAuthUser(req)
