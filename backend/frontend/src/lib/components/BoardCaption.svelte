@@ -7,7 +7,7 @@
   const DOT: Record<Caption['tone'], string> = {
     live: 'rounded-full bg-live animate-pulse motion-reduce:animate-none',
     warn: 'box-border rounded-full border-[1.5px] border-warn',
-    paused: 'rounded-[2px] bg-line-strong',
+    paused: 'rounded-bar bg-line-strong',
     muted: 'rounded-full bg-text-muted',
   }
 </script>

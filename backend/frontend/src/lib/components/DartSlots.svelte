@@ -70,7 +70,7 @@
   const multNames: Record<string, string> = { S: 'Single', D: 'Double', T: 'Treble' }
   // Phones: 58 px slots per Mobile-Match; desktop as before
   const slotBox =
-    'h-[58px] md:h-[min(124px,14vh)] box-border rounded-[12px] md:rounded-[14px] px-1 md:px-[14px] py-1 md:pt-[10px] md:pb-3 flex flex-col items-center justify-center gap-[2px] md:gap-2'
+    'h-[58px] md:h-[min(124px,14vh)] box-border rounded-lg md:rounded-card px-1 md:px-[14px] py-1 md:pt-[10px] md:pb-3 flex flex-col items-center justify-center gap-[2px] md:gap-2'
   const slotLabel = 'font-display font-bold text-[26px] md:text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
 

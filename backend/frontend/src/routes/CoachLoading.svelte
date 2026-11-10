@@ -20,7 +20,7 @@
   <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     {#if params.page === 'list'}
       <header class="flex flex-col gap-1.5">
-        <h1 class="hidden font-display text-[48px] font-bold uppercase leading-none tracking-title md:block">Coach</h1>
+        <h1 class="hidden font-display text-page-title uppercase md:block">Coach</h1>
         <p class="text-[15px] text-text-muted">A second look at any of your last 50 X01 legs.</p>
       </header>
       <ListSkeleton />

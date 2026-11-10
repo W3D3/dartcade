@@ -91,7 +91,7 @@
       <Popover
         triggerLabel="Show the QR code"
         haspopup="dialog"
-        triggerClass="w-9 h-9 shrink-0 flex items-center justify-center rounded-[8px] border-0 bg-surface-key text-text"
+        triggerClass="w-9 h-9 shrink-0 flex items-center justify-center rounded-sm border-0 bg-surface-key text-text"
       >
         {#snippet trigger()}<QrIcon size={17} />{/snippet}
         {#snippet panel()}

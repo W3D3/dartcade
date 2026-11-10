@@ -7,7 +7,7 @@
   let { team, seat, up }: { team: TeamRanked; seat: number; up: boolean } = $props()
 
   const c = $derived(teamClocks(team.ranked, seat, up, team.skew, $tick))
-  const chip = 'inline-flex h-[30px] items-center gap-[6px] rounded-[8px] border px-[9px] whitespace-nowrap'
+  const chip = 'inline-flex h-[30px] items-center gap-[6px] rounded-sm border px-[9px] whitespace-nowrap'
   const tone = $derived(
     c.low
       ? 'border-live bg-live-soft text-live-text'

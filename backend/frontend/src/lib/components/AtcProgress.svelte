@@ -18,7 +18,7 @@
   } = $props()
 
   const text = $derived(
-    layout === 'strip' ? 'text-[14px] rounded-[5px]' : cellHeight >= 44 ? 'text-[18px] rounded-[7px]' : 'text-[16px] rounded-[7px]',
+    layout === 'strip' ? 'text-[14px] rounded-[5px]' : cellHeight >= 44 ? 'text-[18px] rounded-segment' : 'text-[16px] rounded-segment',
   )
 </script>
 

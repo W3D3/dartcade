@@ -17,7 +17,7 @@
     size?: 'md' | 'sm'
   } = $props()
 
-  const item = $derived(size === 'sm' ? 'rounded-[6px] px-2.5 py-1 text-[12px]' : 'rounded-[7px] px-3 py-[7px] text-[13px]')
+  const item = $derived(size === 'sm' ? 'rounded-chip px-2.5 py-1 text-[12px]' : 'rounded-segment px-3 py-[7px] text-[13px]')
   const look = (on: boolean) => (on ? 'bg-line font-semibold text-text' : 'text-text-muted hover:text-text')
 </script>
 
