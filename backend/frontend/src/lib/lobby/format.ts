@@ -4,7 +4,7 @@ import type { ConfigFieldMeta } from '../api'
 import { rulesOf } from '../gameViews/rules.js'
 import { teamSizesLabel } from '../teams.js'
 import { gameTitle } from '$shared/gameNames'
-import { dayMonth, pad2, startOfDay } from '../fmt.js'
+import { calendarDaysAgo, dayMonth, pad2 } from '../fmt.js'
 
 /** The mode's name ("X01", "Around the Clock"); the id itself for a mode we don't know. */
 export const gameName = gameTitle
@@ -163,7 +163,7 @@ export function inviteTime(at: string, now: Date): string {
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins} min ago`
   const time = feedTime(at)
-  const days = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000)
+  const days = calendarDaysAgo(d, now)
   if (days === 0) return `Today, ${time}`
   if (days === 1) return `Yesterday, ${time}`
   return `${dayMonth(d)}, ${time}`

@@ -1,6 +1,6 @@
 // What the progression screens show: levels, bars and the XP breakdown, from the shared rules.
 import { FREEZE_EVERY, MAX_FREEZES, PERKS, levelOf, type Perk } from '$shared/progression.js'
-import { ordinal } from '$lib/fmt'
+import { LOCALE, ordinal } from '$lib/fmt'
 import type { XpGainedMessage, XpLine } from '$lib/api/lobby-ws'
 
 const nf = new Intl.NumberFormat('en-US')
@@ -57,7 +57,7 @@ export function lineLabel(line: XpLine): string {
 
 /** 'Fri' for a YYYY-MM-DD. */
 export const weekday = (date: string, style: 'short' | 'long' = 'short'): string =>
-  new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: style, timeZone: 'UTC' })
+  new Date(`${date}T12:00:00Z`).toLocaleDateString(LOCALE, { weekday: style, timeZone: 'UTC' })
 
 /** The cosmetic a streak milestone unlocks, where it has one. */
 const MILESTONE_REWARDS: Partial<Record<number, string>> = {
