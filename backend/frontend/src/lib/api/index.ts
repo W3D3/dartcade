@@ -50,6 +50,7 @@ export type BoardLights = Schemas['BoardLights']
 export type WledDevice = Schemas['WledDevice']
 export type FoundWledDevice = Schemas['FoundWledDevice']
 export type LightProfile = Schemas['LightProfile']
+export type LightProfileSummary = Schemas['LightProfileSummary']
 export type LightRule = Schemas['LightRule']
 
 export type {

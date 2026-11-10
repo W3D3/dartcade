@@ -1,49 +1,68 @@
 <script lang="ts">
-  // Settings' Lights: the board's light profile (Settings-Lights board). Only the built-in
-  // "Dartcade default" exists today, so its effects are read-only and Duplicate/Import/Export are
-  // disabled; its seat colours are the one thing a board can change. ▶ Test plays one
-  // rule on the board's devices now (disabled while lights are off, the bridge is offline, or
-  // the bridge is outdated).
-  import { ChevronDown } from '@lucide/svelte'
+  // Settings' Lights: the board's light profile (Settings-Lights board). The menu picks the built-in
+  // "Dartcade default" or one of the player's own; Duplicate copies the one in use, Import makes a new
+  // one from a file, Export saves it as a file. Effects are read-only for now, seat colours can be
+  // changed. ▶ Test plays one rule on the board's devices now (disabled while lights are off, the
+  // bridge is offline, or the bridge is outdated).
   import { Button } from '$lib/components/ui/button/index.js'
-  import type { LightProfile } from '$lib/api'
+  import { Select } from '$lib/components/ui/select/index.js'
+  import type { LightProfile, LightProfileSummary } from '$lib/api'
   import { effectGroups, ruleLabel } from '$lib/lights/view'
   import { isDefaultSeatColors } from '$lib/lights/seatColors'
   import SeatColorPicker from './SeatColorPicker.svelte'
 
   let {
     profile,
+    profiles,
     canTest,
     ontest,
     onseatcolor,
     onresetseatcolors,
+    onselect,
+    onduplicate,
+    onimport,
+    onexport,
+    ondelete,
   }: {
     profile: LightProfile
+    profiles: LightProfileSummary[]
     canTest: boolean
     ontest: (rule: number) => void
     onseatcolor: (seat: number, hex: string) => void
     onresetseatcolors: () => void
+    onselect: (profileId: string) => void
+    onduplicate: () => void
+    /** The file the player chose. */
+    onimport: (file: File) => void
+    onexport: () => void
+    ondelete: () => void
   } = $props()
+
+  let fileInput = $state<HTMLInputElement>()
+  const options = $derived(profiles.map(p => ({ value: p.id, label: p.builtIn ? `${p.name} · built in` : p.name })))
 </script>
 
 <section aria-label="Light profile" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
   <h2 class="text-[17px] font-semibold">Light profile</h2>
   <div class="flex gap-2 items-center flex-wrap">
-    <button
-      type="button"
-      aria-haspopup="listbox"
-      aria-label="Light profile: {profile.name}"
-      disabled
-      class="grow min-w-0 h-[42px] px-3 flex items-center gap-2 rounded-md border border-line-strong
-             bg-bg text-text text-[14px] font-semibold whitespace-nowrap cursor-default disabled:opacity-100"
-    >
-      {profile.name}
-      {#if profile.builtIn}<span class="text-[11px] text-text-dim">· built in</span>{/if}
-      <ChevronDown size={16} class="ml-auto text-text-dim" />
-    </button>
-    <Button variant="outline" size="md" disabled title="Coming soon">Duplicate</Button>
-    <Button variant="outline" size="md" disabled title="Coming soon">Import</Button>
-    <Button variant="outline" size="md" disabled title="Coming soon">Export</Button>
+    <Select label="Light profile" {options} value={profile.id} onchange={onselect} class="grow min-w-[200px] h-[42px]" />
+    <Button variant="outline" size="md" onclick={onduplicate}>Duplicate</Button>
+    <Button variant="outline" size="md" onclick={() => fileInput?.click()}>Import</Button>
+    <input
+      bind:this={fileInput}
+      type="file"
+      accept=".json,application/json"
+      aria-label="Light profile file to import"
+      tabindex="-1"
+      class="sr-only"
+      onchange={e => {
+        const file = e.currentTarget.files?.[0]
+        e.currentTarget.value = ''
+        if (file) onimport(file)
+      }}
+    />
+    <Button variant="outline" size="md" onclick={onexport}>Export</Button>
+    {#if !profile.builtIn}<Button variant="destructive" size="md" onclick={ondelete}>Delete</Button>{/if}
   </div>
 
   <section aria-label="Seat colours" class="flex flex-col gap-1">
@@ -136,7 +155,7 @@
   {/each}
 
   <span class="text-[12px] text-text-dim">
-    Lobby shows only while you are in a lobby with no game running, and is off by default. The built-in effects can't be edited and never
-    touch your WLED presets; the seat colours can. Duplicate it to make your own.
+    Lobby shows only while you are in a lobby with no game running, and is off by default. Effects can't be edited yet and never touch your
+    WLED presets; the seat colours can. Duplicate a profile to keep your own copy, or export it as a file.
   </span>
 </section>

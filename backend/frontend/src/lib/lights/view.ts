@@ -142,3 +142,13 @@ export function effectGroups<R extends { when: { trigger: string } }>(rules: rea
     items: rules.flatMap((rule, index) => (gameOf(rule) === game ? [{ rule, index }] : [])),
   })).filter(g => g.items.length > 0)
 }
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** The line after an import: 'Imported 14 effects, ignored 2, adjusted 1'. */
+export function importSummary(r: { imported: number; ignored: readonly string[]; adjusted: readonly string[] }): string {
+  const parts = [`Imported ${plural(r.imported, 'effect', 'effects')}`]
+  if (r.ignored.length) parts.push(`ignored ${r.ignored.length}`)
+  if (r.adjusted.length) parts.push(`adjusted ${r.adjusted.length}`)
+  return parts.join(', ')
+}
