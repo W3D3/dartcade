@@ -202,7 +202,10 @@ function scoring(legs: StatLeg[], oldestFirst: StatLeg[], before: StatLeg[] | nu
   const now = scoringVisits(legs)
   const then = before && scoringVisits(before)
   const thrown = (ls: StatLeg[]) => visitsOf(ls).filter(v => v.darts.length > 0)
-  const tiered = (keep: (tier: VisitTier | null) => boolean) => (ls: StatLeg[]) => thrown(ls).filter(v => keep(visitTier(v.scored))).length
+  const inTier =
+    (...tiers: VisitTier[]) =>
+    (ls: StatLeg[]) =>
+      thrown(ls).filter(v => tiers.some(t => t === visitTier(v.scored))).length
   const byScore = [...groupBy(now, v => v.scored)].map(([score, vs]) => ({ score, visits: vs.length }))
   const twenties = visitsOf(legs)
     .flatMap(v => v.darts)
@@ -211,21 +214,9 @@ function scoring(legs: StatLeg[], oldestFirst: StatLeg[], before: StatLeg[] | nu
   return {
     visits: thrown(legs).length,
     until170: metric(oldestFirst, before, until170),
-    count180: count(
-      legs,
-      before,
-      tiered(t => t === 'max'),
-    ),
-    count140: count(
-      legs,
-      before,
-      tiered(t => t === '140'),
-    ),
-    count100: count(
-      legs,
-      before,
-      tiered(t => t !== null),
-    ),
+    count180: count(legs, before, inTier('max')),
+    count140: count(legs, before, inTier('140')),
+    count100: count(legs, before, inTier('max', '140', 'ton')),
     share100: { value: shareOf(thrown(legs), 100, MAX_VISIT), before: before && shareOf(thrown(before), 100, MAX_VISIT) },
     under40: { value: shareOf(now, 0, 39), before: then && shareOf(then, 0, 39) },
     buckets: BUCKETS.map(([from, to, label]) => ({ label, now: shareOf(now, from, to), before: then && shareOf(then, from, to) })),

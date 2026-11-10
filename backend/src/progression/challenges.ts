@@ -6,6 +6,7 @@ import { seededRng, type Rng } from '../shared/rng.js'
 import { addDays, daysBetween } from '../shared/progression.js'
 import { gameTitle } from '../shared/gameNames.js'
 import { AVG_CLASS_MIN, avgClass } from '../shared/avgClass.js'
+import { visitTier } from '../shared/darts.js'
 
 export type Period = 'daily' | 'weekly'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -293,7 +294,7 @@ export const TEMPLATES: readonly Template[] = [
     step: once(g => {
       let run = 0
       for (const v of g.visits) {
-        run = !v.bust && (v.scored ?? 0) >= 140 ? run + 1 : 0
+        run = !v.bust && ['max', '140'].includes(visitTier(v.scored ?? 0) ?? '') ? run + 1 : 0
         if (run >= 3) return true
       }
       return false

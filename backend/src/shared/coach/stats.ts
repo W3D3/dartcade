@@ -2,6 +2,7 @@
 // doubles.
 import { directOutId } from './aims.js'
 import { dartPoints, type Throw } from './walk.js'
+import { perVisitAverage } from '../darts.js'
 
 export type DoubleStat = { target: string; darts: number; hits: number }
 export type CoachStats = {
@@ -31,7 +32,7 @@ export function executionStats(throws: readonly Throw[]): CoachStats {
   }
   const list = [...doubles.values()].sort((a, b) => b.darts - a.darts)
   return {
-    scoringAverage: scoring.length ? (points / scoring.length) * 3 : null,
+    scoringAverage: perVisitAverage(points, scoring.length),
     scoringDarts: scoring.length,
     busts: throws.filter(t => t.bust).length,
     doubles: list,

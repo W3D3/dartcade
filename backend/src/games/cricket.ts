@@ -34,7 +34,7 @@ import {
 } from './teams.js'
 import { BOT_SPEED_OPTION, BULL_OFF_OPTION } from './commonOptions.js'
 import { OPEN, TARGETS, cricketTarget, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
-import { DARTS_PER_VISIT } from '../shared/darts.js'
+import { DARTS_PER_VISIT, perVisitAverage } from '../shared/darts.js'
 
 export type CricketConfig = {
   mode: CricketMode
@@ -325,7 +325,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       return {
         placement,
         stats: {
-          mpr: darts > 0 ? (s.marksScored[i] / darts) * DARTS_PER_VISIT : 0,
+          mpr: perVisitAverage(s.marksScored[i], darts) ?? 0,
           marksScored: s.marksScored[i],
           dartsThrown: darts,
           legsWon: s.legs[s.teamOf[i]],

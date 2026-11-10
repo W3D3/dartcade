@@ -7,13 +7,13 @@ import type { RollOptions } from './rollingNumber.js'
 import type { Stat } from './statPages.js'
 
 import type { AtcGame, X01Game } from './api/game-ws'
-import { DARTS_PER_VISIT } from '$shared/darts.js'
+import { DARTS_PER_VISIT, perVisitAverage } from '$shared/darts.js'
 
 /** A 3-dart average to one decimal; a dash without darts. */
 export const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
 
 /** A 3-dart average from points and darts, to one decimal; a dash without darts. */
-export const avgOf = (points: number, darts: number) => fmtAvg(darts > 0 ? (points / darts) * 3 : null)
+export const avgOf = (points: number, darts: number) => fmtAvg(perVisitAverage(points, darts))
 
 /** Darts at a finish that hit, as "40%" and "2/5"; a dash before the first. */
 export const checkoutRate = (hits: number, attempts: number) => ({

@@ -21,7 +21,7 @@ import {
 import { BOT_SPEED_OPTION, BULL_OFF_OPTION, OUT_MODE_OPTION } from './commonOptions.js'
 import { x01MatchStats } from './x01Stats.js'
 import { meetsMode, scoreDart } from './outRules.js'
-import { DARTS_PER_VISIT, MAX_VISIT } from '../shared/darts.js'
+import { DARTS_PER_VISIT, MAX_VISIT, perVisitAverage } from '../shared/darts.js'
 
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
@@ -449,7 +449,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       return {
         placement,
         stats: {
-          average: darts > 0 ? (s.pointsScored[i] / darts) * DARTS_PER_VISIT : 0,
+          average: perVisitAverage(s.pointsScored[i], darts) ?? 0,
           dartsThrown: darts,
           legsWon: s.legs[s.teamOf[i]],
           pointsScored: s.pointsScored[i],

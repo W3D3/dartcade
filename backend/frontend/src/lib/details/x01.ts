@@ -1,7 +1,7 @@
 // X01 on the details page: the sides (seats, or teams), and per leg the points-left chart, the
 // chalkboard and the one-line summary, all from the server's X01Detail.
 import type { GameSummary, Segment, X01Detail } from '../api'
-import { visitTier } from '$shared/darts.js'
+import { visitFx } from '../visitBand.js'
 
 export type Side = { key: number; name: string; seats: number[] }
 export type ChalkCell = {
@@ -15,12 +15,6 @@ export type ChalkCell = {
   crossed: boolean
 }
 export type ChalkRow = { n: number; cells: (ChalkCell | null)[] }
-/** The chalkboard marks 180 and every other ton-plus visit alike. */
-const chalkTier = (scored: number): ChalkCell['tier'] => {
-  const tier = visitTier(scored)
-  return tier === 'max' ? 'max' : tier ? 'ton' : null
-}
-
 type Visit = X01Detail['legs'][number]['visits'][number]
 
 export function x01Sides(game: GameSummary, detail: X01Detail): Side[] {
@@ -59,6 +53,7 @@ export function chalkboardRows(detail: X01Detail, leg: number, sides: Side[]): C
       const v = vs.at(i)
       if (!v) return null
       const last = i === vs.length - 1
+      const fx = visitFx(v.scored)
       return {
         seat: v.seat,
         scored: v.scored,
@@ -66,7 +61,7 @@ export function chalkboardRows(detail: X01Detail, leg: number, sides: Side[]): C
         darts: v.darts.map(d => dartLabel(d.segment)),
         bust: v.bust,
         out: last && winner !== null && v.seat === winner,
-        tier: chalkTier(v.scored),
+        tier: fx === 'none' ? null : fx,
         crossed: !last,
       }
     }),

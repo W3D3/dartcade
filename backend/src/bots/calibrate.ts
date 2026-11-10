@@ -4,6 +4,7 @@
 import { pickTarget, throwAt } from './accuracy.js'
 import { seededRng } from '../session/rng.js'
 import { LEVEL_AVERAGE } from '../shared/botLevels.js'
+import { DARTS_PER_VISIT } from '../shared/darts.js'
 
 const START = 501
 const OUT_MODE = 'double'
@@ -51,7 +52,7 @@ function averageAt(sigma: number, seed: number): number {
     totalDarts += darts
     totalPoints += points
   }
-  return (totalPoints / totalDarts) * 3
+  return (totalPoints / totalDarts) * DARTS_PER_VISIT
 }
 
 /** The sigma (board units) producing `targetAvg`, by binary search. */

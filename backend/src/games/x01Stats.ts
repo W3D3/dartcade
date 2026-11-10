@@ -4,7 +4,7 @@ import type { CommittedVisit, MatchStats } from '../session/types.js'
 import type { X01State } from './x01.js'
 import { row, values } from './matchStats.js'
 import { seatsByTeam } from './teams.js'
-import { visitTier } from '../shared/darts.js'
+import { perVisitAverage, visitTier } from '../shared/darts.js'
 
 const ROWS = [
   row('average', '3-dart average', 'decimal', 'higher'),
@@ -52,7 +52,7 @@ function toVisit(v: CommittedVisit<X01State>): Visit {
 const sum = (ns: number[]) => ns.reduce((a, b) => a + b, 0)
 const maxOf = (ns: number[]) => (ns.length > 0 ? Math.max(...ns) : undefined)
 const minOf = (ns: number[]) => (ns.length > 0 ? Math.min(...ns) : undefined)
-const perVisit = (points: number, darts: number) => (darts > 0 ? (points / darts) * 3 : undefined)
+const perVisit = (points: number, darts: number) => perVisitAverage(points, darts) ?? undefined
 
 /** The values of a group of seats (one seat, or a team's seats). */
 function groupValues(all: Visit[], seats: number[]): Record<string, number | undefined> {

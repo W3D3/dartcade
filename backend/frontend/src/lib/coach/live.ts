@@ -7,7 +7,7 @@ import { aimPoints, isDoubleAim, type Aim } from '$shared/coach/aims'
 import type { CoachModels } from '$shared/coach/model'
 import { coachOpenVisit, scoringAims } from '$shared/coach/openVisit'
 import { afterDart, coachDart, dartPhase } from '$shared/coach/walk'
-import { DARTS_PER_VISIT } from '$shared/darts.js'
+import { DARTS_PER_VISIT, perVisitAverage } from '$shared/darts.js'
 
 export type LiveAim = { label: string; aimId: string; detail: string }
 export type LiveCoach = {
@@ -64,8 +64,8 @@ export type LiveAverage = { value: number | null; line: string }
  *  measured against itself). */
 export function liveAverage(thirtyDay: number | null | undefined, points: number, darts: number): LiveAverage {
   if (thirtyDay != null) return { value: thirtyDay, line: `Graded against your 30-day average, ${thirtyDay.toFixed(1)}.` }
-  if (darts > 0) {
-    const game = (points / darts) * 3
+  const game = perVisitAverage(points, darts)
+  if (game !== null) {
     return { value: game, line: `Graded against this game's average, ${game.toFixed(1)}.` }
   }
   return { value: null, line: 'No average yet: a scoring visit is graded on its own.' }
