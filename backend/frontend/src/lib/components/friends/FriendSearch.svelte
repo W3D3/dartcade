@@ -8,6 +8,7 @@
   import type { FriendSearchHit } from '$lib/api'
   import type { Friend, OutgoingFriendRequest } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
+  import { createToast } from '$lib/toast'
   import Toast from '$lib/components/ui/toast/toast.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { cancelRequest, sendRequest } from '$lib/friends/actions'
@@ -35,8 +36,8 @@
   // The field and its rule line: the panel opens below both, as wide as the field
   let anchor = $state<HTMLElement | null>(null)
   let picked = $state('')
-  let toast = $state<{ text: string; tone: 'success' | 'error'; undo?: () => void } | null>(null)
-  let toastTimer: ReturnType<typeof setTimeout> | undefined
+  const notice = createToast<{ text: string; tone: 'success' | 'error'; undo?: () => void }>(6000)
+  const toast = $derived($notice?.value ?? null)
 
   const text = $derived(query.trim())
   const allMatching = $derived(filterFriends(friends, text))
@@ -64,15 +65,8 @@
       : '',
   )
 
-  function say(next: typeof toast) {
-    clearTimeout(toastTimer)
-    toast = next
-    toastTimer = setTimeout(() => (toast = null), 6000)
-  }
-  const dismiss = () => {
-    clearTimeout(toastTimer)
-    toast = null
-  }
+  const say = notice.show
+  const dismiss = notice.dismiss
 
   async function add(p: FriendSearchHit) {
     const before = stateOf(p)

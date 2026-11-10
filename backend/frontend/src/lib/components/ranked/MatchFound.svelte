@@ -2,7 +2,7 @@
   // The match-found prompt (MM-Found, MM-Found-Duo, MM-Found-Phone boards), on whatever screen you
   // are: everyone has 10 s to accept, the other side stays hidden until all did. Once everyone
   // accepted the game starts, and the server's matchmaking.ended takes you to it.
-  import { onDestroy } from 'svelte'
+  import { createToast } from '$lib/toast'
   import { tick } from '$lib/now'
   import { push } from 'svelte-spa-router'
   import { Check, Lock, Swords } from '@lucide/svelte'
@@ -27,10 +27,9 @@
 
   // The server says how a match ended (matchmaking.ended): the game started, which opens it, or it
   // fell through, which says so for a few seconds
-  let notice = $state<string | null>(null)
+  const fellThrough = createToast<string>(NOTICE_MS)
+  const notice = $derived($fellThrough?.value ?? null)
   let handled: unknown = null
-  let noticeTimer: ReturnType<typeof setTimeout> | undefined
-  onDestroy(() => clearTimeout(noticeTimer))
   $effect(() => {
     const ended = $matchmakingEnded
     if (!ended || ended === handled) return
@@ -39,9 +38,9 @@
       void push(`/session/${ended.sessionId}`)
       return
     }
-    notice = endedNotice(ended)
-    clearTimeout(noticeTimer)
-    noticeTimer = setTimeout(() => (notice = null), NOTICE_MS)
+    const text = endedNotice(ended)
+    if (text) fellThrough.show(text)
+    else fellThrough.dismiss()
   })
 
   async function accept() {
