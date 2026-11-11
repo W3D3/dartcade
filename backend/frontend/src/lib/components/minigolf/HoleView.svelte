@@ -206,7 +206,7 @@
   <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r + 12} fill="#1f5134" opacity="0.8" />
   <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r} fill="#050604" />
   <line x1={pole[0]} y1={pole[1]} x2={pole[0]} y2={pole[1] - 240} stroke={THEME.text} stroke-width="8" stroke-linecap="round" />
-  <path d="M{pole[0]} {pole[1] - 240} l110 34 l-110 34 z" fill={THEME.accent} stroke="#0a0b09" stroke-width="4" />
+  <path d="M{pole[0]} {pole[1] - 240} l110 34 l-110 34 z" fill={THEME.boardRed} stroke="#0a0b09" stroke-width="4" />
   {#if arrows.length}
     <g pointer-events="none" stroke="#4ec6f2" stroke-width="8" stroke-linecap="round" data-testid="force-arrows">
       {#each arrows as { at, end }, i (i)}

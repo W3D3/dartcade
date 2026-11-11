@@ -256,7 +256,7 @@
     pole.castShadow = true
     g.add(pole)
     const flagShape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(170, -45), new THREE.Vector2(0, -90)])
-    const flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), toon(THEME.accent, THREE.DoubleSide))
+    const flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), toon(THEME.boardRed, THREE.DoubleSide))
     flag.position.set(fx, cupH + 520, fy)
     flag.castShadow = true
     g.add(flag)
