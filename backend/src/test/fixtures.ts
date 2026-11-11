@@ -1,5 +1,5 @@
 import type { Insertable, Kysely } from 'kysely'
-import type { BoardsTable, Database, LobbiesTable, UserTable } from '../db/schema.js'
+import type { BoardsTable, Database, LobbiesTable, TournamentEntriesTable, TournamentsTable, UserTable } from '../db/schema.js'
 
 type NewUser = Pick<UserTable, 'id'> & Partial<Insertable<UserTable>>
 
@@ -40,5 +40,36 @@ export async function insertLobby(db: Kysely<Database>, { id, ...rest }: NewLobb
   await db
     .insertInto('lobbies')
     .values({ name: `${id} lobby`, code: id.toUpperCase().padEnd(6, 'X').slice(0, 6), ...rest, id })
+    .execute()
+}
+
+type NewTournament = Pick<TournamentsTable, 'id'> & Partial<Insertable<TournamentsTable>>
+
+/** A public solo X01 single elimination of 8, a draft unless `status` says otherwise. */
+export async function insertTournament(db: Kysely<Database>, { id, ...rest }: NewTournament): Promise<void> {
+  await db
+    .insertInto('tournaments')
+    .values({
+      kind: 'community',
+      access: 'public',
+      name: `${id} cup`,
+      game_id: 'x01',
+      game_config: JSON.stringify({ start: 501 }),
+      format: 'single_elimination',
+      team_size: 1,
+      max_entries: 8,
+      starts_at: null,
+      ...rest,
+      id,
+    })
+    .execute()
+}
+
+type NewEntry = Pick<TournamentEntriesTable, 'id' | 'tournament_id'> & Partial<Insertable<TournamentEntriesTable>>
+
+export async function insertTournamentEntry(db: Kysely<Database>, { id, ...rest }: NewEntry): Promise<void> {
+  await db
+    .insertInto('tournament_entries')
+    .values({ name: id, ...rest, id })
     .execute()
 }
