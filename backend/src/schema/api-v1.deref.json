@@ -93,6 +93,10 @@
       "description": "The signed-in user's stats per game mode (stats.enabled)"
     },
     {
+      "name": "tournaments",
+      "description": "Tournaments, their entries and matches (tournaments.enabled)"
+    },
+    {
       "name": "admin",
       "description": "Admin-only account management (list users, promote or demote admins) and feature flag overrides"
     },
@@ -38498,6 +38502,238 @@
         }
       }
     },
+    "/api/tournaments": {
+      "get": {
+        "operationId": "listTournaments",
+        "summary": "Public tournaments to browse (tournaments.enabled)",
+        "description": "Published public tournaments that have not ended, the soonest first; those an organizer starts come last.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournaments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tournaments"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tournaments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "kind",
+                          "access",
+                          "status",
+                          "gameId",
+                          "format",
+                          "teamSize",
+                          "maxEntries",
+                          "entries",
+                          "startsAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "official",
+                              "community"
+                            ]
+                          },
+                          "access": {
+                            "type": "string",
+                            "enum": [
+                              "public",
+                              "friends",
+                              "invite",
+                              "in_person"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "open",
+                              "check_in",
+                              "running",
+                              "finished",
+                              "cancelled"
+                            ]
+                          },
+                          "gameId": {
+                            "type": "string",
+                            "description": "The game every match plays"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "single_elimination",
+                              "double_elimination",
+                              "round_robin",
+                              "groups_knockout"
+                            ]
+                          },
+                          "teamSize": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4,
+                            "description": "Players per entry: 1 is solo"
+                          },
+                          "maxEntries": {
+                            "type": "integer"
+                          },
+                          "entries": {
+                            "type": "integer",
+                            "description": "Entries registered so far (withdrawn ones not counted)"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Null: an organizer starts it"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/achievements": {
       "get": {
         "operationId": "getMyAchievements",
@@ -73514,6 +73750,90 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "TournamentSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "access",
+          "status",
+          "gameId",
+          "format",
+          "teamSize",
+          "maxEntries",
+          "entries",
+          "startsAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "official",
+              "community"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "invite",
+              "in_person"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "check_in",
+              "running",
+              "finished",
+              "cancelled"
+            ]
+          },
+          "gameId": {
+            "type": "string",
+            "description": "The game every match plays"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_elimination",
+              "double_elimination",
+              "round_robin",
+              "groups_knockout"
+            ]
+          },
+          "teamSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Players per entry: 1 is solo"
+          },
+          "maxEntries": {
+            "type": "integer"
+          },
+          "entries": {
+            "type": "integer",
+            "description": "Entries registered so far (withdrawn ones not counted)"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null: an organizer starts it"
           }
         }
       },
