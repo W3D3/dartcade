@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // Home's What's new: hand-edited, newest first. Like the Featured banners, an item about a feature
 // behind a flag shows only to players who have it.
 import { visibleFeatured } from './featured'
@@ -11,14 +12,14 @@ export const NEWS: NewsItem[] = [
     date: '2026-10-27',
     title: 'Home',
     text: 'Your form, your rank and what your friends are up to, all on one page.',
-    href: '#/',
+    href: hrefs.home(),
   },
   {
     id: 'lights',
     date: '2026-10-14',
     title: 'Lights for your board',
     text: 'Pair WLED strips in Settings › Lights and let them follow the game.',
-    href: '#/settings/lights',
+    href: hrefs.settings('lights'),
     flag: 'lights.enabled',
   },
   {
@@ -26,7 +27,7 @@ export const NEWS: NewsItem[] = [
     date: '2026-10-02',
     title: 'Ranked tiers and reserve timer',
     text: 'Wood to Elite, five stages each. A reserve timer per player.',
-    href: '#/matchmaking/ranks',
+    href: hrefs.ranks(),
     flag: 'matchmaking.enabled',
   },
 ]

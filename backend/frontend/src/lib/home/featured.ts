@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // Home's Featured banners: new things worth a look. Hand-edited, newest first; a slide shows only
 // to players who have what it advertises (its flag is on for them), so nobody is sent to a page
 // they can't open. Slides for Cricket and Stats from the design are left out: neither has a page yet.
@@ -23,7 +24,7 @@ export const FEATURED: FeaturedSlide[] = [
     badge: 'NEW GAME MODE',
     title: 'Minigolf',
     text: 'Your dart is the putter: angle aims, distance is power. Play the courses with your friends, one hole at a time.',
-    primary: { label: 'Play minigolf', href: '#/play' },
+    primary: { label: 'Play minigolf', href: hrefs.play() },
     flag: 'gamemode.minigolf.enabled',
     img: minigolfImg,
   },
@@ -32,7 +33,7 @@ export const FEATURED: FeaturedSlide[] = [
     badge: 'NEW',
     title: 'Board lights',
     text: 'Connect WLED lights around your board. They follow whose turn it is, flash on a 180 and count down your checkout.',
-    primary: { label: 'Set up lights', href: '#/settings/lights' },
+    primary: { label: 'Set up lights', href: hrefs.settings('lights') },
     flag: 'lights.enabled',
     icon: 'lights',
   },

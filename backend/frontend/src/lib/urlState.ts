@@ -3,6 +3,7 @@
 // `querystring` store; `location.search` is the wrong place (see AGENTS.md).
 
 import { replace } from 'svelte-spa-router'
+import { hrefs } from '$lib/routes'
 
 /** The value under `key` when it is one of `allowed`; anything else (missing, unknown) is `fallback`. */
 export function readParam<T extends string, F>(qs: string | null | undefined, key: string, allowed: readonly T[], fallback: F): T | F {
@@ -31,7 +32,7 @@ export function setParam(path: string, qs: string | null | undefined, key: strin
 type Store = Pick<Storage, 'getItem' | 'setItem'>
 
 const HISTORY_KEY = 'dartcade:history-url'
-const HISTORY_HREF = '#/history'
+const HISTORY_HREF = hrefs.history()
 
 /** Remembers the History list's URL, filter included, for this tab, so a details page can link back to it. */
 export function rememberHistoryUrl(storage: Store | null, qs: string | null | undefined): void {

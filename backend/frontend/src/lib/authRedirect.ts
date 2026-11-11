@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // better-auth's verify-email and reset-password callbacks redirect the browser with `?error=…`
 // (or, for reset, `?token=…`) in the page's real query string, before the `#` — not inside the
 // hash route svelte-spa-router reads ($querystring only parses the text after `#/route?…`). A
@@ -18,6 +19,6 @@ const VERIFY_EMAIL_ERRORS = new Set(['TOKEN_EXPIRED', 'INVALID_TOKEN', 'USER_NOT
  */
 export function authRedirect(search: string, hash: string): { hash: string; stripQuery: boolean } {
   const error = new URLSearchParams(search).get('error')
-  if (!error || hash.startsWith('#/reset') || !VERIFY_EMAIL_ERRORS.has(error)) return { hash, stripQuery: false }
-  return { hash: `#/verify?error=${error}`, stripQuery: true }
+  if (!error || hash.startsWith(hrefs.reset()) || !VERIFY_EMAIL_ERRORS.has(error)) return { hash, stripQuery: false }
+  return { hash: hrefs.verify(`error=${error}`), stripQuery: true }
 }

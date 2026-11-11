@@ -3,6 +3,7 @@ import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } 
 import type { ConfigFieldMeta } from '../api'
 import { rulesOf } from '../gameViews/rules.js'
 import { teamSizesLabel } from '../teams.js'
+import { hrefs } from '../routes.js'
 import { gameTitle } from '$shared/gameNames'
 import { calendarDaysAgo, dayMonth, pad2 } from '../fmt.js'
 
@@ -26,7 +27,7 @@ export function qrJoinLink(origin: string, code: string): string {
 
 /** The Join page for a code, still marked as scanned from the QR code (`?via=qr`) if it was. */
 export function joinPath(code: string, viaQr: boolean): string {
-  return `/#/join/${code}${viaQr ? '?via=qr' : ''}`
+  return `/${hrefs.join(code, viaQr ? 'via=qr' : undefined)}`
 }
 
 /** Under the host's "Who can join" choice. */

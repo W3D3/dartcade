@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 import { get, writable, type Readable } from 'svelte/store'
 import {
   WsCloseCode,
@@ -98,7 +99,7 @@ export function createSessionStore(sessionId: string, { watch = false }: { watch
       // The close code's name, when it is one of ours
       const code: string | undefined = WsCloseCode[closeCode]
       if (code === 'Unauthorized') {
-        window.location.hash = '#/login'
+        window.location.hash = hrefs.login()
         return 'stop'
       }
       // Not this user's session, or it no longer exists: retrying won't help. A successful

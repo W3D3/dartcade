@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 import createClient from 'openapi-fetch'
 import type { paths } from './schema'
 
@@ -14,7 +15,7 @@ export function createApi({ baseUrl = '', fetch, onUnauthorized }: ApiOptions = 
   const goToLogin =
     onUnauthorized ??
     (() => {
-      window.location.hash = '#/login'
+      window.location.hash = hrefs.login()
     })
   client.use({
     onResponse({ response }) {

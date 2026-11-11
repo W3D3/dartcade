@@ -1,15 +1,16 @@
+import { hrefs } from '$lib/routes'
 // Breadcrumb trails for the admin pages, as plain data: each page renders it with
 // $lib/components/ui/breadcrumb and wires any onclick it needs (e.g. an unsaved-changes guard).
 import type { BreadcrumbItem } from '$lib/components/ui/breadcrumb/index.js'
 import { ADMIN_AREA, type Area } from '$lib/minigolf/editor/area'
 
-const ADMIN: BreadcrumbItem = { label: 'Admin', href: '#/admin' }
+const ADMIN: BreadcrumbItem = { label: 'Admin', href: hrefs.admin() }
 
 export const usersTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Users' }]
 
 /** `gameTitle` set: a game's details are open, so "Games" becomes a link back to the list. */
 export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
-  gameTitle ? [ADMIN, { label: 'Games', href: '#/admin/games' }, { label: gameTitle }] : [ADMIN, { label: 'Games' }]
+  gameTitle ? [ADMIN, { label: 'Games', href: hrefs.adminGames() }, { label: gameTitle }] : [ADMIN, { label: 'Games' }]
 
 export const rankedTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Ranked queue' }]
 
@@ -25,9 +26,9 @@ export const cosmeticsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Cosmetic
 
 /** `flagKey` set: a flag's details are open, so "Feature flags" becomes a link back to the list. */
 export const flagsTrail = (flagKey?: string | null): BreadcrumbItem[] =>
-  flagKey ? [ADMIN, { label: 'Feature flags', href: '#/admin/flags' }, { label: flagKey }] : [ADMIN, { label: 'Feature flags' }]
+  flagKey ? [ADMIN, { label: 'Feature flags', href: hrefs.adminFlags() }, { label: flagKey }] : [ADMIN, { label: 'Feature flags' }]
 
-const PLAY: BreadcrumbItem = { label: 'Play', href: '#/play' }
+const PLAY: BreadcrumbItem = { label: 'Play', href: hrefs.play() }
 
 /** `courseName` set: a course is open, so the courses crumb becomes a link back to the list. */
 export const minigolfCoursesTrail = (courseName: string | null | undefined, area: Area = ADMIN_AREA): BreadcrumbItem[] => {

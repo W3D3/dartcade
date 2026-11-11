@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 import { createAuthClient } from 'better-auth/svelte'
 import { adminClient } from 'better-auth/client/plugins'
 import { passkeyClient } from '@better-auth/passkey/client'
@@ -29,6 +30,6 @@ export async function signOut(): Promise<void> {
   } finally {
     currentUser.set(null)
     clearBests()
-    window.location.hash = '#/login'
+    window.location.hash = hrefs.login()
   }
 }
