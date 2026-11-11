@@ -22,13 +22,27 @@ function liveItem(liveSessionId: string | null, label: string): NavTab {
     : { href: '/session', label, icon: 'live', aria: `${label}: no game running`, disabled: true }
 }
 
+/** What the nav shows besides the fixed pages: counts for the badges and the features that are on. */
+export type NavState = {
+  /** Pending lobby invites, a badge on Play. */
+  invites?: number
+  ranked?: boolean
+  /** Challenges to claim while progression is on; null while it is off. */
+  progress?: number | null
+  /** Admins and moderators. */
+  admin?: boolean
+  home?: boolean
+  coach?: boolean
+  stats?: boolean
+}
+
 /**
  * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Coach
  * while the coach is on, Tournaments (soon) or Progress while progression is on (Mobile-Progress),
  * History; pending invites as a badge on Play. No Live tab: a running game is one tap away from
  * Play's Continue and the lobby strip.
  */
-export function navTabs(invites = 0, ranked = false, progress: number | null = null, home = false, coach = false): NavTab[] {
+export function navTabs({ invites = 0, ranked = false, progress = null, home = false, coach = false }: NavState = {}): NavTab[] {
   return [
     ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     {
@@ -47,20 +61,12 @@ export function navTabs(invites = 0, ranked = false, progress: number | null = n
 }
 
 /** The tablet rail: the phone's tabs, then Stats (while it is on), Settings and Admin (admins and moderators), which phones reach from the account menu. */
-export function railTabs(
-  invites = 0,
-  ranked = false,
-  progress: number | null = null,
-  admin = false,
-  home = false,
-  coach = false,
-  stats = false,
-): NavTab[] {
+export function railTabs(nav: NavState = {}): NavTab[] {
   return [
-    ...navTabs(invites, ranked, progress, home, coach),
-    ...(stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),
+    ...navTabs(nav),
+    ...(nav.stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),
     { href: '/settings', label: 'Settings', icon: 'settings' },
-    ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
+    ...(nav.admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
 }
 
@@ -74,12 +80,7 @@ function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
 /** The desktop side nav: the same pages under their long names (Coach while the coach is on), then Stats (while it is on), Progress, Settings and Admin (admins and moderators). */
 export function sideLinks(
   liveSessionId: string | null,
-  ranked = false,
-  admin = false,
-  progress: number | null = null,
-  home = false,
-  coach = false,
-  stats = false,
+  { ranked = false, admin = false, progress = null, home = false, coach = false, stats = false }: NavState = {},
 ): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
