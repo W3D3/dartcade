@@ -1,6 +1,7 @@
 <script lang="ts">
   // Every stats component with made-up numbers (lib/stats/fixtures.ts), for building and
   // screenshotting them on their own. Only in the dev server (App.svelte), never in a build.
+  import { hrefs } from '$lib/routes'
   import Layout from '$lib/components/Layout.svelte'
   import StatTile from '$lib/components/stats/StatTile.svelte'
   import TileGrid from '$lib/components/stats/TileGrid.svelte'
@@ -101,7 +102,7 @@
         spark={series(50, 36, 8, -4)}
       />
       <StatTile label="180s" value="4" trend={trendOf(4, 2, 'count', 'higher')} sub="1 every 12.5 legs">
-        <a href="#/dev/stats" class="text-[13px] font-semibold text-accent no-underline">View all ›</a>
+        <a href={hrefs.devStats()} class="text-[13px] font-semibold text-accent no-underline">View all ›</a>
       </StatTile>
       <StatTile label="Legs won" value="31" unit="of 50" sub="No range before to compare with" />
     </TileGrid>
@@ -187,11 +188,13 @@
       </ChartCard>
       <ChartCard title="Top checkouts" note="Tap one to open the game">
         <div class="flex flex-col">
-          <LinkRow href="#/dev/stats" sub="501 · vs Lena · 12 Oct · leg 3" tag="TON+"
+          <LinkRow href={hrefs.devStats()} sub="501 · vs Lena · 12 Oct · leg 3" tag="TON+"
             >{#snippet title()}124 <span class="font-normal text-text-muted">· T20 T16 D8</span>{/snippet}</LinkRow
           >
-          <LinkRow href="#/dev/stats" sub="Ranked 501 · vs Anna K. · 2 Oct" value="13 darts">{#snippet title()}Best leg{/snippet}</LinkRow>
-          <LinkRow href="#/dev/stats" sub="Solo practice · 17 Oct">{#snippet title()}Visit 3 of leg 5{/snippet}</LinkRow>
+          <LinkRow href={hrefs.devStats()} sub="Ranked 501 · vs Anna K. · 2 Oct" value="13 darts"
+            >{#snippet title()}Best leg{/snippet}</LinkRow
+          >
+          <LinkRow href={hrefs.devStats()} sub="Solo practice · 17 Oct">{#snippet title()}Visit 3 of leg 5{/snippet}</LinkRow>
         </div>
       </ChartCard>
     </div>

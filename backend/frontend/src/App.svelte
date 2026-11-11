@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { PLAYER_AREA } from '$lib/minigolf/editor/area'
   import { deviceStore } from '$lib/storage'
   import Router, { push, location } from 'svelte-spa-router'
@@ -203,13 +204,13 @@
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
     // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user
-    if (currentHash.startsWith('#/big-screen')) {
+    if (currentHash.startsWith(hrefs.bigScreen('')) || currentHash.startsWith(hrefs.bigScreenFrame())) {
       checked = true
       return
     }
     // A join link or QR code opened while signed out shows its lobby first (and comes back after
     // signing in); everything else goes to the login page and comes back here after it
-    if (!get(currentUser) && !currentHash.startsWith('#/join/')) {
+    if (!get(currentUser) && !currentHash.startsWith(hrefs.join() + '/')) {
       rememberReturn(sessionStore(), currentHash)
       void push('/login')
     }

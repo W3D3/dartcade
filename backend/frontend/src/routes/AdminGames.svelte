@@ -1,5 +1,6 @@
 <!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
@@ -299,7 +300,7 @@
                 </div>
                 {#if g.status === 'finished'}
                   <a
-                    href="#/admin/games/{g.id}"
+                    href={hrefs.adminGames(g.id)}
                     class="relative block px-[22px] {$currentUser.isAdmin
                       ? 'pr-28'
                       : 'pr-20'} py-3 text-text no-underline hover:bg-surface-active"

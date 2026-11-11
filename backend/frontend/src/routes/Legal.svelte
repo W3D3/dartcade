@@ -1,11 +1,13 @@
 <script lang="ts">
   // Terms, Privacy Policy and Imprint (#/terms, #/privacy, #/imprint), see Legal.dc.html / Mobile-Legal.dc.html.
+  import { hrefs } from '$lib/routes'
   import { location } from 'svelte-spa-router'
   import Wordmark from '$lib/components/Wordmark.svelte'
   import { api } from '$lib/api'
 
   type Doc = 'terms' | 'privacy' | 'imprint'
   const TITLES: Record<Doc, string> = { terms: 'Terms', privacy: 'Privacy', imprint: 'Imprint' }
+  const DOCS: Doc[] = ['terms', 'privacy', 'imprint']
   const isDoc = (s: string): s is Doc => s in TITLES
 
   const doc = $derived.by(() => {
@@ -36,13 +38,13 @@
 
     <div class="flex flex-col gap-[10px] border-b border-line pb-4">
       <nav aria-label="Legal documents" class="flex gap-[18px] md:gap-5">
-        {#each Object.entries(TITLES) as [id, label] (id)}
+        {#each DOCS as id (id)}
           <a
-            href="#/{id}"
+            href={hrefs.legal(id)}
             aria-current={doc === id ? 'page' : undefined}
             class="text-[14px] md:text-[15px] no-underline {doc === id ? 'font-semibold text-text' : 'font-medium text-text-muted'}"
           >
-            {label}
+            {TITLES[id]}
           </a>
         {/each}
       </nav>

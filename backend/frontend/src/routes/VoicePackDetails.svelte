@@ -2,6 +2,7 @@
      caller can ask a voice for, and a preview for each one the pack has. Opened from the pack's Details
      button in Settings → Caller. -->
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { onDestroy, onMount } from 'svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -73,7 +74,7 @@
 <Layout title={name}>
   <PageMain>
     <PageTitle
-      trail={[{ label: 'Settings', href: '#/settings' }, { label: 'Caller', href: '#/settings/caller' }, { label: name }]}
+      trail={[{ label: 'Settings', href: hrefs.settings() }, { label: 'Caller', href: hrefs.settings('caller') }, { label: name }]}
       title={name}
       sub={clips ? `${have} of ${total} sounds` : 'Every sound the caller can use, and a preview of the ones this voice has'}
     />

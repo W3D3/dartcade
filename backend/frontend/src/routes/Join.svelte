@@ -2,6 +2,7 @@
   // Joining a lobby by its code: typed, or from a join link or QR code (#/join/K7Q4MD). It shows
   // which lobby the code opens first; someone in another lobby can leave it first. Signed out, a
   // link shows its invite (InviteLink) with sign-in and sign-up that come back here.
+  import { hrefs } from '$lib/routes'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
@@ -94,7 +95,7 @@
 
   /** Signs out; signing in as someone else comes back here with the code. */
   function switchAccount() {
-    rememberReturn(sessionStore(), code.length === 6 ? joinPath(code, viaQr).slice(1) : '#/join')
+    rememberReturn(sessionStore(), code.length === 6 ? joinPath(code, viaQr).slice(1) : hrefs.join())
     void signOut()
   }
 

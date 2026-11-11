@@ -2,6 +2,7 @@
   // Landing page for the mail Register/Login just triggered. A verification link itself goes
   // straight to its destination (verifyCallback); this page is only "check your inbox" plus resend,
   // or (an expired/invalid link, or no email known at all) a way to get a fresh one.
+  import { hrefs } from '$lib/routes'
   import { onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -146,7 +147,7 @@
         </Button>
       </form>
 
-      <a href="#/register" class="self-center text-[14px] no-underline">Wrong address? Start over</a>
+      <a href={hrefs.register()} class="self-center text-[14px] no-underline">Wrong address? Start over</a>
     </div>
   </main>
 </div>

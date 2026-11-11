@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -106,8 +107,8 @@
         <label class="flex items-start gap-[10px] text-body text-ink-2 min-h-[44px] cursor-pointer">
           <Checkbox bind:checked={acceptTerms} class="mt-[2px]" />
           <span
-            >I agree to the <a href="#/terms">Terms</a> and
-            <a href="#/privacy">Privacy Policy</a>.</span
+            >I agree to the <a href={hrefs.legal('terms')}>Terms</a> and
+            <a href={hrefs.legal('privacy')}>Privacy Policy</a>.</span
           >
         </label>
       </div>
@@ -128,7 +129,7 @@
 
       <p class="text-body text-text-muted text-center">
         Already have an account?
-        <a href="#/login" class="font-semibold no-underline">Sign in</a>
+        <a href={hrefs.login()} class="font-semibold no-underline">Sign in</a>
       </p>
 
       <AuthFooter />

@@ -2,6 +2,7 @@
   // The Coach page's Review tab (Coach-Review): counts over your last 50 legs, then every coached leg,
   // filtered server-side, each opening its leg review. The filter lives in the querystring
   // (#/coach?filter=lost) so back and forward step through it.
+  import { hrefs } from '$lib/routes'
   import { querystring } from 'svelte-spa-router'
   import { ChevronRight, Clock, LoaderCircle, Scan, Target } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -157,7 +158,7 @@
 
 {#snippet review(row: CoachLegRow, first: boolean)}
   <Button
-    href="#/coach/leg/{row.gameId}/{row.leg}"
+    href={hrefs.coachLeg(row.gameId, row.leg)}
     variant={first ? 'accent' : 'outline'}
     class="h-[38px] gap-1.5 text-[15px] font-semibold"
     aria-label="Review {vsLine(row.opponents)}, {row.context}"
@@ -193,7 +194,7 @@
     {:else}
       <nav aria-label="Coach" class="flex gap-[30px] border-b border-surface-paused">
         <a
-          href="#/coach"
+          href={hrefs.coach()}
           aria-current="page"
           class="-mb-px flex items-center gap-3 border-b-[3px] border-accent px-1.5 pb-3.5 text-text no-underline hover:text-text"
         >
@@ -214,7 +215,7 @@
       {#if counts?.legs === 0 && pending === 0}
         <EmptyState title="Nothing to review yet" text="Play an X01 game with double out to get a review.">
           {#snippet icon()}<Target size={24} />{/snippet}
-          {#snippet actions()}<a class="underline" href="#/play">Play</a>{/snippet}
+          {#snippet actions()}<a class="underline" href={hrefs.play()}>Play</a>{/snippet}
         </EmptyState>
       {:else}
         {#if counts || loading}<CountCards {counts} />{/if}
@@ -222,11 +223,13 @@
         <section aria-label="Legs" class="card flex flex-col gap-3 p-4 md:px-[22px] md:py-5">
           <div class="flex flex-wrap items-center gap-2">
             {#each COACH_FILTERS as f (f.id)}
-              <Chip variant="plain" href={f.id === 'all' ? '#/coach' : `#/coach?filter=${f.id}`} selected={f.id === filter}>{f.label}</Chip>
+              <Chip variant="plain" href={f.id === 'all' ? hrefs.coach() : hrefs.coach(`filter=${f.id}`)} selected={f.id === filter}
+                >{f.label}</Chip
+              >
             {/each}
             <span class="ml-auto flex flex-wrap items-center gap-x-3.5 gap-y-1">
               {#if counts}<span class="text-[13px] text-text-muted">X01 · double out · last {counts.legs} legs</span>{/if}
-              <a href="#/coach/checks" class="inline-flex items-center text-[13px] font-semibold no-underline"
+              <a href={hrefs.coachChecks()} class="inline-flex items-center text-[13px] font-semibold no-underline"
                 >What the coach detects <ChevronRight size={14} /></a
               >
             </span>

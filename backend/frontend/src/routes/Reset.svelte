@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -51,7 +52,7 @@
           <SectionLabel>Invalid or used token</SectionLabel>
           <div class="flex flex-col gap-3 p-4 rounded-md bg-surface-inset border border-danger-line">
             <p class="text-body/normal text-danger-text">This link has expired or was already used.</p>
-            <a href="#/forgot" class="text-label font-semibold no-underline">Request a new link</a>
+            <a href={hrefs.forgot()} class="text-label font-semibold no-underline">Request a new link</a>
           </div>
         </div>
       {:else}

@@ -3,6 +3,7 @@
   // new, your friends' lobbies and what they did lately, and a way back into your last games. Every
   // section loads on its own. No customising yet: the sections are in the design's order.
   // Design: docs/superpowers/specs/2026-10-27-home-page-design.md
+  import { hrefs } from '$lib/routes'
   import { ArrowRight } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -35,7 +36,7 @@
           {greeting(now)}{#if $currentUser}, {$currentUser.name}{/if}
         </h1>
       </div>
-      <Button href="#/play" variant="accent" class="shrink-0">New game<ArrowRight size={16} /></Button>
+      <Button href={hrefs.play()} variant="accent" class="shrink-0">New game<ArrowRight size={16} /></Button>
     </header>
 
     <div class="grid gap-[14px] md:gap-5 {$matchmaking ? 'lg:grid-cols-[1.5fr_1fr]' : ''}">

@@ -1,6 +1,7 @@
 <script lang="ts">
   // The big screen: a view-only page a TV or kiosk opens at #/big-screen/<board>?k=<token>.
   // The board's socket says what to show (idle, the live game, the held result).
+  import { hrefs } from '$lib/routes'
   import { onDestroy, onMount, untrack } from 'svelte'
   import { hideCursor } from '$lib/bigscreen/hideCursor'
   import { currentUser } from '$lib/auth'
@@ -23,7 +24,7 @@
   const board = params.board
   // The kiosk's token comes in the URL once; it is kept in memory only
   const token = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('k')
-  if (token !== null) history.replaceState(null, '', window.location.pathname + window.location.search + `#/big-screen/${board}`)
+  if (token !== null) history.replaceState(null, '', window.location.pathname + window.location.search + hrefs.bigScreen(board))
 
   const store = createBigScreenStore(board, token)
   const message = store.message

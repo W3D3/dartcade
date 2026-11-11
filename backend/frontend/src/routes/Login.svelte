@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
   import { FingerprintPattern } from '@lucide/svelte'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
@@ -138,7 +139,7 @@
           <div class="flex justify-between items-baseline">
             <label for="login-password" class="field-label">Password</label>
             {#if $authInfo.mail}
-              <a href="#/forgot" class="hidden md:inline text-[14px] no-underline">Forgot password?</a>
+              <a href={hrefs.forgot()} class="hidden md:inline text-[14px] no-underline">Forgot password?</a>
             {/if}
           </div>
           <Input
@@ -158,7 +159,7 @@
             Keep me signed in
           </label>
           {#if $authInfo.mail}
-            <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+            <a href={hrefs.forgot()} class="text-[14px] no-underline">Forgot password?</a>
           {/if}
         </div>
 
@@ -198,7 +199,7 @@
 
       <p class="text-body text-text-muted text-center">
         New to Dartcade?
-        <a href="#/register" class="font-semibold no-underline">Create an account</a>
+        <a href={hrefs.register()} class="font-semibold no-underline">Create an account</a>
       </p>
 
       <AuthFooter />

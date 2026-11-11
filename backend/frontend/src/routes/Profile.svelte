@@ -4,6 +4,7 @@
   // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
   // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
   // opens `#/profile/customise`. Friends see the streak and status; recent games are public ones plus those the viewer played in (the API decides).
+  import { hrefs } from '$lib/routes'
   import { ArrowLeft, Eye, Flame } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
@@ -153,12 +154,12 @@
             {#if self}
               <div class="flex flex-wrap gap-2">
                 <a
-                  href="#/profile/customise"
+                  href={hrefs.customise()}
                   class="rounded-md border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-accent-fg no-underline"
                   >Customise</a
                 >
                 <a
-                  href="#/settings/profile"
+                  href={hrefs.settings('profile')}
                   class="rounded-md border border-line-strong px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-text no-underline"
                   >Edit in Settings</a
                 >

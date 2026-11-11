@@ -1,6 +1,7 @@
 <script lang="ts">
   // The lobby: who's in, on which boards, the next game, the history. It all comes from the
   // lobby socket; changes go through the REST API and come back on the socket.
+  import { hrefs } from '$lib/routes'
   import { onDestroy, onMount } from 'svelte'
   import { push, querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -207,7 +208,7 @@
 
 {#snippet startOrJoin()}
   <Button variant="accent" onclick={() => void create()}>Create lobby</Button>
-  <Button variant="outline" size="md" href="#/join">Join with a code</Button>
+  <Button variant="outline" size="md" href={hrefs.join()}>Join with a code</Button>
 {/snippet}
 
 {#snippet errorBanner()}

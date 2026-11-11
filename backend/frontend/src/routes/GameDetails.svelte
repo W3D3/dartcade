@@ -1,6 +1,7 @@
 <script lang="ts">
   // A finished game's details (X01-Details*, ATC-Details* boards): the result, the match stats
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
+  import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -41,7 +42,7 @@
 
   // `admin`: opened from the admin game list, so any finished game, with every seat's account
   let { params, admin = false }: { params: { id: string }; admin?: boolean } = $props()
-  const back = $derived(admin ? { href: '#/admin/games', label: 'Games' } : { href: historyHref(sessionStore()), label: 'History' })
+  const back = $derived(admin ? { href: hrefs.adminGames(), label: 'Games' } : { href: historyHref(sessionStore()), label: 'History' })
   let detail = $state<GameDetail | null>(null)
   // Admin view only: how a moderator invalidated the game, if one did
   let invalidated = $state<Invalidation>(null)
