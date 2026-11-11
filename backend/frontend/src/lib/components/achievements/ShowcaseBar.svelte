@@ -1,6 +1,7 @@
 <script lang="ts">
   // Your showcase (Achievements board): up to five earned badges, in order, shown on your profile
   // and in your profile card. Each slot has a remove cross; empty slots say so.
+  import { hrefs } from '$lib/routes'
   import { X } from '@lucide/svelte'
   import Badge from './Badge.svelte'
   import { statusLine, type Badge as BadgeData } from '$lib/achievements/view'
@@ -14,7 +15,7 @@
       <span class="text-caption label-caps text-text-dim">Showcase</span>
       <span class="font-display font-bold text-lead tabular-nums">{slots.length} <span class="text-text-dim">/ {max}</span></span>
     </div>
-    <a href="#/profile" class="text-small font-semibold text-accent no-underline">See your profile ›</a>
+    <a href={hrefs.profile()} class="text-small font-semibold text-accent no-underline">See your profile ›</a>
   </div>
   <p class="text-small text-text-muted">
     Pick up to {max} earned achievements. They show on your profile and in your profile card, in this order.

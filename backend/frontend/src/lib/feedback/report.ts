@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // The bug report dialog (Alpha badge, Settings): one store both entry points open, the page's
 // screenshot taken before the dialog covers it, and the payload POST /api/feedback takes.
 import { domToJpeg } from 'modern-screenshot'
@@ -43,7 +44,7 @@ export const closeFeedback = (): void => feedbackDialog.set(null)
 /** What the browser sends along: where the user is and what they run. */
 export function pageContext(): FeedbackContext {
   return {
-    route: location.hash || '#/',
+    route: location.hash || hrefs.home(),
     userAgent: navigator.userAgent,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     locale: navigator.language,

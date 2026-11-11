@@ -1,6 +1,7 @@
 <script lang="ts">
   // Above the phone tab bar while you're in a lobby: its name and what's next, or during its
   // game the way back. Not on the lobby page itself.
+  import { hrefs } from '$lib/routes'
   import { ChevronRight } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { me } from '$lib/lobby/sockets'
@@ -21,7 +22,7 @@
       ? 'bg-surface-picked border-accent'
       : 'bg-surface-active border-accent-line'}"
   >
-    <a href="#/matchmaking" class="flex min-w-0 flex-1 items-center gap-[10px] text-text no-underline">
+    <a href={hrefs.matchmaking()} class="flex min-w-0 flex-1 items-center gap-[10px] text-text no-underline">
       {#if queue.kind === 'searching'}<span class="size-2 shrink-0 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"
         ></span>{/if}
       <span class="min-w-0 truncate text-[14px] font-semibold {queue.kind === 'found' ? 'text-accent' : ''}">{queue.strip}</span>
@@ -40,7 +41,7 @@
   </div>
 {:else if view && $location !== '/lobby'}
   <a
-    href={view.back ? `#/session/${view.back.sessionId}` : '#/lobby'}
+    href={view.back ? hrefs.session(view.back.sessionId) : hrefs.lobby()}
     aria-label="You're in the lobby {view.name}. {view.line}"
     class="md:hidden shrink-0 flex items-center gap-[10px] h-12 px-4 bg-surface-active border-t border-accent-line text-text no-underline"
   >

@@ -2,6 +2,7 @@
   // The course editor's header: a breadcrumb back to the list, the draft's status, Preview
   // round, Unpublish, Delete, Discard draft and Publish changes, with what refused the last
   // publish listed underneath.
+  import { hrefs } from '$lib/routes'
   import { Play, Trash } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
@@ -86,7 +87,8 @@
       <div class="ml-auto flex flex-wrap items-center gap-[10px]">
         <span class="text-[13px] {failing ? 'text-live-text' : 'text-text-muted'}" aria-live="polite">{STATUS[status]()}</span>
         {#if status === 'conflict'}<Button variant="outline" onclick={onreload}>Reload</Button>{/if}
-        {#if area.admin}<Button variant="ghost" href="#/admin/minigolf?course={courseId}&draft=1"><Play size={16} />Preview round</Button
+        {#if area.admin}<Button variant="ghost" href={hrefs.adminMinigolf(`course=${courseId}&draft=1`)}
+            ><Play size={16} />Preview round</Button
           >{/if}
         {#if published}<Button variant="outline" disabled={busy || !editable} onclick={onunpublish}>Unpublish</Button>{/if}
         {#if !builtIn}<Button variant="ghost" disabled={busy || !loaded} onclick={ondelete}><Trash size={16} />Delete</Button>{/if}

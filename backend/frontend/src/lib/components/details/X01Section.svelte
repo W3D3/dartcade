@@ -7,6 +7,7 @@
   // are both remounted on every tab switch, so a pick they held themselves would reset. The
   // highlight picker (party games) and Heatmap's "Where every dart landed" note sit alongside
   // the title-tabs, as the artboards show.
+  import { hrefs } from '$lib/routes'
   import type { GameDetail } from '$lib/api'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import X01Legs from './X01Legs.svelte'
@@ -92,7 +93,7 @@
             </div>
           {/if}
           {#if canCoach && legSel !== null}
-            <a class="text-[14px] font-semibold underline-offset-2 hover:underline" href="#/coach/leg/{detail.game.id}/{legSel}"
+            <a class="text-[14px] font-semibold underline-offset-2 hover:underline" href={hrefs.coachLeg(detail.game.id, legSel)}
               >Coach review</a
             >
           {/if}

@@ -3,6 +3,7 @@
   // Create or Join while you're in no lobby; otherwise your lobby, live (who's in it, next game,
   // whose turn), and the way back into a running game, whether or not anyone else is in it. On
   // the Play page, whose own button creates a lobby with the chosen game, only Join shows.
+  import { hrefs } from '$lib/routes'
   import { ChevronRight, Plus } from '@lucide/svelte'
   import { location, push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -42,7 +43,7 @@
   {:else if view}
     <div class="flex flex-col gap-2 p-3 rounded-t-[11px] border-b border-line-2 bg-surface-active">
       <a
-        href="#/lobby"
+        href={hrefs.lobby()}
         aria-label="You're in the lobby {view.name}. {view.line}. Open the lobby"
         class="flex flex-col gap-2 text-text no-underline"
       >
@@ -58,7 +59,8 @@
           <span class="text-[12px] text-text-muted truncate">{view.line}</span>
         </span>
       </a>
-      {#if view.back}<Button variant="accent" href="#/session/{view.back.sessionId}" class="h-[34px] text-[13px]">{view.back.label}</Button
+      {#if view.back}<Button variant="accent" href={hrefs.session(view.back.sessionId)} class="h-[34px] text-[13px]"
+          >{view.back.label}</Button
         >{/if}
     </div>
   {:else if $me}
@@ -75,7 +77,7 @@
       {/if}
       {#if error}<ErrorText class="text-[12px] text-center">{error}</ErrorText>{/if}
       <span class="text-[12px] text-text-dim text-center"
-        >Have a code? <a href="#/join" class="font-semibold no-underline">Join a lobby</a></span
+        >Have a code? <a href={hrefs.join()} class="font-semibold no-underline">Join a lobby</a></span
       >
     </div>
   {/if}

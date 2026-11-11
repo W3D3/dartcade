@@ -4,6 +4,7 @@
   // or tap opens the profile itself. Touch has no hover, so a tap goes straight there. The card sits in
   // a popover layer (no scroll area clips it), below the name, flipping above near the bottom edge.
   // Without progression (or for a guest or bot: no `userId`) it is just the content.
+  import { hrefs } from '$lib/routes'
   import type { Snippet } from 'svelte'
   import { LinkPreview } from 'bits-ui'
   import ProfileCard from './ProfileCard.svelte'
@@ -32,7 +33,7 @@
         <a
           {...props}
           role={undefined}
-          href="#/profile/{userId}"
+          href={hrefs.profile(userId)}
           aria-label="{name}: profile"
           class="min-w-0 max-w-full inline-flex items-center gap-[6px] no-underline text-inherit! [text-transform:inherit] {className}"
         >

@@ -4,6 +4,7 @@
   // artboard). With mail on, better-auth mails a confirm link and nothing is deleted until it's
   // opened; without mail the account goes at once. A player with a passkey can confirm with it
   // instead of the password: a fresh passkey prompt, checked by the server, deletes at once.
+  import { hrefs } from '$lib/routes'
   import { FingerprintPattern, Trash } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -44,7 +45,7 @@
     error = ''
     try {
       await authInfo.refresh()
-      const { error: err } = await authClient.deleteUser({ password, callbackURL: '/#/login?deleted=1' })
+      const { error: err } = await authClient.deleteUser({ password, callbackURL: '/' + hrefs.login('deleted=1') })
       if (err) {
         error = err.message ?? 'Could not delete your account'
         return

@@ -1,15 +1,16 @@
 <script lang="ts">
   // Overview / Rewards / Achievements, the three pages of Progress. Achievements shows only where
   // achievements.enabled is on, with a "new" count of tiers you have not looked at yet.
+  import { hrefs } from '$lib/routes'
   import { location } from 'svelte-spa-router'
   import { flag } from '$lib/flags'
   import { achievements } from '$lib/achievements/store'
 
   const on = flag('achievements.enabled')
   const tabs = $derived([
-    { href: '#/progress', path: '/progress', name: 'Overview' },
-    { href: '#/progress/rewards', path: '/progress/rewards', name: 'Rewards' },
-    ...($on ? [{ href: '#/progress/achievements', path: '/progress/achievements', name: 'Achievements' }] : []),
+    { href: hrefs.progress(), path: '/progress', name: 'Overview' },
+    { href: hrefs.rewards(), path: '/progress/rewards', name: 'Rewards' },
+    ...($on ? [{ href: hrefs.achievements(), path: '/progress/achievements', name: 'Achievements' }] : []),
   ])
   const fresh = $derived($on ? ($achievements?.unseen ?? 0) : 0)
 </script>

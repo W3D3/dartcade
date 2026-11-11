@@ -2,6 +2,7 @@
   // The tablet's main navigation (md up to xl): an 88 px icon rail with the phone's tabs, Settings
   // and Admin, the Lobby item, Friends and the avatar that opens the account menu. Desktops get
   // SideNav instead.
+  import { hrefs } from '$lib/routes'
   import { progress } from '$lib/progress/store'
   import { location, push } from 'svelte-spa-router'
   import { Plus, House, Swords } from '@lucide/svelte'
@@ -87,7 +88,7 @@
         >
       {:else}
         <a
-          href="#/matchmaking"
+          href={hrefs.matchmaking()}
           aria-label="{queue.tag}, {queue.name}. {queue.clock}"
           class="relative box-border flex h-16 w-[72px] flex-col items-center justify-center gap-1 rounded-md border border-accent-line-strong bg-surface-active text-accent no-underline"
         >

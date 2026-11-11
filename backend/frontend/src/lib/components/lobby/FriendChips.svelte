@@ -1,6 +1,7 @@
 <script lang="ts">
   // "Friends: [+ Lena] [+ Max] All friends": add a friend to the lobby in one tap (an invite;
   // their row shows Pending until they accept). Hidden when there's nobody to add.
+  import { hrefs } from '$lib/routes'
   import type { FriendChip } from '$lib/lobby/friendChips'
 
   let { chips, onpick }: { chips: FriendChip[]; onpick: (userId: string) => void } = $props()
@@ -20,6 +21,6 @@
         + {c.name}
       </button>
     {/each}
-    <a href="#/friends" class="text-accent font-semibold no-underline">All friends</a>
+    <a href={hrefs.friends()} class="text-accent font-semibold no-underline">All friends</a>
   </div>
 {/if}

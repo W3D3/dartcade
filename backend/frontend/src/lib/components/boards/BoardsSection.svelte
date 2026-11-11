@@ -2,6 +2,7 @@
   // Settings' Boards section (Boards, Mobile-Boards, Tablet-Boards boards): the board chips, the
   // selected board's panel and its cards (cameras, live events, lights, game, big screen, pairing). With none yet, the
   // Settings-Boards-Empty onboarding.
+  import { hrefs } from '$lib/routes'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import {
     Activity,
@@ -613,7 +614,7 @@
               {#snippet aside()}
                 {#if n}
                   <a
-                    href="#/settings/lights?board={selected.id}"
+                    href={hrefs.settings('lights', `board=${selected.id}`)}
                     class="inline-flex items-center gap-1 text-[14px] font-semibold no-underline">Manage</a
                   >
                 {/if}
@@ -625,7 +626,7 @@
                   Light up the board with WLED: colours per player, a flash on 180s, a glow on checkouts.
                 </p>
                 <a
-                  href="#/settings/lights?board={selected.id}"
+                  href={hrefs.settings('lights', `board=${selected.id}`)}
                   class="self-start h-11 px-4 inline-flex items-center rounded-md border border-line-3 text-text text-[14px]
                          font-semibold no-underline transition-colors hover:bg-surface-active">Add WLED lights</a
                 >

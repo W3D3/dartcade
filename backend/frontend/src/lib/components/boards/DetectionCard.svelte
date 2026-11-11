@@ -1,6 +1,7 @@
 <script lang="ts">
   // The board's Dart detection card: whether its camera darts are kept as training data for dartcade's
   // own dart detection (on by default; turning it off deletes what was kept).
+  import { hrefs } from '$lib/routes'
   import { api, type Board } from '$lib/api'
   import { ScanEye } from '@lucide/svelte'
   import SectionCard from './SectionCard.svelte'
@@ -24,5 +25,5 @@
     checked={board.shareTrainingImages}
     onchange={set}
   />
-  <a href="#/privacy" class="text-[13.5px]">How these pictures are used</a>
+  <a href={hrefs.legal('privacy')} class="text-[13.5px]">How these pictures are used</a>
 </SectionCard>

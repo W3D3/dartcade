@@ -4,6 +4,7 @@
   // rest into a chip. On a phone it drops from the top with no buttons and a tap opens the page; on
   // the match screen it is a pill at the top. Six seconds, kept open while the pointer is on it.
   // They come with achievement.unlocked, sent when a game has ended. Reduced motion: no drop.
+  import { hrefs } from '$lib/routes'
   import { onDestroy } from 'svelte'
   import { get } from 'svelte/store'
   import { location } from 'svelte-spa-router'
@@ -106,7 +107,7 @@
       >
         <!-- A phone has no buttons: a tap opens the badge -->
         <a
-          href="#/progress/achievements"
+          href={hrefs.achievements()}
           onclick={showNext}
           aria-label="Open {t.badge.def.name}"
           class="absolute inset-0 rounded-card md:hidden"
@@ -141,7 +142,7 @@
         {/if}
         {#if t.more > 0}
           <a
-            href="#/progress/achievements"
+            href={hrefs.achievements()}
             onclick={showNext}
             class="relative self-start rounded-full bg-surface-chip px-3 py-1 text-small font-semibold text-text no-underline"
             >+{t.more} more {t.more === 1 ? 'achievement' : 'achievements'} from this game ›</a
@@ -154,8 +155,7 @@
             class="rounded-md border border-accent bg-accent px-4 py-2 font-display font-bold text-body uppercase tracking-cta text-accent-fg cursor-pointer hover:bg-accent-hover"
             >Show on profile</button
           >
-          <a href="#/progress/achievements" onclick={showNext} class="text-label font-semibold text-text no-underline">All achievements ›</a
-          >
+          <a href={hrefs.achievements()} onclick={showNext} class="text-label font-semibold text-text no-underline">All achievements ›</a>
         </div>
       </div>
     {/if}

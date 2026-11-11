@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { THEME } from '$lib/theme'
   // The Progress page's level card (Progress board): the level, the XP bar and what's left to go,
   // and everything the next level unlocks, which opens the rewards track at that level.
@@ -169,7 +170,7 @@
             >{equipped ? 'Equipped' : `Wear ${newTitle.name}`}</button
           >
         {/if}
-        <a href="#/progress/rewards/{up.level}" class="text-[14px] font-semibold no-underline whitespace-nowrap">See rewards</a>
+        <a href={hrefs.rewards(up.level)} class="text-[14px] font-semibold no-underline whitespace-nowrap">See rewards</a>
         <button
           type="button"
           aria-label="Dismiss"
@@ -202,7 +203,7 @@
   </div>
   {#if nextLevel !== null}
     <a
-      href="#/progress/rewards/{nextLevel}"
+      href={hrefs.rewards(nextLevel)}
       aria-label="Next unlock at level {nextLevel}: {nextPerks
         .map(p => `${KIND_LABEL[p.kind].one} ${p.name}`)
         .join(', ')}. Show it on the rewards track"
@@ -225,7 +226,7 @@
       <ChevronRight size={18} strokeWidth={2.2} class="shrink-0 text-accent" aria-hidden="true" />
     </a>
   {/if}
-  <a href="#/progress/rewards" class="mt-[-6px] self-start text-[14px] font-semibold no-underline">All rewards</a>
+  <a href={hrefs.rewards()} class="mt-[-6px] self-start text-[14px] font-semibold no-underline">All rewards</a>
 </section>
 
 <style>

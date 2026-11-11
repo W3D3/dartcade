@@ -2,6 +2,7 @@
   // One reward of the rewards track opened (Rewards board's details): every item with its preview,
   // kind and name; an unlocked one is applied at once (Applied when worn), a locked one says what
   // unlocks it. Apply all wears every unlocked item; Customise is a link away.
+  import { hrefs } from '$lib/routes'
   import { Check, Lock, X } from '@lucide/svelte'
   import { Dialog } from 'bits-ui'
   import { Modal } from '$lib/components/ui/modal'
@@ -125,7 +126,7 @@
   {#if error}<ErrorText>{error}</ErrorText>{/if}
 
   <div class="flex flex-wrap items-center gap-3">
-    <a href="#/profile/customise" class="text-[13px] text-text-muted hover:text-text">Open in Profile · Customise</a>
+    <a href={hrefs.customise()} class="text-[13px] text-text-muted hover:text-text">Open in Profile · Customise</a>
     <span class="flex-1"></span>
     <Button variant="accent" size="sm" class="rounded-full px-5" disabled={busy || plan.empty} onclick={applyAll}>Apply all</Button>
     <Button variant="outline" size="sm" class="rounded-full" onclick={onclose}>Close</Button>

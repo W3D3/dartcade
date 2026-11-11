@@ -1,6 +1,7 @@
 <script lang="ts">
   // The overview of a profile (Profile-Self, Profile-Lena boards): ranked, averages, recent matches,
   // level, friends, head-to-head, what they play most, and your collection on your own.
+  import { hrefs } from '$lib/routes'
   import ProfileFriends from '$lib/components/progress/ProfileFriends.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
@@ -32,7 +33,7 @@
     <section aria-label="Ranked" class="card box-border flex flex-col gap-4 p-[18px] md:p-[22px]">
       <div class="flex items-baseline justify-between">
         <span class="text-[12px] label-caps text-text-dim">Ranked</span>
-        <a href="#/matchmaking/ranks" class="text-[13px] font-semibold text-accent no-underline">Ranks</a>
+        <a href={hrefs.ranks()} class="text-[13px] font-semibold text-accent no-underline">Ranks</a>
       </div>
       <div class="grid gap-3 sm:grid-cols-2">
         {#each p.ranked as r (r.mode)}
@@ -81,7 +82,7 @@
           {#each p.recent as g (g.id)}
             {@const mark = placementMark(g.placement, g.players)}
             <li class="border-b border-line last:border-b-0">
-              <a href="#/history/{g.id}" class="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 py-3 text-text no-underline">
+              <a href={hrefs.history(g.id)} class="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 py-3 text-text no-underline">
                 <span
                   class="size-8 rounded-full flex items-center justify-center text-[13px] font-bold {mark.won
                     ? 'bg-accent text-accent-fg'
