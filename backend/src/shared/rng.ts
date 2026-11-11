@@ -15,3 +15,13 @@ export function seededRng(seed: number): Rng {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
+
+/** A shuffled copy (Fisher–Yates): the same order for the same generator state. */
+export function shuffle<T>(xs: readonly T[], rng: Rng): T[] {
+  const out = [...xs]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
