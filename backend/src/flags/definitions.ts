@@ -7,6 +7,8 @@ import { FLAG_META } from '../shared/flags.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
 
 const isAdmin = (ctx: EvaluationContext) => ctx.admin === true
+// contextFor sets `moderator` for admins too
+const isModerator = (ctx: EvaluationContext) => ctx.moderator === true
 
 /** What an override's mode means for who the flag is on for. */
 function modeRule(o: { mode: 'off' | 'admins' | 'users' | 'on'; userIds: string[] }): (ctx: EvaluationContext) => boolean {
@@ -25,9 +27,10 @@ function modeRule(o: { mode: 'off' | 'admins' | 'users' | 'on'; userIds: string[
 /** Who a boolean flag is on for when neither FLAGS_ON nor an override says otherwise. */
 const DEFAULT_RULES = {
   admins: isAdmin,
+  moderators: isModerator,
   nobody: () => false,
   everyone: () => true,
-} satisfies Record<'admins' | 'nobody' | 'everyone', (ctx: EvaluationContext) => boolean>
+} satisfies Record<'admins' | 'moderators' | 'nobody' | 'everyone', (ctx: EvaluationContext) => boolean>
 
 export function flagDefinitions(
   flagsOn: ReadonlySet<string>,

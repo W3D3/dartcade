@@ -69,6 +69,7 @@ describe('flagMode', () => {
 describe('defaultLabel', () => {
   it('names the rule when FLAGS_ON is off for this deployment', () => {
     expect(defaultLabel(booleanFlag({ default: { rule: 'admins', envOn: false } }))).toBe('Default (admins)')
+    expect(defaultLabel(booleanFlag({ default: { rule: 'moderators', envOn: false } }))).toBe('Default (moderators)')
     expect(defaultLabel(booleanFlag({ default: { rule: 'nobody', envOn: false } }))).toBe('Default (off)')
   })
 

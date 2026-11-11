@@ -2,7 +2,7 @@
 // never from what a browser sends. Design: docs/superpowers/specs/2026-10-12-feature-flags-design.md
 import { OpenFeature, TypedInMemoryProvider, type EvaluationContext } from '@openfeature/server-sdk'
 import type { Kysely } from 'kysely'
-import { isAdmin } from '../auth/admin.js'
+import { isAdmin, isModerator } from '../auth/admin.js'
 import type { Database } from '../db/schema.js'
 import { getRoleAndEmail } from '../db/users.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
@@ -74,7 +74,9 @@ export function currentOverrides(): ReadonlyMap<string, FlagOverride> {
 }
 
 export function contextFor(user: FlagUser): EvaluationContext {
-  return user ? { targetingKey: user.id, email: user.email, admin: isAdmin(user) } : { targetingKey: 'anonymous' }
+  return user
+    ? { targetingKey: user.id, email: user.email, admin: isAdmin(user), moderator: isModerator(user) }
+    : { targetingKey: 'anonymous' }
 }
 
 export async function flagEnabled(key: FlagKey, user: FlagUser): Promise<boolean> {

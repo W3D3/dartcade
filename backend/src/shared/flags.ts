@@ -9,7 +9,7 @@ export const LOBBY_IDLE_SHARED_MINUTES = 20
 /** What the admin flags page shows for one flag (schema/api-v1.yaml, api/adminFlags.ts): who an
  *  on/off flag is on for by default, or a number flag's range and code default. */
 export type FlagMeta =
-  | { kind: 'boolean'; description: string; defaultRule: 'admins' | 'nobody' | 'everyone' }
+  | { kind: 'boolean'; description: string; defaultRule: 'admins' | 'moderators' | 'nobody' | 'everyone' }
   | { kind: 'number'; description: string; range: [number, number]; defaultNumber: number }
 
 export const FLAG_META = {
@@ -17,6 +17,17 @@ export const FLAG_META = {
     kind: 'boolean',
     description: 'Makes Home the landing page. Off shows the Play page at the root instead.',
     defaultRule: 'everyone',
+  },
+  'tournaments.enabled': {
+    kind: 'boolean',
+    description: 'Turns on tournaments: the Tournaments page and its API. Off, the nav item is dimmed and the API answers 404.',
+    defaultRule: 'admins',
+  },
+  'tournaments.community.enabled': {
+    kind: 'boolean',
+    description:
+      'Lets a player create community tournaments (on top of tournaments.enabled). Official tournaments are planned by admins either way.',
+    defaultRule: 'moderators',
   },
   'gamemode.minigolf.enabled': {
     kind: 'boolean',
