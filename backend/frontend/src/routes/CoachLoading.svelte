@@ -1,6 +1,7 @@
 <script lang="ts">
   // Placeholder for a coach route while its chunk downloads (App.svelte's `loading`, `page` from its
   // `loadingParams`): the page's own skeleton in the page's frame, instead of RouteLoading's line.
+  import { hrefs } from '$lib/routes'
   import { ChevronLeft } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ListSkeleton from '$lib/components/coach/ListSkeleton.svelte'
@@ -11,7 +12,7 @@
 </script>
 
 {#snippet breadcrumb()}
-  <a href="#/coach" class="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold no-underline"
+  <a href={hrefs.coach()} class="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold no-underline"
     ><ChevronLeft size={16} />Review</a
   >
 {/snippet}

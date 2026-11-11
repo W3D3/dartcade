@@ -2,6 +2,7 @@
   // Ranks (MM-Ranks board): your rank in each mode with its progress to the next stage, how ranks
   // move, and every tier and stage with the RP it starts at, in six columns from Wood to Elite.
   // Your stages are filled and marked 1v1 / 2v2 on the ladder.
+  import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
   import { ChevronLeft } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -45,7 +46,7 @@
     class="flex grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex flex-col gap-[6px]">
-      <a href="#/matchmaking" class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"
+      <a href={hrefs.matchmaking()} class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"
         ><ChevronLeft size={16} />Matchmaking</a
       >
       <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Ranks</h1>

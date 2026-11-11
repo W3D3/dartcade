@@ -4,6 +4,7 @@
   // locked ones grey until hovered or focused), and the rewards off the track; each opens its details
   // (RewardDetails), where you apply it. `#/progress/rewards/15`
   // opens it at level 15. Behind progression.enabled, like Progress.
+  import { hrefs } from '$lib/routes'
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { Check, Lock } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -67,11 +68,11 @@
   >
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div>
-        <a href="#/progress" class="text-[12px] label-caps text-text-dim no-underline hover:text-text">Progress</a>
+        <a href={hrefs.progress()} class="text-[12px] label-caps text-text-dim no-underline hover:text-text">Progress</a>
         <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-title">Rewards</h1>
       </div>
       <a
-        href="#/profile/customise"
+        href={hrefs.customise()}
         class="order-last md:order-0 rounded-md border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-accent-fg no-underline hover:bg-accent-hover"
         >Customise your card</a
       >

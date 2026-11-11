@@ -1,5 +1,6 @@
 <!-- Courses players made (`#/minigolf/browse`, behind minigolf.userCourses.enabled): search by name, play counts, and a way to report one. -->
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -57,7 +58,7 @@
   <PageMain>
     <header class="flex flex-wrap items-end justify-between gap-3">
       <PageTitle title="Player courses" sub="Minigolf courses made by other players. Pick one in a Minigolf game under User courses." />
-      <a href="#/minigolf/courses" class="text-[14px] font-semibold">My courses</a>
+      <a href={hrefs.minigolfCourses()} class="text-[14px] font-semibold">My courses</a>
     </header>
 
     <SearchInput bind:value={search} oninput={onSearch} label="Search by course name" class="w-full max-w-[360px]" />

@@ -4,6 +4,7 @@
   // your card and in a lobby row, and saved together (only what changed) or dropped on Cancel.
   // Switching tabs keeps the draft: it's one route, so the page stays mounted. Locked options show
   // what unlocks them and can't be picked. Behind progression.enabled, like Profile.
+  import { hrefs } from '$lib/routes'
   import { deviceStore } from '$lib/storage'
   import type { Snippet } from 'svelte'
   import { PartyPopper, Trophy, Volume2, VolumeX } from '@lucide/svelte'
@@ -255,11 +256,11 @@
   <main
     class="flex grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-3 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:pt-8 xl:pb-10"
   >
-    <Breadcrumb items={[{ label: 'Profile', href: '#/profile' }, { label: 'Customise' }]} />
+    <Breadcrumb items={[{ label: 'Profile', href: hrefs.profile() }, { label: 'Customise' }]} />
     <div class="hidden md:flex items-center gap-4 -mt-3">
       <h1 class="font-display font-bold text-[40px] leading-none uppercase tracking-title">Customise</h1>
       <div class="ml-auto flex gap-[10px]">
-        <Button variant="outline" size="md" href="#/profile" class="px-5 text-[15px] font-semibold">Cancel</Button>
+        <Button variant="outline" size="md" href={hrefs.profile()} class="px-5 text-[15px] font-semibold">Cancel</Button>
         {@render saveButton('h-11 px-5 font-semibold')}
       </div>
     </div>
@@ -274,7 +275,7 @@
         <nav aria-label="Customise" class="flex gap-1 lg:gap-[6px] min-w-0 overflow-x-auto scrollbar-none">
           {#each TABS as t (t)}
             <a
-              href="#/profile/customise/{t}"
+              href={hrefs.customise(t)}
               aria-current={t === tab ? 'page' : undefined}
               class="shrink-0 rounded-full border px-3 py-[7px] text-[13px] lg:px-4 lg:py-[9px] lg:text-[14px] no-underline {t === tab
                 ? 'border-line-chip bg-surface-paused text-text font-semibold'

@@ -3,6 +3,7 @@
   // the same range before. The range and filters live in the querystring (#/stats?range=days30&kind=ranked)
   // so Back, reload and a shared link keep them; the server picks the start score and out rule
   // you played most when none is asked for.
+  import { hrefs } from '$lib/routes'
   import { querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Chip } from '$lib/components/ui/chip'
@@ -93,7 +94,7 @@
       <StatsState kind="loading" />
     {:else if empty}
       <StatsState kind="empty" title="No stats yet" text="Finish an X01 game and your averages, scoring and checkouts show up here.">
-        {#snippet action()}<a class="underline" href="#/play">Play</a>{/snippet}
+        {#snippet action()}<a class="underline" href={hrefs.play()}>Play</a>{/snippet}
       </StatsState>
     {:else}
       <div class="flex flex-wrap items-end gap-x-5 gap-y-2 border-b border-surface-paused">

@@ -3,6 +3,7 @@
   // a section nav over Profile, Game preferences, Boards, Lights and Caller, each its own
   // route (`#/settings/<section>`). Lights only shows behind its flag. Tablets and desktops open
   // on Profile; phones get a list of the sections first.
+  import { hrefs } from '$lib/routes'
   import { deviceStore } from '$lib/storage'
   import { onMount, untrack, type Component } from 'svelte'
   import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
@@ -87,7 +88,7 @@
           {@const Icon = ICONS[s.id]}
           {@const on = s.id === shown}
           <a
-            href="#/settings/{s.id}"
+            href={hrefs.settings(s.id)}
             aria-current={on ? 'page' : undefined}
             class="h-[46px] px-4 -mb-px flex items-center gap-[9px] shrink-0 whitespace-nowrap text-[15px] no-underline border-b-2
                    transition-colors {on
@@ -105,7 +106,7 @@
       <nav aria-label="Settings sections" class="md:hidden flex flex-col gap-[14px]">
         {#each visible as s (s.id)}
           {@const Icon = ICONS[s.id]}
-          <a href="#/settings/{s.id}" class="flex items-center gap-[14px] p-4 card no-underline text-text! hover:bg-surface-active">
+          <a href={hrefs.settings(s.id)} class="flex items-center gap-[14px] p-4 card no-underline text-text! hover:bg-surface-active">
             <span class="size-10 shrink-0 flex items-center justify-center rounded-md bg-surface-active text-accent">
               <Icon size={20} strokeWidth={1.8} />
             </span>
@@ -119,7 +120,7 @@
       </nav>
     {:else}
       <a
-        href="#/settings"
+        href={hrefs.settings()}
         class="md:hidden self-start -my-1 min-h-10 inline-flex items-center gap-1 text-[14px] font-semibold no-underline"
       >
         <ChevronLeft size={16} strokeWidth={2.2} />Settings

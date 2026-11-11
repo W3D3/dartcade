@@ -2,6 +2,7 @@
   // One leg's review (Coach-Leg, Coach-Phone-Leg): the coach's take and skill letters, then every
   // visit graded. From xl the selected visit shows on the board in the right rail (40% wide, so its
   // board is big and the visit list still fits at 1280); on phones and tablets it opens under its card.
+  import { hrefs } from '$lib/routes'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
   import { MediaQuery } from 'svelte/reactivity'
   import Layout from '$lib/components/Layout.svelte'
@@ -112,7 +113,7 @@
 <Layout title="Coach">
   <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
     {#snippet breadcrumb()}
-      <a href="#/coach" class="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold no-underline"
+      <a href={hrefs.coach()} class="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold no-underline"
         ><ChevronLeft size={16} />Review</a
       >
     {/snippet}
@@ -125,7 +126,7 @@
       {@render breadcrumb()}
       <div class="flex flex-col gap-2 py-8">
         <p class="text-[17px] font-semibold">This leg has no review</p>
-        <a href="#/coach" class="text-[15px]">Back to the coach</a>
+        <a href={hrefs.coach()} class="text-[15px]">Back to the coach</a>
       </div>
     {:else if phase === 'failed' || !review || !title}
       {@render breadcrumb()}
@@ -145,7 +146,7 @@
           >
           <span class="text-[13px] text-text-dim xl:text-[14px]">{gradedAs(review.coachTier)}</span>
         </div>
-        <Button variant="outline" href="#/history/{params.gameId}" class="h-11 text-[15px] font-semibold">Match details</Button>
+        <Button variant="outline" href={hrefs.history(params.gameId)} class="h-11 text-[15px] font-semibold">Match details</Button>
       </header>
 
       <div class="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(380px,40%)] xl:items-start xl:gap-5">

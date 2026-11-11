@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -22,7 +23,7 @@
     loading = true
     error = ''
     try {
-      const { error: err } = await authClient.requestPasswordReset({ email, redirectTo: `${location.origin}/#/reset` })
+      const { error: err } = await authClient.requestPasswordReset({ email, redirectTo: `${location.origin}/${hrefs.reset()}` })
       if (err?.status === 429) {
         error = 'Try again in a minute.'
         return
@@ -78,7 +79,7 @@
           </div>
         {/if}
 
-        <p class="text-body text-text-muted text-center"><a href="#/login" class="font-semibold no-underline">Back to sign in</a></p>
+        <p class="text-body text-text-muted text-center"><a href={hrefs.login()} class="font-semibold no-underline">Back to sign in</a></p>
       {/if}
     </div>
   </main>

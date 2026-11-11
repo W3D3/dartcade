@@ -3,6 +3,7 @@
   // the Find a match panel (Searching while your search runs: MM-Searching, MM-Duo), and your last
   // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
+  import { hrefs } from '$lib/routes'
   import { fmtAvg } from '$lib/playerStats'
   import { onMount } from 'svelte'
   import { now as clockEvery } from '$lib/now'
@@ -102,7 +103,7 @@
         <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Matchmaking</h1>
         <p class="text-[15px] text-text-muted">
           Ranked X01 against players near your level. Wins and losses move your rating and rank.
-          <a href="#/matchmaking/ranks" class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
+          <a href={hrefs.ranks()} class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>
         </p>
       </div>
       <span class="hidden shrink-0 md:block">{@render boardChip()}</span>
@@ -191,7 +192,7 @@
                   </RadioGroupItem>
                   {#if needsLobby}
                     <span class="absolute bottom-2 left-3 text-[11px] text-warn md:bottom-3 md:left-[14px] md:text-[12px]">
-                      <span class="hidden md:inline">{opt.hint} · </span><a href="#/lobby" class="font-semibold text-warn underline"
+                      <span class="hidden md:inline">{opt.hint} · </span><a href={hrefs.lobby()} class="font-semibold text-warn underline"
                         ><span class="md:hidden">Create a lobby of 2</span><span class="hidden md:inline">create one</span></a
                       >
                     </span>
@@ -259,7 +260,9 @@
               {:else}
                 No board paired <span class="text-text-dim">· darts by hand</span>
               {/if}
-              <a href="#/settings/boards" class="ml-auto font-semibold text-accent no-underline">{board ? 'Change' : 'Add a board'}</a>
+              <a href={hrefs.settings('boards')} class="ml-auto font-semibold text-accent no-underline"
+                >{board ? 'Change' : 'Add a board'}</a
+              >
             </div>
 
             <button
@@ -285,7 +288,7 @@
         >
           <div class="flex items-center justify-between">
             <h2 class="text-[15px] font-semibold md:text-[16px]">Recent ranked<span class="hidden md:inline">&nbsp;matches</span></h2>
-            <a href="#/history" class="text-[13px] font-semibold text-accent no-underline"
+            <a href={hrefs.history()} class="text-[13px] font-semibold text-accent no-underline"
               >All<span class="hidden md:inline">&nbsp;in History</span></a
             >
           </div>
@@ -303,7 +306,8 @@
                   >
                   <span class="hidden md:block"><Avatar name={r.name} face={r.opponent} size={30} /></span>
                   <span class="flex min-w-0 grow flex-col gap-px">
-                    <a href="#/history/{r.key}" class="truncate text-[14px] font-semibold text-text no-underline md:text-[15px]">{r.name}</a
+                    <a href={hrefs.history(r.key)} class="truncate text-[14px] font-semibold text-text no-underline md:text-[15px]"
+                      >{r.name}</a
                     >
                     <span class="flex items-center gap-1 truncate text-[11px] text-text-dim md:text-[12px]">
                       <span class="truncate md:hidden">{r.day}</span>

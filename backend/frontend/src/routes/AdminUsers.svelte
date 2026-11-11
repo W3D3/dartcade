@@ -1,5 +1,6 @@
 <!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP, ban and unban them. -->
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { untrack } from 'svelte'
@@ -237,7 +238,7 @@
     >
       {#if expanded.has(user.id)}<ChevronDown size={16} aria-hidden="true" />{:else}<ChevronRight size={16} aria-hidden="true" />{/if}
     </button>
-    <a href="#/profile/{user.id}" class="flex min-w-0 items-center gap-3 no-underline hover:underline">
+    <a href={hrefs.profile(user.id)} class="flex min-w-0 items-center gap-3 no-underline hover:underline">
       <Avatar name={user.name} face={{ avatar: user.avatar, userId: user.id }} size={32} />
       <span class="truncate text-[14px] font-semibold text-text">{user.name}</span>
     </a>

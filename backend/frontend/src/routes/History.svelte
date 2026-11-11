@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { deviceStore } from '$lib/storage'
   import { onMount, untrack } from 'svelte'
   import { querystring } from 'svelte-spa-router'
@@ -162,7 +163,7 @@
 <!-- The coach page link: shown next to the title on desktop, and as the phone header's action
      (PhoneHeader is md:hidden, so it never renders in both places at once). -->
 {#snippet coachLink()}
-  {#if $coachEnabled}<a class="text-[14px] underline-offset-2 hover:underline" href="#/coach">Coach: review your X01 games</a>{/if}
+  {#if $coachEnabled}<a class="text-[14px] underline-offset-2 hover:underline" href={hrefs.coach()}>Coach: review your X01 games</a>{/if}
 {/snippet}
 
 <!-- A player in throw order, opening their profile; your own badge is outlined in the accent colour.
@@ -352,7 +353,7 @@
         <DataTable
           data={games}
           {columns}
-          rowHref={(g: GameSummary) => `#/history/${g.id}`}
+          rowHref={(g: GameSummary) => hrefs.history(g.id)}
           {rowLabel}
           resizable
           growColumn="game"

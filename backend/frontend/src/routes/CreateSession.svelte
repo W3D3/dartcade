@@ -3,6 +3,7 @@
   // lobby): Choose players saves the game as your lobby's next game and goes there, opening a
   // lobby when you have none; New lobby starts over with a fresh one while you're alone in yours.
   // A member of someone else's lobby sees its planned game read-only.
+  import { hrefs } from '$lib/routes'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { tick, untrack } from 'svelte'
   import { fly } from 'svelte/transition'
@@ -360,11 +361,11 @@
             {/if}
             {#if canEditGame && selectedMode === 'minigolf'}
               {#if $currentUser?.isAdmin}
-                <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
+                <a href={hrefs.adminMinigolfCourses()} class="self-start text-[14px] font-semibold">Edit courses</a>
               {:else if $userCoursesOn}
                 <span class="flex gap-4">
-                  <a href="#/minigolf/courses" class="text-[14px] font-semibold">My courses</a>
-                  <a href="#/minigolf/browse" class="text-[14px] font-semibold">Player courses</a>
+                  <a href={hrefs.minigolfCourses()} class="text-[14px] font-semibold">My courses</a>
+                  <a href={hrefs.minigolfBrowse()} class="text-[14px] font-semibold">Player courses</a>
                 </span>
               {/if}
             {/if}

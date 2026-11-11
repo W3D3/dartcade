@@ -1,5 +1,6 @@
 <script lang="ts">
   // "What the coach detects" (Coach-Mistakes): every check this version runs, from lib/coach/checks.ts.
+  import { hrefs } from '$lib/routes'
   import Layout from '$lib/components/Layout.svelte'
   import SectionLabel from '$lib/components/SectionLabel.svelte'
   import { flag, flagsLoaded } from '$lib/flags'
@@ -23,7 +24,7 @@
 <Layout title="Coach">
   <main class="flex min-h-0 grow flex-col gap-6 overflow-y-auto p-4 md:px-8 md:py-10 xl:px-11">
     <header class="flex flex-col gap-2">
-      <a href="#/coach" class="text-[12px] font-semibold label-caps no-underline">Coach · Review</a>
+      <a href={hrefs.coach()} class="text-[12px] font-semibold label-caps no-underline">Coach · Review</a>
       <h1 class="font-display text-[34px] font-bold uppercase leading-none md:text-[48px]">What the coach can detect</h1>
       <p class="max-w-[900px] text-body/normal text-text-muted md:text-[16px]">
         {total} checks run on every X01 leg with double out. Visit checks put a label and a note on the visit; leg patterns go into the coach's
