@@ -15,6 +15,7 @@ import {
 const admin = { id: 'a', email: 'boss@x', role: 'admin' }
 const player = { id: 'p', email: 'p@x', role: null }
 const other = { id: 'o', email: 'o@x', role: null }
+const moderator = { id: 'm', email: 'm@x', role: 'moderator' }
 
 describe('flags', () => {
   beforeAll(() => setupFlags(new Set()))
@@ -43,6 +44,16 @@ describe('flags', () => {
   it('turns matchmaking on for admins only', async () => {
     expect(await flagEnabled('matchmaking.enabled', admin)).toBe(true)
     expect(await flagEnabled('matchmaking.enabled', player)).toBe(false)
+  })
+
+  it('turns tournaments on for admins, and creating community ones for moderators and admins', async () => {
+    expect(await flagEnabled('tournaments.enabled', admin)).toBe(true)
+    expect(await flagEnabled('tournaments.enabled', moderator)).toBe(false)
+    expect(await flagEnabled('tournaments.enabled', player)).toBe(false)
+    expect(await flagEnabled('tournaments.community.enabled', admin)).toBe(true)
+    expect(await flagEnabled('tournaments.community.enabled', moderator)).toBe(true)
+    expect(await flagEnabled('tournaments.community.enabled', player)).toBe(false)
+    expect(await flagEnabled('tournaments.community.enabled', null)).toBe(false)
   })
 
   it('reads FLAGS_ON from the environment', () => {
@@ -80,13 +91,16 @@ describe('flags', () => {
   })
 
   it('builds the context from the user, an anonymous one signed out', () => {
-    expect(contextFor(admin)).toEqual({ targetingKey: 'a', email: 'boss@x', admin: true })
+    expect(contextFor(admin)).toEqual({ targetingKey: 'a', email: 'boss@x', admin: true, moderator: true })
+    expect(contextFor(moderator)).toEqual({ targetingKey: 'm', email: 'm@x', admin: false, moderator: true })
     expect(contextFor(null)).toEqual({ targetingKey: 'anonymous' })
   })
 
   it('evaluates every flag', async () => {
     expect(await evaluateAll(admin)).toEqual([
       { key: 'home.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'tournaments.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'tournaments.community.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'minigolf.userCourses.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.p121.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },

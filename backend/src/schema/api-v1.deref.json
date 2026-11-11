@@ -26230,6 +26230,7 @@
                                 "type": "string",
                                 "enum": [
                                   "admins",
+                                  "moderators",
                                   "nobody",
                                   "everyone"
                                 ],
@@ -26594,6 +26595,7 @@
                           "type": "string",
                           "enum": [
                             "admins",
+                            "moderators",
                             "nobody",
                             "everyone"
                           ],
@@ -72597,6 +72599,7 @@
             "type": "string",
             "enum": [
               "admins",
+              "moderators",
               "nobody",
               "everyone"
             ],
@@ -72659,6 +72662,7 @@
                 "type": "string",
                 "enum": [
                   "admins",
+                  "moderators",
                   "nobody",
                   "everyone"
                 ],
@@ -72813,6 +72817,7 @@
                       "type": "string",
                       "enum": [
                         "admins",
+                        "moderators",
                         "nobody",
                         "everyone"
                       ],

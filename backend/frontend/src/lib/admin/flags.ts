@@ -25,7 +25,8 @@ export function flagMode(flag: AdminFlag): FlagMode {
 /** What "Default" means for this flag right now, e.g. "Default (admins)". */
 export function defaultLabel(flag: AdminFlag): string {
   if (flag.default.envOn || flag.default.rule === 'everyone') return 'Default (everyone)'
-  return flag.default.rule === 'admins' ? 'Default (admins)' : 'Default (off)'
+  if (flag.default.rule === 'admins') return 'Default (admins)'
+  return flag.default.rule === 'moderators' ? 'Default (moderators)' : 'Default (off)'
 }
 
 /** The users chosen for a 'users'-mode override; empty otherwise. */
