@@ -1,6 +1,9 @@
 // Plane geometry for holes, with arithmetic only (no trig), so results match everywhere.
 import { BALL_R, type Hole, type Pt } from './types.js'
 
+/** Where the flag pole stands: on the cup's outer rim, at its +x edge, so it never covers the hole. */
+export const flagBase = ({ at, r }: Hole['cup']): Pt => [at[0] + r, at[1]]
+
 /** Even-odd ray cast; points exactly on an edge may land either side. */
 export function pointInPolygon([x, y]: Pt, poly: readonly Pt[]): boolean {
   let inside = false

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { bounds, edgesOf, pointInPolygon, segmentsIntersect } from './geometry.js'
+import { bounds, edgesOf, flagBase, pointInPolygon, segmentsIntersect } from './geometry.js'
+import type { Pt } from './types.js'
 
 const square = [
   [0, 0],
@@ -40,5 +41,12 @@ describe('geometry', () => {
   })
   it('measures bounds', () => {
     expect(bounds(square)).toEqual({ minX: 0, minY: 0, maxX: 100, maxY: 100 })
+  })
+})
+
+describe('flagBase', () => {
+  it('stands on the cup rim, one cup radius from its centre', () => {
+    const cup = { at: [200, 150] as Pt, r: 80 }
+    expect(flagBase(cup)).toEqual([280, 150])
   })
 })
