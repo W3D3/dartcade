@@ -2,6 +2,7 @@ import type { ColumnType, Generated, RawBuilder } from 'kysely'
 import type { components } from '../schema/api.js'
 import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
+import type { MatchOutcome, MatchStatus, TournamentStatus } from '../shared/tournaments/state.js'
 import type { RankedRules } from '../session/rankedClock.js'
 import type { RankedEntry } from '../session/types.js'
 
@@ -117,6 +118,8 @@ export interface GameSessionsTable {
   invalidated_by: ColumnType<string | null, never, string | null>
   /** Why, in the moderator's words; optional. */
   invalidation_reason: ColumnType<string | null, never, string | null>
+  /** The tournament match this game was played for (migration 066). */
+  tournament_match_id: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 export interface GamePlayersTable {
@@ -135,6 +138,8 @@ export interface GamePlayersTable {
   forfeited: ColumnType<boolean, boolean | undefined, boolean>
   /** The seat is a bot thrown by the server, at this difficulty 1-20; null for a human or guest (migration 017). */
   bot_level: number | null
+  /** The tournament spot this seat played for (migration 066): claiming the spot moves the seat to the account. */
+  tournament_player_id: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 export interface GameSessionEventsTable {
@@ -560,6 +565,87 @@ export interface UserAchievementsTable {
   showcase_slot: number | null
 }
 
+type Defaulted<T> = ColumnType<T, T | undefined, T>
+type Stamp = ColumnType<Date | null, Date | null | undefined, Date | null>
+
+/** A tournament (migration 066); its status moves by shared/tournaments/state.ts's table. */
+export interface TournamentsTable {
+  id: string
+  owner_user_id: string | null
+  kind: 'official' | 'community'
+  access: 'public' | 'friends' | 'invite' | 'in_person'
+  status: Defaulted<TournamentStatus>
+  name: string
+  description: Defaulted<string>
+  game_id: string
+  /** The game's options (written as JSON). */
+  game_config: ColumnType<unknown, string, string>
+  format: 'single_elimination' | 'double_elimination' | 'round_robin' | 'groups_knockout'
+  /** Players per entry: 1 solo, 2-4 a team. */
+  team_size: number
+  max_entries: number
+  /** Null: an organizer starts it. */
+  starts_at: Date | null
+  /** Seeding, match length, check-in and the other organizer choices (written as JSON). */
+  settings: ColumnType<unknown, string | undefined, string>
+  created_at: ColumnType<Date, never, never>
+  published_at: Stamp
+  started_at: Stamp
+  /** Finished or cancelled. */
+  ended_at: Stamp
+}
+
+export interface TournamentOrganizersTable {
+  tournament_id: string
+  user_id: string
+  added_at: ColumnType<Date, never, never>
+}
+
+export interface TournamentEntriesTable {
+  id: string
+  tournament_id: string
+  name: string
+  status: Defaulted<'pending' | 'registered' | 'checked_in' | 'withdrawn'>
+  seed: ColumnType<number | null, number | null | undefined, number | null>
+  final_place: ColumnType<number | null, number | null | undefined, number | null>
+  registered_by_user_id: ColumnType<string | null, string | null | undefined, string | null>
+  created_at: ColumnType<Date, never, never>
+}
+
+export interface TournamentPlayersTable {
+  id: string
+  tournament_id: string
+  entry_id: string
+  /** Null for a guest or an unclaimed spot. */
+  user_id: string | null
+  name: string
+  position: number
+  confirmed_at: Stamp
+  created_at: ColumnType<Date, never, never>
+}
+
+export interface TournamentMatchesTable {
+  id: string
+  tournament_id: string
+  bracket: 'main' | 'lower' | 'final' | 'group'
+  /** Set for a group match only. */
+  group_no: ColumnType<number | null, number | null | undefined, number | null>
+  round: number
+  slot: number
+  entry_a_id: ColumnType<string | null, string | null | undefined, string | null>
+  entry_b_id: ColumnType<string | null, string | null | undefined, string | null>
+  first_to: number
+  status: Defaulted<MatchStatus>
+  /** Set exactly when the match is finished. */
+  outcome: ColumnType<MatchOutcome | null, MatchOutcome | null | undefined, MatchOutcome | null>
+  winner_entry_id: ColumnType<string | null, string | null | undefined, string | null>
+  legs_a: Defaulted<number>
+  legs_b: Defaulted<number>
+  ready_at: Stamp
+  started_at: Stamp
+  finished_at: Stamp
+}
+
 export interface AchievementGamesTable {
   user_id: string
   game_id: string
@@ -648,4 +734,9 @@ export interface Database {
   ranked_matches: RankedMatchesTable
   coach_legs: CoachLegsTable
   coach_games: CoachGamesTable
+  tournaments: TournamentsTable
+  tournament_organizers: TournamentOrganizersTable
+  tournament_entries: TournamentEntriesTable
+  tournament_players: TournamentPlayersTable
+  tournament_matches: TournamentMatchesTable
 }
