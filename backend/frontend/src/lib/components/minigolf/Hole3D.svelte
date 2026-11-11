@@ -15,6 +15,7 @@
   import { onMount } from 'svelte'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
   import { HALF, SEGS, segAngle } from '$shared/board'
+  import { flagBase } from '$shared/minigolf/geometry'
   import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
   import {
@@ -249,13 +250,14 @@
     floor.rotation.x = -Math.PI / 2
     floor.position.set(cx, cupH - CUP_DEPTH, cy)
     g.add(floor)
+    const [fx, fy] = flagBase(h.cup)
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 520, 8), toon('#f4f1e6'))
-    pole.position.set(cx + h.cup.r * 0.55, cupH + 260, cy)
+    pole.position.set(fx, cupH + 260, fy)
     pole.castShadow = true
     g.add(pole)
     const flagShape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(170, -45), new THREE.Vector2(0, -90)])
     const flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), toon(THEME.accent, THREE.DoubleSide))
-    flag.position.set(cx + h.cup.r * 0.55, cupH + 520, cy)
+    flag.position.set(fx, cupH + 520, fy)
     flag.castShadow = true
     g.add(flag)
 
