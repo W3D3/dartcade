@@ -8,3 +8,7 @@ import { notFound } from './errors.js'
 export async function requireFlag(db: Kysely<Database>, key: FlagKey, userId: string): Promise<void> {
   if (!(await flagEnabled(key, await loadFlagUser(db, userId)))) throw notFound()
 }
+
+/** Every tournament route checks this first: with tournaments.enabled off the whole API is absent. */
+export const requireTournamentsFlag = (db: Kysely<Database>, userId: string): Promise<void> =>
+  requireFlag(db, 'tournaments.enabled', userId)

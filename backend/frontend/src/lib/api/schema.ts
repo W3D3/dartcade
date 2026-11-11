@@ -2184,6 +2184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public tournaments to browse (tournaments.enabled)
+         * @description Published public tournaments that have not ended, the soonest first; those an organizer starts come last.
+         */
+        get: operations["listTournaments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/achievements": {
         parameters: {
             query?: never;
@@ -4808,6 +4828,30 @@ export interface components {
                 sound?: string;
                 celebration?: string;
             };
+        };
+        TournamentSummary: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            kind: "official" | "community";
+            /** @enum {string} */
+            access: "public" | "friends" | "invite" | "in_person";
+            /** @enum {string} */
+            status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
+            /** @description The game every match plays */
+            gameId: string;
+            /** @enum {string} */
+            format: "single_elimination" | "double_elimination" | "round_robin" | "groups_knockout";
+            /** @description Players per entry: 1 is solo */
+            teamSize: number;
+            maxEntries: number;
+            /** @description Entries registered so far (withdrawn ones not counted) */
+            entries: number;
+            /**
+             * Format: date-time
+             * @description Null: an organizer starts it
+             */
+            startsAt: string | null;
         };
         Achievements: {
             /** @description One entry per achievement with any count; the rest of the catalogue is not earned yet */
@@ -9235,6 +9279,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerFriends"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTournaments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournaments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tournaments: components["schemas"]["TournamentSummary"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -29,6 +29,7 @@ import { rankedApiPlugin } from './api/ranked.js'
 import { homeApiPlugin } from './api/home.js'
 import { progressApiPlugin } from './api/progress.js'
 import { achievementsApiPlugin } from './api/achievements.js'
+import { tournamentsApiPlugin } from './api/tournaments.js'
 import { coachApiPlugin } from './api/coach.js'
 import { statsApiPlugin } from './api/stats.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
@@ -275,6 +276,7 @@ export async function buildApp({
   await app.register(homeApiPlugin, { db })
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
+  await app.register(tournamentsApiPlugin, { db })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
