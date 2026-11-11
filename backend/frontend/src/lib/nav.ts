@@ -11,7 +11,7 @@ export type NavTab = {
   badgeLabel?: string
   /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
   aria?: string
-  /** Shown dimmed, not a link: Live with no running game, Tournaments until it ships. */
+  /** Shown dimmed, not a link: Live with no running game, Tournaments while its flag is off. */
   disabled?: boolean
 }
 
@@ -34,15 +34,24 @@ export type NavState = {
   home?: boolean
   coach?: boolean
   stats?: boolean
+  tournaments?: boolean
 }
 
 /**
  * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Coach
- * while the coach is on, Tournaments (soon) or Progress while progression is on (Mobile-Progress),
- * History; pending invites as a badge on Play. No Live tab: a running game is one tap away from
+ * while the coach is on, Progress while progression is on (Mobile-Progress), Tournaments while it
+ * is on (Tournaments-Phone; dimmed "soon" in Progress's place while both are off), History;
+ * pending invites as a badge on Play. No Live tab: a running game is one tap away from
  * Play's Continue and the lobby strip.
  */
-export function navTabs({ invites = 0, ranked = false, progress = null, home = false, coach = false }: NavState = {}): NavTab[] {
+export function navTabs({
+  invites = 0,
+  ranked = false,
+  progress = null,
+  home = false,
+  coach = false,
+  tournaments = false,
+}: NavState = {}): NavTab[] {
   return [
     ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     {
@@ -53,9 +62,9 @@ export function navTabs({ invites = 0, ranked = false, progress = null, home = f
     },
     ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
     ...(coach ? [{ href: '/coach', label: 'Coach', icon: 'coach' as const }] : []),
-    progress !== null
-      ? { href: '/progress', label: 'Progress', icon: 'progress', ...dailyBadge(progress) }
-      : { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
+    ...(progress !== null ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const, ...dailyBadge(progress) }] : []),
+    // Progress took over the dimmed placeholder's slot; once on, Tournaments has a slot of its own
+    ...(tournaments || progress === null ? [tournamentsLink(tournaments)] : []),
     { href: '/history', label: 'History', icon: 'history' },
   ]
 }
@@ -72,15 +81,21 @@ export function railTabs(nav: NavState = {}): NavTab[] {
 
 export type SideLink = Omit<NavTab, 'aria'> & { soon?: boolean }
 
+/** Tournaments: a link while its flag is on, else dimmed as coming soon. */
+function tournamentsLink(on: boolean): NavTab & Pick<SideLink, 'soon'> {
+  const link = { href: '/tournaments', label: 'Tournaments', icon: 'tournaments' } as const
+  return on ? link : { ...link, aria: 'Tournaments: coming soon', disabled: true, soon: true }
+}
+
 /** Progress counts the challenges finished and waiting to be claimed. */
 function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
   return toClaim > 0 ? { badge: toClaim, badgeLabel: `${toClaim} ${toClaim === 1 ? 'challenge' : 'challenges'} to claim` } : {}
 }
 
-/** The desktop side nav: the same pages under their long names (Coach while the coach is on), then Stats (while it is on), Progress, Settings and Admin (admins and moderators). */
+/** The desktop side nav: the same pages under their long names (Coach while the coach is on, Tournaments dimmed "soon" while it is off), then Stats (while it is on), Progress, Settings and Admin (admins and moderators). */
 export function sideLinks(
   liveSessionId: string | null,
-  { ranked = false, admin = false, progress = null, home = false, coach = false, stats = false }: NavState = {},
+  { ranked = false, admin = false, progress = null, home = false, coach = false, stats = false, tournaments = false }: NavState = {},
 ): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
@@ -89,7 +104,7 @@ export function sideLinks(
     ...(ranked ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'ranked' as const }] : []),
     ...(coach ? [{ href: '/coach', label: 'Coach', icon: 'coach' as const }] : []),
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
-    { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
+    tournamentsLink(tournaments),
     { href: '/history', label: 'History', icon: 'history' },
     ...(stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),
     ...(progress !== null ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const, ...dailyBadge(progress) }] : []),

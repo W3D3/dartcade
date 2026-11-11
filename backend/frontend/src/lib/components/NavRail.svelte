@@ -25,6 +25,7 @@
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
+  const tournaments = flag('tournaments.enabled')
   const stats = flag('stats.enabled')
   const tabs = $derived(
     railTabs({
@@ -34,6 +35,7 @@
       admin: $currentUser?.isModerator ?? false,
       home: $home,
       coach: $coach,
+      tournaments: $tournaments,
       stats: $stats,
     }),
   )

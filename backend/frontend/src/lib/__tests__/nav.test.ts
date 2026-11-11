@@ -8,6 +8,11 @@ describe('navTabs', () => {
   it('shows Tournaments as not there yet', () => {
     expect(navTabs()[1]).toMatchObject({ label: 'Tournaments', disabled: true })
   })
+  it('links Tournaments while its flag is on, beside Progress', () => {
+    expect(navTabs({ tournaments: true })[1]).toEqual({ href: '/tournaments', label: 'Tournaments', icon: 'tournaments' })
+    expect(navTabs({ progress: 0, tournaments: true }).map(t => t.label)).toEqual(['Play', 'Progress', 'Tournaments', 'History'])
+    expect(railTabs({ tournaments: true }).find(t => t.label === 'Tournaments')).not.toHaveProperty('disabled')
+  })
 
   it('puts Ranked after Play while matchmaking is on', () => {
     expect(navTabs({ ranked: true }).map(t => t.label)).toEqual(['Play', 'Ranked', 'Tournaments', 'History'])
@@ -132,6 +137,14 @@ describe('sideLinks', () => {
       'History',
       'Settings',
     ])
+  })
+  it('dims Tournaments as soon while its flag is off, and links it once on', () => {
+    expect(sideLinks('s1').find(l => l.label === 'Tournaments')).toMatchObject({ disabled: true, soon: true })
+    expect(sideLinks('s1', { tournaments: true }).find(l => l.label === 'Tournaments')).toEqual({
+      href: '/tournaments',
+      label: 'Tournaments',
+      icon: 'tournaments',
+    })
   })
   it('links Live match to the running game, disabled without one', () => {
     expect(sideLinks('s1')[1]).toEqual({ href: '/session/s1', label: 'Live match', icon: 'live' })

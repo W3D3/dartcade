@@ -1,6 +1,6 @@
 <script lang="ts">
   // One item of the phone tab bar and the tablet rail: icon over label, the Live dot, the invites badge.
-  // A disabled tab (Live with no game running, Tournaments until it ships) is a dimmed span, not a link.
+  // A disabled tab (Live with no game running, Tournaments while its flag is off) is a dimmed span, not a link.
   import {
     ChartColumn,
     Clock,

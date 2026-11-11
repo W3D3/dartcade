@@ -35,6 +35,7 @@
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
+  const tournaments = flag('tournaments.enabled')
   const stats = flag('stats.enabled')
 
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
@@ -45,6 +46,7 @@
       progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
       home: $home,
       coach: $coach,
+      tournaments: $tournaments,
       stats: $stats,
     }),
   )

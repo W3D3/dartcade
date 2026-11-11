@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The phone's main navigation (below md): Home, Play, Ranked, Coach, Progress or Tournaments, History.
+  // The phone's main navigation (below md): Home, Play, Ranked, Coach, Progress, Tournaments, History.
   import { progress } from '$lib/progress/store'
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
@@ -11,6 +11,7 @@
   const progression = flag('progression.enabled')
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
+  const tournaments = flag('tournaments.enabled')
   const tabs = $derived(
     navTabs({
       invites: $me?.invites.length ?? 0,
@@ -18,6 +19,7 @@
       progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
       home: $home,
       coach: $coach,
+      tournaments: $tournaments,
     }),
   )
 </script>
