@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // The Stats page's wording (Stats.dc.html): the range and filter choices, what the arrows compare
 // with, and the line naming where a best happened. Number formats and arrows: lib/stats/trend.ts.
 import type { StatRef, StatsKind, StatsOutMode, StatsRange, StatsSpan, X01Stats } from '$lib/api'
@@ -71,7 +72,7 @@ export function refLine(ref: StatRef): string {
 /** "Visit 2 of leg 1". */
 export const visitTitle = (ref: StatRef): string => `Visit ${ref.visit ?? 1} of leg ${(ref.leg ?? 0) + 1}`
 
-export const refHref = (ref: StatRef): string => `#/history/${ref.gameId}`
+export const refHref = (ref: StatRef): string => hrefs.history(ref.gameId)
 
 /** Darts at a finish and how many went out, over every double thrown at. */
 export function doubleTotals(doubles: X01Stats['checkout']['doubles']): { hits: number; attempts: number } {

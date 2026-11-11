@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // The two lobby sockets. /ws/lobby?lobbyId= pushes the whole lobby after every change (the
 // lobby page). /ws/me pushes your pending invites and a summary of your lobby (the
 // indicator and the invite badge, everywhere), your friends list with their status, and your
@@ -67,7 +68,7 @@ export function createLobbyStore(lobbyId: string, open?: OpenSocket) {
       onClose: closeCode => {
         const code: string | undefined = WsCloseCode[closeCode]
         if (code === 'Unauthorized') {
-          window.location.hash = '#/login'
+          window.location.hash = hrefs.login()
           return 'stop'
         }
         if (code === 'Forbidden') {
@@ -156,7 +157,7 @@ export function createMeStore(open?: OpenSocket) {
           // Signed out by the server (a ban, say): every page holds this socket, so it sends you to sign in
           onClose: code => {
             if (WsCloseCode[code] !== 'Unauthorized') return
-            window.location.hash = '#/login'
+            window.location.hash = hrefs.login()
             return 'stop'
           },
         },

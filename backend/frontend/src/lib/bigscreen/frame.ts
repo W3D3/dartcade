@@ -1,11 +1,12 @@
 // The big screen draws the match screen's components in a same-origin iframe a fifth smaller than the
 // stage and scales it up, so their media queries, vh sizes and breakpoints behave as in a 1536 px window.
 // The page owns the socket, the audio and the previous snapshot; it posts what the frame draws.
+import { hrefs } from '../routes.js'
 import type { GameSettings } from '../gameSettings.js'
 import type { VisitHistory } from '../visitHistory.js'
 import type { BigScreenState } from './store.js'
 
-export const FRAME_HASH = '#/big-screen-frame'
+export const FRAME_HASH = hrefs.bigScreenFrame()
 /** The stage is this much bigger than the frame's window (1920 / 1.25 = 1536). */
 export const FRAME_SCALE = 1.25
 export const FRAME_READY = 'bigscreen.ready'

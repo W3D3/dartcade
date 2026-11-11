@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // The caller's voices: the user's packs (on the server, per account) and the built-in ones
 // (static files under /voices/<id>/). The server keeps the packs and their usage; this reads
 // them, sends imports and turns manifests into clip URLs for the player.
@@ -214,7 +215,7 @@ export function uploadVoicePack(file: File, onProgress: (fraction: number) => vo
     }
     xhr.onload = () => {
       if (xhr.status === 401) {
-        window.location.hash = '#/login'
+        window.location.hash = hrefs.login()
         finish({ kind: 'cancelled' })
         return
       }

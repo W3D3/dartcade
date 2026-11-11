@@ -1,3 +1,4 @@
+import { hrefs } from '$lib/routes'
 // Dev-only quick logins: the accounts the backend seeds in development (auth/seed.ts).
 // Only used behind import.meta.env.DEV; production never seeds or shows them.
 import { authClient, currentUser } from './auth.js'
@@ -28,6 +29,6 @@ export async function signInAs(user: DevUser): Promise<string | null> {
   const { error } = await authClient.signIn.email({ email: user.email, password: user.password })
   if (error) return error.message ?? 'Sign-in failed'
   await currentUser.refresh()
-  window.location.hash = '#/'
+  window.location.hash = hrefs.home()
   return null
 }
