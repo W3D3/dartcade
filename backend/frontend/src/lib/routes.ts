@@ -3,6 +3,7 @@
 // hash href ("#/history/abc"); `query` is an already-encoded query string without its "?".
 import type { Tab } from './progress/customise.js'
 import type { SettingsSection } from './settings/sections.js'
+import type { TournamentsTab } from './tournaments/tabs.js'
 
 const at = (path: string, query?: string): string => `#${path}${query ? `?${query}` : ''}`
 
@@ -30,6 +31,7 @@ export const hrefs = {
   voicePack: (id: string) => at(`/voice-packs/${id}`),
   friends: () => at('/friends'),
   matchmaking: () => at('/matchmaking'),
+  tournaments: (tab?: TournamentsTab) => at(tab ? `/tournaments/${tab}` : '/tournaments'),
   ranks: () => at('/matchmaking/ranks'),
   progress: () => at('/progress'),
   rewards: (level?: number | string) => at(level === undefined ? '/progress/rewards' : `/progress/rewards/${level}`),

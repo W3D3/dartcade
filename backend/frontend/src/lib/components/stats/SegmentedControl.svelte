@@ -9,22 +9,27 @@
     value,
     onchange,
     size = 'md',
+    fill = false,
   }: {
     label: string
     items: Segment<string>[]
     value: string
     onchange?: (id: string) => void
     size?: 'md' | 'sm'
+    /** Spread over the full width, the choices sharing it equally (a phone's tabs). */
+    fill?: boolean
   } = $props()
 
-  const item = $derived(size === 'sm' ? 'rounded-chip px-2.5 py-1 text-[12px]' : 'rounded-segment px-3 py-[7px] text-[13px]')
+  const item = $derived(
+    `${size === 'sm' ? 'rounded-chip px-2.5 py-1 text-[12px]' : 'rounded-segment px-3 py-[7px] text-[13px]'}${fill ? ' flex-1 text-center' : ''}`,
+  )
   const look = (on: boolean) => (on ? 'bg-line font-semibold text-text' : 'text-text-muted hover:text-text')
 </script>
 
 <div
   role="group"
   aria-label={label}
-  class="flex w-fit rounded-md border border-line bg-surface-panel {size === 'sm' ? 'p-0.5' : 'p-[3px]'}"
+  class="flex {fill ? 'w-full' : 'w-fit'} rounded-md border border-line bg-surface-panel {size === 'sm' ? 'p-0.5' : 'p-[3px]'}"
 >
   {#each items as s (s.id)}
     {#if s.href}

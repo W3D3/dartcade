@@ -29,6 +29,7 @@
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
+  import Tournaments from './routes/Tournaments.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
   import Achievements from './routes/Achievements.svelte'
@@ -153,6 +154,8 @@
     '/friends': Friends,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
+    // One route (tab optional), like Customise
+    '/tournaments/:tab?': Tournaments,
     '/progress': Progress,
     '/progress/rewards': Rewards,
     '/progress/achievements': Achievements,

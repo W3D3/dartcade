@@ -26,6 +26,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   voicePack: [hrefs.voicePack('p1')],
   friends: [hrefs.friends()],
   matchmaking: [hrefs.matchmaking()],
+  tournaments: [hrefs.tournaments(), hrefs.tournaments('teams')],
   ranks: [hrefs.ranks()],
   progress: [hrefs.progress()],
   rewards: [hrefs.rewards(), hrefs.rewards(15)],
