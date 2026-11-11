@@ -2,6 +2,7 @@
   // A profile's Friends section: their friends, mutual ones first and marked, with the mutual
   // count in the header and an Add friend action per person. Without the list (a stranger, or
   // Only me) only the count shows.
+  import { hrefs } from '$lib/routes'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -55,7 +56,7 @@
       <ul class="flex flex-col">
         {#each data.friends as f (f.id)}
           <li class="flex items-center gap-3 py-2 border-b border-line last:border-b-0">
-            <a href="#/profile/{f.id}" class="flex items-center gap-3 min-w-0 flex-1 text-text no-underline">
+            <a href={hrefs.profile(f.id)} class="flex items-center gap-3 min-w-0 flex-1 text-text no-underline">
               <Avatar name={f.name} face={{ avatar: f.avatar, userId: f.id }} size={36} />
               <span class="flex flex-col min-w-0">
                 <span class="truncate text-[15px] font-medium">{f.name}</span>
@@ -67,7 +68,7 @@
             {:else if f.relation === 'requested' || sent.has(f.id)}
               <span class="text-[13px] text-text-muted">Request sent</span>
             {:else if f.relation === 'incoming'}
-              <a href="#/friends" class="text-[13px] font-semibold text-accent no-underline">Wants to be friends</a>
+              <a href={hrefs.friends()} class="text-[13px] font-semibold text-accent no-underline">Wants to be friends</a>
             {:else if f.relation === 'none'}
               <Button variant="outline" onclick={() => void add(f.name, f.id)} class="h-8 px-3 rounded-key text-[13px] font-semibold"
                 >Add friend</Button

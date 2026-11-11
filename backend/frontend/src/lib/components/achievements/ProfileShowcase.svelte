@@ -1,6 +1,7 @@
 <script lang="ts">
   // The badges a player picked for their profile (Profile-Lena-Achievements board), above the
   // overview; "See all" opens the Achievements tab. Nothing shows while they picked none.
+  import { hrefs } from '$lib/routes'
   import Badge from './Badge.svelte'
   import { badgesOf, statusLine, type Achievements } from '$lib/achievements/view'
 
@@ -19,7 +20,7 @@
     </div>
     {#if picked.length === 0}
       <p class="text-label text-text-muted">
-        Nothing shown yet. <a href="#/progress/achievements" class="text-accent no-underline">Pick up to five on the Achievements page</a>.
+        Nothing shown yet. <a href={hrefs.achievements()} class="text-accent no-underline">Pick up to five on the Achievements page</a>.
       </p>
     {:else}
       <ul class="flex flex-wrap gap-x-6 gap-y-4 p-0">

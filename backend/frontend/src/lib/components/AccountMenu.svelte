@@ -8,6 +8,7 @@
   // A bits-ui DropdownMenu: focus moves in on open and back to the badge on close, arrow keys and
   // typeahead move through the items, and Escape closes only the menu (the Friends drawer under
   // it is a lower layer and stays open).
+  import { hrefs } from '$lib/routes'
   import { DropdownMenu } from 'bits-ui'
   import { ChartColumn, ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
@@ -143,7 +144,7 @@
             {#snippet child({ props })}
               <a
                 {...props}
-                href="#/profile"
+                href={hrefs.profile()}
                 aria-label="Your profile: {p.name}"
                 style="background: {CARD_SURFACE}"
                 class="block overflow-hidden rounded-lg border border-line-popover text-text no-underline outline-none data-highlighted:border-accent hover:text-text {colorsClass(
@@ -180,7 +181,7 @@
             {#snippet child({ props })}
               <a
                 {...props}
-                href="#/profile"
+                href={hrefs.profile()}
                 aria-label="Your profile: {name}"
                 class="block rounded-md p-1 text-text no-underline outline-none data-highlighted:bg-surface-hover hover:text-text"
                 >{@render plainHeader()}</a
@@ -207,7 +208,7 @@
         <!-- Desktops and tablets open the Friends drawer beside the nav; phones go to the Friends page -->
         {#if placement === 'header'}
           <DropdownMenu.Item textValue="Friends">
-            {#snippet child({ props })}<a {...props} href="#/friends" class={ITEM}>{@render friendsRow()}</a>{/snippet}
+            {#snippet child({ props })}<a {...props} href={hrefs.friends()} class={ITEM}>{@render friendsRow()}</a>{/snippet}
           </DropdownMenu.Item>
         {:else}
           <DropdownMenu.Item textValue="Friends" onSelect={() => friendsDrawerOpen.set(true)} class={ITEM}
@@ -218,7 +219,7 @@
           {#if !inNav}
             <DropdownMenu.Item textValue="Progress">
               {#snippet child({ props })}
-                <a {...props} href="#/progress" class={ITEM}
+                <a {...props} href={hrefs.progress()} class={ITEM}
                   ><TrendingUp size={18} strokeWidth={1.8} />Progress<span
                     class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span
                   ></a
@@ -230,21 +231,21 @@
         {#if $stats && !inNav}
           <DropdownMenu.Item textValue="Stats">
             {#snippet child({ props })}
-              <a {...props} href="#/stats" class={ITEM}><ChartColumn size={18} strokeWidth={1.8} />Stats</a>
+              <a {...props} href={hrefs.stats()} class={ITEM}><ChartColumn size={18} strokeWidth={1.8} />Stats</a>
             {/snippet}
           </DropdownMenu.Item>
         {/if}
         {#if $currentUser?.isModerator && !inNav}
           <DropdownMenu.Item textValue="Admin">
             {#snippet child({ props })}
-              <a {...props} href="#/admin" class={ITEM}><ShieldCheck size={18} strokeWidth={1.8} />Admin</a>
+              <a {...props} href={hrefs.admin()} class={ITEM}><ShieldCheck size={18} strokeWidth={1.8} />Admin</a>
             {/snippet}
           </DropdownMenu.Item>
         {/if}
         {#if !inNav}
           <DropdownMenu.Item textValue="Settings">
             {#snippet child({ props })}
-              <a {...props} href="#/settings" class={ITEM}><Settings size={18} strokeWidth={1.8} />Settings</a>
+              <a {...props} href={hrefs.settings()} class={ITEM}><Settings size={18} strokeWidth={1.8} />Settings</a>
             {/snippet}
           </DropdownMenu.Item>
         {/if}

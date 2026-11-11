@@ -2,6 +2,7 @@
   // A start was refused: the dialog's kind comes straight from the server's code (no client
   // rules). board_offline and not_ready are skippable (Start anyway); anything else just
   // sends you back.
+  import { hrefs } from '$lib/routes'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
@@ -65,7 +66,7 @@
     {#snippet footer()}
       <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={onback}>Back to lobby</Button>
       {#if returnSessionId}
-        <Button variant="accent" size="lg" class="flex-1" href="#/session/{returnSessionId}">Return to game</Button>
+        <Button variant="accent" size="lg" class="flex-1" href={hrefs.session(returnSessionId)}>Return to game</Button>
       {/if}
     {/snippet}
   </Modal>

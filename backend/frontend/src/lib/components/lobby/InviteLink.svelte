@@ -1,6 +1,7 @@
 <script lang="ts">
   // An invite link opened while signed out (Lobby-Invite-Link): the lobby first, then sign in
   // or sign up, and come straight back to the link.
+  import { hrefs } from '$lib/routes'
   import { push } from 'svelte-spa-router'
   import type { components } from '$lib/api/schema'
   import Wordmark from '$lib/components/Wordmark.svelte'
@@ -42,7 +43,7 @@
 >
   <header class="flex items-center justify-between">
     <Wordmark text="text-[26px]" badge={false} />
-    <a href="#/login" onclick={e => (e.preventDefault(), go('/login'))} class="text-[14px] md:text-[15px] font-semibold no-underline"
+    <a href={hrefs.login()} onclick={e => (e.preventDefault(), go('/login'))} class="text-[14px] md:text-[15px] font-semibold no-underline"
       >Sign in</a
     >
   </header>

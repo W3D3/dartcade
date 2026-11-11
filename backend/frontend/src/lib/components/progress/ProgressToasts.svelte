@@ -6,6 +6,7 @@
   // pill on the match screen. The hit: the dashed circle fills, the check draws itself with a burst,
   // the number rolls up. One at a time; the rest wait their turn. Reduced motion: no burst, the
   // check just appears and the number swaps.
+  import { hrefs } from '$lib/routes'
   import { onDestroy } from 'svelte'
   import { get } from 'svelte/store'
   import { location } from 'svelte-spa-router'
@@ -174,7 +175,9 @@
             {:else if t.kind === 'challenge'}
               <div class="text-[12px] label-caps text-text-dim">Challenge complete</div>
               <div class="text-body/snug font-semibold">{t.title}</div>
-              <a href="#/progress" onclick={showNext} class="text-[13px] font-semibold no-underline">Claim +{fmtXp(t.xp)} XP on Progress</a>
+              <a href={hrefs.progress()} onclick={showNext} class="text-[13px] font-semibold no-underline"
+                >Claim +{fmtXp(t.xp)} XP on Progress</a
+              >
             {/if}
           </div>
           {#if t.kind === 'streak' && t.bonus > 0}{@render xpPill(t.bonus, false)}{/if}

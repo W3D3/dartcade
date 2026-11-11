@@ -1,5 +1,6 @@
 <script lang="ts">
   // Jump back in (Home board): your last three finished games, each with a way to play again.
+  import { hrefs } from '$lib/routes'
   import { Button } from '$lib/components/ui/button/index.js'
   import HomeSection from './HomeSection.svelte'
   import { api } from '$lib/api'
@@ -12,16 +13,16 @@
   const rows = $derived((games.data?.games ?? []).map(g => recentRow(g, now)))
 </script>
 
-<HomeSection title="Jump back in" link={{ label: 'History', href: '#/history' }} loading={games.loading} error={games.error}>
+<HomeSection title="Jump back in" link={{ label: 'History', href: hrefs.history() }} loading={games.loading} error={games.error}>
   {#if rows.length > 0}
     <ul class="flex flex-col gap-[10px]">
       {#each rows as row (row.id)}
         <li class="flex items-center gap-3">
-          <a href="#/history/{row.id}" class="flex min-w-0 flex-1 flex-col text-text no-underline">
+          <a href={hrefs.history(row.id)} class="flex min-w-0 flex-1 flex-col text-text no-underline">
             <span class="truncate text-[15px] font-semibold">{row.title}</span>
             <span class="truncate text-[13px] text-text-muted">{row.line}</span>
           </a>
-          <Button href="#/play" variant="outline" size="sm" aria-label="Play {row.title} again">Play again</Button>
+          <Button href={hrefs.play()} variant="outline" size="sm" aria-label="Play {row.title} again">Play again</Button>
         </li>
       {/each}
     </ul>

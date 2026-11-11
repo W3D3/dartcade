@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import BoardStatusDot from './BoardStatusDot.svelte'
@@ -183,7 +184,10 @@
 
         <BigScreenButton {board} blocked={busy !== null} />
         {#if $bigScreenOn}
-          <a href="#/big-screen/{board.id}" class="text-[13px] text-center text-text-muted! underline underline-offset-4 hover:text-text!">
+          <a
+            href={hrefs.bigScreen(board.id)}
+            class="text-[13px] text-center text-text-muted! underline underline-offset-4 hover:text-text!"
+          >
             Open big screen here
           </a>
         {/if}

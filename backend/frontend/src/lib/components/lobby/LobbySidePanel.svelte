@@ -1,6 +1,7 @@
 <script lang="ts">
   // Under the next game (Lobby, Lobby-New, Tablet-Lobby boards): two tabs, "Friends · N online"
   // with every friend and Invite, and the lobby history. The host also sets who can join here.
+  import { hrefs } from '$lib/routes'
   import { querystring } from 'svelte-spa-router'
   import { readParam, setParam } from '$lib/urlState'
   import { Check } from '@lucide/svelte'
@@ -68,7 +69,7 @@
         <div class="flex flex-col gap-2 grow min-h-0 overflow-y-auto scrollbar-themed pr-1">
           {#if loaded && rows.length === 0}
             <p class="py-2 text-[14px] text-text-muted">
-              No friends yet. <a href="#/friends" class="font-semibold no-underline">Add a friend</a> and they show up here to invite.
+              No friends yet. <a href={hrefs.friends()} class="font-semibold no-underline">Add a friend</a> and they show up here to invite.
             </p>
           {:else}
             <ul aria-label="Your friends" class="flex flex-col">
@@ -107,7 +108,7 @@
             </ul>
             <p class="text-[12px] leading-[1.45] text-text-dim">
               Invited friends join once they accept. Someone not on your list? Add them by @username in People.
-              <a href="#/friends" class="font-semibold no-underline">All friends</a>
+              <a href={hrefs.friends()} class="font-semibold no-underline">All friends</a>
             </p>
           {/if}
         </div>

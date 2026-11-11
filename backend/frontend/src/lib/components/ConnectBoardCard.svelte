@@ -2,6 +2,7 @@
   // The side nav's "Connect your board" card (Onboarding-NoBoard), for accounts with no paired
   // board. Its button opens pairing on the Boards page; "Hide for now" hides it on this device.
   // `compact` is the Play page's row version for phones and tablets, which have no side nav.
+  import { hrefs } from '$lib/routes'
   import { readFlag, writeFlag } from '$lib/storage'
   import { ChevronRight, Target, X } from '@lucide/svelte'
   import { currentUser } from '$lib/auth'
@@ -63,7 +64,7 @@
       >
     </span>
     <a
-      href="#/settings/boards?pair"
+      href={hrefs.settings('boards', 'pair')}
       class="{compact
         ? 'px-4 max-sm:w-full'
         : ''} h-10 flex items-center justify-center gap-[6px] rounded-md bg-accent text-accent-fg text-[14px] font-bold no-underline hover:bg-accent-hover"

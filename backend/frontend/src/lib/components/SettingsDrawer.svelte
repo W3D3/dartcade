@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { ChevronRight, MonitorPlay, X } from '@lucide/svelte'
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import { onMount } from 'svelte'
@@ -170,7 +171,10 @@
           />
         </div>
         <div class="flex flex-col gap-1">
-          <a href="#/settings/caller" class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline">
+          <a
+            href={hrefs.settings('caller')}
+            class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline"
+          >
             Manage voices<ChevronRight size={14} strokeWidth={2.2} />
           </a>
           <span class="text-[12px] text-text-dim">Import packs, delete them and set caller defaults in Settings.</span>
@@ -182,7 +186,7 @@
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-3">
         <SectionLabel as="h3">Big screen</SectionLabel>
         <a
-          href="#/big-screen/{bigScreenBoardId}"
+          href={hrefs.bigScreen(bigScreenBoardId)}
           class="self-start min-h-10 inline-flex items-center gap-2 text-[14px] font-semibold no-underline"
         >
           <MonitorPlay size={16} />Show the big screen in this window

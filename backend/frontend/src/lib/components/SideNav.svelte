@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import Wordmark from './Wordmark.svelte'
   import {
     ChartColumn,
@@ -113,7 +114,7 @@
     {/each}
     {#if inviteCount > 0}
       {@const active = isActiveRoute($location, '/invites')}
-      <NavLink href="#/invites" {active}>
+      <NavLink href={hrefs.invites()} {active}>
         <Mail size={20} strokeWidth={1.8} />Invites
         <NavBadge count={inviteCount} label="{inviteCount} pending" class="ml-auto" />
       </NavLink>

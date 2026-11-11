@@ -4,6 +4,7 @@
   // the level flips, the chip pulses once and one line names the new level. A tap opens the full
   // breakdown. A challenge the game finished gets a line pointing to Progress, where its XP is
   // claimed. Reduced motion shows the end state.
+  import { hrefs } from '$lib/routes'
   import { ChevronDown, ChevronUp, Flame, Target } from '@lucide/svelte'
   import type { GameGain } from '$lib/progress/store'
   import { equip } from '$lib/progress/equip'
@@ -53,7 +54,7 @@
   {#each gain.challenges ?? [] as c (c.title)}
     <p class="flex items-center gap-[6px] text-[13px] text-ink-2">
       <Target size={14} class="shrink-0 text-accent" aria-hidden="true" /><span class="min-w-0 truncate">Challenge done: {c.title}</span><a
-        href="#/progress"
+        href={hrefs.progress()}
         class="ml-auto shrink-0 whitespace-nowrap font-semibold">Claim +{fmtXp(c.xp)} XP</a
       >
     </p>

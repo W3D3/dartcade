@@ -3,6 +3,7 @@
   // the user's packs (sample, delete), the built-in voices, and importing a pack from a zip
   // (drop or choose, with upload progress). The server keeps the packs and
   // decides what an import keeps; this shows what it says.
+  import { hrefs } from '$lib/routes'
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
@@ -174,7 +175,7 @@
               </span>
               <span class="grow min-w-0 truncate text-[15px] font-semibold text-text">{b.name}</span>
               <Button
-                href="#/voice-packs/builtin:{b.id}"
+                href={hrefs.voicePack(`builtin:${b.id}`)}
                 variant="quiet"
                 aria-label="Details of {b.name}"
                 class="h-10 px-[10px] md:px-3 gap-[6px] rounded-key border border-line-chip text-ink-2 text-[14px] font-semibold"
@@ -247,7 +248,7 @@
               </Button>
               {#if $packDetails}
                 <Button
-                  href="#/voice-packs/{p.id}"
+                  href={hrefs.voicePack(p.id)}
                   variant="quiet"
                   aria-label="Details of {p.name}"
                   class="h-10 px-[10px] md:px-3 gap-[6px] rounded-key border border-line-chip text-ink-2 text-[14px] font-semibold"

@@ -1,6 +1,7 @@
 <script lang="ts">
   // Friends' lobbies (Home board): lobbies your friends host, open ones with a Join and running ones
   // with a Watch (behind watch.enabled). Reloads when the friends list changes over /ws/me.
+  import { hrefs } from '$lib/routes'
   import { Eye, Users } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { flag } from '$lib/flags'
@@ -29,7 +30,12 @@
   })
 </script>
 
-<HomeSection title="Friends' lobbies" link={{ label: 'All friends', href: '#/friends' }} loading={lobbies.loading} error={lobbies.error}>
+<HomeSection
+  title="Friends' lobbies"
+  link={{ label: 'All friends', href: hrefs.friends() }}
+  loading={lobbies.loading}
+  error={lobbies.error}
+>
   {#if lobbies.data && lobbies.data.lobbies.length > 0}
     <ul class="flex flex-col gap-[10px]">
       {#each lobbies.data.lobbies as lobby (lobby.id)}

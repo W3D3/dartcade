@@ -1,6 +1,7 @@
 <script lang="ts">
   // Ranked (Home board): your 1v1 rank and rating, how far through the stage you are and your
   // last five ranked games. Mounted only while matchmaking is on, so nothing is fetched without it.
+  import { hrefs } from '$lib/routes'
   import { ArrowRight } from '@lucide/svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import HomeSection from './HomeSection.svelte'
@@ -18,7 +19,7 @@
   const results = $derived(profile.data ? lastFive(profile.data.recent) : [])
 </script>
 
-<HomeSection title="Ranked" link={{ label: 'Ranks', href: '#/matchmaking/ranks' }} loading={profile.loading} error={profile.error}>
+<HomeSection title="Ranked" link={{ label: 'Ranks', href: hrefs.ranks() }} loading={profile.loading} error={profile.error}>
   {#if card}
     <div class="flex items-center gap-3">
       <RankBadge rank={card.rank} size={56} />
@@ -61,7 +62,7 @@
         <span class="text-text-dim">No ranked games yet</span>
       {/each}
     </div>
-    <a href="#/matchmaking" class="mt-auto inline-flex items-center gap-2 text-[14px] font-semibold text-accent no-underline"
+    <a href={hrefs.matchmaking()} class="mt-auto inline-flex items-center gap-2 text-[14px] font-semibold text-accent no-underline"
       >Find a ranked match<ArrowRight size={16} /></a
     >
   {/if}

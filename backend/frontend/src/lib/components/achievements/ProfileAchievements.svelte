@@ -1,6 +1,7 @@
 <script lang="ts">
   // A profile's Achievements tab (Profile-Lena-Achievements board): their totals, how you compare
   // (on someone else's profile), and every badge with its progress, read only.
+  import { hrefs } from '$lib/routes'
   import AchievementList from './AchievementList.svelte'
   import AchievementSummary from './AchievementSummary.svelte'
   import { badgesOf, compare, summarize, type Achievements } from '$lib/achievements/view'
@@ -36,7 +37,7 @@
       <span class="text-caption label-caps text-text-dim">You both have</span>
       <span class="font-display font-bold text-section-title leading-none text-text">{versus.both}</span>
       <span>achievements. {sentence}</span>
-      <a href="#/progress/achievements" class="text-accent no-underline">Your achievements ›</a>
+      <a href={hrefs.achievements()} class="text-accent no-underline">Your achievements ›</a>
     </p>
   {/if}
 

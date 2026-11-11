@@ -3,6 +3,7 @@
   // nav (desktop) or the rail (tablet) over a dimmed page. Requests to answer, who's online and
   // what they play, Invite or Join, and the way to the Friends page. Closes on Escape, a click on
   // the page, the close button, or any navigation.
+  import { hrefs } from '$lib/routes'
   import { ArrowRight, ChevronUp, UserPlus, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { Dialog } from 'bits-ui'
@@ -60,7 +61,7 @@
             >
           </div>
           <a
-            href="#/friends"
+            href={hrefs.friends()}
             aria-label="Add a friend"
             title="Add a friend"
             class="size-10 shrink-0 flex items-center justify-center rounded-md border border-line-chip text-ink-2 hover:text-text"
@@ -137,7 +138,7 @@
 
         <footer class="shrink-0 pt-3 px-4 pb-4 border-t border-surface-paused">
           <a
-            href="#/friends"
+            href={hrefs.friends()}
             class="h-[46px] flex items-center justify-center gap-2 rounded-[11px] border border-line-strong text-text text-[14px] font-semibold no-underline hover:text-text hover:bg-surface-active"
             >Open friends page<ArrowRight size={16} /></a
           >

@@ -2,6 +2,7 @@
   // Settings' Profile: you as others see you. With progression, your profile card and the way to
   // Customise (picture, banner, colours, title), the one place to change them; without it (the
   // profile API needs progression), or until the card loads, your avatar and name.
+  import { hrefs } from '$lib/routes'
   import Avatar from '$lib/components/Avatar.svelte'
   import ProfileCard from '$lib/components/progress/ProfileCard.svelte'
   import { currentUser } from '$lib/auth'
@@ -38,7 +39,7 @@
           >Your picture, banner, colours and title. Friends see this card when they open your profile.</span
         >
         <a
-          href="#/profile/customise"
+          href={hrefs.customise()}
           class="w-fit rounded-md border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-cta text-accent-fg no-underline"
           >Customise</a
         >
