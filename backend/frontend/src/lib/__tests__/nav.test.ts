@@ -10,36 +10,43 @@ describe('navTabs', () => {
   })
 
   it('puts Ranked after Play while matchmaking is on', () => {
-    expect(navTabs(0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Tournaments', 'History'])
-    expect(navTabs(0, true)[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
+    expect(navTabs({ ranked: true }).map(t => t.label)).toEqual(['Play', 'Ranked', 'Tournaments', 'History'])
+    expect(navTabs({ ranked: true })[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
   })
 
   it('puts Coach after Ranked while the coach is on', () => {
-    expect(navTabs(0, true, 0, true, true).map(t => t.label)).toEqual(['Home', 'Play', 'Ranked', 'Coach', 'Progress', 'History'])
-    expect(navTabs(0, false, null, false, true)[1]).toEqual({ href: '/coach', label: 'Coach', icon: 'coach' })
-    expect(navTabs(0, true, 0, true, false).map(t => t.label)).not.toContain('Coach')
+    expect(navTabs({ ranked: true, progress: 0, home: true, coach: true }).map(t => t.label)).toEqual([
+      'Home',
+      'Play',
+      'Ranked',
+      'Coach',
+      'Progress',
+      'History',
+    ])
+    expect(navTabs({ coach: true })[1]).toEqual({ href: '/coach', label: 'Coach', icon: 'coach' })
+    expect(navTabs({ ranked: true, progress: 0, home: true }).map(t => t.label)).not.toContain('Coach')
   })
 
   it('puts the pending invites on the Play tab', () => {
-    expect(navTabs(2)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
-    expect(navTabs(0)[0]).toEqual({ href: '/play', label: 'Play', icon: 'play' })
+    expect(navTabs({ invites: 2 })[0]).toEqual({ href: '/play', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
+    expect(navTabs()[0]).toEqual({ href: '/play', label: 'Play', icon: 'play' })
   })
 })
 
 describe('Home in the nav', () => {
   it('puts Home first, before Play, while Home is on', () => {
-    expect(navTabs(0, false, null, true).map(t => [t.label, t.href])).toEqual([
+    expect(navTabs({ home: true }).map(t => [t.label, t.href])).toEqual([
       ['Home', '/'],
       ['Play', '/play'],
       ['Tournaments', '/tournaments'],
       ['History', '/history'],
     ])
-    expect(navTabs(0, false, null, true)[0]).toEqual({ href: '/', label: 'Home', icon: 'home' })
+    expect(navTabs({ home: true })[0]).toEqual({ href: '/', label: 'Home', icon: 'home' })
   })
 
   it('keeps the invites badge on Play', () => {
-    expect(navTabs(2, false, null, true)[1]).toMatchObject({ label: 'Play', href: '/play', badge: 2 })
-    expect(navTabs(2, false, null, true)[0]).not.toHaveProperty('badge')
+    expect(navTabs({ invites: 2, home: true })[1]).toMatchObject({ label: 'Play', href: '/play', badge: 2 })
+    expect(navTabs({ invites: 2, home: true })[0]).not.toHaveProperty('badge')
   })
 
   it('is the old nav without it: no Home, Play first (always at /play)', () => {
@@ -48,12 +55,12 @@ describe('Home in the nav', () => {
 
   it('shows in the tablet rail and the desktop side nav too', () => {
     expect(
-      railTabs(0, false, null, false, true)
+      railTabs({ home: true })
         .map(t => t.label)
         .slice(0, 2),
     ).toEqual(['Home', 'Play'])
     expect(
-      sideLinks('s1', false, false, null, true)
+      sideLinks('s1', { home: true })
         .map(l => [l.label, l.href])
         .slice(0, 2),
     ).toEqual([
@@ -71,26 +78,26 @@ describe('Home in the nav', () => {
 
 describe('Progress in the nav', () => {
   it('takes the Tournaments tab while progression is on', () => {
-    expect(navTabs(0, true, 0).map(t => t.label)).toEqual(['Play', 'Ranked', 'Progress', 'History'])
-    expect(navTabs(0, false, 0)[1]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
+    expect(navTabs({ ranked: true, progress: 0 }).map(t => t.label)).toEqual(['Play', 'Ranked', 'Progress', 'History'])
+    expect(navTabs({ progress: 0 })[1]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
   })
   it('counts the challenges to claim', () => {
-    expect(navTabs(0, false, 2)[1]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
+    expect(navTabs({ progress: 2 })[1]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
     expect(
-      sideLinks('s1', true, false, null, false, true)
+      sideLinks('s1', { ranked: true, coach: true })
         .map(l => l.label)
         .slice(0, 3),
     ).toEqual(['Play', 'Matchmaking', 'Coach'])
-    expect(sideLinks('s1', true, false, null, false, true).find(l => l.label === 'Coach')).toEqual({
+    expect(sideLinks('s1', { ranked: true, coach: true }).find(l => l.label === 'Coach')).toEqual({
       href: '/coach',
       label: 'Coach',
       icon: 'coach',
     })
     expect(sideLinks('s1').some(l => l.label === 'Coach')).toBe(false)
-    expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
+    expect(sideLinks('s1', { progress: 1 }).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('lists Stats after History while it is on, and on the rail before Settings', () => {
-    expect(sideLinks('s1', false, false, 0, false, false, true).map(l => l.label)).toEqual([
+    expect(sideLinks('s1', { progress: 0, stats: true }).map(l => l.label)).toEqual([
       'Play',
       'Live match',
       'Tournaments',
@@ -99,17 +106,11 @@ describe('Progress in the nav', () => {
       'Progress',
       'Settings',
     ])
-    expect(railTabs(0, false, null, false, false, false, true).map(t => t.label)).toEqual([
-      'Play',
-      'Tournaments',
-      'History',
-      'Stats',
-      'Settings',
-    ])
+    expect(railTabs({ stats: true }).map(t => t.label)).toEqual(['Play', 'Tournaments', 'History', 'Stats', 'Settings'])
     expect(sideLinks('s1').some(l => l.label === 'Stats')).toBe(false)
   })
   it('sits before Settings in the side nav', () => {
-    expect(sideLinks('s1', false, false, 0).map(l => l.label)).toEqual([
+    expect(sideLinks('s1', { progress: 0 }).map(l => l.label)).toEqual([
       'Play',
       'Live match',
       'Tournaments',
@@ -123,14 +124,28 @@ describe('Progress in the nav', () => {
 describe('sideLinks', () => {
   it('lists the design order, with Matchmaking only while it is on', () => {
     expect(sideLinks('s1').map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings'])
-    expect(sideLinks('s1', true).map(l => l.label)).toEqual(['Play', 'Matchmaking', 'Live match', 'Tournaments', 'History', 'Settings'])
+    expect(sideLinks('s1', { ranked: true }).map(l => l.label)).toEqual([
+      'Play',
+      'Matchmaking',
+      'Live match',
+      'Tournaments',
+      'History',
+      'Settings',
+    ])
   })
   it('links Live match to the running game, disabled without one', () => {
     expect(sideLinks('s1')[1]).toEqual({ href: '/session/s1', label: 'Live match', icon: 'live' })
     expect(sideLinks(null)[1]).toMatchObject({ label: 'Live match', disabled: true })
   })
   it('adds Admin last, admins only', () => {
-    expect(sideLinks(null, false, true).map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings', 'Admin'])
+    expect(sideLinks(null, { admin: true }).map(l => l.label)).toEqual([
+      'Play',
+      'Live match',
+      'Tournaments',
+      'History',
+      'Settings',
+      'Admin',
+    ])
     expect(sideLinks(null).map(l => l.label)).not.toContain('Admin')
   })
 })
@@ -196,7 +211,7 @@ describe('friendsEntry', () => {
 describe('railTabs', () => {
   it("adds Settings, and Admin for admins, after the phone's tabs", () => {
     expect(railTabs().map(t => t.label)).toEqual(['Play', 'Tournaments', 'History', 'Settings'])
-    expect(railTabs(0, false, null, true).slice(-2)).toEqual([
+    expect(railTabs({ admin: true }).slice(-2)).toEqual([
       { href: '/settings', label: 'Settings', icon: 'settings' },
       { href: '/admin', label: 'Admin', icon: 'admin' },
     ])

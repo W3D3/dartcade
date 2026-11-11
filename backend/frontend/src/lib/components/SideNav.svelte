@@ -39,15 +39,14 @@
 
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const links = $derived(
-    sideLinks(
-      $activeSessionId,
-      $matchmaking,
-      $currentUser?.isModerator,
-      $progression ? ($progress?.challengesToClaim ?? 0) : null,
-      $home,
-      $coach,
-      $stats,
-    ),
+    sideLinks($activeSessionId, {
+      ranked: $matchmaking,
+      admin: $currentUser?.isModerator,
+      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
+      home: $home,
+      coach: $coach,
+      stats: $stats,
+    }),
   )
 </script>
 

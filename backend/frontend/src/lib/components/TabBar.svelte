@@ -12,7 +12,13 @@
   const home = flag('home.enabled', true)
   const coach = flag('coach.enabled')
   const tabs = $derived(
-    navTabs($me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.challengesToClaim ?? 0) : null, $home, $coach),
+    navTabs({
+      invites: $me?.invites.length ?? 0,
+      ranked: $matchmaking,
+      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
+      home: $home,
+      coach: $coach,
+    }),
   )
 </script>
 
