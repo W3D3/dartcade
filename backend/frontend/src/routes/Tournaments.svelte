@@ -11,6 +11,7 @@
   import BrowseTab from '$lib/components/tournaments/BrowseTab.svelte'
   import MineTab from '$lib/components/tournaments/MineTab.svelte'
   import UpNextCard from '$lib/components/tournaments/UpNextCard.svelte'
+  import TeamRequestBanner from '$lib/components/tournaments/TeamRequestBanner.svelte'
   import YourTeamsCard from '$lib/components/teams/YourTeamsCard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
@@ -107,6 +108,7 @@
       </div>
 
       <section aria-label={TAB_LABELS[tab].label} class="flex flex-col gap-6 pt-2 md:pt-4">
+        <TeamRequestBanner />
         {#if tab === 'teams'}
           <TeamsTab bind:creating />
         {:else if tab === 'browse'}

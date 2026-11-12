@@ -1,25 +1,30 @@
 <script lang="ts">
   // One tournament on Browse (Tournaments .trow, Tournaments-Phone's card): when, name, organizer
-  // and game, entry and format, the spots taken, and Register or why not. The name opens Details.
+  // and game, entry and format, the spots taken, and Register (Register team) or why not; your team
+  // still to complete says how many are to confirm. The name opens Details.
   import { Check, User, UsersRound } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button'
   import type { TournamentSummary } from '$lib/api'
   import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, entryLabel, formatLine, gamePill, spots, whenParts } from '$lib/tournaments/browse'
+  import { teamStatus } from '$lib/tournaments/roster'
+  import { currentUser } from '$lib/auth'
 
   let {
     t,
     busy = false,
     onopen,
     onregister,
-  }: { t: TournamentSummary; busy?: boolean; onopen: () => void; onregister: () => void } = $props()
+    onregisterteam,
+  }: { t: TournamentSummary; busy?: boolean; onopen: () => void; onregister: () => void; onregisterteam: () => void } = $props()
 
   const when = $derived(whenParts(t.startsAt))
   const live = $derived(t.status === 'running')
   const s = $derived(spots(t))
   const why = $derived(t.registration === 'not_eligible' && t.eligibility && t.avgLimit ? notEligibleLine(t.eligibility, t.avgLimit) : '')
-  const note = $derived(why ? `${REGISTRATION_NOTE[t.registration]} · ${why}` : REGISTRATION_NOTE[t.registration])
+  const team = $derived(t.team ? teamStatus(t.team, $currentUser?.id ?? '') : null)
+  const note = $derived(team?.long ?? (why ? `${REGISTRATION_NOTE[t.registration]} · ${why}` : REGISTRATION_NOTE[t.registration]))
 </script>
 
 <!-- Desktop: the five columns of the board's table -->
@@ -61,6 +66,10 @@
   <div class="flex justify-end">
     {#if t.registration === 'open'}
       <Button variant="accent" size="sm" disabled={busy} onclick={onregister}>Register</Button>
+    {:else if t.registration === 'team'}
+      <Button variant="accent" size="sm" disabled={busy} onclick={onregisterteam}>Register team</Button>
+    {:else if team}
+      <Button variant={team.mine ? 'accent' : 'outline'} size="sm" onclick={onopen}>{team.short}</Button>
     {:else if t.registration === 'registered'}
       <span
         class="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-line bg-accent-tint px-3 text-small font-semibold text-accent"
@@ -93,7 +102,11 @@
     <span class="flex items-center gap-1.5 text-caption text-text-muted">
       {@render entryIcon()}{entryLabel(t.teamSize)} · {t.kind === 'official' ? 'official' : `by ${t.owner?.name ?? 'a former player'}`} · {t.entries}/{t.maxEntries}
     </span>
-    <span class="text-caption font-bold {t.registration === 'open' || t.registration === 'registered' ? 'text-accent' : 'text-text-muted'}">
+    <span
+      class="text-caption font-bold {t.registration === 'open' || t.registration === 'team' || t.registration === 'registered'
+        ? 'text-accent'
+        : 'text-text-muted'}"
+    >
       {note}
     </span>
   </span>

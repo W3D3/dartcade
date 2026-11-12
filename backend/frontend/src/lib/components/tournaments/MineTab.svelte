@@ -25,6 +25,7 @@
   import { placeLabel } from '$shared/tournaments/mine'
   import { ordinal, plural } from '$lib/fmt'
   import { currentUser } from '$lib/auth'
+  import RosterActions from './RosterActions.svelte'
   import TournamentDetailHost from './TournamentDetailHost.svelte'
 
   let { mine, onchange, aside }: { mine: MyTournaments; onchange: () => void; aside?: Snippet } = $props()
@@ -125,6 +126,12 @@
                 <span class="text-small font-semibold {TONE[status.tone]}">{status.text}</span>
               </span>
             </button>
+            <!-- Your team still to complete (Tournaments-Mine): Remind and Change player under its row -->
+            {#if p.team?.status === 'pending' && p.team.captainId === $currentUser?.id}
+              <div class="-mt-1 flex justify-end">
+                <RosterActions tournamentId={t.id} entry={p.team} onchanged={onchange} />
+              </div>
+            {/if}
           {/each}
         </section>
       {/if}

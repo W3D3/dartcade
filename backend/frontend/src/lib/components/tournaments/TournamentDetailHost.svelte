@@ -1,8 +1,9 @@
 <script lang="ts">
   // A tournament's Details opened from a list that is not Browse (My tournaments, Up next for
-  // you): loads it, and runs Register, Check in, Withdraw and Start now like Browse does.
+  // you): loads it, and runs Register, Register a team, Check in, Withdraw and Start now like Browse does.
   import type { Tournament } from '$lib/api'
   import { checkIn, loadTournament, register, startNow, withdraw, type Outcome } from '$lib/tournaments/browse'
+  import RegisterTeamDialog from './RegisterTeamDialog.svelte'
   import TournamentDetail from './TournamentDetail.svelte'
 
   // `onchange`: the tournament moved (the list behind it should load again)
@@ -11,6 +12,7 @@
     $props()
 
   let t = $state<Tournament | null>(null)
+  let registering = $state(false)
   let busy = $state(false)
   let error = $state('')
 
@@ -46,5 +48,18 @@
     onwithdraw={() => act(() => withdraw(open.id))}
     oncheckin={() => act(() => checkIn(open.id))}
     onstart={() => act(() => startNow(open.id))}
+    onregisterteam={() => (registering = true)}
+    onchanged={() => act(() => loadTournament(open.id))}
   />
+  {#if registering}
+    <RegisterTeamDialog
+      t={open}
+      onclose={() => (registering = false)}
+      onregistered={(next: Tournament) => {
+        registering = false
+        t = next
+        onchange()
+      }}
+    />
+  {/if}
 {/if}

@@ -1,7 +1,8 @@
 <script lang="ts">
   // A tournament's Details (the Tournaments board's hero facts, as a panel): when, game, entry and
   // format, check-in, the board rule, the spots, which friends are in, and Register, Check in or
-  // Withdraw. Organizers of an invite-link tournament also get the link to share, and of one without
+  // Withdraw. A team tournament has Register team, and once your team is in, its players and who
+  // confirmed. Organizers of an invite-link tournament also get the link to share, and of one without
   // a start time a Start now.
   import { CalendarDays, Check, Target, User, UsersRound } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -15,6 +16,8 @@
   import { canWithdraw } from '$shared/tournaments/registration'
   import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, formatLong, friendsInLine, fullWhen, gameLine, spots } from '$lib/tournaments/browse'
+  import { currentUser } from '$lib/auth'
+  import TeamEntryCard from './TeamEntryCard.svelte'
 
   let {
     t,
@@ -26,6 +29,8 @@
     onwithdraw,
     oncheckin,
     onstart,
+    onregisterteam,
+    onchanged,
   }: {
     t: Tournament
     /** The invite link's code Details was opened with: the tournament page needs it too. */
@@ -37,6 +42,9 @@
     onwithdraw: () => void
     oncheckin: () => void
     onstart: () => void
+    onregisterteam: () => void
+    /** Your team's entry changed (an answer, a reminder, a new player): load the tournament again. */
+    onchanged: () => void
   } = $props()
 
   const s = $derived(spots(t))
@@ -46,6 +54,8 @@
   const startable = $derived(t.role !== null && online && t.status === 'open' && t.startsAt === null)
   // An invite-link tournament opens for someone without a spot only with its code
   const page = $derived(hrefs.tournament(t.id, code && t.access === 'invite' ? `code=${encodeURIComponent(code)}` : undefined))
+  // Only the captain withdraws a team; a picked player answers Can't make it instead
+  const mayWithdraw = $derived(canWithdraw(t.status) && (t.team === null || t.team.captainId === $currentUser?.id))
   const copy = createCopy()
   const time = (iso: string) => new Date(iso).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
   const checkIn = $derived.by(() => {
@@ -121,6 +131,10 @@
     </div>
   {/if}
 
+  {#if t.team}
+    <TeamEntryCard tournamentId={t.id} tournamentName={t.name} entry={t.team} roster {onchanged} />
+  {/if}
+
   {#if error}<ErrorText>{error}</ErrorText>{/if}
 
   {#snippet footer()}
@@ -135,15 +149,23 @@
         <Button variant="accent" class="w-full" href={hrefs.tournamentManage(t.id)}>Manage</Button>
       {:else if t.registration === 'open'}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onregister}>Register</Button>
+      {:else if t.registration === 'team'}
+        <Button variant="accent" class="w-full" disabled={busy} onclick={onregisterteam}><UsersRound size={16} />Register a team</Button>
       {:else if t.registration === 'registered'}
         <div class="flex w-full items-center gap-3">
           <span class="flex grow items-center gap-1.5 text-label font-semibold text-accent">
-            <Check size={16} />{t.checkedIn ? "You're checked in" : "You're registered"}
+            <Check size={16} />{t.checkedIn
+              ? "You're checked in"
+              : t.team?.status === 'pending'
+                ? 'Your team’s spot is held'
+                : t.team
+                  ? 'Your team is registered'
+                  : "You're registered"}
           </span>
           {#if t.status === 'check_in' && !t.checkedIn}
             <Button variant="accent" disabled={busy} onclick={oncheckin}>Check in</Button>
           {/if}
-          {#if canWithdraw(t.status)}
+          {#if mayWithdraw}
             <Button variant="destructive" disabled={busy} onclick={onwithdraw}
               >{t.status === 'running' ? 'Withdraw · forfeit' : 'Withdraw'}</Button
             >

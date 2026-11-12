@@ -11,6 +11,7 @@
   import { Chip } from '$lib/components/ui/chip'
   import SearchInput from '$lib/components/ui/input/search-input.svelte'
   import type { Tournament, TournamentSummary } from '$lib/api'
+  import { me } from '$lib/lobby/sockets'
   import {
     CHIPS,
     CHIP_LABELS,
@@ -26,6 +27,7 @@
     type KindFilter,
     type Outcome,
   } from '$lib/tournaments/browse'
+  import RegisterTeamDialog from './RegisterTeamDialog.svelte'
   import TournamentDetail from './TournamentDetail.svelte'
   import TournamentRow from './TournamentRow.svelte'
 
@@ -38,6 +40,8 @@
   const chips = new SvelteSet<ChipId>()
   let query = $state('')
   let open = $state<Tournament | null>(null)
+  // Register a team, over Details when opened from there
+  let registering = $state<Tournament | null>(null)
   let busy = $state(false)
   let error = $state('')
 
@@ -88,12 +92,24 @@
     }
   }
 
+  /** Register team from a row: the dialog needs the whole tournament. */
+  async function registerTeamFromRow(id: string) {
+    const res = await loadTournament(id)
+    if ('error' in res) error = res.error
+    else registering = res.tournament
+  }
+
   const toggle = (c: ChipId) => {
     if (!chips.delete(c)) chips.add(c)
   }
   const KINDS: KindFilter[] = ['all', 'official', 'community']
 
+  // On open, and whenever the teams you were picked for change (you answered, or a captain picked you)
+  let seenRequests: string | undefined
   $effect(() => {
+    const ids = ($me?.tournamentRequests ?? []).map(r => r.tournamentId).join()
+    if (ids === seenRequests) return
+    seenRequests = ids
     void refresh()
   })
   $effect(() => {
@@ -159,7 +175,13 @@
                 <span>When</span><span>Tournament</span><span>Entry · format</span><span>Players</span><span></span>
               </div>
               {#each rows as t (t.id)}
-                <TournamentRow {t} {busy} onopen={() => show(t.id)} onregister={() => registerFromRow(t.id)} />
+                <TournamentRow
+                  {t}
+                  {busy}
+                  onopen={() => show(t.id)}
+                  onregister={() => registerFromRow(t.id)}
+                  onregisterteam={() => registerTeamFromRow(t.id)}
+                />
               {/each}
             </section>
           {/if}
@@ -185,5 +207,20 @@
     onwithdraw={() => act(() => withdraw(t.id))}
     oncheckin={() => act(() => checkIn(t.id))}
     onstart={() => act(() => startNow(t.id))}
+    onregisterteam={() => (registering = t)}
+    onchanged={() => act(() => loadTournament(t.id))}
+  />
+{/if}
+
+{#if registering}
+  <RegisterTeamDialog
+    t={registering}
+    {code}
+    onclose={() => (registering = null)}
+    onregistered={(next: Tournament) => {
+      registering = null
+      if (open) open = next
+      void refresh()
+    }}
   />
 {/if}
