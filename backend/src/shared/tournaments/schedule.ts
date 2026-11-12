@@ -48,7 +48,7 @@ export function stageName(format: TournamentFormat, stage: Stage, rounds: number
 }
 
 /** How many rounds each bracket has. */
-export const roundsOf = (matches: readonly Match[], bracket: Bracket): number =>
+export const roundsOf = (matches: readonly Stage[], bracket: Bracket): number =>
   Math.max(0, ...matches.filter(m => m.bracket === bracket).map(m => m.round))
 
 const MINUTE = 60_000

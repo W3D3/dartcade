@@ -18,6 +18,7 @@
 
   let {
     t,
+    code,
     busy = false,
     error = '',
     onclose,
@@ -27,6 +28,8 @@
     onstart,
   }: {
     t: Tournament
+    /** The invite link's code Details was opened with: the tournament page needs it too. */
+    code?: string
     busy?: boolean
     error?: string
     onclose: () => void
@@ -41,6 +44,8 @@
   const friends = $derived(t.friendsIn.slice(0, 4))
   const link = $derived(t.inviteCode && t.access === 'invite' ? `${location.origin}/${hrefs.tournamentJoin(t.inviteCode)}` : null)
   const startable = $derived(t.role !== null && online && t.status === 'open' && t.startsAt === null)
+  // An invite-link tournament opens for someone without a spot only with its code
+  const page = $derived(hrefs.tournament(t.id, code && t.access === 'invite' ? `code=${encodeURIComponent(code)}` : undefined))
   const copy = createCopy()
   const time = (iso: string) => new Date(iso).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
   const checkIn = $derived.by(() => {
@@ -120,6 +125,9 @@
 
   {#snippet footer()}
     <div class="flex w-full flex-col gap-2">
+      <Button variant="outline" class="w-full" href={page}
+        >{t.status === 'running' ? 'Live bracket' : t.status === 'finished' ? 'Results' : 'Tournament page'}</Button
+      >
       {#if startable}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onstart}>Start now · open check-in</Button>
       {/if}

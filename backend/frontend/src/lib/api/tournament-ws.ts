@@ -87,7 +87,6 @@ export interface TournamentLiveMatch {
    * The entry ids playing, null while still to be decided (or nobody, in a bye).
    *
    * @minItems 2
-   * @maxItems 2
    */
   sides: [string | null, string | null]
   outcome: 'played' | 'walkover' | 'bye' | 'organizer' | null
@@ -99,7 +98,6 @@ export interface TournamentLiveMatch {
    * Legs won by each side: so far in a live match, the result in a finished one.
    *
    * @minItems 2
-   * @maxItems 2
    */
   legs: [number, number]
   game: {
