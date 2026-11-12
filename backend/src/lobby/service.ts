@@ -9,7 +9,7 @@ import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
-import type { GameEnded, GameStarted, SessionEngine } from '../session/engine.js'
+import type { GameEnded, GameEndedConsumer, GameStarted, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
 import { engineApiError } from '../api/engineErrors.js'
 import { WsCloseCode } from '../schema/game-ws.js'
@@ -130,7 +130,7 @@ function defaultLobbyName(hostName: string): string {
   return `${hostName.slice(0, LOBBY_NAME_MAX - suffix.length).trimEnd()}${suffix}`
 }
 
-export class LobbyService {
+export class LobbyService implements GameEndedConsumer {
   private readonly queues = new KeyedQueue()
   // Open lobbies as last loaded; every change reloads its lobby
   private readonly cache = new Map<string, LobbyState>()

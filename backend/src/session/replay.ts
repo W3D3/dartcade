@@ -54,6 +54,7 @@ export function newSession(a: {
   /** The seated accounts' profile pictures (a replay for history needs none). */
   avatars?: Map<string, Avatar>
   ranked?: RankedGame
+  tournamentMatchId?: string | null
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
@@ -86,6 +87,7 @@ export function newSession(a: {
     dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,
     lobbyName: a.lobbyName ?? null,
+    tournamentMatchId: a.tournamentMatchId ?? null,
   }
 }
 

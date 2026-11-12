@@ -28,10 +28,10 @@ const seat = (name: string, controllerUserId: string, boardId: string | null, us
 
 function makeStore() {
   return {
-    insertSession: vi.fn().mockResolvedValue(undefined),
+    insertSession: vi.fn<EngineStore['insertSession']>().mockResolvedValue(undefined),
     getActiveSessions: vi.fn().mockResolvedValue([]),
     getSessionEvents: vi.fn().mockResolvedValue([]),
-    appendEvent: vi.fn().mockResolvedValue(undefined),
+    appendEvent: vi.fn<EngineStore['appendEvent']>().mockResolvedValue(undefined),
     insertDarts: vi.fn().mockResolvedValue(undefined),
     deleteDarts: vi.fn().mockResolvedValue(undefined),
     finishSession: vi.fn().mockResolvedValue(undefined),
@@ -845,6 +845,7 @@ describe('rebuild', () => {
       players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      tournament_match_id: null,
       ranked: null,
     }
     const bad: StoredGameSession = {
@@ -859,6 +860,7 @@ describe('rebuild', () => {
       players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      tournament_match_id: null,
       ranked: null,
     }
     const warn = vi.fn()
@@ -925,6 +927,7 @@ describe('Around the Clock with multipliers on to the bull (#343)', () => {
       players: [{ name: 'Alice', user_id: id, controller_user_id: id, board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
+      tournament_match_id: null,
       ranked: null,
     })
     const store = makeStore()
@@ -1168,6 +1171,7 @@ describe('rebuild with seats', () => {
         ],
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: null,
       } satisfies StoredGameSession,
     ])
@@ -1206,6 +1210,7 @@ describe('rebuild resumes a bot', () => {
         players: [{ name: 'Bot Lvl 10', user_id: null, controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: 10 }],
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: null,
       } satisfies StoredGameSession,
     ])
@@ -1640,6 +1645,7 @@ describe('lobby games', () => {
         { name: 'Lena', placement: 2, forfeited: true },
       ],
       teamGame: false,
+      tournamentMatchId: null,
       userIds: ['chris', 'lena'],
       boardIds: ['living', 'lenas'],
     })
@@ -1678,6 +1684,7 @@ describe('lobby games', () => {
       abortedByUserId: 'chris',
       results: [],
       teamGame: false,
+      tournamentMatchId: null,
       userIds: ['chris', 'lena'],
       boardIds: ['living', 'lenas'],
     })
@@ -1697,6 +1704,7 @@ describe('lobby games', () => {
       created_at: new Date(),
       lobby_id: id === 'ok' ? 'l1' : 'l2',
       lobby_name: 'Friday darts',
+      tournament_match_id: null,
       ranked: null,
       players: [
         { name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: null },
@@ -1716,6 +1724,7 @@ describe('lobby games', () => {
       abortedByUserId: null,
       results: [],
       teamGame: false,
+      tournamentMatchId: null,
       userIds: ['chris', 'lena'],
       boardIds: [],
     })
@@ -1738,6 +1747,7 @@ describe('lobby games', () => {
       created_at: new Date(),
       lobby_id: 'l2',
       lobby_name: 'Friday darts',
+      tournament_match_id: null,
       ranked: null,
       players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null, bot_level: null }],
     }
@@ -1902,6 +1912,7 @@ describe('a config prepared at start (Minigolf: the published course)', () => {
         ],
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: null,
       } satisfies StoredGameSession,
     ])
@@ -1991,5 +2002,109 @@ describe('nextPlayer hook', () => {
     await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
     await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     expect(nextPlayer).not.toHaveBeenCalled()
+  })
+})
+
+describe('tournament games', () => {
+  // An organizer runs a match from their own account: guest seats they control, on one board
+  const tournamentMatch = (
+    matchId: string,
+    boardId: string,
+    seats = [seat('Anna', 'org', boardId, null), seat('Ben', 'org', boardId, null)],
+  ) => ({
+    ownerUserId: 'org',
+    gameId: 'x01',
+    config: { ...x01Module.defaultConfig, startScore: 301 },
+    seats,
+    tournamentMatchId: matchId,
+  })
+
+  it('lets one account run two tournament games at once, each on its own board', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const a = await engine.createWithSeats(tournamentMatch('m1', 'board-1'))
+    const b = await engine.createWithSeats(tournamentMatch('m2', 'board-2'))
+    expect(engine.getSessionByBoard('board-1')?.id).toBe(a.sessionId)
+    expect(engine.getSessionByBoard('board-2')?.id).toBe(b.sessionId)
+    expect(engine.getSessionByUser('org')).toBeUndefined()
+    expect(store.insertSession).toHaveBeenCalledWith(expect.objectContaining({ id: a.sessionId, tournament_match_id: 'm1' }))
+    // Both take darts, each from its own board
+    await engine.onBridgeEvent('board-2', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    expect((engine.getSnapshot(a.sessionId)?.game as X01Game).scores).toEqual([301, 301])
+    expect((engine.getSnapshot(b.sessionId)?.game as X01Game).scores).toEqual([241, 301])
+    // And the organizer may still start a game of their own
+    await expect(engine.create('org', null, 'atc', {}, [{ name: 'Org' }])).resolves.toBeDefined()
+  })
+
+  it('refuses a normal game for an account while it plays a seat in a tournament game, and frees it after', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.createWithSeats(
+      tournamentMatch('m1', 'board-1', [seat('Lena', 'lena', 'board-1'), seat('Ben', 'org', 'board-1', null)]),
+    )
+    expect(engine.getSessionByUser('lena')?.id).toBe(sessionId)
+    const err = await engine
+      .createWithSeats({ ownerUserId: 'lena', gameId: 'atc', config: {}, lobbyId: 'l1', seats: [seat('Lena', 'lena', null)] })
+      .catch((e: unknown) => e)
+    expect(err instanceof ActiveSessionError && [err.sessionId, err.userId]).toEqual([sessionId, 'lena'])
+    // Nor a second tournament game
+    await expect(engine.createWithSeats(tournamentMatch('m2', 'board-2', [seat('Lena', 'lena', 'board-2')]))).rejects.toBeInstanceOf(
+      ActiveSessionError,
+    )
+    await engine.deleteSession(sessionId, 'org')
+    await expect(engine.create('lena', null, 'atc', {}, [{ name: 'Lena' }])).resolves.toBeDefined()
+  })
+
+  it('still runs at most one game on a board', async () => {
+    const engine = makeEngine()
+    await engine.createWithSeats(tournamentMatch('m1', 'board-1'))
+    await expect(engine.createWithSeats(tournamentMatch('m2', 'board-1'))).rejects.toBeInstanceOf(BoardBusyError)
+    await expect(engine.create('someone', 'board-1', 'atc', {}, [{ name: 'X' }])).rejects.toBeInstanceOf(BoardBusyError)
+  })
+
+  it('ending one game leaves the other running and tells the end listener its match', async () => {
+    const ended = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, ended)
+    const a = await engine.createWithSeats(tournamentMatch('m1', 'board-1'))
+    const b = await engine.createWithSeats(tournamentMatch('m2', 'board-2'))
+    await engine.deleteSession(a.sessionId, 'org')
+    expect(ended).toHaveBeenCalledWith(expect.objectContaining({ sessionId: a.sessionId, tournamentMatchId: 'm1', status: 'aborted' }))
+    expect(engine.getSessionByBoard('board-1')).toBeUndefined()
+    expect(engine.getSessionByBoard('board-2')?.id).toBe(b.sessionId)
+  })
+
+  it('a restart rebuilds both games from their logs, as they were', async () => {
+    const live = makeStore()
+    const engine = new SessionEngine(live, push)
+    const a = await engine.createWithSeats(tournamentMatch('m1', 'board-1'))
+    const b = await engine.createWithSeats(tournamentMatch('m2', 'board-2'))
+    await visit(engine, 'board-1', [T20, T20, S1])
+    await engine.onBridgeEvent('board-1', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    await visit(engine, 'board-2', [S1])
+
+    // What the store kept: each session row as inserted, and its log
+    const restarted = makeStore()
+    restarted.getActiveSessions.mockResolvedValue(
+      live.insertSession.mock.calls.map(([s]): StoredGameSession => ({
+        ...s,
+        created_at: new Date(),
+        lobby_id: null,
+        lobby_name: null,
+        ranked: null,
+        tournament_match_id: s.tournament_match_id ?? null,
+        players: s.players.map(p => ({ ...p, board_name: p.board_db_id })),
+      })),
+    )
+    restarted.getSessionEvents.mockImplementation((id: string) =>
+      Promise.resolve(live.appendEvent.mock.calls.flatMap(([e]) => (e.session_id === id ? [e] : []))),
+    )
+    const rebuilt = new SessionEngine(restarted, push)
+    await rebuilt.rebuild()
+    for (const { sessionId } of [a, b]) {
+      expect(rebuilt.getSnapshot(sessionId)).toEqual(engine.getSnapshot(sessionId))
+      expect(rebuilt.getSession(sessionId)?.tournamentMatchId).toBe(engine.getSession(sessionId)?.tournamentMatchId)
+    }
+    expect((rebuilt.getSnapshot(a.sessionId)?.game as X01Game).scores).toEqual([180, 241])
+    expect(rebuilt.getSessionByBoard('board-2')?.id).toBe(b.sessionId)
+    expect(rebuilt.getSessionByUser('org')).toBeUndefined()
   })
 })

@@ -174,6 +174,7 @@ describe('the ranked clock in a game', () => {
         created_at: live?.createdAt,
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: ranked(),
         players: seats.map(s => ({
           name: s.name,

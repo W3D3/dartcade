@@ -47,8 +47,15 @@ export type GameEnded = {
   userIds: string[]
   /** The boards the seats play on (the big screen shows the result there). */
   boardIds: string[]
+  /** The tournament match the game was played for, or null. */
+  tournamentMatchId: string | null
 }
 export type EndedFn = (e: GameEnded) => void | Promise<void>
+
+/** A service that acts on every game's end (the lobbies, the ranked queue); index.ts calls each one, independently. */
+export interface GameEndedConsumer {
+  onGameEnded(e: GameEnded): Promise<void>
+}
 
 /** How long a won game stays after it ends, so late watchers still get its final snapshot. */
 const KEEP_FINISHED_MS = 10 * 60_000
@@ -135,14 +142,23 @@ export type NewSessionSpec = {
   shuffleSeats?: boolean
   /** Started by the ranked queue; stored with the session, in one transaction. */
   ranked?: RankedGame
+  /**
+   * Played for this tournament match. The owner and controllers (an organizer running several
+   * matches from one account) are not held to one game; the seats' own accounts and boards are.
+   */
+  tournamentMatchId?: string | null
 }
 
 const distinct = <T>(xs: (T | null)[]): T[] => [...new Set(xs.filter((x): x is T => x !== null))]
 const seatBoards = (s: Session): string[] => distinct(s.seats.map(x => x.boardId))
-const controllers = (s: Session): string[] => distinct(s.seats.map(x => x.controllerUserId))
+const controllers = (s: Pick<Session, 'seats'>): string[] => distinct(s.seats.map(x => x.controllerUserId))
 // Every account seated: the owner and every seat's controller (a member always controls their
 // own seat; only a guest's controller differs from them, and a guest has no account).
-const seatedUserIds = (s: Session): string[] => distinct([s.ownerUserId, ...controllers(s)])
+const seatedUserIds = (s: Pick<Session, 'ownerUserId' | 'seats'>): string[] => distinct([s.ownerUserId, ...controllers(s)])
+// The accounts a game holds to it (one running game each): in a tournament game only the seats'
+// own players, so an organizer can run several of its matches at once
+const claimedUserIds = (s: Pick<Session, 'ownerUserId' | 'seats' | 'tournamentMatchId'>): string[] =>
+  s.tournamentMatchId === null ? seatedUserIds(s) : distinct(s.seats.map(x => x.userId))
 // Some team has more than one seat (without teams every seat is its own team)
 const isTeamGame = (s: Session): boolean => {
   const teamOf = s.module.teamsOf?.(s.committedState) ?? []
@@ -161,6 +177,7 @@ const storedAborted = (row: StoredGameSession): GameEnded => ({
   teamGame: false,
   userIds: storedSeatedUserIds(row),
   boardIds: [],
+  tournamentMatchId: row.tournament_match_id,
 })
 
 /** The seats as one viewer sees them: boards online, controllers connected or since when not. */
@@ -300,6 +317,7 @@ export class SessionEngine {
       lobbyName: spec.lobbyName ?? null,
       avatars,
       ranked: spec.ranked,
+      tournamentMatchId: spec.tournamentMatchId,
     })
     // Claim the players and boards before the next await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
@@ -315,6 +333,7 @@ export class SessionEngine {
         config,
         lobby_id: lobbyId,
         ranked: spec.ranked,
+        tournament_match_id: spec.tournamentMatchId ?? null,
         players: seats.map(s => ({
           name: s.name,
           user_id: s.userId,
@@ -338,7 +357,7 @@ export class SessionEngine {
 
   /** Throws if a player or board of the new game is in a running one. */
   private assertFree(spec: NewSessionSpec): void {
-    for (const userId of distinct([spec.ownerUserId, ...spec.seats.map(s => s.controllerUserId)])) {
+    for (const userId of claimedUserIds({ ...spec, tournamentMatchId: spec.tournamentMatchId ?? null })) {
       const running = this.byUser.get(userId)
       if (running) throw new ActiveSessionError('active session already exists for user', running.id, userId)
     }
@@ -349,7 +368,7 @@ export class SessionEngine {
 
   private index(session: Session): void {
     for (const b of seatBoards(session)) this.byBoard.set(b, session)
-    for (const u of distinct([session.ownerUserId, ...controllers(session)])) this.byUser.set(u, session)
+    for (const u of claimedUserIds(session)) this.byUser.set(u, session)
     if (session.lobbyId !== null) this.byLobby.set(session.lobbyId, session)
     this.byId.set(session.id, session)
   }
@@ -548,6 +567,7 @@ export class SessionEngine {
       teamGame: isTeamGame(session),
       userIds: seatedUserIds(session),
       boardIds: seatBoards(session),
+      tournamentMatchId: session.tournamentMatchId,
     }
   }
 
@@ -634,6 +654,7 @@ export class SessionEngine {
       version: row.game_version,
       avatars,
       ranked: row.ranked ?? undefined,
+      tournamentMatchId: row.tournament_match_id,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
@@ -711,9 +732,14 @@ export class SessionEngine {
     return this.byBoard.get(boardId)
   }
 
-  /** The user's running session, if any (as owner, or as any seat's controller). */
+  /** The user's running session, if any (as owner, or as any seat's controller; in a tournament game only as a seat's player). */
   getSessionByUser(userId: string): Session | undefined {
     return this.byUser.get(userId)
+  }
+
+  /** Every running game the account owns or controls a seat in: an organizer may run several tournament games. */
+  sessionsOf(userId: string): Session[] {
+    return [...this.byId.values()].filter(s => s.status === 'active' && seatedUserIds(s).includes(userId))
   }
 
   /** The lobby's running game, if any. */
@@ -766,7 +792,7 @@ export class SessionEngine {
   private release(session: Session): void {
     this.timers.stop(session.id)
     for (const b of seatBoards(session)) if (this.byBoard.get(b) === session) this.byBoard.delete(b)
-    for (const u of distinct([session.ownerUserId, ...controllers(session)])) if (this.byUser.get(u) === session) this.byUser.delete(u)
+    for (const u of claimedUserIds(session)) if (this.byUser.get(u) === session) this.byUser.delete(u)
     if (session.lobbyId !== null && this.byLobby.get(session.lobbyId) === session) this.byLobby.delete(session.lobbyId)
   }
 

@@ -257,6 +257,12 @@ export interface Session {
   lobbyId: string | null
   /** The lobby's name at the start, for the match header; null for a local game. */
   lobbyName: string | null
+  /**
+   * The tournament match the game is played for; null otherwise. It is bound to no device: any
+   * device of its host or a seat's controller opens it by its id, so a match left (paused) on one
+   * device goes on from another.
+   */
+  tournamentMatchId: string | null
   seats: Seat[]
   players: Player[]
   module: AnyGameModule
