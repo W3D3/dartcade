@@ -3,11 +3,11 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { getAccountsByIds, type Avatar } from '../db/users.js'
-import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
+import { getOpenLobbyIdOfUser, loadLobby, ownBoardSeats } from '../db/lobbies.js'
 import { matchRatings, rankedOutcomes, recordRankedGame, unrecordedRankedGames, type MatchRating } from '../db/ranked.js'
 import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError } from '../session/errors.js'
-import type { RankedEntry, Seat } from '../session/types.js'
+import type { RankedEntry } from '../session/types.js'
 import type { X01Config } from '../games/x01.js'
 import type { MatchmakingEndedMessage, MatchmakingMessage } from '../schema/lobby-ws.js'
 import { ApiError } from '../api/errors.js'
@@ -454,7 +454,11 @@ export class MatchmakingService implements GameEndedConsumer {
     this.found.delete(found.id)
     const [a, b] = found.sides
     const mode = a.mode
-    const seats = await this.seatsOf([...a.players, ...b.players])
+    const seats = await ownBoardSeats(
+      this.deps.db,
+      [...a.players, ...b.players],
+      id => this.deps.engine.getSessionByBoard(id) !== undefined,
+    )
     let sessionId: string
     try {
       ;({ sessionId } = await this.deps.engine.createWithSeats({
@@ -494,34 +498,6 @@ export class MatchmakingService implements GameEndedConsumer {
       flagEnabled('matchmaking.manualEntry', host),
     ])
     return { visitSeconds, reserveSeconds, manualEntry }
-  }
-
-  private async seatsOf(players: Player[]): Promise<Seat[]> {
-    const usual = await usualBoards(
-      this.deps.db,
-      players.map(p => p.userId),
-    )
-    const seats: Seat[] = []
-    for (const p of players) {
-      const lobbyId = await getOpenLobbyIdOfUser(this.deps.db, p.userId)
-      const person = lobbyId === undefined ? undefined : (await loadLobby(this.deps.db, lobbyId))?.people.find(x => x.userId === p.userId)
-      const board =
-        person === undefined
-          ? (usual.get(p.userId) ?? null)
-          : person.boardId === null
-            ? null
-            : { id: person.boardId, name: person.boardName ?? '' }
-      const free = board !== null && !this.deps.engine.getSessionByBoard(board.id) && !seats.some(s => s.boardId === board.id)
-      seats.push({
-        name: p.name,
-        userId: p.userId,
-        controllerUserId: p.userId,
-        boardId: free ? board.id : null,
-        boardName: free ? board.name : null,
-        bot: null,
-      })
-    }
-    return seats
   }
 
   // ---- results -------------------------------------------------------------------------

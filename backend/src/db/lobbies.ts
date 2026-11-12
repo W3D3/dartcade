@@ -14,6 +14,7 @@ import {
   type TeamId,
   type ThrowOrder,
 } from '../lobby/types.js'
+import type { Seat } from '../session/types.js'
 
 /** How many activity lines a lobby shows (newest first). */
 export const ACTIVITY_LIMIT = 50
@@ -173,6 +174,43 @@ export async function usualBoards(db: Kysely<Database>, userIds: string[]): Prom
     .execute()
   for (const b of owned) if (!usual.has(b.owner_user_id)) usual.set(b.owner_user_id, { id: b.id, name: b.name })
   return usual
+}
+
+/**
+ * Seats for players who each play from their own board, as a queued game starts them: their open
+ * lobby seat's board, else their usual one; entered by hand without one, or when it is `busy` or
+ * taken by an earlier seat.
+ */
+export async function ownBoardSeats(
+  db: Kysely<Database>,
+  players: readonly { userId: string; name: string }[],
+  busy: (boardId: string) => boolean,
+): Promise<Seat[]> {
+  const usual = await usualBoards(
+    db,
+    players.map(p => p.userId),
+  )
+  const seats: Seat[] = []
+  for (const p of players) {
+    const lobbyId = await getOpenLobbyIdOfUser(db, p.userId)
+    const person = lobbyId === undefined ? undefined : (await loadLobby(db, lobbyId))?.people.find(x => x.userId === p.userId)
+    const board =
+      person === undefined
+        ? (usual.get(p.userId) ?? null)
+        : person.boardId === null
+          ? null
+          : { id: person.boardId, name: person.boardName ?? '' }
+    const free = board !== null && !busy(board.id) && !seats.some(s => s.boardId === board.id)
+    seats.push({
+      name: p.name,
+      userId: p.userId,
+      controllerUserId: p.userId,
+      boardId: free ? board.id : null,
+      boardName: free ? board.name : null,
+      bot: null,
+    })
+  }
+  return seats
 }
 
 /** The lobby with its people (board names, owners, usual boards), pending invites and feed. */
