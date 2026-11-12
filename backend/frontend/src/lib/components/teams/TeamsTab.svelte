@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The Tournaments page's Teams tab (Tournaments-Teams): invites to answer on top, then your teams
+  // The Tournaments page's Teams tab (Tournaments-Teams): invites to answer and the teams you
+  // registered that still wait for a player (Waiting on Lena) on top, then your teams
   // on the left and the picked one on the right (stacked on a phone). Reloads when /ws/me says your
   // invites changed. `creating` opens New team (the page's header button sets it).
   import { Plus, UsersRound } from '@lucide/svelte'
@@ -10,6 +11,9 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { me } from '$lib/lobby/sockets'
   import { loadTeams, type Team } from '$lib/teams/actions'
+  import type { TournamentSummary } from '$lib/api'
+  import TeamEntryCard from '$lib/components/tournaments/TeamEntryCard.svelte'
+  import { loadBrowse } from '$lib/tournaments/browse'
   import type { TeamInvite } from '$lib/api/lobby-ws'
   import { TEAM_LIMITS } from '$shared/teams.js'
   import InvitePlayersDialog from './InvitePlayersDialog.svelte'
@@ -31,6 +35,14 @@
   const self = $derived($currentUser ? { id: $currentUser.id, name: $currentUser.name, avatar: $currentUser.avatar, detail: '' } : null)
   const selected = $derived(data?.teams.find(t => t.id === selectedId) ?? data?.teams[0] ?? null)
   const canMake = $derived((data?.teams.length ?? 0) < TEAM_LIMITS.teamsPerPlayer)
+  // Tournaments where a team you registered still waits for a player
+  let waiting = $state<TournamentSummary[]>([])
+  async function reloadWaiting() {
+    waiting = ((await loadBrowse()) ?? []).filter(t => t.team?.status === 'pending' && t.team.captainId === myId)
+  }
+  $effect(() => {
+    if (myId) void reloadWaiting()
+  })
 
   async function reload() {
     const r = await loadTeams()
@@ -60,6 +72,11 @@
   <div class="flex flex-col gap-4 md:gap-5">
     {#each data.invites as invite (invite.id)}
       <TeamInviteBanner {invite} {now} onanswered={() => void reload()} />
+    {/each}
+    {#each waiting as t (t.id)}
+      {#if t.team}
+        <TeamEntryCard tournamentId={t.id} tournamentName={t.name} entry={t.team} onchanged={() => void reloadWaiting()} />
+      {/if}
     {/each}
 
     {#if data.teams.length === 0}
