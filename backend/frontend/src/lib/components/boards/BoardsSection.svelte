@@ -33,9 +33,10 @@
   import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
   import { me } from '$lib/lobby/sockets'
   import { DOT_TEXT, bmDotColor } from '$lib/boardStatus'
+  import { createToast } from '$lib/toast'
   import BoardStatusDot from '../BoardStatusDot.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
-  import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
+  import { api, fetchBoardStatus, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 
   let boards = $state<Board[]>([])
   let selectedId = $state<string | null>(null)
@@ -80,12 +81,7 @@
   })
 
   async function loadBmStatus(boardId: string) {
-    try {
-      const { data } = await api.GET('/api/boards/{id}/status', { params: { path: { id: boardId } } })
-      bmStatus = data ?? null
-    } catch {
-      bmStatus = null
-    }
+    bmStatus = await fetchBoardStatus(boardId)
   }
 
   function startStatusPoll(boardId: string) {
@@ -109,19 +105,18 @@
 
   const currentBoard = (): Board | null => selected ?? null
 
+  const commandFailure = createToast<string>(6000)
+  onDestroy(commandFailure.dismiss)
+
   async function runAction(action: BoardAction) {
     if (!selected) return
     busy = action
-    try {
-      await runBoardAction(selected.id, action)
-    } catch {
-      /* ignore */
-    } finally {
-      busy = null
-      // The selection may have changed while the action ran
-      const now = currentBoard()
-      if (now?.online) void loadBmStatus(now.id)
-    }
+    const failed = await runBoardAction(selected.id, action)
+    if (failed) commandFailure.show(failed)
+    busy = null
+    // The selection may have changed while the action ran
+    const now = currentBoard()
+    if (now?.online) void loadBmStatus(now.id)
   }
 
   // Update bridge: the bridge reports its progress, which /ws/me pushes (board.status); the poll
@@ -710,5 +705,8 @@
     >
       <span class="text-text font-semibold">{toast.name}</span> is paired. It shows as online once all cameras report in.
     </Toast>
+  {/if}
+  {#if $commandFailure}
+    <Toast tone="error" onclose={commandFailure.dismiss}>{$commandFailure.value}</Toast>
   {/if}
 </div>

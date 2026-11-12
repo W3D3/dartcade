@@ -1,4 +1,5 @@
 // The Board Manager's status as a coloured dot (the Boards page and the match screen's board menu).
+import type { BoardStatus } from '$lib/api'
 
 export type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
 
@@ -7,6 +8,23 @@ export const SPINNING = new Set(['Starting', 'Stopping'])
 
 /** States that are busy but still tell their colour: a ring turns around the dot. */
 export const RINGED = new Set(['Takeout in progress', 'Calibrating'])
+
+/** The status of a board whose bridge is online but cannot get an answer from its Board Manager: commands can't work. */
+export const NOT_REACHABLE = 'Board Manager not reachable'
+
+/**
+ * What a status poll shows: Board Manager's status, NOT_REACHABLE when the bridge could not reach it (502) or
+ * did not answer in time (503), null when nothing is known.
+ */
+export const polledStatus = (data: BoardStatus | undefined, httpStatus: number): BoardStatus | null =>
+  data ?? (httpStatus === 502 || httpStatus === 503 ? { status: NOT_REACHABLE, running: false, event: null } : null)
+
+/** The toast for a Board Manager command (Start, Stop, Reset, Calibrate) that failed with this HTTP status. */
+export function commandError(httpStatus: number | undefined): string {
+  if (httpStatus === 502) return 'The Board Manager did not do it. Is it running? Check the board, then try again.'
+  if (httpStatus === 503) return "The board's bridge did not answer. If it keeps happening, restart the bridge."
+  return 'That did not work, try again.'
+}
 
 /** Green: detecting darts; yellow: takeout or stopping; purple: setting up; red: stopped; gray: offline or unknown. */
 export function bmDotColor(status: string | null, online: boolean): DotColor {
@@ -26,6 +44,7 @@ export function bmDotColor(status: string | null, online: boolean): DotColor {
     case 'Stopped':
     case 'Error':
     case 'Offline':
+    case NOT_REACHABLE:
       return 'red'
     default:
       return 'gray'
