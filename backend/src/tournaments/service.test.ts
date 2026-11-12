@@ -3,13 +3,14 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { registerSolo, withdrawSolo } from '../db/tournaments.js'
-import { checkIn } from '../db/tournamentRun.js'
+import { checkIn, seesTournamentOfMatch } from '../db/tournamentRun.js'
 import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { insertTournament, insertUsers } from '../test/fixtures.js'
 import { TournamentService } from './service.js'
+import { liveMessage } from './live.js'
 
 const MIN = 60_000
 const seg = (name: string, number: number, bed: Segment['bed'], multiplier: Segment['multiplier']): Segment => ({
@@ -81,13 +82,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
 
   /**
    * Plays a 301 game by hand to its end: `winner` wins the bull off and every leg with 180 then
-   * T20 T17 D5, the other side throws S1 S1 S1.
+   * T20 T17 D5, the other side throws S1 S1 S1. Stops early once `until` holds.
    */
-  async function play(sessionId: string, winner: string): Promise<void> {
+  async function play(sessionId: string, winner: string, until: () => Promise<boolean> = () => Promise.resolve(false)): Promise<void> {
     let winnerVisits = 0
     for (let i = 0; i < 100; i++) {
       const s = engine.getSession(sessionId)
-      if (!s || s.status !== 'active') return
+      if (!s || s.status !== 'active' || (await until())) return
       const user = s.seats[currentSeat(s)].controllerUserId
       const state = s.currentState as { stage: string; bullOff: { result: { rethrow: boolean } | null } }
       if (state.stage === 'bulloff' && state.bullOff.result && !state.bullOff.result.rethrow) {
@@ -350,5 +351,55 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     await engine.deleteSession(gameOf('p5'), 'p5')
     const [quit] = await matches('quit')
     expect(quit).toMatchObject({ status: 'finished', outcome: 'walkover', winner_entry_id: quit.entry_b_id })
+  })
+  it('shows the bracket live: the games, their legs as they are won, the schedule, and lets anyone who sees it watch', async () => {
+    const start = now + 60 * MIN
+    await insertTournament(db, {
+      id: 'live4',
+      owner_user_id: 'org',
+      status: 'open',
+      game_config: JSON.stringify({ startScore: 301 }),
+      starts_at: new Date(start),
+      settings: settings({ firstTo: 2, longerFinal: null, checkInMinutes: null }),
+    })
+    const four = ['q1', 'q2', 'q3', 'q4']
+    await insertUsers(db, four)
+    for (const u of four) online.add(u)
+    await register('live4', four)
+    const view = () => liveMessage(db, engine, 'live4', now)
+    const before = await view()
+    expect(before).toMatchObject({ status: 'open', matches: [], tables: [], schedule: [] })
+    expect(before?.entries.map(e => e.name)).toEqual(['q1', 'q2', 'q3', 'q4'])
+
+    now = start
+    await service.tick()
+    const on = await view()
+    const name = (id: string | null) => on?.entries.find(e => e.id === id)?.name ?? null
+    expect(on?.matches.map(m => [m.key, m.status, m.sides.map(name), m.legs, m.game?.sessionId ?? null])).toEqual([
+      ['R1M1', 'live', ['q1', 'q4'], [0, 0], gameOf('q1')],
+      ['R1M2', 'live', ['q2', 'q3'], [0, 0], gameOf('q2')],
+      ['R2M1', 'pending', [null, null], [0, 0], null],
+    ])
+    // First to 2 is at most 3 legs, 12 minutes
+    expect(on?.schedule).toEqual([
+      { bracket: 'main', round: 1, name: 'Semi-finals', state: 'now', at: null },
+      { bracket: 'main', round: 2, name: 'Final', state: 'later', at: new Date(start + 12 * MIN).toISOString() },
+    ])
+
+    // A leg won shows while the game goes on
+    const first = gameOf('q1')
+    await play(first, 'q1', async () => (await view())?.matches[0].legs[0] === 1)
+    expect((await view())?.matches[0]).toMatchObject({ status: 'live', legs: [1, 0], game: { sessionId: first } })
+
+    // Anyone who may see the tournament may watch its games
+    const [semi] = await matches('live4')
+    expect(await seesTournamentOfMatch(db, semi.id, 'p8')).toBe(true)
+    await db.updateTable('tournaments').set({ access: 'friends' }).where('id', '=', 'live4').execute()
+    expect(await seesTournamentOfMatch(db, semi.id, 'p8')).toBe(false)
+
+    await play(first, 'q1')
+    const after = await view()
+    expect(after?.matches[0]).toMatchObject({ status: 'finished', outcome: 'played', winner: 0, legs: [2, 0], game: null })
+    expect(after?.matches[2].sides.map(id => after.entries.find(e => e.id === id)?.name ?? null)).toEqual(['q1', null])
   })
 })

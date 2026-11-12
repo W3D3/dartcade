@@ -25,6 +25,9 @@ import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
 import { canSpectateSession } from './session/access.js'
+import { seesTournamentOfMatch } from './db/tournamentRun.js'
+import { tournamentGwPlugin } from './browser-gw/tournament.js'
+import { TournamentLive, liveMessage } from './tournaments/live.js'
 import { rankedApiPlugin } from './api/ranked.js'
 import { homeApiPlugin } from './api/home.js'
 import { progressApiPlugin } from './api/progress.js'
@@ -230,11 +233,26 @@ export async function buildApp({
   await app.register(browserGwPlugin, {
     engine,
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
-    canSpectate: async (userId, session) =>
-      (await flagEnabled('watch.enabled', await loadFlagUser(db, userId))) &&
-      (await canSpectateSession(userId, session, (viewer, ids) => friends.watchable(viewer, ids))),
+    canSpectate: async (userId, session) => {
+      const user = await loadFlagUser(db, userId)
+      return canSpectateSession(
+        userId,
+        session,
+        async (viewer, ids) => (await flagEnabled('watch.enabled', user)) && friends.watchable(viewer, ids),
+        async (viewer, matchId) => (await flagEnabled('tournaments.enabled', user)) && seesTournamentOfMatch(db, matchId, viewer),
+      )
+    },
   })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
+  const live = new TournamentLive(
+    id => liveMessage(db, engine, id, Date.now()),
+    (message, details) => app.log.warn(details, message),
+  )
+  live.start()
+  app.addHook('onClose', () => {
+    live.close()
+  })
+  await app.register(tournamentGwPlugin, { db, live })
   await app.register(bigScreenGwPlugin, { db, service: bigScreen })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
@@ -321,7 +339,7 @@ export async function buildApp({
     live: async () => {
       const { bridges, boards } = bridgeConnections.counts()
       return {
-        browsers: browserConnections.socketCount() + hub.socketCount(),
+        browsers: browserConnections.socketCount() + hub.socketCount() + live.socketCount(),
         bridges,
         boardsOnline: boards,
         runningGames: engine.getAllSessions().filter(s => s.status === 'active').length,

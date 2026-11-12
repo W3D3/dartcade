@@ -1,0 +1,925 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tournament-ws/v1",
+  "title": "TournamentWs",
+  "description": "Messages the backend pushes on the tournament socket (/ws/tournament?tournamentId=…[&code=…]): the running state of one tournament, the same for everyone who may see it. It only pushes, again whenever something changed; the tournament's setup comes from GET /api/tournaments/{id}. The server closes it with a WsCloseCode from game-ws-v1.json (NotFound when the caller may not see the tournament).",
+  "$defs": {
+    "TournamentLivePlayer": {
+      "title": "TournamentLivePlayer",
+      "type": "object",
+      "required": [
+        "userId",
+        "name",
+        "avatar"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null for a guest spot."
+        },
+        "name": {
+          "type": "string"
+        },
+        "avatar": {
+          "title": "Avatar",
+          "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "foreground",
+                "background"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "preset"
+                  ]
+                },
+                "foreground": {
+                  "type": "string",
+                  "description": "The finish of the mark in front"
+                },
+                "background": {
+                  "type": "string",
+                  "description": "The finish of the disc behind it"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "version"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "upload"
+                  ]
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "TournamentLiveEntry": {
+      "title": "TournamentLiveEntry",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "status",
+        "seed",
+        "finalPlace",
+        "players"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "registered",
+            "checked_in",
+            "withdrawn"
+          ]
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Set at the draw."
+        },
+        "finalPlace": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Set when the tournament finished."
+        },
+        "players": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLivePlayer",
+            "type": "object",
+            "required": [
+              "userId",
+              "name",
+              "avatar"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Null for a guest spot."
+              },
+              "name": {
+                "type": "string"
+              },
+              "avatar": {
+                "title": "Avatar",
+                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "none"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "foreground",
+                      "background"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "foreground": {
+                        "type": "string",
+                        "description": "The finish of the mark in front"
+                      },
+                      "background": {
+                        "type": "string",
+                        "description": "The finish of the disc behind it"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "upload"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "description": "In team order; a solo entry has one."
+        }
+      }
+    },
+    "TournamentLiveMatch": {
+      "title": "TournamentLiveMatch",
+      "type": "object",
+      "required": [
+        "key",
+        "bracket",
+        "group",
+        "round",
+        "index",
+        "firstTo",
+        "status",
+        "sides",
+        "outcome",
+        "winner",
+        "legs",
+        "game"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Unique in the bracket, e.g. R2M3, L1M2, GF1, G2R1M1."
+        },
+        "bracket": {
+          "type": "string",
+          "enum": [
+            "main",
+            "lower",
+            "final",
+            "group"
+          ]
+        },
+        "group": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "round": {
+          "type": "integer"
+        },
+        "index": {
+          "type": "integer",
+          "description": "1-based position in its round, top first."
+        },
+        "firstTo": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "ready",
+            "live",
+            "finished"
+          ]
+        },
+        "sides": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
+        },
+        "outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "played",
+            "walkover",
+            "bye",
+            "organizer",
+            null
+          ]
+        },
+        "winner": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "enum": [
+            0,
+            1,
+            null
+          ],
+          "description": "The winning side once finished."
+        },
+        "legs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer"
+          },
+          "description": "Legs won by each side: so far in a live match, the result in a finished one."
+        },
+        "game": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "sessionId",
+                "throwing"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "sessionId": {
+                  "type": "string",
+                  "description": "The running game: Watch opens it, its players go back to it."
+                },
+                "throwing": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "enum": [
+                    0,
+                    1,
+                    null
+                  ],
+                  "description": "The side whose turn it is."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TournamentLiveStanding": {
+      "title": "TournamentLiveStanding",
+      "type": "object",
+      "required": [
+        "entryId",
+        "played",
+        "won",
+        "lost",
+        "legsWon",
+        "legsLost"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "entryId": {
+          "type": "string"
+        },
+        "played": {
+          "type": "integer"
+        },
+        "won": {
+          "type": "integer"
+        },
+        "lost": {
+          "type": "integer"
+        },
+        "legsWon": {
+          "type": "integer"
+        },
+        "legsLost": {
+          "type": "integer"
+        }
+      }
+    },
+    "TournamentLiveTable": {
+      "title": "TournamentLiveTable",
+      "type": "object",
+      "required": [
+        "group",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "description": "A group's table, or a round robin's (group null), best first.",
+      "properties": {
+        "group": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLiveStanding",
+            "type": "object",
+            "required": [
+              "entryId",
+              "played",
+              "won",
+              "lost",
+              "legsWon",
+              "legsLost"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "entryId": {
+                "type": "string"
+              },
+              "played": {
+                "type": "integer"
+              },
+              "won": {
+                "type": "integer"
+              },
+              "lost": {
+                "type": "integer"
+              },
+              "legsWon": {
+                "type": "integer"
+              },
+              "legsLost": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TournamentLiveStage": {
+      "title": "TournamentLiveStage",
+      "type": "object",
+      "required": [
+        "bracket",
+        "round",
+        "name",
+        "state",
+        "at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bracket": {
+          "type": "string",
+          "enum": [
+            "main",
+            "lower",
+            "final",
+            "group"
+          ]
+        },
+        "round": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string",
+          "description": "Quarter-finals, Lower round 2, Grand final, Groups · round 1, …"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "done",
+            "now",
+            "later"
+          ]
+        },
+        "at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "For a later stage: when it is expected to start."
+        }
+      }
+    },
+    "TournamentLiveMessage": {
+      "title": "TournamentLiveMessage",
+      "type": "object",
+      "required": [
+        "type",
+        "tournamentId",
+        "status",
+        "entries",
+        "matches",
+        "tables",
+        "schedule"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tournament.live"
+        },
+        "tournamentId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "open",
+            "check_in",
+            "running",
+            "finished",
+            "cancelled"
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLiveEntry",
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "status",
+              "seed",
+              "finalPlace",
+              "players"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "registered",
+                  "checked_in",
+                  "withdrawn"
+                ]
+              },
+              "seed": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Set at the draw."
+              },
+              "finalPlace": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Set when the tournament finished."
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "title": "TournamentLivePlayer",
+                  "type": "object",
+                  "required": [
+                    "userId",
+                    "name",
+                    "avatar"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "userId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null for a guest spot."
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "foreground",
+                            "background"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "description": "The finish of the mark in front"
+                            },
+                            "background": {
+                              "type": "string",
+                              "description": "The finish of the disc behind it"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "description": "In team order; a solo entry has one."
+              }
+            }
+          },
+          "description": "Withdrawn ones too, in registration order."
+        },
+        "matches": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLiveMatch",
+            "type": "object",
+            "required": [
+              "key",
+              "bracket",
+              "group",
+              "round",
+              "index",
+              "firstTo",
+              "status",
+              "sides",
+              "outcome",
+              "winner",
+              "legs",
+              "game"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Unique in the bracket, e.g. R2M3, L1M2, GF1, G2R1M1."
+              },
+              "bracket": {
+                "type": "string",
+                "enum": [
+                  "main",
+                  "lower",
+                  "final",
+                  "group"
+                ]
+              },
+              "group": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "round": {
+                "type": "integer"
+              },
+              "index": {
+                "type": "integer",
+                "description": "1-based position in its round, top first."
+              },
+              "firstTo": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "ready",
+                  "live",
+                  "finished"
+                ]
+              },
+              "sides": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
+              },
+              "outcome": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "played",
+                  "walkover",
+                  "bye",
+                  "organizer",
+                  null
+                ]
+              },
+              "winner": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "enum": [
+                  0,
+                  1,
+                  null
+                ],
+                "description": "The winning side once finished."
+              },
+              "legs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Legs won by each side: so far in a live match, the result in a finished one."
+              },
+              "game": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "sessionId",
+                      "throwing"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "sessionId": {
+                        "type": "string",
+                        "description": "The running game: Watch opens it, its players go back to it."
+                      },
+                      "throwing": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "enum": [
+                          0,
+                          1,
+                          null
+                        ],
+                        "description": "The side whose turn it is."
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "description": "Empty until the draw."
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLiveTable",
+            "type": "object",
+            "required": [
+              "group",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "A group's table, or a round robin's (group null), best first.",
+            "properties": {
+              "group": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "title": "TournamentLiveStanding",
+                  "type": "object",
+                  "required": [
+                    "entryId",
+                    "played",
+                    "won",
+                    "lost",
+                    "legsWon",
+                    "legsLost"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entryId": {
+                      "type": "string"
+                    },
+                    "played": {
+                      "type": "integer"
+                    },
+                    "won": {
+                      "type": "integer"
+                    },
+                    "lost": {
+                      "type": "integer"
+                    },
+                    "legsWon": {
+                      "type": "integer"
+                    },
+                    "legsLost": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "schedule": {
+          "type": "array",
+          "items": {
+            "title": "TournamentLiveStage",
+            "type": "object",
+            "required": [
+              "bracket",
+              "round",
+              "name",
+              "state",
+              "at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "bracket": {
+                "type": "string",
+                "enum": [
+                  "main",
+                  "lower",
+                  "final",
+                  "group"
+                ]
+              },
+              "round": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string",
+                "description": "Quarter-finals, Lower round 2, Grand final, Groups · round 1, …"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "done",
+                  "now",
+                  "later"
+                ]
+              },
+              "at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "For a later stage: when it is expected to start."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
