@@ -13,7 +13,7 @@
 <header class="md:hidden h-14 shrink-0 box-border pl-4 pr-2 flex items-center gap-3 border-b border-line bg-surface-1">
   <BrandMark size={26} />
   <h1 class="font-display font-bold text-[24px] uppercase tracking-section leading-none whitespace-nowrap">{title}</h1>
-  <AlphaBadge interactive />
+  <AlphaBadge />
   <PreviewBadge />
   <div class="ml-auto flex items-center gap-2 min-w-0">
     {#if action}<div class="flex items-center min-w-0">{@render action()}</div>{/if}
