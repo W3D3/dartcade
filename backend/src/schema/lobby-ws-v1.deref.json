@@ -4784,6 +4784,46 @@
         }
       }
     },
+    "TournamentDroppedMessage": {
+      "title": "TournamentDroppedMessage",
+      "description": "Pushed on /ws/me to the players of an entry an unlocked average limit dropped when check-in opened (or at the start without a check-in): their 30-day form no longer fits.",
+      "type": "object",
+      "required": [
+        "type",
+        "tournamentId",
+        "tournamentName",
+        "reason",
+        "average"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tournament.dropped"
+        },
+        "tournamentId": {
+          "type": "string"
+        },
+        "tournamentName": {
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "few_legs",
+            "no_average",
+            "below",
+            "above"
+          ],
+          "description": "As TournamentEligibility's reason."
+        },
+        "average": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "The average checked (the entry's, for a team average)."
+        }
+      }
+    },
     "TournamentMatchMessage": {
       "title": "TournamentMatchMessage",
       "description": "Pushed on /ws/me to both players when their tournament match's game starts (\"Your match is on\").",
@@ -7897,6 +7937,46 @@
             "closesAt": {
               "type": "string",
               "format": "date-time"
+            }
+          }
+        },
+        {
+          "title": "TournamentDroppedMessage",
+          "description": "Pushed on /ws/me to the players of an entry an unlocked average limit dropped when check-in opened (or at the start without a check-in): their 30-day form no longer fits.",
+          "type": "object",
+          "required": [
+            "type",
+            "tournamentId",
+            "tournamentName",
+            "reason",
+            "average"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "tournament.dropped"
+            },
+            "tournamentId": {
+              "type": "string"
+            },
+            "tournamentName": {
+              "type": "string"
+            },
+            "reason": {
+              "enum": [
+                "few_legs",
+                "no_average",
+                "below",
+                "above"
+              ],
+              "description": "As TournamentEligibility's reason."
+            },
+            "average": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "The average checked (the entry's, for a team average)."
             }
           }
         },

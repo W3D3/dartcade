@@ -35,6 +35,9 @@ import {
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { checkIn } from '../db/tournamentRun.js'
 import { getUsersByIds } from '../db/queries.js'
+import { x01Forms } from '../db/ranked.js'
+import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
+import { NO_FORM, viewerEligibility, type Eligibility, type Form } from '../shared/tournaments/avgLimit.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { TournamentService } from '../tournaments/service.js'
 import { newLobbyCode } from '../lobby/code.js'
@@ -85,28 +88,43 @@ const forRegistration = (t: TournamentView): RegistrationTournament => ({
 const ownerOf = (t: TournamentView) =>
   t.owner_user_id !== null && t.owner_name !== null ? { id: t.owner_user_id, name: t.owner_name } : null
 
-const summary = (t: BrowseRow, hasBoard: boolean, now: Date) => ({
-  id: t.id,
-  name: t.name,
-  kind: t.kind,
-  access: t.access,
-  status: t.status,
-  gameId: t.game_id,
-  gameConfig: t.game_config,
-  format: t.format,
-  teamSize: t.team_size,
-  maxEntries: t.max_entries,
-  entries: t.entries,
-  startsAt: t.starts_at?.toISOString() ?? null,
-  owner: ownerOf(t),
-  registration: registrationState(forRegistration(t), { registered: t.registered, hasBoard }, now),
-})
+/** The caller against the tournament's average limit; null without one. */
+const eligibilityOf = (t: TournamentView, form: Form): Eligibility | null =>
+  t.settings.avgLimit === null ? null : viewerEligibility(t.settings.avgLimit, t.team_size, form)
+
+const eligible = (e: Eligibility | null) => e?.eligible ?? true
+
+const formOf = async (db: Kysely<Database>, userId: string): Promise<Form> =>
+  (await x01Forms(db, [userId], PROFILE_AVERAGE_DAYS)).get(userId) ?? NO_FORM
+
+const summary = (t: BrowseRow, hasBoard: boolean, form: Form, now: Date) => {
+  const eligibility = eligibilityOf(t, form)
+  return {
+    id: t.id,
+    name: t.name,
+    kind: t.kind,
+    access: t.access,
+    status: t.status,
+    gameId: t.game_id,
+    gameConfig: t.game_config,
+    format: t.format,
+    teamSize: t.team_size,
+    maxEntries: t.max_entries,
+    entries: t.entries,
+    startsAt: t.starts_at?.toISOString() ?? null,
+    owner: ownerOf(t),
+    avgLimit: t.settings.avgLimit,
+    eligibility,
+    registration: registrationState(forRegistration(t), { registered: t.registered, hasBoard, eligible: eligible(eligibility) }, now),
+  }
+}
 
 /** What the caller sees of a tournament besides its setup: their spot, their friends in it. */
 interface Viewer {
   registered: boolean
   checkedIn: boolean
   hasBoard: boolean
+  form: Form
   friendsIn: Tournament['friendsIn']
 }
 
@@ -115,6 +133,7 @@ const isLocked = (t: TournamentView) => t.access !== 'in_person' && t.has_entrie
 
 function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, now: Date): Tournament {
   const input = storedInput(t)
+  const eligibility = eligibilityOf(t, viewer.form)
   return {
     ...input,
     id: t.id,
@@ -126,7 +145,8 @@ function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, no
     locked: isLocked(t),
     createdAt: t.created_at.toISOString(),
     publishedAt: t.published_at?.toISOString() ?? null,
-    registration: registrationState(forRegistration(t), viewer, now),
+    registration: registrationState(forRegistration(t), { ...viewer, eligible: eligible(eligibility) }, now),
+    eligibility,
     registrationClosesAt: registrationClosesAt(input),
     friendsIn: viewer.friendsIn,
     inviteCode: role ? t.invite_code : null,
@@ -196,6 +216,7 @@ const conflict = (error: string) => new ApiError(409, { error })
 const REFUSED: Record<Exclude<RegistrationState, 'open' | 'registered'>, string> = {
   full: 'full',
   closed: 'registration closed',
+  not_eligible: 'not eligible',
   board_needed: 'paired board needed',
   team: 'team tournament',
   in_person: 'in person',
@@ -240,12 +261,13 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   }
 
   async function viewerOf(t: TournamentView, userId: string): Promise<Viewer> {
-    const [spot, hasBoard, friends] = await Promise.all([
+    const [spot, hasBoard, form, friends] = await Promise.all([
       spotStatus(db, t.id, userId),
       hasPairedBoard(db, userId),
+      formOf(db, userId),
       friendsIn(db, t.id, userId),
     ])
-    return { registered: spot !== null, checkedIn: spot === 'checked_in', hasBoard, friendsIn: friends }
+    return { registered: spot !== null, checkedIn: spot === 'checked_in', hasBoard, form, friendsIn: friends }
   }
 
   async function present(t: TournamentView, role: OrganizerRole | null, userId: string): Promise<Tournament> {
@@ -259,10 +281,18 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   }
 
   app.get<Route<'listTournaments'>>('/api/tournaments', { schema: fromSpec('listTournaments') }, async req => {
-    const [rows, hasBoard] = await Promise.all([listBrowseTournaments(db, req.userId), hasPairedBoard(db, req.userId)])
+    const [rows, hasBoard, form] = await Promise.all([
+      listBrowseTournaments(db, req.userId),
+      hasPairedBoard(db, req.userId),
+      formOf(db, req.userId),
+    ])
     const now = new Date()
-    return { tournaments: rows.map(t => summary(t, hasBoard, now)) }
+    return { tournaments: rows.map(t => summary(t, hasBoard, form, now)) }
   })
+
+  app.get<Route<'getTournamentForm'>>('/api/tournaments/form', { schema: fromSpec('getTournamentForm') }, async req =>
+    formOf(db, req.userId),
+  )
 
   app.post<Route<'createTournament'>>('/api/tournaments', { schema: fromSpec('createTournament') }, async (req, reply) => {
     const user = await loadFlagUser(db, req.userId)
@@ -302,10 +332,14 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     { schema: fromSpec('registerForTournament') },
     async req => {
       const { t, role } = await visible(req.params.id, req.userId, req.query.code)
-      const [user, hasBoard] = await Promise.all([getUsersByIds(db, [req.userId]), hasPairedBoard(db, req.userId)])
+      const [user, hasBoard, form] = await Promise.all([
+        getUsersByIds(db, [req.userId]),
+        hasPairedBoard(db, req.userId),
+        formOf(db, req.userId),
+      ])
       const name = user.at(0)?.name
       if (name === undefined) throw notFound()
-      const state = await registerSolo(db, t.id, { id: req.userId, name, hasBoard }, new Date())
+      const state = await registerSolo(db, t.id, { id: req.userId, name, hasBoard, eligible: eligible(eligibilityOf(t, form)) }, new Date())
       if (state === null) throw notFound()
       if (state !== 'open' && state !== 'registered') throw conflict(REFUSED[state])
       return respond(t.id, role, req.userId)

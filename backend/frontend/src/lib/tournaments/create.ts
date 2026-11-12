@@ -241,6 +241,7 @@ export function toInput(f: CreateForm): TournamentInput {
       plannedFor,
       manualScoring: online && f.manualScoring,
       noShowMinutes: online && f.noShow ? f.noShowMinutes : null,
+      avgLimit: null,
     },
   }
 }

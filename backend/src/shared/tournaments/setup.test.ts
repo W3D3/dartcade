@@ -18,6 +18,7 @@ const fixed: TournamentSetup = {
     plannedFor: null,
     manualScoring: false,
     noShowMinutes: 10,
+    avgLimit: null,
   },
 }
 const organizerStart: TournamentSetup = {
@@ -100,6 +101,15 @@ describe('setupProblems', () => {
     expect(paths(with_(organizerStart, {}, { registrationClosesMinutes: 60 }))).toEqual(['body/settings/registrationClosesMinutes'])
     expect(paths(with_(organizerStart, {}, { checkInMinutes: 30 }))).toEqual(['body/settings/checkInMinutes'])
     expect(paths(with_(organizerStart, {}, { checkInMinutes: null }))).toEqual(['body/settings/checkInMinutes'])
+  })
+
+  it('gives an online tournament an average limit with a bound, the minimum below the maximum', () => {
+    const limit = { min: 50, max: 70, teams: 'every', minLegs: 20, lock: true } as const
+    expect(paths(with_(fixed, {}, { avgLimit: limit }))).toEqual([])
+    expect(paths(with_(fixed, {}, { avgLimit: { ...limit, max: null } }))).toEqual([])
+    expect(paths(with_(fixed, {}, { avgLimit: { ...limit, min: null, max: null } }))).toEqual(['body/settings/avgLimit'])
+    expect(paths(with_(fixed, {}, { avgLimit: { ...limit, min: 70 } }))).toEqual(['body/settings/avgLimit'])
+    expect(paths(with_(inPerson, {}, { avgLimit: limit }))).toEqual(['body/settings/avgLimit'])
   })
 
   it('opens check-in only once registration has closed', () => {

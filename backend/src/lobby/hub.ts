@@ -12,6 +12,7 @@ import type {
   AchievementUnlockedMessage,
   TeamInviteMessage,
   TournamentCheckInMessage,
+  TournamentDroppedMessage,
   TournamentMatchMessage,
   TournamentRequestMessage,
 } from '../schema/lobby-ws.js'
@@ -132,8 +133,8 @@ export class LobbyHub {
     this.users.pushEach(userId, () => msg)
   }
 
-  /** Tells a player (on /ws/me) their tournament's check-in opened, or their match's game started. */
-  sendTournament(userId: string, msg: TournamentCheckInMessage | TournamentMatchMessage): void {
+  /** Tells a player (on /ws/me) their tournament's check-in opened, they lost their spot to the average limit, or their match's game started. */
+  sendTournament(userId: string, msg: TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 

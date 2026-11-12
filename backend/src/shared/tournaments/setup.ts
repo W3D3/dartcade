@@ -2,6 +2,7 @@
 // create page can show the same problems. The game's own options are checked by its module on the
 // server.
 import { CONTROL_CHARS } from '../names.js'
+import type { AvgLimit } from './avgLimit.js'
 
 export type TournamentAccess = 'public' | 'friends' | 'invite' | 'in_person'
 export type TournamentFormat = 'single_elimination' | 'double_elimination' | 'round_robin' | 'groups_knockout'
@@ -16,6 +17,7 @@ export interface TournamentSettings {
   readonly plannedFor: string | null
   readonly manualScoring: boolean
   readonly noShowMinutes: number | null
+  readonly avgLimit: AvgLimit | null
 }
 
 export interface TournamentSetup {
@@ -82,6 +84,12 @@ export function setupProblems(t: TournamentSetup): Problem[] {
   }
   if (!online && s.checkInMinutes !== null) bad('settings/checkInMinutes', 'an in-person tournament has no check-in')
   if (!online && s.noShowMinutes !== null) bad('settings/noShowMinutes', 'an in-person tournament has no no-show wait')
+  if (s.avgLimit) {
+    const { min, max } = s.avgLimit
+    if (!online) bad('settings/avgLimit', 'an in-person tournament has no average limit')
+    if (min === null && max === null) bad('settings/avgLimit', 'needs a minimum, a maximum or both')
+    if (min !== null && max !== null && min >= max) bad('settings/avgLimit', 'the minimum must be below the maximum')
+  }
   return out
 }
 

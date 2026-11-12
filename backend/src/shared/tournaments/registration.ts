@@ -1,5 +1,6 @@
 // Whether someone may register for a tournament now, and if not why: one rule for the Register
 // button on Browse and the register route's answer. Pure, shared with the SPA.
+import type { AvgLimit } from './avgLimit.js'
 import type { TournamentAccess } from './setup.js'
 import type { TournamentStatus } from './state.js'
 
@@ -11,16 +12,20 @@ export interface RegistrationTournament {
   /** Entries registered so far, withdrawn ones not counted. */
   readonly entries: number
   readonly startsAt: string | null
-  readonly settings: { readonly registrationClosesMinutes: number | null; readonly manualScoring: boolean }
+  readonly settings: {
+    readonly registrationClosesMinutes: number | null
+    readonly manualScoring: boolean
+    readonly avgLimit: AvgLimit | null
+  }
 }
 
 /**
  * `registered`: the caller has a spot. `in_person`: the organizers add everyone. `closed`: not
  * open, or past the registration close. `team`: a team registers through its captain.
- * `full`: every spot taken. `board_needed`: online play needs a paired board unless the organizer
+ * `full`: every spot taken. `not_eligible`: outside the average limit (`viewerEligibility`). `board_needed`: online play needs a paired board unless the organizer
  * allows manual scoring. `open`: Register.
  */
-export type RegistrationState = 'registered' | 'in_person' | 'closed' | 'team' | 'full' | 'board_needed' | 'open'
+export type RegistrationState = 'registered' | 'in_person' | 'closed' | 'team' | 'full' | 'not_eligible' | 'board_needed' | 'open'
 
 /** When registration closes before a fixed start; null while an organizer starts it. */
 export function registrationClosesAt(t: Pick<RegistrationTournament, 'startsAt' | 'settings'>): string | null {
@@ -30,7 +35,7 @@ export function registrationClosesAt(t: Pick<RegistrationTournament, 'startsAt' 
 
 export function registrationState(
   t: RegistrationTournament,
-  me: { readonly registered: boolean; readonly hasBoard: boolean },
+  me: { readonly registered: boolean; readonly hasBoard: boolean; readonly eligible: boolean },
   now: Date,
 ): RegistrationState {
   if (me.registered) return 'registered'
@@ -39,6 +44,7 @@ export function registrationState(
   if (t.status !== 'open' || (closes !== null && Date.parse(closes) <= now.getTime())) return 'closed'
   if (t.teamSize > 1) return 'team'
   if (t.entries >= t.maxEntries) return 'full'
+  if (!me.eligible) return 'not_eligible'
   if (!t.settings.manualScoring && !me.hasBoard) return 'board_needed'
   return 'open'
 }

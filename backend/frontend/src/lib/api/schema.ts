@@ -2228,6 +2228,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your X01 form over the last 30 days, the one an average limit checks (tournaments.enabled) */
+        get: operations["getTournamentForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{id}": {
         parameters: {
             query?: never;
@@ -2583,7 +2600,7 @@ export interface paths {
         put?: never;
         /**
          * Register alone (tournaments.enabled)
-         * @description Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).
+         * @description Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).
          */
         post: operations["registerForTournament"];
         /**
@@ -5307,14 +5324,47 @@ export interface components {
             }[];
         };
         /**
-         * @description The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)
+         * @description The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)
          * @enum {string}
          */
-        TournamentRegistration: "registered" | "in_person" | "closed" | "team" | "full" | "board_needed" | "open";
+        TournamentRegistration: "registered" | "in_person" | "closed" | "team" | "full" | "not_eligible" | "board_needed" | "open";
         /** @description Null once the owner's account is gone */
         TournamentOwner: {
             id: string;
             name: string;
+        } | null;
+        /** @description Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone. */
+        AvgLimit: {
+            /** @description Null: at most max */
+            min: number | null;
+            /** @description Null: at least min */
+            max: number | null;
+            /**
+             * @description Teams: every player within it, or the mean of their averages
+             * @enum {string}
+             */
+            teams: "every" | "team";
+            /** @description Legs each player played in the 30 days */
+            minLegs: number;
+            /** @description On: a spot is kept when the average moves; off: rechecked at check-in */
+            lock: boolean;
+        } | null;
+        TournamentForm: {
+            /** @description X01 3-dart average over the last 30 days (one decimal); null without darts */
+            average: number | null;
+            /** @description X01 legs played in the last 30 days */
+            legs: number;
+        };
+        /** @description The caller against the average limit; null when the tournament has none */
+        TournamentEligibility: {
+            eligible: boolean;
+            /**
+             * @description Why not: too few legs, no X01 average, below the minimum, above the maximum
+             * @enum {string|null}
+             */
+            reason: "few_legs" | "no_average" | "below" | "above" | null;
+            /** @description The caller's 30-day average */
+            average: number | null;
         } | null;
         TournamentSummary: {
             id: string;
@@ -5344,6 +5394,8 @@ export interface components {
              * @description Null: an organizer starts it
              */
             startsAt: string | null;
+            avgLimit: components["schemas"]["AvgLimit"];
+            eligibility: components["schemas"]["TournamentEligibility"];
         };
         /** @description Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button. */
         TournamentSettings: {
@@ -5387,6 +5439,7 @@ export interface components {
              * @enum {integer|null}
              */
             noShowMinutes: 5 | 10 | 15 | null;
+            avgLimit: components["schemas"]["AvgLimit"];
         };
         TournamentInput: {
             /** @description 3-40 characters after trimming, no control characters */
@@ -5477,6 +5530,7 @@ export interface components {
              * @description Before a fixed start; null while an organizer starts it
              */
             registrationClosesAt: string | null;
+            eligibility: components["schemas"]["TournamentEligibility"];
             /** @description The caller's friends who hold a spot, by name */
             friendsIn: {
                 id: string;
@@ -10018,6 +10072,29 @@ export interface operations {
                     "application/json": {
                         tournaments: components["schemas"]["Tournament"][];
                     };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournamentForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your form */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentForm"];
                 };
             };
             401: components["responses"]["Unauthorized"];
