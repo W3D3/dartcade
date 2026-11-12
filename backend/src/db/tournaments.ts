@@ -89,7 +89,7 @@ export type TournamentView = TournamentRow & {
   owner_name: string | null
 }
 
-function viewQuery(db: Kysely<Database>) {
+export function viewQuery(db: Kysely<Database>) {
   return db
     .selectFrom('tournaments as t')
     .leftJoin('user as u', 'u.id', 't.owner_user_id')
@@ -106,7 +106,7 @@ function viewQuery(db: Kysely<Database>) {
     ])
 }
 
-const toView = <R extends { entries: string | null; has_entries: SqlBool }>(r: R) => ({
+export const toView = <R extends { entries: string | null; has_entries: SqlBool }>(r: R) => ({
   ...r,
   entries: Number(r.entries ?? 0),
   has_entries: Boolean(r.has_entries),

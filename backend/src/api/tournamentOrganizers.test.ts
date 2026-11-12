@@ -9,7 +9,7 @@ import { setOverrides, setupFlags } from '../flags/index.js'
 import { createFastify } from './fastify.js'
 import { tournamentsApiPlugin } from './tournaments.js'
 
-type Tournament = components['schemas']['Tournament']
+type MyTournaments = components['schemas']['MyTournaments']
 type Organizers = components['schemas']['TournamentOrganizers']
 
 /** A setup that passes the create and publish checks. */
@@ -132,8 +132,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament organizers API', () 
   })
 
   it('lets an organizer leave, after which the tournament is not theirs any more', async () => {
-    const mine = async () => (await send('lena', 'GET', '/api/tournaments/mine')).json<{ tournaments: Tournament[] }>().tournaments
-    expect((await mine()).map(t => [t.id, t.role])).toEqual([['t1', 'organizer']])
+    const mine = async () => (await send('lena', 'GET', '/api/tournaments/mine')).json<MyTournaments>().organizing
+    expect((await mine()).map(o => [o.tournament.id, o.role])).toEqual([['t1', 'organizer']])
     expect((await send('lena', 'DELETE', '/api/tournaments/t1/organizers/lena')).statusCode).toBe(204)
     expect(await mine()).toEqual([])
     expect((await send('lena', 'PATCH', '/api/tournaments/t1', { description: 'x' })).statusCode).toBe(403)
@@ -146,7 +146,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament organizers API', () 
   it('shows a new organizer the tournament under Organizing', async () => {
     await send('owner', 'POST', '/api/tournaments/t1/organizers', { userId: 'max' })
     const res = await send('max', 'GET', '/api/tournaments/mine')
-    expect(res.json<{ tournaments: Tournament[] }>().tournaments.map(t => [t.id, t.role])).toEqual([['t1', 'organizer']])
+    expect(res.json<MyTournaments>().organizing.map(o => [o.tournament.id, o.role])).toEqual([['t1', 'organizer']])
   })
 
   it('hides organizers of a draft from people who are not organizers', async () => {

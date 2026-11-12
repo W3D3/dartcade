@@ -39855,388 +39855,133 @@
     "/api/tournaments/mine": {
       "get": {
         "operationId": "listMyTournaments",
-        "summary": "Tournaments you own or organize, drafts included (tournaments.enabled)",
-        "description": "Newest first.",
+        "summary": "Your tournaments, the My tournaments tab (tournaments.enabled)",
+        "description": "The match being played now, the tournaments you hold a spot in that are not over, those you organize that are not over (drafts included), your finished ones (newest first, at most 50) and your results over the current calendar quarter.",
         "tags": [
           "tournaments"
         ],
         "responses": {
           "200": {
-            "description": "The tournaments",
+            "description": "Your tournaments",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "required": [
-                    "tournaments"
+                    "liveMatch",
+                    "playing",
+                    "organizing",
+                    "past",
+                    "pastTotal",
+                    "season"
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "tournaments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "id",
-                          "name",
-                          "description",
-                          "kind",
-                          "access",
-                          "status",
-                          "gameId",
-                          "gameConfig",
-                          "format",
-                          "teamSize",
-                          "maxEntries",
-                          "startsAt",
-                          "settings",
-                          "entries",
-                          "owner",
-                          "role",
-                          "locked",
-                          "createdAt",
-                          "publishedAt",
-                          "registration",
-                          "registrationClosesAt",
-                          "friendsIn",
-                          "inviteCode",
-                          "checkedIn",
-                          "eligibility"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "kind": {
-                            "type": "string",
-                            "enum": [
-                              "official",
-                              "community"
-                            ]
-                          },
-                          "access": {
-                            "type": "string",
-                            "enum": [
-                              "public",
-                              "friends",
-                              "invite",
-                              "in_person"
-                            ]
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "draft",
-                              "open",
-                              "check_in",
-                              "running",
-                              "finished",
-                              "cancelled"
-                            ]
-                          },
-                          "gameId": {
-                            "type": "string"
-                          },
-                          "gameConfig": {
-                            "type": "object",
-                            "additionalProperties": true
-                          },
-                          "format": {
-                            "type": "string",
-                            "enum": [
-                              "single_elimination",
-                              "double_elimination",
-                              "round_robin",
-                              "groups_knockout"
-                            ]
-                          },
-                          "teamSize": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 4
-                          },
-                          "maxEntries": {
-                            "type": "integer"
-                          },
-                          "startsAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
-                          "settings": {
-                            "type": "object",
-                            "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
-                            "required": [
-                              "seeding",
-                              "firstTo",
-                              "longerFinal",
-                              "groups",
-                              "registrationClosesMinutes",
-                              "checkInMinutes",
-                              "plannedFor",
-                              "manualScoring",
-                              "noShowMinutes",
-                              "avgLimit"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "seeding": {
-                                "type": "string",
-                                "enum": [
-                                  "rating",
-                                  "random",
-                                  "manual"
-                                ]
-                              },
-                              "firstTo": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 7,
-                                "description": "Legs to win a match"
-                              },
-                              "longerFinal": {
-                                "type": "object",
-                                "nullable": true,
-                                "description": "Knockout formats only; longer than firstTo",
-                                "required": [
-                                  "firstTo",
-                                  "semis"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "firstTo": {
-                                    "type": "integer",
-                                    "enum": [
-                                      2,
-                                      3,
-                                      4,
-                                      5,
-                                      6,
-                                      7,
-                                      9,
-                                      11
-                                    ]
-                                  },
-                                  "semis": {
-                                    "type": "boolean",
-                                    "description": "The semi-finals too"
-                                  }
-                                }
-                              },
-                              "groups": {
-                                "type": "object",
-                                "nullable": true,
-                                "description": "Groups + knockout only (and required there)",
-                                "required": [
-                                  "size",
-                                  "through"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "size": {
-                                    "type": "integer",
-                                    "enum": [
-                                      3,
-                                      4,
-                                      5
-                                    ]
-                                  },
-                                  "through": {
-                                    "type": "integer",
-                                    "enum": [
-                                      1,
-                                      2
-                                    ],
-                                    "description": "Entries per group that go through"
-                                  }
-                                }
-                              },
-                              "registrationClosesMinutes": {
-                                "type": "integer",
-                                "nullable": true,
-                                "enum": [
-                                  15,
-                                  60,
-                                  180,
-                                  1440,
-                                  null
-                                ],
-                                "description": "Before a fixed start"
-                              },
-                              "checkInMinutes": {
-                                "type": "integer",
-                                "nullable": true,
-                                "enum": [
-                                  2,
-                                  5,
-                                  10,
-                                  15,
-                                  30,
-                                  60,
-                                  null
-                                ]
-                              },
-                              "plannedFor": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true,
-                                "description": "Organizer start: a hint, not a start time"
-                              },
-                              "manualScoring": {
-                                "type": "boolean",
-                                "description": "Online players without a paired board may type their scores"
-                              },
-                              "noShowMinutes": {
-                                "type": "integer",
-                                "nullable": true,
-                                "enum": [
-                                  5,
-                                  10,
-                                  15,
-                                  null
-                                ],
-                                "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
-                              },
-                              "avgLimit": {
-                                "type": "object",
-                                "nullable": true,
-                                "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
-                                "required": [
-                                  "min",
-                                  "max",
-                                  "teams",
-                                  "minLegs",
-                                  "lock"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "min": {
-                                    "type": "number",
-                                    "nullable": true,
-                                    "minimum": 0,
-                                    "maximum": 180,
-                                    "description": "Null: at most max"
-                                  },
-                                  "max": {
-                                    "type": "number",
-                                    "nullable": true,
-                                    "minimum": 0,
-                                    "maximum": 180,
-                                    "description": "Null: at least min"
-                                  },
-                                  "teams": {
-                                    "type": "string",
-                                    "enum": [
-                                      "every",
-                                      "team"
-                                    ],
-                                    "description": "Teams: every player within it, or the mean of their averages"
-                                  },
-                                  "minLegs": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 500,
-                                    "description": "Legs each player played in the 30 days"
-                                  },
-                                  "lock": {
-                                    "type": "boolean",
-                                    "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          "entries": {
-                            "type": "integer",
-                            "description": "Entries registered so far (withdrawn ones not counted)"
-                          },
-                          "owner": {
-                            "type": "object",
-                            "nullable": true,
-                            "description": "Null once the owner's account is gone",
-                            "required": [
-                              "id",
-                              "name"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "registration": {
-                            "type": "string",
-                            "enum": [
-                              "registered",
-                              "in_person",
-                              "closed",
-                              "team",
-                              "full",
-                              "not_eligible",
-                              "board_needed",
-                              "open"
-                            ],
-                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
-                          },
-                          "registrationClosesAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "Before a fixed start; null while an organizer starts it"
-                          },
-                          "eligibility": {
-                            "type": "object",
-                            "nullable": true,
-                            "description": "The caller against the average limit; null when the tournament has none",
-                            "required": [
-                              "eligible",
-                              "reason",
-                              "average"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "eligible": {
-                                "type": "boolean"
-                              },
-                              "reason": {
-                                "type": "string",
-                                "nullable": true,
-                                "enum": [
-                                  "few_legs",
-                                  "no_average",
-                                  "below",
-                                  "above",
-                                  null
-                                ],
-                                "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
-                              },
-                              "average": {
-                                "type": "number",
-                                "nullable": true,
-                                "description": "The caller's 30-day average"
-                              }
-                            }
-                          },
-                          "friendsIn": {
-                            "type": "array",
-                            "description": "The caller's friends who hold a spot, by name",
-                            "items": {
+                    "liveMatch": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Your match whose game is running now",
+                      "required": [
+                        "tournament",
+                        "round",
+                        "opponent",
+                        "firstTo",
+                        "sessionId"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "tournament": {
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "name",
+                            "kind",
+                            "access",
+                            "status",
+                            "gameId",
+                            "gameConfig",
+                            "format",
+                            "teamSize",
+                            "maxEntries",
+                            "entries",
+                            "startsAt",
+                            "owner"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "official",
+                                "community"
+                              ]
+                            },
+                            "access": {
+                              "type": "string",
+                              "enum": [
+                                "public",
+                                "friends",
+                                "invite",
+                                "in_person"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "check_in",
+                                "running",
+                                "finished",
+                                "cancelled"
+                              ]
+                            },
+                            "gameId": {
+                              "type": "string"
+                            },
+                            "gameConfig": {
                               "type": "object",
+                              "additionalProperties": true
+                            },
+                            "format": {
+                              "type": "string",
+                              "enum": [
+                                "single_elimination",
+                                "double_elimination",
+                                "round_robin",
+                                "groups_knockout"
+                              ]
+                            },
+                            "teamSize": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4
+                            },
+                            "maxEntries": {
+                              "type": "integer"
+                            },
+                            "entries": {
+                              "type": "integer",
+                              "description": "Entries registered so far (withdrawn ones not counted)"
+                            },
+                            "startsAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "owner": {
+                              "type": "object",
+                              "nullable": true,
+                              "description": "Null once the owner's account is gone",
                               "required": [
                                 "id",
-                                "name",
-                                "avatar"
+                                "name"
                               ],
                               "additionalProperties": false,
                               "properties": {
@@ -40245,107 +39990,505 @@
                                 },
                                 "name": {
                                   "type": "string"
-                                },
-                                "avatar": {
-                                  "title": "Avatar",
-                                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
-                                  "oneOf": [
-                                    {
-                                      "type": "object",
-                                      "required": [
-                                        "kind"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "enum": [
-                                            "none"
-                                          ]
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "object",
-                                      "required": [
-                                        "kind",
-                                        "foreground",
-                                        "background"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "enum": [
-                                            "preset"
-                                          ]
-                                        },
-                                        "foreground": {
-                                          "type": "string",
-                                          "description": "The finish of the mark in front"
-                                        },
-                                        "background": {
-                                          "type": "string",
-                                          "description": "The finish of the disc behind it"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "object",
-                                      "required": [
-                                        "kind",
-                                        "version"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "enum": [
-                                            "upload"
-                                          ]
-                                        },
-                                        "version": {
-                                          "type": "integer",
-                                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
-                                        }
-                                      }
-                                    }
-                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "round": {
+                          "type": "string",
+                          "description": "Where it sits, e.g. Quarter-final"
+                        },
+                        "opponent": {
+                          "type": "string"
+                        },
+                        "firstTo": {
+                          "type": "integer"
+                        },
+                        "sessionId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "playing": {
+                      "type": "array",
+                      "description": "Soonest first; organizer-started ones last",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "tournament",
+                          "entryName",
+                          "playerName",
+                          "waitingFor",
+                          "opponent"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "tournament": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "kind",
+                              "access",
+                              "status",
+                              "gameId",
+                              "gameConfig",
+                              "format",
+                              "teamSize",
+                              "maxEntries",
+                              "entries",
+                              "startsAt",
+                              "owner"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "official",
+                                  "community"
+                                ]
+                              },
+                              "access": {
+                                "type": "string",
+                                "enum": [
+                                  "public",
+                                  "friends",
+                                  "invite",
+                                  "in_person"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "open",
+                                  "check_in",
+                                  "running",
+                                  "finished",
+                                  "cancelled"
+                                ]
+                              },
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "gameConfig": {
+                                "type": "object",
+                                "additionalProperties": true
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "single_elimination",
+                                  "double_elimination",
+                                  "round_robin",
+                                  "groups_knockout"
+                                ]
+                              },
+                              "teamSize": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 4
+                              },
+                              "maxEntries": {
+                                "type": "integer"
+                              },
+                              "entries": {
+                                "type": "integer",
+                                "description": "Entries registered so far (withdrawn ones not counted)"
+                              },
+                              "startsAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "owner": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null once the owner's account is gone",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
                                 }
                               }
                             }
                           },
-                          "inviteCode": {
+                          "entryName": {
+                            "type": "string",
+                            "description": "The team, or you"
+                          },
+                          "playerName": {
+                            "type": "string",
+                            "description": "The name your spot plays under"
+                          },
+                          "waitingFor": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Teammates who have not confirmed yet"
+                          },
+                          "opponent": {
                             "type": "string",
                             "nullable": true,
-                            "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                            "description": "Your next match's opponent once known"
+                          }
+                        }
+                      }
+                    },
+                    "organizing": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "tournament",
+                          "role",
+                          "claimed",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "tournament": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "kind",
+                              "access",
+                              "status",
+                              "gameId",
+                              "gameConfig",
+                              "format",
+                              "teamSize",
+                              "maxEntries",
+                              "entries",
+                              "startsAt",
+                              "owner"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "official",
+                                  "community"
+                                ]
+                              },
+                              "access": {
+                                "type": "string",
+                                "enum": [
+                                  "public",
+                                  "friends",
+                                  "invite",
+                                  "in_person"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "open",
+                                  "check_in",
+                                  "running",
+                                  "finished",
+                                  "cancelled"
+                                ]
+                              },
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "gameConfig": {
+                                "type": "object",
+                                "additionalProperties": true
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "single_elimination",
+                                  "double_elimination",
+                                  "round_robin",
+                                  "groups_knockout"
+                                ]
+                              },
+                              "teamSize": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 4
+                              },
+                              "maxEntries": {
+                                "type": "integer"
+                              },
+                              "entries": {
+                                "type": "integer",
+                                "description": "Entries registered so far (withdrawn ones not counted)"
+                              },
+                              "startsAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "owner": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null once the owner's account is gone",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
                           },
                           "role": {
                             "type": "string",
-                            "nullable": true,
                             "enum": [
                               "owner",
-                              "organizer",
-                              null
-                            ],
-                            "description": "The caller's part in it"
+                              "organizer"
+                            ]
                           },
-                          "checkedIn": {
-                            "type": "boolean",
-                            "description": "The caller holds a spot and checked in"
-                          },
-                          "locked": {
-                            "type": "boolean",
-                            "description": "Someone registered: only startsAt (with its settings) and description can change"
+                          "claimed": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "In person: spots claimed by an account; null otherwise"
                           },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "past": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "tournament",
+                          "entryName",
+                          "playerName",
+                          "place",
+                          "won",
+                          "lost",
+                          "average",
+                          "endedAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "tournament": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "kind",
+                              "access",
+                              "status",
+                              "gameId",
+                              "gameConfig",
+                              "format",
+                              "teamSize",
+                              "maxEntries",
+                              "entries",
+                              "startsAt",
+                              "owner"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "official",
+                                  "community"
+                                ]
+                              },
+                              "access": {
+                                "type": "string",
+                                "enum": [
+                                  "public",
+                                  "friends",
+                                  "invite",
+                                  "in_person"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "open",
+                                  "check_in",
+                                  "running",
+                                  "finished",
+                                  "cancelled"
+                                ]
+                              },
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "gameConfig": {
+                                "type": "object",
+                                "additionalProperties": true
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "single_elimination",
+                                  "double_elimination",
+                                  "round_robin",
+                                  "groups_knockout"
+                                ]
+                              },
+                              "teamSize": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 4
+                              },
+                              "maxEntries": {
+                                "type": "integer"
+                              },
+                              "entries": {
+                                "type": "integer",
+                                "description": "Entries registered so far (withdrawn ones not counted)"
+                              },
+                              "startsAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "owner": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null once the owner's account is gone",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
                           },
-                          "publishedAt": {
+                          "entryName": {
+                            "type": "string"
+                          },
+                          "playerName": {
+                            "type": "string"
+                          },
+                          "place": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "won": {
+                            "type": "integer"
+                          },
+                          "lost": {
+                            "type": "integer"
+                          },
+                          "average": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Your X01 3-dart average in its matches"
+                          },
+                          "endedAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "pastTotal": {
+                      "type": "integer"
+                    },
+                    "season": {
+                      "type": "object",
+                      "required": [
+                        "label",
+                        "played",
+                        "titles",
+                        "won",
+                        "lost",
+                        "average",
+                        "best"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "The calendar quarter, e.g. Q4 2026"
+                        },
+                        "played": {
+                          "type": "integer"
+                        },
+                        "titles": {
+                          "type": "integer"
+                        },
+                        "won": {
+                          "type": "integer"
+                        },
+                        "lost": {
+                          "type": "integer"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "best": {
+                          "type": "object",
+                          "nullable": true,
+                          "required": [
+                            "place",
+                            "tournament"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "place": {
+                              "type": "integer"
+                            },
+                            "tournament": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -86344,6 +86487,741 @@
             "type": "number",
             "nullable": true,
             "description": "The caller's 30-day average"
+          }
+        }
+      },
+      "MyTournamentRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "access",
+          "status",
+          "gameId",
+          "gameConfig",
+          "format",
+          "teamSize",
+          "maxEntries",
+          "entries",
+          "startsAt",
+          "owner"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "official",
+              "community"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "invite",
+              "in_person"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "check_in",
+              "running",
+              "finished",
+              "cancelled"
+            ]
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_elimination",
+              "double_elimination",
+              "round_robin",
+              "groups_knockout"
+            ]
+          },
+          "teamSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "maxEntries": {
+            "type": "integer"
+          },
+          "entries": {
+            "type": "integer",
+            "description": "Entries registered so far (withdrawn ones not counted)"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "owner": {
+            "type": "object",
+            "nullable": true,
+            "description": "Null once the owner's account is gone",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "MyTournaments": {
+        "type": "object",
+        "required": [
+          "liveMatch",
+          "playing",
+          "organizing",
+          "past",
+          "pastTotal",
+          "season"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "liveMatch": {
+            "type": "object",
+            "nullable": true,
+            "description": "Your match whose game is running now",
+            "required": [
+              "tournament",
+              "round",
+              "opponent",
+              "firstTo",
+              "sessionId"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tournament": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "kind",
+                  "access",
+                  "status",
+                  "gameId",
+                  "gameConfig",
+                  "format",
+                  "teamSize",
+                  "maxEntries",
+                  "entries",
+                  "startsAt",
+                  "owner"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "official",
+                      "community"
+                    ]
+                  },
+                  "access": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "invite",
+                      "in_person"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "open",
+                      "check_in",
+                      "running",
+                      "finished",
+                      "cancelled"
+                    ]
+                  },
+                  "gameId": {
+                    "type": "string"
+                  },
+                  "gameConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "single_elimination",
+                      "double_elimination",
+                      "round_robin",
+                      "groups_knockout"
+                    ]
+                  },
+                  "teamSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4
+                  },
+                  "maxEntries": {
+                    "type": "integer"
+                  },
+                  "entries": {
+                    "type": "integer",
+                    "description": "Entries registered so far (withdrawn ones not counted)"
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "owner": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Null once the owner's account is gone",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "round": {
+                "type": "string",
+                "description": "Where it sits, e.g. Quarter-final"
+              },
+              "opponent": {
+                "type": "string"
+              },
+              "firstTo": {
+                "type": "integer"
+              },
+              "sessionId": {
+                "type": "string"
+              }
+            }
+          },
+          "playing": {
+            "type": "array",
+            "description": "Soonest first; organizer-started ones last",
+            "items": {
+              "type": "object",
+              "required": [
+                "tournament",
+                "entryName",
+                "playerName",
+                "waitingFor",
+                "opponent"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "tournament": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "entries",
+                    "startsAt",
+                    "owner"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "entryName": {
+                  "type": "string",
+                  "description": "The team, or you"
+                },
+                "playerName": {
+                  "type": "string",
+                  "description": "The name your spot plays under"
+                },
+                "waitingFor": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Teammates who have not confirmed yet"
+                },
+                "opponent": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Your next match's opponent once known"
+                }
+              }
+            }
+          },
+          "organizing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tournament",
+                "role",
+                "claimed",
+                "createdAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "tournament": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "entries",
+                    "startsAt",
+                    "owner"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "owner",
+                    "organizer"
+                  ]
+                },
+                "claimed": {
+                  "type": "integer",
+                  "nullable": true,
+                  "description": "In person: spots claimed by an account; null otherwise"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "past": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tournament",
+                "entryName",
+                "playerName",
+                "place",
+                "won",
+                "lost",
+                "average",
+                "endedAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "tournament": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "entries",
+                    "startsAt",
+                    "owner"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "entryName": {
+                  "type": "string"
+                },
+                "playerName": {
+                  "type": "string"
+                },
+                "place": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "won": {
+                  "type": "integer"
+                },
+                "lost": {
+                  "type": "integer"
+                },
+                "average": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "Your X01 3-dart average in its matches"
+                },
+                "endedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "pastTotal": {
+            "type": "integer"
+          },
+          "season": {
+            "type": "object",
+            "required": [
+              "label",
+              "played",
+              "titles",
+              "won",
+              "lost",
+              "average",
+              "best"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "The calendar quarter, e.g. Q4 2026"
+              },
+              "played": {
+                "type": "integer"
+              },
+              "titles": {
+                "type": "integer"
+              },
+              "won": {
+                "type": "integer"
+              },
+              "lost": {
+                "type": "integer"
+              },
+              "average": {
+                "type": "number",
+                "nullable": true
+              },
+              "best": {
+                "type": "object",
+                "nullable": true,
+                "required": [
+                  "place",
+                  "tournament"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "place": {
+                    "type": "integer"
+                  },
+                  "tournament": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         }
       },

@@ -200,11 +200,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       await db.insertInto('tournament_organizers').values({ tournament_id: t.id, user_id: 'cohost' }).execute()
       expect((await get('player', `/api/tournaments/${t.id}`)).statusCode).toBe(404)
       expect((await send('player', 'PATCH', `/api/tournaments/${t.id}`, { description: 'x' })).statusCode).toBe(404)
-      expect((await get('player', '/api/tournaments/mine')).json()).toEqual({ tournaments: [] })
+      expect((await get('player', '/api/tournaments/mine')).json().organizing).toEqual([])
       expect((await get('player')).json().tournaments.map((x: { id: string }) => x.id)).not.toContain(t.id)
       expect((await get('cohost', `/api/tournaments/${t.id}`)).json()).toMatchObject({ role: 'organizer' })
-      expect((await get('cohost', '/api/tournaments/mine')).json().tournaments).toMatchObject([{ id: t.id, role: 'organizer' }])
-      expect((await get('admin', '/api/tournaments/mine')).json().tournaments).toMatchObject([{ id: t.id, role: 'owner' }])
+      expect((await get('cohost', '/api/tournaments/mine')).json().organizing).toMatchObject([
+        { tournament: { id: t.id }, role: 'organizer' },
+      ])
+      expect((await get('admin', '/api/tournaments/mine')).json().organizing).toMatchObject([{ tournament: { id: t.id }, role: 'owner' }])
     })
 
     it("shows a friends-only tournament to the owner's friends only", async () => {
