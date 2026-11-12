@@ -20,3 +20,7 @@ export function isValidName(name: string): boolean {
   const length = Array.from(name).length
   return length >= NAME_MIN && length <= NAME_MAX && NAME_ALLOWED.test(name)
 }
+
+/** Characters no text shown to other players may hold (names, course and tournament texts). */
+// oxlint-disable-next-line no-control-regex -- the point is to refuse them
+export const CONTROL_CHARS = /[\u0000-\u001f\u007f]/
