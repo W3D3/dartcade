@@ -375,27 +375,42 @@
     }
 
     const sphere = new THREE.SphereGeometry(BALL_R, 24, 16)
-    const ballMesh = new THREE.Mesh(sphere, toon(ballColor))
-    ballMesh.castShadow = true
-    scene.add(ballMesh)
-    const otherMeshes: THREE.Mesh<THREE.SphereGeometry, THREE.MeshToonMaterial>[] = []
-    function placeBalls(): void {
-      ballMesh.material.color.set(ballColor)
+    type Ball = { mesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshToonMaterial> }
+    const newBall = (color: string): Ball => {
+      const b = { mesh: new THREE.Mesh(sphere, toon(color)) }
+      b.mesh.castShadow = true
+      scene.add(b.mesh)
+      return b
+    }
+    const own = newBall(ballColor)
+    const otherBalls: Ball[] = []
+    const scratch = new THREE.Color()
+    /** Puts a ball at `at` in `color`; true when that moved, recoloured or showed it. */
+    function putBall(b: Ball, at: PathPt, color: string): boolean {
+      const [x, y, z] = [at[0], drawnY(at), at[1]]
+      const p = b.mesh.position
+      const changed = p.x !== x || p.y !== y || p.z !== z || !b.mesh.material.color.equals(scratch.set(color)) || !b.mesh.visible
+      p.set(x, y, z)
+      b.mesh.material.color.set(color)
+      b.mesh.visible = true
+      return changed
+    }
+    /** Places the balls; true when any of them changed. */
+    function placeBalls(): boolean {
       // While aiming the ball sits on top of its dial, as in 2D; rolling, walls hide it as they should
-      ballMesh.renderOrder = aim ? GUIDES + 1 : 0
-      ballMesh.material.depthTest = !aim
-      ballMesh.position.set(ball[0], drawnY(ball), ball[1])
+      own.mesh.renderOrder = aim ? GUIDES + 1 : 0
+      own.mesh.material.depthTest = !aim
+      let changed = putBall(own, ball, ballColor)
       others.forEach((o, i) => {
-        if (!otherMeshes[i]) {
-          otherMeshes[i] = new THREE.Mesh(sphere, toon(o.color))
-          otherMeshes[i].castShadow = true
-          scene.add(otherMeshes[i])
-        }
-        otherMeshes[i].material.color.set(o.color)
+        otherBalls[i] ??= newBall(o.color)
         // A ball below the rim is drawn down in the cup: its height says so
-        otherMeshes[i].position.set(o.at[0], drawnY(o.at), o.at[1])
+        changed = putBall(otherBalls[i], o.at, o.color) || changed
       })
-      otherMeshes.forEach((m, i) => (m.visible = i < others.length))
+      for (const b of otherBalls.slice(others.length)) {
+        changed ||= b.mesh.visible
+        b.mesh.visible = false
+      }
+      return changed
     }
 
     let course = new THREE.Group()
@@ -426,7 +441,10 @@
       Object.assign(sun.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 10, far: reach * 4 })
       sun.shadow.camera.updateProjectionMatrix()
       placed = null
+      dirty = true
     }
+    /** Something changed that the camera's pose doesn't show: the frame must be drawn. */
+    let dirty = true
     /** What the overlays were last laid out for: they're redone when it changes. */
     let placed: { aim: typeof aim; aims: typeof aims } | null = null
     // The chase camera's path, as drawn (with the relief), worked out once a roll
@@ -440,6 +458,7 @@
       renderer.setSize(w, h, false)
       camera.aspect = size.w / size.h
       framed = ''
+      dirty = true
     }
     const observer = new ResizeObserver(resize)
     observer.observe(host)
@@ -448,6 +467,9 @@
     // The camera glides between where it should be, rather than jumping
     const eye = new THREE.Vector3()
     const look = new THREE.Vector3()
+    // Where the camera was for the last frame drawn
+    const drawnEye = new THREE.Vector3()
+    const drawnLook = new THREE.Vector3()
     let first = true
     let chaseCam: ChaseCam | null = null
     let orbitAngle: number | null = null
@@ -481,8 +503,9 @@
         placeAim()
         placeDots()
         placed = { aim, aims }
+        dirty = true
       }
-      placeBalls()
+      if (placeBalls()) dirty = true
       // The hole is framed where the panels leave the canvas free: the camera's centre goes there
       const view = framing(size.w, size.h, insets)
       const key = `${size.w}:${size.h}:${view.offsetX}:${view.offsetY}`
@@ -490,6 +513,7 @@
         camera.setViewOffset(size.w, size.h, view.offsetX, view.offsetY, size.w, size.h)
         camera.updateProjectionMatrix()
         framed = key
+        dirty = true
       }
 
       if (freeCamera) {
@@ -553,6 +577,12 @@
         camera.lookAt(look)
       }
       first = false
+      // Nothing moved (aiming, waiting for the next dart): the last frame still stands, and the GPU rests
+      const still = !dirty && !freeCamera && eye.distanceToSquared(drawnEye) < 0.01 && look.distanceToSquared(drawnLook) < 0.01
+      if (still) return
+      dirty = false
+      drawnEye.copy(eye)
+      drawnLook.copy(look)
       timer?.begin()
       renderer.render(scene, camera)
       timer?.end()
@@ -570,7 +600,7 @@
       dialMat.map?.dispose()
       dialMat.dispose()
       ringMat.dispose()
-      for (const o of [ballMesh, bright, faint, ...otherMeshes]) dispose(o)
+      for (const o of [own.mesh, bright, faint, ...otherBalls.map(b => b.mesh)]) dispose(o)
       renderer.dispose()
     }
   })
