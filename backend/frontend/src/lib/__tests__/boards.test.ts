@@ -7,6 +7,7 @@ const board = (over: Partial<Board> = {}): Board => ({
   name: 'Living room',
   hardwareId: null,
   online: true,
+  bmReachable: null,
   bridgeVersion: '0.4.2',
   bmVersion: null,
   createdAt: '2026-08-12T10:00:00.000Z',

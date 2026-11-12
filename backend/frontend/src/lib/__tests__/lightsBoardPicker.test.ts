@@ -8,6 +8,7 @@ const board = (id: string, online = true): Board => ({
   name: `Board ${id}`,
   hardwareId: null,
   online,
+  bmReachable: null,
   bridgeVersion: null,
   bmVersion: null,
   createdAt: '2026-01-01T00:00:00Z',

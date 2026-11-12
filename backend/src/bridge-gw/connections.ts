@@ -16,6 +16,8 @@ export type BridgeConn = {
   bmUrl: string | null
   /** From bridge.hello: it can update itself (bridge.update). */
   bridgeUpdatable: boolean
+  /** Its socket to the Board Manager is up (bridge.hello, then each bm.link); null: the bridge doesn't say (0.13 and older). */
+  bmUp?: boolean | null
   helloReceived: boolean
   connectedAt: Date
 }

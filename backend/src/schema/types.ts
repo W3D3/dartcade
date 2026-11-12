@@ -130,6 +130,10 @@ export interface BridgeHelloData {
    * The bridge can update itself on a bridge.update: it runs as an installed service from the copy its install keeps. Absent (older bridges): false.
    */
   updatable?: boolean;
+  /**
+   * The bridge's events socket to its Board Manager is up as it connects; bm.link events report each change after that. Absent (older bridges): unknown until their next bm.link.
+   */
+  bm_up?: boolean;
 }
 /**
  * Board Manager WebSocket connection went up or down.

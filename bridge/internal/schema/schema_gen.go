@@ -559,6 +559,11 @@ type BridgeHelloData struct {
 	// Arch corresponds to the JSON schema field "arch".
 	Arch string `json:"arch" yaml:"arch" mapstructure:"arch"`
 
+	// The bridge's events socket to its Board Manager is up as it connects; bm.link
+	// events report each change after that. Absent (older bridges): unknown until
+	// their next bm.link.
+	BmUp *bool `json:"bm_up,omitempty,omitzero" yaml:"bm_up,omitempty" mapstructure:"bm_up,omitempty"`
+
 	// BmUrl corresponds to the JSON schema field "bm_url".
 	BmUrl string `json:"bm_url" yaml:"bm_url" mapstructure:"bm_url"`
 

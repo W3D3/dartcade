@@ -5678,6 +5678,7 @@ components:
           name,
           hardwareId,
           online,
+          bmReachable,
           bridgeVersion,
           bmVersion,
           createdAt,
@@ -5695,6 +5696,10 @@ components:
         name: { type: string }
         hardwareId: { type: string, nullable: true }
         online: { type: boolean }
+        bmReachable:
+          type: boolean
+          nullable: true
+          description: "Whether the online bridge reaches its Board Manager; null when offline or the bridge doesn't say (0.13 and older)"
         bridgeVersion: { type: string, nullable: true, description: 'Bridge build, e.g. v0.4.2 or dev+b503493-dirty' }
         bmVersion: { type: string, nullable: true, description: Board Manager version }
         createdAt: { type: string, format: date-time, description: When the board was paired }

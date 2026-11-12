@@ -6800,6 +6800,7 @@
                           "name",
                           "hardwareId",
                           "online",
+                          "bmReachable",
                           "bridgeVersion",
                           "bmVersion",
                           "createdAt",
@@ -6825,6 +6826,11 @@
                           },
                           "online": {
                             "type": "boolean"
+                          },
+                          "bmReachable": {
+                            "type": "boolean",
+                            "nullable": true,
+                            "description": "Whether the online bridge reaches its Board Manager; null when offline or the bridge doesn't say (0.13 and older)"
                           },
                           "bridgeVersion": {
                             "type": "string",
@@ -81394,6 +81400,7 @@
           "name",
           "hardwareId",
           "online",
+          "bmReachable",
           "bridgeVersion",
           "bmVersion",
           "createdAt",
@@ -81419,6 +81426,11 @@
           },
           "online": {
             "type": "boolean"
+          },
+          "bmReachable": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the online bridge reaches its Board Manager; null when offline or the bridge doesn't say (0.13 and older)"
           },
           "bridgeVersion": {
             "type": "string",
@@ -82152,6 +82164,7 @@
                 "name",
                 "hardwareId",
                 "online",
+                "bmReachable",
                 "bridgeVersion",
                 "bmVersion",
                 "createdAt",
@@ -82177,6 +82190,11 @@
                 },
                 "online": {
                   "type": "boolean"
+                },
+                "bmReachable": {
+                  "type": "boolean",
+                  "nullable": true,
+                  "description": "Whether the online bridge reaches its Board Manager; null when offline or the bridge doesn't say (0.13 and older)"
                 },
                 "bridgeVersion": {
                   "type": "string",
