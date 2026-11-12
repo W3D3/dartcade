@@ -23,6 +23,7 @@ import type {
   AchievementUnlockedMessage,
   LobbyIdleClosedMessage,
   TeamInvite,
+  TournamentTeamRequest,
   TeamInviteMessage,
   TournamentCheckInMessage,
   TournamentDroppedMessage,
@@ -100,6 +101,7 @@ export function createLobbyStore(lobbyId: string, open?: OpenSocket) {
 export type MeState = {
   invites: PendingInvite[]
   teamInvites: TeamInvite[]
+  tournamentRequests: TournamentTeamRequest[]
   lobby: LobbySummary | null
   game: ActiveGame | null
   friends: FriendList | null
@@ -107,7 +109,7 @@ export type MeState = {
   matchmaking: Matchmaking | null
 }
 
-const EMPTY: MeState = { invites: [], teamInvites: [], lobby: null, game: null, friends: null, matchmaking: null }
+const EMPTY: MeState = { invites: [], teamInvites: [], tournamentRequests: [], lobby: null, game: null, friends: null, matchmaking: null }
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open?: OpenSocket) {
@@ -141,7 +143,7 @@ export function createMeStore(open?: OpenSocket) {
     tournament: { subscribe: tournament.subscribe } satisfies Readable<
       TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage | null
     >,
-    /** Someone last made you a tournament organizer (tournament.request), as it arrives. */
+    /** Someone last made you a tournament organizer, or a captain picked or reminded you to play (tournament.request), as it arrives. */
     tournamentRequest: { subscribe: tournamentRequest.subscribe } satisfies Readable<TournamentRequestMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
@@ -153,7 +155,14 @@ export function createMeStore(open?: OpenSocket) {
           onMessage: data => {
             const msg = parseMeMessage(data)
             if (msg?.type === 'me') {
-              state.update(s => ({ ...(s ?? EMPTY), invites: msg.invites, teamInvites: msg.teamInvites, lobby: msg.lobby, game: msg.game }))
+              state.update(s => ({
+                ...(s ?? EMPTY),
+                invites: msg.invites,
+                teamInvites: msg.teamInvites,
+                tournamentRequests: msg.tournamentRequests,
+                lobby: msg.lobby,
+                game: msg.game,
+              }))
             } else if (msg?.type === 'friends') {
               const { type: _type, ...list } = msg
               state.update(s => ({ ...(s ?? EMPTY), friends: list }))

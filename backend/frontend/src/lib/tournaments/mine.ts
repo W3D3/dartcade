@@ -1,7 +1,7 @@
 // The My tournaments tab (Tournaments-Mine, Tournaments-Mine-Phone): its filters, the words on each
 // row, the tab's badge and Browse's "Up next for you".
 import { api, type MyTournaments, type MyTournamentRef } from '$lib/api'
-import { joinNames } from '$lib/fmt'
+import { teamStatus } from './roster'
 
 type Playing = MyTournaments['playing'][number]
 type Organizing = MyTournaments['organizing'][number]
@@ -55,9 +55,11 @@ export function filterMine(m: MyTournaments, f: MineFilter) {
 export type Tone = 'plain' | 'good' | 'warn'
 
 /** The line under an upcoming row: what is open for you (Upcoming, Up next for you). */
-export function statusLine(p: Playing): { text: string; tone: Tone } {
+/** `myId`: the caller, who may be the one still to confirm. */
+export function statusLine(p: Playing, myId: string): { text: string; tone: Tone } {
   const t = p.tournament
-  if (p.waitingFor.length > 0) return { text: `Waiting for ${joinNames(p.waitingFor)} to confirm`, tone: 'warn' }
+  const team = p.team && teamStatus(p.team, myId)
+  if (team) return { text: team.long, tone: 'warn' }
   if (t.status === 'check_in') return { text: 'Check-in is open', tone: 'good' }
   if (t.access === 'in_person') return { text: `Claimed spot · played on ${t.owner?.name ?? 'the organizer'}'s devices`, tone: 'plain' }
   return { text: t.status === 'running' ? 'In progress' : 'Registered', tone: 'good' }

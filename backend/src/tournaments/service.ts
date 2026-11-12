@@ -28,12 +28,14 @@ import {
   writeDraw,
   type RunEntry,
 } from '../db/tournamentRun.js'
+import { releaseUnconfirmed } from '../db/tournamentRoster.js'
 import { games } from '../games/index.js'
 import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { seedEntries, type Seeding } from '../shared/tournaments/bracket.js'
 import { drawFor, finalPlaces, isComplete, samePlace } from '../shared/tournaments/run.js'
 import { before, bracketOf, placeOf, seededOf, setupOf } from './bracketRows.js'
+import { registrationOpen } from '../shared/tournaments/registration.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 
 /** How often due check-ins and starts are opened and running brackets move on. */
@@ -134,13 +136,11 @@ export class TournamentService implements GameEndedConsumer {
   }
 
   /**
-   * A player withdrew from a running tournament (Q12): their game, if one is on, is aborted, and
-   * every match they had left goes to the other side.
+   * An entry withdrew from a running tournament (Q12; a player, or a team's captain): its game, if
+   * one is on, is aborted, and every match it had left goes to the other side.
    */
-  async withdrawn(tournamentId: string, userId: string): Promise<void> {
-    const entries = await listEntries(this.deps.db, tournamentId)
-    const mine = entries.find(e => e.players.some(p => p.userId === userId))
-    const live = mine && (await listMatches(this.deps.db, tournamentId)).find(r => r.status === 'live' && involves(r, mine.id))
+  async withdrawn(tournamentId: string, entryId: string): Promise<void> {
+    const live = (await listMatches(this.deps.db, tournamentId)).find(r => r.status === 'live' && involves(r, entryId))
     const game = live && (await latestGame(this.deps.db, live.id))
     // Outside the lane: the abort's end hook queues the step that hands the match over
     if (game?.status === 'active') await this.deps.engine.deleteSession(game.id)
@@ -153,6 +153,9 @@ export class TournamentService implements GameEndedConsumer {
     const t = await getTournamentRow(this.deps.db, tournamentId)
     if (!t?.starts_at || t.access === 'in_person' || (t.status !== 'open' && t.status !== 'check_in')) return
     const now = this.now()
+    // Registration closed: a team still waiting for a player's confirmation loses its held spot
+    if (!registrationOpen({ status: t.status, startsAt: t.starts_at.toISOString(), settings: t.settings }, new Date(now)))
+      await releaseUnconfirmed(this.deps.db, t.id)
     const startAt = t.starts_at.getTime()
     if (now >= startAt) return this.begin(t)
     const checkIn = t.settings.checkInMinutes

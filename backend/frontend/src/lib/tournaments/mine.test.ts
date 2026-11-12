@@ -22,7 +22,7 @@ const playing = (id: string, over: Partial<MyTournamentRef> = {}, extra: object 
   tournament: ref(id, over),
   entryName: 'Me',
   playerName: 'Me',
-  waitingFor: [],
+  team: null,
   opponent: null,
   ...extra,
 })
@@ -31,7 +31,25 @@ const mine: MyTournaments = {
   liveMatch: { tournament: ref('live', { status: 'running' }), round: 'Final', opponent: 'Max', firstTo: 3, sessionId: 's' },
   playing: [
     playing('live', { status: 'running' }),
-    playing('cup', { teamSize: 2 }, { entryName: 'Double Agents', waitingFor: ['Lena', 'Tom'] }),
+    playing(
+      'cup',
+      { teamSize: 2 },
+      {
+        entryName: 'Double Agents',
+        team: {
+          entryId: 'e',
+          status: 'pending',
+          team: null,
+          captainId: 'me',
+          confirmBy: null,
+          slots: [
+            { position: 0, user: { id: 'me', name: 'Christoph' }, confirmed: true },
+            { position: 1, user: { id: 'lena', name: 'Lena' }, confirmed: false },
+            { position: 2, user: { id: 'tom', name: 'Tom' }, confirmed: false },
+          ],
+        },
+      },
+    ),
     playing('club', { access: 'in_person' }, { playerName: 'Chris' }),
   ],
   organizing: [
@@ -85,11 +103,12 @@ describe('the tab list', () => {
 describe('row text', () => {
   it('says what is open for you', () => {
     const [, cup, club] = mine.playing
-    expect(statusLine(cup)).toEqual({ text: 'Waiting for Lena and Tom to confirm', tone: 'warn' })
-    expect(statusLine(club)).toEqual({ text: "Claimed spot · played on Max's devices", tone: 'plain' })
-    expect(statusLine(playing('a', { status: 'check_in' }))).toEqual({ text: 'Check-in is open', tone: 'good' })
-    expect(statusLine(playing('a', { status: 'running' })).text).toBe('In progress')
-    expect(statusLine(playing('a')).text).toBe('Registered')
+    expect(statusLine(cup, 'me')).toEqual({ text: 'Waiting for Lena and Tom to confirm', tone: 'warn' })
+    expect(statusLine(cup, 'lena')).toEqual({ text: 'Confirm your place', tone: 'warn' })
+    expect(statusLine(club, 'me')).toEqual({ text: "Claimed spot · played on Max's devices", tone: 'plain' })
+    expect(statusLine(playing('a', { status: 'check_in' }), 'me')).toEqual({ text: 'Check-in is open', tone: 'good' })
+    expect(statusLine(playing('a', { status: 'running' }), 'me').text).toBe('In progress')
+    expect(statusLine(playing('a'), 'me').text).toBe('Registered')
   })
 
   it('names who you play as', () => {

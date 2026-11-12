@@ -20,8 +20,9 @@ export interface RegistrationTournament {
 }
 
 /**
- * `registered`: the caller has a spot. `in_person`: the organizers add everyone. `closed`: not
- * open, or past the registration close. `team`: a team registers through its captain.
+ * `registered`: the caller has a spot (registering a team: the team has one). `in_person`: the
+ * organizers add everyone. `closed`: not open, or past the registration close. `team`: a team
+ * registers through its captain.
  * `full`: every spot taken. `not_eligible`: outside the average limit (`viewerEligibility`). `board_needed`: online play needs a paired board unless the organizer
  * allows manual scoring. `open`: Register.
  */
@@ -33,16 +34,26 @@ export function registrationClosesAt(t: Pick<RegistrationTournament, 'startsAt' 
   return new Date(Date.parse(t.startsAt) - (t.settings.registrationClosesMinutes ?? 0) * 60_000).toISOString()
 }
 
+/** Registration is open: published, not started, and before its close. Picked players confirm, and captains change them, only then. */
+export function registrationOpen(t: Pick<RegistrationTournament, 'status' | 'startsAt' | 'settings'>, now: Date): boolean {
+  const closes = registrationClosesAt(t)
+  return t.status === 'open' && (closes === null || Date.parse(closes) > now.getTime())
+}
+
+/**
+ * `me` registers alone, or with `team` a captain registers their team: then `registered` says the
+ * team has a spot, `hasBoard` that every picked player has a board and `eligible` that the picks fit
+ * the average limit.
+ */
 export function registrationState(
   t: RegistrationTournament,
-  me: { readonly registered: boolean; readonly hasBoard: boolean; readonly eligible: boolean },
+  me: { readonly registered: boolean; readonly hasBoard: boolean; readonly eligible: boolean; readonly team?: boolean },
   now: Date,
 ): RegistrationState {
   if (me.registered) return 'registered'
   if (t.access === 'in_person') return 'in_person'
-  const closes = registrationClosesAt(t)
-  if (t.status !== 'open' || (closes !== null && Date.parse(closes) <= now.getTime())) return 'closed'
-  if (t.teamSize > 1) return 'team'
+  if (!registrationOpen(t, now)) return 'closed'
+  if (t.teamSize > 1 && me.team !== true) return 'team'
   if (t.entries >= t.maxEntries) return 'full'
   if (!me.eligible) return 'not_eligible'
   if (!t.settings.manualScoring && !me.hasBoard) return 'board_needed'

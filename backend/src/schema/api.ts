@@ -2659,6 +2659,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/team-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Your teams for Register a team (tournaments.enabled)
+         * @description Every team the caller is in, with each member's 30-day form, paired board and whether they already hold a spot in this tournament: what the Register a team dialog picks from. Only a team's captain registers it.
+         */
+        get: operations["getTournamentTeamOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a team (tournaments.enabled)
+         * @description The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.
+         */
+        post: operations["registerTeamForTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/roster/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * I'm in, or Can't make it (tournaments.enabled)
+         * @description A picked player answers their captain while registration is open. I'm in confirms; once every place is confirmed the team is registered. Can't make it frees the player's place (not the team's spot: the captain picks someone else), also after they confirmed. 409 when the caller holds no place in a team, or registration has closed.
+         */
+        post: operations["answerTournamentRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/roster/{position}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                position: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change player (tournaments.enabled)
+         * @description The captain puts another team member in a place that is empty (its player declined) or still waits for its player; the new player gets a request to confirm. The picks are checked again like a registration. 409 with the reason: `registration closed`, `confirmed` (that player already confirmed), `not eligible`, `paired board needed`, `not a member` or `already in this tournament`; 404 when the caller registered no team here.
+         */
+        put: operations["changeTournamentPlayer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/roster/remind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remind the players still to confirm (tournaments.enabled)
+         * @description The captain sends the picked players who have not confirmed their request again (a tournament.request on /ws/me), at most once every 15 minutes: 429 with `reminded recently` before that. 409 when nobody is waiting or registration has closed; 404 when the caller registered no team here.
+         */
+        post: operations["remindTournamentPlayers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/achievements": {
         parameters: {
             query?: never;
@@ -5454,8 +5565,7 @@ export interface components {
                 entryName: string;
                 /** @description The name your spot plays under */
                 playerName: string;
-                /** @description Teammates who have not confirmed yet */
-                waitingFor: string[];
+                team: components["schemas"]["TournamentTeamEntry"];
                 /** @description Your next match's opponent once known */
                 opponent: string | null;
             }[];
@@ -5494,9 +5604,61 @@ export interface components {
                 } | null;
             };
         };
+        /** @description The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile. */
+        TournamentTeamEntry: {
+            entryId: string;
+            /** @enum {string} */
+            status: "pending" | "registered" | "checked_in";
+            /** @description Null once the team was deleted */
+            team: {
+                id: string;
+                name: string;
+                tag: string;
+                color: string;
+            } | null;
+            /** @description Who registered it; null once their account is gone */
+            captainId: string | null;
+            /**
+             * Format: date-time
+             * @description When registration closes; null while an organizer starts it
+             */
+            confirmBy: string | null;
+            /** @description One per place, in throwing order */
+            slots: {
+                position: number;
+                /** @description Null when the player declined and nobody took the place yet */
+                user: {
+                    id: string;
+                    name: string;
+                } | null;
+                confirmed: boolean;
+            }[];
+        } | null;
+        TournamentTeamOptions: {
+            /** @description The teams the caller is in, the ones they captain first */
+            teams: {
+                id: string;
+                name: string;
+                tag: string;
+                color: string;
+                captainId: string;
+                /** @description The team holds a spot in this tournament */
+                entered: boolean;
+                /** @description The captain first, then by when they joined */
+                members: {
+                    user: components["schemas"]["UserRef"];
+                    form: components["schemas"]["TournamentForm"];
+                    /** @description Their first paired board's name */
+                    board: string | null;
+                    /** @description They hold a spot in this tournament already */
+                    taken: boolean;
+                }[];
+            }[];
+        };
         TournamentSummary: {
             id: string;
             name: string;
+            team: components["schemas"]["TournamentTeamEntry"];
             gameConfig: {
                 [key: string]: unknown;
             };
@@ -5727,6 +5889,7 @@ export interface components {
             role: "owner" | "organizer" | null;
             /** @description The caller holds a spot and checked in */
             checkedIn: boolean;
+            team: components["schemas"]["TournamentTeamEntry"];
             /** @description Someone registered: only startsAt (with its settings) and description can change */
             locked: boolean;
             /** Format: date-time */
@@ -10980,6 +11143,156 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Tournament"];
                 };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournamentTeamOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentTeamOptions"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    registerTeamForTournament: {
+        parameters: {
+            query?: {
+                /** @description An invite link's tournament needs its code */
+                code?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    teamId: string;
+                    /** @description The user ids who play, in throwing order */
+                    players: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    answerTournamentRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    accept: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Answered */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    changeTournamentPlayer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                position: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    remindTournamentPlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reminded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];

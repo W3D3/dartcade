@@ -5,6 +5,7 @@ import { openTestSchema } from '../db/testSchema.js'
 import { insertGameSession } from '../db/queries.js'
 import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
 import { myTournaments } from './mine.js'
+import { waitingFor } from '../shared/tournaments/roster.js'
 
 const NOW = new Date('2026-11-12T12:00:00Z')
 
@@ -39,7 +40,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('tournaments_mine_test'))
-    await insertUsers(db, ['me', 'max', 'boss', 'co'])
+    await insertUsers(db, ['me', 'max', 'boss', 'co', 'lena'])
   })
   afterAll(async () => close())
 
@@ -62,9 +63,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
       starts_at: new Date('2026-11-15T20:00:00Z'),
     })
     await spot('sat', 'e-sat', { name: 'Double Agents', status: 'pending' })
+    // `me` captains it and has confirmed; Lena has not
+    await db.updateTable('tournament_entries').set({ registered_by_user_id: 'me' }).where('id', '=', 'e-sat').execute()
+    await db.updateTable('tournament_players').set({ confirmed_at: NOW }).where('id', '=', 'p-e-sat').execute()
     await db
       .insertInto('tournament_players')
-      .values({ id: 'p-lena', tournament_id: 'sat', entry_id: 'e-sat', user_id: null, name: 'Lena', position: 1 })
+      .values({ id: 'p-lena', tournament_id: 'sat', entry_id: 'e-sat', user_id: 'lena', name: 'Lena', position: 1 })
       .execute()
     await insertTournament(db, {
       id: 'live',
@@ -114,8 +118,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
     await spot('off', 'e-off')
 
     const r = await myTournaments(db, 'me', NOW)
-    expect(r.playing.map(p => [p.tournament.id, p.entryName, p.waitingFor, p.opponent])).toEqual([
-      ['live', 'Me', [], 'Max'],
+    expect(
+      r.playing.map(p => [p.tournament.id, p.entryName, p.team && waitingFor(p.team.slots).map(s => s.user?.name), p.opponent]),
+    ).toEqual([
+      ['live', 'Me', null, 'Max'],
       ['sat', 'Double Agents', ['Lena'], null],
     ])
     expect(r.liveMatch).toMatchObject({

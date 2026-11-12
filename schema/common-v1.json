@@ -180,6 +180,37 @@
         "expiresAt": { "type": "string", "format": "date-time" }
       }
     },
+    "TournamentTeamRequest": {
+      "title": "TournamentTeamRequest",
+      "description": "A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.",
+      "type": "object",
+      "required": ["tournamentId", "tournamentName", "team", "from", "confirmBy"],
+      "additionalProperties": false,
+      "properties": {
+        "tournamentId": { "type": "string" },
+        "tournamentName": { "type": "string" },
+        "team": {
+          "type": "object",
+          "required": ["id", "name", "tag", "color"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "tag": { "type": "string" },
+            "color": { "type": "string" }
+          }
+        },
+        "from": {
+          "anyOf": [{ "$ref": "#/$defs/UserRef" }, { "type": "null" }],
+          "description": "The captain who registered the team; null once their account is gone."
+        },
+        "confirmBy": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When registration closes; null while an organizer starts the tournament."
+        }
+      }
+    },
     "UserRef": {
       "title": "UserRef",
       "type": "object",

@@ -21,7 +21,7 @@ const playing = (id: string, name: string, over: object, extra: object = {}) => 
   tournament: { ...ref, id, name, ...over },
   entryName: 'Christoph',
   playerName: 'Christoph',
-  waitingFor: [],
+  team: null,
   opponent: null,
   ...extra,
 })
@@ -41,7 +41,20 @@ const mine = {
       'doubles',
       'November Doubles Cup',
       { kind: 'official', teamSize: 2, format: 'double_elimination', maxEntries: 32, startsAt: '2026-11-15T20:00:00Z', owner: null },
-      { entryName: 'Double Agents', waitingFor: ['Lena'] },
+      {
+        entryName: 'Double Agents',
+        team: {
+          entryId: 'e',
+          status: 'pending',
+          team: null,
+          captainId: 'me',
+          confirmBy: null,
+          slots: [
+            { position: 0, user: { id: 'me', name: 'Christoph' }, confirmed: true },
+            { position: 1, user: { id: 'lena', name: 'Lena' }, confirmed: false },
+          ],
+        },
+      },
     ),
     playing(
       'league',

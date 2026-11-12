@@ -24,6 +24,7 @@
   } from '$lib/tournaments/mine'
   import { placeLabel } from '$shared/tournaments/mine'
   import { ordinal, plural } from '$lib/fmt'
+  import { currentUser } from '$lib/auth'
   import TournamentDetailHost from './TournamentDetailHost.svelte'
 
   let { mine, onchange, aside }: { mine: MyTournaments; onchange: () => void; aside?: Snippet } = $props()
@@ -94,7 +95,7 @@
           {#each shown.upcoming as p (p.tournament.id)}
             {@const t = p.tournament}
             {@const when = whenParts(t.startsAt)}
-            {@const status = statusLine(p)}
+            {@const status = statusLine(p, $currentUser?.id ?? '')}
             <button
               type="button"
               onclick={() => (open = t.id)}

@@ -57,6 +57,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
     app.register(tournamentsApiPlugin, {
       db,
       hub: { sendTournamentRequest: () => {} },
+      lobbies: { pushMe: () => Promise.resolve() },
       tournaments: { organizerStart: () => Promise.resolve('started' as const), withdrawn: () => Promise.resolve() },
     })
     return app.inject({ method, url, payload, headers: { 'x-user': user } })

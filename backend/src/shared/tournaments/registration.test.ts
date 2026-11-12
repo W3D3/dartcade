@@ -59,3 +59,22 @@ it('registrationClosesAt subtracts the close from the start', () => {
   expect(registrationClosesAt(open)).toBe('2026-11-16T17:00:00.000Z')
   expect(registrationClosesAt({ startsAt: null, settings: open.settings })).toBeNull()
 })
+
+describe('registrationState for a team', () => {
+  const teams = { ...open, teamSize: 2 }
+
+  it('sends a player to their captain, and lets the captain register the team', () => {
+    expect(registrationState(teams, me, now)).toBe('team')
+    expect(registrationState(teams, { ...me, team: true }, now)).toBe('open')
+  })
+
+  it('counts pending teams against the spots', () => {
+    expect(registrationState({ ...teams, entries: 8 }, { ...me, team: true }, now)).toBe('full')
+  })
+
+  it('refuses picks outside the limit or without boards, and a team already in', () => {
+    expect(registrationState(teams, { ...me, team: true, eligible: false }, now)).toBe('not_eligible')
+    expect(registrationState(teams, { ...me, team: true, hasBoard: false }, now)).toBe('board_needed')
+    expect(registrationState(teams, { ...me, team: true, registered: true }, now)).toBe('registered')
+  })
+})

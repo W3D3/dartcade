@@ -202,7 +202,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   })
 
   const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
-  const meMsg = { type: 'me' as const, invites: [], teamInvites: [], lobby: null, game: null }
+  const meMsg = { type: 'me' as const, invites: [], teamInvites: [], tournamentRequests: [], lobby: null, game: null }
   const last = (ws: { send: { mock: { calls: unknown[][] } } }) => JSON.parse(String(ws.send.mock.calls.at(-1)?.[0]))
   async function open(userId: string) {
     const ws = sock()

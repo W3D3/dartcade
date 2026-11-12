@@ -421,6 +421,10 @@ export interface MeMessage {
    * Invites to named teams waiting for your answer, newest first.
    */
   teamInvites: TeamInvite[]
+  /**
+   * Tournament teams you were picked to play for, waiting for your answer, soonest deadline first (tournaments.enabled).
+   */
+  tournamentRequests: TournamentTeamRequest[]
   lobby: LobbySummary | null
   game: ActiveGame | null
 }
@@ -462,6 +466,27 @@ export interface UserRef1 {
    */
   name: string
   avatar: Avatar1
+}
+/**
+ * A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.
+ */
+export interface TournamentTeamRequest {
+  tournamentId: string
+  tournamentName: string
+  team: {
+    id: string
+    name: string
+    tag: string
+    color: string
+  }
+  /**
+   * The captain who registered the team; null once their account is gone.
+   */
+  from: UserRef1 | null
+  /**
+   * When registration closes; null while an organizer starts the tournament.
+   */
+  confirmBy: string | null
 }
 /**
  * Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.
@@ -628,7 +653,7 @@ export interface AchievementUnlockedMessage {
   levelAfter: number
 }
 /**
- * Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.
+ * Pushed on /ws/me when someone makes you a tournament organizer (role organizer; the tournament is under Organizing from then on), or a captain picks you, or reminds you, to play for their team (role player, with the team; the request is in me.tournamentRequests until you answer).
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "TournamentRequestMessage".
@@ -637,7 +662,11 @@ export interface TournamentRequestMessage {
   type: 'tournament.request'
   tournamentId: string
   tournamentName: string
-  role: 'organizer'
+  role: 'organizer' | 'player'
+  /**
+   * role player: the team's name.
+   */
+  team?: string
   from: {
     id: string
     name: string

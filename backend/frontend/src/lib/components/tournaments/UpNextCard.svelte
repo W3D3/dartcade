@@ -4,6 +4,7 @@
   import type { MyTournaments } from '$lib/api'
   import { whenParts } from '$lib/tournaments/browse'
   import { hrefs } from '$lib/routes'
+  import { currentUser } from '$lib/auth'
   import { asLine, mineCount, statusLine, upcomingOf } from '$lib/tournaments/mine'
 
   let { mine }: { mine: MyTournaments } = $props()
@@ -35,7 +36,7 @@
       </div>
     {/if}
     {#each rows as p (p.tournament.id)}
-      {@const status = statusLine(p)}
+      {@const status = statusLine(p, $currentUser?.id ?? '')}
       {@const when = whenParts(p.tournament.startsAt)}
       <div class="flex flex-col gap-2 border-t border-surface-paused py-3">
         <span class="flex min-w-0 flex-col">
