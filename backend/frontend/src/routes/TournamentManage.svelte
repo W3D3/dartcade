@@ -14,6 +14,7 @@
   import { hrefs } from '$lib/routes'
   import { loadTournament, type Tournament } from '$lib/tournaments/create'
   import { loadParticipants, organizerLine, type Participants } from '$lib/tournaments/participants'
+  import { isEditable } from '$shared/tournaments/state'
 
   let { params = {} }: { params?: { id?: string } } = $props()
 
@@ -32,7 +33,7 @@
     })
   })
 
-  const editable = $derived(t?.status === 'draft' || t?.status === 'open')
+  const editable = $derived(!!t && isEditable(t.status))
   const when = $derived.by(() => {
     const d = t?.settings.plannedFor ? new Date(t.settings.plannedFor) : null
     return d ? ` · ${weekday(d)} ${dayMonth(d)}` : ''
@@ -75,7 +76,7 @@
           <h1 class="type-page-title wrap-break-word">{t.name}</h1>
           <span class="text-label text-text-muted">{organizerLine(t, participants.entries.length)}</span>
         </div>
-        <Button variant="outline" href={hrefs.tournamentEdit(t.id)}><Pencil size={16} />Edit</Button>
+        {#if editable}<Button variant="outline" href={hrefs.tournamentEdit(t.id)}><Pencil size={16} />Edit</Button>{/if}
       </header>
 
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">

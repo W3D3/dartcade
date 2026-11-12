@@ -106,7 +106,6 @@
       <ParticipantsAdd
         {teams}
         full={list.length >= max}
-        csv={false}
         onaddone={() => (teams ? (editingTeam = { entry: null }) : (naming = { entry: null }))}
         onlines={lines}
       />

@@ -4,7 +4,7 @@
   // Withdraw. A team tournament has Register team, and once your team is in, its players and who
   // confirmed. Organizers of an invite-link tournament also get the link to share, and of one without
   // a start time a Start now.
-  import { CalendarDays, Check, Target, User, UsersRound } from '@lucide/svelte'
+  import { CalendarDays, Check, Pencil, Target, User, UsersRound } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button'
@@ -14,6 +14,7 @@
   import { LOCALE } from '$lib/fmt'
   import { hrefs } from '$lib/routes'
   import { canWithdraw } from '$shared/tournaments/registration'
+  import { isEditable } from '$shared/tournaments/state'
   import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, formatLong, friendsInLine, fullWhen, gameLine, spots } from '$lib/tournaments/browse'
   import { currentUser } from '$lib/auth'
@@ -142,6 +143,9 @@
       <Button variant="outline" class="w-full" href={page}
         >{t.status === 'running' ? 'Live bracket' : t.status === 'finished' ? 'Results' : 'Tournament page'}</Button
       >
+      {#if t.role && isEditable(t.status)}
+        <Button variant="outline" class="w-full" href={hrefs.tournamentEdit(t.id)}><Pencil size={16} />Edit tournament</Button>
+      {/if}
       {#if startable}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onstart}>Start now · open check-in</Button>
       {/if}
