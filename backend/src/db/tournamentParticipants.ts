@@ -5,6 +5,7 @@ import type { Kysely, Transaction, Updateable } from 'kysely'
 import type { Database, TournamentsTable } from './schema.js'
 import type { TeamColor } from '../shared/teams.js'
 import type { EntryInput } from '../shared/tournaments/participants.js'
+import { isEditable } from '../shared/tournaments/state.js'
 
 export interface SpotRow {
   id: string
@@ -77,7 +78,7 @@ export async function setParticipants(
   return db.transaction().execute(async tx => {
     const t = await tx.selectFrom('tournaments').select('status').where('id', '=', tournamentId).forUpdate().executeTakeFirst()
     if (!t) return 'missing'
-    if (t.status !== 'draft' && t.status !== 'open') return 'started'
+    if (!isEditable(t.status)) return 'started'
     const [storedEntries, storedSpots] = await Promise.all([
       tx.selectFrom('tournament_entries').select('id').where('tournament_id', '=', tournamentId).execute(),
       tx

@@ -58,3 +58,6 @@ export function nextTournamentStatus(status: TournamentStatus, event: Tournament
 export function nextMatchStatus(status: MatchStatus, event: MatchEvent): MatchStatus | null {
   return MATCH_TRANSITIONS[status][event] ?? null
 }
+
+/** Organizers change a tournament (its setup, an in-person one's players) until it starts. */
+export const isEditable = (status: TournamentStatus): boolean => status === 'draft' || status === 'open'

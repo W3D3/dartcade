@@ -57,6 +57,7 @@ import {
 } from '../shared/tournaments/setup.js'
 import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
 import { REMIND_EVERY_MS, pickProblem, waitingFor, type Candidate, type PickProblem } from '../shared/tournaments/roster.js'
+import { isEditable } from '../shared/tournaments/state.js'
 import {
   registrationClosesAt,
   registrationOpen,
@@ -424,7 +425,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
 
   app.patch<Route<'updateTournament'>>('/api/tournaments/:id', { schema: fromSpec('updateTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
-    if (t.status !== 'draft' && t.status !== 'open') throw conflict(`a ${t.status} tournament cannot be changed`)
+    if (!isEditable(t.status)) throw conflict(`a ${t.status} tournament cannot be changed`)
     const { participants: list, ...patch } = req.body
     const before = storedInput(t)
     const next = await pickedBoards(cleanText({ ...before, ...patch }), req.userId, before.settings.boardIds ?? [])
