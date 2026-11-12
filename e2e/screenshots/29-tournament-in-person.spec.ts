@@ -162,3 +162,16 @@ test('tournaments: organizer page, players and teams', async ({ browser }) => {
   await expect(phone.page.getByText('6 teams · 2 of 11 claimed')).toBeVisible()
   await shot(phone.page, 'tournaments/in-person-organizer-teams-phone.png')
 })
+
+test('tournaments: details for an organizer', async ({ browser }) => {
+  const s = await open(browser, 'admin', VIEW.dialog)
+  await clearMine(s.page)
+  const id = await inPerson(s.page, 'Spring Club Night', 1, 'single_elimination')
+  await api(s.page).put(`/api/tournaments/${id}/participants`, {
+    entries: ['Anna Berger', 'Jonas'].map(name => ({ name, tag: null, color: null, players: [{ name }] })),
+  })
+  await openHash(s.page, '/tournaments/browse')
+  await s.page.getByRole('button', { name: 'Spring Club Night' }).first().click()
+  await expect(s.page.getByRole('dialog', { name: 'Spring Club Night' })).toBeVisible()
+  await shot(s.page, 'tournaments/organizer-details-dialog.png')
+})
