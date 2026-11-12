@@ -1,9 +1,12 @@
 <script lang="ts">
   import { hrefs } from '$lib/routes'
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
-  import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
+  import { fetchBoardStatus, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import BoardStatusDot from './BoardStatusDot.svelte'
   import { DOT_TEXT, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
+  import { createToast } from '$lib/toast'
+  import { Toast } from '$lib/components/ui/toast/index.js'
+  import { onDestroy } from 'svelte'
   import BigScreenButton from '$lib/components/BigScreenButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { flag } from '$lib/flags'
@@ -35,12 +38,8 @@
     const id = boardId
     let cancelled = false
     const load = async () => {
-      try {
-        const { data } = await api.GET('/api/boards/{id}/status', { params: { path: { id } } })
-        if (!cancelled) bmStatus = data ?? null
-      } catch {
-        if (!cancelled) bmStatus = null
-      }
+      const status = await fetchBoardStatus(id)
+      if (!cancelled) bmStatus = status
     }
     void load()
     const interval = setInterval(() => void load(), 3000)
@@ -51,15 +50,13 @@
   })
 
   // Board Manager commands for this board
+  const commandFailure = createToast<string>(6000)
+  onDestroy(commandFailure.dismiss)
   async function runAction(name: string, action: BoardAction) {
     busy = name
-    try {
-      await runBoardAction(board.id, action)
-    } catch {
-      /* ignore */
-    } finally {
-      busy = null
-    }
+    const failed = await runBoardAction(board.id, action)
+    if (failed) commandFailure.show(failed)
+    busy = null
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -195,3 +192,7 @@
     </div>
   {/if}
 </div>
+
+{#if $commandFailure}
+  <Toast tone="error" onclose={commandFailure.dismiss}>{$commandFailure.value}</Toast>
+{/if}

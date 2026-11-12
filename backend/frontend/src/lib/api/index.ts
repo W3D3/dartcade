@@ -71,4 +71,4 @@ export type {
 } from './game-ws'
 export { WsCloseCode } from './game-ws'
 export { api, createApi } from './client'
-export { runBoardAction, type BoardAction } from './boardActions'
+export { fetchBoardStatus, runBoardAction, type BoardAction } from './boardActions'
