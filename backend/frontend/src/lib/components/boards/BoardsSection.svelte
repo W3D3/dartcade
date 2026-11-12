@@ -32,7 +32,7 @@
   import SectionCard from './SectionCard.svelte'
   import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
   import { me } from '$lib/lobby/sockets'
-  import { DOT_TEXT, bmDotColor } from '$lib/boardStatus'
+  import { DOT_TEXT, bmDotColor, shownStatus } from '$lib/boardStatus'
   import { createToast } from '$lib/toast'
   import BoardStatusDot from '../BoardStatusDot.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -43,7 +43,7 @@
   let selected = $derived(boards.find(b => b.id === selectedId) ?? null)
   let cameraTs = $state(Date.now())
   let cameraInterval: ReturnType<typeof setInterval> | null = null
-  let bmStatus = $state<BoardStatus | null>(null)
+  let polled = $state<BoardStatus | null>(null)
   let bmStatusInterval: ReturnType<typeof setInterval> | null = null
   let busy = $state<string | null>(null)
   // The list has come back: until then neither the boards nor the empty state show
@@ -81,7 +81,7 @@
   })
 
   async function loadBmStatus(boardId: string) {
-    bmStatus = await fetchBoardStatus(boardId)
+    polled = await fetchBoardStatus(boardId)
   }
 
   function startStatusPoll(boardId: string) {
@@ -95,7 +95,7 @@
       clearInterval(bmStatusInterval)
       bmStatusInterval = null
     }
-    bmStatus = null
+    polled = null
   }
 
   $effect(() => {
@@ -314,6 +314,7 @@
     }),
   )
 
+  const bmStatus = $derived(shownStatus(polled, selected?.bmReachable ?? null))
   const isRunning = $derived(bmStatus?.running === true)
 
   const dotColor = $derived(bmDotColor(bmStatus?.status ?? null, selected?.online ?? false))
