@@ -66,6 +66,7 @@
   import { addPicked, type OrganizerPick } from '$lib/tournaments/organizers'
   import { draftProblems, emptyDraft, fromParticipants, loadParticipants, toBody } from '$lib/tournaments/participants'
   import { TOURNAMENT_TEXT } from '$shared/tournaments/setup'
+  import { isEditable } from '$shared/tournaments/state'
 
   let { params = {} }: { params?: { id?: string } } = $props()
 
@@ -94,8 +95,11 @@
   })
 
   const editing = $derived(!!params.id)
-  /** Someone registered: only the start time, its settings and the description can change. */
-  const locked = $derived(stored?.locked ?? false)
+  /** Started (check-in included): nothing changes anymore. */
+  const started = $derived(!!stored && !isEditable(stored.status))
+  /** Someone registered for an online tournament: only the start time, its settings and the description can change. */
+  const registered = $derived(stored?.locked ?? false)
+  const locked = $derived(registered || started)
   const draft = $derived(!editing || stored?.status === 'draft')
   const inPerson = $derived(form.access === 'in_person')
   const startMode = $derived(startModeOf(form))
@@ -104,6 +108,7 @@
   const problems = $derived([
     ...formProblems(form, new Date()),
     ...(inPerson ? draftProblems(participants, perTeam, maxEntriesOf(form)) : []),
+    ...(started ? ['The tournament has started, so it can’t change anymore.'] : []),
   ])
   const owner = $derived((editing ? stored?.owner?.name : $currentUser?.name) ?? 'you')
   const saved = $derived(new URLSearchParams($querystring ?? '').get('saved'))
@@ -175,7 +180,7 @@
       {#if editing}
         <p class="text-body text-text-muted">
           {saved ? 'Saved. ' : ''}{statusLine}
-          {#if locked}Someone registered, so only the start time and description can change.{/if}
+          {#if registered && !started}Someone registered, so only the start time and description can change.{/if}
           {#if inPerson && stored}<a href={hrefs.tournamentManage(stored.id)} class="font-semibold text-accent">Open the organizer page</a
             >{/if}
         </p>
@@ -348,7 +353,7 @@
                 {perTeam}
                 max={maxEntriesOf(form)}
                 tournamentId={params.id}
-                disabled={!draft && stored?.status !== 'open'}
+                disabled={started}
                 onkeep={(n: number) => set('playersPerTeam', PLAYERS_PER_TEAM.find(c => c.value === n)?.value ?? form.playersPerTeam)}
               />
             {/if}
