@@ -2,35 +2,19 @@
   // "Search friends" (Team-Create): your friends, online first, filtered as you type, and the
   // account with exactly the name you typed (with or without the @). Invite hands the person up.
   import { UserPlus } from '@lucide/svelte'
-  import { api } from '$lib/api'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import SearchInput from '$lib/components/ui/input/search-input.svelte'
   import { me } from '$lib/lobby/sockets'
+  import { createUserLookup } from '$lib/teams/userLookup.svelte'
   import { pickerPeople, type PickerPerson } from '$lib/teams/view'
-  import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
 
   let { exclude, onpick }: { exclude: string[]; onpick: (p: PickerPerson) => void } = $props()
 
   let text = $state('')
-  let found = $state<{ id: string; name: string }[]>([])
   const query = $derived(text.trim().replace(/^@/, ''))
-  const people = $derived(pickerPeople($me?.friends?.friends ?? [], found, query, exclude))
-
-  const lookup = debounced(() => {
-    const q = query
-    void api
-      .GET('/api/users', { params: { query: { q } } })
-      .then(({ data }) => {
-        if (q === query) found = data?.users ?? []
-      })
-      .catch(() => {})
-  }, SEARCH_DEBOUNCE_MS)
-  $effect(() => {
-    found = []
-    if (query.length >= 2) lookup.call()
-    else lookup.cancel()
-  })
+  const lookup = createUserLookup(() => query)
+  const people = $derived(pickerPeople($me?.friends?.friends ?? [], lookup.found, query, exclude))
 </script>
 
 <div class="flex flex-col gap-2">

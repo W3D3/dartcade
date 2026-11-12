@@ -26,6 +26,7 @@ import type {
   TeamInviteMessage,
   TournamentCheckInMessage,
   TournamentMatchMessage,
+  TournamentRequestMessage,
 } from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
@@ -117,6 +118,7 @@ export function createMeStore(open?: OpenSocket) {
   const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
   const teamInvite = writable<TeamInviteMessage | null>(null)
   const tournament = writable<TournamentCheckInMessage | TournamentMatchMessage | null>(null)
+  const tournamentRequest = writable<TournamentRequestMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
@@ -136,6 +138,8 @@ export function createMeStore(open?: OpenSocket) {
     teamInvite: { subscribe: teamInvite.subscribe } satisfies Readable<TeamInviteMessage | null>,
     /** Your tournament's check-in opened, or your match's game started (tournament.checkIn, tournament.match), as it arrives. */
     tournament: { subscribe: tournament.subscribe } satisfies Readable<TournamentCheckInMessage | TournamentMatchMessage | null>,
+    /** Someone last made you a tournament organizer (tournament.request), as it arrives. */
+    tournamentRequest: { subscribe: tournamentRequest.subscribe } satisfies Readable<TournamentRequestMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -164,6 +168,8 @@ export function createMeStore(open?: OpenSocket) {
               teamInvite.set(msg)
             } else if (msg?.type === 'tournament.checkIn' || msg?.type === 'tournament.match') {
               tournament.set(msg)
+            } else if (msg?.type === 'tournament.request') {
+              tournamentRequest.set(msg)
             } else if (msg?.type === 'matchmaking') {
               const { type: _type, ...matchmaking } = msg
               state.update(s => ({ ...(s ?? EMPTY), matchmaking }))
@@ -190,6 +196,7 @@ export function createMeStore(open?: OpenSocket) {
       idleClosed.set(null)
       teamInvite.set(null)
       tournament.set(null)
+      tournamentRequest.set(null)
     },
   }
 }
