@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RINGED, SPINNING, bmDotColor, bmShortLabel, bmStatusLabel } from '../boardStatus.js'
+import { NOT_REACHABLE, RINGED, SPINNING, bmDotColor, bmShortLabel, bmStatusLabel, commandError, polledStatus } from '../boardStatus.js'
 
 describe('bmDotColor', () => {
   it('is gray while the board is offline, whatever its last status', () => {
@@ -40,5 +40,34 @@ describe('bmShortLabel', () => {
     expect(bmShortLabel('Takeout in progress', true)).toBe('Takeout')
     expect(bmShortLabel('Calibrating', true)).toBe('Calibrating')
     expect(bmShortLabel(null, false)).toBe('Offline')
+  })
+})
+
+describe('polledStatus', () => {
+  const running = { status: 'Throw', running: true, event: null }
+
+  it("is Board Manager's status when it answered", () => {
+    expect(polledStatus(running, 200)).toBe(running)
+  })
+
+  it('says the Board Manager is not reachable when the bridge could not reach it or did not answer, with a red dot', () => {
+    for (const code of [502, 503]) {
+      const s = polledStatus(undefined, code)
+      expect(s).toEqual({ status: NOT_REACHABLE, running: false, event: null })
+      expect(bmDotColor(s!.status, true)).toBe('red')
+      expect(bmStatusLabel(s!.status, true)).toBe('Board Manager not reachable')
+    }
+  })
+
+  it('knows nothing on any other failure', () => {
+    expect(polledStatus(undefined, 500)).toBeNull()
+  })
+})
+
+describe('commandError', () => {
+  it('names what did not answer', () => {
+    expect(commandError(502)).toMatch(/Board Manager/)
+    expect(commandError(503)).toMatch(/bridge/)
+    expect(commandError(undefined)).toMatch(/try again/i)
   })
 })
