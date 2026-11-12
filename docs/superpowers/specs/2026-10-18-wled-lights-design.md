@@ -83,21 +83,21 @@ Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 One pure function per game: `(before: View | null, after: View) => Trigger[]`, in the style of the
 caller's `callsFor`. Undo or a correction that reopens a visit must not fire the visit's triggers twice.
 
-| Trigger                                       | Fields          | Source                                                                                              |
-| --------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
-| `turn`                                        | `seat`          | every game: the current seat changed, or the game started                                           |
-| `game.won`                                    | `seat`          | every game                                                                                          |
-| `lobby`                                       | —               | no active game on the board but someone sits at it in a lobby: after a game ends, on bridge connect |
-| `takeout.started`, `takeout.finished`         | —               | bridge board events, from the gateway                                                               |
-| `calibration.started`, `calibration.finished` | —               | bridge `board.status` events: the Board Manager's status enters/leaves `Calibrating`                |
-| `visit`                                       | `seat, total`   | X01: a visit was committed                                                                          |
-| `bust`                                        | `seat`          | X01                                                                                                 |
-| `checkout`                                    | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)                            |
-| `cricket.closed`                              | `seat`          | Cricket: the thrower's team gets its third mark on a number                                         |
-| `p121.made`                                   | `seat`          | 121 Checkout: a seat checks out its target                                                          |
-| `hilo.lifeLost`                               | `seat`          | Higher Lower                                                                                        |
-| `golf.sunk`                                   | `seat, strokes` | Minigolf                                                                                            |
-| `bulloff.won`                                 | `seat`          | bull off, in any game                                                                               |
+| Trigger                               | Fields          | Source                                                                                                            |
+| ------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `turn`                                | `seat`          | every game: the current seat changed, or the game started                                                         |
+| `game.won`                            | `seat`          | every game                                                                                                        |
+| `lobby`                               | —               | no active game on the board but someone sits at it in a lobby: after a game ends, on bridge connect               |
+| `takeout.started`, `takeout.finished` | —               | bridge board events, from the gateway                                                                             |
+| `calibration.finished`                | —               | bridge `board.status` event: the Board Manager's status leaves `Calibrating` (not for Offline, Stopping, Stopped) |
+| `visit`                               | `seat, total`   | X01: a visit was committed                                                                                        |
+| `bust`                                | `seat`          | X01                                                                                                               |
+| `checkout`                            | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)                                          |
+| `cricket.closed`                      | `seat`          | Cricket: the thrower's team gets its third mark on a number                                                       |
+| `p121.made`                           | `seat`          | 121 Checkout: a seat checks out its target                                                                        |
+| `hilo.lifeLost`                       | `seat`          | Higher Lower                                                                                                      |
+| `golf.sunk`                           | `seat, strokes` | Minigolf                                                                                                          |
+| `bulloff.won`                         | `seat`          | bull off, in any game                                                                                             |
 
 For each board, the service adds `local: boolean` (the seat plays on this board). Takeout, calibration
 and lobby are always local.
@@ -138,7 +138,7 @@ was removed):
 | 3   | General      | `game.won` · mine       | flash 5 s   | user preset "Matchshot"            |
 | 4   | General      | `bulloff.won` · mine    | flash 2 s   | seat colour · blink                |
 | 5   | General      | `takeout.started`       | scene       | `#ffd60a` (yellow) · breathe · 255 |
-| 6   | General      | `calibration.started`   | scene       | `#a855f7` · lighthouse · 255       |
+| 6   | General      | `calibration.finished`  | flash 3 s   | `#a855f7` · lighthouse · 255       |
 | 7   | General      | `lobby` · **off**       | scene       | `#c6f24e` · breathe · 60 · slow    |
 | 8   | X01          | `visit` = 180 · mine    | flash 4 s   | user preset "180"                  |
 | 9   | X01          | `visit` ≥ 100 · mine    | flash 2 s   | white · sparkle · 255              |
@@ -149,8 +149,7 @@ was removed):
 | 14  | Minigolf     | `golf.sunk` · mine      | flash 2 s   | seat colour · sparkle              |
 | 15  | Higher Lower | `hilo.lifeLost` · mine  | flash 1.5 s | `#ff3b30` · blink                  |
 
-`takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
-scene (see below). The Target hit flash was removed in #522 because it disturbed detection, and the
+`takeout.finished` has no rule: the service re-applies the board's game scene (see below). The Target hit flash was removed in #522 because it disturbed detection, and the
 100+ flash no longer flashes the player's colour: a big score sparkles white (the Turn change scene
 keeps the player colour).
 
@@ -166,12 +165,15 @@ A won X01 match plays only the game.won look, on the winning dart.
   gateway for `takeout.*` events, `board.status` events, bridge connects and game ends.
 - For each board in the game whose lights are on and that has devices: derive triggers, add `local`,
   `match` each trigger, and send `wled.apply` with `patchFor` to every device through `bridgeConnections`.
-- Keeps each board's **game scene** (the last scene from a non-takeout, non-calibration trigger).
-  `takeout.started`/`calibration.started` send their scene without replacing the game scene.
-  `takeout.finished`/`calibration.finished` re-send the game scene.
-- Tracks, per board, whether the Board Manager's last `board.status` reported `Calibrating`: entering
-  it fires `calibration.started`, leaving it fires the `takeout.finished`-style restore. A repeated
-  status (still/not yet `Calibrating`) does nothing, and malformed `board.status` data is ignored.
+- Keeps each board's **game scene** (the last scene from a non-takeout trigger).
+  `takeout.started` sends its scene without replacing the game scene; `takeout.finished` re-sends the game scene.
+- Tracks, per board, whether the Board Manager's last `board.status` reported `Calibrating`. While it
+  does, **no light change is sent** (the lights might disturb the calibration): a scene change is only
+  remembered, flashes, takeouts and idle/off changes are dropped. Leaving `Calibrating` for a running
+  status fires `calibration.finished` (the Calibrated flash, once); when its hold is over the game scene is
+  re-sent (a calibration restarting meanwhile owns the lights instead). The service never sends a Board
+  Manager reset. Leaving it for Offline/Stopping/Stopped just restores the scene (no flash). A repeated status does nothing, and malformed `board.status` data is ignored. A bridge hello
+  forgets the calibrating state. With the effect off the scene comes back at once.
 - On bridge connect: send `wled.devices`, then the game scene (or the lobby scene if a lobby uses the board and that rule is on, otherwise off).
 - Bridges older than the first version with `wled` support (checked from `bridge.hello`'s
   `bridge_version`) get nothing; the API reports `bridgeOutdated: true`.
