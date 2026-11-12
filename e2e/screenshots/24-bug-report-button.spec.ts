@@ -45,8 +45,8 @@ test('on a page, and the dialog it opens', async ({ browser }) => {
     const { ctx, page } = await open(browser, 'phil', SIZES[name])
     await openHash(page, '/')
     await page.getByRole('button', { name: 'Report a bug' }).locator('visible=true').first().click()
-    // The screenshot of the page is taken before the dialog opens
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByText('Include a screenshot of this page')).toBeVisible({ timeout: 60_000 })
     await shot(page, `bug-report-button/${name}-dialog.png`, { keepToasts: true })
     await ctx.close()
   }

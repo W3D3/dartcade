@@ -36,23 +36,43 @@ describe('bug report', () => {
     expect(canSend('x'.repeat(MESSAGE_MAX + 1))).toBe(false)
   })
 
-  it('captures the page before the dialog opens', async () => {
-    const order: string[] = []
-    const unsubscribe = feedbackDialog.subscribe(v => v && order.push('open'))
-    await openFeedback(() => {
-      order.push('capture')
-      return Promise.resolve('data:image/jpeg;base64,abc')
-    })
+  it('opens at once, then shows the screenshot when it is taken', async () => {
+    const seen: unknown[] = []
+    const unsubscribe = feedbackDialog.subscribe(v => v && seen.push({ ...v }))
+    let capture: (url: string) => void = () => undefined
+    const opening = openFeedback(
+      () => new Promise<string>(resolve => (capture = resolve)),
+      () => Promise.resolve(),
+    )
+    await Promise.resolve()
+    expect(get(feedbackDialog)).toEqual({ screenshot: null, capturing: true, captureFailed: false })
+    capture('data:image/jpeg;base64,abc')
+    await opening
     unsubscribe()
-    expect(order).toEqual(['capture', 'open'])
-    expect(get(feedbackDialog)).toEqual({ screenshot: 'data:image/jpeg;base64,abc', captureFailed: false })
+    expect(get(feedbackDialog)).toEqual({ screenshot: 'data:image/jpeg;base64,abc', capturing: false, captureFailed: false })
     closeFeedback()
     expect(get(feedbackDialog)).toBeNull()
   })
 
+  it('drops a screenshot that finishes after the dialog was closed', async () => {
+    let capture: (url: string) => void = () => undefined
+    const opening = openFeedback(
+      () => new Promise<string>(resolve => (capture = resolve)),
+      () => Promise.resolve(),
+    )
+    await Promise.resolve()
+    closeFeedback()
+    capture('data:image/jpeg;base64,late')
+    await opening
+    expect(get(feedbackDialog)).toBeNull()
+  })
+
   it('opens without a screenshot, saying so, when the capture fails', async () => {
-    await openFeedback(() => Promise.reject(new Error('tainted canvas')))
-    expect(get(feedbackDialog)).toEqual({ screenshot: null, captureFailed: true })
+    await openFeedback(
+      () => Promise.reject(new Error('tainted canvas')),
+      () => Promise.resolve(),
+    )
+    expect(get(feedbackDialog)).toEqual({ screenshot: null, capturing: false, captureFailed: true })
     closeFeedback()
   })
 })

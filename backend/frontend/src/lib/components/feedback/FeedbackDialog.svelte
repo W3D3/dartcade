@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Report a bug or give feedback (the Alpha badge, Settings → Profile). Mounted once in Layout;
-  // openFeedback() took the page's screenshot before this opened.
+  // Report a bug or give feedback (the Report a bug button, Settings → Profile). Mounted once in App;
+  // it opens at once and openFeedback() fills in the page's screenshot a moment later.
   import ErrorText from '$lib/components/ErrorText.svelte'
   import FieldLabel from '$lib/components/FieldLabel.svelte'
   import { api } from '$lib/api'
@@ -24,6 +24,8 @@
 
   const dialog = $derived($feedbackDialog)
   const context = $derived(dialog ? pageContext() : null)
+  // Unticking the screenshot while it is taken lets the report go without it
+  const waitingForScreenshot = $derived(!!dialog?.capturing && form.includeScreenshot)
   const role = $derived($currentUser?.isAdmin ? 'admin' : $currentUser?.isModerator ? 'moderator' : 'user')
 
   function close() {
@@ -35,7 +37,7 @@
 
   async function send(e: SubmitEvent) {
     e.preventDefault()
-    if (!dialog || !context || !canSend(form.message) || sending) return
+    if (!dialog || !context || !canSend(form.message) || sending || waitingForScreenshot) return
     sending = true
     error = ''
     try {
@@ -80,12 +82,12 @@
           <span class="self-end normal-case tracking-normal text-[12px]">{form.message.length} / {MESSAGE_MAX}</span>
         </FieldLabel>
 
-        {#if dialog.screenshot}
+        {#if dialog.screenshot || dialog.capturing}
           <label class="flex items-center gap-3 cursor-pointer text-[14px]">
             <Checkbox bind:checked={form.includeScreenshot} class="size-5" />
-            Include a screenshot of this page
+            {dialog.capturing ? 'Taking a screenshot of this page…' : 'Include a screenshot of this page'}
           </label>
-          {#if form.includeScreenshot}
+          {#if form.includeScreenshot && dialog.screenshot}
             <img src={dialog.screenshot} alt="Screenshot of the page to send" class="w-full rounded-md border border-line-2" />
           {/if}
         {:else if dialog.captureFailed}
@@ -122,7 +124,14 @@
         <Button variant="accent" size="lg" class="flex-1" onclick={close}>Close</Button>
       {:else}
         <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={close}>Cancel</Button>
-        <Button variant="accent" size="lg" class="flex-1" type="submit" form="feedback-form" disabled={!canSend(form.message) || sending}>
+        <Button
+          variant="accent"
+          size="lg"
+          class="flex-1"
+          type="submit"
+          form="feedback-form"
+          disabled={!canSend(form.message) || sending || waitingForScreenshot}
+        >
           {sending ? 'Sending…' : 'Send report'}
         </Button>
       {/if}
