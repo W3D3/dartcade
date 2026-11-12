@@ -155,6 +155,8 @@
     '/friends': Friends,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
+    // Before /tournaments/:tab?, which would read "join" as a tab
+    '/tournaments/join/:code': Tournaments,
     // One route (tab optional), like Customise
     '/tournaments/:tab?': Tournaments,
     '/progress': Progress,

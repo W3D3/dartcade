@@ -7,14 +7,16 @@
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import TeamsTab from '$lib/components/teams/TeamsTab.svelte'
+  import BrowseTab from '$lib/components/tournaments/BrowseTab.svelte'
   import YourTeamsCard from '$lib/components/teams/YourTeamsCard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { me } from '$lib/lobby/sockets'
   import { flag, flagsLoaded } from '$lib/flags'
   import { hrefs } from '$lib/routes'
-  import { TAB_LABELS, TOURNAMENT_TABS, tabOf, type TournamentsTab } from '$lib/tournaments/tabs'
+  import { TAB_LABELS, TOURNAMENT_TABS, tabOf } from '$lib/tournaments/tabs'
 
-  let { params = {} }: { params?: { tab?: string } } = $props()
+  // `code`: an invite link (#/tournaments/join/:code), shown on Browse
+  let { params = {} }: { params?: { tab?: string; code?: string } } = $props()
 
   const enabled = flag('tournaments.enabled')
   const tab = $derived(tabOf(params.tab))
@@ -22,18 +24,6 @@
   const teamInvites = $derived($me?.teamInvites.length ?? 0)
   // New team, from the header or the Teams tab
   let creating = $state(false)
-
-  const EMPTY: Record<Exclude<TournamentsTab, 'teams'>, { title: string; text: string }> = {
-    browse: {
-      title: 'No tournaments yet',
-      text: 'Open tournaments show up here: official events from Dartcade and tournaments run by players.',
-    },
-    mine: {
-      title: 'Nothing here yet',
-      text: 'Tournaments you register for or organize show up here, with your next match first.',
-    },
-  }
-  const empty = $derived(EMPTY[tab === 'teams' ? 'browse' : tab])
 </script>
 
 <Layout title="Tournaments">
@@ -89,11 +79,14 @@
       <section aria-label={TAB_LABELS[tab].label} class="flex flex-col gap-6 pt-2 md:pt-4">
         {#if tab === 'teams'}
           <TeamsTab bind:creating />
+        {:else if tab === 'browse'}
+          <BrowseTab code={params.code}>
+            {#snippet aside()}<YourTeamsCard />{/snippet}
+          </BrowseTab>
         {:else}
-          <EmptyState title={empty.title} text={empty.text}>
+          <EmptyState title="Nothing here yet" text="Tournaments you register for or organize show up here, with your next match first.">
             {#snippet icon()}<Trophy size={24} />{/snippet}
           </EmptyState>
-          {#if tab === 'browse'}<div class="max-w-[420px]"><YourTeamsCard /></div>{/if}
         {/if}
       </section>
     {/if}
