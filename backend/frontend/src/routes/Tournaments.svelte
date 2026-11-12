@@ -1,6 +1,7 @@
 <script lang="ts">
   // The Tournaments page (Tournaments, Tournaments-Phone): Browse, My tournaments and Teams, as
-  // underlined tabs on a desktop and a segmented control on a phone. Behind tournaments.enabled.
+  // underlined tabs on a desktop and a segmented control on a phone, and the Create tournament
+  // button for those who may create one. Behind tournaments.enabled.
   import { Plus, Trophy } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
@@ -10,6 +11,7 @@
   import BrowseTab from '$lib/components/tournaments/BrowseTab.svelte'
   import YourTeamsCard from '$lib/components/teams/YourTeamsCard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag, flagsLoaded } from '$lib/flags'
   import { hrefs } from '$lib/routes'
@@ -19,6 +21,9 @@
   let { params = {} }: { params?: { tab?: string; code?: string } } = $props()
 
   const enabled = flag('tournaments.enabled')
+  const community = flag('tournaments.community.enabled')
+  // Admins may always create one (the server's rule)
+  const mayCreate = $derived($enabled && (!!$currentUser?.isAdmin || $community))
   const tab = $derived(tabOf(params.tab))
   // Pending team invites: the Teams tab's badge
   const teamInvites = $derived($me?.teamInvites.length ?? 0)
@@ -37,11 +42,16 @@
             : 'Official events from Dartcade and tournaments run by players. Solo or as a team.'}
         </p>
       </div>
-      {#if $enabled}
-        <Button variant="outline" href={hrefs.tournaments('teams')} onclick={() => (creating = true)} class="ml-auto"
-          ><Plus size={16} />New team</Button
-        >
-      {/if}
+      <div class="ml-auto flex gap-2.5">
+        {#if $enabled}
+          <Button variant="outline" href={hrefs.tournaments('teams')} onclick={() => (creating = true)}><Plus size={16} />New team</Button>
+        {/if}
+        {#if mayCreate}
+          <Button variant="accent" href={hrefs.tournamentNew()} class="hidden h-10 md:inline-flex"
+            ><Plus size={18} />Create tournament</Button
+          >
+        {/if}
+      </div>
     </header>
 
     {#if !$enabled && !$flagsLoaded}
@@ -89,6 +99,9 @@
           </EmptyState>
         {/if}
       </section>
+      {#if mayCreate}
+        <Button variant="outline" size="md" class="md:hidden" href={hrefs.tournamentNew()}><Plus size={18} />Create tournament</Button>
+      {/if}
     {/if}
   </main>
 </Layout>

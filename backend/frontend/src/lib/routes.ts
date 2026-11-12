@@ -34,6 +34,9 @@ export const hrefs = {
   tournaments: (tab?: TournamentsTab) => at(tab ? `/tournaments/${tab}` : '/tournaments'),
   /** An invite link's landing: Browse with that tournament's Details open. */
   tournamentJoin: (code: string) => at(`/tournaments/join/${code}`),
+  tournamentNew: () => at('/tournaments/new'),
+  /** `saved`: say so above the form (after creating it, the page this one replaced). */
+  tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
   ranks: () => at('/matchmaking/ranks'),
   progress: () => at('/progress'),
   rewards: (level?: number | string) => at(level === undefined ? '/progress/rewards' : `/progress/rewards/${level}`),

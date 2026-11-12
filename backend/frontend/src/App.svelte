@@ -30,6 +30,7 @@
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
   import Tournaments from './routes/Tournaments.svelte'
+  import TournamentCreate from './routes/TournamentCreate.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
   import Achievements from './routes/Achievements.svelte'
@@ -157,6 +158,9 @@
     '/matchmaking/ranks': Ranks,
     // Before /tournaments/:tab?, which would read "join" as a tab
     '/tournaments/join/:code': Tournaments,
+    // Before /tournaments/:tab?, which would take "new" for a tab
+    '/tournaments/new': TournamentCreate,
+    '/tournaments/:id/edit': TournamentCreate,
     // One route (tab optional), like Customise
     '/tournaments/:tab?': Tournaments,
     '/progress': Progress,
