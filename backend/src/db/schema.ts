@@ -614,6 +614,11 @@ export interface TournamentEntriesTable {
   registered_by_user_id: ColumnType<string | null, string | null | undefined, string | null>
   /** The named team it plays as (migration 067). */
   team_id: ColumnType<string | null, string | null | undefined, string | null>
+  /** An in-person team's own tag and colour (migration 071). */
+  tag: ColumnType<string | null, string | null | undefined, string | null>
+  color: ColumnType<TeamColor | null, TeamColor | null | undefined, TeamColor | null>
+  /** Where the organizers put it on an in-person tournament's list (migration 071). */
+  list_position: ColumnType<number | null, number | null | undefined, number | null>
   created_at: ColumnType<Date, never, never>
 }
 
@@ -626,6 +631,10 @@ export interface TournamentPlayersTable {
   name: string
   position: number
   confirmed_at: Stamp
+  /** A registered player, or a spot an organizer added in person (migration 071). */
+  kind: Defaulted<'player' | 'spot'>
+  /** A spot's claim link code; null for a player. */
+  claim_code: ColumnType<string | null, string | null | undefined, never>
   created_at: ColumnType<Date, never, never>
 }
 

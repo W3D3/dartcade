@@ -371,6 +371,13 @@ export async function hasPairedBoard(db: Kysely<Database>, userId: string): Prom
   return (await db.selectFrom('boards').select('id').where('owner_user_id', '=', userId).executeTakeFirst()) !== undefined
 }
 
+/** Which of `ids` are boards `userId` paired. */
+export async function ownedBoardIds(db: Kysely<Database>, userId: string, ids: readonly string[]): Promise<string[]> {
+  if (ids.length === 0) return []
+  const rows = await db.selectFrom('boards').select('id').where('owner_user_id', '=', userId).where('id', 'in', ids).execute()
+  return rows.map(r => r.id)
+}
+
 /** `userId`'s friends who hold a spot in the tournament, by name. */
 export async function friendsIn(
   db: Kysely<Database>,

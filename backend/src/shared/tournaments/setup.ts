@@ -18,6 +18,8 @@ export interface TournamentSettings {
   readonly manualScoring: boolean
   readonly noShowMinutes: number | null
   readonly avgLimit: AvgLimit | null
+  /** In person: the organizer's boards the venue's devices may score on; absent or null, none. */
+  readonly boardIds?: readonly string[] | null
 }
 
 export interface TournamentSetup {
@@ -90,6 +92,7 @@ export function setupProblems(t: TournamentSetup): Problem[] {
     if (min === null && max === null) bad('settings/avgLimit', 'needs a minimum, a maximum or both')
     if (min !== null && max !== null && min >= max) bad('settings/avgLimit', 'the minimum must be below the maximum')
   }
+  if (online && s.boardIds) bad('settings/boardIds', 'only an in-person tournament picks its boards')
   return out
 }
 

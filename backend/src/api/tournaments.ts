@@ -15,6 +15,7 @@ import {
   getTournament,
   getTournamentByCode,
   hasPairedBoard,
+  ownedBoardIds,
   insertTournamentCapped,
   listBrowseTournaments,
   listOrganizers,
@@ -29,6 +30,7 @@ import {
   type OrganizerRole,
   type TournamentView,
 } from '../db/tournaments.js'
+import { listParticipants, setParticipants, unlinkSpot, type SetParticipantsResult } from '../db/tournamentParticipants.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { checkIn } from '../db/tournamentRun.js'
 import { getUsersByIds } from '../db/queries.js'
@@ -51,6 +53,7 @@ import {
   startProblems,
   type Problem,
 } from '../shared/tournaments/setup.js'
+import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
 import {
   registrationClosesAt,
   registrationState,
@@ -220,6 +223,22 @@ const REFUSED: Record<Exclude<RegistrationState, 'open' | 'registered'>, string>
   in_person: 'in person',
 }
 
+/** The list cleaned, or 400 with its problems (at `path` in the body) for that team size and cap. */
+function checkedEntries(entries: EntryInput[], t: Pick<Setup, 'teamSize' | 'maxEntries'>, path: string): EntryInput[] {
+  const cleaned = cleanEntries(entries, t.teamSize)
+  const problems = participantProblems(cleaned, t).map(p => ({ ...p, path: p.path.replace('body/entries', path) }))
+  if (problems.length > 0) throw new ApiError(400, { error: 'invalid request', details: problems })
+  return cleaned
+}
+
+/** The answer for a list that could not be stored. */
+function replaced(res: SetParticipantsResult): void {
+  if (res === 'missing') throw notFound()
+  if (res === 'started' || res === 'claimed') throw conflict(res)
+  if (res === 'unknown id')
+    throw new ApiError(400, { error: 'invalid request', details: [{ path: 'body/entries', message: 'unknown id' }] })
+}
+
 /** Invite codes are unique; a clash is retried with a fresh one. */
 const CODE_ATTEMPTS = 5
 
@@ -292,7 +311,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     const user = await loadFlagUser(db, req.userId)
     if (!(user && isAdmin(user)) && !(await flagEnabled('tournaments.community.enabled', user)))
       throw new ApiError(403, { error: 'you cannot create tournaments yet' })
-    const input = cleanText(req.body)
+    const input = await pickedBoards(cleanText(req.body), req.userId, [])
     check(input, new Date())
     const id = randomUUID()
     const created = await withFreshCode(code =>
@@ -353,19 +372,38 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   app.patch<Route<'updateTournament'>>('/api/tournaments/:id', { schema: fromSpec('updateTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
     if (t.status !== 'draft' && t.status !== 'open') throw conflict(`a ${t.status} tournament cannot be changed`)
+    const { participants: list, ...patch } = req.body
     const before = storedInput(t)
-    const next = cleanText({ ...before, ...req.body })
+    const next = await pickedBoards(cleanText({ ...before, ...patch }), req.userId, before.settings.boardIds ?? [])
     const changed = lockedChanges(before, next)
     if (isLocked(t) && changed.length > 0)
       throw new ApiError(409, {
         error: 'locked',
         details: changed.map(f => ({ path: `body/${f.replace('.', '/')}`, message: 'cannot change once someone registered' })),
       })
+    if (list && next.access !== 'in_person') throw conflict('not in person')
+    // In person the spots are entries: who may join stays, and a new team size comes with its new list
+    const shape = {
+      access: next.access !== before.access,
+      teamSize: next.teamSize !== before.teamSize && !list,
+    }
+    if (t.access === 'in_person' && t.has_entries && (shape.access || shape.teamSize))
+      throw new ApiError(409, {
+        error: 'locked',
+        details: [
+          ...(shape.access ? [{ path: 'body/access', message: 'remove the players before it can be joined online' }] : []),
+          ...(shape.teamSize ? [{ path: 'body/teamSize', message: 'send the players with the new team size' }] : []),
+        ],
+      })
     const moved =
       at(next.startsAt) !== at(before.startsAt) || next.settings.registrationClosesMinutes !== before.settings.registrationClosesMinutes
     check(next, moved ? new Date() : null)
-    // A registration landing meanwhile locks the fields this changes
-    const unregistered = changed.length > 0 && t.access !== 'in_person'
+    if (list) {
+      replaced(await setParticipants(db, t.id, checkedEntries(list.entries, next, 'body/participants/entries'), columns(next)))
+      return respond(t.id, role, req.userId)
+    }
+    // A registration (or in person, a spot) landing meanwhile locks the fields this changes
+    const unregistered = t.access === 'in_person' ? shape.access || shape.teamSize : changed.length > 0
     if (!(await updateTournament(db, t.id, columns(next), { status: t.status, unregistered })))
       throw conflict('the tournament changed meanwhile')
     return respond(t.id, role, req.userId)
@@ -455,6 +493,60 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       if (role !== 'owner' && userId !== req.userId) throw new ApiError(403, { error: 'only the owner can add or remove organizers' })
       if (!(await removeOrganizer(db, t.id, userId))) throw notFound()
       return reply.code(204).send()
+    },
+  )
+
+  /**
+   * The boards the venue may score on, each listed once: a board newly picked must be one the caller
+   * paired (a co-organizer keeps the ones the owner picked, `kept`), or 400.
+   */
+  async function pickedBoards(t: Setup, userId: string, kept: readonly string[]): Promise<Setup> {
+    if (!t.settings.boardIds) return t
+    const boardIds = [...new Set(t.settings.boardIds)]
+    const added = boardIds.filter(id => !kept.includes(id))
+    if ((await ownedBoardIds(db, userId, added)).length !== added.length)
+      throw new ApiError(400, {
+        error: 'invalid request',
+        details: [{ path: 'body/settings/boardIds', message: 'only boards you paired' }],
+      })
+    return { ...t, settings: { ...t.settings, boardIds } }
+  }
+
+  /** As organized, and 409 unless its organizers add the players themselves. */
+  async function inPerson(id: string, userId: string): Promise<TournamentView> {
+    const { t } = await organized(id, userId)
+    if (t.access !== 'in_person') throw conflict('not in person')
+    return t
+  }
+
+  const participantsOf = async (t: TournamentView) => {
+    const entries = await listParticipants(db, t.id)
+    return { entries, startBlocker: startBlocker(entries, t.team_size) }
+  }
+
+  app.get<Route<'listTournamentParticipants'>>(
+    '/api/tournaments/:id/participants',
+    { schema: fromSpec('listTournamentParticipants') },
+    async req => participantsOf(await inPerson(req.params.id, req.userId)),
+  )
+
+  app.put<Route<'setTournamentParticipants'>>(
+    '/api/tournaments/:id/participants',
+    { schema: fromSpec('setTournamentParticipants') },
+    async req => {
+      const t = await inPerson(req.params.id, req.userId)
+      replaced(await setParticipants(db, t.id, checkedEntries(req.body.entries, storedInput(t), 'body/entries')))
+      return participantsOf(t)
+    },
+  )
+
+  app.post<Route<'unlinkTournamentSpot'>>(
+    '/api/tournaments/:id/participants/:playerId/unlink',
+    { schema: fromSpec('unlinkTournamentSpot') },
+    async req => {
+      const t = await inPerson(req.params.id, req.userId)
+      if (!(await unlinkSpot(db, t.id, req.params.playerId))) throw notFound()
+      return participantsOf(t)
     },
   )
 
