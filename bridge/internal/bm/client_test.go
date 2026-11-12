@@ -171,8 +171,14 @@ func TestWSLoopRecoversFromAFrozenBoardManager(t *testing.T) {
 	go func() { c.wsLoop(ctx); close(stopped) }()
 
 	waitFrame(t, c, "bm_connect")
+	if !c.Linked() {
+		t.Error("not linked while connected")
+	}
 	mode.Store(hangHandshake)
 	waitFrame(t, c, "bm_disconnect")
+	if c.Linked() {
+		t.Error("still linked to a frozen Board Manager")
+	}
 	time.Sleep(2 * dialTimeout) // a dial or two hangs and gives up
 	mode.Store(answer)
 	waitFrame(t, c, "bm_reconnect")

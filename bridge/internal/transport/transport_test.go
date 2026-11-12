@@ -64,7 +64,7 @@ func TestBridgeHelloOnConnect(t *testing.T) {
 		received <- e
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt", BMUp: func() bool { return false }})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -81,6 +81,9 @@ func TestBridgeHelloOnConnect(t *testing.T) {
 		}
 		if d.Schema == "" {
 			t.Error("bridge.hello data.schema is empty")
+		}
+		if d.BmUp == nil || *d.BmUp {
+			t.Errorf("bridge.hello bm_up = %v, want false (the Board Manager is not linked)", d.BmUp)
 		}
 	case <-time.After(2 * time.Second):
 		t.Error("timeout waiting for bridge.hello")

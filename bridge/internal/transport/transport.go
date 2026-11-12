@@ -65,6 +65,8 @@ type Config struct {
 	OutboxPath string
 	// The bridge can update itself (bridge.update), reported in bridge.hello
 	Updatable bool
+	// Whether the Board Manager's events socket is up, reported in bridge.hello (bm.link events follow each change)
+	BMUp func() bool
 }
 
 // Transport manages the WSS connection to the backend.
@@ -231,18 +233,20 @@ func redact(err error, token string) error {
 
 func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 	// Send bridge.hello on every connect (not seq-numbered, not in outbox).
-	hello := map[string]any{
-		"kind": "bridge.hello",
-		"data": schema.BridgeHelloData{
-			BridgeVersion: t.cfg.BridgeVersion,
-			Schema:        schemaVersion,
-			Os:            runtime.GOOS,
-			Arch:          runtime.GOARCH,
-			BmVersion:     t.cfg.BMVersion,
-			BmUrl:         t.cfg.BMUrl,
-			Updatable:     &t.cfg.Updatable,
-		},
+	data := schema.BridgeHelloData{
+		BridgeVersion: t.cfg.BridgeVersion,
+		Schema:        schemaVersion,
+		Os:            runtime.GOOS,
+		Arch:          runtime.GOARCH,
+		BmVersion:     t.cfg.BMVersion,
+		BmUrl:         t.cfg.BMUrl,
+		Updatable:     &t.cfg.Updatable,
 	}
+	if t.cfg.BMUp != nil {
+		up := t.cfg.BMUp()
+		data.BmUp = &up
+	}
+	hello := map[string]any{"kind": "bridge.hello", "data": data}
 	if err := write(ctx, conn, hello); err != nil {
 		return
 	}

@@ -229,6 +229,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 		BoardID:       client.BoardID(),
 		BMVersion:     client.BMVersion(),
 		BMUrl:         bm.Reachable(cfg.BoardURL, cfg.BackendURL),
+		BMUp:          client.Linked,
 		BridgeVersion: buildVersion(),
 		OutboxPath:    outboxPath(cfgPath),
 		Updatable:     updater.Unavailable == "",
