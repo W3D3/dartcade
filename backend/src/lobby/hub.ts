@@ -11,6 +11,7 @@ import type {
   XpGainedMessage,
   AchievementUnlockedMessage,
   TeamInviteMessage,
+  TournamentRequestMessage,
 } from '../schema/lobby-ws.js'
 
 /** Open lobby sockets (per lobby) and per-user sockets (/ws/me, per user). */
@@ -121,6 +122,11 @@ export class LobbyHub {
 
   /** Tells the user's /ws/me sockets a captain invited them (once, for a toast). */
   sendTeamInvite(userId: string, msg: TeamInviteMessage): void {
+    this.users.pushEach(userId, () => msg)
+  }
+
+  /** Tells a user (on /ws/me) someone made them a tournament organizer. */
+  sendTournamentRequest(userId: string, msg: TournamentRequestMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 

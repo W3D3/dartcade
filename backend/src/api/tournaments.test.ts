@@ -26,7 +26,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
 
   const send = (user: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object) => {
     const app = createFastify()
-    app.register(tournamentsApiPlugin, { db })
+    app.register(tournamentsApiPlugin, { db, hub: { sendTournamentRequest: () => {} } })
     return app.inject({ method, url, payload, headers: { 'x-user': user } })
   }
   const get = (user: string, url = '/api/tournaments') => send(user, 'GET', url)

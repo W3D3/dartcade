@@ -36,6 +36,8 @@ export interface Problem {
 export const TOURNAMENT_TEXT = { nameMin: 3, nameMax: 40, descriptionMax: 280 } as const
 /** Tournaments an owner may have that are not finished or cancelled. */
 export const MAX_UNFINISHED_TOURNAMENTS = 5
+/** Co-organizers a tournament may have besides its owner. */
+export const MAX_ORGANIZERS = 10
 /** Everyone plays everyone: 16 entries are already 120 matches. */
 export const ROUND_ROBIN_MAX_ENTRIES = 16
 /** Check-in windows: before a fixed start, or after an organizer presses Start. */

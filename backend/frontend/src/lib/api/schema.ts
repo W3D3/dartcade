@@ -2458,6 +2458,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/organizers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** The owner and co-organizers of a tournament you may see */
+        get: operations["listTournamentOrganizers"];
+        put?: never;
+        /**
+         * Make someone an organizer (the owner only)
+         * @description The new organizer gets a tournament.request push on /ws/me and finds the tournament under Organizing.
+         */
+        post: operations["addTournamentOrganizer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/organizers/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an organizer (the owner), or leave the role yourself (an organizer)
+         * @description The owner stays the owner; they cancel or delete the tournament instead.
+         */
+        delete: operations["removeTournamentOrganizer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/achievements": {
         parameters: {
             query?: never;
@@ -5280,6 +5326,19 @@ export interface components {
             /** Format: date-time */
             startsAt?: string | null;
             settings?: components["schemas"]["TournamentSettings"];
+        };
+        TournamentOrganizers: {
+            organizers: {
+                id: string;
+                name: string;
+                /** @enum {string} */
+                role: "owner" | "organizer";
+                /**
+                 * Format: date-time
+                 * @description Null for the owner
+                 */
+                addedAt: string | null;
+            }[];
         };
         Tournament: {
             id: string;
@@ -10245,6 +10304,91 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTournamentOrganizers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The owner first, then the organizers by when they were added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentOrganizers"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    addTournamentOrganizer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The organizers now */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentOrganizers"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeTournamentOrganizer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };

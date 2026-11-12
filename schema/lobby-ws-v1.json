@@ -467,6 +467,25 @@
         "levelAfter": { "type": "integer", "minimum": 1 }
       }
     },
+    "TournamentRequestMessage": {
+      "title": "TournamentRequestMessage",
+      "description": "Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.",
+      "type": "object",
+      "required": ["type", "tournamentId", "tournamentName", "role", "from"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "tournament.request" },
+        "tournamentId": { "type": "string" },
+        "tournamentName": { "type": "string" },
+        "role": { "const": "organizer" },
+        "from": {
+          "type": "object",
+          "required": ["id", "name"],
+          "additionalProperties": false,
+          "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+        }
+      }
+    },
     "BoardStatusMessage": {
       "title": "BoardStatusMessage",
       "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.",
@@ -628,6 +647,7 @@
         { "$ref": "#/$defs/FriendsMessage" },
         { "$ref": "#/$defs/XpGainedMessage" },
         { "$ref": "#/$defs/AchievementUnlockedMessage" },
+        { "$ref": "#/$defs/TournamentRequestMessage" },
         { "$ref": "#/$defs/BoardStatusMessage" },
         { "$ref": "#/$defs/LobbyIdleClosedMessage" },
         { "$ref": "#/$defs/MatchmakingMessage" },

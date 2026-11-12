@@ -89,6 +89,7 @@ export type MeServerMessage =
   | FriendsMessage
   | XpGainedMessage
   | AchievementUnlockedMessage
+  | TournamentRequestMessage
   | BoardStatusMessage
   | LobbyIdleClosedMessage
   | MatchmakingMessage
@@ -622,6 +623,22 @@ export interface AchievementUnlockedMessage {
   }[]
   levelBefore: number
   levelAfter: number
+}
+/**
+ * Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "TournamentRequestMessage".
+ */
+export interface TournamentRequestMessage {
+  type: 'tournament.request'
+  tournamentId: string
+  tournamentName: string
+  role: 'organizer'
+  from: {
+    id: string
+    name: string
+  }
 }
 /**
  * Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.

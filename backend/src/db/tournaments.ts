@@ -12,7 +12,7 @@ import {
   type TournamentEvent,
   type TournamentStatus,
 } from '../shared/tournaments/state.js'
-import { MAX_UNFINISHED_TOURNAMENTS } from '../shared/tournaments/setup.js'
+import { MAX_ORGANIZERS, MAX_UNFINISHED_TOURNAMENTS } from '../shared/tournaments/setup.js'
 
 export type TournamentRow = Selectable<TournamentsTable>
 export type TournamentMatchRow = Selectable<TournamentMatchesTable>
@@ -214,5 +214,66 @@ export async function updateTournament(
 /** Deletes a draft; false when it is not (or no longer) one. */
 export async function deleteDraft(db: Kysely<Database>, id: string): Promise<boolean> {
   const res = await db.deleteFrom('tournaments').where('id', '=', id).where('status', '=', 'draft').executeTakeFirst()
+  return res.numDeletedRows > 0n
+}
+
+/** The one answer to "may this user run this tournament", from their `organizerRole`: its owner or a co-organizer. Every organizer-only route asks it. */
+export const canOrganize = (role: OrganizerRole | null): role is OrganizerRole => role !== null
+
+export interface OrganizerRow {
+  id: string
+  name: string
+  role: OrganizerRole
+  added_at: Date | null
+}
+
+/** The owner first, then the co-organizers by when they were added. */
+export async function listOrganizers(db: Kysely<Database>, t: Pick<TournamentRow, 'id' | 'owner_user_id'>): Promise<OrganizerRow[]> {
+  const rows = await db
+    .selectFrom('tournament_organizers as o')
+    .innerJoin('user as u', 'u.id', 'o.user_id')
+    .select(['u.id', 'u.name', 'o.added_at'])
+    .where('o.tournament_id', '=', t.id)
+    .orderBy('o.added_at')
+    .orderBy('u.id')
+    .execute()
+  const owner =
+    t.owner_user_id === null
+      ? undefined
+      : await db.selectFrom('user').select(['id', 'name']).where('id', '=', t.owner_user_id).executeTakeFirst()
+  return [
+    ...(owner ? [{ ...owner, role: 'owner' as const, added_at: null }] : []),
+    ...rows.map(r => ({ ...r, role: 'organizer' as const })),
+  ]
+}
+
+/** Adds a co-organizer unless they already are one or the tournament has the most co-organizers. */
+export async function addOrganizer(db: Kysely<Database>, tournamentId: string, userId: string): Promise<'added' | 'exists' | 'full'> {
+  return db.transaction().execute(async tx => {
+    // Two adds at once wait here, so both cannot slip under the cap
+    await tx.selectFrom('tournaments').select('id').where('id', '=', tournamentId).forUpdate().execute()
+    const { n } = await tx
+      .selectFrom('tournament_organizers')
+      .select(eb => eb.fn.countAll<string>().as('n'))
+      .where('tournament_id', '=', tournamentId)
+      .executeTakeFirstOrThrow()
+    if (Number(n) >= MAX_ORGANIZERS) return 'full'
+    const row = await tx
+      .insertInto('tournament_organizers')
+      .values({ tournament_id: tournamentId, user_id: userId })
+      .onConflict(oc => oc.doNothing())
+      .returning('user_id')
+      .executeTakeFirst()
+    return row ? 'added' : 'exists'
+  })
+}
+
+/** Removes a co-organizer; false when they were not one. */
+export async function removeOrganizer(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+  const res = await db
+    .deleteFrom('tournament_organizers')
+    .where('tournament_id', '=', tournamentId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst()
   return res.numDeletedRows > 0n
 }
