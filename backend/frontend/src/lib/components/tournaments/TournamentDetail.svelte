@@ -1,7 +1,8 @@
 <script lang="ts">
   // A tournament's Details (the Tournaments board's hero facts, as a panel): when, game, entry and
-  // format, check-in, the board rule, the spots, which friends are in, and Register or Withdraw.
-  // Organizers of an invite-link tournament also get the link to share.
+  // format, check-in, the board rule, the spots, which friends are in, and Register, Check in or
+  // Withdraw. Organizers of an invite-link tournament also get the link to share, and of one without
+  // a start time a Start now.
   import { CalendarDays, Check, Target, User, UsersRound } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -21,6 +22,8 @@
     onclose,
     onregister,
     onwithdraw,
+    oncheckin,
+    onstart,
   }: {
     t: Tournament
     busy?: boolean
@@ -28,12 +31,15 @@
     onclose: () => void
     onregister: () => void
     onwithdraw: () => void
+    oncheckin: () => void
+    onstart: () => void
   } = $props()
 
   const s = $derived(spots(t))
   const online = $derived(t.access !== 'in_person')
   const friends = $derived(t.friendsIn.slice(0, 4))
   const link = $derived(t.inviteCode && t.access === 'invite' ? `${location.origin}/${hrefs.tournamentJoin(t.inviteCode)}` : null)
+  const startable = $derived(t.role !== null && online && t.status === 'open' && t.startsAt === null)
   const copy = createCopy()
   const time = (iso: string) => new Date(iso).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
   const checkIn = $derived.by(() => {
@@ -107,15 +113,29 @@
   {#if error}<ErrorText>{error}</ErrorText>{/if}
 
   {#snippet footer()}
-    {#if t.registration === 'open'}
-      <Button variant="accent" class="w-full" disabled={busy} onclick={onregister}>Register</Button>
-    {:else if t.registration === 'registered'}
-      <div class="flex w-full items-center gap-3">
-        <span class="flex grow items-center gap-1.5 text-label font-semibold text-accent"><Check size={16} />You're registered</span>
-        {#if canWithdraw(t.status)}<Button variant="destructive" disabled={busy} onclick={onwithdraw}>Withdraw</Button>{/if}
-      </div>
-    {:else}
-      <Button variant="outline" class="w-full" disabled>{REGISTRATION_NOTE[t.registration]}</Button>
-    {/if}
+    <div class="flex w-full flex-col gap-2">
+      {#if startable}
+        <Button variant="accent" class="w-full" disabled={busy} onclick={onstart}>Start now · open check-in</Button>
+      {/if}
+      {#if t.registration === 'open'}
+        <Button variant="accent" class="w-full" disabled={busy} onclick={onregister}>Register</Button>
+      {:else if t.registration === 'registered'}
+        <div class="flex w-full items-center gap-3">
+          <span class="flex grow items-center gap-1.5 text-label font-semibold text-accent">
+            <Check size={16} />{t.checkedIn ? "You're checked in" : "You're registered"}
+          </span>
+          {#if t.status === 'check_in' && !t.checkedIn}
+            <Button variant="accent" disabled={busy} onclick={oncheckin}>Check in</Button>
+          {/if}
+          {#if canWithdraw(t.status)}
+            <Button variant="destructive" disabled={busy} onclick={onwithdraw}
+              >{t.status === 'running' ? 'Withdraw · forfeit' : 'Withdraw'}</Button
+            >
+          {/if}
+        </div>
+      {:else}
+        <Button variant="outline" class="w-full" disabled>{REGISTRATION_NOTE[t.registration]}</Button>
+      {/if}
+    </div>
   {/snippet}
 </Modal>

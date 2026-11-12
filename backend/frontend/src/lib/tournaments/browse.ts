@@ -166,3 +166,6 @@ export const loadByCode = (code: string) => outcome(api.GET('/api/tournaments/co
 export const register = (id: string, code?: string) =>
   outcome(api.POST('/api/tournaments/{id}/registration', { params: { path: { id }, query: { code } } }))
 export const withdraw = (id: string) => outcome(api.DELETE('/api/tournaments/{id}/registration', { params: { path: { id } } }))
+export const checkIn = (id: string) => outcome(api.POST('/api/tournaments/{id}/check-in', { params: { path: { id } } }))
+/** An organizer starts a tournament without a start time: its check-in opens now. */
+export const startNow = (id: string) => outcome(api.POST('/api/tournaments/{id}/start', { params: { path: { id } } }))
