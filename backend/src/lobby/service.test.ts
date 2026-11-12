@@ -803,7 +803,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     it('pushes /ws/me to members, only when it changed', async () => {
       const me = sock()
       hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
-      expect(lastMsg(me)).toEqual({ type: 'me', invites: [], lobby: null, game: null })
+      expect(lastMsg(me)).toEqual({ type: 'me', invites: [], teamInvites: [], lobby: null, game: null })
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       expect(lastMsg(me).lobby).toMatchObject({ id, name: "Christoph's lobby", peopleCount: 2, sessionId: null, youThrowNext: false })

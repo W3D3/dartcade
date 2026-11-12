@@ -202,6 +202,7 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'max', undefined)).toMatchObject({ sessionId: null, gameId: null, youThrowNext: false, leg: null })
     const me = {
       type: 'me' as const,
+      teamInvites: [],
       invites: [
         inviteView(
           {

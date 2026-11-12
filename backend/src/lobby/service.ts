@@ -9,6 +9,7 @@ import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
+import { pendingInvitesFor as pendingTeamInvitesFor } from '../db/teams.js'
 import type { GameEnded, GameEndedConsumer, GameStarted, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
 import { engineApiError } from '../api/engineErrors.js'
@@ -300,13 +301,14 @@ export class LobbyService implements GameEndedConsumer {
   }
 
   async meMessage(userId: string): Promise<MeMessage> {
-    const invites = await this.listInvites(userId)
+    const [invites, teamInvites] = await Promise.all([this.listInvites(userId), pendingTeamInvitesFor(this.db, userId)])
     const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
     const lobby = lobbyId === undefined ? undefined : await this.state(lobbyId)
     const session = this.deps.engine.getSessionByUser(userId)
     const msg: MeMessage = {
       type: 'me',
       invites,
+      teamInvites,
       lobby: lobby ? lobbySummary(lobby, userId, this.deps.engine.getLobbySession(lobby.id)) : null,
       game: session
         ? { sessionId: session.id, gameId: session.module.id, lobbyName: session.lobbyName, players: session.players.map(p => p.name) }

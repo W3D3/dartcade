@@ -348,11 +348,16 @@
       "title": "MeMessage",
       "description": "Pushed on /ws/me when it opens and whenever it changes.",
       "type": "object",
-      "required": ["type", "invites", "lobby", "game"],
+      "required": ["type", "invites", "teamInvites", "lobby", "game"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "me" },
         "invites": { "type": "array", "items": { "$ref": "#/$defs/PendingInvite" } },
+        "teamInvites": {
+          "type": "array",
+          "description": "Invites to named teams waiting for your answer, newest first.",
+          "items": { "$ref": "common-v1.json#/$defs/TeamInvite" }
+        },
         "lobby": { "anyOf": [{ "$ref": "#/$defs/LobbySummary" }, { "type": "null" }] },
         "game": { "anyOf": [{ "$ref": "#/$defs/ActiveGame" }, { "type": "null" }] }
       }
@@ -604,6 +609,17 @@
         "sessionId": { "type": ["string", "null"], "description": "started: the game that began." }
       }
     },
+    "TeamInviteMessage": {
+      "title": "TeamInviteMessage",
+      "description": "Pushed on /ws/me when a captain invites you to their team (once, for a toast; the invite also shows in me.teamInvites).",
+      "type": "object",
+      "required": ["type", "invite"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "team.invite" },
+        "invite": { "$ref": "common-v1.json#/$defs/TeamInvite" }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -615,7 +631,8 @@
         { "$ref": "#/$defs/BoardStatusMessage" },
         { "$ref": "#/$defs/LobbyIdleClosedMessage" },
         { "$ref": "#/$defs/MatchmakingMessage" },
-        { "$ref": "#/$defs/MatchmakingEndedMessage" }
+        { "$ref": "#/$defs/MatchmakingEndedMessage" },
+        { "$ref": "#/$defs/TeamInviteMessage" }
       ]
     }
   }

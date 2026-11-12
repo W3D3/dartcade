@@ -3046,6 +3046,7 @@
       "required": [
         "type",
         "invites",
+        "teamInvites",
         "lobby",
         "game"
       ],
@@ -3487,6 +3488,240 @@
                 "items": {
                   "type": "string"
                 }
+              }
+            }
+          }
+        },
+        "teamInvites": {
+          "type": "array",
+          "description": "Invites to named teams waiting for your answer, newest first.",
+          "items": {
+            "title": "TeamInvite",
+            "description": "An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).",
+            "type": "object",
+            "required": [
+              "id",
+              "team",
+              "members",
+              "memberCount",
+              "createdAt",
+              "expiresAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "team": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "tag",
+                  "color"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                }
+              },
+              "inviter": {
+                "description": "Left out once the inviter's account is gone.",
+                "title": "UserRef",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "avatar"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Their handle, shown as @name"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "foreground",
+                          "background"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "description": "The finish of the mark in front"
+                          },
+                          "background": {
+                            "type": "string",
+                            "description": "The finish of the disc behind it"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "members": {
+                "type": "array",
+                "description": "The first four members, the captain first.",
+                "items": {
+                  "title": "UserRef",
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "avatar"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Their handle, shown as @name"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "foreground",
+                            "background"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "description": "The finish of the mark in front"
+                            },
+                            "background": {
+                              "type": "string",
+                              "description": "The finish of the disc behind it"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "memberCount": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
               }
             }
           }
@@ -5609,6 +5844,251 @@
         }
       }
     },
+    "TeamInviteMessage": {
+      "title": "TeamInviteMessage",
+      "description": "Pushed on /ws/me when a captain invites you to their team (once, for a toast; the invite also shows in me.teamInvites).",
+      "type": "object",
+      "required": [
+        "type",
+        "invite"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "team.invite"
+        },
+        "invite": {
+          "title": "TeamInvite",
+          "description": "An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).",
+          "type": "object",
+          "required": [
+            "id",
+            "team",
+            "members",
+            "memberCount",
+            "createdAt",
+            "expiresAt"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "team": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "tag",
+                "color"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                }
+              }
+            },
+            "inviter": {
+              "description": "Left out once the inviter's account is gone.",
+              "title": "UserRef",
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "avatar"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Their handle, shown as @name"
+                },
+                "avatar": {
+                  "title": "Avatar",
+                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "foreground",
+                        "background"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "preset"
+                          ]
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "description": "The finish of the mark in front"
+                        },
+                        "background": {
+                          "type": "string",
+                          "description": "The finish of the disc behind it"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "upload"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "members": {
+              "type": "array",
+              "description": "The first four members, the captain first.",
+              "items": {
+                "title": "UserRef",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "avatar"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Their handle, shown as @name"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "foreground",
+                          "background"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "description": "The finish of the mark in front"
+                          },
+                          "background": {
+                            "type": "string",
+                            "description": "The finish of the disc behind it"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "memberCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -5620,6 +6100,7 @@
           "required": [
             "type",
             "invites",
+            "teamInvites",
             "lobby",
             "game"
           ],
@@ -6061,6 +6542,240 @@
                     "items": {
                       "type": "string"
                     }
+                  }
+                }
+              }
+            },
+            "teamInvites": {
+              "type": "array",
+              "description": "Invites to named teams waiting for your answer, newest first.",
+              "items": {
+                "title": "TeamInvite",
+                "description": "An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).",
+                "type": "object",
+                "required": [
+                  "id",
+                  "team",
+                  "members",
+                  "memberCount",
+                  "createdAt",
+                  "expiresAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "team": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "tag",
+                      "color"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "color": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "inviter": {
+                    "description": "Left out once the inviter's account is gone.",
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "avatar"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "foreground",
+                              "background"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "description": "The finish of the mark in front"
+                              },
+                              "background": {
+                                "type": "string",
+                                "description": "The finish of the disc behind it"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "members": {
+                    "type": "array",
+                    "description": "The first four members, the captain first.",
+                    "items": {
+                      "title": "UserRef",
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "avatar"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Their handle, shown as @name"
+                        },
+                        "avatar": {
+                          "title": "Avatar",
+                          "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "none"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind",
+                                "foreground",
+                                "background"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "preset"
+                                  ]
+                                },
+                                "foreground": {
+                                  "type": "string",
+                                  "description": "The finish of the mark in front"
+                                },
+                                "background": {
+                                  "type": "string",
+                                  "description": "The finish of the disc behind it"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind",
+                                "version"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "upload"
+                                  ]
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "memberCount": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
                   }
                 }
               }
@@ -7573,6 +8288,251 @@
                 "null"
               ],
               "description": "started: the game that began."
+            }
+          }
+        },
+        {
+          "title": "TeamInviteMessage",
+          "description": "Pushed on /ws/me when a captain invites you to their team (once, for a toast; the invite also shows in me.teamInvites).",
+          "type": "object",
+          "required": [
+            "type",
+            "invite"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "team.invite"
+            },
+            "invite": {
+              "title": "TeamInvite",
+              "description": "An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).",
+              "type": "object",
+              "required": [
+                "id",
+                "team",
+                "members",
+                "memberCount",
+                "createdAt",
+                "expiresAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "team": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "tag",
+                    "color"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "inviter": {
+                  "description": "Left out once the inviter's account is gone.",
+                  "title": "UserRef",
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "avatar"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Their handle, shown as @name"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "foreground",
+                            "background"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "description": "The finish of the mark in front"
+                            },
+                            "background": {
+                              "type": "string",
+                              "description": "The finish of the disc behind it"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "members": {
+                  "type": "array",
+                  "description": "The first four members, the captain first.",
+                  "items": {
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "avatar"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "foreground",
+                              "background"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "description": "The finish of the mark in front"
+                              },
+                              "background": {
+                                "type": "string",
+                                "description": "The finish of the disc behind it"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "memberCount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
             }
           }
         }

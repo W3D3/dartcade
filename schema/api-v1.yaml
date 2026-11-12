@@ -50,6 +50,8 @@ tags:
     description: The signed-in user's stats per game mode (stats.enabled)
   - name: tournaments
     description: Tournaments, their entries and matches (tournaments.enabled)
+  - name: teams
+    description: Named teams that register for team tournaments (tournaments.enabled)
   - name: admin
     description: Admin-only account management (list users, promote or demote admins) and feature flag overrides
   - name: minigolf
@@ -2765,6 +2767,189 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/teams:
+    get:
+      operationId: listTeams
+      summary: Your teams and the invites waiting for your answer (tournaments.enabled)
+      description: Every team you are in, oldest membership first, with what the Teams tab shows for each.
+      tags: [teams]
+      responses:
+        '200':
+          description: Your teams and invites
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [teams, invites]
+                additionalProperties: false
+                properties:
+                  teams: { type: array, items: { $ref: '#/components/schemas/Team' } }
+                  invites: { type: array, items: { $ref: '#/components/schemas/TeamInvite' }, description: Newest first }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    post:
+      operationId: createTeam
+      summary: Make a team with you as captain, and invite players to it
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, tag, color]
+              additionalProperties: false
+              properties:
+                name: { type: string, maxLength: 200, description: '3 to 24 characters once trimmed; unique ignoring case' }
+                tag: { type: string, pattern: '^\s*[A-Za-z]{2,4}\s*$', description: '2 to 4 letters, stored in capitals' }
+                color: { $ref: '#/components/schemas/TeamColor' }
+                invite:
+                  { type: array, maxItems: 7, uniqueItems: true, items: { type: string, minLength: 1 }, description: Accounts to invite }
+      responses:
+        '201':
+          description: Made
+          content:
+            application/json:
+              schema: { type: object, required: [id], additionalProperties: false, properties: { id: { type: string } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TeamConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/teams/{id}:
+    parameters: [{ $ref: '#/components/parameters/TeamId' }]
+    patch:
+      operationId: updateTeam
+      summary: Change the team's name, tag or colour (captain)
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: false
+              properties:
+                name: { type: string, maxLength: 200 }
+                tag: { type: string, pattern: '^\s*[A-Za-z]{2,4}\s*$' }
+                color: { $ref: '#/components/schemas/TeamColor' }
+      responses:
+        '204': { description: Changed }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TeamConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/teams/{id}/invites:
+    parameters: [{ $ref: '#/components/parameters/TeamId' }]
+    post:
+      operationId: inviteToTeam
+      summary: Invite an account to the team (captain); the invite expires after 7 days
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              additionalProperties: false
+              properties: { userId: { type: string, minLength: 1 } }
+      responses:
+        '201':
+          description: Invited
+          content:
+            application/json:
+              schema: { type: object, required: [id], additionalProperties: false, properties: { id: { type: string } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TeamConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/teams/{id}/invites/{inviteId}:
+    parameters: [{ $ref: '#/components/parameters/TeamId' }, { $ref: '#/components/parameters/TeamInviteId' }]
+    delete:
+      operationId: cancelTeamInvite
+      summary: Take back an invite (captain)
+      tags: [teams]
+      responses:
+        '204': { description: Cancelled }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/teams/{id}/captain:
+    parameters: [{ $ref: '#/components/parameters/TeamId' }]
+    put:
+      operationId: setTeamCaptain
+      summary: Hand the captaincy to another member (captain)
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              additionalProperties: false
+              properties: { userId: { type: string, minLength: 1 } }
+      responses:
+        '204': { description: Handed over }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/teams/{id}/members/{userId}:
+    parameters: [{ $ref: '#/components/parameters/TeamId' }, { $ref: '#/components/parameters/TeamMemberUserId' }]
+    delete:
+      operationId: removeTeamMember
+      summary: Remove a member (captain), or leave the team (yourself)
+      description: >-
+        The captain can't leave while others are in the team: they hand the captaincy over first. A
+        captain alone in the team leaving deletes it.
+      tags: [teams]
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TeamConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/team-invites/{inviteId}/accept:
+    parameters: [{ $ref: '#/components/parameters/TeamInviteId' }]
+    post:
+      operationId: acceptTeamInvite
+      summary: Join the team you were invited to
+      tags: [teams]
+      responses:
+        '204': { description: Joined }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/TeamConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/team-invites/{inviteId}/decline:
+    parameters: [{ $ref: '#/components/parameters/TeamInviteId' }]
+    post:
+      operationId: declineTeamInvite
+      summary: Decline an invite to a team
+      tags: [teams]
+      responses:
+        '204': { description: Declined }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/achievements:
     get:
       operationId: getMyAchievements
@@ -3490,6 +3675,21 @@ components:
       required: true
       description: Lobby code; case, dashes and spaces are ignored
       schema: { type: string, minLength: 1, maxLength: 16 }
+    TeamId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    TeamInviteId:
+      name: inviteId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    TeamMemberUserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
     FriendRequestId:
       name: id
       in: path
@@ -3598,6 +3798,11 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/FriendConflict' }
+    TeamConflict:
+      description: The name is taken, a limit is reached, or the change needs another first (a captain hands over before leaving)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/TeamConflict' }
     MinigolfPublishRefused:
       description: The course has no holes, or a hole in it fails a check that blocks Publish
       content:
@@ -3633,6 +3838,7 @@ components:
 
     FriendList: { $ref: 'common-v1.json#/$defs/FriendList' }
     Avatar: { $ref: 'common-v1.json#/$defs/Avatar' }
+    UserRef: { $ref: 'common-v1.json#/$defs/UserRef' }
     AvatarChoice: { $ref: 'common-v1.json#/$defs/AvatarChoice' }
     HomeLobbies:
       type: object
@@ -6319,6 +6525,83 @@ components:
             name: { type: string }
             sound: { type: string }
             celebration: { type: string }
+    TeamColor: { type: string, enum: ['#9b7bff', '#4fd1c5', '#ff8a4a', '#3fb6e8', '#eac24f', '#7fd18f', '#ff6b9a', '#c6f24e'] }
+    TeamInvite: { $ref: 'common-v1.json#/$defs/TeamInvite' }
+    TeamConflict:
+      type: object
+      required: [error, code]
+      additionalProperties: false
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum: [name_taken, team_full, too_many_teams, already_member, already_invited, captain_must_hand_over, unavailable]
+    Team:
+      type: object
+      description: A team you are in, as the Teams tab shows it
+      required: [id, name, tag, color, captainUserId, createdAt, members, invites, record, average, tournaments]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tag: { type: string }
+        color: { $ref: '#/components/schemas/TeamColor' }
+        captainUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+        members:
+          type: array
+          description: The captain first, then by when they joined
+          items:
+            type: object
+            required: [user, joinedAt, rating]
+            additionalProperties: false
+            properties:
+              user: { $ref: '#/components/schemas/UserRef' }
+              joinedAt: { type: string, format: date-time }
+              rating:
+                { type: integer, nullable: true, description: 'Their 1v1 ranked rating; null before their placement matches are done' }
+        invites:
+          type: array
+          description: Pending invites, oldest first
+          items:
+            type: object
+            required: [id, user, createdAt, expiresAt, rating]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              user: { $ref: '#/components/schemas/UserRef' }
+              createdAt: { type: string, format: date-time }
+              expiresAt: { type: string, format: date-time }
+              rating: { type: integer, nullable: true }
+        record:
+          type: object
+          description: Its tournament matches (byes left out) and tournaments
+          required: [wins, losses, tournaments, bestPlace]
+          additionalProperties: false
+          properties:
+            wins: { type: integer, minimum: 0 }
+            losses: { type: integer, minimum: 0 }
+            tournaments: { type: integer, minimum: 0 }
+            bestPlace: { type: integer, minimum: 1, nullable: true }
+        average:
+          type: number
+          nullable: true
+          description: The mean of its members' X01 3-dart averages over the last 30 days; null when none played X01
+        tournaments:
+          type: array
+          description: The tournaments it entered, the latest first, at most 10
+          items:
+            type: object
+            required: [id, name, startsAt, status, entryStatus, finalPlace]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              name: { type: string }
+              startsAt: { type: string, format: date-time, nullable: true }
+              status: { type: string, enum: [draft, open, check_in, running, finished, cancelled] }
+              entryStatus: { type: string, enum: [pending, registered, checked_in, withdrawn] }
+              finalPlace: { type: integer, minimum: 1, nullable: true }
+
     TournamentSummary:
       type: object
       required: [id, name, kind, access, status, gameId, format, teamSize, maxEntries, entries, startsAt]

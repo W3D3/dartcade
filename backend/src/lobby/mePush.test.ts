@@ -15,6 +15,7 @@ vi.mock('../db/lobbies.js', async importOriginal => ({
   pendingInvitesFor: vi.fn(),
   getOpenLobbyIdOfUser: vi.fn(),
 }))
+vi.mock('../db/teams.js', () => ({ pendingInvitesFor: vi.fn().mockResolvedValue([]) }))
 
 const store = (): EngineStore => ({
   insertSession: vi.fn().mockResolvedValue(undefined),
