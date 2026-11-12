@@ -337,8 +337,9 @@ export function handleBridgeConnection(
           const { startup, ...report } = m.data.data
           bigScreenState.set(boardDbId, { helper: report.helper, running: report.running })
           if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
-          // Only a helper that has just started opens it: a window the user closed stays closed until Start
-          if (startup && report.helper) callHook('onBigScreenStartup', boardDbId, () => opts.onBigScreenStartup?.(boardDbId))
+          // Only a helper that has just started opens it, and not over a window it found already open: a window the user closed stays closed until Start
+          if (startup && report.helper && !report.running)
+            callHook('onBigScreenStartup', boardDbId, () => opts.onBigScreenStartup?.(boardDbId))
           return
         }
 

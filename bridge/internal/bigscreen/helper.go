@@ -149,7 +149,24 @@ func (h *helper) session(ctx context.Context, addr string) error {
 func (h *helper) report() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.adoptLocked()
 	h.reportLocked()
+}
+
+// adoptLocked takes over a window that is open though this helper has no handle on it (a helper
+// that restarted, a Chromium that outlived its launcher): Chromium keeps one instance per
+// profile, so a second launch would hand over to it and exit, and the helper would call it stopped.
+func (h *helper) adoptLocked() {
+	a, ok := h.launch.(Adopter)
+	if !ok || h.current != nil {
+		return
+	}
+	r := a.Adopt()
+	if r == nil {
+		return
+	}
+	h.current = r
+	h.watchLocked(r)
 }
 
 func (h *helper) reportLocked() {
@@ -173,6 +190,12 @@ func (h *helper) reportLocked() {
 func (h *helper) stopLocked() {
 	if h.current != nil && h.current.Kill != nil {
 		h.current.Kill()
+		if h.current.Done != nil { // the next launch must not meet the old window's profile lock
+			select {
+			case <-h.current.Done:
+			case <-time.After(2 * time.Second):
+			}
+		}
 	}
 	h.current = nil
 }
@@ -191,6 +214,7 @@ func (h *helper) open(target string) {
 		h.reportLocked()
 		return
 	}
+	h.adoptLocked()
 	h.stopLocked()
 	r, err := h.launch.Launch(target)
 	if err != nil {
@@ -200,22 +224,29 @@ func (h *helper) open(target string) {
 	}
 	h.current = r
 	h.reportLocked()
-	if r.Done != nil {
-		go func() {
-			<-r.Done
-			h.mu.Lock()
-			defer h.mu.Unlock()
-			if h.current == r { // not replaced or closed meanwhile
-				h.current = nil
-				h.reportLocked()
-			}
-		}()
+	h.watchLocked(r)
+}
+
+// watchLocked reports the window gone when its process exits.
+func (h *helper) watchLocked(r *Running) {
+	if r.Done == nil {
+		return
 	}
+	go func() {
+		<-r.Done
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		if h.current == r { // not replaced or closed meanwhile
+			h.current = nil
+			h.reportLocked()
+		}
+	}()
 }
 
 func (h *helper) close() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.adoptLocked()
 	h.stopLocked()
 	h.reportLocked()
 }

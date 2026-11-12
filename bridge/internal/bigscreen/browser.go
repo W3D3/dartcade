@@ -20,6 +20,12 @@ type Launcher interface {
 	Launch(url string) (*Running, error)
 }
 
+// Adopter is a Launcher that can find a window it (or an earlier helper) opened that is still open.
+type Adopter interface {
+	// Adopt returns the open window, or nil when there is none
+	Adopt() *Running
+}
+
 type candidate struct{ name, bin string }
 
 func chromiumCandidates(goos string) []candidate {
@@ -74,6 +80,8 @@ type osLauncher struct{ profileDir string }
 
 // DefaultLauncher opens the page in an installed browser, with its own profile in profileDir.
 func DefaultLauncher(profileDir string) Launcher { return osLauncher{profileDir} }
+
+func (l osLauncher) Adopt() *Running { return adopt(l.profileDir) }
 
 func (l osLauncher) Launch(url string) (*Running, error) {
 	// Firefox, unlike Chromium, won't create a missing --profile directory
