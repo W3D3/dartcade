@@ -95,6 +95,8 @@
   --color-ice: #9ec8ff;
   --color-ice-line: #7fb4ff;
   --color-ice-soft: #17202e;
+  /* The Report a bug button: orange, apart from the lime accent, the red of live and danger, and the yellow of warn */
+  --color-bug: #ff9a3d;
   /* A challenge one step from done (Progress board) */
   --color-gold: #f2b94e;
   --color-gold-line: #6b5a2a;

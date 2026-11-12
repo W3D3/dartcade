@@ -19,11 +19,19 @@ const MAX_SCREENSHOT = 2_800_000
 /** The open dialog: the screenshot as a JPEG data URL, or null and whether taking it failed. */
 export const feedbackDialog = writable<{ screenshot: string | null; captureFailed: boolean } | null>(null)
 
+/** Marks a control the screenshot hides (the report button itself), keeping its space so the layout holds. */
+export const SCREENSHOT_SKIP_ATTR = 'data-screenshot-skip'
+
+export function hideSkipped(clone: Node): void {
+  if (clone instanceof HTMLElement && clone.hasAttribute(SCREENSHOT_SKIP_ATTR)) clone.style.visibility = 'hidden'
+}
+
 /** The page as a JPEG data URL, at most 1600 px wide. */
 async function captureScreenshot(): Promise<string> {
   const url = await domToJpeg(document.body, {
     scale: Math.min(1, MAX_WIDTH / window.innerWidth),
     quality: 0.7,
+    onCloneEachNode: hideSkipped,
     backgroundColor: getComputedStyle(document.body).backgroundColor,
   })
   if (url.length > MAX_SCREENSHOT) throw new Error('screenshot too large')

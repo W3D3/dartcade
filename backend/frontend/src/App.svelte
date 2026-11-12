@@ -55,6 +55,7 @@
   import AdminSystem from './routes/AdminSystem.svelte'
   import AdminDartSamples from './routes/AdminDartSamples.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
+  import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte'
   import MatchFound from '$lib/components/ranked/MatchFound.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
@@ -288,5 +289,7 @@
       {#if $currentUser && !bigScreen}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast /><MatchFound />{/if}
     {/if}
   {/if}
+  <!-- App-wide: the game screens have no Layout, and the report button is on them too -->
+  {#if $currentUser && !bigScreen}<FeedbackDialog />{/if}
   {#if $currentUser?.impersonating && !bigScreen}<ImpersonationBanner name={$currentUser.name} />{/if}
 </Tooltip.Provider>

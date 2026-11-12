@@ -4,6 +4,7 @@
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import RankedPill from '$lib/components/ranked/RankedPill.svelte'
+  import ReportBugButton from '$lib/components/feedback/ReportBugButton.svelte'
   import WatchingPill from '$lib/components/watch/WatchingPill.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import type { Board } from '$lib/api'
@@ -111,6 +112,7 @@
       {/if}
       <WatchingPill count={watching} />
       {#each boards as b (b.id)}<BoardStatusPanel board={b} compact />{/each}
+      <ReportBugButton />
       <Button
         variant="outline"
         size="icon"
@@ -183,6 +185,8 @@
       {#each boards as b (b.id)}
         <BoardStatusPanel board={b} />
       {/each}
+
+      <ReportBugButton variant="labelled" />
 
       <Button
         variant="outline"
