@@ -7,7 +7,6 @@ import type { Database } from '../db/schema.js'
 import type { components } from '../schema/api.js'
 import { requireAuth } from '../auth/middleware.js'
 import { isAdmin } from '../auth/admin.js'
-import { areFriends } from '../db/friends.js'
 import {
   addOrganizer,
   canOrganize,
@@ -17,15 +16,14 @@ import {
   getTournamentByCode,
   hasPairedBoard,
   insertTournamentCapped,
-  isRegistered,
   listBrowseTournaments,
   listOrganizers,
   moveTournament,
-  organizerRole,
   registerSolo,
   spotStatus,
   removeOrganizer,
   updateTournament,
+  viewerRole,
   withdrawSolo,
   type BrowseRow,
   type OrganizerRole,
@@ -244,13 +242,9 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     code?: string,
   ): Promise<{ t: TournamentView; role: OrganizerRole | null }> {
     if (!t) throw notFound()
-    const role = await organizerRole(db, t, userId)
-    if (role) return { t, role }
-    if (t.status === 'draft') throw notFound()
-    if (t.access === 'friends' && !(t.owner_user_id !== null && (await areFriends(db, t.owner_user_id, userId)))) throw notFound()
-    if (t.access === 'invite' && !(code !== undefined && code.toUpperCase() === t.invite_code) && !(await isRegistered(db, t.id, userId)))
-      throw notFound()
-    return { t, role }
+    const seen = await viewerRole(db, t, userId, code)
+    if (!seen) throw notFound()
+    return { t, role: seen.role }
   }
 
   /** As visible, and 403 unless the caller organizes it. */

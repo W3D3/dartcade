@@ -38,6 +38,9 @@ export type Result = MatchResult | { readonly outcome: 'bye'; readonly winner: 0
 /** `main` is the knockout (or a whole round robin); `lower` and `final` belong to a double elimination. */
 export type Bracket = 'main' | 'lower' | 'final' | 'group'
 
+/** The order brackets are played and listed in: groups, the knockout (upper), the lower bracket, the grand final. */
+export const BRACKET_ORDER: Record<Bracket, number> = { group: 0, main: 1, lower: 2, final: 3 }
+
 export interface Match {
   /**
    * Unique within the draw, e.g. `R2M3`, `L4M1` (lower bracket), `GF1`/`GF2` (grand final and

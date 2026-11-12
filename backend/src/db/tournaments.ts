@@ -20,6 +20,7 @@ import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { toAvatar, type Avatar } from './users.js'
 import { x01Forms } from './ranked.js'
 import { groupBy } from '../util/groupBy.js'
+import { areFriends } from './friends.js'
 
 export type TournamentRow = Selectable<TournamentsTable>
 export type TournamentMatchRow = Selectable<TournamentMatchesTable>
@@ -207,6 +208,26 @@ export async function organizerRole(
     .where('user_id', '=', userId)
     .executeTakeFirst()
   return row ? 'organizer' : null
+}
+
+/**
+ * Whether `userId` may see the tournament, with their organizer role; null for a draft, a
+ * friends-only one of someone not their friend, or an invite link's they hold no spot in and came
+ * to without its `code`. The API, the live socket and Watch all ask this.
+ */
+export async function viewerRole(
+  db: Kysely<Database>,
+  t: Pick<TournamentRow, 'id' | 'owner_user_id' | 'status' | 'access' | 'invite_code'>,
+  userId: string,
+  code?: string,
+): Promise<{ role: OrganizerRole | null } | null> {
+  const role = await organizerRole(db, t, userId)
+  if (role) return { role }
+  if (t.status === 'draft') return null
+  if (t.access === 'friends' && !(t.owner_user_id !== null && (await areFriends(db, t.owner_user_id, userId)))) return null
+  if (t.access === 'invite' && !(code !== undefined && code.toUpperCase() === t.invite_code) && !(await isRegistered(db, t.id, userId)))
+    return null
+  return { role: null }
 }
 
 /** Inserts the tournament unless its owner already has the most unfinished ones; false then. */

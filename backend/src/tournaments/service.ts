@@ -31,17 +31,9 @@ import {
 import { games } from '../games/index.js'
 import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
-import { seedEntries, type MatchResult, type Seeding } from '../shared/tournaments/bracket.js'
-import {
-  drawFor,
-  finalPlaces,
-  isComplete,
-  replay,
-  samePlace,
-  type Decided,
-  type DrawSetup,
-  type MatchPlace,
-} from '../shared/tournaments/run.js'
+import { seedEntries, type Seeding } from '../shared/tournaments/bracket.js'
+import { drawFor, finalPlaces, isComplete, samePlace } from '../shared/tournaments/run.js'
+import { before, bracketOf, placeOf, seededOf, setupOf } from './bracketRows.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 
 /** How often due check-ins and starts are opened and running brackets move on. */
@@ -61,8 +53,6 @@ export type TournamentDeps = {
 
 export type StartOutcome = 'started' | 'not_startable'
 
-const setupOf = (t: TournamentRow): DrawSetup => ({ format: t.format, settings: t.settings })
-const placeOf = (r: TournamentMatchRow): MatchPlace => ({ bracket: r.bracket, group: r.group_no, round: r.round, index: r.slot })
 const sidesOf = (r: TournamentMatchRow): [string | null, string | null] => [r.entry_a_id, r.entry_b_id]
 /** A solo entry's player, when they have an account (only accounts play online). */
 function playerOf(e: RunEntry): { id: string; userId: string; name: string } | null {
@@ -70,19 +60,6 @@ function playerOf(e: RunEntry): { id: string; userId: string; name: string } | n
   return p?.userId != null ? { ...p, userId: p.userId } : null
 }
 const involves = (r: TournamentMatchRow, entryId: string) => r.entry_a_id === entryId || r.entry_b_id === entryId
-// Earlier in the bracket first: a round robin's later rounds wait for the earlier ones
-const BRACKET_ORDER = { group: 0, main: 1, lower: 2, final: 3 } as const
-const before = (a: TournamentMatchRow, b: TournamentMatchRow) =>
-  BRACKET_ORDER[a.bracket] - BRACKET_ORDER[b.bracket] || (a.group_no ?? 0) - (b.group_no ?? 0) || a.round - b.round || a.slot - b.slot
-
-/** A finished row as the bracket takes it: legs that finish the match are a played result, anything else a walkover. */
-function decidedOf(r: TournamentMatchRow): Decided {
-  const winner = r.winner_entry_id === r.entry_a_id ? 0 : 1
-  const legs = [r.legs_a, r.legs_b] as const
-  const played = r.outcome !== 'walkover' && legs[winner] === r.first_to && legs[1 - winner] < r.first_to
-  const result: MatchResult = played ? { outcome: 'played', winner, legs } : { outcome: 'walkover', winner }
-  return { ...placeOf(r), result }
-}
 
 /**
  * Runs online tournaments (issue #606): opens check-in, draws the bracket at the start, starts each
@@ -274,15 +251,8 @@ export class TournamentService implements GameEndedConsumer {
     const t = await getTournamentRow(db, tournamentId)
     if (t?.status !== 'running') return false
     const [entries, rows] = await Promise.all([listEntries(db, t.id), listMatches(db, t.id)])
-    const seeded = entries
-      .filter(e => e.seed !== null)
-      .sort((a, b) => (a.seed ?? 0) - (b.seed ?? 0))
-      .map(e => e.id)
-    const decided = rows
-      .filter(r => r.status === 'finished' && r.outcome !== 'bye')
-      .sort((a, b) => (a.finished_at?.getTime() ?? 0) - (b.finished_at?.getTime() ?? 0) || before(a, b))
-      .map(decidedOf)
-    const bracket = replay(setupOf(t), seeded, decided)
+    const seeded = seededOf(entries)
+    const bracket = bracketOf(t, seeded, rows)
     if (isComplete(bracket)) {
       await finishWithPlaces(db, t.id, finalPlaces(setupOf(t), seeded, bracket))
       return false
