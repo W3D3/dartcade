@@ -172,7 +172,7 @@ func (t *Transport) Send(evs []differ.Event) uint64 {
 
 var (
 	heartbeatEvery = 20 * time.Second
-	deadAfter      = 45 * time.Second // no message from the backend for this long ends the connection
+	deadAfter      = 45 * time.Second // no answer from the backend (ack or pong) for this long ends the connection
 )
 
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
@@ -295,8 +295,9 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 				readErr <- err
 				return
 			}
-			deadline.Reset(deadAfter)
-			t.handleMessage(msg)
+			if t.handleMessage(msg) {
+				deadline.Reset(deadAfter)
+			}
 		}
 	}()
 
@@ -453,8 +454,9 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 }
 
 // handleMessage handles a message from the backend: an ack, or a kinded message (wled.*).
-// It must not block.
-func (t *Transport) handleMessage(msg []byte) {
+// It must not block. True for an answer to the bridge (an ack or a pong): only those show that
+// the backend still works through what the bridge sends, while its commands come regardless.
+func (t *Transport) handleMessage(msg []byte) bool {
 	var m struct {
 		Kind string          `json:"kind"`
 		Data json.RawMessage `json:"data"`
@@ -463,7 +465,7 @@ func (t *Transport) handleMessage(msg []byte) {
 		if t.onMessage != nil {
 			t.onMessage(m.Kind, m.Data)
 		}
-		return
+		return false
 	}
 
 	var ack struct {
@@ -500,4 +502,5 @@ func (t *Transport) handleMessage(msg []byte) {
 			t.markDirty()
 		}
 	}
+	return true
 }
