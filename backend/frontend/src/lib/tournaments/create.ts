@@ -4,6 +4,7 @@
 import { api } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { dayMonth, pad2, weekday } from '$lib/fmt'
+import { IN_PERSON_MAX, PARTICIPANTS_REFUSED, saveParticipants, type ParticipantsBody } from './participants'
 import {
   ROUND_ROBIN_MAX_ENTRIES,
   setupProblems,
@@ -54,6 +55,8 @@ export interface CreateForm {
   noShow: boolean
   noShowMinutes: 5 | 10 | 15
   avgLimit: AvgLimitForm
+  /** In person: the paired boards the venue's devices may score on; null, none. */
+  boardIds: string[] | null
 }
 
 const nums = <T extends number>(values: readonly T[], unit = ''): Choice<T>[] => values.map(value => ({ value, label: `${value}${unit}` }))
@@ -154,8 +157,11 @@ export const sizeChoices = (f: CreateForm): Choice<CreateForm['maxEntries']>[] =
         ? `A round robin has at most ${ROUND_ROBIN_MAX_ENTRIES}: everyone plays everyone.`
         : undefined,
   }))
-const maxEntriesOf = (f: CreateForm): CreateForm['maxEntries'] =>
-  f.format === 'round_robin' && f.maxEntries > ROUND_ROBIN_MAX_ENTRIES ? ROUND_ROBIN_MAX_ENTRIES : f.maxEntries
+/** In person there is no size to pick: the organizers' list is capped at the largest. */
+export const maxEntriesOf = (f: CreateForm): CreateForm['maxEntries'] => {
+  const size = f.access === 'in_person' ? IN_PERSON_MAX : f.maxEntries
+  return f.format === 'round_robin' && size > ROUND_ROBIN_MAX_ENTRIES ? ROUND_ROBIN_MAX_ENTRIES : size
+}
 
 export const LONGER_FINAL_DISABLED = 'A round robin has no final.'
 export const finalChoices = (f: CreateForm): Choice<FinalFirstTo>[] =>
@@ -216,6 +222,7 @@ export function defaultForm(now: Date): CreateForm {
     noShow: true,
     noShowMinutes: 10,
     avgLimit: DEFAULT_AVG_LIMIT,
+    boardIds: null,
   }
 }
 
@@ -242,9 +249,11 @@ export function toInput(f: CreateForm): TournamentInput {
       registrationClosesMinutes: fixed ? f.registrationCloses : null,
       checkInMinutes: !online ? null : fixed ? checkInBeforeOf(f) : f.checkInAfter,
       plannedFor,
-      manualScoring: online && f.manualScoring,
+      // In person a device can always type the scores
+      manualScoring: !online || f.manualScoring,
       noShowMinutes: online && f.noShow ? f.noShowMinutes : null,
       avgLimit: toAvgLimit(f.avgLimit, online),
+      boardIds: online ? null : f.boardIds,
     },
   }
 }
@@ -289,6 +298,7 @@ export function fromTournament(t: Tournament, now: Date): CreateForm {
     noShow: online ? s.noShowMinutes !== null : d.noShow,
     noShowMinutes: pick(NO_SHOW_WAIT, s.noShowMinutes, d.noShowMinutes),
     avgLimit: fromAvgLimit(s.avgLimit),
+    boardIds: s.boardIds ? [...s.boardIds] : null,
   }
 }
 
@@ -302,10 +312,13 @@ const FIELD_LABELS: Record<string, string> = {
   'body/settings/registrationClosesMinutes': 'Registration',
   'body/settings/longerFinal': 'Longer final',
   'body/settings/avgLimit': 'Average limit',
+  'body/access': 'Who can join',
+  'body/teamSize': 'Players per team',
 }
 
 /** "Name: must be 3-40 characters", for the server's problems and the form's own. */
-export const problemText = (p: { path: string; message: string }): string => `${FIELD_LABELS[p.path] ?? 'Setup'}: ${p.message}`
+export const problemText = (p: { path: string; message: string }): string =>
+  `${FIELD_LABELS[p.path] ?? (p.path.startsWith('body/participants') ? 'Participants' : 'Setup')}: ${p.message}`
 
 /** What keeps the form from saving, checked as the server will (a start time in the past included). */
 export function formProblems(f: CreateForm, now: Date): string[] {
@@ -363,7 +376,7 @@ export function previewOf(f: CreateForm): Preview {
       ...(inPerson ? ['IN PERSON'] : []),
     ],
     when,
-    size: `${maxEntriesOf(f)} ${team ? 'teams' : 'players'}`,
+    size: inPerson ? `${team ? 'teams' : 'players'} added by you` : `${maxEntriesOf(f)} ${team ? 'teams' : 'players'}`,
     help: inPerson
       ? 'Played in Tournament mode on your devices. You can edit the players until you start it.'
       : `Community tournaments don’t give season points. You can edit everything until the first ${team ? 'team' : 'player'} registers; after that only the start time and description.`,
@@ -378,7 +391,10 @@ export type SaveResult = { ok: true; id: string } | { ok: false; errors: string[
 const failed = (error: components['schemas']['ErrorResponse'] | undefined, status: number): { ok: false; errors: string[] } => {
   if (status === 409 && error?.error === 'limit reached')
     return { ok: false, errors: ['You already have 5 tournaments that aren’t finished. Finish or cancel one first.'] }
-  if (status === 409 && error?.error === 'locked')
+  const refused = status === 409 && error ? PARTICIPANTS_REFUSED[error.error] : undefined
+  if (refused) return { ok: false, errors: [refused] }
+  // In person the lock names what can't change (who can join, a team size without its players)
+  if (status === 409 && error?.error === 'locked' && !error.details?.some(d => d.path === 'body/access' || d.path === 'body/teamSize'))
     return { ok: false, errors: ['Someone registered, so only the start time and description can change.'] }
   const details = error?.details ?? []
   return { ok: false, errors: details.length > 0 ? details.map(problemText) : ['Couldn’t save the tournament. Try again.'] }
@@ -389,13 +405,21 @@ export async function loadTournament(id: string): Promise<Tournament | null> {
   return (await api.GET('/api/tournaments/{id}', { params: { path: { id } } })).data ?? null
 }
 
-/** Creates the tournament (or saves `id`), then publishes it when asked. */
-export async function saveTournament(input: TournamentInput, opts: { id?: string; publish: boolean }): Promise<SaveResult> {
+/** Creates the tournament (or saves `id`), saves an in-person tournament's `participants`, then publishes it when asked. */
+export async function saveTournament(
+  input: TournamentInput,
+  opts: { id?: string; publish: boolean; participants?: ParticipantsBody },
+): Promise<SaveResult> {
+  // An edit stores a new team size and its players in one go; a new tournament has none yet
   const saved = opts.id
-    ? await api.PATCH('/api/tournaments/{id}', { params: { path: { id: opts.id } }, body: input })
+    ? await api.PATCH('/api/tournaments/{id}', { params: { path: { id: opts.id } }, body: { ...input, participants: opts.participants } })
     : await api.POST('/api/tournaments', { body: input })
   if (!saved.data) return failed(saved.error, saved.response.status)
   const id = saved.data.id
+  if (opts.participants && !opts.id) {
+    const res = await saveParticipants(id, opts.participants)
+    if (!res.ok) return { ok: false, errors: res.errors, id }
+  }
   if (opts.publish && saved.data.status === 'draft') {
     const published = await api.POST('/api/tournaments/{id}/publish', { params: { path: { id } } })
     if (!published.data) return { ...failed(published.error, published.response.status), id }

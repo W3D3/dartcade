@@ -73,7 +73,7 @@ const FORMAT_SHORT: Record<TournamentSummary['format'], string> = {
   round_robin: 'Round robin',
   groups_knockout: 'Groups + KO',
 }
-const FORMAT_LONG: Record<TournamentSummary['format'], string> = {
+export const FORMAT_LONG: Record<TournamentSummary['format'], string> = {
   single_elimination: 'single elimination',
   double_elimination: 'double elimination',
   round_robin: 'round robin',

@@ -1,7 +1,7 @@
 <script lang="ts">
   // My tournaments (Tournaments-Mine, Tournaments-Mine-Phone): the match being played, filters, then
   // Upcoming, Organizing and Past, with This season and Your teams beside them. A row opens that
-  // tournament's Details; the live bracket and the organizer page come with their own tickets.
+  // tournament's Details; an in-person tournament you organize opens its organizer page.
   import { Trophy } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { MyTournaments } from '$lib/api'
@@ -146,14 +146,22 @@
                   {#if t.teamSize > 1}{@render tag(`TEAMS OF ${t.teamSize}`)}{/if}
                   {#if t.status === 'draft'}{@render tag('DRAFT')}{/if}
                 </span>
-                <button
-                  type="button"
-                  onclick={() => (open = t.id)}
-                  class="cursor-pointer truncate text-left text-body-lg font-semibold hover:underline">{t.name}</button
-                >
+                {#if t.access === 'in_person'}
+                  <a href={hrefs.tournamentManage(t.id)} class="truncate text-body-lg font-semibold text-text no-underline hover:underline"
+                    >{t.name}</a
+                  >
+                {:else}
+                  <button
+                    type="button"
+                    onclick={() => (open = t.id)}
+                    class="cursor-pointer truncate text-left text-body-lg font-semibold hover:underline">{t.name}</button
+                  >
+                {/if}
                 <span class="text-small text-text-muted">{organizingLine(o, t.startsAt && dayLabel(t.startsAt))}</span>
               </span>
-              {#if t.status === 'draft'}
+              {#if t.access === 'in_person'}
+                <Button variant="outline" size="sm" href={hrefs.tournamentManage(t.id)}>Manage</Button>
+              {:else if t.status === 'draft'}
                 <Button variant="outline" size="sm" href={hrefs.tournamentEdit(t.id)}>Continue editing</Button>
               {:else}
                 <Button variant="outline" size="sm" onclick={() => (open = t.id)}>Manage</Button>

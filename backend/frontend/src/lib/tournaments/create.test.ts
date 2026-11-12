@@ -8,6 +8,7 @@ import {
   fromTournament,
   matchLengthLine,
   previewOf,
+  problemText,
   sizeChoices,
   toInput,
   type CreateForm,
@@ -72,15 +73,18 @@ describe('toInput', () => {
     })
   })
 
-  it('leaves an in-person tournament without a start time, check-in, no-show wait or manual scoring', () => {
-    const input = toInput(form({ access: 'in_person', plannedFor: '2026-11-28T00:00' }))
+  it('leaves an in-person tournament without a start time, check-in or no-show wait, scored by hand or on its boards', () => {
+    const input = toInput(form({ access: 'in_person', plannedFor: '2026-11-28T00:00', manualScoring: false, boardIds: ['b1'] }))
     expect(input.startsAt).toBeNull()
+    expect(input.maxEntries).toBe(64)
     expect(input.settings).toMatchObject({
       checkInMinutes: null,
       noShowMinutes: null,
-      manualScoring: false,
+      manualScoring: true,
+      boardIds: ['b1'],
       plannedFor: new Date(2026, 10, 28).toISOString(),
     })
+    expect(toInput(form({ boardIds: ['b1'] })).settings.boardIds).toBeNull()
   })
 
   it('turns the no-show forfeit off', () => {
@@ -229,7 +233,7 @@ describe('previewOf', () => {
       access: 'players added by you',
       pills: ['X01 501', 'SOLO', 'Round robin', 'IN PERSON'],
       when: 'Sat 28 Nov · in person',
-      size: '16 players',
+      size: 'players added by you',
       primary: 'Create tournament',
       footnote: 'You’ll get claim links for every spot.',
     })
@@ -242,5 +246,16 @@ describe('matchLengthLine', () => {
     expect(matchLengthLine(1)).toBe('First to 1 leg wins the match.')
     expect(matchLengthLine(3)).toBe('First to 3 legs wins the match (best of 5).')
     expect(matchLengthLine(7)).toBe('First to 7 legs wins the match (best of 13).')
+  })
+})
+
+describe('problemText', () => {
+  it('labels the problems of the players sent with an edit and the in-person lock', () => {
+    expect(problemText({ path: 'body/participants/entries/0/name', message: 'two teams have this name' })).toBe(
+      'Participants: two teams have this name',
+    )
+    expect(problemText({ path: 'body/access', message: 'remove the players before it can be joined online' })).toBe(
+      'Who can join: remove the players before it can be joined online',
+    )
   })
 })
