@@ -22,6 +22,8 @@ import type {
   XpGainedMessage,
   AchievementUnlockedMessage,
   LobbyIdleClosedMessage,
+  TeamInvite,
+  TeamInviteMessage,
 } from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
@@ -93,6 +95,7 @@ export function createLobbyStore(lobbyId: string, open?: OpenSocket) {
 
 export type MeState = {
   invites: PendingInvite[]
+  teamInvites: TeamInvite[]
   lobby: LobbySummary | null
   game: ActiveGame | null
   friends: FriendList | null
@@ -100,7 +103,7 @@ export type MeState = {
   matchmaking: Matchmaking | null
 }
 
-const EMPTY: MeState = { invites: [], lobby: null, game: null, friends: null, matchmaking: null }
+const EMPTY: MeState = { invites: [], teamInvites: [], lobby: null, game: null, friends: null, matchmaking: null }
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open?: OpenSocket) {
@@ -110,6 +113,7 @@ export function createMeStore(open?: OpenSocket) {
   const boardStatus = writable<BoardStatusMessage | null>(null)
   const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
   const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
+  const teamInvite = writable<TeamInviteMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
@@ -125,6 +129,8 @@ export function createMeStore(open?: OpenSocket) {
     matchmakingEnded: { subscribe: matchmakingEnded.subscribe } satisfies Readable<MatchmakingEndedMessage | null>,
     /** Your lobby was last closed for being idle (lobby.idleClosed), as it arrives. */
     idleClosed: { subscribe: idleClosed.subscribe } satisfies Readable<LobbyIdleClosedMessage | null>,
+    /** A captain last invited you to their team (team.invite), as it arrives. */
+    teamInvite: { subscribe: teamInvite.subscribe } satisfies Readable<TeamInviteMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -135,7 +141,7 @@ export function createMeStore(open?: OpenSocket) {
           onMessage: data => {
             const msg = parseMeMessage(data)
             if (msg?.type === 'me') {
-              state.update(s => ({ ...(s ?? EMPTY), invites: msg.invites, lobby: msg.lobby, game: msg.game }))
+              state.update(s => ({ ...(s ?? EMPTY), invites: msg.invites, teamInvites: msg.teamInvites, lobby: msg.lobby, game: msg.game }))
             } else if (msg?.type === 'friends') {
               const { type: _type, ...list } = msg
               state.update(s => ({ ...(s ?? EMPTY), friends: list }))
@@ -149,6 +155,8 @@ export function createMeStore(open?: OpenSocket) {
               matchmakingEnded.set(msg)
             } else if (msg?.type === 'lobby.idleClosed') {
               idleClosed.set(msg)
+            } else if (msg?.type === 'team.invite') {
+              teamInvite.set(msg)
             } else if (msg?.type === 'matchmaking') {
               const { type: _type, ...matchmaking } = msg
               state.update(s => ({ ...(s ?? EMPTY), matchmaking }))
@@ -173,6 +181,7 @@ export function createMeStore(open?: OpenSocket) {
       boardStatus.set(null)
       matchmakingEnded.set(null)
       idleClosed.set(null)
+      teamInvite.set(null)
     },
   }
 }
