@@ -465,6 +465,39 @@ describe('handleBridgeConnection', () => {
   })
 })
 
+describe('Board Manager reachability', () => {
+  async function connect(boardId: string, hello: object) {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null, owner_user_id: 'u-bm' } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev-bm' })
+    const onBoardStatus = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine: { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any, onBoardStatus })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: hello })))
+    await flush()
+    return { socket, onBoardStatus }
+  }
+  const link = (up: boolean) =>
+    Buffer.from(
+      JSON.stringify({ v: 1, seq: 1, kind: 'bm.link', bridge_id: 'br', boot_id: 'boot', recv_wall: new Date().toISOString(), data: { up } }),
+    )
+
+  it('is unknown for a bridge that does not say (0.13 and older)', async () => {
+    await connect('board-bm-old', {})
+    expect(bridgeConnections.get('board-bm-old')?.bmUp).toBeNull()
+  })
+
+  it('follows the hello, then each bm.link, and tells the owner', async () => {
+    const { socket, onBoardStatus } = await connect('board-bm-new', { bm_up: false })
+    expect(bridgeConnections.get('board-bm-new')?.bmUp).toBe(false)
+    onBoardStatus.mockClear()
+    socket.emit('message', link(true))
+    await flush()
+    await flush()
+    expect(bridgeConnections.get('board-bm-new')?.bmUp).toBe(true)
+    expect(onBoardStatus).toHaveBeenCalledWith('u-bm', 'board-bm-new', true)
+  })
+})
+
 describe('a bridge that goes silent', () => {
   it('stays online through a quiet spell, then is dropped and its owner told the board is offline', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-silent', hardware_id: null, owner_user_id: 'u-silent' } as any)
