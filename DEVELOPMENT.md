@@ -273,6 +273,12 @@ a root install writes the file by re-running the bridge as the desktop user, nev
 `cd bridge && go run ./cmd/bridge big-screen-helper` (`--helper-addr` if the bridge listens
 elsewhere than `127.0.0.1:47817`).
 
+A browser keeps one instance per profile, so the helper finds a kiosk that is already open for its
+profile (Chromium's `SingletonLock` in the profile, checked against the process's command line; not
+on Windows or for Firefox) and adopts it: the board shows as running, Stop closes it, and Start
+replaces it rather than opening a second window. A helper that finds one at startup does not ask
+the backend to open the screen again.
+
 The kiosk token is part of the browser's command line and goes over the unauthenticated loopback
 channel, so other local users on that machine can read it. The browser opens private (`--incognito`,
 `--private-window`) to keep it out of the history. The token only lets a socket watch that one

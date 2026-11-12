@@ -790,6 +790,9 @@ describe('wled telemetry from the bridge', () => {
       expect(onBigScreenStartup).not.toHaveBeenCalled()
       await send(socket, { helper: true, running: false, startup: true })
       expect(onBigScreenStartup).toHaveBeenCalledWith('board-bs1')
+      onBigScreenStartup.mockClear()
+      await send(socket, { helper: true, running: true, startup: true })
+      expect(onBigScreenStartup).not.toHaveBeenCalled()
     })
 
     it('clears the report when the bridge drops', async () => {
