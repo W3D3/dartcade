@@ -20,6 +20,8 @@
     matches,
     register,
     withdraw,
+    checkIn,
+    startNow,
     type Chip as ChipId,
     type KindFilter,
     type Outcome,
@@ -180,5 +182,7 @@
     }}
     onregister={() => act(() => register(t.id, code))}
     onwithdraw={() => act(() => withdraw(t.id))}
+    oncheckin={() => act(() => checkIn(t.id))}
+    onstart={() => act(() => startNow(t.id))}
   />
 {/if}
