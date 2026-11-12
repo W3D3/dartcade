@@ -1,6 +1,7 @@
 <script lang="ts">
   // The match screen once a game is won: two sides face off around the score (a duel, or two
   // teams), three or more stand on a podium with the standings beside it. Confetti falls behind.
+  import ReportBugButton from '$lib/components/feedback/ReportBugButton.svelte'
   import { Check, House, RotateCcw, RotateCcwClock, Trophy } from '@lucide/svelte'
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
@@ -173,6 +174,7 @@
       <Check size={14} strokeWidth={3} />MATCH OVER
     </span>
     {#if board}<span class="hidden md:inline text-[14px] text-ink-2 shrink-0">{board}</span>{/if}
+    <ReportBugButton variant="labelled" />
   </header>
 
   <main

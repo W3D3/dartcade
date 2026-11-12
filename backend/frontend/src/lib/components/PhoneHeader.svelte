@@ -5,6 +5,7 @@
   import BrandMark from './BrandMark.svelte'
   import PreviewBadge from './PreviewBadge.svelte'
   import AlphaBadge from './feedback/AlphaBadge.svelte'
+  import ReportBugButton from './feedback/ReportBugButton.svelte'
 
   let { title, action }: { title: string; action?: Snippet } = $props()
 </script>
@@ -16,6 +17,7 @@
   <PreviewBadge />
   <div class="ml-auto flex items-center gap-2 min-w-0">
     {#if action}<div class="flex items-center min-w-0">{@render action()}</div>{/if}
+    <ReportBugButton />
     <AccountMenu />
   </div>
 </header>

@@ -19,6 +19,7 @@
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
+  import ReportBugButton from './feedback/ReportBugButton.svelte'
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
@@ -124,6 +125,7 @@
 
   <div class="mt-auto flex flex-col gap-3">
     <ConnectBoardCard />
+    <ReportBugButton variant="row" />
     <LobbyIndicator />
   </div>
 </nav>
