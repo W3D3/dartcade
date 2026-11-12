@@ -5339,7 +5339,7 @@ export interface components {
             /** @description Online players without a paired board may type their scores */
             manualScoring: boolean;
             /**
-             * @description Online only: the wait before a no-show forfeits
+             * @description Online only: the wait before a no-show forfeits; null: no forfeit
              * @enum {integer|null}
              */
             noShowMinutes: 5 | 10 | 15 | null;

@@ -6784,7 +6784,12 @@ components:
         plannedFor: { type: string, format: date-time, nullable: true, description: 'Organizer start: a hint, not a start time' }
         manualScoring: { type: boolean, description: Online players without a paired board may type their scores }
         noShowMinutes:
-          { type: integer, nullable: true, enum: [5, 10, 15, null], description: 'Online only: the wait before a no-show forfeits' }
+          {
+            type: integer,
+            nullable: true,
+            enum: [5, 10, 15, null],
+            description: 'Online only: the wait before a no-show forfeits; null: no forfeit',
+          }
     TournamentInput:
       type: object
       required: [name, description, access, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings]

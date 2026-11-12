@@ -86,7 +86,10 @@ describe('setupProblems', () => {
     ])
     expect(paths(with_(inPerson, {}, { checkInMinutes: 5 }))).toEqual(['body/settings/checkInMinutes'])
     expect(paths(with_(inPerson, {}, { noShowMinutes: 10 }))).toEqual(['body/settings/noShowMinutes'])
-    expect(paths(with_(fixed, {}, { noShowMinutes: null }))).toEqual(['body/settings/noShowMinutes'])
+  })
+
+  it('lets an online tournament go without a no-show forfeit', () => {
+    expect(paths(with_(fixed, {}, { noShowMinutes: null }))).toEqual([])
   })
 
   it('fits the registration and check-in settings to the kind of start', () => {
