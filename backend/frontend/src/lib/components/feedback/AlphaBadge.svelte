@@ -1,26 +1,7 @@
 <script lang="ts">
-  // "Alpha" beside the logo. Signed in (interactive) on a server that takes reports, it opens the bug report dialog.
-  import { authInfo } from '$lib/authInfo'
+  // "Alpha" beside the logo: a plain badge (the Report a bug button is the way into the dialog). A PR preview shows the PR badge instead.
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { openFeedback } from '$lib/feedback/report'
   import { preview } from '$lib/preview'
-
-  let { interactive = false }: { interactive?: boolean } = $props()
 </script>
 
-{#if $preview}
-  <!-- A PR preview shows the PR badge instead -->
-{:else if interactive && $authInfo.feedback}
-  <button
-    type="button"
-    onclick={() => void openFeedback()}
-    title="Report a bug or give feedback"
-    aria-label="Alpha: report a bug or give feedback"
-    class="shrink-0 inline-flex rounded-full cursor-pointer border-0 hover:brightness-125
- focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:outline-offset-2"
-  >
-    <Badge variant="alpha">Alpha</Badge>
-  </button>
-{:else}
-  <Badge variant="alpha">Alpha</Badge>
-{/if}
+{#if !$preview}<Badge variant="alpha">Alpha</Badge>{/if}

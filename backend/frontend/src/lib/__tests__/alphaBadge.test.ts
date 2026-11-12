@@ -6,12 +6,12 @@ import AlphaBadge from '../components/feedback/AlphaBadge.svelte'
 // A plain store instead of the one loading from the backend
 vi.mock('$lib/preview', async () => ({ preview: (await import('svelte/store')).writable(null) }))
 
-vi.mock('$lib/feedback/report', () => ({ openFeedback: vi.fn() }))
-
 describe('AlphaBadge', () => {
-  it('shows outside previews', () => {
+  it('shows outside previews, as a plain badge that opens nothing', () => {
     preview.set(null)
-    expect(render(AlphaBadge).body).toContain('Alpha')
+    const { body } = render(AlphaBadge)
+    expect(body).toContain('Alpha')
+    expect(body).not.toContain('<button')
   })
 
   it('is hidden on a preview deployment', () => {
