@@ -34,7 +34,8 @@
 </script>
 
 <Dialog.Root bind:open={() => true, open => !open && onclose()}>
-  <div class={cn('fixed inset-0 flex items-end md:items-center justify-center bg-black/60 p-0 md:p-4', zClass)}>
+  <!-- Never in a bug report's screenshot, which is taken with a dialog open -->
+  <div data-screenshot-omit class={cn('fixed inset-0 flex items-end md:items-center justify-center bg-black/60 p-0 md:p-4', zClass)}>
     {#if dismissOnBackdrop}
       <div class="absolute inset-0" onclick={onclose} aria-hidden="true"></div>
     {/if}

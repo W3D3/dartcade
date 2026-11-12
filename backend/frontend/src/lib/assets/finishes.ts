@@ -19,7 +19,7 @@ function symbol(path: string, svg: string): string {
 
 /** One hidden svg holding every finish layer as a symbol, for `<use href="#finish-bg-<id>">`. */
 export const finishSprite =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">' +
+  '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" data-screenshot-omit focusable="false">' +
   Object.entries(files)
     .map(([path, svg]) => symbol(path, svg))
     .join('') +

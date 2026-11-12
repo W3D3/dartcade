@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from 'svelte/server'
 import ReportBugButton from '../components/feedback/ReportBugButton.svelte'
-import { hideSkipped, SCREENSHOT_SKIP_ATTR } from '../feedback/report'
+import { hideSkipped, keepInScreenshot, SCREENSHOT_OMIT_ATTR, SCREENSHOT_SKIP_ATTR, screenshotScale } from '../feedback/report'
 
 const info = vi.hoisted(() => ({ feedback: true }))
 const user = vi.hoisted(() => ({ value: { id: 'u1' } }))
@@ -50,5 +50,26 @@ describe('screenshot', () => {
     vi.unstubAllGlobals()
     expect(skipped.style.visibility).toBe('hidden')
     expect(other.style.visibility).toBe('')
+  })
+})
+
+describe('screenshot cost', () => {
+  it('leaves out what is marked omitted (the dialog, the SVG sprites) and keeps the rest', () => {
+    class FakeElement {
+      constructor(private omit: boolean) {}
+      hasAttribute = (name: string) => this.omit && name === SCREENSHOT_OMIT_ATTR
+    }
+    vi.stubGlobal('Element', FakeElement)
+    const kept = [keepInScreenshot(new FakeElement(false) as unknown as Node), keepInScreenshot({} as Node)]
+    const dropped = keepInScreenshot(new FakeElement(true) as unknown as Node)
+    vi.unstubAllGlobals()
+    expect(kept).toEqual([true, true])
+    expect(dropped).toBe(false)
+  })
+
+  it('takes it at 1x on a phone and caps its width at 1600 px', () => {
+    expect(screenshotScale(390)).toBe(1)
+    expect(screenshotScale(1600)).toBe(1)
+    expect(screenshotScale(3200)).toBe(0.5)
   })
 })

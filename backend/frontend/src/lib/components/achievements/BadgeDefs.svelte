@@ -4,7 +4,7 @@
   import { BADGE_DEFS } from '$lib/achievements/defs'
 </script>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" data-screenshot-omit>
   <defs>
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- our own static asset -->
     {@html BADGE_DEFS}
