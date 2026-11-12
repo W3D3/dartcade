@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { NOT_REACHABLE, RINGED, SPINNING, bmDotColor, bmShortLabel, bmStatusLabel, commandError, polledStatus } from '../boardStatus.js'
+import {
+  NOT_REACHABLE,
+  RINGED,
+  SPINNING,
+  bmDotColor,
+  bmShortLabel,
+  bmStatusLabel,
+  commandError,
+  polledStatus,
+  shownStatus,
+} from '../boardStatus.js'
 
 describe('bmDotColor', () => {
   it('is gray while the board is offline, whatever its last status', () => {
@@ -61,6 +71,20 @@ describe('polledStatus', () => {
 
   it('knows nothing on any other failure', () => {
     expect(polledStatus(undefined, 500)).toBeNull()
+  })
+})
+
+describe('shownStatus', () => {
+  const running = { status: 'Throw', running: true, event: null }
+
+  it('is not reachable once the bridge says it lost its Board Manager, whatever the last poll said', () => {
+    expect(shownStatus(running, false)?.status).toBe(NOT_REACHABLE)
+  })
+
+  it('is the poll otherwise, also for a bridge that does not say (null)', () => {
+    expect(shownStatus(running, true)).toBe(running)
+    expect(shownStatus(running, null)).toBe(running)
+    expect(shownStatus(null, null)).toBeNull()
   })
 })
 

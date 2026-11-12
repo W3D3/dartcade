@@ -11,13 +11,18 @@ export const RINGED = new Set(['Takeout in progress', 'Calibrating'])
 
 /** The status of a board whose bridge is online but cannot get an answer from its Board Manager: commands can't work. */
 export const NOT_REACHABLE = 'Board Manager not reachable'
+const UNREACHABLE: BoardStatus = { status: NOT_REACHABLE, running: false, event: null }
 
 /**
  * What a status poll shows: Board Manager's status, NOT_REACHABLE when the bridge could not reach it (502) or
  * did not answer in time (503), null when nothing is known.
  */
 export const polledStatus = (data: BoardStatus | undefined, httpStatus: number): BoardStatus | null =>
-  data ?? (httpStatus === 502 || httpStatus === 503 ? { status: NOT_REACHABLE, running: false, event: null } : null)
+  data ?? (httpStatus === 502 || httpStatus === 503 ? UNREACHABLE : null)
+
+/** What the dot shows: NOT_REACHABLE once the bridge says it lost its Board Manager (Board.bmReachable), else the last poll. */
+export const shownStatus = (polled: BoardStatus | null, bmReachable: boolean | null): BoardStatus | null =>
+  bmReachable === false ? UNREACHABLE : polled
 
 /** The toast for a Board Manager command (Start, Stop, Reset, Calibrate) that failed with this HTTP status. */
 export function commandError(httpStatus: number | undefined): string {

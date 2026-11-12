@@ -3,7 +3,7 @@
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { fetchBoardStatus, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import BoardStatusDot from './BoardStatusDot.svelte'
-  import { DOT_TEXT, bmDotColor, bmStatusLabel } from '$lib/boardStatus'
+  import { DOT_TEXT, bmDotColor, bmStatusLabel, shownStatus } from '$lib/boardStatus'
   import { createToast } from '$lib/toast'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import { onDestroy } from 'svelte'
@@ -22,7 +22,8 @@
 
   let open = $state(false)
   let busy = $state<string | null>(null)
-  let bmStatus = $state<BoardStatus | null>(null)
+  let polled = $state<BoardStatus | null>(null)
+  const bmStatus = $derived(shownStatus(polled, board.bmReachable))
 
   // Primitives, so a new board object with the same id and status (every snapshot) doesn't restart polling
   const boardId = $derived(board.id)
@@ -32,14 +33,14 @@
   // status) the moment it isn't, or when a different board is passed in.
   $effect(() => {
     if (!online) {
-      bmStatus = null
+      polled = null
       return
     }
     const id = boardId
     let cancelled = false
     const load = async () => {
       const status = await fetchBoardStatus(id)
-      if (!cancelled) bmStatus = status
+      if (!cancelled) polled = status
     }
     void load()
     const interval = setInterval(() => void load(), 3000)
