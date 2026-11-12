@@ -2,19 +2,23 @@
   // The Tournaments page (Tournaments, Tournaments-Phone): Browse, My tournaments and Teams, as
   // underlined tabs on a desktop and a segmented control on a phone, and the Create tournament
   // button for those who may create one. Behind tournaments.enabled.
-  import { Plus, Trophy } from '@lucide/svelte'
+  import { Plus } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
-  import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import TeamsTab from '$lib/components/teams/TeamsTab.svelte'
   import BrowseTab from '$lib/components/tournaments/BrowseTab.svelte'
+  import MineTab from '$lib/components/tournaments/MineTab.svelte'
+  import UpNextCard from '$lib/components/tournaments/UpNextCard.svelte'
   import YourTeamsCard from '$lib/components/teams/YourTeamsCard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag, flagsLoaded } from '$lib/flags'
   import { hrefs } from '$lib/routes'
+  import type { MyTournaments } from '$lib/api'
+  import { loadMine, mineCount } from '$lib/tournaments/mine'
   import { TAB_LABELS, TOURNAMENT_TABS, tabOf } from '$lib/tournaments/tabs'
 
   // `code`: an invite link (#/tournaments/join/:code), shown on Browse
@@ -29,6 +33,19 @@
   const teamInvites = $derived($me?.teamInvites.length ?? 0)
   // New team, from the header or the Teams tab
   let creating = $state(false)
+
+  // Your tournaments: the Mine tab's badge and list, and Browse's "Up next for you"
+  let mine = $state<MyTournaments | null>(null)
+  let mineFailed = $state(false)
+  async function reloadMine() {
+    const m = await loadMine()
+    mineFailed = m === null
+    if (m) mine = m
+  }
+  $effect(() => {
+    if ($enabled) void reloadMine()
+  })
+  const mineBadge = $derived(mine ? mineCount(mine) : 0)
 </script>
 
 <Layout title="Tournaments">
@@ -69,6 +86,9 @@
             >{TAB_LABELS[t].label}{#if t === 'teams' && teamInvites > 0}<span
                 class="ml-2 rounded-pill bg-accent px-[7px] py-0.5 type-pill text-accent-fg"
                 aria-label="{teamInvites} invites">{teamInvites}</span
+              >{:else if t === 'mine' && mineBadge > 0}<span
+                class="ml-2 rounded-pill bg-surface-chip px-[7px] py-0.5 type-pill text-ink-2"
+                aria-label="{mineBadge} tournaments">{mineBadge}</span
               >{/if}</a
           >
         {/each}
@@ -80,7 +100,7 @@
           fill
           items={TOURNAMENT_TABS.map(t => ({
             id: t,
-            label: t === 'teams' && teamInvites > 0 ? `${TAB_LABELS[t].short} (${teamInvites})` : TAB_LABELS[t].short,
+            label: `${TAB_LABELS[t].short}${t === 'teams' && teamInvites > 0 ? ` (${teamInvites})` : t === 'mine' && mineBadge > 0 ? ` · ${mineBadge}` : ''}`,
             href: hrefs.tournaments(t),
           }))}
         />
@@ -91,12 +111,16 @@
           <TeamsTab bind:creating />
         {:else if tab === 'browse'}
           <BrowseTab code={params.code}>
-            {#snippet aside()}<YourTeamsCard />{/snippet}
+            {#snippet aside()}{#if mine}<UpNextCard {mine} />{/if}<YourTeamsCard />{/snippet}
           </BrowseTab>
+        {:else if mine}
+          <MineTab {mine} onchange={reloadMine}>
+            {#snippet aside()}<YourTeamsCard />{/snippet}
+          </MineTab>
+        {:else if mineFailed}
+          <ErrorText>Couldn't load your tournaments. Try again in a moment.</ErrorText>
         {:else}
-          <EmptyState title="Nothing here yet" text="Tournaments you register for or organize show up here, with your next match first.">
-            {#snippet icon()}<Trophy size={24} />{/snippet}
-          </EmptyState>
+          <PageLoading />
         {/if}
       </section>
       {#if mayCreate}

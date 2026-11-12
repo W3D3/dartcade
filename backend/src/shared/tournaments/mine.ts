@@ -1,5 +1,6 @@
 // The words and the calendar behind the My tournaments tab (shared with the SPA): the season, a
 // finished tournament's place and where a match sits in its bracket. Pure.
+import { ordinal } from '../ordinal.js'
 import { roundName, type Bracket } from './bracket.js'
 import type { TournamentFormat } from './setup.js'
 
@@ -7,12 +8,6 @@ import type { TournamentFormat } from './setup.js'
 export function quarterOf(now: Date): { label: string; start: Date } {
   const q = Math.floor(now.getUTCMonth() / 3)
   return { label: `Q${q + 1} ${now.getUTCFullYear()}`, start: new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1)) }
-}
-
-const ordinal = (n: number): string => {
-  const rest = n % 100
-  const suffix = rest >= 11 && rest <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] ?? 'th')
-  return `${n}${suffix}`
 }
 
 /**

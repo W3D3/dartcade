@@ -57,6 +57,10 @@ export function whenParts(iso: string | null): { weekday: string; month: string;
   }
 }
 
+/** "Sun 16 Nov". */
+export const dayLabel = (iso: string): string =>
+  new Date(iso).toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'short' })
+
 /** "Sun 16 Nov · 19:00". */
 export const fullWhen = (iso: string): string => {
   const d = new Date(iso)

@@ -39872,7 +39872,6 @@
                     "playing",
                     "organizing",
                     "past",
-                    "pastTotal",
                     "season"
                   ],
                   "additionalProperties": false,
@@ -40437,9 +40436,6 @@
                           }
                         }
                       }
-                    },
-                    "pastTotal": {
-                      "type": "integer"
                     },
                     "season": {
                       "type": "object",
@@ -86602,7 +86598,6 @@
           "playing",
           "organizing",
           "past",
-          "pastTotal",
           "season"
         ],
         "additionalProperties": false,
@@ -87167,9 +87162,6 @@
                 }
               }
             }
-          },
-          "pastTotal": {
-            "type": "integer"
           },
           "season": {
             "type": "object",

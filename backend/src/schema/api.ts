@@ -5432,7 +5432,6 @@ export interface components {
                 /** Format: date-time */
                 endedAt: string | null;
             }[];
-            pastTotal: number;
             season: {
                 /** @description The calendar quarter, e.g. Q4 2026 */
                 label: string;

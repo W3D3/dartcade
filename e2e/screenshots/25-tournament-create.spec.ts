@@ -37,8 +37,8 @@ test('tournaments: create phone', async ({ browser }) => {
 test('tournaments: create with an organizer start, then edit the draft', async ({ browser }) => {
   const s = await open(browser, 'admin', VIEW.wide)
   // A reused stack keeps earlier drafts, and an owner may have only 5 unfinished tournaments
-  const mine = (await api(s.page).get('/api/tournaments/mine')) as { tournaments: { id: string; status: string }[] }
-  for (const t of mine.tournaments.filter(t => t.status === 'draft'))
+  const mine = (await api(s.page).get('/api/tournaments/mine')) as { organizing: { tournament: { id: string; status: string } }[] }
+  for (const { tournament: t } of mine.organizing.filter(o => o.tournament.status === 'draft'))
     await s.page.request.delete(`/api/tournaments/${t.id}`, { headers: { Origin: BASE } })
 
   await openHash(s.page, '/tournaments/new')

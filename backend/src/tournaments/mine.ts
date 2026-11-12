@@ -113,7 +113,6 @@ export async function myTournaments(db: Kysely<Database>, userId: string, now: D
       average: averageOf(averages.get(s.playerId)),
       endedAt: s.t.ended_at?.toISOString() ?? null,
     })),
-    pastTotal: past.length,
     season: {
       label,
       played: season.length,

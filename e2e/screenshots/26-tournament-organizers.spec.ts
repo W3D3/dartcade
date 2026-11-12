@@ -13,8 +13,8 @@ async function prepare(admin: Page, others: Page[]): Promise<Record<string, stri
     await api(page).tryPost('/api/friends/requests', { name: 'admin' })
   }
   // An owner may have only 5 unfinished tournaments, and a reused stack keeps earlier drafts
-  const mine = (await api(admin).get('/api/tournaments/mine')) as { tournaments: { id: string; status: string }[] }
-  for (const t of mine.tournaments.filter(t => t.status === 'draft'))
+  const mine = (await api(admin).get('/api/tournaments/mine')) as { organizing: { tournament: { id: string; status: string } }[] }
+  for (const { tournament: t } of mine.organizing.filter(o => o.tournament.status === 'draft'))
     await admin.request.delete(`/api/tournaments/${t.id}`, { headers: { Origin: BASE } })
   return ids
 }
