@@ -38509,8 +38509,8 @@
     "/api/tournaments": {
       "get": {
         "operationId": "listTournaments",
-        "summary": "Public tournaments to browse (tournaments.enabled)",
-        "description": "Published public tournaments that have not ended, the soonest first; those an organizer starts come last.",
+        "summary": "Tournaments to browse (tournaments.enabled)",
+        "description": "Published tournaments that have not ended, the soonest first (those an organizer starts come last): public ones, friends-only ones of the caller's friends, and any the caller holds a spot in or organizes. An invite link's tournament is hidden from everyone else.",
         "tags": [
           "tournaments"
         ],
@@ -38537,11 +38537,14 @@
                           "access",
                           "status",
                           "gameId",
+                          "gameConfig",
                           "format",
                           "teamSize",
                           "maxEntries",
                           "entries",
-                          "startsAt"
+                          "startsAt",
+                          "owner",
+                          "registration"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -38550,6 +38553,41 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "gameConfig": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "owner": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Null once the owner's account is gone",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "registration": {
+                            "type": "string",
+                            "enum": [
+                              "registered",
+                              "in_person",
+                              "closed",
+                              "team",
+                              "full",
+                              "board_needed",
+                              "open"
+                            ],
+                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
                           },
                           "kind": {
                             "type": "string",
@@ -38989,7 +39027,11 @@
                     "role",
                     "locked",
                     "createdAt",
-                    "publishedAt"
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -39214,6 +39256,117 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
                     },
                     "role": {
                       "type": "string",
@@ -39523,7 +39676,11 @@
                           "role",
                           "locked",
                           "createdAt",
-                          "publishedAt"
+                          "publishedAt",
+                          "registration",
+                          "registrationClosesAt",
+                          "friendsIn",
+                          "inviteCode"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -39749,6 +39906,117 @@
                               }
                             }
                           },
+                          "registration": {
+                            "type": "string",
+                            "enum": [
+                              "registered",
+                              "in_person",
+                              "closed",
+                              "team",
+                              "full",
+                              "board_needed",
+                              "open"
+                            ],
+                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                          },
+                          "registrationClosesAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Before a fixed start; null while an organizer starts it"
+                          },
+                          "friendsIn": {
+                            "type": "array",
+                            "description": "The caller's friends who hold a spot, by name",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "name",
+                                "avatar"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "avatar": {
+                                  "title": "Avatar",
+                                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "none"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind",
+                                        "foreground",
+                                        "background"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "preset"
+                                          ]
+                                        },
+                                        "foreground": {
+                                          "type": "string",
+                                          "description": "The finish of the mark in front"
+                                        },
+                                        "background": {
+                                          "type": "string",
+                                          "description": "The finish of the disc behind it"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind",
+                                        "version"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "upload"
+                                          ]
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          },
+                          "inviteCode": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                          },
                           "role": {
                             "type": "string",
                             "nullable": true,
@@ -39914,7 +40182,7 @@
       "get": {
         "operationId": "getTournament",
         "summary": "One tournament (tournaments.enabled)",
-        "description": "A draft only for its organizers, a friends-only one for the owner's friends; 404 otherwise.",
+        "description": "A draft only for its organizers, a friends-only one for the owner's friends, an invite link's only for its organizers and those holding a spot (others open it by its code); 404 otherwise.",
         "tags": [
           "tournaments"
         ],
@@ -39944,7 +40212,11 @@
                     "role",
                     "locked",
                     "createdAt",
-                    "publishedAt"
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -40169,6 +40441,117 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
                     },
                     "role": {
                       "type": "string",
@@ -40554,7 +40937,11 @@
                     "role",
                     "locked",
                     "createdAt",
-                    "publishedAt"
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -40779,6 +41166,117 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
                     },
                     "role": {
                       "type": "string",
@@ -41297,7 +41795,11 @@
                     "role",
                     "locked",
                     "createdAt",
-                    "publishedAt"
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -41522,6 +42024,117 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
                     },
                     "role": {
                       "type": "string",
@@ -41831,7 +42444,11 @@
                     "role",
                     "locked",
                     "createdAt",
-                    "publishedAt"
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -42056,6 +42673,117 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
                     },
                     "role": {
                       "type": "string",
@@ -45374,6 +46102,1682 @@
           },
           "403": {
             "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/code/{code}": {
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournamentByCode",
+        "summary": "The tournament an invite link names (tournaments.enabled)",
+        "description": "Like getTournament; a draft or a friends-only one the caller may not see is 404 here too.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/registration": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "registerForTournament",
+        "summary": "Register alone (tournaments.enabled)",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An invite link's tournament needs its code"
+          }
+        ],
+        "description": "Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "withdrawFromTournament",
+        "summary": "Withdraw from a tournament before the draw (tournaments.enabled)",
+        "description": "409 when the caller holds no spot or the bracket is already drawn.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
             "content": {
               "application/json": {
                 "schema": {
@@ -81326,6 +83730,37 @@
           }
         }
       },
+      "TournamentRegistration": {
+        "type": "string",
+        "enum": [
+          "registered",
+          "in_person",
+          "closed",
+          "team",
+          "full",
+          "board_needed",
+          "open"
+        ],
+        "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+      },
+      "TournamentOwner": {
+        "type": "object",
+        "nullable": true,
+        "description": "Null once the owner's account is gone",
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "TournamentSummary": {
         "type": "object",
         "required": [
@@ -81335,11 +83770,14 @@
           "access",
           "status",
           "gameId",
+          "gameConfig",
           "format",
           "teamSize",
           "maxEntries",
           "entries",
-          "startsAt"
+          "startsAt",
+          "owner",
+          "registration"
         ],
         "additionalProperties": false,
         "properties": {
@@ -81348,6 +83786,41 @@
           },
           "name": {
             "type": "string"
+          },
+          "gameConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "owner": {
+            "type": "object",
+            "nullable": true,
+            "description": "Null once the owner's account is gone",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "registration": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "in_person",
+              "closed",
+              "team",
+              "full",
+              "board_needed",
+              "open"
+            ],
+            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
           },
           "kind": {
             "type": "string",
@@ -82018,7 +84491,11 @@
           "role",
           "locked",
           "createdAt",
-          "publishedAt"
+          "publishedAt",
+          "registration",
+          "registrationClosesAt",
+          "friendsIn",
+          "inviteCode"
         ],
         "additionalProperties": false,
         "properties": {
@@ -82243,6 +84720,117 @@
                 "type": "string"
               }
             }
+          },
+          "registration": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "in_person",
+              "closed",
+              "team",
+              "full",
+              "board_needed",
+              "open"
+            ],
+            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+          },
+          "registrationClosesAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Before a fixed start; null while an organizer starts it"
+          },
+          "friendsIn": {
+            "type": "array",
+            "description": "The caller's friends who hold a spot, by name",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "avatar"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "avatar": {
+                  "title": "Avatar",
+                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "foreground",
+                        "background"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "preset"
+                          ]
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "description": "The finish of the mark in front"
+                        },
+                        "background": {
+                          "type": "string",
+                          "description": "The finish of the disc behind it"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "upload"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "inviteCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
           },
           "role": {
             "type": "string",

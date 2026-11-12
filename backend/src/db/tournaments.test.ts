@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
-import { listPublicTournaments, moveMatch, moveTournament } from './tournaments.js'
+import { listBrowseTournaments, moveMatch, moveTournament } from './tournaments.js'
 import { MATCH_OUTCOMES, MATCH_STATUSES, TOURNAMENT_STATUSES } from '../shared/tournaments/state.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament tables', () => {
@@ -235,10 +235,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament tables', () => {
     })
   })
 
-  describe('listPublicTournaments', () => {
+  describe('listBrowseTournaments', () => {
+    const at = (d: number) => new Date(Date.UTC(2026, 10, d, 19))
+
     it('lists published public tournaments not yet over, soonest first, with their entries', async () => {
       await db.deleteFrom('tournaments').execute()
-      const at = (d: number) => new Date(Date.UTC(2026, 10, d, 19))
       await insertTournament(db, { id: 'later', status: 'open', starts_at: at(20) })
       await insertTournament(db, { id: 'soon', status: 'check_in', starts_at: at(16) })
       await insertTournament(db, { id: 'whenever', status: 'open', starts_at: null })
@@ -246,18 +247,48 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament tables', () => {
       await insertTournament(db, { id: 'draft', status: 'draft', starts_at: at(12) })
       await insertTournament(db, { id: 'done', status: 'finished', starts_at: at(1) })
       await insertTournament(db, { id: 'called-off', status: 'cancelled', starts_at: at(2) })
-      await insertTournament(db, { id: 'friends', status: 'open', access: 'friends', starts_at: at(3) })
       await insertTournamentEntry(db, { id: 's1', tournament_id: 'soon' })
       await insertTournamentEntry(db, { id: 's2', tournament_id: 'soon' })
       await insertTournamentEntry(db, { id: 's3', tournament_id: 'soon', status: 'withdrawn' })
 
-      const rows = await listPublicTournaments(db)
-      expect(rows.map(r => [r.id, r.entries])).toEqual([
-        ['live', 0],
-        ['soon', 2],
-        ['later', 0],
-        ['whenever', 0],
+      const rows = await listBrowseTournaments(db, 'ann')
+      expect(rows.map(r => [r.id, r.entries, r.registered])).toEqual([
+        ['live', 0, false],
+        ['soon', 2, false],
+        ['later', 0, false],
+        ['whenever', 0, false],
       ])
+    })
+
+    it("shows friends-only ones to the owner's friends, and invite links only to those in them", async () => {
+      await db.deleteFrom('tournaments').execute()
+      await insertUsers(db, ['cat', 'dan'])
+      await db.insertInto('friendships').values({ id: 'ann-cat', requester_id: 'cat', addressee_id: 'ann', status: 'accepted' }).execute()
+      await db.insertInto('friendships').values({ id: 'ann-dan', requester_id: 'ann', addressee_id: 'dan', status: 'pending' }).execute()
+      await insertTournament(db, { id: 'cats', status: 'open', access: 'friends', owner_user_id: 'cat', starts_at: at(3) })
+      await insertTournament(db, { id: 'dans', status: 'open', access: 'friends', owner_user_id: 'dan', starts_at: at(4) })
+      await insertTournament(db, { id: 'link', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(5) })
+      await insertTournament(db, { id: 'joined', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(6) })
+      await insertTournament(db, { id: 'left', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(7) })
+      await insertTournament(db, { id: 'mine', status: 'open', access: 'invite', owner_user_id: 'ann', starts_at: at(8) })
+      for (const [t, status] of [
+        ['joined', 'registered'],
+        ['left', 'withdrawn'],
+      ] as const) {
+        await insertTournamentEntry(db, { id: `${t}-e`, tournament_id: t, status })
+        await db
+          .insertInto('tournament_players')
+          .values({ id: `${t}-p`, tournament_id: t, entry_id: `${t}-e`, user_id: 'ann', name: 'ann', position: 0 })
+          .execute()
+      }
+
+      expect((await listBrowseTournaments(db, 'ann')).map(r => [r.id, r.registered])).toEqual([
+        ['cats', false],
+        ['joined', true],
+        ['mine', false],
+      ])
+      expect((await listBrowseTournaments(db, 'ben')).map(r => r.id)).toEqual([])
+      expect((await listBrowseTournaments(db, 'cat')).map(r => r.id)).toEqual(['cats'])
     })
   })
 })

@@ -2192,8 +2192,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Public tournaments to browse (tournaments.enabled)
-         * @description Published public tournaments that have not ended, the soonest first; those an organizer starts come last.
+         * Tournaments to browse (tournaments.enabled)
+         * @description Published tournaments that have not ended, the soonest first (those an organizer starts come last): public ones, friends-only ones of the caller's friends, and any the caller holds a spot in or organizes. An invite link's tournament is hidden from everyone else.
          */
         get: operations["listTournaments"];
         put?: never;
@@ -2239,7 +2239,7 @@ export interface paths {
         };
         /**
          * One tournament (tournaments.enabled)
-         * @description A draft only for its organizers, a friends-only one for the owner's friends; 404 otherwise.
+         * @description A draft only for its organizers, a friends-only one for the owner's friends, an invite link's only for its organizers and those holding a spot (others open it by its code); 404 otherwise.
          */
         get: operations["getTournament"];
         put?: never;
@@ -2499,6 +2499,54 @@ export interface paths {
          * @description The owner stays the owner; they cancel or delete the tournament instead.
          */
         delete: operations["removeTournamentOrganizer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The tournament an invite link names (tournaments.enabled)
+         * @description Like getTournament; a draft or a friends-only one the caller may not see is 404 here too.
+         */
+        get: operations["getTournamentByCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register alone (tournaments.enabled)
+         * @description Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).
+         */
+        post: operations["registerForTournament"];
+        /**
+         * Withdraw from a tournament before the draw (tournaments.enabled)
+         * @description 409 when the caller holds no spot or the bracket is already drawn.
+         */
+        delete: operations["withdrawFromTournament"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5214,9 +5262,24 @@ export interface components {
                 finalPlace: number | null;
             }[];
         };
+        /**
+         * @description The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)
+         * @enum {string}
+         */
+        TournamentRegistration: "registered" | "in_person" | "closed" | "team" | "full" | "board_needed" | "open";
+        /** @description Null once the owner's account is gone */
+        TournamentOwner: {
+            id: string;
+            name: string;
+        } | null;
         TournamentSummary: {
             id: string;
             name: string;
+            gameConfig: {
+                [key: string]: unknown;
+            };
+            owner: components["schemas"]["TournamentOwner"];
+            registration: components["schemas"]["TournamentRegistration"];
             /** @enum {string} */
             kind: "official" | "community";
             /** @enum {string} */
@@ -5363,11 +5426,21 @@ export interface components {
             settings: components["schemas"]["TournamentSettings"];
             /** @description Entries registered so far (withdrawn ones not counted) */
             entries: number;
-            /** @description Null once the owner's account is gone */
-            owner: {
+            owner: components["schemas"]["TournamentOwner"];
+            registration: components["schemas"]["TournamentRegistration"];
+            /**
+             * Format: date-time
+             * @description Before a fixed start; null while an organizer starts it
+             */
+            registrationClosesAt: string | null;
+            /** @description The caller's friends who hold a spot, by name */
+            friendsIn: {
                 id: string;
                 name: string;
-            } | null;
+                avatar: components["schemas"]["Avatar"];
+            }[];
+            /** @description The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else */
+            inviteCode: string | null;
             /**
              * @description The caller's part in it
              * @enum {string|null}
@@ -10387,6 +10460,86 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournamentByCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    registerForTournament: {
+        parameters: {
+            query?: {
+                /** @description An invite link's tournament needs its code */
+                code?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    withdrawFromTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];

@@ -1,10 +1,10 @@
 import '../test/authByHeader.js'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import type { components } from '../schema/api.js'
-import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
 import { setOverrides, setupFlags } from '../flags/index.js'
 import { createFastify } from './fastify.js'
 import { tournamentsApiPlugin } from './tournaments.js'
@@ -17,7 +17,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
     ;({ db, close } = await openTestSchema('tournaments_api_test'))
     await insertUsers(db, [{ id: 'admin', role: 'admin' }, { id: 'mod', role: 'moderator' }, 'player', 'friend', 'cohost'])
     await setupFlags(new Set())
-    await insertTournament(db, { id: 'weekly', status: 'open', starts_at: new Date('2026-11-16T18:00:00Z'), name: 'Weekly Open' })
+    await insertTournament(db, { id: 'weekly', status: 'open', starts_at: new Date('2030-11-16T18:00:00Z'), name: 'Weekly Open' })
     await insertTournamentEntry(db, { id: 'e1', tournament_id: 'weekly' })
     await insertTournament(db, { id: 'draft', name: 'Not yet' })
   })
@@ -48,11 +48,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           access: 'public',
           status: 'open',
           gameId: 'x01',
+          gameConfig: { start: 501 },
           format: 'single_elimination',
           teamSize: 1,
           maxEntries: 8,
           entries: 1,
-          startsAt: '2026-11-16T18:00:00.000Z',
+          startsAt: '2030-11-16T18:00:00.000Z',
+          owner: null,
+          registration: 'board_needed',
         },
       ],
     })
@@ -299,6 +302,153 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       const open = await created()
       await send('admin', 'POST', `/api/tournaments/${open.id}/publish`)
       expect((await send('admin', 'DELETE', `/api/tournaments/${open.id}`)).statusCode).toBe(409)
+    })
+  })
+
+  describe('browse and register solo', () => {
+    type Tournament = components['schemas']['Tournament']
+    const everyone = ['admin', 'player', 'friend', 'cohost', 'p3', 'p4']
+    const register = (user: string, id: string) => send(user, 'POST', `/api/tournaments/${id}/registration`)
+    const withdraw = (user: string, id: string) => send(user, 'DELETE', `/api/tournaments/${id}/registration`)
+    const error = (res: { json: () => unknown }) => (res.json() as { error: string }).error
+    const open = (id: string, rest: Omit<Parameters<typeof insertTournament>[1], 'id'> = {}) =>
+      insertTournament(db, { id, status: 'open', owner_user_id: 'cohost', starts_at: new Date('2030-11-16T18:00:00Z'), ...rest })
+
+    beforeAll(async () => {
+      await insertUsers(db, ['p3', 'p4'])
+      for (const u of everyone) await insertBoard(db, { id: `board-${u}`, owner_user_id: u })
+    })
+    afterEach(async () => {
+      await db.deleteFrom('tournaments').where('id', 'not in', ['weekly', 'draft']).execute()
+      await db.deleteFrom('friendships').execute()
+    })
+    beforeEach(() => setOverrides(new Map([['tournaments.enabled', { mode: 'users', userIds: everyone }]])))
+
+    it('registers, says so on Browse and the detail, and withdraws', async () => {
+      await open('cup')
+      const res = await register('player', 'cup')
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toMatchObject({ entries: 1, registration: 'registered' })
+      expect((await register('player', 'cup')).json()).toMatchObject({ entries: 1 })
+      const listed = (await get('player')).json<{ tournaments: { id: string; registration: string }[] }>().tournaments
+      expect(listed.find(t => t.id === 'cup')).toMatchObject({ registration: 'registered' })
+      expect((await get('friend', '/api/tournaments/cup')).json()).toMatchObject({ entries: 1, registration: 'open' })
+
+      expect((await withdraw('player', 'cup')).json()).toMatchObject({ entries: 0, registration: 'open' })
+      expect((await withdraw('player', 'cup')).statusCode).toBe(409)
+      expect((await register('player', 'cup')).json()).toMatchObject({ entries: 1, registration: 'registered' })
+    })
+
+    it('answers 409 full past capacity, and lets nobody slip into the last spot together', async () => {
+      await open('small', { max_entries: 2 })
+      await register('player', 'small')
+      const both = await Promise.all([register('friend', 'small'), register('p3', 'small')])
+      expect(both.map(r => r.statusCode).sort()).toEqual([200, 409])
+      const refused = both.find(r => r.statusCode === 409)!
+      expect(error(refused)).toBe('full')
+      expect((await get('p4', '/api/tournaments/small')).json()).toMatchObject({ entries: 2, registration: 'full' })
+    })
+
+    it('closes registration at registration_closes_at', async () => {
+      const soon = new Date(Date.now() + 30 * 60_000)
+      const settings = {
+        ...(await db.selectFrom('tournaments').select('settings').where('id', '=', 'weekly').executeTakeFirstOrThrow()).settings,
+      }
+      await open('closing', { starts_at: soon, settings: JSON.stringify({ ...settings, registrationClosesMinutes: 60 }) })
+      const res = await register('player', 'closing')
+      expect(res.statusCode).toBe(409)
+      expect(error(res)).toBe('registration closed')
+      await open('started', { status: 'check_in' })
+      expect(error(await register('player', 'started'))).toBe('registration closed')
+    })
+
+    it('needs a paired board unless the organizer allows manual scoring', async () => {
+      await insertUsers(db, ['boardless'])
+      await setOverrides(new Map([['tournaments.enabled', { mode: 'users', userIds: [...everyone, 'boardless'] }]]))
+      await open('boards')
+      const res = await register('boardless', 'boards')
+      expect([res.statusCode, error(res)]).toEqual([409, 'paired board needed'])
+      const settings = {
+        ...(await db.selectFrom('tournaments').select('settings').where('id', '=', 'weekly').executeTakeFirstOrThrow()).settings,
+      }
+      await open('typed', { settings: JSON.stringify({ ...settings, manualScoring: true }) })
+      expect((await register('boardless', 'typed')).statusCode).toBe(200)
+    })
+
+    it('leaves team and in-person tournaments to captains and organizers', async () => {
+      await open('pairs', { team_size: 2 })
+      expect(error(await register('player', 'pairs'))).toBe('team tournament')
+      await open('venue', { access: 'in_person', starts_at: null })
+      expect(error(await register('player', 'venue'))).toBe('in person')
+    })
+
+    it("hides a friends-only tournament from all but the owner's friends, on Browse and to register", async () => {
+      await open('friends', { access: 'friends' })
+      await db.insertInto('friendships').values({ id: 'f1', requester_id: 'friend', addressee_id: 'cohost', status: 'accepted' }).execute()
+      const ids = async (u: string) => (await get(u)).json<{ tournaments: { id: string }[] }>().tournaments.map(t => t.id)
+      expect(await ids('friend')).toContain('friends')
+      expect(await ids('player')).not.toContain('friends')
+      expect((await get('player', '/api/tournaments/friends')).statusCode).toBe(404)
+      expect((await register('player', 'friends')).statusCode).toBe(404)
+      expect((await register('friend', 'friends')).statusCode).toBe(200)
+    })
+
+    it('hides an invite-link tournament from Browse but opens it by its code', async () => {
+      const res = await send('admin', 'POST', '/api/tournaments', {
+        name: 'Living Room Classic',
+        description: '',
+        access: 'invite',
+        gameId: 'x01',
+        gameConfig: {},
+        format: 'single_elimination',
+        teamSize: 1,
+        maxEntries: 8,
+        startsAt: '2030-11-23T15:00:00.000Z',
+        settings: {
+          seeding: 'random',
+          firstTo: 3,
+          longerFinal: null,
+          groups: null,
+          registrationClosesMinutes: 60,
+          checkInMinutes: null,
+          plannedFor: null,
+          manualScoring: false,
+          noShowMinutes: 10,
+        },
+      })
+      const draft = res.json<Tournament>()
+      expect(draft.inviteCode).toMatch(/^[A-HJ-NP-Z2-9]{6}$/)
+      await send('admin', 'POST', `/api/tournaments/${draft.id}/publish`)
+      const code = draft.inviteCode!
+      const ids = async (u: string) => (await get(u)).json<{ tournaments: { id: string }[] }>().tournaments.map(t => t.id)
+      expect(await ids('player')).not.toContain(draft.id)
+
+      const landed = await get('player', `/api/tournaments/code/${code.toLowerCase()}`)
+      expect(landed.json()).toMatchObject({ id: draft.id, registration: 'open', inviteCode: null })
+      expect((await get('player', '/api/tournaments/code/NOPE22')).statusCode).toBe(404)
+
+      // The id alone is not the link: without the code it is hidden and refuses to register
+      expect((await get('player', `/api/tournaments/${draft.id}`)).statusCode).toBe(404)
+      expect((await register('player', draft.id)).statusCode).toBe(404)
+      expect((await send('player', 'POST', `/api/tournaments/${draft.id}/registration?code=WRONG2`)).statusCode).toBe(404)
+      const joined = await send('player', 'POST', `/api/tournaments/${draft.id}/registration?code=${code.toLowerCase()}`)
+      expect(joined.json()).toMatchObject({ registration: 'registered' })
+      expect((await get('player', `/api/tournaments/${draft.id}`)).json()).toMatchObject({ registration: 'registered' })
+      expect((await get('friend', `/api/tournaments/${draft.id}`)).statusCode).toBe(404)
+      expect(await ids('player')).toContain(draft.id)
+      expect(await ids('friend')).not.toContain(draft.id)
+    })
+
+    it("names the caller's friends who are in", async () => {
+      await open('social')
+      await db.insertInto('friendships').values({ id: 'f2', requester_id: 'player', addressee_id: 'friend', status: 'accepted' }).execute()
+      await db.insertInto('friendships').values({ id: 'f3', requester_id: 'p3', addressee_id: 'player', status: 'accepted' }).execute()
+      for (const u of ['friend', 'p3', 'p4']) await register(u, 'social')
+      const t = (await get('player', '/api/tournaments/social')).json<Tournament>()
+      expect(t.friendsIn.map(f => [f.id, f.name, f.avatar.kind])).toEqual([
+        ['friend', 'friend', 'preset'],
+        ['p3', 'p3', 'preset'],
+      ])
     })
   })
 })
