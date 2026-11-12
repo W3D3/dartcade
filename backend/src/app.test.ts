@@ -34,6 +34,7 @@ const deps = () => ({
   hub: {} as any,
   friends: {} as any,
   matchmaking: {} as any,
+  tournaments: {} as any,
   bigScreen: {} as any,
 })
 

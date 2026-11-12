@@ -2280,6 +2280,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an online tournament that has no start time (organizers)
+         * @description Opens the check-in now; the bracket is drawn from who checked in when it closes. 409 when the tournament has a start time, is in person, or is not open.
+         */
+        post: operations["startTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check in during the check-in window (tournaments.enabled)
+         * @description Who is registered and has not checked in when it closes is left out of the draw. 409 outside the check-in or without a spot.
+         */
+        post: operations["checkInToTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{id}/cancel": {
         parameters: {
             query?: never;
@@ -2543,8 +2587,8 @@ export interface paths {
          */
         post: operations["registerForTournament"];
         /**
-         * Withdraw from a tournament before the draw (tournaments.enabled)
-         * @description 409 when the caller holds no spot or the bracket is already drawn.
+         * Withdraw from a tournament (tournaments.enabled)
+         * @description After the draw, the caller's game (if one is on) is aborted and every match they had left goes to the other side by walkover. 409 when the caller holds no spot or the tournament is over.
          */
         delete: operations["withdrawFromTournament"];
         options?: never;
@@ -5446,6 +5490,8 @@ export interface components {
              * @enum {string|null}
              */
             role: "owner" | "organizer" | null;
+            /** @description The caller holds a spot and checked in */
+            checkedIn: boolean;
             /** @description Someone registered: only startsAt (with its settings) and description can change */
             locked: boolean;
             /** Format: date-time */
@@ -10084,6 +10130,59 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    checkInToTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];

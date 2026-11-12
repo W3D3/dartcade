@@ -90,6 +90,8 @@ export type MeServerMessage =
   | XpGainedMessage
   | AchievementUnlockedMessage
   | TournamentRequestMessage
+  | TournamentCheckInMessage
+  | TournamentMatchMessage
   | BoardStatusMessage
   | LobbyIdleClosedMessage
   | MatchmakingMessage
@@ -639,6 +641,37 @@ export interface TournamentRequestMessage {
     id: string
     name: string
   }
+}
+/**
+ * Pushed on /ws/me to everyone registered when a tournament's check-in opens. Whoever has not checked in by closesAt is dropped when the bracket is drawn.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "TournamentCheckInMessage".
+ */
+export interface TournamentCheckInMessage {
+  type: 'tournament.checkIn'
+  tournamentId: string
+  tournamentName: string
+  closesAt: string
+}
+/**
+ * Pushed on /ws/me to both players when their tournament match's game starts ("Your match is on").
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "TournamentMatchMessage".
+ */
+export interface TournamentMatchMessage {
+  type: 'tournament.match'
+  tournamentId: string
+  tournamentName: string
+  /**
+   * The game to open.
+   */
+  sessionId: string
+  /**
+   * The other side's entry name.
+   */
+  opponent: string
 }
 /**
  * Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.

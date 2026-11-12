@@ -60,6 +60,7 @@ import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
 import type { MatchmakingService } from './matchmaking/service.js'
+import type { TournamentService } from './tournaments/service.js'
 import { bigScreenGwPlugin } from './browser-gw/bigScreen.js'
 import type { BigScreenService } from './bigscreen/service.js'
 import { matchmakingApiPlugin } from './api/matchmaking.js'
@@ -86,6 +87,8 @@ export type AppDeps = {
   samples?: SampleCollector
   /** The ranked queue (see matchmaking/service.ts). */
   matchmaking: MatchmakingService
+  /** Runs online tournaments (see tournaments/service.ts). */
+  tournaments: TournamentService
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -136,6 +139,7 @@ export async function buildApp({
   bigScreen,
   samples,
   matchmaking,
+  tournaments,
   frontendDist,
   onRoute,
 }: AppDeps): Promise<FastifyInstance> {
@@ -277,7 +281,7 @@ export async function buildApp({
   await app.register(homeApiPlugin, { db })
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
-  await app.register(tournamentsApiPlugin, { db, hub })
+  await app.register(tournamentsApiPlugin, { db, hub, tournaments })
   await app.register(teamsApiPlugin, { db, lobbies, hub })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })

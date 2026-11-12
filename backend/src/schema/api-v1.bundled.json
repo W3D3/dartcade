@@ -6029,6 +6029,97 @@
         }
       }
     },
+    "/api/tournaments/{id}/start": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "startTournament",
+        "summary": "Start an online tournament that has no start time (organizers)",
+        "description": "Opens the check-in now; the bracket is drawn from who checked in when it closes. 409 when the tournament has a start time, is in person, or is not open.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/check-in": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "checkInToTournament",
+        "summary": "Check in during the check-in window (tournaments.enabled)",
+        "description": "Who is registered and has not checked in when it closes is left out of the draw. 409 outside the check-in or without a spot.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/tournaments/{id}/cancel": {
       "parameters": [
         {
@@ -6769,8 +6860,8 @@
       },
       "delete": {
         "operationId": "withdrawFromTournament",
-        "summary": "Withdraw from a tournament before the draw (tournaments.enabled)",
-        "description": "409 when the caller holds no spot or the bracket is already drawn.",
+        "summary": "Withdraw from a tournament (tournaments.enabled)",
+        "description": "After the draw, the caller's game (if one is on) is aborted and every match they had left goes to the other side by walkover. 409 when the caller holds no spot or the tournament is over.",
         "tags": [
           "tournaments"
         ],
@@ -16754,7 +16845,8 @@
           "registration",
           "registrationClosesAt",
           "friendsIn",
-          "inviteCode"
+          "inviteCode",
+          "checkedIn"
         ],
         "additionalProperties": false,
         "properties": {
@@ -16880,6 +16972,10 @@
               null
             ],
             "description": "The caller's part in it"
+          },
+          "checkedIn": {
+            "type": "boolean",
+            "description": "The caller holds a spot and checked in"
           },
           "locked": {
             "type": "boolean",

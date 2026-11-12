@@ -43,5 +43,5 @@ export function registrationState(
   return 'open'
 }
 
-/** A withdrawal is possible until the bracket is drawn. */
-export const canWithdraw = (status: TournamentStatus): boolean => status === 'open' || status === 'check_in'
+/** A withdrawal is possible until the tournament is over; once it runs, the matches left are lost by walkover (Q12). */
+export const canWithdraw = (status: TournamentStatus): boolean => status === 'open' || status === 'check_in' || status === 'running'

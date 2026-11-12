@@ -11,6 +11,8 @@ import type {
   XpGainedMessage,
   AchievementUnlockedMessage,
   TeamInviteMessage,
+  TournamentCheckInMessage,
+  TournamentMatchMessage,
   TournamentRequestMessage,
 } from '../schema/lobby-ws.js'
 
@@ -127,6 +129,11 @@ export class LobbyHub {
 
   /** Tells a user (on /ws/me) someone made them a tournament organizer. */
   sendTournamentRequest(userId: string, msg: TournamentRequestMessage): void {
+    this.users.pushEach(userId, () => msg)
+  }
+
+  /** Tells a player (on /ws/me) their tournament's check-in opened, or their match's game started. */
+  sendTournament(userId: string, msg: TournamentCheckInMessage | TournamentMatchMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 

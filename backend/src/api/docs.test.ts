@@ -12,6 +12,7 @@ describe('API docs', () => {
       hub: {} as any,
       friends: {} as any,
       matchmaking: {} as any,
+      tournaments: {} as any,
     })
     const res = await app.inject('/api/docs/json')
     expect(res.statusCode).toBe(200)
@@ -32,6 +33,7 @@ describe('API docs', () => {
       hub: {} as any,
       friends: {} as any,
       matchmaking: {} as any,
+      tournaments: {} as any,
     })
 
     let page = await app.inject('/api/docs')
