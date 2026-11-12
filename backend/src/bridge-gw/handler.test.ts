@@ -7,7 +7,7 @@ import fastifyWebsocket from '@fastify/websocket'
 // Node's own WebSocket can't send headers
 import { WebSocket as WsClient } from 'ws'
 import { log } from '../log.js'
-import { BridgeConnections } from './connections.js'
+import { BRIDGE_SILENCE_MS, BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 import { LightsStore } from '../lights/store.js'
 import { BigScreenState } from '../boards/bigScreenState.js'
@@ -550,6 +550,36 @@ describe('camera stills from the bridge', () => {
     expect(stills.versions('board-c2')).toEqual([])
     expect(onCameraStill).not.toHaveBeenCalled()
     warn.mockRestore()
+  })
+})
+
+describe('BridgeConnections silence sweep', () => {
+  const conn = () =>
+    ({
+      ws: { readyState: 1, OPEN: 1, close: vi.fn(), terminate: vi.fn(), send: vi.fn() },
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      bridgeUpdatable: false,
+      connectedAt: new Date(),
+      helloReceived: true,
+    }) as any
+
+  it('closes a bridge that sent nothing for the silence limit (a wedged bridge whose socket stays open), keeps one that did', () => {
+    const bc = new BridgeConnections()
+    const quiet = conn()
+    const talking = conn()
+    bc.add(quiet, 0)
+    bc.add(talking, 0)
+    bc.register(quiet, 'b-quiet')
+    bc.register(talking, 'b-talking')
+    bc.seen(talking, 50_000)
+    bc.closeSilent(BRIDGE_SILENCE_MS + 1)
+    expect(quiet.ws.terminate).toHaveBeenCalled()
+    expect(talking.ws.terminate).not.toHaveBeenCalled()
   })
 })
 
