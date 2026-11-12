@@ -110,8 +110,9 @@ export function parseHello(data: unknown): {
   return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url, updatable: h.updatable }
 }
 
-// The bridge's keepalive (bridge/internal/transport): not an event, never acked. Any
-// message from us resets the bridge's read deadline, so it gets a pong back.
+// The bridge's keepalive (bridge/internal/transport): not an event, never acked. Only our
+// pongs and acks keep the bridge connected, and the pong is queued behind the events like them:
+// a connection whose events stopped going through gets dropped and redialled by the bridge.
 const PingSchema = z.object({ ping: z.string() })
 
 // High-rate kinds the games never read (the bridge's telemetry, bridge/internal/transport)
@@ -252,18 +253,24 @@ export function handleBridgeConnection(
   let failed = false
 
   socket.on('message', (raw: Buffer) => {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw.toString())
+    } catch {
+      return
+    }
+    // An answer to a Board Manager call settles at once: a command must not wait behind the game
+    // events queued before it (only requests sent to this connection can match it)
+    if (MessageKindSchema.safeParse(parsed).data?.kind === 'bm.response') {
+      const m = BmResponseMessageSchema.safeParse(parsed)
+      if (m.success) bridgeConnections.respond(conn, m.data.data)
+      return
+    }
     eventQueue = eventQueue
       .then(async () => {
         if (failed) return
         const boardDbId = conn.boardDbId
         if (!boardDbId) return // unauthenticated (socket already closed)
-
-        let parsed: unknown
-        try {
-          parsed = JSON.parse(raw.toString())
-        } catch {
-          return
-        }
 
         if (!conn.helloReceived) {
           const first = MessageKindSchema.safeParse(parsed)
@@ -292,11 +299,6 @@ export function handleBridgeConnection(
         const earlyKind = MessageKindSchema.safeParse(parsed).data?.kind
         if (earlyKind === 'camera.still') {
           takeStill(boardDbId, parsed, stills, opts.onCameraStill, opts.samples)
-          return
-        }
-        if (earlyKind === 'bm.response') {
-          const m = BmResponseMessageSchema.safeParse(parsed)
-          if (m.success) bridgeConnections.respond(conn, m.data.data)
           return
         }
         if (earlyKind === 'wled.found') {
