@@ -2197,7 +2197,102 @@ export interface paths {
          */
         get: operations["listTournaments"];
         put?: never;
+        /**
+         * Create a community tournament as a draft (tournaments.enabled)
+         * @description Needs tournaments.community.enabled (admins always may). The caller owns it; an owner has at most 5 tournaments that are not finished or cancelled. Publish it to open registration.
+         */
+        post: operations["createTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tournaments you own or organize, drafts included (tournaments.enabled)
+         * @description Newest first.
+         */
+        get: operations["listMyTournaments"];
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * One tournament (tournaments.enabled)
+         * @description A draft only for its organizers, a friends-only one for the owner's friends; 404 otherwise.
+         */
+        get: operations["getTournament"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a draft (organizers)
+         * @description A published tournament is cancelled instead (409).
+         */
+        delete: operations["deleteTournament"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a draft or open tournament (organizers)
+         * @description The fields sent replace the stored ones. An online tournament someone registered for keeps everything but startsAt (with its registration and check-in settings) and description: 409 `locked`, the locked fields in `details`.
+         */
+        patch: operations["updateTournament"];
+        trace?: never;
+    };
+    "/api/tournaments/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a draft and open registration (organizers)
+         * @description Checks the tournament again (a start time may have passed since it was saved).
+         */
+        post: operations["publishTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a published tournament that has not finished (organizers) */
+        post: operations["cancelTournament"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4852,6 +4947,135 @@ export interface components {
              * @description Null: an organizer starts it
              */
             startsAt: string | null;
+        };
+        /** @description Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button. */
+        TournamentSettings: {
+            /** @enum {string} */
+            seeding: "rating" | "random" | "manual";
+            /** @description Legs to win a match */
+            firstTo: number;
+            /** @description Knockout formats only; longer than firstTo */
+            longerFinal: {
+                /** @enum {integer} */
+                firstTo: 2 | 3 | 4 | 5 | 6 | 7 | 9 | 11;
+                /** @description The semi-finals too */
+                semis: boolean;
+            } | null;
+            /** @description Groups + knockout only (and required there) */
+            groups: {
+                /** @enum {integer} */
+                size: 3 | 4 | 5;
+                /**
+                 * @description Entries per group that go through
+                 * @enum {integer}
+                 */
+                through: 1 | 2;
+            } | null;
+            /**
+             * @description Before a fixed start
+             * @enum {integer|null}
+             */
+            registrationClosesMinutes: 15 | 60 | 180 | 1440 | null;
+            /** @enum {integer|null} */
+            checkInMinutes: 2 | 5 | 10 | 15 | 30 | 60 | null;
+            /**
+             * Format: date-time
+             * @description Organizer start: a hint, not a start time
+             */
+            plannedFor: string | null;
+            /** @description Online players without a paired board may type their scores */
+            manualScoring: boolean;
+            /**
+             * @description Online only: the wait before a no-show forfeits
+             * @enum {integer|null}
+             */
+            noShowMinutes: 5 | 10 | 15 | null;
+        };
+        TournamentInput: {
+            /** @description 3-40 characters after trimming, no control characters */
+            name: string;
+            /** @description At most 280 characters, no control characters */
+            description: string;
+            /** @enum {string} */
+            access: "public" | "friends" | "invite" | "in_person";
+            /** @enum {string} */
+            gameId: "x01" | "cricket";
+            /** @description The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game */
+            gameConfig: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            format: "single_elimination" | "double_elimination" | "round_robin" | "groups_knockout";
+            /** @description 1 is solo; teams play alternate visits */
+            teamSize: number;
+            /** @enum {integer} */
+            maxEntries: 8 | 16 | 32 | 64;
+            /**
+             * Format: date-time
+             * @description Null: an organizer starts it (not for public ones; always for in person)
+             */
+            startsAt: string | null;
+            settings: components["schemas"]["TournamentSettings"];
+        };
+        /** @description Any fields of TournamentInput; settings, when sent, is replaced whole */
+        TournamentPatch: {
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            access?: "public" | "friends" | "invite" | "in_person";
+            /** @enum {string} */
+            gameId?: "x01" | "cricket";
+            gameConfig?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            format?: "single_elimination" | "double_elimination" | "round_robin" | "groups_knockout";
+            teamSize?: number;
+            /** @enum {integer} */
+            maxEntries?: 8 | 16 | 32 | 64;
+            /** Format: date-time */
+            startsAt?: string | null;
+            settings?: components["schemas"]["TournamentSettings"];
+        };
+        Tournament: {
+            id: string;
+            name: string;
+            description: string;
+            /** @enum {string} */
+            kind: "official" | "community";
+            /** @enum {string} */
+            access: "public" | "friends" | "invite" | "in_person";
+            /** @enum {string} */
+            status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
+            gameId: string;
+            gameConfig: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            format: "single_elimination" | "double_elimination" | "round_robin" | "groups_knockout";
+            teamSize: number;
+            maxEntries: number;
+            /** Format: date-time */
+            startsAt: string | null;
+            settings: components["schemas"]["TournamentSettings"];
+            /** @description Entries registered so far (withdrawn ones not counted) */
+            entries: number;
+            /** @description Null once the owner's account is gone */
+            owner: {
+                id: string;
+                name: string;
+            } | null;
+            /**
+             * @description The caller's part in it
+             * @enum {string|null}
+             */
+            role: "owner" | "organizer" | null;
+            /** @description Someone registered: only startsAt (with its settings) and description can change */
+            locked: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            publishedAt: string | null;
         };
         Achievements: {
             /** @description One entry per achievement with any count; the rest of the catalogue is not earned yet */
@@ -9308,6 +9532,206 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TournamentInput"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description limit reached: the owner already has 5 unfinished tournaments */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMyTournaments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournaments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tournaments: components["schemas"]["Tournament"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TournamentPatch"];
+            };
+        };
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    publishTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tournament */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
