@@ -2950,6 +2950,67 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/tournaments/{id}/organizers:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: listTournamentOrganizers
+      summary: The owner and co-organizers of a tournament you may see
+      tags: [tournaments]
+      responses:
+        '200':
+          {
+            description: 'The owner first, then the organizers by when they were added',
+            content: { application/json: { schema: { $ref: '#/components/schemas/TournamentOrganizers' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    post:
+      operationId: addTournamentOrganizer
+      summary: Make someone an organizer (the owner only)
+      description: The new organizer gets a tournament.request push on /ws/me and finds the tournament under Organizing.
+      tags: [tournaments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              additionalProperties: false
+              properties:
+                userId: { type: string }
+      responses:
+        '201':
+          {
+            description: The organizers now,
+            content: { application/json: { schema: { $ref: '#/components/schemas/TournamentOrganizers' } } },
+          }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/tournaments/{id}/organizers/{userId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: userId, in: path, required: true, schema: { type: string } }
+    delete:
+      operationId: removeTournamentOrganizer
+      summary: Remove an organizer (the owner), or leave the role yourself (an organizer)
+      description: The owner stays the owner; they cancel or delete the tournament instead.
+      tags: [tournaments]
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/achievements:
     get:
       operationId: getMyAchievements
@@ -6693,6 +6754,22 @@ components:
         maxEntries: { type: integer, enum: [8, 16, 32, 64] }
         startsAt: { type: string, format: date-time, nullable: true }
         settings: { $ref: '#/components/schemas/TournamentSettings' }
+    TournamentOrganizers:
+      type: object
+      required: [organizers]
+      additionalProperties: false
+      properties:
+        organizers:
+          type: array
+          items:
+            type: object
+            required: [id, name, role, addedAt]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              name: { type: string }
+              role: { type: string, enum: [owner, organizer] }
+              addedAt: { type: string, format: date-time, nullable: true, description: Null for the owner }
     Tournament:
       type: object
       required:

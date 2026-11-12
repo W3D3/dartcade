@@ -277,7 +277,7 @@ export async function buildApp({
   await app.register(homeApiPlugin, { db })
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
-  await app.register(tournamentsApiPlugin, { db })
+  await app.register(tournamentsApiPlugin, { db, hub })
   await app.register(teamsApiPlugin, { db, lobbies, hub })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })

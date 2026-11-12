@@ -9,29 +9,43 @@ import { requireAuth } from '../auth/middleware.js'
 import { isAdmin } from '../auth/admin.js'
 import { areFriends } from '../db/friends.js'
 import {
+  addOrganizer,
+  canOrganize,
   deleteDraft,
   getTournament,
   insertTournamentCapped,
   listOrganizedTournaments,
+  listOrganizers,
   listPublicTournaments,
   moveTournament,
   organizerRole,
+  removeOrganizer,
   updateTournament,
   type BrowseRow,
   type OrganizerRole,
   type TournamentView,
 } from '../db/tournaments.js'
+import { getUsersByIds } from '../db/queries.js'
+import type { LobbyHub } from '../lobby/hub.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { validateOptions } from '../games/configMeta.js'
 import { games } from '../games/index.js'
 import { normalizeName } from '../shared/names.js'
-import { MAX_UNFINISHED_TOURNAMENTS, lockedChanges, setupProblems, startProblems, type Problem } from '../shared/tournaments/setup.js'
+import {
+  MAX_ORGANIZERS,
+  MAX_UNFINISHED_TOURNAMENTS,
+  lockedChanges,
+  setupProblems,
+  startProblems,
+  type Problem,
+} from '../shared/tournaments/setup.js'
 import { ApiError, notFound } from './errors.js'
 import { requireTournamentsFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database> }
+type Opts = FastifyPluginOptions & { db: Kysely<Database>; hub: Pick<LobbyHub, 'sendTournamentRequest'> }
+
 type Input = components['schemas']['TournamentInput']
 /** A setup as stored: a tournament made elsewhere (official ones, later games) may hold any game and size. */
 type Setup = Omit<Input, 'gameId' | 'maxEntries'> & { gameId: string; maxEntries: number }
@@ -128,7 +142,7 @@ const at = (iso: string | null) => (iso === null ? null : Date.parse(iso))
 const conflict = (error: string) => new ApiError(409, { error })
 
 export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db } = opts
+  const { db, hub } = opts
   // Before the body is validated: with the flag off even a bad request answers 404
   app.addHook('preValidation', requireAuth)
   app.addHook('preValidation', async req => requireTournamentsFlag(db, req.userId))
@@ -147,7 +161,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   /** As visible, and 403 unless the caller organizes it. */
   async function organized(id: string, userId: string): Promise<{ t: TournamentView; role: OrganizerRole }> {
     const { t, role } = await visible(id, userId)
-    if (!role) throw new ApiError(403, { error: 'only organizers can do this' })
+    if (!canOrganize(role)) throw new ApiError(403, { error: 'only organizers can do this' })
     return { t, role }
   }
 
@@ -227,6 +241,60 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     if (!(await moveTournament(db, t.id, 'cancel'))) throw conflict(`a ${t.status} tournament cannot be cancelled`)
     return respond(t.id, role)
   })
+
+  const organizersOf = async (t: TournamentView) => ({
+    organizers: (await listOrganizers(db, t)).map(o => ({
+      id: o.id,
+      name: o.name,
+      role: o.role,
+      addedAt: o.added_at?.toISOString() ?? null,
+    })),
+  })
+
+  app.get<Route<'listTournamentOrganizers'>>(
+    '/api/tournaments/:id/organizers',
+    { schema: fromSpec('listTournamentOrganizers') },
+    async req => organizersOf((await visible(req.params.id, req.userId)).t),
+  )
+
+  app.post<Route<'addTournamentOrganizer'>>(
+    '/api/tournaments/:id/organizers',
+    { schema: fromSpec('addTournamentOrganizer') },
+    async (req, reply) => {
+      const { t, role } = await organized(req.params.id, req.userId)
+      if (role !== 'owner') throw new ApiError(403, { error: 'only the owner can add or remove organizers' })
+      if (t.status === 'finished' || t.status === 'cancelled') throw conflict(`a ${t.status} tournament has no use for more organizers`)
+      const { userId } = req.body
+      const users = await getUsersByIds(db, [userId, req.userId])
+      if (!users.some(u => u.id === userId)) throw notFound()
+      if (userId === t.owner_user_id) throw conflict('they own it already')
+      const added = await addOrganizer(db, t.id, userId)
+      if (added === 'full') throw conflict(`at most ${MAX_ORGANIZERS} organizers`)
+      if (added === 'exists') throw conflict('they are an organizer already')
+      hub.sendTournamentRequest(userId, {
+        type: 'tournament.request',
+        tournamentId: t.id,
+        tournamentName: t.name,
+        role: 'organizer',
+        from: { id: req.userId, name: users.find(u => u.id === req.userId)?.name ?? '' },
+      })
+      return reply.code(201).send(await organizersOf(t))
+    },
+  )
+
+  app.delete<Route<'removeTournamentOrganizer'>>(
+    '/api/tournaments/:id/organizers/:userId',
+    { schema: fromSpec('removeTournamentOrganizer') },
+    async (req, reply) => {
+      const { t, role } = await organized(req.params.id, req.userId)
+      const { userId } = req.params
+      if (userId === t.owner_user_id) throw conflict('the owner cannot step down; cancel or delete the tournament instead')
+      // An organizer may leave, never remove someone else
+      if (role !== 'owner' && userId !== req.userId) throw new ApiError(403, { error: 'only the owner can add or remove organizers' })
+      if (!(await removeOrganizer(db, t.id, userId))) throw notFound()
+      return reply.code(204).send()
+    },
+  )
 
   done()
 }
