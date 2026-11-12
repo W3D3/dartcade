@@ -7,6 +7,7 @@
   import { currentUser } from '$lib/auth'
   import { accountSettings } from '$lib/accountSettings'
   import { loadSettings } from '$lib/gameSettings'
+  import { urlQuality } from '$lib/minigolf/quality'
   import { createBigScreenAudio, createSettingsMemo, kioskSettings } from '$lib/bigscreen/audio'
   import { createBigScreenStore } from '$lib/bigscreen/store'
   import { gameState } from '$lib/gameState'
@@ -24,6 +25,8 @@
   const board = params.board
   // The kiosk's token comes in the URL once; it is kept in memory only
   const token = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('k')
+  // Minigolf's 3D quality: `?quality=low` in the kiosk's URL (the board's screen is often a Raspberry Pi), else this device's
+  const quality = urlQuality(window.location.hash) ?? loadSettings(localStorage).minigolfQuality
   if (token !== null) history.replaceState(null, '', window.location.pathname + window.location.search + hrefs.bigScreen(board))
 
   const store = createBigScreenStore(board, token)
@@ -33,9 +36,10 @@
   onDestroy(() => store.destroy())
 
   // The owner's own settings when signed in here, else the owner's account settings from the message
-  const settings = $derived(
-    $currentUser ? { ...loadSettings(localStorage), ...($accountSettings ?? {}) } : kioskSettings($message?.prefs ?? {}),
-  )
+  const settings = $derived({
+    ...($currentUser ? { ...loadSettings(localStorage), ...($accountSettings ?? {}) } : kioskSettings($message?.prefs ?? {})),
+    minigolfQuality: quality,
+  })
 
   // Same object while the settings are equal: the audio below is built once, not per message
   const memo = createSettingsMemo()

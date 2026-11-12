@@ -3,9 +3,9 @@ import { WebGLRenderer } from 'three'
 import type { PathPt } from '$shared/minigolf/types'
 
 /** The renderer on `canvas`, or null when the device can't do WebGL. */
-export function startRenderer(canvas: HTMLCanvasElement): WebGLRenderer | null {
+export function startRenderer(canvas: HTMLCanvasElement, antialias = true): WebGLRenderer | null {
   try {
-    return new WebGLRenderer({ canvas, antialias: true })
+    return new WebGLRenderer({ canvas, antialias })
   } catch {
     return null
   }

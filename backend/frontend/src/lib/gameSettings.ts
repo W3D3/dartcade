@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { COACH_TIER_IDS, type CoachTarget } from '$shared/coach/tiers'
 import type { ScoreUpdates } from './heldScore.js'
+import { QUALITIES, type QualityChoice } from './minigolf/quality.js'
 
 /** In-game display and sound settings, cached per device in localStorage; the account-wide ones
  *  (`ACCOUNT_KEYS` in accountSettings.ts) also follow the signed-in account. */
@@ -37,6 +38,9 @@ export interface GameSettings {
   aimDial: boolean
   /** Minigolf: rolls slow down near the cup. */
   slowMotion: boolean
+  /** Minigolf: how well this device draws the 3D hole (lib/minigolf/quality.ts). Per device, never
+   *  synced to the account: a phone and the board's screen need different ones. */
+  minigolfQuality: QualityChoice
   /** The match screen's input: the board or the keypad, as last picked; null until picked. */
   inputView: 'board' | 'entry' | null
   /** X01: the caller says each visit. */
@@ -98,6 +102,7 @@ export const defaultSettings: GameSettings = {
   effectsVolume: 0.5,
   aimDial: true,
   slowMotion: true,
+  minigolfQuality: 'auto',
   inputView: null,
   callerOn: false,
   callerVoice: null,
@@ -153,6 +158,10 @@ const SettingsSchema = z
     effectsVolume: unit(d.effectsVolume),
     aimDial: flag(d.aimDial),
     slowMotion: flag(d.slowMotion),
+    minigolfQuality: z
+      .enum(['auto', ...QUALITIES])
+      .catch(d.minigolfQuality)
+      .default(d.minigolfQuality),
     inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
     callerOn: flag(d.callerOn),
     callerVoice: z.string().min(1).nullable().catch(null).default(null),

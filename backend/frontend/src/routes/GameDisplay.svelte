@@ -159,7 +159,8 @@
   onMount(() => {
     window.addEventListener('pointerdown', wakeAudio)
     window.addEventListener('keydown', wakeAudio)
-    sessionId = window.location.hash.match(/\/session\/([^/]+)/)?.[1] ?? ''
+    // The id ends at a query (?quality=, ?perf=)
+    sessionId = window.location.hash.match(/\/session\/([^/?]+)/)?.[1] ?? ''
     if (!sessionId) return
     sessionStore = createSessionStore(sessionId)
     unsubSnap = sessionStore.snapshot.subscribe(snap => {

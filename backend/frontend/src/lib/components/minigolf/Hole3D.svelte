@@ -31,6 +31,7 @@
     type Insets,
   } from '$lib/minigolf/view3d'
   import { RecentFrames, glRenderer, gpuTimer, perfOverlayOn, type FrameSample, type PerfSummary } from '$lib/minigolf/perf'
+  import { FrameBudget, TIERS, autoTier, pixelRatio, probeGpu, urlQuality, type Quality, type QualityChoice } from '$lib/minigolf/quality'
   import PerfOverlay from './PerfOverlay.svelte'
 
   let {
@@ -48,6 +49,7 @@
     shading = 'toon',
     insets = { left: 0, right: 0, top: 0, bottom: 0 },
     relief = 1,
+    quality = 'auto',
     onfail,
     onframe,
   }: {
@@ -76,6 +78,9 @@
     insets?: Insets
     /** Bench only: how much taller than true the ground is drawn (the physics keeps true heights). */
     relief?: number
+    /** How well to draw (lib/minigolf/quality.ts), read when the view opens; `?quality=` in the
+     *  page's URL wins. Auto picks from the GPU and lowers it while frames come too slowly. */
+    quality?: QualityChoice
     /** WebGL couldn't start, or lost its context. */
     onfail?: () => void
     /** Each drawn frame's timings and counts (the benchmark). */
@@ -298,7 +303,10 @@
 
   // Set up once, untracked: the loop reads the props every frame, and a re-run would rebuild the scene and snap the camera
   onMount(() => {
-    const renderer = startRenderer(canvas)
+    const choice = urlQuality(location.hash) ?? quality
+    const budget = choice === 'auto' ? new FrameBudget(autoTier(probeGpu())) : null
+    let tier: Quality = budget?.tier ?? (choice === 'auto' ? 'high' : choice)
+    const renderer = startRenderer(canvas, TIERS[tier].antialias)
     if (!renderer) {
       failed = true
       onfail?.()
@@ -306,8 +314,7 @@
     }
     const lost = () => onfail?.()
     canvas.addEventListener('webglcontextlost', lost)
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio))
-    renderer.shadowMap.enabled = true
+    renderer.shadowMap.enabled = TIERS[tier].shadows
     renderer.shadowMap.type = THREE.PCFShadowMap
 
     const scene = new THREE.Scene()
@@ -320,7 +327,7 @@
     let controlsOn = false
     scene.add(new THREE.HemisphereLight('#ffffff', '#4a5a40', 1.6))
     const sun = new THREE.DirectionalLight('#ffffff', 2.2)
-    sun.castShadow = true
+    sun.castShadow = TIERS[tier].shadows
     sun.shadow.mapSize.set(2048, 2048)
     sun.shadow.radius = 4
     scene.add(sun, sun.target)
@@ -375,11 +382,14 @@
     }
 
     const sphere = new THREE.SphereGeometry(BALL_R, 24, 16)
-    type Ball = { mesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshToonMaterial> }
+    // Without shadows (the low tier) a soft dark disc under each ball keeps it on the ground
+    const blobGeo = new THREE.CircleGeometry(BALL_R * 1.15, 20).rotateX(-Math.PI / 2)
+    const blobMat = new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.35, depthWrite: false })
+    type Ball = { mesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshToonMaterial>; blob: THREE.Mesh }
     const newBall = (color: string): Ball => {
-      const b = { mesh: new THREE.Mesh(sphere, toon(color)) }
+      const b = { mesh: new THREE.Mesh(sphere, toon(color)), blob: new THREE.Mesh(blobGeo, blobMat) }
       b.mesh.castShadow = true
-      scene.add(b.mesh)
+      scene.add(b.mesh, b.blob)
       return b
     }
     const own = newBall(ballColor)
@@ -393,6 +403,8 @@
       p.set(x, y, z)
       b.mesh.material.color.set(color)
       b.mesh.visible = true
+      b.blob.position.set(x, heightAt(hole, [at[0], at[1]]) * relief + 1.5, z)
+      b.blob.visible = !TIERS[tier].shadows
       return changed
     }
     /** Places the balls; true when any of them changed. */
@@ -408,7 +420,7 @@
       })
       for (const b of otherBalls.slice(others.length)) {
         changed ||= b.mesh.visible
-        b.mesh.visible = false
+        b.mesh.visible = b.blob.visible = false
       }
       return changed
     }
@@ -458,6 +470,19 @@
       renderer.setSize(w, h, false)
       camera.aspect = size.w / size.h
       framed = ''
+      applyQuality()
+    }
+    /** Puts the tier and Auto's scale into effect: shadows or blobs, and the canvas's resolution. */
+    const applyQuality = (): void => {
+      const t = TIERS[tier]
+      if (renderer.shadowMap.enabled !== t.shadows) {
+        renderer.shadowMap.enabled = sun.castShadow = t.shadows
+        // Each shader is built with or without shadows
+        scene.traverse(o => {
+          if (isMesh(o)) for (const m of [o.material].flat()) m.needsUpdate = true
+        })
+      }
+      renderer.setPixelRatio(pixelRatio(t, devicePixelRatio, size.w, size.h, budget?.scale ?? 1))
       dirty = true
     }
     const observer = new ResizeObserver(resize)
@@ -487,6 +512,8 @@
         calls: renderer.info.render.calls,
         triangles: renderer.info.render.triangles,
         canvas: [buffer.x, buffer.y],
+        tier,
+        scale: budget?.scale ?? 1,
       }
       onframe?.(sample)
       const summary = showPerf ? recent.add(sample, now) : null
@@ -587,6 +614,10 @@
       renderer.render(scene, camera)
       timer?.end()
       measured(started, frameMs)
+      if (budget?.frame(frameMs, now)) {
+        tier = budget.tier
+        applyQuality()
+      }
     })
 
     return () => {
@@ -601,6 +632,8 @@
       dialMat.dispose()
       ringMat.dispose()
       for (const o of [own.mesh, bright, faint, ...otherBalls.map(b => b.mesh)]) dispose(o)
+      blobGeo.dispose()
+      blobMat.dispose()
       renderer.dispose()
     }
   })

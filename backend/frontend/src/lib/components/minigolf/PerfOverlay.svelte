@@ -1,5 +1,5 @@
 <!--
-  The 3D view's frame-time overlay (?perf=1): the last 2 s of frames, the canvas, the GPU.
+  The 3D view's frame-time overlay (?perf=1): the last 2 s of frames, the canvas, the tier, the GPU.
 -->
 <script lang="ts">
   import type { FrameSample, PerfSummary } from '$lib/minigolf/perf'
@@ -18,6 +18,6 @@
       · gpu p50 {summary.gpuMs.p50} ms{/if}
   </div>
   <div>{summary.calls} draws · {summary.triangles} tris</div>
-  <div>{last.canvas[0]}×{last.canvas[1]}</div>
+  <div>{last.canvas[0]}×{last.canvas[1]} · {last.tier}{last.scale < 1 ? ` at ${Math.round(last.scale * 100)}%` : ''}</div>
   <div>{gl}</div>
 </div>

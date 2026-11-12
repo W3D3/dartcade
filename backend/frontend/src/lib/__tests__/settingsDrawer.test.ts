@@ -26,9 +26,9 @@ describe('settings drawer rows follow the game', () => {
     expect(sounds(html)).toEqual(['Hit', 'Treble', 'Miss', 'Player switch', 'Bust'])
   })
 
-  it('Minigolf: its own display rows and the ball sound', () => {
+  it('Minigolf: its own display rows, the 3D quality and the ball sound', () => {
     const html = drawer('minigolf')
-    expect(switches(html)).toEqual(['aimDial', 'slowMotion', 'boardView'])
+    expect(switches(html)).toEqual(['aimDial', 'slowMotion', 'boardView', 'minigolfQuality'])
     expect(sounds(html)).toEqual(['Hit', 'Miss', 'Player switch', 'Ball'])
   })
 
