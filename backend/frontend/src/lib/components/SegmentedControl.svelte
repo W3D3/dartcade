@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="T">
   // One of a few options side by side (bits-ui RadioGroup: a radio group, arrow keys move between options).
   import { RadioGroup, Tooltip } from 'bits-ui'
 
@@ -12,10 +12,10 @@
     labelledby,
     class: className = '',
   }: {
-    options: { value: unknown; label: string; tooltip?: string; disabled?: boolean; title?: string }[]
-    value?: unknown
-    onchange?: (v: unknown) => void
-    defaultValue?: unknown
+    options: { value: T; label: string; tooltip?: string; disabled?: boolean; title?: string }[]
+    value?: T
+    onchange?: (v: T) => void
+    defaultValue?: T
     /** Read-only: no clicks, every option dimmed except the selected one (which stays readable). */
     disabled?: boolean
     /** The group's accessible name, or the id of the element naming it. */
