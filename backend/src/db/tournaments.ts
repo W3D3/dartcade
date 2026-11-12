@@ -64,14 +64,14 @@ function matchChanges(move: MatchMove, now: Date): Updateable<TournamentMatchesT
   }
 }
 
-/** Moves a match by `move.event`; the new status, or null when it is missing or may not move so. */
-export async function moveMatch(db: Kysely<Database>, id: string, move: MatchMove): Promise<MatchStatus | null> {
+/** Moves a match by `move.event` at `at`; the new status, or null when it is missing or may not move so. */
+export async function moveMatch(db: Kysely<Database>, id: string, move: MatchMove, at = new Date()): Promise<MatchStatus | null> {
   const row = await db.selectFrom('tournament_matches').select('status').where('id', '=', id).executeTakeFirst()
   const to = row && nextMatchStatus(row.status, move.event)
   if (!row || !to) return null
   const res = await db
     .updateTable('tournament_matches')
-    .set({ status: to, ...matchChanges(move, new Date()) })
+    .set({ status: to, ...matchChanges(move, at) })
     .where('id', '=', id)
     .where('status', '=', row.status)
     .executeTakeFirst()
@@ -314,17 +314,26 @@ export async function getTournamentByCode(db: Kysely<Database>, code: string): P
   return row && toView(row)
 }
 
-/** `userId` holds a spot that is not withdrawn. */
-export async function isRegistered(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+/** The status of `userId`'s spot when it is not withdrawn, else null. */
+export async function spotStatus(
+  db: Kysely<Database>,
+  tournamentId: string,
+  userId: string,
+): Promise<'pending' | 'registered' | 'checked_in' | null> {
   const row = await db
     .selectFrom('tournament_players as p')
     .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
-    .select('p.id')
+    .select('e.status')
     .where('p.tournament_id', '=', tournamentId)
     .where('p.user_id', '=', userId)
     .where('e.status', '<>', 'withdrawn')
     .executeTakeFirst()
-  return row !== undefined
+  return row?.status === undefined || row.status === 'withdrawn' ? null : row.status
+}
+
+/** `userId` holds a spot that is not withdrawn. */
+export async function isRegistered(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+  return (await spotStatus(db, tournamentId, userId)) !== null
 }
 
 /** `userId` has paired a board: online tournaments need one unless manual scoring is allowed. */
@@ -410,7 +419,7 @@ export async function registerSolo(
   })
 }
 
-/** Withdraws `userId`'s spot until the bracket is drawn; false when they hold none or it is too late. */
+/** Withdraws `userId`'s spot until the tournament is over; false when they hold none or it is too late. */
 export async function withdrawSolo(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
   return db.transaction().execute(async tx => {
     const t = await tx.selectFrom('tournaments').select('status').where('id', '=', tournamentId).forUpdate().executeTakeFirst()

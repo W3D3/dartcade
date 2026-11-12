@@ -1,5 +1,5 @@
 import '../test/authByHeader.js'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
@@ -24,9 +24,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
   afterEach(() => setOverrides(new Map()))
   afterAll(async () => close())
 
+  const tournaments = {
+    organizerStart: vi.fn(() => Promise.resolve('started' as const)),
+    withdrawn: vi.fn(() => Promise.resolve()),
+  }
   const send = (user: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object) => {
     const app = createFastify()
-    app.register(tournamentsApiPlugin, { db, hub: { sendTournamentRequest: () => {} } })
+    app.register(tournamentsApiPlugin, { db, hub: { sendTournamentRequest: () => {} }, tournaments })
     return app.inject({ method, url, payload, headers: { 'x-user': user } })
   }
   const get = (user: string, url = '/api/tournaments') => send(user, 'GET', url)
@@ -449,6 +453,42 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
         ['friend', 'friend', 'preset'],
         ['p3', 'p3', 'preset'],
       ])
+    })
+    describe('check-in, start and withdrawing once it runs', () => {
+      const status = (id: string, s: 'check_in' | 'running') =>
+        db.updateTable('tournaments').set({ status: s }).where('id', '=', id).execute()
+
+      it('checks a registered player in during the check-in only, and says so', async () => {
+        await open('ci')
+        await register('player', 'ci')
+        const checkIn = (user: string) => send(user, 'POST', '/api/tournaments/ci/check-in')
+        expect((await checkIn('player')).statusCode).toBe(409)
+        await status('ci', 'check_in')
+        expect((await checkIn('friend')).statusCode).toBe(409)
+        expect((await checkIn('player')).json()).toMatchObject({ checkedIn: true, registration: 'registered' })
+        expect((await checkIn('player')).statusCode).toBe(409)
+        expect((await get('friend', '/api/tournaments/ci')).json()).toMatchObject({ checkedIn: false })
+      })
+
+      it('lets only organizers start a tournament, and answers 409 when the service will not', async () => {
+        await open('go', { starts_at: null })
+        tournaments.organizerStart.mockClear()
+        expect((await send('player', 'POST', '/api/tournaments/go/start')).statusCode).toBe(403)
+        expect((await send('cohost', 'POST', '/api/tournaments/go/start')).statusCode).toBe(200)
+        expect(tournaments.organizerStart).toHaveBeenCalledWith('go')
+        tournaments.organizerStart.mockResolvedValueOnce('not_startable' as never)
+        expect((await send('cohost', 'POST', '/api/tournaments/go/start')).statusCode).toBe(409)
+      })
+
+      it('withdraws a player from a running tournament and hands their matches over', async () => {
+        await open('live')
+        await register('player', 'live')
+        await status('live', 'running')
+        tournaments.withdrawn.mockClear()
+        expect((await withdraw('player', 'live')).json()).toMatchObject({ registration: 'closed' })
+        expect(tournaments.withdrawn).toHaveBeenCalledWith('live', 'player')
+        expect((await withdraw('player', 'live')).statusCode).toBe(409)
+      })
     })
   })
 })

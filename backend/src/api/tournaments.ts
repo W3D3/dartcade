@@ -24,6 +24,7 @@ import {
   moveTournament,
   organizerRole,
   registerSolo,
+  spotStatus,
   removeOrganizer,
   updateTournament,
   withdrawSolo,
@@ -32,8 +33,10 @@ import {
   type TournamentView,
 } from '../db/tournaments.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
+import { checkIn } from '../db/tournamentRun.js'
 import { getUsersByIds } from '../db/queries.js'
 import type { LobbyHub } from '../lobby/hub.js'
+import type { TournamentService } from '../tournaments/service.js'
 import { newLobbyCode } from '../lobby/code.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { validateOptions } from '../games/configMeta.js'
@@ -58,7 +61,11 @@ import { requireTournamentsFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database>; hub: Pick<LobbyHub, 'sendTournamentRequest'> }
+type Opts = FastifyPluginOptions & {
+  db: Kysely<Database>
+  hub: Pick<LobbyHub, 'sendTournamentRequest'>
+  tournaments: Pick<TournamentService, 'organizerStart' | 'withdrawn'>
+}
 
 type Input = components['schemas']['TournamentInput']
 /** A setup as stored: a tournament made elsewhere (official ones, later games) may hold any game and size. */
@@ -98,6 +105,7 @@ const summary = (t: BrowseRow, hasBoard: boolean, now: Date) => ({
 /** What the caller sees of a tournament besides its setup: their spot, their friends in it. */
 interface Viewer {
   registered: boolean
+  checkedIn: boolean
   hasBoard: boolean
   friendsIn: Tournament['friendsIn']
 }
@@ -122,6 +130,7 @@ function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, no
     registrationClosesAt: registrationClosesAt(input),
     friendsIn: viewer.friendsIn,
     inviteCode: role ? t.invite_code : null,
+    checkedIn: viewer.checkedIn,
   }
 }
 
@@ -196,7 +205,7 @@ const REFUSED: Record<Exclude<RegistrationState, 'open' | 'registered'>, string>
 const CODE_ATTEMPTS = 5
 
 export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, hub } = opts
+  const { db, hub, tournaments } = opts
   // Before the body is validated: with the flag off even a bad request answers 404
   app.addHook('preValidation', requireAuth)
   app.addHook('preValidation', async req => requireTournamentsFlag(db, req.userId))
@@ -231,12 +240,12 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   }
 
   async function viewerOf(t: TournamentView, userId: string): Promise<Viewer> {
-    const [registered, hasBoard, friends] = await Promise.all([
-      isRegistered(db, t.id, userId),
+    const [spot, hasBoard, friends] = await Promise.all([
+      spotStatus(db, t.id, userId),
       hasPairedBoard(db, userId),
       friendsIn(db, t.id, userId),
     ])
-    return { registered, hasBoard, friendsIn: friends }
+    return { registered: spot !== null, checkedIn: spot === 'checked_in', hasBoard, friendsIn: friends }
   }
 
   async function present(t: TournamentView, role: OrganizerRole | null, userId: string): Promise<Tournament> {
@@ -308,7 +317,8 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     { schema: fromSpec('withdrawFromTournament') },
     async req => {
       const { t, role } = await visible(req.params.id, req.userId)
-      if (!(await withdrawSolo(db, t.id, req.userId))) throw conflict('not registered, or the bracket is drawn')
+      if (!(await withdrawSolo(db, t.id, req.userId))) throw conflict('not registered, or the tournament is over')
+      if (t.status === 'running') await tournaments.withdrawn(t.id, req.userId)
       return respond(t.id, role, req.userId)
     },
   )
@@ -345,6 +355,19 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     if (t.status !== 'draft') throw conflict(`a ${t.status} tournament is already published`)
     check(storedInput(t), new Date())
     if (!(await moveTournament(db, t.id, 'publish'))) throw conflict('the tournament changed meanwhile')
+    return respond(t.id, role, req.userId)
+  })
+
+  app.post<Route<'startTournament'>>('/api/tournaments/:id/start', { schema: fromSpec('startTournament') }, async req => {
+    const { t, role } = await organized(req.params.id, req.userId)
+    if ((await tournaments.organizerStart(t.id)) !== 'started')
+      throw conflict('only an open online tournament without a start time is started by hand')
+    return respond(t.id, role, req.userId)
+  })
+
+  app.post<Route<'checkInToTournament'>>('/api/tournaments/:id/check-in', { schema: fromSpec('checkInToTournament') }, async req => {
+    const { t, role } = await visible(req.params.id, req.userId)
+    if (!(await checkIn(db, t.id, req.userId))) throw conflict('not registered, checked in already, or not check-in time')
     return respond(t.id, role, req.userId)
   })
 

@@ -30,6 +30,7 @@ import { resetBoardOnNext } from './boards/resetOnNext.js'
 import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
+import { TournamentService } from './tournaments/service.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
@@ -171,7 +172,7 @@ const engine: SessionEngine = new SessionEngine(
     })
     bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
     // Independent: a lobby that fails to reset must not keep the ratings from moving
-    const consumers: GameEndedConsumer[] = [lobbies, matchmaking]
+    const consumers: GameEndedConsumer[] = [lobbies, matchmaking, tournaments]
     return Promise.allSettled(consumers.map(c => c.onGameEnded(ended))).then(results => {
       for (const r of results)
         if (r.status === 'rejected') warn('game-end hook failed', { sessionId: ended.sessionId, error: String(r.reason) })
@@ -228,12 +229,27 @@ const matchmaking = new MatchmakingService({
   },
   warn,
 })
+// Online tournaments: check-in, the draw, each match's game, results (tournaments/service.ts)
+const tournaments = new TournamentService({
+  db,
+  engine,
+  isOnline: userId => friends.isOnline(userId),
+  send: (userId, msg) => {
+    hub.sendTournament(userId, msg)
+  },
+  warn,
+})
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
 // …and a ranked one never moved its ratings
 await matchmaking.settleAll()
 matchmaking.start()
+// A tournament game that ended while the server was down moves its bracket now, then every few seconds
+await tournaments.tick().catch((err: unknown) => {
+  warn('tournament tick failed', { error: String(err) })
+})
+tournaments.start()
 // A rating write that failed is tried again every minute, not only at the next start
 const timers = [every(60_000, 'ranked settle', () => matchmaking.settleAll())]
 // Pairing codes go an hour after they expired, friend activity after a month.
@@ -278,6 +294,7 @@ const app = await buildApp({
   bigScreen,
   samples,
   matchmaking,
+  tournaments,
   frontendDist: join(__dirname, '../frontend/dist'),
 })
 // buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
@@ -291,6 +308,7 @@ backfillCoachLegs(db, warn).catch((err: unknown) => {
 app.addHook('onClose', async () => {
   for (const t of timers) clearInterval(t)
   matchmaking.close()
+  tournaments.close()
   bigScreen.close()
   await friends.close()
   await closePool()

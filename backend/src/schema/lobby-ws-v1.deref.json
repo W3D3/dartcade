@@ -4757,6 +4757,65 @@
         }
       }
     },
+    "TournamentCheckInMessage": {
+      "title": "TournamentCheckInMessage",
+      "description": "Pushed on /ws/me to everyone registered when a tournament's check-in opens. Whoever has not checked in by closesAt is dropped when the bracket is drawn.",
+      "type": "object",
+      "required": [
+        "type",
+        "tournamentId",
+        "tournamentName",
+        "closesAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tournament.checkIn"
+        },
+        "tournamentId": {
+          "type": "string"
+        },
+        "tournamentName": {
+          "type": "string"
+        },
+        "closesAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "TournamentMatchMessage": {
+      "title": "TournamentMatchMessage",
+      "description": "Pushed on /ws/me to both players when their tournament match's game starts (\"Your match is on\").",
+      "type": "object",
+      "required": [
+        "type",
+        "tournamentId",
+        "tournamentName",
+        "sessionId",
+        "opponent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tournament.match"
+        },
+        "tournamentId": {
+          "type": "string"
+        },
+        "tournamentName": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "The game to open."
+        },
+        "opponent": {
+          "type": "string",
+          "description": "The other side's entry name."
+        }
+      }
+    },
     "BoardStatusMessage": {
       "title": "BoardStatusMessage",
       "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.",
@@ -7811,6 +7870,65 @@
                   "type": "string"
                 }
               }
+            }
+          }
+        },
+        {
+          "title": "TournamentCheckInMessage",
+          "description": "Pushed on /ws/me to everyone registered when a tournament's check-in opens. Whoever has not checked in by closesAt is dropped when the bracket is drawn.",
+          "type": "object",
+          "required": [
+            "type",
+            "tournamentId",
+            "tournamentName",
+            "closesAt"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "tournament.checkIn"
+            },
+            "tournamentId": {
+              "type": "string"
+            },
+            "tournamentName": {
+              "type": "string"
+            },
+            "closesAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "title": "TournamentMatchMessage",
+          "description": "Pushed on /ws/me to both players when their tournament match's game starts (\"Your match is on\").",
+          "type": "object",
+          "required": [
+            "type",
+            "tournamentId",
+            "tournamentName",
+            "sessionId",
+            "opponent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "tournament.match"
+            },
+            "tournamentId": {
+              "type": "string"
+            },
+            "tournamentName": {
+              "type": "string"
+            },
+            "sessionId": {
+              "type": "string",
+              "description": "The game to open."
+            },
+            "opponent": {
+              "type": "string",
+              "description": "The other side's entry name."
             }
           }
         },

@@ -31,6 +31,7 @@ const stored = (f: CreateForm): Tournament => ({
   registrationClosesAt: null,
   friendsIn: [],
   inviteCode: null,
+  checkedIn: false,
   createdAt: now.toISOString(),
   publishedAt: null,
 })
