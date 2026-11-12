@@ -41,7 +41,7 @@ import {
 import { COURSE_TEXT_MAX, MINIGOLF_LIMITS, type MinigolfLimit } from '../shared/minigolf/limits.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import type { Hole } from '../shared/minigolf/types.js'
-import { normalizeName } from '../shared/names.js'
+import { CONTROL_CHARS, normalizeName } from '../shared/names.js'
 import { ApiError, notFound } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -106,9 +106,6 @@ async function checkCourseHoles(db: Kysely<Database>, ownerId: string | null, co
 }
 
 /** Course texts are shown to other players, so they follow the names' rules: trimmed, Unicode NFC, no control characters, short. */
-// oxlint-disable-next-line no-control-regex -- the point is to refuse them
-const CONTROL_CHARS = /[\u0000-\u001f\u007f]/
-
 function cleanCourseText(content: CourseContent): CourseContent {
   return { ...content, name: normalizeName(content.name), description: normalizeName(content.description) }
 }
