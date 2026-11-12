@@ -9,7 +9,6 @@ export const TRIGGER_GAME: Record<TriggerKind, GameId | null> = {
   lobby: null,
   'takeout.started': null,
   'takeout.finished': null,
-  'calibration.started': null,
   'calibration.finished': null,
   visit: 'x01',
   bust: 'x01',

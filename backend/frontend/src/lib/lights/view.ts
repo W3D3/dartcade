@@ -29,8 +29,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   'bulloff.won': 'Bull off won',
   'takeout.started': 'Takeout',
   'takeout.finished': 'Takeout',
-  'calibration.started': 'Calibrating',
-  'calibration.finished': 'Calibrating',
+  'calibration.finished': 'Calibrated',
   lobby: 'Lobby',
 }
 
