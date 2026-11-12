@@ -31,6 +31,11 @@ services:
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:${E2E_FRONTEND_PORT:-5174}
       RATE_LIMIT_MAX: '10000'
+      # Takes bug reports (the Report a bug button shows); nothing listens on the SMTP port and sending is never exercised
+      SMTP_URL: smtp://localhost:1025
+      MAIL_FROM: dartcade@test.local
+      EMAIL_VERIFICATION: 'off'
+      FEEDBACK_EMAIL: reports@test.local
     ports:
       - '${E2E_BACKEND_PORT:-3001}:3000'
     depends_on:
