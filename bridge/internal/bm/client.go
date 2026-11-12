@@ -189,10 +189,12 @@ func (c *Client) wsLoop(ctx context.Context) {
 			continue
 		}
 		if first {
+			log.Info("connected to Board Manager")
 			c.emit(BMFrame{Kind: "bm_connect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
 			first = false
 		} else {
 			gapMs := time.Since(disconnectedAt).Milliseconds()
+			log.Info("reconnected to Board Manager", "after", time.Since(disconnectedAt).Round(time.Second))
 			c.emit(BMFrame{Kind: "bm_reconnect", GapMs: gapMs, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 		}
 		connectedAt := time.Now()
