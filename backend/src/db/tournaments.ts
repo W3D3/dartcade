@@ -1,7 +1,8 @@
 // Tournaments (migration 066). Status changes go through moveTournament/moveMatch only: each reads
 // the status, asks shared/tournaments/state.ts's table where the event leads, and writes it only if
 // the row still has the status it read. A refused, raced or repeated move returns null.
-import type { Insertable, Kysely, Selectable, SqlBool, Updateable } from 'kysely'
+import { randomUUID } from 'node:crypto'
+import { sql, type ExpressionBuilder, type Insertable, type Kysely, type Selectable, type SqlBool, type Updateable } from 'kysely'
 import type { Database, TournamentMatchesTable, TournamentsTable } from './schema.js'
 import {
   OUTCOME_OF,
@@ -13,6 +14,8 @@ import {
   type TournamentStatus,
 } from '../shared/tournaments/state.js'
 import { MAX_ORGANIZERS, MAX_UNFINISHED_TOURNAMENTS } from '../shared/tournaments/setup.js'
+import { canWithdraw, registrationState, type RegistrationState } from '../shared/tournaments/registration.js'
+import { toAvatar, type Avatar } from './users.js'
 
 export type TournamentRow = Selectable<TournamentsTable>
 export type TournamentMatchRow = Selectable<TournamentMatchesTable>
@@ -75,32 +78,6 @@ export async function moveMatch(db: Kysely<Database>, id: string, move: MatchMov
   return res.numUpdatedRows > 0n ? to : null
 }
 
-export type BrowseRow = TournamentRow & { entries: number }
-
-/** Published public tournaments not yet over, soonest first (organizer-started ones last), with their entry count. */
-export async function listPublicTournaments(db: Kysely<Database>): Promise<BrowseRow[]> {
-  const rows = await db
-    .selectFrom('tournaments as t')
-    .selectAll('t')
-    .select(eb =>
-      eb
-        .selectFrom('tournament_entries as e')
-        .whereRef('e.tournament_id', '=', 't.id')
-        .where('e.status', '<>', 'withdrawn')
-        .select(eb.fn.countAll<string>().as('n'))
-        .as('entries'),
-    )
-    .where('t.access', '=', 'public')
-    .where('t.status', 'in', ['open', 'check_in', 'running'])
-    .orderBy(
-      eb => eb.ref('t.starts_at'),
-      eb => eb.asc().nullsLast(),
-    )
-    .orderBy('t.created_at')
-    .execute()
-  return rows.map(r => ({ ...r, entries: Number(r.entries ?? 0) }))
-}
-
 export type TournamentView = TournamentRow & {
   entries: number
   /** Anyone ever registered (withdrawn too): an online tournament's setup is then locked. */
@@ -130,6 +107,60 @@ const toView = <R extends { entries: string | null; has_entries: SqlBool }>(r: R
   entries: Number(r.entries ?? 0),
   has_entries: Boolean(r.has_entries),
 })
+
+export type BrowseRow = TournamentView & { registered: boolean }
+
+type ByTournament = ExpressionBuilder<Database & { t: TournamentsTable }, 't'>
+
+/** `userId` holds a spot that is not withdrawn. */
+const registeredBy = (eb: ByTournament, userId: string) =>
+  eb.exists(
+    eb
+      .selectFrom('tournament_players as p')
+      .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
+      .whereRef('p.tournament_id', '=', 't.id')
+      .where('p.user_id', '=', userId)
+      .where('e.status', '<>', 'withdrawn')
+      .select('p.id'),
+  )
+
+/** An accepted friendship between `userId` and the account in `other` (a column). */
+const friendsWith = (userId: string, other: string) =>
+  sql<boolean>`EXISTS (SELECT 1 FROM friendships f WHERE f.status = 'accepted' AND (
+    (f.requester_id = ${userId} AND f.addressee_id = ${sql.ref(other)}) OR (f.addressee_id = ${userId} AND f.requester_id = ${sql.ref(other)})))`
+
+/**
+ * Published tournaments not yet over that `userId` may browse, soonest first (organizer-started
+ * ones last): public ones, friends-only ones of a friend, and any they hold a spot in or organize
+ * (an invite link's stays hidden from everyone else).
+ */
+export async function listBrowseTournaments(db: Kysely<Database>, userId: string): Promise<BrowseRow[]> {
+  const rows = await viewQuery(db)
+    .select(eb => registeredBy(eb, userId).as('registered'))
+    .where('t.status', 'in', ['open', 'check_in', 'running'])
+    .where(eb =>
+      eb.or([
+        eb('t.access', '=', 'public'),
+        eb('t.owner_user_id', '=', userId),
+        eb.and([eb('t.access', '=', 'friends'), friendsWith(userId, 't.owner_user_id')]),
+        registeredBy(eb, userId),
+        eb.exists(
+          eb
+            .selectFrom('tournament_organizers as o')
+            .whereRef('o.tournament_id', '=', 't.id')
+            .where('o.user_id', '=', userId)
+            .select('o.user_id'),
+        ),
+      ]),
+    )
+    .orderBy(
+      eb => eb.ref('t.starts_at'),
+      eb => eb.asc().nullsLast(),
+    )
+    .orderBy('t.created_at')
+    .execute()
+  return rows.map(r => ({ ...toView(r), registered: Boolean(r.registered) }))
+}
 
 export async function getTournament(db: Kysely<Database>, id: string): Promise<TournamentView | undefined> {
   const row = await viewQuery(db).where('t.id', '=', id).executeTakeFirst()
@@ -276,4 +307,123 @@ export async function removeOrganizer(db: Kysely<Database>, tournamentId: string
     .where('user_id', '=', userId)
     .executeTakeFirst()
   return res.numDeletedRows > 0n
+}
+
+export async function getTournamentByCode(db: Kysely<Database>, code: string): Promise<TournamentView | undefined> {
+  const row = await viewQuery(db).where('t.invite_code', '=', code).executeTakeFirst()
+  return row && toView(row)
+}
+
+/** `userId` holds a spot that is not withdrawn. */
+export async function isRegistered(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom('tournament_players as p')
+    .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
+    .select('p.id')
+    .where('p.tournament_id', '=', tournamentId)
+    .where('p.user_id', '=', userId)
+    .where('e.status', '<>', 'withdrawn')
+    .executeTakeFirst()
+  return row !== undefined
+}
+
+/** `userId` has paired a board: online tournaments need one unless manual scoring is allowed. */
+export async function hasPairedBoard(db: Kysely<Database>, userId: string): Promise<boolean> {
+  return (await db.selectFrom('boards').select('id').where('owner_user_id', '=', userId).executeTakeFirst()) !== undefined
+}
+
+/** `userId`'s friends who hold a spot in the tournament, by name. */
+export async function friendsIn(
+  db: Kysely<Database>,
+  tournamentId: string,
+  userId: string,
+): Promise<{ id: string; name: string; avatar: Avatar }[]> {
+  const rows = await db
+    .selectFrom('tournament_players as p')
+    .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
+    .innerJoin('user as u', 'u.id', 'p.user_id')
+    .select(['u.id', 'u.name', 'u.avatar_kind', 'u.avatar_preset', 'u.avatar_background', 'u.avatar_version'])
+    .where('p.tournament_id', '=', tournamentId)
+    .where('e.status', '<>', 'withdrawn')
+    .where(friendsWith(userId, 'u.id'))
+    .orderBy(eb => eb.fn('lower', ['u.name']))
+    .orderBy('u.id')
+    .execute()
+  return rows.map(r => ({ id: r.id, name: r.name, avatar: toAvatar(r) }))
+}
+
+/**
+ * Registers `user` alone for the tournament, or takes back the spot they withdrew from. Checks
+ * the rule with the tournament row locked, so two registrations cannot both take the last spot.
+ * Returns what stood in the way, or `open` once registered.
+ */
+export async function registerSolo(
+  db: Kysely<Database>,
+  tournamentId: string,
+  user: { id: string; name: string; hasBoard: boolean },
+  now: Date,
+): Promise<RegistrationState | null> {
+  return db.transaction().execute(async tx => {
+    const t = await tx.selectFrom('tournaments').selectAll().where('id', '=', tournamentId).forUpdate().executeTakeFirst()
+    if (!t) return null
+    const mine = await tx
+      .selectFrom('tournament_players as p')
+      .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
+      .select(['e.id', 'e.status'])
+      .where('p.tournament_id', '=', tournamentId)
+      .where('p.user_id', '=', user.id)
+      .executeTakeFirst()
+    const { n } = await tx
+      .selectFrom('tournament_entries')
+      .select(eb => eb.fn.countAll<string>().as('n'))
+      .where('tournament_id', '=', tournamentId)
+      .where('status', '<>', 'withdrawn')
+      .executeTakeFirstOrThrow()
+    const state = registrationState(
+      {
+        status: t.status,
+        access: t.access,
+        teamSize: t.team_size,
+        maxEntries: t.max_entries,
+        entries: Number(n),
+        startsAt: t.starts_at?.toISOString() ?? null,
+        settings: t.settings,
+      },
+      { registered: mine !== undefined && mine.status !== 'withdrawn', hasBoard: user.hasBoard },
+      now,
+    )
+    if (state !== 'open') return state
+    if (mine) {
+      await tx.updateTable('tournament_entries').set({ status: 'registered', name: user.name }).where('id', '=', mine.id).execute()
+      return state
+    }
+    const entryId = randomUUID()
+    await tx
+      .insertInto('tournament_entries')
+      .values({ id: entryId, tournament_id: tournamentId, name: user.name, registered_by_user_id: user.id })
+      .execute()
+    await tx
+      .insertInto('tournament_players')
+      .values({ id: randomUUID(), tournament_id: tournamentId, entry_id: entryId, user_id: user.id, name: user.name, position: 0 })
+      .execute()
+    return state
+  })
+}
+
+/** Withdraws `userId`'s spot until the bracket is drawn; false when they hold none or it is too late. */
+export async function withdrawSolo(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+  return db.transaction().execute(async tx => {
+    const t = await tx.selectFrom('tournaments').select('status').where('id', '=', tournamentId).forUpdate().executeTakeFirst()
+    if (!t || !canWithdraw(t.status)) return false
+    const res = await tx
+      .updateTable('tournament_entries')
+      .set({ status: 'withdrawn' })
+      .where('tournament_id', '=', tournamentId)
+      .where('status', '<>', 'withdrawn')
+      .where('id', 'in', eb =>
+        eb.selectFrom('tournament_players').select('entry_id').where('tournament_id', '=', tournamentId).where('user_id', '=', userId),
+      )
+      .executeTakeFirst()
+    return res.numUpdatedRows > 0n
+  })
 }

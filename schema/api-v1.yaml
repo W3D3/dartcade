@@ -2629,8 +2629,11 @@ paths:
   /api/tournaments:
     get:
       operationId: listTournaments
-      summary: Public tournaments to browse (tournaments.enabled)
-      description: Published public tournaments that have not ended, the soonest first; those an organizer starts come last.
+      summary: Tournaments to browse (tournaments.enabled)
+      description: >-
+        Published tournaments that have not ended, the soonest first (those an organizer starts come
+        last): public ones, friends-only ones of the caller's friends, and any the caller holds a spot
+        in or organizes. An invite link's tournament is hidden from everyone else.
       tags: [tournaments]
       responses:
         '200':
@@ -2696,7 +2699,9 @@ paths:
     get:
       operationId: getTournament
       summary: One tournament (tournaments.enabled)
-      description: A draft only for its organizers, a friends-only one for the owner's friends; 404 otherwise.
+      description: >-
+        A draft only for its organizers, a friends-only one for the owner's friends, an invite link's
+        only for its organizers and those holding a spot (others open it by its code); 404 otherwise.
       tags: [tournaments]
       responses:
         '200': { description: The tournament, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
@@ -3007,6 +3012,53 @@ paths:
         '204': { description: Removed }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/tournaments/code/{code}:
+    parameters:
+      - { name: code, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getTournamentByCode
+      summary: The tournament an invite link names (tournaments.enabled)
+      description: Like getTournament; a draft or a friends-only one the caller may not see is 404 here too.
+      tags: [tournaments]
+      responses:
+        '200': { description: The tournament, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/tournaments/{id}/registration:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: registerForTournament
+      summary: Register alone (tournaments.enabled)
+      parameters:
+        - { name: code, in: query, required: false, schema: { type: string }, description: "An invite link's tournament needs its code" }
+      description: >-
+        Takes a spot, or takes back the one the caller withdrew from; registering twice is fine.
+        An invite link's tournament answers 404 without its code, unless the caller is already in it.
+        409 with the reason: `full`, `registration closed`, `paired board needed` (unless the
+        organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person`
+        (the organizers add the players).
+      tags: [tournaments]
+      responses:
+        '200': { description: The tournament, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: withdrawFromTournament
+      summary: Withdraw from a tournament before the draw (tournaments.enabled)
+      description: 409 when the caller holds no spot or the bracket is already drawn.
+      tags: [tournaments]
+      responses:
+        '200': { description: The tournament, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
@@ -6663,13 +6715,32 @@ components:
               entryStatus: { type: string, enum: [pending, registered, checked_in, withdrawn] }
               finalPlace: { type: integer, minimum: 1, nullable: true }
 
-    TournamentSummary:
+    TournamentRegistration:
+      type: string
+      enum: [registered, in_person, closed, team, full, board_needed, open]
+      description: >-
+        The caller and registration: registered (holds a spot), in_person (the organizers add
+        everyone), closed (not open, or past the close), team (a captain registers a team), full,
+        board_needed (online play needs a paired board unless manualScoring), open (may register)
+    TournamentOwner:
       type: object
-      required: [id, name, kind, access, status, gameId, format, teamSize, maxEntries, entries, startsAt]
+      nullable: true
+      description: Null once the owner's account is gone
+      required: [id, name]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
+    TournamentSummary:
+      type: object
+      required: [id, name, kind, access, status, gameId, gameConfig, format, teamSize, maxEntries, entries, startsAt, owner, registration]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        gameConfig: { type: object, additionalProperties: true }
+        owner: { $ref: '#/components/schemas/TournamentOwner' }
+        registration: { $ref: '#/components/schemas/TournamentRegistration' }
         kind: { type: string, enum: [official, community] }
         access: { type: string, enum: [public, friends, invite, in_person] }
         status: { type: string, enum: [draft, open, check_in, running, finished, cancelled] }
@@ -6793,6 +6864,10 @@ components:
           locked,
           createdAt,
           publishedAt,
+          registration,
+          registrationClosesAt,
+          friendsIn,
+          inviteCode,
         ]
       additionalProperties: false
       properties:
@@ -6810,15 +6885,25 @@ components:
         startsAt: { type: string, format: date-time, nullable: true }
         settings: { $ref: '#/components/schemas/TournamentSettings' }
         entries: { type: integer, description: Entries registered so far (withdrawn ones not counted) }
-        owner:
-          type: object
+        owner: { $ref: '#/components/schemas/TournamentOwner' }
+        registration: { $ref: '#/components/schemas/TournamentRegistration' }
+        registrationClosesAt:
+          { type: string, format: date-time, nullable: true, description: 'Before a fixed start; null while an organizer starts it' }
+        friendsIn:
+          type: array
+          description: "The caller's friends who hold a spot, by name"
+          items:
+            type: object
+            required: [id, name, avatar]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              name: { type: string }
+              avatar: { $ref: '#/components/schemas/Avatar' }
+        inviteCode:
+          type: string
           nullable: true
-          description: Null once the owner's account is gone
-          required: [id, name]
-          additionalProperties: false
-          properties:
-            id: { type: string }
-            name: { type: string }
+          description: "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
         role: { type: string, nullable: true, enum: [owner, organizer, null], description: "The caller's part in it" }
         locked: { type: boolean, description: 'Someone registered: only startsAt (with its settings) and description can change' }
         createdAt: { type: string, format: date-time }

@@ -594,6 +594,8 @@ export interface TournamentsTable {
   started_at: Stamp
   /** Finished or cancelled. */
   ended_at: Stamp
+  /** The invite link's code (migration 068); null on tournaments made before it. */
+  invite_code: ColumnType<string | null, string | undefined, never>
 }
 
 export interface TournamentOrganizersTable {

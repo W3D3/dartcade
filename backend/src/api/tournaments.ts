@@ -12,21 +12,29 @@ import {
   addOrganizer,
   canOrganize,
   deleteDraft,
+  friendsIn,
   getTournament,
+  getTournamentByCode,
+  hasPairedBoard,
   insertTournamentCapped,
+  isRegistered,
+  listBrowseTournaments,
   listOrganizedTournaments,
   listOrganizers,
-  listPublicTournaments,
   moveTournament,
   organizerRole,
+  registerSolo,
   removeOrganizer,
   updateTournament,
+  withdrawSolo,
   type BrowseRow,
   type OrganizerRole,
   type TournamentView,
 } from '../db/tournaments.js'
+import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { getUsersByIds } from '../db/queries.js'
 import type { LobbyHub } from '../lobby/hub.js'
+import { newLobbyCode } from '../lobby/code.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { validateOptions } from '../games/configMeta.js'
 import { games } from '../games/index.js'
@@ -39,6 +47,12 @@ import {
   startProblems,
   type Problem,
 } from '../shared/tournaments/setup.js'
+import {
+  registrationClosesAt,
+  registrationState,
+  type RegistrationState,
+  type RegistrationTournament,
+} from '../shared/tournaments/registration.js'
 import { ApiError, notFound } from './errors.js'
 import { requireTournamentsFlag } from './flagGate.js'
 import { fromSpec } from './spec.js'
@@ -51,35 +65,63 @@ type Input = components['schemas']['TournamentInput']
 type Setup = Omit<Input, 'gameId' | 'maxEntries'> & { gameId: string; maxEntries: number }
 type Tournament = components['schemas']['Tournament']
 
-const summary = (t: BrowseRow) => ({
+const forRegistration = (t: TournamentView): RegistrationTournament => ({
+  status: t.status,
+  access: t.access,
+  teamSize: t.team_size,
+  maxEntries: t.max_entries,
+  entries: t.entries,
+  startsAt: t.starts_at?.toISOString() ?? null,
+  settings: t.settings,
+})
+
+const ownerOf = (t: TournamentView) =>
+  t.owner_user_id !== null && t.owner_name !== null ? { id: t.owner_user_id, name: t.owner_name } : null
+
+const summary = (t: BrowseRow, hasBoard: boolean, now: Date) => ({
   id: t.id,
   name: t.name,
   kind: t.kind,
   access: t.access,
   status: t.status,
   gameId: t.game_id,
+  gameConfig: t.game_config,
   format: t.format,
   teamSize: t.team_size,
   maxEntries: t.max_entries,
   entries: t.entries,
   startsAt: t.starts_at?.toISOString() ?? null,
+  owner: ownerOf(t),
+  registration: registrationState(forRegistration(t), { registered: t.registered, hasBoard }, now),
 })
+
+/** What the caller sees of a tournament besides its setup: their spot, their friends in it. */
+interface Viewer {
+  registered: boolean
+  hasBoard: boolean
+  friendsIn: Tournament['friendsIn']
+}
 
 /** Someone registered for an online tournament: its setup is locked. In person the organizers add the players and keep editing. */
 const isLocked = (t: TournamentView) => t.access !== 'in_person' && t.has_entries
 
-function toApi(t: TournamentView, role: OrganizerRole | null): Tournament {
+function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, now: Date): Tournament {
+  const input = storedInput(t)
   return {
-    ...storedInput(t),
+    ...input,
     id: t.id,
     kind: t.kind,
     status: t.status,
     entries: t.entries,
-    owner: t.owner_user_id !== null && t.owner_name !== null ? { id: t.owner_user_id, name: t.owner_name } : null,
+    owner: ownerOf(t),
     role,
     locked: isLocked(t),
     createdAt: t.created_at.toISOString(),
     publishedAt: t.published_at?.toISOString() ?? null,
+    registration: registrationState(forRegistration(t), viewer, now),
+    registrationClosesAt: registrationClosesAt(input),
+    friendsIn: viewer.friendsIn,
+    inviteCode: role ? t.invite_code : null,
   }
 }
 
@@ -141,20 +183,43 @@ function check(t: Setup, now: Date | null): void {
 const at = (iso: string | null) => (iso === null ? null : Date.parse(iso))
 const conflict = (error: string) => new ApiError(409, { error })
 
+/** The 409 for each reason registration is refused. */
+const REFUSED: Record<Exclude<RegistrationState, 'open' | 'registered'>, string> = {
+  full: 'full',
+  closed: 'registration closed',
+  board_needed: 'paired board needed',
+  team: 'team tournament',
+  in_person: 'in person',
+}
+
+/** Invite codes are unique; a clash is retried with a fresh one. */
+const CODE_ATTEMPTS = 5
+
 export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db, hub } = opts
   // Before the body is validated: with the flag off even a bad request answers 404
   app.addHook('preValidation', requireAuth)
   app.addHook('preValidation', async req => requireTournamentsFlag(db, req.userId))
 
-  /** The tournament with the caller's role; 404 for a draft or a friends-only one they may not see. */
-  async function visible(id: string, userId: string): Promise<{ t: TournamentView; role: OrganizerRole | null }> {
-    const t = await getTournament(db, id)
+  /**
+   * The tournament with the caller's role; 404 for a draft, a friends-only one of someone not
+   * their friend, or an invite link's they hold no spot in and came to without its `code`.
+   */
+  const visible = async (id: string, userId: string, code?: string) => seen(await getTournament(db, id), userId, code)
+
+  /** As visible, for a tournament found another way (by its invite code). */
+  async function seen(
+    t: TournamentView | undefined,
+    userId: string,
+    code?: string,
+  ): Promise<{ t: TournamentView; role: OrganizerRole | null }> {
     if (!t) throw notFound()
     const role = await organizerRole(db, t, userId)
     if (role) return { t, role }
     if (t.status === 'draft') throw notFound()
     if (t.access === 'friends' && !(t.owner_user_id !== null && (await areFriends(db, t.owner_user_id, userId)))) throw notFound()
+    if (t.access === 'invite' && !(code !== undefined && code.toUpperCase() === t.invite_code) && !(await isRegistered(db, t.id, userId)))
+      throw notFound()
     return { t, role }
   }
 
@@ -165,15 +230,30 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     return { t, role }
   }
 
-  async function respond(id: string, role: OrganizerRole | null): Promise<Tournament> {
-    const t = await getTournament(db, id)
-    if (!t) throw notFound()
-    return toApi(t, role)
+  async function viewerOf(t: TournamentView, userId: string): Promise<Viewer> {
+    const [registered, hasBoard, friends] = await Promise.all([
+      isRegistered(db, t.id, userId),
+      hasPairedBoard(db, userId),
+      friendsIn(db, t.id, userId),
+    ])
+    return { registered, hasBoard, friendsIn: friends }
   }
 
-  app.get<Route<'listTournaments'>>('/api/tournaments', { schema: fromSpec('listTournaments') }, async () => ({
-    tournaments: (await listPublicTournaments(db)).map(summary),
-  }))
+  async function present(t: TournamentView, role: OrganizerRole | null, userId: string): Promise<Tournament> {
+    return toApi(t, role, await viewerOf(t, userId), new Date())
+  }
+
+  async function respond(id: string, role: OrganizerRole | null, userId: string): Promise<Tournament> {
+    const t = await getTournament(db, id)
+    if (!t) throw notFound()
+    return present(t, role, userId)
+  }
+
+  app.get<Route<'listTournaments'>>('/api/tournaments', { schema: fromSpec('listTournaments') }, async req => {
+    const [rows, hasBoard] = await Promise.all([listBrowseTournaments(db, req.userId), hasPairedBoard(db, req.userId)])
+    const now = new Date()
+    return { tournaments: rows.map(t => summary(t, hasBoard, now)) }
+  })
 
   app.post<Route<'createTournament'>>('/api/tournaments', { schema: fromSpec('createTournament') }, async (req, reply) => {
     const user = await loadFlagUser(db, req.userId)
@@ -182,24 +262,56 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     const input = cleanText(req.body)
     check(input, new Date())
     const id = randomUUID()
-    const created = await insertTournamentCapped(db, { id, owner_user_id: req.userId, kind: 'community', ...columns(input) })
+    const created = await withFreshCode(code =>
+      insertTournamentCapped(db, { id, owner_user_id: req.userId, kind: 'community', invite_code: code, ...columns(input) }),
+    )
     if (!created)
       throw new ApiError(409, {
         error: 'limit reached',
         details: [{ path: 'body', message: `at most ${MAX_UNFINISHED_TOURNAMENTS} tournaments that are not finished or cancelled` }],
       })
-    return reply.code(201).send(await respond(id, 'owner'))
+    return reply.code(201).send(await respond(id, 'owner', req.userId))
   })
 
   app.get<Route<'listMyTournaments'>>('/api/tournaments/mine', { schema: fromSpec('listMyTournaments') }, async req => {
     const rows = await listOrganizedTournaments(db, req.userId)
-    return { tournaments: rows.map(t => toApi(t, t.owner_user_id === req.userId ? 'owner' : 'organizer')) }
+    return { tournaments: await Promise.all(rows.map(t => present(t, t.owner_user_id === req.userId ? 'owner' : 'organizer', req.userId))) }
   })
 
   app.get<Route<'getTournament'>>('/api/tournaments/:id', { schema: fromSpec('getTournament') }, async req => {
     const { t, role } = await visible(req.params.id, req.userId)
-    return toApi(t, role)
+    return present(t, role, req.userId)
   })
+
+  app.get<Route<'getTournamentByCode'>>('/api/tournaments/code/:code', { schema: fromSpec('getTournamentByCode') }, async req => {
+    const { t, role } = await seen(await getTournamentByCode(db, req.params.code.toUpperCase()), req.userId, req.params.code)
+    return present(t, role, req.userId)
+  })
+
+  app.post<Route<'registerForTournament'>>(
+    '/api/tournaments/:id/registration',
+    { schema: fromSpec('registerForTournament') },
+    async req => {
+      const { t, role } = await visible(req.params.id, req.userId, req.query.code)
+      const [user, hasBoard] = await Promise.all([getUsersByIds(db, [req.userId]), hasPairedBoard(db, req.userId)])
+      const name = user.at(0)?.name
+      if (name === undefined) throw notFound()
+      const state = await registerSolo(db, t.id, { id: req.userId, name, hasBoard }, new Date())
+      if (state === null) throw notFound()
+      if (state !== 'open' && state !== 'registered') throw conflict(REFUSED[state])
+      return respond(t.id, role, req.userId)
+    },
+  )
+
+  app.delete<Route<'withdrawFromTournament'>>(
+    '/api/tournaments/:id/registration',
+    { schema: fromSpec('withdrawFromTournament') },
+    async req => {
+      const { t, role } = await visible(req.params.id, req.userId)
+      if (!(await withdrawSolo(db, t.id, req.userId))) throw conflict('not registered, or the bracket is drawn')
+      return respond(t.id, role, req.userId)
+    },
+  )
 
   app.patch<Route<'updateTournament'>>('/api/tournaments/:id', { schema: fromSpec('updateTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
@@ -219,7 +331,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     const unregistered = changed.length > 0 && t.access !== 'in_person'
     if (!(await updateTournament(db, t.id, columns(next), { status: t.status, unregistered })))
       throw conflict('the tournament changed meanwhile')
-    return respond(t.id, role)
+    return respond(t.id, role, req.userId)
   })
 
   app.delete<Route<'deleteTournament'>>('/api/tournaments/:id', { schema: fromSpec('deleteTournament') }, async (req, reply) => {
@@ -233,13 +345,13 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     if (t.status !== 'draft') throw conflict(`a ${t.status} tournament is already published`)
     check(storedInput(t), new Date())
     if (!(await moveTournament(db, t.id, 'publish'))) throw conflict('the tournament changed meanwhile')
-    return respond(t.id, role)
+    return respond(t.id, role, req.userId)
   })
 
   app.post<Route<'cancelTournament'>>('/api/tournaments/:id/cancel', { schema: fromSpec('cancelTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
     if (!(await moveTournament(db, t.id, 'cancel'))) throw conflict(`a ${t.status} tournament cannot be cancelled`)
-    return respond(t.id, role)
+    return respond(t.id, role, req.userId)
   })
 
   const organizersOf = async (t: TournamentView) => ({
@@ -297,4 +409,15 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   )
 
   done()
+}
+
+/** Runs `insert` with fresh invite codes until one is free. */
+async function withFreshCode<T>(insert: (code: string) => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await insert(newLobbyCode())
+    } catch (err) {
+      if (pgErrorCode(err) !== UNIQUE_VIOLATION || attempt >= CODE_ATTEMPTS) throw err
+    }
+  }
 }
