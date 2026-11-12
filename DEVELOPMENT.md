@@ -287,6 +287,35 @@ controls on the match screen have the Start/Stop big screen button and an "Open 
 Machines that installed a bridge before this existed need the install command from the Boards
 page run once more: registration happens only at install.
 
+## Minigolf 3D performance
+
+To measure how the 3D hole (`lib/components/minigolf/Hole3D.svelte`) draws, on any device:
+
+1. Open `#/admin/minigolf?perf=1` (or add `perf=1` to a match screen's or big screen's URL): a
+   frame-time overlay sits in the 3D view's corner, for this browser until `perf=0`. It shows the
+   last 2 s: fps, the 1% low, frame and main-thread ms (GPU ms where the browser can time it), draw
+   calls, triangles, the canvas size and the GPU.
+2. For numbers to compare, open `#/admin/minigolf?bench=1` (the bench's Benchmark 3D button) in a full-screen window. It runs four holes for about 50 s,
+   then shows the result as JSON with a Copy button.
+
+On a Raspberry Pi 5, sign in as an admin in Chromium on the screen the board uses, press F11, open
+`#/admin/minigolf?bench=1` and send the JSON result.
+
+`e2e/perf/minigolf-bench.mjs` runs the same benchmark in Chromium at several window sizes, pixel
+ratios and CPU slowdowns against a running stack, and prints a table (not part of CI):
+
+```sh
+cd e2e
+node perf/minigolf-bench.mjs --sizes 1920x1080,3840x2160 --dpr 1,2 --throttle 1,6 --out /tmp/bench.json
+```
+
+It signs in as `BENCH_EMAIL`/`BENCH_PASSWORD` (default: the visual check's admin). Without `--gpu`
+Chromium draws with SwiftShader, its software GL: a worst-case stand-in for a weak GPU, not a measure
+of any real one. `--gpu --chrome /path/to/chrome` uses the machine's GPU. `--throttle` slows only the
+page's main thread, not Chrome's GPU process. Headless Chromium also has its own ceiling on large
+windows (about 40 fps for an empty 4K canvas on an Intel UHD 630), so compare tiers with each other,
+not with a real screen.
+
 ## Tailwind checks
 
 Two checks keep the utility classes on the theme tokens in `src/app.css`.
