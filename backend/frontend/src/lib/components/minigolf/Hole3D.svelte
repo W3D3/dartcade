@@ -14,6 +14,7 @@
   import * as THREE from 'three'
   import { onMount } from 'svelte'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+  import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { flagBase } from '$shared/minigolf/geometry'
   import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
@@ -198,13 +199,18 @@
     return (p[2] ?? ground + BALL_R) + (relief - 1) * ground
   }
 
-  /** A block along ab, standing on the ground (rails and walls). */
-  function block(a: Pt, b: Pt, material: THREE.Material, thickness = wallThickness): THREE.Mesh {
+  /** A block along ab, standing on the ground (rails and walls), in place. */
+  function block(a: Pt, b: Pt, thickness = wallThickness): THREE.BufferGeometry {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]) + thickness
     const mid: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, RAIL_HEIGHT * 2, thickness), material)
-    mesh.position.set(mid[0], heightAt(hole, mid) * relief, mid[1])
-    mesh.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0])
+    return new THREE.BoxGeometry(len, RAIL_HEIGHT * 2, thickness)
+      .rotateY(-Math.atan2(b[1] - a[1], b[0] - a[0]))
+      .translate(mid[0], heightAt(hole, mid) * relief, mid[1])
+  }
+  /** The pieces as one mesh: a curved outline is hundreds of blocks, and each mesh is a draw call (two with shadows). */
+  function merged(pieces: THREE.BufferGeometry[], material: THREE.Material): THREE.Mesh {
+    const mesh = new THREE.Mesh(mergeGeometries(pieces), material)
+    for (const p of pieces) p.dispose()
     mesh.castShadow = mesh.receiveShadow = true
     return mesh
   }
@@ -233,20 +239,19 @@
     ground.receiveShadow = true
     g.add(ground)
 
-    const rail = toon(RAIL)
     const ring = (pts: readonly Pt[], closed: boolean) => (closed ? [...pts, pts[0]] : pts)
     const edges = ring(h.outline, true)
-    for (let i = 1; i < edges.length; i++) g.add(block(edges[i - 1], edges[i], rail))
+    const rails: THREE.BufferGeometry[] = []
+    for (let i = 1; i < edges.length; i++) rails.push(block(edges[i - 1], edges[i]))
     for (const w of h.walls) {
       const pts = ring(w.points, w.closed ?? false)
-      for (let i = 1; i < pts.length; i++) g.add(block(pts[i - 1], pts[i], rail, w.thickness))
+      for (let i = 1; i < pts.length; i++) rails.push(block(pts[i - 1], pts[i], w.thickness))
     }
-    for (const b of h.bumpers) {
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r, RAIL_HEIGHT * 2, 32), toon(BUMPER))
-      m.position.set(b.at[0], heightAt(h, b.at) * relief, b.at[1])
-      m.castShadow = m.receiveShadow = true
-      g.add(m)
-    }
+    g.add(merged(rails, toon(RAIL)))
+    const bumpers = h.bumpers.map(b =>
+      new THREE.CylinderGeometry(b.r, b.r, RAIL_HEIGHT * 2, 32).translate(b.at[0], heightAt(h, b.at) * relief, b.at[1]),
+    )
+    if (bumpers.length) g.add(merged(bumpers, toon(BUMPER)))
 
     // The cup: a dark tube down into the hole (48 sides, on the ground's rim points), and the flag
     const [cx, cy] = h.cup.at
