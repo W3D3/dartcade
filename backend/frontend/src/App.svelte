@@ -48,6 +48,7 @@
   import AchievementToasts from '$lib/components/achievements/AchievementToasts.svelte'
   import TeamInviteToast from '$lib/components/teams/TeamInviteToast.svelte'
   import TournamentToast from '$lib/components/tournaments/TournamentToast.svelte'
+  import TournamentRequestToast from '$lib/components/tournaments/TournamentRequestToast.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminRanked from './routes/AdminRanked.svelte'
   import AdminMinigolfReports from './routes/AdminMinigolfReports.svelte'
@@ -285,7 +286,8 @@
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser && !bigScreen}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast /><MatchFound />{/if}
+      {#if $currentUser && !bigScreen}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast /><TournamentRequestToast
+        /><MatchFound />{/if}
     {/if}
   {/if}
   {#if $currentUser?.impersonating && !bigScreen}<ImpersonationBanner name={$currentUser.name} />{/if}

@@ -2,7 +2,7 @@
   // Create a tournament (Tournament-Create), or edit one you organize (`#/tournaments/:id/edit`):
   // Basics, Game, Entry, Format, Schedule & rules, and a live Preview with the save buttons. Behind
   // tournaments.enabled; creating also needs tournaments.community.enabled (admins always may).
-  // Average limit (#604), guests (#612), organizers (#613) and the in-person participants (#614)
+  // Average limit (#604), guests (#612) and the in-person participants (#614)
   // come with their tickets.
   import { ChevronLeft } from '@lucide/svelte'
   import { querystring, replace } from 'svelte-spa-router'
@@ -11,6 +11,7 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import CreatePreview from '$lib/components/tournaments/CreatePreview.svelte'
   import FormSection from '$lib/components/tournaments/FormSection.svelte'
+  import OrganizersField from '$lib/components/tournaments/OrganizersField.svelte'
   import OptionCards from '$lib/components/tournaments/OptionCards.svelte'
   import DateTimeField from '$lib/components/tournaments/DateTimeField.svelte'
   import SwitchRow from '$lib/components/tournaments/SwitchRow.svelte'
@@ -59,6 +60,7 @@
     type CreateForm,
     type Tournament,
   } from '$lib/tournaments/create'
+  import { addPicked, type OrganizerPick } from '$lib/tournaments/organizers'
   import { TOURNAMENT_TEXT } from '$shared/tournaments/setup'
 
   let { params = {} }: { params?: { id?: string } } = $props()
@@ -72,6 +74,8 @@
   let stored = $state<Tournament | null | undefined>(undefined)
   let busy = $state(false)
   let errors = $state<string[]>([])
+  /** Organizers picked for a tournament that is not saved yet. */
+  let organizers = $state<OrganizerPick[]>([])
 
   $effect(() => {
     const id = params.id
@@ -108,8 +112,13 @@
   async function save(publish: boolean) {
     busy = true
     const res = await saveTournament(toInput(form), { id: params.id, publish })
-    busy = false
     if (!res.ok) errors = res.errors
+    // Still busy while the picks are added: a second click would make a second tournament
+    if (res.id && !params.id && organizers.length > 0) {
+      errors = [...errors, ...(await addPicked(res.id, organizers))]
+      organizers = []
+    }
+    busy = false
     if (!res.id) return
     // A new tournament (even one whose publish failed) is edited from now on, so a retry saves it
     if (res.id !== params.id) return void replace(hrefs.tournamentEdit(res.id, res.ok ? 'saved=1' : undefined).slice(1))
@@ -189,6 +198,7 @@
                 class="resize-y rounded-md border border-line-3 bg-surface-2 px-4 py-3 text-base text-text
                        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"></textarea>
             </label>
+            <OrganizersField tournamentId={params.id} tournamentName={form.name || 'this tournament'} bind:picks={organizers} />
           </FormSection>
 
           <FormSection n={2} title="Game">
