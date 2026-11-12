@@ -174,6 +174,7 @@
   {@const t = open}
   <TournamentDetail
     {t}
+    {code}
     {busy}
     {error}
     onclose={() => {

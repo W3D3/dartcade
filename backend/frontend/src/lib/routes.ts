@@ -35,6 +35,8 @@ export const hrefs = {
   /** An invite link's landing: Browse with that tournament's Details open. */
   tournamentJoin: (code: string) => at(`/tournaments/join/${code}`),
   tournamentNew: () => at('/tournaments/new'),
+  /** A tournament's live page: its bracket, players and rules; `code=` an invite link's, for someone without a spot. */
+  tournament: (id: string, query?: string) => at(`/tournaments/${id}`, query),
   /** `saved`: say so above the form (after creating it, the page this one replaced). */
   tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
   ranks: () => at('/matchmaking/ranks'),

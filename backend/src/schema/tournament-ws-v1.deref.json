@@ -287,14 +287,22 @@
         },
         "sides": {
           "type": "array",
+          "items": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          ],
           "minItems": 2,
-          "maxItems": 2,
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
+          "additionalItems": false,
           "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
         },
         "outcome": {
@@ -324,11 +332,16 @@
         },
         "legs": {
           "type": "array",
+          "items": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
           "minItems": 2,
-          "maxItems": 2,
-          "items": {
-            "type": "integer"
-          },
+          "additionalItems": false,
           "description": "Legs won by each side: so far in a live match, the result in a finished one."
         },
         "game": {
@@ -732,14 +745,22 @@
               },
               "sides": {
                 "type": "array",
+                "items": [
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ],
                 "minItems": 2,
-                "maxItems": 2,
-                "items": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
+                "additionalItems": false,
                 "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
               },
               "outcome": {
@@ -769,11 +790,16 @@
               },
               "legs": {
                 "type": "array",
+                "items": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
                 "minItems": 2,
-                "maxItems": 2,
-                "items": {
-                  "type": "integer"
-                },
+                "additionalItems": false,
                 "description": "Legs won by each side: so far in a live match, the result in a finished one."
               },
               "game": {
