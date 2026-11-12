@@ -2216,8 +2216,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Tournaments you own or organize, drafts included (tournaments.enabled)
-         * @description Newest first.
+         * Your tournaments, the My tournaments tab (tournaments.enabled)
+         * @description The match being played now, the tournaments you hold a spot in that are not over, those you organize that are not over (drafts included), your finished ones (newest first, at most 50) and your results over the current calendar quarter.
          */
         get: operations["listMyTournaments"];
         put?: never;
@@ -5366,6 +5366,87 @@ export interface components {
             /** @description The caller's 30-day average */
             average: number | null;
         } | null;
+        MyTournamentRef: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            kind: "official" | "community";
+            /** @enum {string} */
+            access: "public" | "friends" | "invite" | "in_person";
+            /** @enum {string} */
+            status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
+            gameId: string;
+            gameConfig: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            format: "single_elimination" | "double_elimination" | "round_robin" | "groups_knockout";
+            teamSize: number;
+            maxEntries: number;
+            /** @description Entries registered so far (withdrawn ones not counted) */
+            entries: number;
+            /** Format: date-time */
+            startsAt: string | null;
+            owner: components["schemas"]["TournamentOwner"];
+        };
+        MyTournaments: {
+            /** @description Your match whose game is running now */
+            liveMatch: {
+                tournament: components["schemas"]["MyTournamentRef"];
+                /** @description Where it sits, e.g. Quarter-final */
+                round: string;
+                opponent: string;
+                firstTo: number;
+                sessionId: string;
+            } | null;
+            /** @description Soonest first; organizer-started ones last */
+            playing: {
+                tournament: components["schemas"]["MyTournamentRef"];
+                /** @description The team, or you */
+                entryName: string;
+                /** @description The name your spot plays under */
+                playerName: string;
+                /** @description Teammates who have not confirmed yet */
+                waitingFor: string[];
+                /** @description Your next match's opponent once known */
+                opponent: string | null;
+            }[];
+            organizing: {
+                tournament: components["schemas"]["MyTournamentRef"];
+                /** @enum {string} */
+                role: "owner" | "organizer";
+                /** @description In person: spots claimed by an account; null otherwise */
+                claimed: number | null;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+            past: {
+                tournament: components["schemas"]["MyTournamentRef"];
+                entryName: string;
+                playerName: string;
+                place: number | null;
+                won: number;
+                lost: number;
+                /** @description Your X01 3-dart average in its matches */
+                average: number | null;
+                /** Format: date-time */
+                endedAt: string | null;
+            }[];
+            pastTotal: number;
+            season: {
+                /** @description The calendar quarter, e.g. Q4 2026 */
+                label: string;
+                played: number;
+                titles: number;
+                won: number;
+                lost: number;
+                average: number | null;
+                best: {
+                    place: number;
+                    tournament: string;
+                } | null;
+            };
+        };
         TournamentSummary: {
             id: string;
             name: string;
@@ -10063,15 +10144,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The tournaments */
+            /** @description Your tournaments */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        tournaments: components["schemas"]["Tournament"][];
-                    };
+                    "application/json": components["schemas"]["MyTournaments"];
                 };
             };
             401: components["responses"]["Unauthorized"];

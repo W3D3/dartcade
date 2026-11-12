@@ -19,7 +19,6 @@ import {
   insertTournamentCapped,
   isRegistered,
   listBrowseTournaments,
-  listOrganizedTournaments,
   listOrganizers,
   moveTournament,
   organizerRole,
@@ -40,6 +39,7 @@ import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { NO_FORM, viewerEligibility, type Eligibility, type Form } from '../shared/tournaments/avgLimit.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { TournamentService } from '../tournaments/service.js'
+import { myTournaments } from '../tournaments/mine.js'
 import { newLobbyCode } from '../lobby/code.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { validateOptions } from '../games/configMeta.js'
@@ -313,8 +313,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   })
 
   app.get<Route<'listMyTournaments'>>('/api/tournaments/mine', { schema: fromSpec('listMyTournaments') }, async req => {
-    const rows = await listOrganizedTournaments(db, req.userId)
-    return { tournaments: await Promise.all(rows.map(t => present(t, t.owner_user_id === req.userId ? 'owner' : 'organizer', req.userId))) }
+    return myTournaments(db, req.userId, new Date())
   })
 
   app.get<Route<'getTournament'>>('/api/tournaments/:id', { schema: fromSpec('getTournament') }, async req => {
