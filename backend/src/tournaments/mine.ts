@@ -4,7 +4,8 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { components } from '../schema/api.js'
 import { listOrganizedTournaments, type TournamentView } from '../db/tournaments.js'
-import { averageParts, claimedCounts, listSpots, openMatches, recordOf, unconfirmedTeammates } from '../db/tournamentMine.js'
+import { averageParts, claimedCounts, listSpots, openMatches, recordOf } from '../db/tournamentMine.js'
+import { teamEntriesOf } from '../db/tournamentRoster.js'
 import { matchTitle, quarterOf } from '../shared/tournaments/mine.js'
 
 type MyTournaments = components['schemas']['MyTournaments']
@@ -39,10 +40,10 @@ export async function myTournaments(db: Kysely<Database>, userId: string, now: D
   const [spots, organized] = await Promise.all([listSpots(db, userId), listOrganizedTournaments(db, userId)])
   const current = spots.filter(s => s.t.status !== 'finished').sort((a, b) => byStart(a.t, b.t))
   const finished = spots.filter(s => s.t.status === 'finished')
-  const [waiting, matches, record, averages, claimed] = await Promise.all([
-    unconfirmedTeammates(
+  const [teams, matches, record, averages, claimed] = await Promise.all([
+    teamEntriesOf(
       db,
-      current.map(s => s.entryId),
+      current.map(s => s.t.id),
       userId,
     ),
     openMatches(
@@ -92,7 +93,7 @@ export async function myTournaments(db: Kysely<Database>, userId: string, now: D
       tournament: refOf(s.t),
       entryName: s.entryName,
       playerName: s.playerName,
-      waitingFor: waiting.get(s.entryId) ?? [],
+      team: teams.get(s.t.id) ?? null,
       opponent: matches.find(m => m.entryId === s.entryId && m.opponent !== null)?.opponent ?? null,
     })),
     organizing: organized

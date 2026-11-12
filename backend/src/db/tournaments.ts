@@ -456,21 +456,29 @@ export async function registerSolo(
   })
 }
 
-/** Withdraws `userId`'s spot until the tournament is over; false when they hold none or it is too late. */
-export async function withdrawSolo(db: Kysely<Database>, tournamentId: string, userId: string): Promise<boolean> {
+/** Withdraws `userId`'s spot (or the team they registered) until the tournament is over: the entry's id, or null when they hold none or it is too late. */
+export async function withdrawSolo(db: Kysely<Database>, tournamentId: string, userId: string): Promise<string | null> {
   return db.transaction().execute(async tx => {
     const t = await tx.selectFrom('tournaments').select('status').where('id', '=', tournamentId).forUpdate().executeTakeFirst()
-    if (!t || !canWithdraw(t.status)) return false
-    const res = await tx
+    if (!t || !canWithdraw(t.status)) return null
+    const row = await tx
       .updateTable('tournament_entries')
       .set({ status: 'withdrawn' })
       .where('tournament_id', '=', tournamentId)
       .where('status', '<>', 'withdrawn')
-      .where('id', 'in', eb =>
-        eb.selectFrom('tournament_players').select('entry_id').where('tournament_id', '=', tournamentId).where('user_id', '=', userId),
+      .where(eb =>
+        eb.or([
+          eb(
+            'id',
+            'in',
+            eb.selectFrom('tournament_players').select('entry_id').where('tournament_id', '=', tournamentId).where('user_id', '=', userId),
+          ),
+          eb.and([eb('registered_by_user_id', '=', userId), eb('team_id', 'is not', null)]),
+        ]),
       )
+      .returning('id')
       .executeTakeFirst()
-    return res.numUpdatedRows > 0n
+    return row?.id ?? null
   })
 }
 

@@ -348,7 +348,7 @@
       "title": "MeMessage",
       "description": "Pushed on /ws/me when it opens and whenever it changes.",
       "type": "object",
-      "required": ["type", "invites", "teamInvites", "lobby", "game"],
+      "required": ["type", "invites", "teamInvites", "tournamentRequests", "lobby", "game"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "me" },
@@ -357,6 +357,11 @@
           "type": "array",
           "description": "Invites to named teams waiting for your answer, newest first.",
           "items": { "$ref": "common-v1.json#/$defs/TeamInvite" }
+        },
+        "tournamentRequests": {
+          "type": "array",
+          "description": "Tournament teams you were picked to play for, waiting for your answer, soonest deadline first (tournaments.enabled).",
+          "items": { "$ref": "common-v1.json#/$defs/TournamentTeamRequest" }
         },
         "lobby": { "anyOf": [{ "$ref": "#/$defs/LobbySummary" }, { "type": "null" }] },
         "game": { "anyOf": [{ "$ref": "#/$defs/ActiveGame" }, { "type": "null" }] }
@@ -469,7 +474,7 @@
     },
     "TournamentRequestMessage": {
       "title": "TournamentRequestMessage",
-      "description": "Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.",
+      "description": "Pushed on /ws/me when someone makes you a tournament organizer (role organizer; the tournament is under Organizing from then on), or a captain picks you, or reminds you, to play for their team (role player, with the team; the request is in me.tournamentRequests until you answer).",
       "type": "object",
       "required": ["type", "tournamentId", "tournamentName", "role", "from"],
       "additionalProperties": false,
@@ -477,7 +482,8 @@
         "type": { "const": "tournament.request" },
         "tournamentId": { "type": "string" },
         "tournamentName": { "type": "string" },
-        "role": { "const": "organizer" },
+        "role": { "enum": ["organizer", "player"] },
+        "team": { "type": "string", "description": "role player: the team's name." },
         "from": {
           "type": "object",
           "required": ["id", "name"],

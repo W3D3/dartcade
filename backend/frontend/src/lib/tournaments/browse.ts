@@ -127,7 +127,7 @@ export const REGISTRATION_NOTE: Record<RegistrationState, string> = {
   closed: 'Registration closed',
   board_needed: 'Paired board needed',
   not_eligible: 'Not eligible',
-  team: 'A captain registers the team',
+  team: 'Open · captains register their team',
   in_person: 'Added by the organizers',
 }
 
@@ -148,14 +148,21 @@ const REFUSAL: Partial<Record<string, string>> = {
   'registration closed': 'Registration has closed.',
   'paired board needed': 'Pair a board first: this tournament is played on your own board.',
   'not eligible': 'Your 30-day average is outside this tournament’s limit.',
+  'already in this tournament': 'Someone you picked already plays in this tournament.',
+  'already registered': 'This team is in already.',
+  'reminded recently': 'You reminded them a moment ago. Try again later.',
+  confirmed: 'That player has confirmed already.',
 }
 
-async function outcome(call: Promise<{ data?: Tournament; error?: { error: string }; response: Response }>): Promise<Outcome> {
+/** What to say for a refused request: the server's reason in words, when there is one. */
+export const refusal = (error: string | undefined): string => REFUSAL[error ?? ''] ?? error ?? 'Something went wrong. Try again.'
+
+export async function outcome(call: Promise<{ data?: Tournament; error?: { error: string }; response: Response }>): Promise<Outcome> {
   try {
     const res = await call
     if (res.data) return { tournament: res.data }
     if (res.response.status === 404) return { error: 'This tournament is gone, or you cannot see it.' }
-    return { error: REFUSAL[res.error?.error ?? ''] ?? res.error?.error ?? 'Something went wrong. Try again.' }
+    return { error: refusal(res.error?.error) }
   } catch {
     return { error: 'Something went wrong. Try again.' }
   }

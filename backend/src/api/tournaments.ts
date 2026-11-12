@@ -33,11 +33,13 @@ import {
 import { listParticipants, setParticipants, unlinkSpot, type SetParticipantsResult } from '../db/tournamentParticipants.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { checkIn } from '../db/tournamentRun.js'
+import { answerRequest, candidatesOf, changePlayer, registerTeam, teamEntriesOf, teamOptions } from '../db/tournamentRoster.js'
 import { getUsersByIds } from '../db/queries.js'
 import { x01Forms } from '../db/ranked.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { NO_FORM, viewerEligibility, type Eligibility, type Form } from '../shared/tournaments/avgLimit.js'
 import type { LobbyHub } from '../lobby/hub.js'
+import type { LobbyService } from '../lobby/service.js'
 import type { TournamentService } from '../tournaments/service.js'
 import { myTournaments } from '../tournaments/mine.js'
 import { newLobbyCode } from '../lobby/code.js'
@@ -54,8 +56,10 @@ import {
   type Problem,
 } from '../shared/tournaments/setup.js'
 import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
+import { REMIND_EVERY_MS, pickProblem, waitingFor, type Candidate, type PickProblem } from '../shared/tournaments/roster.js'
 import {
   registrationClosesAt,
+  registrationOpen,
   registrationState,
   type RegistrationState,
   type RegistrationTournament,
@@ -68,6 +72,8 @@ import type { Route } from './route.js'
 type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   hub: Pick<LobbyHub, 'sendTournamentRequest'>
+  /** Refreshes /ws/me (its tournament requests) for these players. */
+  lobbies: Pick<LobbyService, 'pushMe'>
   tournaments: Pick<TournamentService, 'organizerStart' | 'withdrawn'>
 }
 
@@ -75,6 +81,7 @@ type Input = components['schemas']['TournamentInput']
 /** A setup as stored: a tournament made elsewhere (official ones, later games) may hold any game and size. */
 type Setup = Omit<Input, 'gameId' | 'maxEntries'> & { gameId: string; maxEntries: number }
 type Tournament = components['schemas']['Tournament']
+type TeamEntry = components['schemas']['TournamentTeamEntry']
 
 const forRegistration = (t: TournamentView): RegistrationTournament => ({
   status: t.status,
@@ -98,7 +105,7 @@ const eligible = (e: Eligibility | null) => e?.eligible ?? true
 const formOf = async (db: Kysely<Database>, userId: string): Promise<Form> =>
   (await x01Forms(db, [userId], PROFILE_AVERAGE_DAYS)).get(userId) ?? NO_FORM
 
-const summary = (t: BrowseRow, hasBoard: boolean, form: Form, now: Date) => {
+const summary = (t: BrowseRow, hasBoard: boolean, form: Form, team: TeamEntry, now: Date) => {
   const eligibility = eligibilityOf(t, form)
   return {
     id: t.id,
@@ -116,7 +123,12 @@ const summary = (t: BrowseRow, hasBoard: boolean, form: Form, now: Date) => {
     owner: ownerOf(t),
     avgLimit: t.settings.avgLimit,
     eligibility,
-    registration: registrationState(forRegistration(t), { registered: t.registered, hasBoard, eligible: eligible(eligibility) }, now),
+    registration: registrationState(
+      forRegistration(t),
+      { registered: t.registered || team !== null, hasBoard, eligible: eligible(eligibility) },
+      now,
+    ),
+    team,
   }
 }
 
@@ -127,6 +139,7 @@ interface Viewer {
   hasBoard: boolean
   form: Form
   friendsIn: Tournament['friendsIn']
+  team: TeamEntry
 }
 
 /** Someone registered for an online tournament: its setup is locked. In person the organizers add the players and keep editing. */
@@ -146,12 +159,17 @@ function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, no
     locked: isLocked(t),
     createdAt: t.created_at.toISOString(),
     publishedAt: t.published_at?.toISOString() ?? null,
-    registration: registrationState(forRegistration(t), { ...viewer, eligible: eligible(eligibility) }, now),
+    registration: registrationState(
+      forRegistration(t),
+      { registered: viewer.registered, hasBoard: viewer.hasBoard, eligible: eligible(eligibility) },
+      now,
+    ),
     eligibility,
     registrationClosesAt: registrationClosesAt(input),
     friendsIn: viewer.friendsIn,
     inviteCode: role ? t.invite_code : null,
     checkedIn: viewer.checkedIn,
+    team: viewer.team,
   }
 }
 
@@ -239,11 +257,29 @@ function replaced(res: SetParticipantsResult): void {
     throw new ApiError(400, { error: 'invalid request', details: [{ path: 'body/entries', message: 'unknown id' }] })
 }
 
+/** The 409 for each reason picks are refused. */
+const PICK_REFUSED: Record<PickProblem, string> = {
+  count: 'wrong player count',
+  taken: 'already in this tournament',
+  not_eligible: REFUSED.not_eligible,
+  board_needed: REFUSED.board_needed,
+}
+
+/** A member as the picks' checks judge them. */
+const candidate = (userId: string, c: { form: Form; board: string | null; taken: boolean }): Candidate => ({
+  userId,
+  form: c.form,
+  hasBoard: c.board !== null,
+  taken: c.taken,
+})
+
 /** Invite codes are unique; a clash is retried with a fresh one. */
 const CODE_ATTEMPTS = 5
 
 export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, hub, tournaments } = opts
+  const { db, hub, lobbies, tournaments } = opts
+  // shortcut: when each team entry last reminded its players, in memory (a restart allows one more), until reminders need to outlive one
+  const reminded = new Map<string, number>()
   // Before the body is validated: with the flag off even a bad request answers 404
   app.addHook('preValidation', requireAuth)
   app.addHook('preValidation', async req => requireTournamentsFlag(db, req.userId))
@@ -274,13 +310,22 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   }
 
   async function viewerOf(t: TournamentView, userId: string): Promise<Viewer> {
-    const [spot, hasBoard, form, friends] = await Promise.all([
+    const [spot, hasBoard, form, friends, teams] = await Promise.all([
       spotStatus(db, t.id, userId),
       hasPairedBoard(db, userId),
       formOf(db, userId),
       friendsIn(db, t.id, userId),
+      teamEntriesOf(db, [t.id], userId),
     ])
-    return { registered: spot !== null, checkedIn: spot === 'checked_in', hasBoard, form, friendsIn: friends }
+    return {
+      // A captain who doesn't play holds their team's spot all the same
+      registered: spot !== null || teams.has(t.id),
+      checkedIn: spot === 'checked_in',
+      hasBoard,
+      form,
+      friendsIn: friends,
+      team: teams.get(t.id) ?? null,
+    }
   }
 
   async function present(t: TournamentView, role: OrganizerRole | null, userId: string): Promise<Tournament> {
@@ -299,8 +344,13 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       hasPairedBoard(db, req.userId),
       formOf(db, req.userId),
     ])
+    const teams = await teamEntriesOf(
+      db,
+      rows.filter(t => t.team_size > 1).map(t => t.id),
+      req.userId,
+    )
     const now = new Date()
-    return { tournaments: rows.map(t => summary(t, hasBoard, form, now)) }
+    return { tournaments: rows.map(t => summary(t, hasBoard, form, teams.get(t.id) ?? null, now)) }
   })
 
   app.get<Route<'getTournamentForm'>>('/api/tournaments/form', { schema: fromSpec('getTournamentForm') }, async req =>
@@ -363,8 +413,11 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     { schema: fromSpec('withdrawFromTournament') },
     async req => {
       const { t, role } = await visible(req.params.id, req.userId)
-      if (!(await withdrawSolo(db, t.id, req.userId))) throw conflict('not registered, or the tournament is over')
-      if (t.status === 'running') await tournaments.withdrawn(t.id, req.userId)
+      const team = (await teamEntriesOf(db, [t.id], req.userId)).get(t.id)
+      if (team && team.captainId !== req.userId) throw conflict("only the captain withdraws a team; answer Can't make it instead")
+      const entryId = await withdrawSolo(db, t.id, req.userId)
+      if (entryId === null) throw conflict('not registered, or the tournament is over')
+      if (t.status === 'running') await tournaments.withdrawn(t.id, entryId)
       return respond(t.id, role, req.userId)
     },
   )
@@ -547,6 +600,140 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       const t = await inPerson(req.params.id, req.userId)
       if (!(await unlinkSpot(db, t.id, req.params.playerId))) throw notFound()
       return participantsOf(t)
+    },
+  )
+
+  const nameOf = async (userId: string) => (await getUsersByIds(db, [userId])).at(0)?.name ?? ''
+
+  /** Tells picked players a captain wants them to play: a toast, and the request in their /ws/me. */
+  async function ask(t: TournamentView, userIds: readonly string[], team: string, from: { id: string; name: string }): Promise<void> {
+    await Promise.allSettled(
+      userIds.map(async userId => {
+        hub.sendTournamentRequest(userId, {
+          type: 'tournament.request',
+          tournamentId: t.id,
+          tournamentName: t.name,
+          role: 'player',
+          team,
+          from,
+        })
+        await lobbies.pushMe(userId)
+      }),
+    )
+  }
+
+  /** The caller's team entry here, as the captain who registered it, and its team; 404 otherwise. */
+  async function captained(t: TournamentView, userId: string) {
+    const entry = (await teamEntriesOf(db, [t.id], userId)).get(t.id)
+    if (!entry || entry.captainId !== userId || entry.team === null) throw notFound()
+    return { entry, team: entry.team }
+  }
+
+  app.get<Route<'getTournamentTeamOptions'>>(
+    '/api/tournaments/:id/team-options',
+    { schema: fromSpec('getTournamentTeamOptions') },
+    async req => {
+      const { t } = await visible(req.params.id, req.userId)
+      return { teams: await teamOptions(db, t.id, req.userId) }
+    },
+  )
+
+  app.post<Route<'registerTeamForTournament'>>(
+    '/api/tournaments/:id/teams',
+    { schema: fromSpec('registerTeamForTournament') },
+    async req => {
+      const { t, role } = await visible(req.params.id, req.userId, req.query.code)
+      const team = (await teamOptions(db, t.id, req.userId)).find(o => o.id === req.body.teamId)
+      if (!team) throw notFound()
+      if (team.captainId !== req.userId) throw new ApiError(403, { error: 'only the captain can register this team' })
+      const picked = req.body.players.map(id => team.members.find(m => m.user.id === id))
+      const members = picked.filter(m => m !== undefined)
+      if (members.length < picked.length) throw conflict('not a member')
+      const { problem } = pickProblem(
+        forRegistration(t),
+        members.map(m => candidate(m.user.id, m)),
+      )
+      if (problem === 'count') throw conflict(PICK_REFUSED.count)
+      const state = await registerTeam(
+        db,
+        t.id,
+        {
+          team,
+          captainId: req.userId,
+          players: members.map(m => m.user),
+          hasBoard: problem !== 'board_needed',
+          eligible: problem !== 'not_eligible',
+        },
+        new Date(),
+      )
+      if (state === null) throw notFound()
+      if (state === 'taken') throw conflict(PICK_REFUSED.taken)
+      if (state === 'registered') throw conflict('already registered')
+      if (state !== 'open') throw conflict(REFUSED[state])
+      await ask(
+        t,
+        members.map(m => m.user.id).filter(id => id !== req.userId),
+        team.name,
+        { id: req.userId, name: await nameOf(req.userId) },
+      )
+      return respond(t.id, role, req.userId)
+    },
+  )
+
+  app.post<Route<'answerTournamentRequest'>>(
+    '/api/tournaments/:id/roster/answer',
+    { schema: fromSpec('answerTournamentRequest') },
+    async (req, reply) => {
+      const { t } = await visible(req.params.id, req.userId)
+      const res = await answerRequest(db, t.id, req.userId, req.body.accept, new Date())
+      if (res === 'closed') throw conflict(REFUSED.closed)
+      if (typeof res === 'string') throw conflict('you were not picked for a team here')
+      await lobbies.pushMe(req.userId)
+      return reply.code(204).send()
+    },
+  )
+
+  app.put<Route<'changeTournamentPlayer'>>(
+    '/api/tournaments/:id/roster/:position',
+    { schema: fromSpec('changeTournamentPlayer') },
+    async req => {
+      const { t, role } = await visible(req.params.id, req.userId)
+      const { entry, team } = await captained(t, req.userId)
+      const { position } = req.params
+      const { userId } = req.body
+      const member = (await teamOptions(db, t.id, req.userId)).find(o => o.id === team.id)?.members.find(m => m.user.id === userId)
+      if (!member) throw conflict('not a member')
+      // Judged with the others who keep their places, as a registration would be. They hold their
+      // places in this entry, so only the new player can be taken elsewhere: changePlayer checks that
+      const others = entry.slots.flatMap(s => (s.position === position || s.user === null ? [] : [s.user.id]))
+      const judge = await candidatesOf(db, t.id, [...others, userId])
+      const picks = [...others, userId].map(id => ({ ...judge(id), taken: false }))
+      const { problem } = pickProblem({ ...forRegistration(t), teamSize: picks.length }, picks)
+      if (problem === 'not_eligible' || problem === 'board_needed') throw conflict(PICK_REFUSED[problem])
+      const changed = await changePlayer(db, t.id, req.userId, position, member.user, new Date())
+      if (changed === 'none') throw notFound()
+      if (changed === 'closed') throw conflict(REFUSED.closed)
+      if (changed === 'confirmed') throw conflict('confirmed')
+      if (changed === 'taken') throw conflict(PICK_REFUSED.taken)
+      if (userId !== req.userId) await ask(t, [userId], team.name, { id: req.userId, name: await nameOf(req.userId) })
+      return respond(t.id, role, req.userId)
+    },
+  )
+
+  app.post<Route<'remindTournamentPlayers'>>(
+    '/api/tournaments/:id/roster/remind',
+    { schema: fromSpec('remindTournamentPlayers') },
+    async (req, reply) => {
+      const { t } = await visible(req.params.id, req.userId)
+      const { entry, team } = await captained(t, req.userId)
+      const now = Date.now()
+      if (!registrationOpen(forRegistration(t), new Date(now))) throw conflict(REFUSED.closed)
+      const waiting = waitingFor(entry.slots).flatMap(s => (s.user === null ? [] : [s.user.id]))
+      if (waiting.length === 0) throw conflict('nobody is waiting to confirm')
+      if (now - (reminded.get(entry.entryId) ?? -Infinity) < REMIND_EVERY_MS) throw new ApiError(429, { error: 'reminded recently' })
+      reminded.set(entry.entryId, now)
+      await ask(t, waiting, team.name, { id: req.userId, name: await nameOf(req.userId) })
+      return reply.code(204).send()
     },
   )
 

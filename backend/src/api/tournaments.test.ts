@@ -30,7 +30,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
   }
   const send = (user: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object) => {
     const app = createFastify()
-    app.register(tournamentsApiPlugin, { db, hub: { sendTournamentRequest: () => {} }, tournaments })
+    app.register(tournamentsApiPlugin, {
+      db,
+      hub: { sendTournamentRequest: () => {} },
+      lobbies: { pushMe: () => Promise.resolve() },
+      tournaments,
+    })
     return app.inject({ method, url, payload, headers: { 'x-user': user } })
   }
   const get = (user: string, url = '/api/tournaments') => send(user, 'GET', url)
@@ -62,6 +67,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           registration: 'board_needed',
           avgLimit: null,
           eligibility: null,
+          team: null,
         },
       ],
     })
@@ -551,7 +557,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
         await status('live', 'running')
         tournaments.withdrawn.mockClear()
         expect((await withdraw('player', 'live')).json()).toMatchObject({ registration: 'closed' })
-        expect(tournaments.withdrawn).toHaveBeenCalledWith('live', 'player')
+        const entry = await db
+          .selectFrom('tournament_players')
+          .select('entry_id')
+          .where('tournament_id', '=', 'live')
+          .where('user_id', '=', 'player')
+          .executeTakeFirstOrThrow()
+        expect(tournaments.withdrawn).toHaveBeenCalledWith('live', entry.entry_id)
         expect((await withdraw('player', 'live')).statusCode).toBe(409)
       })
     })

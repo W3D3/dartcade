@@ -38552,7 +38552,8 @@
                           "owner",
                           "registration",
                           "avgLimit",
-                          "eligibility"
+                          "eligibility",
+                          "team"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -38561,6 +38562,110 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "team": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                            "required": [
+                              "entryId",
+                              "status",
+                              "team",
+                              "captainId",
+                              "confirmBy",
+                              "slots"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "entryId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "registered",
+                                  "checked_in"
+                                ]
+                              },
+                              "team": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null once the team was deleted",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "tag",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "tag": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "captainId": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "Who registered it; null once their account is gone"
+                              },
+                              "confirmBy": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true,
+                                "description": "When registration closes; null while an organizer starts it"
+                              },
+                              "slots": {
+                                "type": "array",
+                                "description": "One per place, in throwing order",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "position",
+                                    "user",
+                                    "confirmed"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "position": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "user": {
+                                      "type": "object",
+                                      "nullable": true,
+                                      "description": "Null when the player declined and nobody took the place yet",
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "confirmed": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
                           },
                           "gameConfig": {
                             "type": "object",
@@ -39179,7 +39284,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -39621,6 +39727,110 @@
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
                     },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "locked": {
                       "type": "boolean",
                       "description": "Someone registered: only startsAt (with its settings) and description can change"
@@ -40042,7 +40252,7 @@
                           "tournament",
                           "entryName",
                           "playerName",
-                          "waitingFor",
+                          "team",
                           "opponent"
                         ],
                         "additionalProperties": false,
@@ -40160,12 +40370,109 @@
                             "type": "string",
                             "description": "The name your spot plays under"
                           },
-                          "waitingFor": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "Teammates who have not confirmed yet"
+                          "team": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                            "required": [
+                              "entryId",
+                              "status",
+                              "team",
+                              "captainId",
+                              "confirmBy",
+                              "slots"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "entryId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "registered",
+                                  "checked_in"
+                                ]
+                              },
+                              "team": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null once the team was deleted",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "tag",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "tag": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "captainId": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "Who registered it; null once their account is gone"
+                              },
+                              "confirmBy": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true,
+                                "description": "When registration closes; null while an organizer starts it"
+                              },
+                              "slots": {
+                                "type": "array",
+                                "description": "One per place, in throwing order",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "position",
+                                    "user",
+                                    "confirmed"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "position": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "user": {
+                                      "type": "object",
+                                      "nullable": true,
+                                      "description": "Null when the player declined and nobody took the place yet",
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "confirmed": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
                           },
                           "opponent": {
                             "type": "string",
@@ -40843,7 +41150,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -41284,6 +41592,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -41804,7 +42216,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -42245,6 +42658,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -42759,7 +43276,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -43200,6 +43718,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -43506,7 +44128,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -43947,6 +44570,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -44214,7 +44941,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -44655,6 +45383,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -44882,7 +45714,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -45323,6 +46156,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -49934,7 +50871,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -50375,6 +51313,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -50575,7 +51617,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -51016,6 +52059,110 @@
                     "checkedIn": {
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "locked": {
                       "type": "boolean",
@@ -51232,7 +52379,8 @@
                     "friendsIn",
                     "inviteCode",
                     "checkedIn",
-                    "eligibility"
+                    "eligibility",
+                    "team"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -51674,6 +52822,110 @@
                       "type": "boolean",
                       "description": "The caller holds a spot and checked in"
                     },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "locked": {
                       "type": "boolean",
                       "description": "Someone registered: only startsAt (with its settings) and description can change"
@@ -51691,6 +52943,2366 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/team-options": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournamentTeamOptions",
+        "summary": "Your teams for Register a team (tournaments.enabled)",
+        "description": "Every team the caller is in, with each member's 30-day form, paired board and whether they already hold a spot in this tournament: what the Register a team dialog picks from. Only a team's captain registers it.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "Your teams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "teams"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "teams": {
+                      "type": "array",
+                      "description": "The teams the caller is in, the ones they captain first",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "tag",
+                          "color",
+                          "captainId",
+                          "entered",
+                          "members"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "tag": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "captainId": {
+                            "type": "string"
+                          },
+                          "entered": {
+                            "type": "boolean",
+                            "description": "The team holds a spot in this tournament"
+                          },
+                          "members": {
+                            "type": "array",
+                            "description": "The captain first, then by when they joined",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "user",
+                                "form",
+                                "board",
+                                "taken"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "user": {
+                                  "title": "UserRef",
+                                  "type": "object",
+                                  "required": [
+                                    "id",
+                                    "name",
+                                    "avatar"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "description": "Their handle, shown as @name"
+                                    },
+                                    "avatar": {
+                                      "title": "Avatar",
+                                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "none"
+                                              ]
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "kind",
+                                            "foreground",
+                                            "background"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "preset"
+                                              ]
+                                            },
+                                            "foreground": {
+                                              "type": "string",
+                                              "description": "The finish of the mark in front"
+                                            },
+                                            "background": {
+                                              "type": "string",
+                                              "description": "The finish of the disc behind it"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "kind",
+                                            "version"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "upload"
+                                              ]
+                                            },
+                                            "version": {
+                                              "type": "integer",
+                                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "form": {
+                                  "type": "object",
+                                  "required": [
+                                    "average",
+                                    "legs"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "average": {
+                                      "type": "number",
+                                      "nullable": true,
+                                      "description": "X01 3-dart average over the last 30 days (one decimal); null without darts"
+                                    },
+                                    "legs": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "X01 legs played in the last 30 days"
+                                    }
+                                  }
+                                },
+                                "board": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Their first paired board's name"
+                                },
+                                "taken": {
+                                  "type": "boolean",
+                                  "description": "They hold a spot in this tournament already"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/teams": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "registerTeamForTournament",
+        "summary": "Register a team (tournaments.enabled)",
+        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An invite link's tournament needs its code"
+          }
+        ],
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "teamId",
+                  "players"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "teamId": {
+                    "type": "string"
+                  },
+                  "players": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The user ids who play, in throwing order"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode",
+                    "checkedIn",
+                    "eligibility",
+                    "team"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes",
+                        "avgLimit"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "not_eligible",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "checkedIn": {
+                      "type": "boolean",
+                      "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/answer": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "answerTournamentRequest",
+        "summary": "I'm in, or Can't make it (tournaments.enabled)",
+        "description": "A picked player answers their captain while registration is open. I'm in confirms; once every place is confirmed the team is registered. Can't make it frees the player's place (not the team's spot: the captain picks someone else), also after they confirmed. 409 when the caller holds no place in a team, or registration has closed.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "accept"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "accept": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Answered"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/{position}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "position",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        }
+      ],
+      "put": {
+        "operationId": "changeTournamentPlayer",
+        "summary": "Change player (tournaments.enabled)",
+        "description": "The captain puts another team member in a place that is empty (its player declined) or still waits for its player; the new player gets a request to confirm. The picks are checked again like a registration. 409 with the reason: `registration closed`, `confirmed` (that player already confirmed), `not eligible`, `paired board needed`, `not a member` or `already in this tournament`; 404 when the caller registered no team here.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode",
+                    "checkedIn",
+                    "eligibility",
+                    "team"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes",
+                        "avgLimit"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "in_person",
+                        "closed",
+                        "team",
+                        "full",
+                        "not_eligible",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "checkedIn": {
+                      "type": "boolean",
+                      "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/remind": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "remindTournamentPlayers",
+        "summary": "Remind the players still to confirm (tournaments.enabled)",
+        "description": "The captain sends the picked players who have not confirmed their request again (a tournament.request on /ws/me), at most once every 15 minutes: 429 with `reminded recently` before that. 409 when nobody is waiting or registration has closed; 404 when the caller registered no team here.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "204": {
+            "description": "Reminded"
           },
           "401": {
             "description": "Not signed in",
@@ -88048,7 +91660,7 @@
                 "tournament",
                 "entryName",
                 "playerName",
-                "waitingFor",
+                "team",
                 "opponent"
               ],
               "additionalProperties": false,
@@ -88166,12 +91778,109 @@
                   "type": "string",
                   "description": "The name your spot plays under"
                 },
-                "waitingFor": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Teammates who have not confirmed yet"
+                "team": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                  "required": [
+                    "entryId",
+                    "status",
+                    "team",
+                    "captainId",
+                    "confirmBy",
+                    "slots"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entryId": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "registered",
+                        "checked_in"
+                      ]
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the team was deleted",
+                      "required": [
+                        "id",
+                        "name",
+                        "tag",
+                        "color"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "tag": {
+                          "type": "string"
+                        },
+                        "color": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "captainId": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Who registered it; null once their account is gone"
+                    },
+                    "confirmBy": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "When registration closes; null while an organizer starts it"
+                    },
+                    "slots": {
+                      "type": "array",
+                      "description": "One per place, in throwing order",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "position",
+                          "user",
+                          "confirmed"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "position": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "user": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Null when the player declined and nobody took the place yet",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "confirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
                 },
                 "opponent": {
                   "type": "string",
@@ -88521,6 +92230,287 @@
           }
         }
       },
+      "TournamentTeamEntry": {
+        "type": "object",
+        "nullable": true,
+        "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+        "required": [
+          "entryId",
+          "status",
+          "team",
+          "captainId",
+          "confirmBy",
+          "slots"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "entryId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "registered",
+              "checked_in"
+            ]
+          },
+          "team": {
+            "type": "object",
+            "nullable": true,
+            "description": "Null once the team was deleted",
+            "required": [
+              "id",
+              "name",
+              "tag",
+              "color"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tag": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "captainId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who registered it; null once their account is gone"
+          },
+          "confirmBy": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When registration closes; null while an organizer starts it"
+          },
+          "slots": {
+            "type": "array",
+            "description": "One per place, in throwing order",
+            "items": {
+              "type": "object",
+              "required": [
+                "position",
+                "user",
+                "confirmed"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "user": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Null when the player declined and nobody took the place yet",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "confirmed": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TournamentTeamOptions": {
+        "type": "object",
+        "required": [
+          "teams"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "teams": {
+            "type": "array",
+            "description": "The teams the caller is in, the ones they captain first",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "tag",
+                "color",
+                "captainId",
+                "entered",
+                "members"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                },
+                "captainId": {
+                  "type": "string"
+                },
+                "entered": {
+                  "type": "boolean",
+                  "description": "The team holds a spot in this tournament"
+                },
+                "members": {
+                  "type": "array",
+                  "description": "The captain first, then by when they joined",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "user",
+                      "form",
+                      "board",
+                      "taken"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "user": {
+                        "title": "UserRef",
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Their handle, shown as @name"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "form": {
+                        "type": "object",
+                        "required": [
+                          "average",
+                          "legs"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "average": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "X01 3-dart average over the last 30 days (one decimal); null without darts"
+                          },
+                          "legs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "X01 legs played in the last 30 days"
+                          }
+                        }
+                      },
+                      "board": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Their first paired board's name"
+                      },
+                      "taken": {
+                        "type": "boolean",
+                        "description": "They hold a spot in this tournament already"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "TournamentSummary": {
         "type": "object",
         "required": [
@@ -88539,7 +92529,8 @@
           "owner",
           "registration",
           "avgLimit",
-          "eligibility"
+          "eligibility",
+          "team"
         ],
         "additionalProperties": false,
         "properties": {
@@ -88548,6 +92539,110 @@
           },
           "name": {
             "type": "string"
+          },
+          "team": {
+            "type": "object",
+            "nullable": true,
+            "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+            "required": [
+              "entryId",
+              "status",
+              "team",
+              "captainId",
+              "confirmBy",
+              "slots"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "entryId": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "registered",
+                  "checked_in"
+                ]
+              },
+              "team": {
+                "type": "object",
+                "nullable": true,
+                "description": "Null once the team was deleted",
+                "required": [
+                  "id",
+                  "name",
+                  "tag",
+                  "color"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                }
+              },
+              "captainId": {
+                "type": "string",
+                "nullable": true,
+                "description": "Who registered it; null once their account is gone"
+              },
+              "confirmBy": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "When registration closes; null while an organizer starts it"
+              },
+              "slots": {
+                "type": "array",
+                "description": "One per place, in throwing order",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "position",
+                    "user",
+                    "confirmed"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "position": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "user": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null when the player declined and nobody took the place yet",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "confirmed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           },
           "gameConfig": {
             "type": "object",
@@ -89897,7 +93992,8 @@
           "friendsIn",
           "inviteCode",
           "checkedIn",
-          "eligibility"
+          "eligibility",
+          "team"
         ],
         "additionalProperties": false,
         "properties": {
@@ -90338,6 +94434,110 @@
           "checkedIn": {
             "type": "boolean",
             "description": "The caller holds a spot and checked in"
+          },
+          "team": {
+            "type": "object",
+            "nullable": true,
+            "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+            "required": [
+              "entryId",
+              "status",
+              "team",
+              "captainId",
+              "confirmBy",
+              "slots"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "entryId": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "registered",
+                  "checked_in"
+                ]
+              },
+              "team": {
+                "type": "object",
+                "nullable": true,
+                "description": "Null once the team was deleted",
+                "required": [
+                  "id",
+                  "name",
+                  "tag",
+                  "color"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                }
+              },
+              "captainId": {
+                "type": "string",
+                "nullable": true,
+                "description": "Who registered it; null once their account is gone"
+              },
+              "confirmBy": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "When registration closes; null while an organizer starts it"
+              },
+              "slots": {
+                "type": "array",
+                "description": "One per place, in throwing order",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "position",
+                    "user",
+                    "confirmed"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "position": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "user": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null when the player declined and nobody took the place yet",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "confirmed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           },
           "locked": {
             "type": "boolean",

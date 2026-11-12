@@ -308,8 +308,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     now += 2 * MIN
     await service.tick()
     const game = gameOf('p5')
-    expect(await withdrawSolo(db, 'wd', 'p6')).toBe(true)
-    await service.withdrawn('wd', 'p6')
+    const entryId = await withdrawSolo(db, 'wd', 'p6')
+    expect(entryId).not.toBeNull()
+    await service.withdrawn('wd', entryId ?? '')
     expect(engine.getSession(game)?.status).not.toBe('active')
     const [final] = await matches('wd')
     expect(final).toMatchObject({ status: 'finished', outcome: 'walkover', winner_entry_id: final.entry_a_id })

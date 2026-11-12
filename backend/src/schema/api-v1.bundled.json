@@ -7058,6 +7058,300 @@
         }
       }
     },
+    "/api/tournaments/{id}/team-options": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournamentTeamOptions",
+        "summary": "Your teams for Register a team (tournaments.enabled)",
+        "description": "Every team the caller is in, with each member's 30-day form, paired board and whether they already hold a spot in this tournament: what the Register a team dialog picks from. Only a team's captain registers it.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "Your teams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentTeamOptions"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/teams": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "registerTeamForTournament",
+        "summary": "Register a team (tournaments.enabled)",
+        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An invite link's tournament needs its code"
+          }
+        ],
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "teamId",
+                  "players"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "teamId": {
+                    "type": "string"
+                  },
+                  "players": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The user ids who play, in throwing order"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/answer": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "answerTournamentRequest",
+        "summary": "I'm in, or Can't make it (tournaments.enabled)",
+        "description": "A picked player answers their captain while registration is open. I'm in confirms; once every place is confirmed the team is registered. Can't make it frees the player's place (not the team's spot: the captain picks someone else), also after they confirmed. 409 when the caller holds no place in a team, or registration has closed.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "accept"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "accept": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Answered"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/{position}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "position",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        }
+      ],
+      "put": {
+        "operationId": "changeTournamentPlayer",
+        "summary": "Change player (tournaments.enabled)",
+        "description": "The captain puts another team member in a place that is empty (its player declined) or still waits for its player; the new player gets a request to confirm. The picks are checked again like a registration. 409 with the reason: `registration closed`, `confirmed` (that player already confirmed), `not eligible`, `paired board needed`, `not a member` or `already in this tournament`; 404 when the caller registered no team here.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/roster/remind": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "remindTournamentPlayers",
+        "summary": "Remind the players still to confirm (tournaments.enabled)",
+        "description": "The captain sends the picked players who have not confirmed their request again (a tournament.request on /ws/me), at most once every 15 minutes: 429 with `reminded recently` before that. 409 when nobody is waiting or registration has closed; 404 when the caller registered no team here.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "204": {
+            "description": "Reminded"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/achievements": {
       "get": {
         "operationId": "getMyAchievements",
@@ -16815,7 +17109,7 @@
                 "tournament",
                 "entryName",
                 "playerName",
-                "waitingFor",
+                "team",
                 "opponent"
               ],
               "additionalProperties": false,
@@ -16831,12 +17125,8 @@
                   "type": "string",
                   "description": "The name your spot plays under"
                 },
-                "waitingFor": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Teammates who have not confirmed yet"
+                "team": {
+                  "$ref": "#/components/schemas/TournamentTeamEntry"
                 },
                 "opponent": {
                   "type": "string",
@@ -16982,6 +17272,188 @@
           }
         }
       },
+      "TournamentTeamEntry": {
+        "type": "object",
+        "nullable": true,
+        "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+        "required": [
+          "entryId",
+          "status",
+          "team",
+          "captainId",
+          "confirmBy",
+          "slots"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "entryId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "registered",
+              "checked_in"
+            ]
+          },
+          "team": {
+            "type": "object",
+            "nullable": true,
+            "description": "Null once the team was deleted",
+            "required": [
+              "id",
+              "name",
+              "tag",
+              "color"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tag": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "captainId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who registered it; null once their account is gone"
+          },
+          "confirmBy": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When registration closes; null while an organizer starts it"
+          },
+          "slots": {
+            "type": "array",
+            "description": "One per place, in throwing order",
+            "items": {
+              "type": "object",
+              "required": [
+                "position",
+                "user",
+                "confirmed"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "user": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Null when the player declined and nobody took the place yet",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "confirmed": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TournamentTeamOptions": {
+        "type": "object",
+        "required": [
+          "teams"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "teams": {
+            "type": "array",
+            "description": "The teams the caller is in, the ones they captain first",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "tag",
+                "color",
+                "captainId",
+                "entered",
+                "members"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                },
+                "captainId": {
+                  "type": "string"
+                },
+                "entered": {
+                  "type": "boolean",
+                  "description": "The team holds a spot in this tournament"
+                },
+                "members": {
+                  "type": "array",
+                  "description": "The captain first, then by when they joined",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "user",
+                      "form",
+                      "board",
+                      "taken"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "user": {
+                        "$ref": "#/components/schemas/UserRef"
+                      },
+                      "form": {
+                        "$ref": "#/components/schemas/TournamentForm"
+                      },
+                      "board": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Their first paired board's name"
+                      },
+                      "taken": {
+                        "type": "boolean",
+                        "description": "They hold a spot in this tournament already"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "TournamentSummary": {
         "type": "object",
         "required": [
@@ -17000,7 +17472,8 @@
           "owner",
           "registration",
           "avgLimit",
-          "eligibility"
+          "eligibility",
+          "team"
         ],
         "additionalProperties": false,
         "properties": {
@@ -17009,6 +17482,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TournamentTeamEntry"
           },
           "gameConfig": {
             "type": "object",
@@ -17643,7 +18119,8 @@
           "friendsIn",
           "inviteCode",
           "checkedIn",
-          "eligibility"
+          "eligibility",
+          "team"
         ],
         "additionalProperties": false,
         "properties": {
@@ -17776,6 +18253,9 @@
           "checkedIn": {
             "type": "boolean",
             "description": "The caller holds a spot and checked in"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TournamentTeamEntry"
           },
           "locked": {
             "type": "boolean",

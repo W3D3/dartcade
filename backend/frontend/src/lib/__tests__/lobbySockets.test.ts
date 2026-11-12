@@ -45,6 +45,7 @@ const meMsg = {
   type: 'me',
   invites: [],
   teamInvites: [],
+  tournamentRequests: [],
   game: null,
   lobby: {
     id: 'l1',
@@ -232,6 +233,7 @@ describe('createMeStore', () => {
     expect(get(s)).toEqual({
       invites: [],
       teamInvites: [],
+      tournamentRequests: [],
       lobby: null,
       game: null,
       friends: { friends: [], incoming: [], outgoing: [] },

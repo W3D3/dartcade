@@ -43,28 +43,6 @@ export async function listSpots(db: Kysely<Database>, userId: string): Promise<S
   }))
 }
 
-/** Teammates who have not confirmed the captain's request yet, by entry id. */
-export async function unconfirmedTeammates(
-  db: Kysely<Database>,
-  entryIds: readonly string[],
-  userId: string,
-): Promise<Map<string, string[]>> {
-  const out = new Map<string, string[]>()
-  if (entryIds.length === 0) return out
-  const rows = await db
-    .selectFrom('tournament_players as p')
-    .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
-    .select(['p.entry_id', 'p.name'])
-    .where('p.entry_id', 'in', entryIds)
-    .where('e.status', '=', 'pending')
-    .where('p.confirmed_at', 'is', null)
-    .where(eb => eb.or([eb('p.user_id', 'is', null), eb('p.user_id', '<>', userId)]))
-    .orderBy('p.position')
-    .execute()
-  for (const r of rows) out.set(r.entry_id, [...(out.get(r.entry_id) ?? []), r.name])
-  return out
-}
-
 export interface OpenMatch {
   entryId: string
   tournamentId: string

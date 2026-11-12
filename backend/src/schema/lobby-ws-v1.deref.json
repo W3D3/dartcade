@@ -3047,6 +3047,7 @@
         "type",
         "invites",
         "teamInvites",
+        "tournamentRequests",
         "lobby",
         "game"
       ],
@@ -3722,6 +3723,156 @@
               "expiresAt": {
                 "type": "string",
                 "format": "date-time"
+              }
+            }
+          }
+        },
+        "tournamentRequests": {
+          "type": "array",
+          "description": "Tournament teams you were picked to play for, waiting for your answer, soonest deadline first (tournaments.enabled).",
+          "items": {
+            "title": "TournamentTeamRequest",
+            "description": "A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.",
+            "type": "object",
+            "required": [
+              "tournamentId",
+              "tournamentName",
+              "team",
+              "from",
+              "confirmBy"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tournamentId": {
+                "type": "string"
+              },
+              "tournamentName": {
+                "type": "string"
+              },
+              "team": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "tag",
+                  "color"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                }
+              },
+              "from": {
+                "anyOf": [
+                  {
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "avatar"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "foreground",
+                              "background"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "description": "The finish of the mark in front"
+                              },
+                              "background": {
+                                "type": "string",
+                                "description": "The finish of the disc behind it"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The captain who registered the team; null once their account is gone."
+              },
+              "confirmBy": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When registration closes; null while an organizer starts the tournament."
               }
             }
           }
@@ -4716,7 +4867,7 @@
     },
     "TournamentRequestMessage": {
       "title": "TournamentRequestMessage",
-      "description": "Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.",
+      "description": "Pushed on /ws/me when someone makes you a tournament organizer (role organizer; the tournament is under Organizing from then on), or a captain picks you, or reminds you, to play for their team (role player, with the team; the request is in me.tournamentRequests until you answer).",
       "type": "object",
       "required": [
         "type",
@@ -4737,7 +4888,14 @@
           "type": "string"
         },
         "role": {
-          "const": "organizer"
+          "enum": [
+            "organizer",
+            "player"
+          ]
+        },
+        "team": {
+          "type": "string",
+          "description": "role player: the team's name."
         },
         "from": {
           "type": "object",
@@ -6243,6 +6401,7 @@
             "type",
             "invites",
             "teamInvites",
+            "tournamentRequests",
             "lobby",
             "game"
           ],
@@ -6918,6 +7077,156 @@
                   "expiresAt": {
                     "type": "string",
                     "format": "date-time"
+                  }
+                }
+              }
+            },
+            "tournamentRequests": {
+              "type": "array",
+              "description": "Tournament teams you were picked to play for, waiting for your answer, soonest deadline first (tournaments.enabled).",
+              "items": {
+                "title": "TournamentTeamRequest",
+                "description": "A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.",
+                "type": "object",
+                "required": [
+                  "tournamentId",
+                  "tournamentName",
+                  "team",
+                  "from",
+                  "confirmBy"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "tournamentId": {
+                    "type": "string"
+                  },
+                  "tournamentName": {
+                    "type": "string"
+                  },
+                  "team": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "tag",
+                      "color"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "color": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "from": {
+                    "anyOf": [
+                      {
+                        "title": "UserRef",
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Their handle, shown as @name"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The captain who registered the team; null once their account is gone."
+                  },
+                  "confirmBy": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time",
+                    "description": "When registration closes; null while an organizer starts the tournament."
                   }
                 }
               }
@@ -7872,7 +8181,7 @@
         },
         {
           "title": "TournamentRequestMessage",
-          "description": "Pushed on /ws/me when someone makes you a tournament organizer. Not stored: the tournament is under Organizing from then on.",
+          "description": "Pushed on /ws/me when someone makes you a tournament organizer (role organizer; the tournament is under Organizing from then on), or a captain picks you, or reminds you, to play for their team (role player, with the team; the request is in me.tournamentRequests until you answer).",
           "type": "object",
           "required": [
             "type",
@@ -7893,7 +8202,14 @@
               "type": "string"
             },
             "role": {
-              "const": "organizer"
+              "enum": [
+                "organizer",
+                "player"
+              ]
+            },
+            "team": {
+              "type": "string",
+              "description": "role player: the team's name."
             },
             "from": {
               "type": "object",

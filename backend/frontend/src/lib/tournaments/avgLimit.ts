@@ -66,12 +66,12 @@ export function fromAvgLimit(l: AvgLimit | null): AvgLimitForm {
 
 const num = (n: number) => String(Math.round(n * 10) / 10)
 
+/** The bounds: "50–70", "50+", "up to 45". */
+export const avgRange = (l: AvgLimit): string =>
+  l.min !== null && l.max !== null ? `${num(l.min)}–${num(l.max)}` : l.min !== null ? `${num(l.min)}+` : `up to ${num(l.max ?? 0)}`
+
 /** Browse's tag: "Ø 50–70", "Ø 50+", "Ø up to 45", "Team Ø 55+". */
-export function avgTag(l: AvgLimit, teamSize: number): string {
-  const range =
-    l.min !== null && l.max !== null ? `${num(l.min)}–${num(l.max)}` : l.min !== null ? `${num(l.min)}+` : `up to ${num(l.max ?? 0)}`
-  return `${teamSize > 1 && l.teams === 'team' ? 'Team Ø' : 'Ø'} ${range}`
-}
+export const avgTag = (l: AvgLimit, teamSize: number): string => `${teamSize > 1 && l.teams === 'team' ? 'Team Ø' : 'Ø'} ${avgRange(l)}`
 
 /** Why not, under Not eligible: "Your Ø 68.4 · max 45". */
 export function notEligibleLine(e: Eligibility, l: AvgLimit): string {
