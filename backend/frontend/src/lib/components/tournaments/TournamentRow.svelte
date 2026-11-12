@@ -5,6 +5,7 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button'
   import type { TournamentSummary } from '$lib/api'
+  import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, entryLabel, formatLine, gamePill, spots, whenParts } from '$lib/tournaments/browse'
 
   let {
@@ -17,7 +18,8 @@
   const when = $derived(whenParts(t.startsAt))
   const live = $derived(t.status === 'running')
   const s = $derived(spots(t))
-  const note = $derived(REGISTRATION_NOTE[t.registration])
+  const why = $derived(t.registration === 'not_eligible' && t.eligibility && t.avgLimit ? notEligibleLine(t.eligibility, t.avgLimit) : '')
+  const note = $derived(why ? `${REGISTRATION_NOTE[t.registration]} · ${why}` : REGISTRATION_NOTE[t.registration])
 </script>
 
 <!-- Desktop: the five columns of the board's table -->
@@ -42,6 +44,13 @@
       <span class="inline-flex h-[22px] items-center rounded-full bg-surface-chip px-2 text-caption font-bold tracking-section text-ink-2">
         {gamePill(t.gameId, t.gameConfig)}
       </span>
+      {#if t.avgLimit}
+        <span
+          class="inline-flex h-[22px] items-center rounded-full bg-accent-tint px-2 text-caption font-bold tracking-section text-accent"
+        >
+          {avgTag(t.avgLimit, t.teamSize)}
+        </span>
+      {/if}
     </span>
   </div>
   <div class="flex flex-col gap-1 text-small text-ink-2">
@@ -57,6 +66,11 @@
         class="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-line bg-accent-tint px-3 text-small font-semibold text-accent"
       >
         <Check size={15} />Registered
+      </span>
+    {:else if t.registration === 'not_eligible'}
+      <span class="flex flex-col items-end gap-1">
+        <Button variant="outline" size="sm" disabled>Not eligible</Button>
+        <span class="whitespace-nowrap text-caption text-text-muted">{why}</span>
       </span>
     {:else}
       <span class="flex flex-col items-end gap-1">

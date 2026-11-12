@@ -5,10 +5,10 @@ import { LOCALE } from '$lib/fmt'
 import { gameTitle } from '$shared/gameNames'
 import type { RegistrationState } from '$shared/tournaments/registration'
 
-type Listed = Pick<TournamentSummary, 'kind' | 'status' | 'teamSize' | 'gameId' | 'name' | 'owner'>
+type Listed = Pick<TournamentSummary, 'kind' | 'status' | 'teamSize' | 'gameId' | 'name' | 'owner' | 'eligibility'>
 
 export type KindFilter = 'all' | 'official' | 'community'
-export const CHIPS = ['open', 'solo', 'teams', 'x01', 'cricket', 'minigolf'] as const
+export const CHIPS = ['open', 'solo', 'teams', 'x01', 'cricket', 'minigolf', 'fits'] as const
 export type Chip = (typeof CHIPS)[number]
 export const CHIP_LABELS: Record<Chip, string> = {
   open: 'Open now',
@@ -17,6 +17,7 @@ export const CHIP_LABELS: Record<Chip, string> = {
   x01: 'X01',
   cricket: 'Cricket',
   minigolf: 'Minigolf',
+  fits: 'Fits my Ø',
 }
 
 export interface BrowseFilter {
@@ -30,6 +31,8 @@ const GROUPS: readonly (readonly [Chip[], (t: Listed, c: Chip) => boolean])[] = 
   [['open'], t => t.status === 'open'],
   [['solo', 'teams'], (t, c) => (c === 'solo') === (t.teamSize === 1)],
   [['x01', 'cricket', 'minigolf'], (t, c) => t.gameId === c],
+  // A tournament without an average limit fits everyone
+  [['fits'], t => t.eligibility?.eligible ?? true],
 ]
 
 export function matches(t: Listed, f: BrowseFilter): boolean {

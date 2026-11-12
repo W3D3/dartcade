@@ -2,13 +2,13 @@
   // Create a tournament (Tournament-Create), or edit one you organize (`#/tournaments/:id/edit`):
   // Basics, Game, Entry, Format, Schedule & rules, and a live Preview with the save buttons. Behind
   // tournaments.enabled; creating also needs tournaments.community.enabled (admins always may).
-  // Average limit (#604), guests (#612) and the in-person participants (#614)
-  // come with their tickets.
+  // Guests (#612) and the in-person participants (#614) come with their tickets.
   import { ChevronLeft } from '@lucide/svelte'
   import { querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
+  import AvgLimitSection from '$lib/components/tournaments/AvgLimitSection.svelte'
   import CreatePreview from '$lib/components/tournaments/CreatePreview.svelte'
   import FormSection from '$lib/components/tournaments/FormSection.svelte'
   import OrganizersField from '$lib/components/tournaments/OrganizersField.svelte'
@@ -328,7 +328,9 @@
             {/if}
           </FormSection>
 
-          <FormSection n={4} title="Format">
+          <AvgLimitSection n={4} {form} {locked} onchange={(v: CreateForm['avgLimit']) => set('avgLimit', v)} />
+
+          <FormSection n={5} title="Format">
             <OptionCards
               label="Format"
               options={FORMATS}
@@ -388,7 +390,7 @@
             {/if}
           </FormSection>
 
-          <FormSection n={5} title="Schedule & rules">
+          <FormSection n={6} title="Schedule & rules">
             {#if inPerson}
               <p class="rounded-md border border-line bg-surface-1 p-3.5 text-label text-text-muted">
                 You start it from <b class="text-text">Tournament mode</b> when everyone’s there. Open Tournament mode on every device you want

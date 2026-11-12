@@ -13,6 +13,7 @@
   import { LOCALE } from '$lib/fmt'
   import { hrefs } from '$lib/routes'
   import { canWithdraw } from '$shared/tournaments/registration'
+  import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, formatLong, friendsInLine, fullWhen, gameLine, spots } from '$lib/tournaments/browse'
 
   let {
@@ -64,6 +65,11 @@
   </ul>
 
   <div class="flex flex-wrap gap-1.5">
+    {#if t.settings.avgLimit}
+      <span class="inline-flex h-[22px] items-center rounded-full bg-accent-tint px-2 text-caption font-bold text-accent"
+        >{avgTag(t.settings.avgLimit, t.teamSize)} · 30 days</span
+      >
+    {/if}
     {#if t.registrationClosesAt && t.status === 'open'}
       <span class="inline-flex h-[22px] items-center rounded-full bg-surface-chip px-2 text-caption font-bold text-ink-2">
         Registration closes {fullWhen(t.registrationClosesAt)}
@@ -135,6 +141,9 @@
         </div>
       {:else}
         <Button variant="outline" class="w-full" disabled>{REGISTRATION_NOTE[t.registration]}</Button>
+        {#if t.registration === 'not_eligible' && t.eligibility && t.settings.avgLimit}
+          <span class="text-center text-caption text-text-muted">{notEligibleLine(t.eligibility, t.settings.avgLimit)}</span>
+        {/if}
       {/if}
     </div>
   {/snippet}

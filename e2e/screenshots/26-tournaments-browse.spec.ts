@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test'
 import { VIEW, open, openHash, shot } from './helpers.js'
 
 // Browse with tournaments (Tournaments, Tournaments-Phone boards) and a tournament's Details, from
-// mocked answers: official and community tournaments, one you are in, one full, one needing a board.
+// mocked answers: official and community tournaments, one you are in, one full, one needing a board,
+// one with a team average limit and one whose average limit you are above.
 const settings = {
   seeding: 'random',
   firstTo: 3,
@@ -13,6 +14,7 @@ const settings = {
   plannedFor: null,
   manualScoring: false,
   noShowMinutes: 10,
+  avgLimit: null,
 }
 const base = {
   kind: 'community',
@@ -24,7 +26,10 @@ const base = {
   teamSize: 1,
   owner: null,
   registration: 'open',
+  avgLimit: null,
+  eligibility: null,
 }
+const limit = { min: null, max: null, teams: 'every', minLegs: 20, lock: true }
 const tournaments = [
   {
     ...base,
@@ -37,6 +42,8 @@ const tournaments = [
     entries: 27,
     startsAt: '2026-11-15T19:00:00Z',
     registration: 'team',
+    avgLimit: { ...limit, min: 55, teams: 'team' },
+    eligibility: { eligible: true, reason: null, average: 68.4 },
   },
   {
     ...base,
@@ -83,7 +90,9 @@ const tournaments = [
     maxEntries: 16,
     entries: 5,
     startsAt: '2026-11-29T17:00:00Z',
-    registration: 'board_needed',
+    registration: 'not_eligible',
+    avgLimit: { ...limit, max: 45 },
+    eligibility: { eligible: false, reason: 'above', average: 68.4 },
   },
 ]
 const detail = {
@@ -114,6 +123,16 @@ for (const [name, view] of [
     await openHash(s.page, '/tournaments/browse')
     await expect(s.page.getByText('Cricket Night').locator('visible=true')).toBeVisible()
     await shot(s.page, `tournaments/browse-list-${name}.png`)
+  })
+
+  test(`tournaments browse: not eligible ${name}`, async ({ browser }) => {
+    const s = await open(browser, 'admin', view)
+    await mock(s.page)
+    await openHash(s.page, '/tournaments/browse')
+    const row = s.page.getByText('Beginners Welcome Cup').locator('visible=true')
+    await row.evaluate(el => el.scrollIntoView({ block: 'center' }))
+    await expect(s.page.getByText(/Your Ø 68.4 · max 45/).locator('visible=true')).toBeVisible()
+    await shot(s.page, `tournaments/browse-not-eligible-${name}.png`)
   })
 
   test(`tournaments browse: details ${name}`, async ({ browser }) => {

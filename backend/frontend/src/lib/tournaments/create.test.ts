@@ -49,6 +49,8 @@ describe('toInput', () => {
       { format: 'round_robin', maxEntries: 64, longerFinal: true },
       { firstTo: 7, longerFinal: true, finalFirstTo: 3 },
       { registrationCloses: 15, checkInBefore: 60 },
+      { avgLimit: { ...defaultForm(now).avgLimit, on: true } },
+      { entry: 'teams', avgLimit: { ...defaultForm(now).avgLimit, on: true, mode: 'at_most', max: 45, teams: 'every' } },
     ]
     for (const s of setups) expect(setupProblems(toInput(form(s))), JSON.stringify(s)).toEqual([])
   })

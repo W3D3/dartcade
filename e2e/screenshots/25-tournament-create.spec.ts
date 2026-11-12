@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test'
 import { BASE, VIEW, api, open, openHash, shot } from './helpers.js'
 
 // Create tournament (Tournament-Create): the whole form for a team tournament with groups and a
-// longer final, the same on a phone, an organizer start, and the edit page of the saved draft.
+// longer final, the same on a phone, an organizer start, the edit page of the saved draft, and the
+// Average limit section switched on (the organizer's own 30-day form mocked).
 // The page scrolls inside <main>, so the full-form shots use a tall viewport.
 
 async function fillTeamsTournament(page: Page): Promise<void> {
@@ -57,3 +58,22 @@ test('tournaments: create with an organizer start, then edit the draft', async (
   await expect(s.page.getByLabel('Name', { exact: true })).toHaveValue('Sunday Doubles')
   await shot(s.page, 'tournaments/edit-draft-desktop.png')
 })
+
+for (const [name, view, width] of [
+  ['desktop', VIEW.wide, 1440],
+  ['phone', VIEW.phone, 390],
+] as const) {
+  test(`tournaments: create with an average limit ${name}`, async ({ browser }) => {
+    const s = await open(browser, 'admin', view)
+    await s.page.route('**/api/tournaments/form', r => r.fulfill({ json: { average: 68.4, legs: 120 } }))
+    await s.page.setViewportSize({ width, height: 1100 })
+    await openHash(s.page, '/tournaments/new')
+    await fillTeamsTournament(s.page)
+    await s.page.getByLabel('Limit who can join by average').click()
+    const section = s.page.getByRole('region', { name: 'Average limit' })
+    await expect(section.getByText(/your 30-day average \(68.4\) counts towards/)).toBeVisible()
+    await expect(s.page.getByRole('region', { name: 'Preview' }).getByText('Team Ø 50–70')).toBeVisible()
+    await section.scrollIntoViewIfNeeded()
+    await shot(s.page, `tournaments/create-avg-limit-${name}.png`)
+  })
+}
