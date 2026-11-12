@@ -39130,6 +39130,15 @@
                             "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                           }
                         }
+                      },
+                      "boardIds": {
+                        "type": "array",
+                        "nullable": true,
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "In person only: the boards the venue devices may score on; absent or null, none"
                       }
                     }
                   }
@@ -39419,6 +39428,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -41074,6 +41092,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -41646,8 +41673,99 @@
                             "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                           }
                         }
+                      },
+                      "boardIds": {
+                        "type": "array",
+                        "nullable": true,
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "In person only: the boards the venue devices may score on; absent or null, none"
                       }
                     }
+                  },
+                  "participants": {
+                    "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).",
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "description": "The whole list, in order. A stored entry or spot is named by its id (and keeps its claim link); one left out is removed. A claimed spot keeps its name.",
+                        "required": [
+                          "entries"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "entries": {
+                            "type": "array",
+                            "maxItems": 64,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "tag",
+                                "color",
+                                "players"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "description": "Teams: 3-24 characters, unique; solo: ignored"
+                                },
+                                "tag": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "maxLength": 10,
+                                  "description": "Teams: 2-4 letters"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    "#9b7bff",
+                                    "#4fd1c5",
+                                    "#ff8a4a",
+                                    "#3fb6e8",
+                                    "#eac24f",
+                                    "#7fd18f",
+                                    "#ff6b9a",
+                                    "#c6f24e",
+                                    null
+                                  ],
+                                  "description": "A TeamColor, or none"
+                                },
+                                "players": {
+                                  "type": "array",
+                                  "maxItems": 4,
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "description": "1-24 characters, unique in the tournament ignoring case"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               }
@@ -41935,6 +42053,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -42881,6 +43008,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -43619,6 +43755,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -44318,6 +44463,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -44977,6 +45131,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -48625,6 +48788,1102 @@
         }
       }
     },
+    "/api/tournaments/{id}/participants": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listTournamentParticipants",
+        "summary": "The players or teams of an in-person tournament, with their claim links (organizers)",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries in order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "entries",
+                    "startBlocker"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+                        "required": [
+                          "id",
+                          "name",
+                          "tag",
+                          "color",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "color": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "#9b7bff",
+                              "#4fd1c5",
+                              "#ff8a4a",
+                              "#3fb6e8",
+                              "#eac24f",
+                              "#7fd18f",
+                              "#ff6b9a",
+                              "#c6f24e",
+                              null
+                            ],
+                            "description": "A TeamColor, or none"
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "description": "One player of an in-person tournament, added by its organizers.",
+                              "required": [
+                                "id",
+                                "name",
+                                "claimCode",
+                                "claimedBy"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "claimCode": {
+                                  "type": "string",
+                                  "description": "The code of its claim link, #/tournaments/claim/<code>"
+                                },
+                                "claimedBy": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The account that claimed it; null while it is a guest",
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "startBlocker": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why it can't start yet (too few entries, a team with empty spots)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setTournamentParticipants",
+        "summary": "Replace the players or teams of an in-person tournament until it starts (organizers)",
+        "description": "409 `not in person` for an online tournament, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "The whole list, in order. A stored entry or spot is named by its id (and keeps its claim link); one left out is removed. A claimed spot keeps its name.",
+                "required": [
+                  "entries"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "tag",
+                        "color",
+                        "players"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "description": "Teams: 3-24 characters, unique; solo: ignored"
+                        },
+                        "tag": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 10,
+                          "description": "Teams: 2-4 letters"
+                        },
+                        "color": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "#9b7bff",
+                            "#4fd1c5",
+                            "#ff8a4a",
+                            "#3fb6e8",
+                            "#eac24f",
+                            "#7fd18f",
+                            "#ff6b9a",
+                            "#c6f24e",
+                            null
+                          ],
+                          "description": "A TeamColor, or none"
+                        },
+                        "players": {
+                          "type": "array",
+                          "maxItems": 4,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "description": "1-24 characters, unique in the tournament ignoring case"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The entries now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "entries",
+                    "startBlocker"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+                        "required": [
+                          "id",
+                          "name",
+                          "tag",
+                          "color",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "color": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "#9b7bff",
+                              "#4fd1c5",
+                              "#ff8a4a",
+                              "#3fb6e8",
+                              "#eac24f",
+                              "#7fd18f",
+                              "#ff6b9a",
+                              "#c6f24e",
+                              null
+                            ],
+                            "description": "A TeamColor, or none"
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "description": "One player of an in-person tournament, added by its organizers.",
+                              "required": [
+                                "id",
+                                "name",
+                                "claimCode",
+                                "claimedBy"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "claimCode": {
+                                  "type": "string",
+                                  "description": "The code of its claim link, #/tournaments/claim/<code>"
+                                },
+                                "claimedBy": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The account that claimed it; null while it is a guest",
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "startBlocker": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why it can't start yet (too few entries, a team with empty spots)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/participants/{playerId}/unlink": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "playerId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "unlinkTournamentSpot",
+        "summary": "Turn a claimed spot back into a guest (organizers)",
+        "description": "Its games go back to the guest seat; its claim link works again.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "entries",
+                    "startBlocker"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+                        "required": [
+                          "id",
+                          "name",
+                          "tag",
+                          "color",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "color": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "#9b7bff",
+                              "#4fd1c5",
+                              "#ff8a4a",
+                              "#3fb6e8",
+                              "#eac24f",
+                              "#7fd18f",
+                              "#ff6b9a",
+                              "#c6f24e",
+                              null
+                            ],
+                            "description": "A TeamColor, or none"
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "description": "One player of an in-person tournament, added by its organizers.",
+                              "required": [
+                                "id",
+                                "name",
+                                "claimCode",
+                                "claimedBy"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "claimCode": {
+                                  "type": "string",
+                                  "description": "The code of its claim link, #/tournaments/claim/<code>"
+                                },
+                                "claimedBy": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The account that claimed it; null while it is a guest",
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "startBlocker": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why it can't start yet (too few entries, a team with empty spots)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tournaments/code/{code}": {
       "parameters": [
         {
@@ -48924,6 +50183,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -49556,6 +50824,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -50204,6 +51481,15 @@
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                             }
                           }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
                         }
                       }
                     },
@@ -87620,6 +88906,15 @@
                 "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
               }
             }
+          },
+          "boardIds": {
+            "type": "array",
+            "nullable": true,
+            "maxItems": 20,
+            "items": {
+              "type": "string"
+            },
+            "description": "In person only: the boards the venue devices may score on; absent or null, none"
           }
         }
       },
@@ -87878,6 +89173,15 @@
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                   }
                 }
+              },
+              "boardIds": {
+                "type": "array",
+                "nullable": true,
+                "maxItems": 20,
+                "items": {
+                  "type": "string"
+                },
+                "description": "In person only: the boards the venue devices may score on; absent or null, none"
               }
             }
           }
@@ -88121,6 +89425,401 @@
                   "lock": {
                     "type": "boolean",
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
+              },
+              "boardIds": {
+                "type": "array",
+                "nullable": true,
+                "maxItems": 20,
+                "items": {
+                  "type": "string"
+                },
+                "description": "In person only: the boards the venue devices may score on; absent or null, none"
+              }
+            }
+          },
+          "participants": {
+            "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).",
+            "allOf": [
+              {
+                "type": "object",
+                "description": "The whole list, in order. A stored entry or spot is named by its id (and keeps its claim link); one left out is removed. A claimed spot keeps its name.",
+                "required": [
+                  "entries"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "tag",
+                        "color",
+                        "players"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "description": "Teams: 3-24 characters, unique; solo: ignored"
+                        },
+                        "tag": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 10,
+                          "description": "Teams: 2-4 letters"
+                        },
+                        "color": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "#9b7bff",
+                            "#4fd1c5",
+                            "#ff8a4a",
+                            "#3fb6e8",
+                            "#eac24f",
+                            "#7fd18f",
+                            "#ff6b9a",
+                            "#c6f24e",
+                            null
+                          ],
+                          "description": "A TeamColor, or none"
+                        },
+                        "players": {
+                          "type": "array",
+                          "maxItems": 4,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "description": "1-24 characters, unique in the tournament ignoring case"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "TournamentSpot": {
+        "type": "object",
+        "description": "One player of an in-person tournament, added by its organizers.",
+        "required": [
+          "id",
+          "name",
+          "claimCode",
+          "claimedBy"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "claimCode": {
+            "type": "string",
+            "description": "The code of its claim link, #/tournaments/claim/<code>"
+          },
+          "claimedBy": {
+            "type": "object",
+            "nullable": true,
+            "description": "The account that claimed it; null while it is a guest",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TournamentParticipant": {
+        "type": "object",
+        "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+        "required": [
+          "id",
+          "name",
+          "tag",
+          "color",
+          "players"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "#9b7bff",
+              "#4fd1c5",
+              "#ff8a4a",
+              "#3fb6e8",
+              "#eac24f",
+              "#7fd18f",
+              "#ff6b9a",
+              "#c6f24e",
+              null
+            ],
+            "description": "A TeamColor, or none"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One player of an in-person tournament, added by its organizers.",
+              "required": [
+                "id",
+                "name",
+                "claimCode",
+                "claimedBy"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "claimCode": {
+                  "type": "string",
+                  "description": "The code of its claim link, #/tournaments/claim/<code>"
+                },
+                "claimedBy": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "The account that claimed it; null while it is a guest",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TournamentParticipants": {
+        "type": "object",
+        "required": [
+          "entries",
+          "startBlocker"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+              "required": [
+                "id",
+                "name",
+                "tag",
+                "color",
+                "players"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "color": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    "#9b7bff",
+                    "#4fd1c5",
+                    "#ff8a4a",
+                    "#3fb6e8",
+                    "#eac24f",
+                    "#7fd18f",
+                    "#ff6b9a",
+                    "#c6f24e",
+                    null
+                  ],
+                  "description": "A TeamColor, or none"
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "One player of an in-person tournament, added by its organizers.",
+                    "required": [
+                      "id",
+                      "name",
+                      "claimCode",
+                      "claimedBy"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "claimCode": {
+                        "type": "string",
+                        "description": "The code of its claim link, #/tournaments/claim/<code>"
+                      },
+                      "claimedBy": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "The account that claimed it; null while it is a guest",
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "startBlocker": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why it can't start yet (too few entries, a team with empty spots)"
+          }
+        }
+      },
+      "TournamentParticipantsInput": {
+        "type": "object",
+        "description": "The whole list, in order. A stored entry or spot is named by its id (and keeps its claim link); one left out is removed. A claimed spot keeps its name.",
+        "required": [
+          "entries"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "tag",
+                "color",
+                "players"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "description": "Teams: 3-24 characters, unique; solo: ignored"
+                },
+                "tag": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 10,
+                  "description": "Teams: 2-4 letters"
+                },
+                "color": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    "#9b7bff",
+                    "#4fd1c5",
+                    "#ff8a4a",
+                    "#3fb6e8",
+                    "#eac24f",
+                    "#7fd18f",
+                    "#ff6b9a",
+                    "#c6f24e",
+                    null
+                  ],
+                  "description": "A TeamColor, or none"
+                },
+                "players": {
+                  "type": "array",
+                  "maxItems": 4,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "description": "1-24 characters, unique in the tournament ignoring case"
+                      }
+                    }
                   }
                 }
               }
@@ -88447,6 +90146,15 @@
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
                   }
                 }
+              },
+              "boardIds": {
+                "type": "array",
+                "nullable": true,
+                "maxItems": 20,
+                "items": {
+                  "type": "string"
+                },
+                "description": "In person only: the boards the venue devices may score on; absent or null, none"
               }
             }
           },

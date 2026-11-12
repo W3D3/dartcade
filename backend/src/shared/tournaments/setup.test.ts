@@ -89,6 +89,11 @@ describe('setupProblems', () => {
     expect(paths(with_(inPerson, {}, { noShowMinutes: 10 }))).toEqual(['body/settings/noShowMinutes'])
   })
 
+  it('picks paired boards only in person', () => {
+    expect(paths(with_(inPerson, {}, { boardIds: ['b1'] }))).toEqual([])
+    expect(paths(with_(fixed, {}, { boardIds: ['b1'] }))).toEqual(['body/settings/boardIds'])
+  })
+
   it('lets an online tournament go without a no-show forfeit', () => {
     expect(paths(with_(fixed, {}, { noShowMinutes: null }))).toEqual([])
   })

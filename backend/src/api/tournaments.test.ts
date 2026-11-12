@@ -281,7 +281,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       expect(moved.json()).toMatchObject({ startsAt: '2030-11-24T18:00:00.000Z', description: 'Moved a day' })
     })
 
-    it('keeps an in-person tournament editable when its organizers added players', async () => {
+    it('keeps an in-person tournament editable when its organizers added players, but its team size comes with its list', async () => {
       const t = await created('admin', {
         ...input,
         access: 'in_person',
@@ -289,9 +289,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
         settings: { ...input.settings, registrationClosesMinutes: null, checkInMinutes: null, noShowMinutes: null },
       })
       await insertTournamentEntry(db, { id: 'bar-1', tournament_id: t.id })
-      const res = await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { teamSize: 3 })
+      const res = await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { name: 'Bar Night', format: 'double_elimination' })
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toMatchObject({ teamSize: 3, locked: false })
+      expect(res.json()).toMatchObject({ name: 'Bar Night', locked: false })
+      expect((await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { teamSize: 3 })).json()).toMatchObject({ error: 'locked' })
     })
 
     it('cancels a published tournament and refuses to change it after', async () => {

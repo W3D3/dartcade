@@ -3056,6 +3056,68 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/tournaments/{id}/participants:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: listTournamentParticipants
+      summary: The players or teams of an in-person tournament, with their claim links (organizers)
+      tags: [tournaments]
+      responses:
+        '200':
+          {
+            description: The entries in order,
+            content: { application/json: { schema: { $ref: '#/components/schemas/TournamentParticipants' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    put:
+      operationId: setTournamentParticipants
+      summary: Replace the players or teams of an in-person tournament until it starts (organizers)
+      description: >-
+        409 `not in person` for an online tournament, `started` once it runs, `claimed` when a
+        claimed spot would be renamed (unlink it first); 400 with the problems of the list.
+      tags: [tournaments]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TournamentParticipantsInput' } } }
+      responses:
+        '200':
+          {
+            description: The entries now,
+            content: { application/json: { schema: { $ref: '#/components/schemas/TournamentParticipants' } } },
+          }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/tournaments/{id}/participants/{playerId}/unlink:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: playerId, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: unlinkTournamentSpot
+      summary: Turn a claimed spot back into a guest (organizers)
+      description: Its games go back to the guest seat; its claim link works again.
+      tags: [tournaments]
+      responses:
+        '200':
+          {
+            description: The entries now,
+            content: { application/json: { schema: { $ref: '#/components/schemas/TournamentParticipants' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/tournaments/code/{code}:
     parameters:
       - { name: code, in: path, required: true, schema: { type: string } }
@@ -6996,6 +7058,12 @@ components:
             description: 'Online only: the wait before a no-show forfeits; null: no forfeit',
           }
         avgLimit: { $ref: '#/components/schemas/AvgLimit' }
+        boardIds:
+          type: array
+          nullable: true
+          maxItems: 20
+          items: { type: string }
+          description: 'In person only: the boards the venue devices may score on; absent or null, none'
     TournamentInput:
       type: object
       required: [name, description, access, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings]
@@ -7036,6 +7104,89 @@ components:
         maxEntries: { type: integer, enum: [8, 16, 32, 64] }
         startsAt: { type: string, format: date-time, nullable: true }
         settings: { $ref: '#/components/schemas/TournamentSettings' }
+        participants:
+          description: >-
+            In person: the players or teams, stored with the rest in one go (as setTournamentParticipants).
+            Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).
+          allOf: [{ $ref: '#/components/schemas/TournamentParticipantsInput' }]
+    TournamentSpot:
+      type: object
+      description: One player of an in-person tournament, added by its organizers.
+      required: [id, name, claimCode, claimedBy]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        claimCode: { type: string, description: 'The code of its claim link, #/tournaments/claim/<code>' }
+        claimedBy:
+          type: object
+          nullable: true
+          description: The account that claimed it; null while it is a guest
+          required: [id, name]
+          additionalProperties: false
+          properties:
+            id: { type: string }
+            name: { type: string }
+    TournamentParticipant:
+      type: object
+      description: An entry of an in-person tournament; solo, its one player and the player's name.
+      required: [id, name, tag, color, players]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tag: { type: string, nullable: true }
+        color:
+          {
+            type: string,
+            nullable: true,
+            enum: ['#9b7bff', '#4fd1c5', '#ff8a4a', '#3fb6e8', '#eac24f', '#7fd18f', '#ff6b9a', '#c6f24e', null],
+            description: 'A TeamColor, or none',
+          }
+        players: { type: array, items: { $ref: '#/components/schemas/TournamentSpot' } }
+    TournamentParticipants:
+      type: object
+      required: [entries, startBlocker]
+      additionalProperties: false
+      properties:
+        entries: { type: array, items: { $ref: '#/components/schemas/TournamentParticipant' } }
+        startBlocker: { type: string, nullable: true, description: "Why it can't start yet (too few entries, a team with empty spots)" }
+    TournamentParticipantsInput:
+      type: object
+      description: >-
+        The whole list, in order. A stored entry or spot is named by its id (and keeps its claim
+        link); one left out is removed. A claimed spot keeps its name.
+      required: [entries]
+      additionalProperties: false
+      properties:
+        entries:
+          type: array
+          maxItems: 64
+          items:
+            type: object
+            required: [name, tag, color, players]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              name: { type: string, maxLength: 100, description: 'Teams: 3-24 characters, unique; solo: ignored' }
+              tag: { type: string, nullable: true, maxLength: 10, description: 'Teams: 2-4 letters' }
+              color:
+                {
+                  type: string,
+                  nullable: true,
+                  enum: ['#9b7bff', '#4fd1c5', '#ff8a4a', '#3fb6e8', '#eac24f', '#7fd18f', '#ff6b9a', '#c6f24e', null],
+                  description: 'A TeamColor, or none',
+                }
+              players:
+                type: array
+                maxItems: 4
+                items:
+                  type: object
+                  required: [name]
+                  additionalProperties: false
+                  properties:
+                    id: { type: string }
+                    name: { type: string, maxLength: 100, description: '1-24 characters, unique in the tournament ignoring case' }
     TournamentOrganizers:
       type: object
       required: [organizers]

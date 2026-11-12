@@ -2565,6 +2565,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** The players or teams of an in-person tournament, with their claim links (organizers) */
+        get: operations["listTournamentParticipants"];
+        /**
+         * Replace the players or teams of an in-person tournament until it starts (organizers)
+         * @description 409 `not in person` for an online tournament, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.
+         */
+        put: operations["setTournamentParticipants"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/participants/{playerId}/unlink": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn a claimed spot back into a guest (organizers)
+         * @description Its games go back to the guest seat; its claim link works again.
+         */
+        post: operations["unlinkTournamentSpot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/code/{code}": {
         parameters: {
             query?: never;
@@ -5522,6 +5568,8 @@ export interface components {
              */
             noShowMinutes: 5 | 10 | 15 | null;
             avgLimit: components["schemas"]["AvgLimit"];
+            /** @description In person only: the boards the venue devices may score on; absent or null, none */
+            boardIds?: string[] | null;
         };
         TournamentInput: {
             /** @description 3-40 characters after trimming, no control characters */
@@ -5568,6 +5616,57 @@ export interface components {
             /** Format: date-time */
             startsAt?: string | null;
             settings?: components["schemas"]["TournamentSettings"];
+            /** @description In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`). */
+            participants?: components["schemas"]["TournamentParticipantsInput"];
+        };
+        /** @description One player of an in-person tournament, added by its organizers. */
+        TournamentSpot: {
+            id: string;
+            name: string;
+            /** @description The code of its claim link, #/tournaments/claim/<code> */
+            claimCode: string;
+            /** @description The account that claimed it; null while it is a guest */
+            claimedBy: {
+                id: string;
+                name: string;
+            } | null;
+        };
+        /** @description An entry of an in-person tournament; solo, its one player and the player's name. */
+        TournamentParticipant: {
+            id: string;
+            name: string;
+            tag: string | null;
+            /**
+             * @description A TeamColor, or none
+             * @enum {string|null}
+             */
+            color: "#9b7bff" | "#4fd1c5" | "#ff8a4a" | "#3fb6e8" | "#eac24f" | "#7fd18f" | "#ff6b9a" | "#c6f24e" | null;
+            players: components["schemas"]["TournamentSpot"][];
+        };
+        TournamentParticipants: {
+            entries: components["schemas"]["TournamentParticipant"][];
+            /** @description Why it can't start yet (too few entries, a team with empty spots) */
+            startBlocker: string | null;
+        };
+        /** @description The whole list, in order. A stored entry or spot is named by its id (and keeps its claim link); one left out is removed. A claimed spot keeps its name. */
+        TournamentParticipantsInput: {
+            entries: {
+                id?: string;
+                /** @description Teams: 3-24 characters, unique; solo: ignored */
+                name: string;
+                /** @description Teams: 2-4 letters */
+                tag: string | null;
+                /**
+                 * @description A TeamColor, or none
+                 * @enum {string|null}
+                 */
+                color: "#9b7bff" | "#4fd1c5" | "#ff8a4a" | "#3fb6e8" | "#eac24f" | "#7fd18f" | "#ff6b9a" | "#c6f24e" | null;
+                players: {
+                    id?: string;
+                    /** @description 1-24 characters, unique in the tournament ignoring case */
+                    name: string;
+                }[];
+            }[];
         };
         TournamentOrganizers: {
             organizers: {
@@ -10713,6 +10812,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTournamentParticipants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries in order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentParticipants"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setTournamentParticipants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TournamentParticipantsInput"];
+            };
+        };
+        responses: {
+            /** @description The entries now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentParticipants"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    unlinkTournamentSpot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentParticipants"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
