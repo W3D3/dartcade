@@ -38,6 +38,7 @@ type Client struct {
 	boardID   atomic.Value // string
 	bmVersion string
 	cameras   atomic.Int32
+	linked    atomic.Bool
 	frames    chan BMFrame
 	startTime time.Time
 
@@ -63,6 +64,9 @@ func (c *Client) BoardID() string { v, _ := c.boardID.Load().(string); return v 
 
 // BMVersion returns the Board Manager version string.
 func (c *Client) BMVersion() string { return c.bmVersion }
+
+// Linked reports whether the events socket to Board Manager is up.
+func (c *Client) Linked() bool { return c.linked.Load() }
 
 // CameraCount returns the number of cameras reported by /api/config.
 func (c *Client) CameraCount() int { return int(c.cameras.Load()) }
@@ -188,6 +192,7 @@ func (c *Client) wsLoop(ctx context.Context) {
 			delay = backoff.Reconnect.Next(delay)
 			continue
 		}
+		c.linked.Store(true)
 		if first {
 			log.Info("connected to Board Manager")
 			c.emit(BMFrame{Kind: "bm_connect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
@@ -214,6 +219,7 @@ func (c *Client) wsLoop(ctx context.Context) {
 		<-watched
 		conn.Close(websocket.StatusNormalClosure, "")
 		disconnectedAt = time.Now()
+		c.linked.Store(false)
 		c.emit(BMFrame{Kind: "bm_disconnect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
 		delay = backoff.Reconnect.Next(delay)
 		select {
