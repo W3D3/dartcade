@@ -362,7 +362,12 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 func write(ctx context.Context, conn *websocket.Conn, v any) error {
 	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
 	defer cancel()
-	return wsjson.Write(ctx, conn, v)
+	err := wsjson.Write(ctx, conn, v)
+	// Logged here: the connection ends on it, and the network dropping shows up as nothing else
+	if err != nil && ctx.Err() != context.Canceled {
+		log.Warn("backend write failed, reconnecting", "err", err)
+	}
+	return err
 }
 
 func (t *Transport) enqueue(evs []differ.Event) uint64 {
