@@ -59,6 +59,17 @@ export async function insertTournament(db: Kysely<Database>, { id, ...rest }: Ne
       team_size: 1,
       max_entries: 8,
       starts_at: null,
+      settings: JSON.stringify({
+        seeding: 'random',
+        firstTo: 3,
+        longerFinal: null,
+        groups: null,
+        registrationClosesMinutes: null,
+        checkInMinutes: 5,
+        plannedFor: null,
+        manualScoring: false,
+        noShowMinutes: 10,
+      }),
       ...rest,
       id,
     })

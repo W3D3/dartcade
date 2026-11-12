@@ -38732,6 +38732,3551 @@
             }
           }
         }
+      },
+      "post": {
+        "operationId": "createTournament",
+        "summary": "Create a community tournament as a draft (tournaments.enabled)",
+        "description": "Needs tournaments.community.enabled (admins always may). The caller owns it; an owner has at most 5 tournaments that are not finished or cancelled. Publish it to open registration.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "description",
+                  "access",
+                  "gameId",
+                  "gameConfig",
+                  "format",
+                  "teamSize",
+                  "maxEntries",
+                  "startsAt",
+                  "settings"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "3-40 characters after trimming, no control characters"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "At most 280 characters, no control characters"
+                  },
+                  "access": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "invite",
+                      "in_person"
+                    ]
+                  },
+                  "gameId": {
+                    "type": "string",
+                    "enum": [
+                      "x01",
+                      "cricket"
+                    ]
+                  },
+                  "gameConfig": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "single_elimination",
+                      "double_elimination",
+                      "round_robin",
+                      "groups_knockout"
+                    ]
+                  },
+                  "teamSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4,
+                    "description": "1 is solo; teams play alternate visits"
+                  },
+                  "maxEntries": {
+                    "type": "integer",
+                    "enum": [
+                      8,
+                      16,
+                      32,
+                      64
+                    ]
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true,
+                    "description": "Null: an organizer starts it (not for public ones; always for in person)"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                    "required": [
+                      "seeding",
+                      "firstTo",
+                      "longerFinal",
+                      "groups",
+                      "registrationClosesMinutes",
+                      "checkInMinutes",
+                      "plannedFor",
+                      "manualScoring",
+                      "noShowMinutes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "seeding": {
+                        "type": "string",
+                        "enum": [
+                          "rating",
+                          "random",
+                          "manual"
+                        ]
+                      },
+                      "firstTo": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7,
+                        "description": "Legs to win a match"
+                      },
+                      "longerFinal": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Knockout formats only; longer than firstTo",
+                        "required": [
+                          "firstTo",
+                          "semis"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "firstTo": {
+                            "type": "integer",
+                            "enum": [
+                              2,
+                              3,
+                              4,
+                              5,
+                              6,
+                              7,
+                              9,
+                              11
+                            ]
+                          },
+                          "semis": {
+                            "type": "boolean",
+                            "description": "The semi-finals too"
+                          }
+                        }
+                      },
+                      "groups": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Groups + knockout only (and required there)",
+                        "required": [
+                          "size",
+                          "through"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "size": {
+                            "type": "integer",
+                            "enum": [
+                              3,
+                              4,
+                              5
+                            ]
+                          },
+                          "through": {
+                            "type": "integer",
+                            "enum": [
+                              1,
+                              2
+                            ],
+                            "description": "Entries per group that go through"
+                          }
+                        }
+                      },
+                      "registrationClosesMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          15,
+                          60,
+                          180,
+                          1440,
+                          null
+                        ],
+                        "description": "Before a fixed start"
+                      },
+                      "checkInMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          2,
+                          5,
+                          10,
+                          15,
+                          30,
+                          60,
+                          null
+                        ]
+                      },
+                      "plannedFor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Organizer start: a hint, not a start time"
+                      },
+                      "manualScoring": {
+                        "type": "boolean",
+                        "description": "Online players without a paired board may type their scores"
+                      },
+                      "noShowMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          5,
+                          10,
+                          15,
+                          null
+                        ],
+                        "description": "Online only: the wait before a no-show forfeits"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "limit reached: the owner already has 5 unfinished tournaments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/mine": {
+      "get": {
+        "operationId": "listMyTournaments",
+        "summary": "Tournaments you own or organize, drafts included (tournaments.enabled)",
+        "description": "Newest first.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournaments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tournaments"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tournaments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "kind",
+                          "access",
+                          "status",
+                          "gameId",
+                          "gameConfig",
+                          "format",
+                          "teamSize",
+                          "maxEntries",
+                          "startsAt",
+                          "settings",
+                          "entries",
+                          "owner",
+                          "role",
+                          "locked",
+                          "createdAt",
+                          "publishedAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "official",
+                              "community"
+                            ]
+                          },
+                          "access": {
+                            "type": "string",
+                            "enum": [
+                              "public",
+                              "friends",
+                              "invite",
+                              "in_person"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "open",
+                              "check_in",
+                              "running",
+                              "finished",
+                              "cancelled"
+                            ]
+                          },
+                          "gameId": {
+                            "type": "string"
+                          },
+                          "gameConfig": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "single_elimination",
+                              "double_elimination",
+                              "round_robin",
+                              "groups_knockout"
+                            ]
+                          },
+                          "teamSize": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4
+                          },
+                          "maxEntries": {
+                            "type": "integer"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "settings": {
+                            "type": "object",
+                            "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                            "required": [
+                              "seeding",
+                              "firstTo",
+                              "longerFinal",
+                              "groups",
+                              "registrationClosesMinutes",
+                              "checkInMinutes",
+                              "plannedFor",
+                              "manualScoring",
+                              "noShowMinutes"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "seeding": {
+                                "type": "string",
+                                "enum": [
+                                  "rating",
+                                  "random",
+                                  "manual"
+                                ]
+                              },
+                              "firstTo": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 7,
+                                "description": "Legs to win a match"
+                              },
+                              "longerFinal": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Knockout formats only; longer than firstTo",
+                                "required": [
+                                  "firstTo",
+                                  "semis"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "firstTo": {
+                                    "type": "integer",
+                                    "enum": [
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      9,
+                                      11
+                                    ]
+                                  },
+                                  "semis": {
+                                    "type": "boolean",
+                                    "description": "The semi-finals too"
+                                  }
+                                }
+                              },
+                              "groups": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Groups + knockout only (and required there)",
+                                "required": [
+                                  "size",
+                                  "through"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "size": {
+                                    "type": "integer",
+                                    "enum": [
+                                      3,
+                                      4,
+                                      5
+                                    ]
+                                  },
+                                  "through": {
+                                    "type": "integer",
+                                    "enum": [
+                                      1,
+                                      2
+                                    ],
+                                    "description": "Entries per group that go through"
+                                  }
+                                }
+                              },
+                              "registrationClosesMinutes": {
+                                "type": "integer",
+                                "nullable": true,
+                                "enum": [
+                                  15,
+                                  60,
+                                  180,
+                                  1440,
+                                  null
+                                ],
+                                "description": "Before a fixed start"
+                              },
+                              "checkInMinutes": {
+                                "type": "integer",
+                                "nullable": true,
+                                "enum": [
+                                  2,
+                                  5,
+                                  10,
+                                  15,
+                                  30,
+                                  60,
+                                  null
+                                ]
+                              },
+                              "plannedFor": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true,
+                                "description": "Organizer start: a hint, not a start time"
+                              },
+                              "manualScoring": {
+                                "type": "boolean",
+                                "description": "Online players without a paired board may type their scores"
+                              },
+                              "noShowMinutes": {
+                                "type": "integer",
+                                "nullable": true,
+                                "enum": [
+                                  5,
+                                  10,
+                                  15,
+                                  null
+                                ],
+                                "description": "Online only: the wait before a no-show forfeits"
+                              }
+                            }
+                          },
+                          "entries": {
+                            "type": "integer",
+                            "description": "Entries registered so far (withdrawn ones not counted)"
+                          },
+                          "owner": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Null once the owner's account is gone",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "role": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "owner",
+                              "organizer",
+                              null
+                            ],
+                            "description": "The caller's part in it"
+                          },
+                          "locked": {
+                            "type": "boolean",
+                            "description": "Someone registered: only startsAt (with its settings) and description can change"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournament",
+        "summary": "One tournament (tournaments.enabled)",
+        "description": "A draft only for its organizers, a friends-only one for the owner's friends; 404 otherwise.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateTournament",
+        "summary": "Change a draft or open tournament (organizers)",
+        "description": "The fields sent replace the stored ones. An online tournament someone registered for keeps everything but startsAt (with its registration and check-in settings) and description: 409 `locked`, the locked fields in `details`.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Any fields of TournamentInput; settings, when sent, is replaced whole",
+                "minProperties": 1,
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "access": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "invite",
+                      "in_person"
+                    ]
+                  },
+                  "gameId": {
+                    "type": "string",
+                    "enum": [
+                      "x01",
+                      "cricket"
+                    ]
+                  },
+                  "gameConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "single_elimination",
+                      "double_elimination",
+                      "round_robin",
+                      "groups_knockout"
+                    ]
+                  },
+                  "teamSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4
+                  },
+                  "maxEntries": {
+                    "type": "integer",
+                    "enum": [
+                      8,
+                      16,
+                      32,
+                      64
+                    ]
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "settings": {
+                    "type": "object",
+                    "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                    "required": [
+                      "seeding",
+                      "firstTo",
+                      "longerFinal",
+                      "groups",
+                      "registrationClosesMinutes",
+                      "checkInMinutes",
+                      "plannedFor",
+                      "manualScoring",
+                      "noShowMinutes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "seeding": {
+                        "type": "string",
+                        "enum": [
+                          "rating",
+                          "random",
+                          "manual"
+                        ]
+                      },
+                      "firstTo": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7,
+                        "description": "Legs to win a match"
+                      },
+                      "longerFinal": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Knockout formats only; longer than firstTo",
+                        "required": [
+                          "firstTo",
+                          "semis"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "firstTo": {
+                            "type": "integer",
+                            "enum": [
+                              2,
+                              3,
+                              4,
+                              5,
+                              6,
+                              7,
+                              9,
+                              11
+                            ]
+                          },
+                          "semis": {
+                            "type": "boolean",
+                            "description": "The semi-finals too"
+                          }
+                        }
+                      },
+                      "groups": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Groups + knockout only (and required there)",
+                        "required": [
+                          "size",
+                          "through"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "size": {
+                            "type": "integer",
+                            "enum": [
+                              3,
+                              4,
+                              5
+                            ]
+                          },
+                          "through": {
+                            "type": "integer",
+                            "enum": [
+                              1,
+                              2
+                            ],
+                            "description": "Entries per group that go through"
+                          }
+                        }
+                      },
+                      "registrationClosesMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          15,
+                          60,
+                          180,
+                          1440,
+                          null
+                        ],
+                        "description": "Before a fixed start"
+                      },
+                      "checkInMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          2,
+                          5,
+                          10,
+                          15,
+                          30,
+                          60,
+                          null
+                        ]
+                      },
+                      "plannedFor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Organizer start: a hint, not a start time"
+                      },
+                      "manualScoring": {
+                        "type": "boolean",
+                        "description": "Online players without a paired board may type their scores"
+                      },
+                      "noShowMinutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          5,
+                          10,
+                          15,
+                          null
+                        ],
+                        "description": "Online only: the wait before a no-show forfeits"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTournament",
+        "summary": "Delete a draft (organizers)",
+        "description": "A published tournament is cancelled instead (409).",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/publish": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "publishTournament",
+        "summary": "Publish a draft and open registration (organizers)",
+        "description": "Checks the tournament again (a start time may have passed since it was saved).",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/cancel": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "cancelTournament",
+        "summary": "Cancel a published tournament that has not finished (organizers)",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "access",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "createdAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "access": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "in_person"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/achievements": {
@@ -73834,6 +77379,822 @@
             "format": "date-time",
             "nullable": true,
             "description": "Null: an organizer starts it"
+          }
+        }
+      },
+      "TournamentSettings": {
+        "type": "object",
+        "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+        "required": [
+          "seeding",
+          "firstTo",
+          "longerFinal",
+          "groups",
+          "registrationClosesMinutes",
+          "checkInMinutes",
+          "plannedFor",
+          "manualScoring",
+          "noShowMinutes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "seeding": {
+            "type": "string",
+            "enum": [
+              "rating",
+              "random",
+              "manual"
+            ]
+          },
+          "firstTo": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "Legs to win a match"
+          },
+          "longerFinal": {
+            "type": "object",
+            "nullable": true,
+            "description": "Knockout formats only; longer than firstTo",
+            "required": [
+              "firstTo",
+              "semis"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "firstTo": {
+                "type": "integer",
+                "enum": [
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  9,
+                  11
+                ]
+              },
+              "semis": {
+                "type": "boolean",
+                "description": "The semi-finals too"
+              }
+            }
+          },
+          "groups": {
+            "type": "object",
+            "nullable": true,
+            "description": "Groups + knockout only (and required there)",
+            "required": [
+              "size",
+              "through"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "size": {
+                "type": "integer",
+                "enum": [
+                  3,
+                  4,
+                  5
+                ]
+              },
+              "through": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2
+                ],
+                "description": "Entries per group that go through"
+              }
+            }
+          },
+          "registrationClosesMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              15,
+              60,
+              180,
+              1440,
+              null
+            ],
+            "description": "Before a fixed start"
+          },
+          "checkInMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              2,
+              5,
+              10,
+              15,
+              30,
+              60,
+              null
+            ]
+          },
+          "plannedFor": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Organizer start: a hint, not a start time"
+          },
+          "manualScoring": {
+            "type": "boolean",
+            "description": "Online players without a paired board may type their scores"
+          },
+          "noShowMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              5,
+              10,
+              15,
+              null
+            ],
+            "description": "Online only: the wait before a no-show forfeits"
+          }
+        }
+      },
+      "TournamentInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "access",
+          "gameId",
+          "gameConfig",
+          "format",
+          "teamSize",
+          "maxEntries",
+          "startsAt",
+          "settings"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "3-40 characters after trimming, no control characters"
+          },
+          "description": {
+            "type": "string",
+            "description": "At most 280 characters, no control characters"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "invite",
+              "in_person"
+            ]
+          },
+          "gameId": {
+            "type": "string",
+            "enum": [
+              "x01",
+              "cricket"
+            ]
+          },
+          "gameConfig": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_elimination",
+              "double_elimination",
+              "round_robin",
+              "groups_knockout"
+            ]
+          },
+          "teamSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "1 is solo; teams play alternate visits"
+          },
+          "maxEntries": {
+            "type": "integer",
+            "enum": [
+              8,
+              16,
+              32,
+              64
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null: an organizer starts it (not for public ones; always for in person)"
+          },
+          "settings": {
+            "type": "object",
+            "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+            "required": [
+              "seeding",
+              "firstTo",
+              "longerFinal",
+              "groups",
+              "registrationClosesMinutes",
+              "checkInMinutes",
+              "plannedFor",
+              "manualScoring",
+              "noShowMinutes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "seeding": {
+                "type": "string",
+                "enum": [
+                  "rating",
+                  "random",
+                  "manual"
+                ]
+              },
+              "firstTo": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7,
+                "description": "Legs to win a match"
+              },
+              "longerFinal": {
+                "type": "object",
+                "nullable": true,
+                "description": "Knockout formats only; longer than firstTo",
+                "required": [
+                  "firstTo",
+                  "semis"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "firstTo": {
+                    "type": "integer",
+                    "enum": [
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      9,
+                      11
+                    ]
+                  },
+                  "semis": {
+                    "type": "boolean",
+                    "description": "The semi-finals too"
+                  }
+                }
+              },
+              "groups": {
+                "type": "object",
+                "nullable": true,
+                "description": "Groups + knockout only (and required there)",
+                "required": [
+                  "size",
+                  "through"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "size": {
+                    "type": "integer",
+                    "enum": [
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  "through": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "description": "Entries per group that go through"
+                  }
+                }
+              },
+              "registrationClosesMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  15,
+                  60,
+                  180,
+                  1440,
+                  null
+                ],
+                "description": "Before a fixed start"
+              },
+              "checkInMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  2,
+                  5,
+                  10,
+                  15,
+                  30,
+                  60,
+                  null
+                ]
+              },
+              "plannedFor": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Organizer start: a hint, not a start time"
+              },
+              "manualScoring": {
+                "type": "boolean",
+                "description": "Online players without a paired board may type their scores"
+              },
+              "noShowMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  5,
+                  10,
+                  15,
+                  null
+                ],
+                "description": "Online only: the wait before a no-show forfeits"
+              }
+            }
+          }
+        }
+      },
+      "TournamentPatch": {
+        "type": "object",
+        "description": "Any fields of TournamentInput; settings, when sent, is replaced whole",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "invite",
+              "in_person"
+            ]
+          },
+          "gameId": {
+            "type": "string",
+            "enum": [
+              "x01",
+              "cricket"
+            ]
+          },
+          "gameConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_elimination",
+              "double_elimination",
+              "round_robin",
+              "groups_knockout"
+            ]
+          },
+          "teamSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "maxEntries": {
+            "type": "integer",
+            "enum": [
+              8,
+              16,
+              32,
+              64
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "settings": {
+            "type": "object",
+            "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+            "required": [
+              "seeding",
+              "firstTo",
+              "longerFinal",
+              "groups",
+              "registrationClosesMinutes",
+              "checkInMinutes",
+              "plannedFor",
+              "manualScoring",
+              "noShowMinutes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "seeding": {
+                "type": "string",
+                "enum": [
+                  "rating",
+                  "random",
+                  "manual"
+                ]
+              },
+              "firstTo": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7,
+                "description": "Legs to win a match"
+              },
+              "longerFinal": {
+                "type": "object",
+                "nullable": true,
+                "description": "Knockout formats only; longer than firstTo",
+                "required": [
+                  "firstTo",
+                  "semis"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "firstTo": {
+                    "type": "integer",
+                    "enum": [
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      9,
+                      11
+                    ]
+                  },
+                  "semis": {
+                    "type": "boolean",
+                    "description": "The semi-finals too"
+                  }
+                }
+              },
+              "groups": {
+                "type": "object",
+                "nullable": true,
+                "description": "Groups + knockout only (and required there)",
+                "required": [
+                  "size",
+                  "through"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "size": {
+                    "type": "integer",
+                    "enum": [
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  "through": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "description": "Entries per group that go through"
+                  }
+                }
+              },
+              "registrationClosesMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  15,
+                  60,
+                  180,
+                  1440,
+                  null
+                ],
+                "description": "Before a fixed start"
+              },
+              "checkInMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  2,
+                  5,
+                  10,
+                  15,
+                  30,
+                  60,
+                  null
+                ]
+              },
+              "plannedFor": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Organizer start: a hint, not a start time"
+              },
+              "manualScoring": {
+                "type": "boolean",
+                "description": "Online players without a paired board may type their scores"
+              },
+              "noShowMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  5,
+                  10,
+                  15,
+                  null
+                ],
+                "description": "Online only: the wait before a no-show forfeits"
+              }
+            }
+          }
+        }
+      },
+      "Tournament": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "kind",
+          "access",
+          "status",
+          "gameId",
+          "gameConfig",
+          "format",
+          "teamSize",
+          "maxEntries",
+          "startsAt",
+          "settings",
+          "entries",
+          "owner",
+          "role",
+          "locked",
+          "createdAt",
+          "publishedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "official",
+              "community"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "invite",
+              "in_person"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "check_in",
+              "running",
+              "finished",
+              "cancelled"
+            ]
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_elimination",
+              "double_elimination",
+              "round_robin",
+              "groups_knockout"
+            ]
+          },
+          "teamSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "maxEntries": {
+            "type": "integer"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "settings": {
+            "type": "object",
+            "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+            "required": [
+              "seeding",
+              "firstTo",
+              "longerFinal",
+              "groups",
+              "registrationClosesMinutes",
+              "checkInMinutes",
+              "plannedFor",
+              "manualScoring",
+              "noShowMinutes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "seeding": {
+                "type": "string",
+                "enum": [
+                  "rating",
+                  "random",
+                  "manual"
+                ]
+              },
+              "firstTo": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7,
+                "description": "Legs to win a match"
+              },
+              "longerFinal": {
+                "type": "object",
+                "nullable": true,
+                "description": "Knockout formats only; longer than firstTo",
+                "required": [
+                  "firstTo",
+                  "semis"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "firstTo": {
+                    "type": "integer",
+                    "enum": [
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      9,
+                      11
+                    ]
+                  },
+                  "semis": {
+                    "type": "boolean",
+                    "description": "The semi-finals too"
+                  }
+                }
+              },
+              "groups": {
+                "type": "object",
+                "nullable": true,
+                "description": "Groups + knockout only (and required there)",
+                "required": [
+                  "size",
+                  "through"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "size": {
+                    "type": "integer",
+                    "enum": [
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  "through": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "description": "Entries per group that go through"
+                  }
+                }
+              },
+              "registrationClosesMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  15,
+                  60,
+                  180,
+                  1440,
+                  null
+                ],
+                "description": "Before a fixed start"
+              },
+              "checkInMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  2,
+                  5,
+                  10,
+                  15,
+                  30,
+                  60,
+                  null
+                ]
+              },
+              "plannedFor": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Organizer start: a hint, not a start time"
+              },
+              "manualScoring": {
+                "type": "boolean",
+                "description": "Online players without a paired board may type their scores"
+              },
+              "noShowMinutes": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  5,
+                  10,
+                  15,
+                  null
+                ],
+                "description": "Online only: the wait before a no-show forfeits"
+              }
+            }
+          },
+          "entries": {
+            "type": "integer",
+            "description": "Entries registered so far (withdrawn ones not counted)"
+          },
+          "owner": {
+            "type": "object",
+            "nullable": true,
+            "description": "Null once the owner's account is gone",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "role": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "owner",
+              "organizer",
+              null
+            ],
+            "description": "The caller's part in it"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Someone registered: only startsAt (with its settings) and description can change"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         }
       },

@@ -579,7 +579,7 @@ export interface TournamentsTable {
   description: Defaulted<string>
   game_id: string
   /** The game's options (written as JSON). */
-  game_config: ColumnType<unknown, string, string>
+  game_config: ColumnType<Record<string, unknown>, string, string>
   format: 'single_elimination' | 'double_elimination' | 'round_robin' | 'groups_knockout'
   /** Players per entry: 1 solo, 2-4 a team. */
   team_size: number
@@ -587,7 +587,7 @@ export interface TournamentsTable {
   /** Null: an organizer starts it. */
   starts_at: Date | null
   /** Seeding, match length, check-in and the other organizer choices (written as JSON). */
-  settings: ColumnType<unknown, string | undefined, string>
+  settings: ColumnType<components['schemas']['TournamentSettings'], string | undefined, string>
   created_at: ColumnType<Date, never, never>
   published_at: Stamp
   started_at: Stamp
