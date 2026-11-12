@@ -247,3 +247,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two backends on one database', 
     await next?.end()
   })
 })
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('070_light_calibration_started migration', () => {
+  const SCHEMA_070 = 'mig_070_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_070} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_070}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_070}`)
+    await runMigrations(db, { until: '069_tournament_avg_limit.sql' })
+    await sql`INSERT INTO "user" (id, name, email) VALUES ('u1', 'Christoph', 'c@example.com')`.execute(db)
+    const rules = JSON.stringify([
+      { when: { trigger: 'turn', seats: 'mine' }, type: 'scene', enabled: true },
+      { when: { trigger: 'calibration.started', seats: 'any' }, type: 'scene', enabled: true },
+    ])
+    await sql`INSERT INTO light_profiles (id, owner_user_id, name, seat_colors, rules)
+      VALUES ('p1', 'u1', 'Mine', '[]', ${rules}::jsonb),
+             ('p2', 'u1', 'Only old', '[]', ${JSON.stringify([JSON.parse(rules)[1]])}::jsonb)`.execute(db)
+    await sql`INSERT INTO boards (id, owner_user_id, name, token_hash, light_effect_overrides)
+      VALUES ('b1', 'u1', 'b1', 'h1', '{"calibration.started|any||": false, "turn|mine||": false}'::jsonb)`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_070} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('drops the calibration.started effect from a profile and keeps the others', async () => {
+    const rows = await db.selectFrom('light_profiles').select(['id', 'rules']).orderBy('id').execute()
+    expect(rows.map(r => [r.id, r.rules.map(x => x.when.trigger)])).toEqual([
+      ['p1', ['turn']],
+      ['p2', []],
+    ])
+  })
+
+  it("drops the effect's override from a board and keeps the others", async () => {
+    const board = await db.selectFrom('boards').select('light_effect_overrides').where('id', '=', 'b1').executeTakeFirstOrThrow()
+    expect(board.light_effect_overrides).toEqual({ 'turn|mine||': false })
+  })
+})

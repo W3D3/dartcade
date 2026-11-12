@@ -21,6 +21,7 @@ const dev = (id: string, board: string) => ({
 
 function setup(over: Partial<LightsDeps> = {}) {
   const sent: Sent[] = []
+  const timers: { ms: number; fn: () => void }[] = []
   const snaps = new Map<string, Snapshot>()
   const sessions = new Map<string, { boardId: string | null; seats: { boardId: string | null }[] }>()
   const deps: LightsDeps = {
@@ -33,10 +34,18 @@ function setup(over: Partial<LightsDeps> = {}) {
     getSnapshot: id => snaps.get(id),
     sessionOnBoard: () => null,
     inLobby: () => Promise.resolve(true),
+    later: (ms, fn) => void timers.push({ ms, fn }),
     warn: () => undefined,
     ...over,
   }
-  return { svc: new LightsService(deps), sent, snaps, sessions }
+  // Runs the timers the service set (the end of a flash) and lets the queued work settle
+  const elapse = async () => {
+    for (const t of timers.splice(0)) t.fn()
+    await svc.onBoardEvent('flush', 'noop')
+    await new Promise(r => setTimeout(r, 0))
+  }
+  const svc = new LightsService(deps)
+  return { svc, sent, snaps, sessions, timers, elapse }
 }
 
 const x01 = (g: Record<string, unknown>) =>
@@ -224,39 +233,129 @@ describe('LightsService', () => {
 
   const status = (s: string) => ({ status: s, event: '', running: true, connected: true })
 
-  it('Running to Calibrating sends the purple comet scene', async () => {
-    const { svc, sent, snaps, sessions } = setup()
-    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-    snaps.set('s', x01({}))
-    await svc.onPush('s')
-    sent.length = 0
+  const withGame = async (over: Partial<LightsDeps> = {}) => {
+    const t = setup(over)
+    t.sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    t.snaps.set('s', x01({}))
+    await t.svc.onPush('s')
+    const turn = applies(t.sent, 'b1')[0]?.state
+    t.sent.length = 0
+    return { ...t, turn }
+  }
+  const col = (a: Record<string, unknown>) => (a.state as { seg: { col: number[][] }[] }).seg[0].col
+
+  it('sends no light change at all while Calibrating, not even for a takeout, a flash or a game end', async () => {
+    const { svc, sent, snaps } = await withGame()
     await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
-    const [purple] = applies(sent, 'b1')
-    expect((purple.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[168, 85, 247]])
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'takeout.started')
+    snaps.set('s', x01({ scores: [321, 501], totalVisits: [1, 0], currentPlayer: 1 }))
+    await svc.onPush('s')
+    await svc.onGameEnded('s')
+    await svc.onLobbyBoards(['b1'])
+    expect(sent).toEqual([])
   })
 
-  it('Calibrating to Running restores the remembered game scene', async () => {
-    const { svc, sent, snaps, sessions } = setup()
-    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-    snaps.set('s', x01({}))
-    await svc.onPush('s')
-    const turn = applies(sent, 'b1')[0].state
-    sent.length = 0
+  it('a bridge hello during calibration sends the devices but no scene', async () => {
+    const { svc, sent } = await withGame()
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.devicesChanged('b1')
+    expect(sent.map(s => s.msg.kind)).toEqual(['wled.devices'])
+  })
+
+  it('a finished calibration plays the Calibrated flash once, then restores the scene', async () => {
+    const { svc, sent, timers, elapse, turn } = await withGame()
     await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
     await svc.onBoardEvent('b1', 'board.status', status('Running'))
-    const [, back] = applies(sent, 'b1')
-    expect(back.state).toEqual(turn)
+    const [flash, ...rest] = applies(sent, 'b1')
+    expect(col(flash)).toEqual([[168, 85, 247]])
+    expect(flash.hold_ms).toBe(3000)
+    expect(rest).toEqual([]) // the scene is not resent on top of the flash
+    expect(timers.map(t => t.ms)).toEqual([3000])
+    await elapse()
+    expect(applies(sent, 'b1').at(-1)?.state).toEqual(turn)
   })
 
-  it('repeated Calibrating statuses do not resend', async () => {
-    const { svc, sent, snaps, sessions } = setup()
-    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-    snaps.set('s', x01({}))
-    await svc.onPush('s')
+  it('never sends a Board Manager call: the lights only send wled messages', async () => {
+    const { svc, sent, elapse } = await withGame()
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await elapse()
+    expect(new Set(sent.map(s => s.msg.kind))).toEqual(new Set(['wled.apply']))
+  })
+
+  it('a scene change during calibration is remembered and shown after it', async () => {
+    const { svc, sent, snaps, elapse } = await withGame()
+    const started = svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    snaps.set('s', x01({ currentPlayer: 1 }))
+    const pushed = svc.onPush('s')
+    const finished = svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await Promise.all([started, pushed, finished])
+    await elapse()
+    expect(col(applies(sent, 'b1').at(-1) ?? {})).toEqual([[239, 238, 230]]) // seat 1's colour
+  })
+
+  it('takeout.finished during calibration does not restore the scene; the finished calibration does', async () => {
+    const { svc, sent, elapse, turn } = await withGame()
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'takeout.finished')
+    expect(applies(sent, 'b1')).toEqual([])
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await elapse()
+    expect(applies(sent, 'b1').at(-1)?.state).toEqual(turn)
+  })
+
+  it('a calibration that restarts during the flash is not interrupted; its own finish restores the scene', async () => {
+    const { svc, sent, timers, elapse, turn } = await withGame()
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
     sent.length = 0
+    await elapse() // the first flash is over: the board is calibrating again
+    expect(applies(sent, 'b1')).toEqual([])
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    expect(timers).toHaveLength(1)
+    await elapse()
+    expect(applies(sent, 'b1').map(a => a.state)).toHaveLength(2) // the second flash, then the scene
+    expect(applies(sent, 'b1').at(-1)?.state).toEqual(turn)
+  })
+
+  it('repeated Running statuses after a calibration play the flash and restore the scene once', async () => {
+    const { svc, sent, elapse } = await withGame()
     await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await elapse()
+    expect(applies(sent, 'b1')).toHaveLength(2) // the flash and the scene
+  })
+
+  it('a board that stops while calibrating gets its scene back, with no flash', async () => {
+    const { svc, sent, timers, turn } = await withGame()
     await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Stopped'))
+    expect(applies(sent, 'b1').map(a => a.state)).toEqual([turn])
+    expect(timers).toEqual([])
+  })
+
+  it('a reconnect while calibrating forgets it: the scene shows, the lights are not stuck', async () => {
+    const { svc, sent } = await withGame()
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBridgeHello('b1')
     expect(applies(sent, 'b1')).toHaveLength(1)
+  })
+
+  it('with the Calibrated effect switched off the scene comes straight back; with lights off nothing is sent', async () => {
+    const noRule: Profile = { ...DEFAULT_PROFILE, rules: DEFAULT_PROFILE.rules.filter(r => r.when.trigger !== 'calibration.finished') }
+    const off = await withGame({ profile: () => Promise.resolve(noRule) })
+    await off.svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await off.svc.onBoardEvent('b1', 'board.status', status('Running'))
+    expect(applies(off.sent, 'b1').map(a => a.state)).toEqual([off.turn])
+    expect(off.timers).toEqual([])
+    const dark = await withGame({ enabled: () => Promise.resolve(false) })
+    await dark.svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await dark.svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await dark.elapse()
+    expect(dark.sent).toEqual([])
   })
 
   it('ignores malformed board.status data', async () => {
@@ -265,38 +364,6 @@ describe('LightsService', () => {
     await svc.onBoardEvent('b1', 'board.status', { event: 'no status field' })
     await svc.onBoardEvent('b1', 'board.status', 'Calibrating')
     expect(sent).toEqual([])
-  })
-
-  it('a game scene change during calibration is remembered, the same as during a takeout', async () => {
-    const { svc, sent, snaps, sessions } = setup()
-    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-    snaps.set('s', x01({}))
-    await svc.onPush('s')
-    sent.length = 0
-    // None of these are awaited before the next is issued, the same race the takeout test above covers.
-    const started = svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
-    snaps.set('s', x01({ currentPlayer: 1 }))
-    const pushed = svc.onPush('s')
-    const finished = svc.onBoardEvent('b1', 'board.status', status('Running'))
-    await Promise.all([started, pushed, finished])
-    const last = applies(sent, 'b1').at(-1)
-    expect((last?.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[239, 238, 230]]) // seat 1's colour
-  })
-
-  it('takeout.finished during calibration does not restore the game scene (calibration.finished does it later)', async () => {
-    const { svc, sent, snaps, sessions } = setup()
-    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-    snaps.set('s', x01({}))
-    await svc.onPush('s')
-    const turn = applies(sent, 'b1')[0].state
-    sent.length = 0
-    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
-    sent.length = 0
-    await svc.onBoardEvent('b1', 'takeout.finished')
-    expect(applies(sent, 'b1')).toEqual([]) // still calibrating; no restore yet
-    await svc.onBoardEvent('b1', 'board.status', status('Running'))
-    const [back] = applies(sent, 'b1')
-    expect(back.state).toEqual(turn)
   })
 
   it('onPush sends nothing when lights are off or the bridge is too old', async () => {

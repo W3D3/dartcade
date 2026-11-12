@@ -5,6 +5,7 @@
 import type { WledDeviceRow } from '../db/lights.js'
 import type { Snapshot } from '../schema/game-ws.js'
 import {
+  CALIBRATED_HOLD_MS,
   match,
   patchFor,
   type BoardTrigger,
@@ -32,6 +33,8 @@ export type LightsDeps = {
   sessionOnBoard: (boardId: string) => string | null
   /** Whether someone sits at the board in an open lobby: the lobby scene shows only then, otherwise it's off. */
   inLobby: (boardId: string) => Promise<boolean>
+  /** Runs `fn` after `ms` (setTimeout in production, a manual clock in tests). */
+  later: (ms: number, fn: () => void) => void
   warn: (msg: string, details?: unknown) => void
 }
 
@@ -41,6 +44,9 @@ type Fired = 'sent' | 'no-rule' | 'unavailable'
 type SessionLike = { boardId: string | null; seats: { boardId: string | null }[] }
 /** The scene last shown on a board, remembered so a reconnect or a takeout can bring it back. */
 type RememberedScene = { t: BoardTrigger; game: GameId | null; layout: SeatLayout }
+
+/** Statuses that end Calibrating without the calibration having finished. */
+const NOT_CALIBRATED = new Set(['Offline', 'Stopping', 'Stopped'])
 
 const toLightDevice = (d: WledDeviceRow): LightDevice => ({ leds: d.leds, segmentMode: d.segment_mode, segments: d.segments })
 
@@ -90,7 +96,6 @@ function sampleTrigger(kind: TriggerKind): Trigger {
     case 'lobby':
     case 'takeout.started':
     case 'takeout.finished':
-    case 'calibration.started':
     case 'calibration.finished':
       return { kind }
     case 'visit':
@@ -107,9 +112,12 @@ export class LightsService {
   private last = new Map<string, Snapshot>()
   /** The scene currently shown on a board, so a reconnect or a takeout can bring it back. */
   private scene = new Map<string, RememberedScene>()
-  /** Boards the Board Manager currently reports as "Calibrating" (board.status), so a repeated
-   *  status doesn't resend and leaving the status knows to restore the scene. */
+  /** Boards the Board Manager currently reports as "Calibrating" (board.status). Their lights are
+   *  left alone (a light change can disturb the calibration); leaving the status plays the
+   *  Calibrated flash and restores the scene. */
   private calibrating = new Set<string>()
+  /** The scene restore still due after a board's Calibrated flash; a newer calibration replaces it. */
+  private pendingRestore = new Map<string, symbol>()
   /** Every board-affecting call is chained on its board's queue, so sends land in call order,
    *  never completion order (a takeout racing the push that changed the turn, a slow devices()
    *  call racing a faster later one, onGameEnded racing an in-flight scene fire, …). */
@@ -183,11 +191,14 @@ export class LightsService {
       const wasCalibrating = this.calibrating.has(boardId)
       if (status === 'Calibrating' && !wasCalibrating) {
         this.calibrating.add(boardId)
-        return this.enqueue(boardId, () => this.fire(boardId, { kind: 'calibration.started', local: true }, null, { seatCount: 1 }))
+        this.pendingRestore.delete(boardId)
+        return
       }
       if (status !== 'Calibrating' && wasCalibrating) {
         this.calibrating.delete(boardId)
-        return this.enqueue(boardId, () => this.resendOrIdle(boardId))
+        // The board going away is no finished calibration: just bring the scene back
+        if (NOT_CALIBRATED.has(status)) return this.enqueue(boardId, () => this.resendOrIdle(boardId))
+        return this.enqueue(boardId, () => this.calibrated(boardId))
       }
     }
   }
@@ -196,6 +207,8 @@ export class LightsService {
    *  change that doesn't involve a fresh connection) — darkens a strip left on while lights are
    *  off, otherwise sends the devices and the current scene. */
   async onBridgeHello(boardId: string): Promise<void> {
+    // The status is unknown again; the bridge reports Calibrating afresh if it still is
+    this.calibrating.delete(boardId)
     return this.devicesChanged(boardId)
   }
 
@@ -260,6 +273,24 @@ export class LightsService {
     return chain
   }
 
+  /** Calibration finished: the Calibrated flash plays once, then the remembered scene comes back
+   *  once the flash is over. */
+  private async calibrated(boardId: string): Promise<void> {
+    const t: BoardTrigger = { kind: 'calibration.finished', local: true }
+    if ((await this.fire(boardId, t, null, { seatCount: 1 })) !== 'sent') return this.resendOrIdle(boardId)
+    const token = Symbol()
+    this.pendingRestore.set(boardId, token)
+    const rule = match(await this.deps.profile(boardId), t, null)
+    this.deps.later(rule?.holdMs ?? CALIBRATED_HOLD_MS, () => {
+      void this.enqueue(boardId, async () => {
+        // A newer calibration owns the lights now
+        if (this.pendingRestore.get(boardId) !== token) return
+        this.pendingRestore.delete(boardId)
+        if (!this.calibrating.has(boardId)) await this.resendOrIdle(boardId)
+      })
+    })
+  }
+
   private async resendOrIdle(boardId: string): Promise<void> {
     if (!(await this.resendScene(boardId))) await this.idle(boardId)
   }
@@ -304,6 +335,7 @@ export class LightsService {
   /** No game on the board: the lobby scene while a lobby uses it and its rule is on (it is off by
    *  default), otherwise off. Never remembered, so a reconnect or takeout asks the lobby again. */
   private async idle(boardId: string): Promise<void> {
+    if (this.calibrating.has(boardId)) return
     try {
       const inLobby = await this.deps.inLobby(boardId)
       if (!inLobby || (await this.fire(boardId, { kind: 'lobby', local: true }, null, { seatCount: 1 })) !== 'sent')
@@ -316,6 +348,7 @@ export class LightsService {
 
   /** Every device off, keeping the bridge's allowlist (unlike darken). */
   private async turnOff(boardId: string): Promise<void> {
+    if (this.calibrating.has(boardId)) return
     if (!(await this.deps.enabled(boardId))) return
     if (!supportsLights(this.deps.bridgeVersion(boardId))) return
     for (const d of await this.deps.devices(boardId))
@@ -353,10 +386,15 @@ export class LightsService {
       const profile = await this.deps.profile(board)
       const rule = match(profile, t, game)
       if (!rule) return 'no-rule'
+      const remember = rule.type === 'scene' && t.kind !== 'takeout.started'
+      if (this.calibrating.has(board)) {
+        // Calibrating: leave the lights as they are, a scene change is only remembered
+        if (remember) this.scene.set(board, { t, game, layout })
+        return 'unavailable'
+      }
       for (const device of devices)
         this.send(board, device, rule, t, layout, profile.seatColors, rule.type === 'flash' ? rule.holdMs : undefined)
-      if (rule.type === 'scene' && t.kind !== 'takeout.started' && t.kind !== 'calibration.started')
-        this.scene.set(board, { t, game, layout })
+      if (remember) this.scene.set(board, { t, game, layout })
       return 'sent'
     } catch (err) {
       this.deps.warn('lights fire failed', err)

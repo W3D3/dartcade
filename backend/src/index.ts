@@ -104,6 +104,7 @@ const lights: LightsService = new LightsService({
   getSnapshot: id => engine.getSnapshot(id),
   sessionOnBoard: b => engine.getSessionByBoard(b)?.id ?? null,
   inLobby: b => boardInOpenLobby(db, b),
+  later: (ms, fn) => void setTimeout(fn, ms),
   warn,
 })
 // Big screen: follows boards for /ws/board; reads the engine lazily like lights

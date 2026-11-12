@@ -39,8 +39,8 @@ describe('lights view', () => {
     expect(ruleLabel(rule('game.won'))).toEqual({ ...base, when: 'Game won', type: 'Flash', look: 'Matchshot preset · 5 s' })
     // The takeout scene is a yellow pulse, so players see the board isn't ready
     expect(ruleLabel(rule('takeout.started'))).toEqual({ ...base, when: 'Takeout', type: 'Scene', look: 'yellow · pulse' })
-    // The calibration scene is a purple comet travelling around the strip
-    expect(ruleLabel(rule('calibration.started'))).toEqual({ ...base, when: 'Calibrating', type: 'Scene', look: 'purple · comet' })
+    // The Calibrated flash is a purple comet travelling around the strip
+    expect(ruleLabel(rule('calibration.finished'))).toEqual({ ...base, when: 'Calibrated', type: 'Flash', look: 'purple · comet · 3 s' })
   })
   it('the Lobby rule is off by default and says it shows only in a lobby', () => {
     // It uses the lime colour directly (not 'seat'); name it instead of the hex
