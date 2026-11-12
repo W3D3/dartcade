@@ -91,6 +91,7 @@ export type MeServerMessage =
   | AchievementUnlockedMessage
   | TournamentRequestMessage
   | TournamentCheckInMessage
+  | TournamentDroppedMessage
   | TournamentMatchMessage
   | BoardStatusMessage
   | LobbyIdleClosedMessage
@@ -653,6 +654,25 @@ export interface TournamentCheckInMessage {
   tournamentId: string
   tournamentName: string
   closesAt: string
+}
+/**
+ * Pushed on /ws/me to the players of an entry an unlocked average limit dropped when check-in opened (or at the start without a check-in): their 30-day form no longer fits.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "TournamentDroppedMessage".
+ */
+export interface TournamentDroppedMessage {
+  type: 'tournament.dropped'
+  tournamentId: string
+  tournamentName: string
+  /**
+   * As TournamentEligibility's reason.
+   */
+  reason: 'few_legs' | 'no_average' | 'below' | 'above'
+  /**
+   * The average checked (the entry's, for a team average).
+   */
+  average: number | null
 }
 /**
  * Pushed on /ws/me to both players when their tournament match's game starts ("Your match is on").

@@ -9,9 +9,9 @@ const open: RegistrationTournament = {
   maxEntries: 8,
   entries: 3,
   startsAt: '2026-11-16T18:00:00Z',
-  settings: { registrationClosesMinutes: 60, manualScoring: false },
+  settings: { registrationClosesMinutes: 60, manualScoring: false, avgLimit: null },
 }
-const me = { registered: false, hasBoard: true }
+const me = { registered: false, hasBoard: true, eligible: true }
 
 describe('registrationState', () => {
   it('opens registration with a paired board and a free spot', () => {
@@ -38,6 +38,11 @@ describe('registrationState', () => {
     expect(registrationState({ ...open, settings: { ...open.settings, manualScoring: true } }, { ...me, hasBoard: false }, now)).toBe(
       'open',
     )
+  })
+
+  it('refuses a player outside the average limit, before asking for a board', () => {
+    expect(registrationState(open, { ...me, eligible: false, hasBoard: false }, now)).toBe('not_eligible')
+    expect(registrationState({ ...open, entries: 8 }, { ...me, eligible: false }, now)).toBe('full')
   })
 
   it('says registered whatever else holds', () => {

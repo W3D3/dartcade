@@ -119,6 +119,7 @@ export const REGISTRATION_NOTE: Record<RegistrationState, string> = {
   full: 'Full',
   closed: 'Registration closed',
   board_needed: 'Paired board needed',
+  not_eligible: 'Not eligible',
   team: 'A captain registers the team',
   in_person: 'Added by the organizers',
 }
@@ -139,6 +140,7 @@ const REFUSAL: Partial<Record<string, string>> = {
   full: 'Every spot is taken.',
   'registration closed': 'Registration has closed.',
   'paired board needed': 'Pair a board first: this tournament is played on your own board.',
+  'not eligible': 'Your 30-day average is outside this tournament’s limit.',
 }
 
 async function outcome(call: Promise<{ data?: Tournament; error?: { error: string }; response: Response }>): Promise<Outcome> {

@@ -60,6 +60,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           startsAt: '2030-11-16T18:00:00.000Z',
           owner: null,
           registration: 'board_needed',
+          avgLimit: null,
+          eligibility: null,
         },
       ],
     })
@@ -97,6 +99,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
         plannedFor: null,
         manualScoring: false,
         noShowMinutes: 10,
+        avgLimit: null,
       },
     }
     const create = (user: string, body: object = input) => send(user, 'POST', '/api/tournaments', body)
@@ -379,6 +382,64 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       expect((await register('boardless', 'typed')).statusCode).toBe(200)
     })
 
+    it('checks the average limit: the tag and eligibility on Browse and the detail, 409 not eligible to register', async () => {
+      // p3 played 30 legs at a 68.4 average in the last days; p4 none
+      await db
+        .insertInto('game_sessions')
+        .values({
+          id: 'avg-game',
+          owner_user_id: null,
+          board_db_id: null,
+          game_id: 'x01',
+          config: '{}',
+          status: 'finished',
+          finished_at: new Date(),
+        })
+        .execute()
+      await db
+        .insertInto('game_players')
+        .values({
+          session_id: 'avg-game',
+          seat: 0,
+          name: 'p3',
+          user_id: 'p3',
+          placement: 1,
+          stats: JSON.stringify({ average: 68.4, dartsThrown: 600, legsWon: 30 }),
+          controller_user_id: 'p3',
+          board_db_id: null,
+        })
+        .execute()
+      expect((await get('p3', '/api/tournaments/form')).json()).toEqual({ average: 68.4, legs: 30 })
+      expect((await get('p4', '/api/tournaments/form')).json()).toEqual({ average: null, legs: 0 })
+
+      const settings = {
+        ...(await db.selectFrom('tournaments').select('settings').where('id', '=', 'weekly').executeTakeFirstOrThrow()).settings,
+      }
+      const avgLimit = { min: null, max: 45, teams: 'every', minLegs: 20, lock: true }
+      await open('beginners', { settings: JSON.stringify({ ...settings, avgLimit }) })
+      const listed = (await get('p3')).json<{ tournaments: { id: string }[] }>().tournaments.find(t => t.id === 'beginners')
+      expect(listed).toMatchObject({
+        avgLimit,
+        registration: 'not_eligible',
+        eligibility: { eligible: false, reason: 'above', average: 68.4 },
+      })
+      expect((await get('p4', '/api/tournaments/beginners')).json()).toMatchObject({
+        registration: 'not_eligible',
+        eligibility: { eligible: false, reason: 'few_legs', average: null },
+      })
+      const res = await register('p3', 'beginners')
+      expect([res.statusCode, error(res)]).toEqual([409, 'not eligible'])
+
+      await open('advanced', { settings: JSON.stringify({ ...settings, avgLimit: { ...avgLimit, min: 50, max: null } }) })
+      expect((await register('p3', 'advanced')).json()).toMatchObject({
+        registration: 'registered',
+        eligibility: { eligible: true, reason: null, average: 68.4 },
+      })
+      // Without a limit there is nothing to check
+      expect((await get('p4', '/api/tournaments/weekly')).json()).toMatchObject({ eligibility: null })
+      await db.deleteFrom('game_sessions').where('id', '=', 'avg-game').execute()
+    })
+
     it('leaves team and in-person tournaments to captains and organizers', async () => {
       await open('pairs', { team_size: 2 })
       expect(error(await register('player', 'pairs'))).toBe('team tournament')
@@ -418,6 +479,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           plannedFor: null,
           manualScoring: false,
           noShowMinutes: 10,
+          avgLimit: null,
         },
       })
       const draft = res.json<Tournament>()

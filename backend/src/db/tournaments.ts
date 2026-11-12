@@ -15,7 +15,11 @@ import {
 } from '../shared/tournaments/state.js'
 import { MAX_ORGANIZERS, MAX_UNFINISHED_TOURNAMENTS } from '../shared/tournaments/setup.js'
 import { canWithdraw, registrationState, type RegistrationState } from '../shared/tournaments/registration.js'
+import { NO_FORM, entryEligibility, keepsSpot, type Eligibility } from '../shared/tournaments/avgLimit.js'
+import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { toAvatar, type Avatar } from './users.js'
+import { x01Forms } from './ranked.js'
+import { groupBy } from '../util/groupBy.js'
 
 export type TournamentRow = Selectable<TournamentsTable>
 export type TournamentMatchRow = Selectable<TournamentMatchesTable>
@@ -369,7 +373,7 @@ export async function friendsIn(
 export async function registerSolo(
   db: Kysely<Database>,
   tournamentId: string,
-  user: { id: string; name: string; hasBoard: boolean },
+  user: { id: string; name: string; hasBoard: boolean; eligible: boolean },
   now: Date,
 ): Promise<RegistrationState | null> {
   return db.transaction().execute(async tx => {
@@ -398,7 +402,7 @@ export async function registerSolo(
         startsAt: t.starts_at?.toISOString() ?? null,
         settings: t.settings,
       },
-      { registered: mine !== undefined && mine.status !== 'withdrawn', hasBoard: user.hasBoard },
+      { registered: mine !== undefined && mine.status !== 'withdrawn', hasBoard: user.hasBoard, eligible: user.eligible },
       now,
     )
     if (state !== 'open') return state
@@ -435,4 +439,56 @@ export async function withdrawSolo(db: Kysely<Database>, tournamentId: string, u
       .executeTakeFirst()
     return res.numUpdatedRows > 0n
   })
+}
+
+/**
+ * When check-in opens: with an unlocked average limit, withdraws the entries whose players no
+ * longer fit it (`keepsSpot`). Only players with an account are judged: a spot whose account was
+ * deleted has no form, and guests come with #612. Returns each account that lost its spot with
+ * why, to be told.
+ */
+export async function dropIneligibleEntries(
+  db: Kysely<Database>,
+  tournamentId: string,
+): Promise<{ userId: string; eligibility: Eligibility }[]> {
+  const t = await db.selectFrom('tournaments').select('settings').where('id', '=', tournamentId).executeTakeFirst()
+  const limit = t?.settings.avgLimit ?? null
+  if (limit === null || limit.lock) return []
+  const players = await db
+    .selectFrom('tournament_players as p')
+    .innerJoin('tournament_entries as e', 'e.id', 'p.entry_id')
+    .select(['p.entry_id', 'p.user_id'])
+    .where('p.tournament_id', '=', tournamentId)
+    .where('p.user_id', 'is not', null)
+    .where('e.status', '<>', 'withdrawn')
+    .$narrowType<{ user_id: string }>()
+    .execute()
+  const forms = await x01Forms(
+    db,
+    players.map(p => p.user_id),
+    PROFILE_AVERAGE_DAYS,
+  )
+  const dropped = [...groupBy(players, p => p.entry_id)]
+    .map(([id, ps]) => ({
+      id,
+      ps,
+      eligibility: entryEligibility(
+        limit,
+        ps.map(p => forms.get(p.user_id) ?? NO_FORM),
+      ),
+    }))
+    .filter(e => !keepsSpot(limit, e.eligibility))
+  if (dropped.length === 0) return []
+  await db
+    .updateTable('tournament_entries')
+    .set({ status: 'withdrawn' })
+    .where('tournament_id', '=', tournamentId)
+    .where(
+      'id',
+      'in',
+      dropped.map(e => e.id),
+    )
+    .where('status', '<>', 'withdrawn')
+    .execute()
+  return dropped.flatMap(e => e.ps.map(p => ({ userId: p.user_id, eligibility: e.eligibility })))
 }

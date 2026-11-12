@@ -4,6 +4,7 @@ import { groupBy } from '../util/groupBy.js'
 import { toAvatar, type Avatar } from './users.js'
 import { insertActivity, type ActivityInsert } from './activity.js'
 import { rankUpEvent } from '../activity/events.js'
+import { NO_FORM, roundAverage, type Form } from '../shared/tournaments/avgLimit.js'
 import {
   PLACEMENT_MATCHES,
   START_RATING,
@@ -61,17 +62,21 @@ export async function ratingChangeSince(db: Kysely<Database>, userId: string, si
 }
 
 /** The player's finished, valid X01 games with darts thrown, newest first: their average and darts. */
-const x01Games = (db: Kysely<Database>, userId: string) =>
+/** The seats (p) people threw darts from in finished, valid X01 games (g): what an X01 average counts. */
+const x01Seats = (db: Kysely<Database>) =>
   db
     .selectFrom('game_players as p')
     .innerJoin('game_sessions as g', 'g.id', 'p.session_id')
-    .select([sql<number>`(p.stats->>'average')::float8`.as('average'), sql<number>`(p.stats->>'dartsThrown')::int`.as('darts')])
-    .where('p.user_id', '=', userId)
     .where('p.bot_level', 'is', null)
     .where('g.game_id', '=', 'x01')
     .where('g.status', '=', 'finished')
     .where('g.invalidated_at', 'is', null)
     .where(sql<boolean>`(p.stats->>'dartsThrown')::int > 0`)
+
+const x01Games = (db: Kysely<Database>, userId: string) =>
+  x01Seats(db)
+    .select([sql<number>`(p.stats->>'average')::float8`.as('average'), sql<number>`(p.stats->>'dartsThrown')::int`.as('darts')])
+    .where('p.user_id', '=', userId)
     .orderBy('g.finished_at', 'desc')
 
 const dartWeighted = sql<string | null>`sum(average * darts) / nullif(sum(darts), 0)`
@@ -95,6 +100,33 @@ export async function x01AverageSince(db: Kysely<Database>, userId: string, days
     .select(dartWeighted.as('avg'))
     .executeTakeFirst()
   return row?.avg == null ? null : Number(row.avg)
+}
+
+/**
+ * Each player's X01 form over the `days` days up to now, as an average limit checks it: the
+ * 3-dart average (dart-weighted, one decimal, null without darts) and the legs of those games.
+ * A game's legs are every team's legs won, a team counted once (`teams` in its config).
+ */
+export async function x01Forms(db: Kysely<Database>, userIds: readonly string[], days: number): Promise<Map<string, Form>> {
+  const out = new Map<string, Form>(userIds.map(id => [id, NO_FORM]))
+  if (userIds.length === 0) return out
+  const rows = await x01Seats(db)
+    .select([
+      'p.user_id',
+      sql<
+        string | null
+      >`sum((p.stats->>'average')::float8 * (p.stats->>'dartsThrown')::int) / nullif(sum((p.stats->>'dartsThrown')::int), 0)`.as('avg'),
+      sql<string>`sum((SELECT coalesce(sum(t.legs), 0) FROM (
+        SELECT max((o.stats->>'legsWon')::int) AS legs FROM game_players o WHERE o.session_id = g.id
+        GROUP BY CASE WHEN g.config->>'format' = 'teams' THEN g.config->'teams'->>o.seat ELSE o.seat::text END) t))`.as('legs'),
+    ])
+    .where('p.user_id', 'in', userIds)
+    .where('g.finished_at', '>=', sql<Date>`now() - make_interval(days => ${days})`)
+    .groupBy('p.user_id')
+    .execute()
+  for (const r of rows)
+    if (r.user_id !== null) out.set(r.user_id, { average: r.avg == null ? null : roundAverage(Number(r.avg)), legs: Number(r.legs) })
+  return out
 }
 
 /** The 3-dart average over the last `n` ranked games with one; null before the first. */

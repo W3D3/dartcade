@@ -38544,7 +38544,9 @@
                           "entries",
                           "startsAt",
                           "owner",
-                          "registration"
+                          "registration",
+                          "avgLimit",
+                          "eligibility"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -38584,10 +38586,11 @@
                               "closed",
                               "team",
                               "full",
+                              "not_eligible",
                               "board_needed",
                               "open"
                             ],
-                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                           },
                           "kind": {
                             "type": "string",
@@ -38647,6 +38650,86 @@
                             "format": "date-time",
                             "nullable": true,
                             "description": "Null: an organizer starts it"
+                          },
+                          "avgLimit": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                            "required": [
+                              "min",
+                              "max",
+                              "teams",
+                              "minLegs",
+                              "lock"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "min": {
+                                "type": "number",
+                                "nullable": true,
+                                "minimum": 0,
+                                "maximum": 180,
+                                "description": "Null: at most max"
+                              },
+                              "max": {
+                                "type": "number",
+                                "nullable": true,
+                                "minimum": 0,
+                                "maximum": 180,
+                                "description": "Null: at least min"
+                              },
+                              "teams": {
+                                "type": "string",
+                                "enum": [
+                                  "every",
+                                  "team"
+                                ],
+                                "description": "Teams: every player within it, or the mean of their averages"
+                              },
+                              "minLegs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500,
+                                "description": "Legs each player played in the 30 days"
+                              },
+                              "lock": {
+                                "type": "boolean",
+                                "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                              }
+                            }
+                          },
+                          "eligibility": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "The caller against the average limit; null when the tournament has none",
+                            "required": [
+                              "eligible",
+                              "reason",
+                              "average"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "eligible": {
+                                "type": "boolean"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "nullable": true,
+                                "enum": [
+                                  "few_legs",
+                                  "no_average",
+                                  "below",
+                                  "above",
+                                  null
+                                ],
+                                "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                              },
+                              "average": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "The caller's 30-day average"
+                              }
+                            }
                           }
                         }
                       }
@@ -38873,7 +38956,8 @@
                       "checkInMinutes",
                       "plannedFor",
                       "manualScoring",
-                      "noShowMinutes"
+                      "noShowMinutes",
+                      "avgLimit"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -38993,6 +39077,53 @@
                           null
                         ],
                         "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                      },
+                      "avgLimit": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                        "required": [
+                          "min",
+                          "max",
+                          "teams",
+                          "minLegs",
+                          "lock"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "Null: at most max"
+                          },
+                          "max": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "Null: at least min"
+                          },
+                          "teams": {
+                            "type": "string",
+                            "enum": [
+                              "every",
+                              "team"
+                            ],
+                            "description": "Teams: every player within it, or the mean of their averages"
+                          },
+                          "minLegs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500,
+                            "description": "Legs each player played in the 30 days"
+                          },
+                          "lock": {
+                            "type": "boolean",
+                            "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                          }
+                        }
                       }
                     }
                   }
@@ -39032,7 +39163,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -39113,7 +39245,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -39233,6 +39366,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -39266,16 +39446,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -39686,7 +39900,8 @@
                           "registrationClosesAt",
                           "friendsIn",
                           "inviteCode",
-                          "checkedIn"
+                          "checkedIn",
+                          "eligibility"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -39767,7 +39982,8 @@
                               "checkInMinutes",
                               "plannedFor",
                               "manualScoring",
-                              "noShowMinutes"
+                              "noShowMinutes",
+                              "avgLimit"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -39887,6 +40103,53 @@
                                   null
                                 ],
                                 "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                              },
+                              "avgLimit": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                                "required": [
+                                  "min",
+                                  "max",
+                                  "teams",
+                                  "minLegs",
+                                  "lock"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "min": {
+                                    "type": "number",
+                                    "nullable": true,
+                                    "minimum": 0,
+                                    "maximum": 180,
+                                    "description": "Null: at most max"
+                                  },
+                                  "max": {
+                                    "type": "number",
+                                    "nullable": true,
+                                    "minimum": 0,
+                                    "maximum": 180,
+                                    "description": "Null: at least min"
+                                  },
+                                  "teams": {
+                                    "type": "string",
+                                    "enum": [
+                                      "every",
+                                      "team"
+                                    ],
+                                    "description": "Teams: every player within it, or the mean of their averages"
+                                  },
+                                  "minLegs": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 500,
+                                    "description": "Legs each player played in the 30 days"
+                                  },
+                                  "lock": {
+                                    "type": "boolean",
+                                    "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                                  }
+                                }
                               }
                             }
                           },
@@ -39920,16 +40183,50 @@
                               "closed",
                               "team",
                               "full",
+                              "not_eligible",
                               "board_needed",
                               "open"
                             ],
-                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                           },
                           "registrationClosesAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true,
                             "description": "Before a fixed start; null while an organizer starts it"
+                          },
+                          "eligibility": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "The caller against the average limit; null when the tournament has none",
+                            "required": [
+                              "eligible",
+                              "reason",
+                              "average"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "eligible": {
+                                "type": "boolean"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "nullable": true,
+                                "enum": [
+                                  "few_legs",
+                                  "no_average",
+                                  "below",
+                                  "above",
+                                  null
+                                ],
+                                "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                              },
+                              "average": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "The caller's 30-day average"
+                              }
+                            }
                           },
                           "friendsIn": {
                             "type": "array",
@@ -40178,6 +40475,161 @@
         }
       }
     },
+    "/api/tournaments/form": {
+      "get": {
+        "operationId": "getTournamentForm",
+        "summary": "Your X01 form over the last 30 days, the one an average limit checks (tournaments.enabled)",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "Your form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "average",
+                    "legs"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "average": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "X01 3-dart average over the last 30 days (one decimal); null without darts"
+                    },
+                    "legs": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "X01 legs played in the last 30 days"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tournaments/{id}": {
       "parameters": [
         {
@@ -40227,7 +40679,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -40308,7 +40761,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -40428,6 +40882,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -40461,16 +40962,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -40798,7 +41333,8 @@
                       "checkInMinutes",
                       "plannedFor",
                       "manualScoring",
-                      "noShowMinutes"
+                      "noShowMinutes",
+                      "avgLimit"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -40918,6 +41454,53 @@
                           null
                         ],
                         "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                      },
+                      "avgLimit": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                        "required": [
+                          "min",
+                          "max",
+                          "teams",
+                          "minLegs",
+                          "lock"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "Null: at most max"
+                          },
+                          "max": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "Null: at least min"
+                          },
+                          "teams": {
+                            "type": "string",
+                            "enum": [
+                              "every",
+                              "team"
+                            ],
+                            "description": "Teams: every player within it, or the mean of their averages"
+                          },
+                          "minLegs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500,
+                            "description": "Legs each player played in the 30 days"
+                          },
+                          "lock": {
+                            "type": "boolean",
+                            "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                          }
+                        }
                       }
                     }
                   }
@@ -40957,7 +41540,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -41038,7 +41622,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -41158,6 +41743,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -41191,16 +41823,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -41820,7 +42486,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -41901,7 +42568,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -42021,6 +42689,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -42054,16 +42769,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -42475,7 +43224,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -42556,7 +43306,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -42676,6 +43427,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -42709,16 +43507,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -43091,7 +43923,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -43172,7 +44005,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -43292,6 +44126,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -43325,16 +44206,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -43667,7 +44582,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -43748,7 +44664,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -43868,6 +44785,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -43901,16 +44865,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -47531,7 +48529,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -47612,7 +48611,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -47732,6 +48732,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -47765,16 +48812,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -48045,7 +49126,7 @@
             "description": "An invite link's tournament needs its code"
           }
         ],
-        "description": "Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).",
+        "description": "Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).",
         "tags": [
           "tournaments"
         ],
@@ -48080,7 +49161,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -48161,7 +49243,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -48281,6 +49364,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -48314,16 +49444,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -48645,7 +49809,8 @@
                     "registrationClosesAt",
                     "friendsIn",
                     "inviteCode",
-                    "checkedIn"
+                    "checkedIn",
+                    "eligibility"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -48726,7 +49891,8 @@
                         "checkInMinutes",
                         "plannedFor",
                         "manualScoring",
-                        "noShowMinutes"
+                        "noShowMinutes",
+                        "avgLimit"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -48846,6 +50012,53 @@
                             null
                           ],
                           "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
                         }
                       }
                     },
@@ -48879,16 +50092,50 @@
                         "closed",
                         "team",
                         "full",
+                        "not_eligible",
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
                       "format": "date-time",
                       "nullable": true,
                       "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
                     },
                     "friendsIn": {
                       "type": "array",
@@ -84976,10 +86223,11 @@
           "closed",
           "team",
           "full",
+          "not_eligible",
           "board_needed",
           "open"
         ],
-        "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+        "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
       },
       "TournamentOwner": {
         "type": "object",
@@ -84999,6 +86247,106 @@
           }
         }
       },
+      "AvgLimit": {
+        "type": "object",
+        "nullable": true,
+        "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+        "required": [
+          "min",
+          "max",
+          "teams",
+          "minLegs",
+          "lock"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "min": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 180,
+            "description": "Null: at most max"
+          },
+          "max": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 180,
+            "description": "Null: at least min"
+          },
+          "teams": {
+            "type": "string",
+            "enum": [
+              "every",
+              "team"
+            ],
+            "description": "Teams: every player within it, or the mean of their averages"
+          },
+          "minLegs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500,
+            "description": "Legs each player played in the 30 days"
+          },
+          "lock": {
+            "type": "boolean",
+            "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+          }
+        }
+      },
+      "TournamentForm": {
+        "type": "object",
+        "required": [
+          "average",
+          "legs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "average": {
+            "type": "number",
+            "nullable": true,
+            "description": "X01 3-dart average over the last 30 days (one decimal); null without darts"
+          },
+          "legs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "X01 legs played in the last 30 days"
+          }
+        }
+      },
+      "TournamentEligibility": {
+        "type": "object",
+        "nullable": true,
+        "description": "The caller against the average limit; null when the tournament has none",
+        "required": [
+          "eligible",
+          "reason",
+          "average"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "few_legs",
+              "no_average",
+              "below",
+              "above",
+              null
+            ],
+            "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+          },
+          "average": {
+            "type": "number",
+            "nullable": true,
+            "description": "The caller's 30-day average"
+          }
+        }
+      },
       "TournamentSummary": {
         "type": "object",
         "required": [
@@ -85015,7 +86363,9 @@
           "entries",
           "startsAt",
           "owner",
-          "registration"
+          "registration",
+          "avgLimit",
+          "eligibility"
         ],
         "additionalProperties": false,
         "properties": {
@@ -85055,10 +86405,11 @@
               "closed",
               "team",
               "full",
+              "not_eligible",
               "board_needed",
               "open"
             ],
-            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
           },
           "kind": {
             "type": "string",
@@ -85118,6 +86469,86 @@
             "format": "date-time",
             "nullable": true,
             "description": "Null: an organizer starts it"
+          },
+          "avgLimit": {
+            "type": "object",
+            "nullable": true,
+            "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+            "required": [
+              "min",
+              "max",
+              "teams",
+              "minLegs",
+              "lock"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "min": {
+                "type": "number",
+                "nullable": true,
+                "minimum": 0,
+                "maximum": 180,
+                "description": "Null: at most max"
+              },
+              "max": {
+                "type": "number",
+                "nullable": true,
+                "minimum": 0,
+                "maximum": 180,
+                "description": "Null: at least min"
+              },
+              "teams": {
+                "type": "string",
+                "enum": [
+                  "every",
+                  "team"
+                ],
+                "description": "Teams: every player within it, or the mean of their averages"
+              },
+              "minLegs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500,
+                "description": "Legs each player played in the 30 days"
+              },
+              "lock": {
+                "type": "boolean",
+                "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+              }
+            }
+          },
+          "eligibility": {
+            "type": "object",
+            "nullable": true,
+            "description": "The caller against the average limit; null when the tournament has none",
+            "required": [
+              "eligible",
+              "reason",
+              "average"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "eligible": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "few_legs",
+                  "no_average",
+                  "below",
+                  "above",
+                  null
+                ],
+                "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+              },
+              "average": {
+                "type": "number",
+                "nullable": true,
+                "description": "The caller's 30-day average"
+              }
+            }
           }
         }
       },
@@ -85133,7 +86564,8 @@
           "checkInMinutes",
           "plannedFor",
           "manualScoring",
-          "noShowMinutes"
+          "noShowMinutes",
+          "avgLimit"
         ],
         "additionalProperties": false,
         "properties": {
@@ -85253,6 +86685,53 @@
               null
             ],
             "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+          },
+          "avgLimit": {
+            "type": "object",
+            "nullable": true,
+            "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+            "required": [
+              "min",
+              "max",
+              "teams",
+              "minLegs",
+              "lock"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "min": {
+                "type": "number",
+                "nullable": true,
+                "minimum": 0,
+                "maximum": 180,
+                "description": "Null: at most max"
+              },
+              "max": {
+                "type": "number",
+                "nullable": true,
+                "minimum": 0,
+                "maximum": 180,
+                "description": "Null: at least min"
+              },
+              "teams": {
+                "type": "string",
+                "enum": [
+                  "every",
+                  "team"
+                ],
+                "description": "Teams: every player within it, or the mean of their averages"
+              },
+              "minLegs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500,
+                "description": "Legs each player played in the 30 days"
+              },
+              "lock": {
+                "type": "boolean",
+                "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+              }
+            }
           }
         }
       },
@@ -85343,7 +86822,8 @@
               "checkInMinutes",
               "plannedFor",
               "manualScoring",
-              "noShowMinutes"
+              "noShowMinutes",
+              "avgLimit"
             ],
             "additionalProperties": false,
             "properties": {
@@ -85463,6 +86943,53 @@
                   null
                 ],
                 "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+              },
+              "avgLimit": {
+                "type": "object",
+                "nullable": true,
+                "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                "required": [
+                  "min",
+                  "max",
+                  "teams",
+                  "minLegs",
+                  "lock"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at most max"
+                  },
+                  "max": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at least min"
+                  },
+                  "teams": {
+                    "type": "string",
+                    "enum": [
+                      "every",
+                      "team"
+                    ],
+                    "description": "Teams: every player within it, or the mean of their averages"
+                  },
+                  "minLegs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500,
+                    "description": "Legs each player played in the 30 days"
+                  },
+                  "lock": {
+                    "type": "boolean",
+                    "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
               }
             }
           }
@@ -85540,7 +87067,8 @@
               "checkInMinutes",
               "plannedFor",
               "manualScoring",
-              "noShowMinutes"
+              "noShowMinutes",
+              "avgLimit"
             ],
             "additionalProperties": false,
             "properties": {
@@ -85660,6 +87188,53 @@
                   null
                 ],
                 "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+              },
+              "avgLimit": {
+                "type": "object",
+                "nullable": true,
+                "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                "required": [
+                  "min",
+                  "max",
+                  "teams",
+                  "minLegs",
+                  "lock"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at most max"
+                  },
+                  "max": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at least min"
+                  },
+                  "teams": {
+                    "type": "string",
+                    "enum": [
+                      "every",
+                      "team"
+                    ],
+                    "description": "Teams: every player within it, or the mean of their averages"
+                  },
+                  "minLegs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500,
+                    "description": "Legs each player played in the 30 days"
+                  },
+                  "lock": {
+                    "type": "boolean",
+                    "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
               }
             }
           }
@@ -85734,7 +87309,8 @@
           "registrationClosesAt",
           "friendsIn",
           "inviteCode",
-          "checkedIn"
+          "checkedIn",
+          "eligibility"
         ],
         "additionalProperties": false,
         "properties": {
@@ -85815,7 +87391,8 @@
               "checkInMinutes",
               "plannedFor",
               "manualScoring",
-              "noShowMinutes"
+              "noShowMinutes",
+              "avgLimit"
             ],
             "additionalProperties": false,
             "properties": {
@@ -85935,6 +87512,53 @@
                   null
                 ],
                 "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+              },
+              "avgLimit": {
+                "type": "object",
+                "nullable": true,
+                "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                "required": [
+                  "min",
+                  "max",
+                  "teams",
+                  "minLegs",
+                  "lock"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at most max"
+                  },
+                  "max": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "Null: at least min"
+                  },
+                  "teams": {
+                    "type": "string",
+                    "enum": [
+                      "every",
+                      "team"
+                    ],
+                    "description": "Teams: every player within it, or the mean of their averages"
+                  },
+                  "minLegs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500,
+                    "description": "Legs each player played in the 30 days"
+                  },
+                  "lock": {
+                    "type": "boolean",
+                    "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
               }
             }
           },
@@ -85968,16 +87592,50 @@
               "closed",
               "team",
               "full",
+              "not_eligible",
               "board_needed",
               "open"
             ],
-            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, board_needed (online play needs a paired board unless manualScoring), open (may register)"
+            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
           },
           "registrationClosesAt": {
             "type": "string",
             "format": "date-time",
             "nullable": true,
             "description": "Before a fixed start; null while an organizer starts it"
+          },
+          "eligibility": {
+            "type": "object",
+            "nullable": true,
+            "description": "The caller against the average limit; null when the tournament has none",
+            "required": [
+              "eligible",
+              "reason",
+              "average"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "eligible": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "few_legs",
+                  "no_average",
+                  "below",
+                  "above",
+                  null
+                ],
+                "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+              },
+              "average": {
+                "type": "number",
+                "nullable": true,
+                "description": "The caller's 30-day average"
+              }
+            }
           },
           "friendsIn": {
             "type": "array",

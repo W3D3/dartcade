@@ -3,7 +3,14 @@ import { warn } from '../log.js'
 import type { Database } from '../db/schema.js'
 import { ownBoardSeats } from '../db/lobbies.js'
 import { matchRatings, type MatchRating } from '../db/ranked.js'
-import { moveMatch, moveTournament, type MatchMove, type TournamentMatchRow, type TournamentRow } from '../db/tournaments.js'
+import {
+  dropIneligibleEntries,
+  moveMatch,
+  moveTournament,
+  type MatchMove,
+  type TournamentMatchRow,
+  type TournamentRow,
+} from '../db/tournaments.js'
 import {
   deleteMatches,
   finishWithPlaces,
@@ -23,7 +30,7 @@ import {
 } from '../db/tournamentRun.js'
 import { games } from '../games/index.js'
 import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
-import type { TournamentCheckInMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
+import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { seedEntries, type MatchResult, type Seeding } from '../shared/tournaments/bracket.js'
 import {
   drawFor,
@@ -46,7 +53,7 @@ export type TournamentDeps = {
   /** The player has a /ws/me socket open (FriendsService.isOnline). */
   isOnline: (userId: string) => boolean
   /** LobbyHub.sendTournament. */
-  send: (userId: string, msg: TournamentCheckInMessage | TournamentMatchMessage) => void
+  send: (userId: string, msg: TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage) => void
   now?: () => number
   random?: () => number
   warn?: (message: string, details: unknown) => void
@@ -173,6 +180,9 @@ export class TournamentService implements GameEndedConsumer {
     if (now >= startAt) return this.begin(t)
     const checkIn = t.settings.checkInMinutes
     if (t.status === 'open' && checkIn !== null && now >= startAt - checkIn * 60_000) {
+      // An unlocked average limit is checked again: who no longer fits loses the spot. Before the
+      // move, so a restart in between checks again (dropping twice changes nothing)
+      await this.dropIneligible(t)
       if ((await moveTournament(this.deps.db, t.id, 'open_check_in')) === null) return
       for (const e of await listEntries(this.deps.db, t.id)) {
         if (e.status !== 'registered') continue
@@ -189,8 +199,24 @@ export class TournamentService implements GameEndedConsumer {
     }
   }
 
+  /** Withdraws the entries an unlocked average limit no longer lets in, and tells their players. */
+  private async dropIneligible(t: TournamentRow): Promise<void> {
+    for (const { userId, eligibility } of await dropIneligibleEntries(this.deps.db, t.id)) {
+      if (eligibility.reason === null) continue
+      this.deps.send(userId, {
+        type: 'tournament.dropped',
+        tournamentId: t.id,
+        tournamentName: t.name,
+        reason: eligibility.reason,
+        average: eligibility.average,
+      })
+    }
+  }
+
   // The start: who plays (after a check-in, only who checked in), seeded and drawn
   private async begin(t: TournamentRow): Promise<void> {
+    // Without a check-in window, the start is where an unlocked average limit is checked again
+    if (t.status === 'open') await this.dropIneligible(t)
     const entries = await listEntries(this.deps.db, t.id)
     const playing = entries.filter(e => e.status === 'checked_in' || (t.status === 'open' && e.status === 'registered'))
     const seeded = await this.seed(t, playing)

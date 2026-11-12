@@ -7,7 +7,7 @@ import { checkIn } from '../db/tournamentRun.js'
 import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
-import type { TournamentCheckInMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
+import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { insertTournament, insertUsers } from '../test/fixtures.js'
 import { TournamentService } from './service.js'
 
@@ -36,6 +36,7 @@ const settings = (over: object = {}) =>
     plannedFor: null,
     manualScoring: true,
     noShowMinutes: 10,
+    avgLimit: null,
     ...over,
   })
 
@@ -44,7 +45,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
   let close: () => Promise<void>
   let now: number
   let online: Set<string>
-  let sent: [string, TournamentCheckInMessage | TournamentMatchMessage][]
+  let sent: [string, TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage][]
   let engine: SessionEngine
   let service: TournamentService
   const players = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']
@@ -108,7 +109,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
   }
 
   async function register(tournamentId: string, userIds: string[]): Promise<void> {
-    for (const u of userIds) expect(await registerSolo(db, tournamentId, { id: u, name: u, hasBoard: false }, new Date(now))).toBe('open')
+    for (const u of userIds)
+      expect(await registerSolo(db, tournamentId, { id: u, name: u, hasBoard: false, eligible: true }, new Date(now))).toBe('open')
   }
 
   beforeAll(async () => {
@@ -200,6 +202,39 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
       .execute()
     expect(seats).toHaveLength(14)
     expect(seats.every(s => s.tournament_player_id !== null)).toBe(true)
+  })
+
+  it('checks an unlocked average limit again when check-in opens, and keeps every spot under a locked one', async () => {
+    // Nobody here averages 170: everyone is outside the limit by now
+    const avgLimit = { min: 170, max: null, teams: 'every', minLegs: 0 }
+    for (const [id, lock] of [
+      ['avg-open', false],
+      ['avg-locked', true],
+    ] as const) {
+      await insertTournament(db, {
+        id,
+        owner_user_id: 'org',
+        status: 'open',
+        max_entries: 4,
+        settings: settings({ registrationClosesMinutes: null, checkInMinutes: 2, avgLimit: { ...avgLimit, lock } }),
+      })
+      await register(id, ['p1', 'p2'])
+      sent = []
+      expect(await service.organizerStart(id)).toBe('started')
+      const statuses = await db.selectFrom('tournament_entries').select('status').where('tournament_id', '=', id).execute()
+      expect(statuses.map(e => e.status)).toEqual(lock ? ['registered', 'registered'] : ['withdrawn', 'withdrawn'])
+      expect(sent.filter(([, m]) => m.type === 'tournament.checkIn')).toHaveLength(lock ? 2 : 0)
+      // Who lost the spot is told why
+      const dropped = sent.flatMap(([u, m]) => (m.type === 'tournament.dropped' ? [[u, m.tournamentId] as const] : []))
+      expect(dropped).toEqual(
+        lock
+          ? []
+          : [
+              ['p1', id],
+              ['p2', id],
+            ],
+      )
+    }
   })
 
   it('drops who did not check in, gives a no-show the loss after the wait, and replays an aborted game', async () => {
