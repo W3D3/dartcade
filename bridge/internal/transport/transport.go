@@ -170,7 +170,7 @@ func (t *Transport) Send(evs []differ.Event) uint64 {
 	return seq
 }
 
-const (
+var (
 	heartbeatEvery = 20 * time.Second
 	deadAfter      = 45 * time.Second // no message from the backend for this long ends the connection
 )
