@@ -32,6 +32,7 @@
   import Tournaments from './routes/Tournaments.svelte'
   import TournamentsRoute from './routes/TournamentsRoute.svelte'
   import TournamentCreate from './routes/TournamentCreate.svelte'
+  import TournamentManage from './routes/TournamentManage.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
   import Achievements from './routes/Achievements.svelte'
@@ -161,9 +162,12 @@
     '/matchmaking/ranks': Ranks,
     // Before /tournaments/:tab?, which would read "join" as a tab
     '/tournaments/join/:code': Tournaments,
+    // Browse until claiming a spot gets its own page
+    '/tournaments/claim/:claim': Tournaments,
     // Before /tournaments/:tab?, which would take "new" for a tab
     '/tournaments/new': TournamentCreate,
     '/tournaments/:id/edit': TournamentCreate,
+    '/tournaments/:id/manage': TournamentManage,
     // One route (tab optional), like Customise; any other value is a tournament's id (TournamentsRoute)
     '/tournaments/:tab?': TournamentsRoute,
     '/progress': Progress,

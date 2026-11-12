@@ -2,7 +2,7 @@
   // Create a tournament (Tournament-Create), or edit one you organize (`#/tournaments/:id/edit`):
   // Basics, Game, Entry, Format, Schedule & rules, and a live Preview with the save buttons. Behind
   // tournaments.enabled; creating also needs tournaments.community.enabled (admins always may).
-  // Guests (#612) and the in-person participants (#614) come with their tickets.
+  // In person, the Participants and the paired boards. Guests (#612) come with their ticket.
   import { ChevronLeft } from '@lucide/svelte'
   import { querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -10,6 +10,8 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import AvgLimitSection from '$lib/components/tournaments/AvgLimitSection.svelte'
   import CreatePreview from '$lib/components/tournaments/CreatePreview.svelte'
+  import InPersonBoards from '$lib/components/tournaments/InPersonBoards.svelte'
+  import ParticipantsSection from '$lib/components/tournaments/ParticipantsSection.svelte'
   import FormSection from '$lib/components/tournaments/FormSection.svelte'
   import OrganizersField from '$lib/components/tournaments/OrganizersField.svelte'
   import OptionCards from '$lib/components/tournaments/OptionCards.svelte'
@@ -51,6 +53,7 @@
     fromTournament,
     loadTournament,
     matchLengthLine,
+    maxEntriesOf,
     previewOf,
     saveTournament,
     sizeChoices,
@@ -61,6 +64,7 @@
     type Tournament,
   } from '$lib/tournaments/create'
   import { addPicked, type OrganizerPick } from '$lib/tournaments/organizers'
+  import { draftProblems, emptyDraft, fromParticipants, loadParticipants, toBody } from '$lib/tournaments/participants'
   import { TOURNAMENT_TEXT } from '$shared/tournaments/setup'
 
   let { params = {} }: { params?: { id?: string } } = $props()
@@ -76,6 +80,7 @@
   let errors = $state<string[]>([])
   /** Organizers picked for a tournament that is not saved yet. */
   let organizers = $state<OrganizerPick[]>([])
+  let participants = $state(emptyDraft())
 
   $effect(() => {
     const id = params.id
@@ -84,6 +89,7 @@
     void loadTournament(id).then(t => {
       stored = t
       if (t) form = fromTournament(t, new Date())
+      if (t?.access === 'in_person' && t.role) void loadParticipants(t.id).then(p => p && (participants = fromParticipants(p, t.teamSize)))
     })
   })
 
@@ -94,7 +100,11 @@
   const inPerson = $derived(form.access === 'in_person')
   const startMode = $derived(startModeOf(form))
   const preview = $derived(previewOf(form))
-  const problems = $derived(formProblems(form, new Date()))
+  const perTeam = $derived(toInput(form).teamSize)
+  const problems = $derived([
+    ...formProblems(form, new Date()),
+    ...(inPerson ? draftProblems(participants, perTeam, maxEntriesOf(form)) : []),
+  ])
   const owner = $derived((editing ? stored?.owner?.name : $currentUser?.name) ?? 'you')
   const saved = $derived(new URLSearchParams($querystring ?? '').get('saved'))
 
@@ -111,7 +121,11 @@
 
   async function save(publish: boolean) {
     busy = true
-    const res = await saveTournament(toInput(form), { id: params.id, publish })
+    const res = await saveTournament(toInput(form), {
+      id: params.id,
+      publish,
+      participants: inPerson ? toBody(participants, perTeam) : undefined,
+    })
     if (!res.ok) errors = res.errors
     // Still busy while the picks are added: a second click would make a second tournament
     if (res.id && !params.id && organizers.length > 0) {
@@ -162,6 +176,8 @@
         <p class="text-body text-text-muted">
           {saved ? 'Saved. ' : ''}{statusLine}
           {#if locked}Someone registered, so only the start time and description can change.{/if}
+          {#if inPerson && stored}<a href={hrefs.tournamentManage(stored.id)} class="font-semibold text-accent">Open the organizer page</a
+            >{/if}
         </p>
       {/if}
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -326,11 +342,21 @@
                 >
               {/if}
             {/if}
+            {#if inPerson}
+              <ParticipantsSection
+                bind:draft={participants}
+                {perTeam}
+                max={maxEntriesOf(form)}
+                tournamentId={params.id}
+                disabled={!draft && stored?.status !== 'open'}
+                onkeep={(n: number) => set('playersPerTeam', PLAYERS_PER_TEAM.find(c => c.value === n)?.value ?? form.playersPerTeam)}
+              />
+            {/if}
           </FormSection>
 
           <AvgLimitSection n={4} {form} {locked} onchange={(v: CreateForm['avgLimit']) => set('avgLimit', v)} />
 
-          <FormSection n={5} title="Format">
+          <FormSection n={inPerson ? 4 : 5} title="Format">
             <OptionCards
               label="Format"
               options={FORMATS}
@@ -339,7 +365,7 @@
               onchange={(v: CreateForm['format']) => set('format', v)}
             />
             <div class="grid gap-4 md:grid-cols-2">
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-2" hidden={inPerson}>
                 <span id="tc-size" class="text-label font-semibold">{form.entry === 'teams' ? 'Teams' : 'Players'}</span>
                 <SegmentedControl
                   labelledby="tc-size"
@@ -390,7 +416,7 @@
             {/if}
           </FormSection>
 
-          <FormSection n={6} title="Schedule & rules">
+          <FormSection n={inPerson ? 5 : 6} title="Schedule & rules">
             {#if inPerson}
               <p class="rounded-md border border-line bg-surface-1 p-3.5 text-label text-text-muted">
                 You start it from <b class="text-text">Tournament mode</b> when everyone’s there. Open Tournament mode on every device you want
@@ -406,6 +432,7 @@
                   onchange={(v: string) => set('plannedFor', v ? `${v}T00:00` : '')}
                 />
               </div>
+              <InPersonBoards value={form.boardIds} onchange={(ids: string[] | null) => set('boardIds', ids)} />
             {:else}
               <div class="flex flex-col gap-2">
                 <span id="tc-start" class="text-label font-semibold">When does it start?</span>

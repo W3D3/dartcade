@@ -37,6 +37,10 @@ export const hrefs = {
   tournamentNew: () => at('/tournaments/new'),
   /** A tournament's live page: its bracket, players and rules; `code=` an invite link's, for someone without a spot. */
   tournament: (id: string, query?: string) => at(`/tournaments/${id}`, query),
+  /** A spot's claim link (in person). */
+  tournamentClaim: (code: string) => at(`/tournaments/claim/${code}`),
+  /** The organizer page of an in-person tournament (Tournament-Onsite). */
+  tournamentManage: (id: string) => at(`/tournaments/${id}/manage`),
   /** `saved`: say so above the form (after creating it, the page this one replaced). */
   tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
   ranks: () => at('/matchmaking/ranks'),

@@ -131,7 +131,9 @@
       {#if startable}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onstart}>Start now · open check-in</Button>
       {/if}
-      {#if t.registration === 'open'}
+      {#if t.access === 'in_person' && t.role}
+        <Button variant="accent" class="w-full" href={hrefs.tournamentManage(t.id)}>Manage</Button>
+      {:else if t.registration === 'open'}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onregister}>Register</Button>
       {:else if t.registration === 'registered'}
         <div class="flex w-full items-center gap-3">
