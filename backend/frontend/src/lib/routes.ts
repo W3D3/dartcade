@@ -32,6 +32,8 @@ export const hrefs = {
   friends: () => at('/friends'),
   matchmaking: () => at('/matchmaking'),
   tournaments: (tab?: TournamentsTab) => at(tab ? `/tournaments/${tab}` : '/tournaments'),
+  /** An invite link's landing: Browse with that tournament's Details open. */
+  tournamentJoin: (code: string) => at(`/tournaments/join/${code}`),
   ranks: () => at('/matchmaking/ranks'),
   progress: () => at('/progress'),
   rewards: (level?: number | string) => at(level === undefined ? '/progress/rewards' : `/progress/rewards/${level}`),
