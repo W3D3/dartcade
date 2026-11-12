@@ -175,7 +175,9 @@ func (c *Client) wsLoop(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		conn, _, err := websocket.Dial(ctx, c.boardURL+"/api/events", nil)
+		dialCtx, cancelDial := context.WithTimeout(ctx, dialTimeout)
+		conn, _, err := websocket.Dial(dialCtx, c.boardURL+"/api/events", nil)
+		cancelDial()
 		if err != nil {
 			log.Warn("BM WS connect failed", "err", err, "retry_in", delay)
 			select {
@@ -194,6 +196,9 @@ func (c *Client) wsLoop(ctx context.Context) {
 			c.emit(BMFrame{Kind: "bm_reconnect", GapMs: gapMs, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 		}
 		connectedAt := time.Now()
+		connCtx, stopWatch := context.WithCancel(ctx)
+		watched := make(chan struct{})
+		go func() { watch(connCtx, conn); close(watched) }()
 		for {
 			_, msg, err := conn.Read(ctx)
 			if err != nil {
@@ -203,6 +208,8 @@ func (c *Client) wsLoop(ctx context.Context) {
 			delay = backoff.Reconnect.Reset(delay, connectedAt)
 			c.emitRawWS(msg)
 		}
+		stopWatch()
+		<-watched
 		conn.Close(websocket.StatusNormalClosure, "")
 		disconnectedAt = time.Now()
 		c.emit(BMFrame{Kind: "bm_disconnect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
@@ -211,6 +218,28 @@ func (c *Client) wsLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(delay):
+		}
+	}
+}
+
+// watch pings the Board Manager until ctx ends, and closes conn (ending its read) when a ping
+// goes unanswered.
+func watch(ctx context.Context, conn *websocket.Conn) {
+	tick := time.NewTicker(pingEvery)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		pingCtx, cancel := context.WithTimeout(ctx, pingTimeout)
+		err := conn.Ping(pingCtx)
+		cancel()
+		if err != nil && ctx.Err() == nil {
+			log.Warn("Board Manager stopped answering, reconnecting", "err", err)
+			conn.CloseNow()
+			return
 		}
 	}
 }
