@@ -4,8 +4,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"dartcade/bridge/internal/backoff"
+
+	"github.com/coder/websocket"
 )
 
 // Frames is closed once Start returns, so readers see the end instead of blocking, and
@@ -111,5 +116,80 @@ func TestPollDroppedIfAWSFrameArrivedMeanwhile(t *testing.T) {
 	<-done
 	if f := <-c.Frames(); f.Kind != "poll" {
 		t.Fatalf("frame %q, want poll when no WS frame arrived", f.Kind)
+	}
+}
+
+// A Board Manager that stops answering without closing its socket (a hung process, or the
+// network to it gone) is noticed by the ping and reported down, a handshake it never answers
+// gives up, and once it answers again the bridge reconnects (the board's game goes on).
+func TestWSLoopRecoversFromAFrozenBoardManager(t *testing.T) {
+	defer func(p backoff.Policy, every, timeout, dial time.Duration) {
+		backoff.Reconnect, pingEvery, pingTimeout, dialTimeout = p, every, timeout, dial
+	}(backoff.Reconnect, pingEvery, pingTimeout, dialTimeout)
+	backoff.Reconnect.Max = 100 * time.Millisecond
+	pingEvery, pingTimeout, dialTimeout = 100*time.Millisecond, 200*time.Millisecond, 300*time.Millisecond
+
+	const (
+		hangAfterAccept = iota
+		hangHandshake
+		answer
+	)
+	var mode atomic.Int32
+	gone := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch mode.Load() {
+		case hangHandshake:
+			<-gone
+			return
+		case hangAfterAccept:
+			if _, err := websocket.Accept(w, r, nil); err == nil {
+				<-gone // never reads, so never answers a ping
+			}
+			return
+		}
+		c, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+		go func() {
+			for {
+				if _, _, err := c.Read(r.Context()); err != nil {
+					return
+				}
+			}
+		}()
+		for c.Write(r.Context(), websocket.MessageText, []byte(`{"type":"state","data":{"throws":[]}}`)) == nil {
+			time.Sleep(20 * time.Millisecond)
+		}
+	}))
+	defer srv.Close()
+	defer close(gone) // before Close, which waits for the hung handlers
+	c := NewClient(srv.URL)
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	defer func() { cancel(); <-stopped }()
+	go func() { c.wsLoop(ctx); close(stopped) }()
+
+	waitFrame(t, c, "bm_connect")
+	mode.Store(hangHandshake)
+	waitFrame(t, c, "bm_disconnect")
+	time.Sleep(2 * dialTimeout) // a dial or two hangs and gives up
+	mode.Store(answer)
+	waitFrame(t, c, "bm_reconnect")
+	waitFrame(t, c, "ws")
+}
+
+func waitFrame(t *testing.T, c *Client, kind string) {
+	t.Helper()
+	timeout := time.After(3 * time.Second)
+	for {
+		select {
+		case f := <-c.Frames():
+			if f.Kind == kind {
+				return
+			}
+		case <-timeout:
+			t.Fatalf("no %s frame", kind)
+		}
 	}
 }

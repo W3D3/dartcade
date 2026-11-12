@@ -24,6 +24,14 @@ const httpTimeout = 10 * time.Second
 
 var httpClient = &http.Client{Timeout: httpTimeout}
 
+// The events socket's watchdog: a Board Manager that stops answering without closing the socket
+// (a hung process, the network to it gone) would otherwise leave the bridge waiting on it for good.
+var (
+	dialTimeout = httpTimeout
+	pingEvery   = 10 * time.Second
+	pingTimeout = 5 * time.Second
+)
+
 // Client connects to Board Manager, emits BMFrames, and provides HTTP command methods.
 type Client struct {
 	boardURL  string
