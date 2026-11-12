@@ -13,11 +13,18 @@ export type Seeding =
   /** The organizer's order, seed 1 first: every entry exactly once. */
   | { readonly by: 'manual'; readonly order: readonly string[] }
 
+/** Where a side's entry comes from once the draw is made. */
+export type Source =
+  /** The winner of a match, or its loser: a double elimination's drop into the lower bracket. */
+  | { readonly from: 'winner' | 'loser'; readonly match: string }
+  /** A group's place (1 = the group's winner), filled by {@link fillKnockout}. */
+  | { readonly from: 'group'; readonly group: number; readonly place: number }
+
 export interface Side {
-  /** The entry playing here: null until the source match is decided, or for a bye. */
+  /** The entry playing here: null until its source is decided, or nobody (a bye). */
   readonly entry: string | null
-  /** The match whose winner fills this side; null when the draw placed the entry directly. */
-  readonly source: string | null
+  /** Null when the draw placed the entry directly. */
+  readonly source: Source | null
 }
 
 /** How a match was decided: what a caller reports to {@link advance}. */
@@ -28,9 +35,18 @@ export type MatchResult =
 /** A bye is decided by the draw: the side with an entry goes through without playing. */
 export type Result = MatchResult | { readonly outcome: 'bye'; readonly winner: 0 | 1 }
 
+/** `main` is the knockout (or a whole round robin); `lower` and `final` belong to a double elimination. */
+export type Bracket = 'main' | 'lower' | 'final' | 'group'
+
 export interface Match {
-  /** Stable within a bracket, e.g. `R2M3`: other matches' sides refer to it as `source`. */
+  /**
+   * Unique within the draw, e.g. `R2M3`, `L4M1` (lower bracket), `GF1`/`GF2` (grand final and
+   * its reset), `G2R1M1` (group 2): other matches' sides refer to it as their source.
+   */
   readonly key: string
+  readonly bracket: Bracket
+  /** 1-based; set for a group match only. */
+  readonly group: number | null
   /** 1-based. */
   readonly round: number
   /** 1-based position within the round, top of the bracket first. */
@@ -68,7 +84,33 @@ export function seedEntries(entries: readonly Seedable[], seeding: Seeding): str
   }
 }
 
-const matchKey = (round: number, index: number) => `R${round}M${index}`
+function matchKey(bracket: Bracket, group: number | null, round: number, index: number): string {
+  switch (bracket) {
+    case 'main':
+      return `R${round}M${index}`
+    case 'lower':
+      return `L${round}M${index}`
+    case 'final':
+      return `GF${round}`
+    case 'group':
+      return `G${group}R${round}M${index}`
+  }
+}
+
+const winnerOf = (bracket: Bracket, round: number, index: number): Source => ({
+  from: 'winner',
+  match: matchKey(bracket, null, round, index),
+})
+const loserOf = (bracket: Bracket, round: number, index: number): Source => ({
+  from: 'loser',
+  match: matchKey(bracket, null, round, index),
+})
+const drawn = (entry: string | null): Side => ({ entry, source: null })
+const fed = (source: Source): Side => ({ entry: null, source })
+
+function match(bracket: Bracket, group: number | null, round: number, index: number, firstTo: number, sides: readonly [Side, Side]): Match {
+  return { key: matchKey(bracket, group, round, index), bracket, group, round, index, firstTo, sides, result: null }
+}
 
 /**
  * Seed numbers in bracket order, two per first-round match, so seeds 1 and 2 can only
@@ -83,11 +125,35 @@ function bracketOrder(size: number): number[] {
   return order
 }
 
+/** The first round of a knockout for entries in seed order: byes (null) against the top seeds. */
+function firstRound<T>(seeded: readonly T[]): (readonly [T | null, T | null])[] {
+  const order = bracketOrder(2 ** Math.ceil(Math.log2(seeded.length)))
+  return Array.from({ length: order.length / 2 }, (_, i) => [seeded[order[2 * i] - 1] ?? null, seeded[order[2 * i + 1] - 1] ?? null])
+}
+
 function firstToFor(round: number, rounds: number, length: MatchLength): number {
   const fromEnd = rounds - round
   if (length.final && (fromEnd === 0 || (fromEnd === 1 && length.final.semis))) return length.final.firstTo
   return length.firstTo
 }
+
+/** A knockout from its first round: every later match takes the winners of the two before it. */
+function knockout(round1: readonly (readonly [Side, Side])[], length: MatchLength): Match[] {
+  const rounds = Math.log2(round1.length) + 1
+  const matches: Match[] = []
+  for (let round = 1; round <= rounds; round++) {
+    for (let index = 1; index <= 2 ** (rounds - round); index++) {
+      const sides =
+        round === 1
+          ? round1[index - 1]
+          : ([fed(winnerOf('main', round - 1, 2 * index - 1)), fed(winnerOf('main', round - 1, 2 * index))] as const)
+      matches.push(match('main', null, round, index, firstToFor(round, rounds, length), sides))
+    }
+  }
+  return matches
+}
+
+const drawnRound = (seeded: readonly string[]) => firstRound(seeded).map(([a, b]) => [drawn(a), drawn(b)] as const)
 
 /**
  * The single-elimination draw for entries in seed order. A field that isn't a power of two
@@ -96,28 +162,47 @@ function firstToFor(round: number, rounds: number, length: MatchLength): number 
  */
 export function singleElimination(seeded: readonly string[], length: MatchLength): Match[] {
   if (seeded.length < 2) throw new Error('a bracket needs at least two entries')
-  const rounds = Math.ceil(Math.log2(seeded.length))
-  const order = bracketOrder(2 ** rounds)
-  let matches: Match[] = []
-  for (let round = 1; round <= rounds; round++) {
-    const count = 2 ** (rounds - round)
+  return settle(knockout(drawnRound(seeded), length))
+}
+
+/**
+ * The double-elimination draw: the winners' bracket is the single-elimination draw (bracket
+ * `main`), each of its losers drops into the `lower` bracket, and the two brackets' winners meet
+ * in the grand final `GF1`. Odd lower rounds pair the lower bracket's survivors; even ones bring
+ * in the next winners' round's losers, reversed or half-swapped so a dropped entry doesn't meet
+ * the side of the bracket it just came from. If the lower bracket's winner takes `GF1`, the reset
+ * `GF2` decides it; otherwise `GF2` leaves the draw. A longer final is the grand final's length,
+ * and with `semis` the length of the winners' and lower brackets' finals too.
+ */
+export function doubleElimination(seeded: readonly string[], length: MatchLength): Match[] {
+  if (seeded.length < 3) throw new Error('a double elimination needs at least three entries')
+  const longer = length.final?.semis ? length.final.firstTo : length.firstTo
+  const upper = knockout(drawnRound(seeded), { firstTo: length.firstTo, final: { firstTo: longer, semis: false } })
+  const upperRounds = upper[upper.length - 1].round
+  const lowerRounds = 2 * (upperRounds - 1)
+  const lower: Match[] = []
+  for (let round = 1; round <= lowerRounds; round++) {
+    // Rounds 1 and 2 have a quarter of the field's slots, then every second round halves.
+    const count = 2 ** (upperRounds - 1 - Math.ceil(round / 2))
     for (let index = 1; index <= count; index++) {
-      const drawn = (k: 0 | 1): Side => ({ entry: seeded[order[2 * index - 2 + k] - 1] ?? null, source: null })
-      const sides: [Side, Side] =
-        round === 1
-          ? [drawn(0), drawn(1)]
-          : [
-              { entry: null, source: matchKey(round - 1, 2 * index - 1) },
-              { entry: null, source: matchKey(round - 1, 2 * index) },
-            ]
-      matches.push({ key: matchKey(round, index), round, index, firstTo: firstToFor(round, rounds, length), sides, result: null })
+      let sides: readonly [Side, Side]
+      if (round === 1) {
+        sides = [fed(loserOf('main', 1, 2 * index - 1)), fed(loserOf('main', 1, 2 * index))]
+      } else if (round % 2 === 1) {
+        sides = [fed(winnerOf('lower', round - 1, 2 * index - 1)), fed(winnerOf('lower', round - 1, 2 * index))]
+      } else {
+        const drop = round / 2
+        const from = drop % 2 === 1 ? count + 1 - index : ((index - 1 + (count >> 1)) % count) + 1
+        sides = [fed(winnerOf('lower', round - 1, index)), fed(loserOf('main', drop + 1, from))]
+      }
+      lower.push(match('lower', null, round, index, round === lowerRounds ? longer : length.firstTo, sides))
     }
   }
-  // A field over half the bracket never puts two byes in one match.
-  for (const m of matches.filter(m => m.round === 1 && m.sides.some(s => s.entry === null))) {
-    matches = decide(matches, m, { outcome: 'bye', winner: m.sides[0].entry === null ? 1 : 0 })
-  }
-  return matches
+  const finalTo = length.final?.firstTo ?? length.firstTo
+  const final = match('final', null, 1, 1, finalTo, [fed(winnerOf('main', upperRounds, 1)), fed(winnerOf('lower', lowerRounds, 1))])
+  // The winners' bracket's champion on side 0 again, now with a loss.
+  const reset = match('final', null, 2, 1, finalTo, [fed(loserOf('final', 1, 1)), fed(winnerOf('final', 1, 1))])
+  return settle([...upper, ...lower, final, reset])
 }
 
 /**
@@ -125,45 +210,144 @@ export function singleElimination(seeded: readonly string[], length: MatchLength
  * round, and with an odd field one entry sits each round out.
  */
 export function roundRobin(seeded: readonly string[], firstTo: number): Match[] {
+  return circle(seeded, firstTo, null)
+}
+
+function circle(seeded: readonly string[], firstTo: number, group: number | null): Match[] {
   if (seeded.length < 2) throw new Error('a round robin needs at least two entries')
-  let circle: (string | null)[] = seeded.length % 2 === 0 ? [...seeded] : [...seeded, null]
-  const n = circle.length
+  let ring: (string | null)[] = seeded.length % 2 === 0 ? [...seeded] : [...seeded, null]
+  const n = ring.length
   const matches: Match[] = []
   for (let round = 1; round < n; round++) {
     let index = 0
     for (let i = 0; i < n / 2; i++) {
-      const a = circle[i]
-      const b = circle[n - 1 - i]
+      const a = ring[i]
+      const b = ring[n - 1 - i]
       if (a === null || b === null) continue
       index++
-      matches.push({
-        key: matchKey(round, index),
-        round,
-        index,
-        firstTo,
-        sides: [
-          { entry: a, source: null },
-          { entry: b, source: null },
-        ],
-        result: null,
-      })
+      matches.push(match(group === null ? 'main' : 'group', group, round, index, firstTo, [drawn(a), drawn(b)]))
     }
-    circle = [circle[0], circle[n - 1], ...circle.slice(1, n - 1)]
+    ring = [ring[0], ring[n - 1], ...ring.slice(1, n - 1)]
   }
   return matches
 }
 
-function decide(matches: readonly Match[], decided: Match, result: Result): Match[] {
-  const winner = decided.sides[result.winner].entry
-  const fill = (s: Side): Side => (s.source === decided.key ? { ...s, entry: winner } : s)
-  return matches.map(m => {
-    if (m.key === decided.key) return { ...m, result }
-    if (!m.sides.some(s => s.source === decided.key)) return m
-    return { ...m, sides: [fill(m.sides[0]), fill(m.sides[1])] }
-  })
+export interface GroupStage {
+  /** Entries per group; the field is split into as few groups as fit, so some may have one less. */
+  readonly size: 3 | 4 | 5
+  /** How many of each group go through to the knockout. */
+  readonly through: 1 | 2
 }
 
-/** Records a match's result and moves its winner into the match its `source` feeds. */
+/** Each group's entries in seed order, snake-seeded: 1 2 3 4 | 8 7 6 5 | 9 10 11 12 … across the groups. */
+export function snakeGroups(seeded: readonly string[], size: number): string[][] {
+  const count = Math.ceil(seeded.length / size)
+  const groups: string[][] = Array.from({ length: count }, () => [])
+  seeded.forEach((entry, i) => {
+    const at = i % count
+    groups[Math.floor(i / count) % 2 === 0 ? at : count - 1 - at].push(entry)
+  })
+  return groups
+}
+
+interface Place {
+  readonly group: number
+  readonly place: number
+}
+
+/**
+ * Groups + knockout: a round robin in each of the {@link snakeGroups} (bracket `group`), then a
+ * single-elimination knockout (`main`) of the top `through` of every group, which waits for
+ * {@link fillKnockout}. Group winners are the knockout's top seeds, so any byes are theirs, and
+ * runners-up are placed so two entries of one group meet as late as the bracket allows. The
+ * longer final applies to the knockout only.
+ */
+export function groupsKnockout(seeded: readonly string[], stage: GroupStage, length: MatchLength): Match[] {
+  const groups = snakeGroups(seeded, stage.size)
+  if (groups.length * stage.through < 2) throw new Error('the knockout needs at least two entries')
+  if (groups.some(g => g.length <= stage.through)) throw new Error('every group needs more entries than go through')
+  const side = (p: Place | null): Side => (p ? fed({ from: 'group', ...p }) : drawn(null))
+  const round1 = firstRound(knockoutSeeds(groups.length, stage.through)).map(([a, b]) => [side(a), side(b)] as const)
+  return settle([...groups.flatMap((g, i) => circle(g, length.firstTo, i + 1)), ...knockout(round1, length)])
+}
+
+/**
+ * The knockout's seeds: the group winners by group, then the runners-up in group order rotated
+ * by the shift that keeps every runner-up away from its own group's winner the longest.
+ */
+function knockoutSeeds(groups: number, through: 1 | 2): Place[] {
+  const winners = Array.from({ length: groups }, (_, i) => ({ group: i + 1, place: 1 }))
+  if (through === 1) return winners
+  const order = bracketOrder(2 ** Math.ceil(Math.log2(2 * groups)))
+  const slot = (seed: number) => order.indexOf(seed)
+  // Two slots share a match first in the round of their highest differing bit.
+  const meet = (a: number, b: number) => Math.floor(Math.log2(slot(a) ^ slot(b))) + 1
+  let best: Place[] = []
+  let latest = 0
+  for (let shift = 0; shift < groups; shift++) {
+    const runnersUp = winners.map((_, i) => ({ group: ((i + shift) % groups) + 1, place: 2 }))
+    const earliest = Math.min(...runnersUp.map((r, i) => meet(r.group, groups + i + 1)))
+    if (earliest > latest) {
+      best = [...winners, ...runnersUp]
+      latest = earliest
+    }
+  }
+  return best
+}
+
+const isDecided = (matches: readonly Match[], source: Source | null) =>
+  source === null || (source.from !== 'group' && matches.some(m => m.key === source.match && m.result))
+
+/** Nobody will play here: a bye in the draw, or a decided source with no entry for this side. */
+const isEmpty = (matches: readonly Match[], side: Side) => side.entry === null && isDecided(matches, side.source)
+
+function decide(matches: readonly Match[], decided: Match, result: Result): Match[] {
+  const moving = { winner: decided.sides[result.winner].entry, loser: decided.sides[1 - result.winner].entry }
+  const fill = (s: Side): Side =>
+    s.source && s.source.from !== 'group' && s.source.match === decided.key ? { ...s, entry: moving[s.source.from] } : s
+  const next = matches.map(m => (m.key === decided.key ? { ...m, result } : { ...m, sides: [fill(m.sides[0]), fill(m.sides[1])] as const }))
+  // The winners' bracket's champion takes the grand final at the first go: no reset.
+  const reset = decided.bracket === 'final' && decided.round === 1 && result.winner === 0
+  return settle(reset ? next.filter(m => m.key !== matchKey('final', null, 2, 1)) : next)
+}
+
+/**
+ * Decides as `bye` every match with nobody on a side and its other side known. With nobody on
+ * either side, the bye moves nobody on, which can empty a later match in turn.
+ */
+function settle(matches: readonly Match[]): Match[] {
+  const bye = matches.find(
+    m => !m.result && m.sides.some(s => isEmpty(matches, s)) && m.sides.every(s => s.entry !== null || isEmpty(matches, s)),
+  )
+  if (!bye) return [...matches]
+  return decide(matches, bye, { outcome: 'bye', winner: bye.sides[0].entry === null ? 1 : 0 })
+}
+
+/**
+ * Once every group match is decided, puts each group's places into the knockout, ranked by
+ * {@link standings} with `averages` for the last tie-break; `groups` is {@link snakeGroups}' split.
+ * Until then the knockout stays waiting, and a second call changes nothing.
+ */
+export function fillKnockout(
+  matches: readonly Match[],
+  groups: readonly (readonly string[])[],
+  averages: ReadonlyMap<string, number> = new Map(),
+): Match[] {
+  const stage = matches.filter(m => m.bracket === 'group')
+  if (stage.some(m => !m.result)) return [...matches]
+  const tables = groups.map((entries, i) =>
+    standings(
+      stage.filter(m => m.group === i + 1),
+      entries,
+      averages,
+    ),
+  )
+  const fill = (s: Side): Side =>
+    s.source?.from === 'group' && s.entry === null ? { ...s, entry: tables[s.source.group - 1][s.source.place - 1].entry } : s
+  return settle(matches.map(m => (m.result ? m : { ...m, sides: [fill(m.sides[0]), fill(m.sides[1])] as const })))
+}
+
+/** Records a match's result and moves its entries on: the winner, and in a double elimination the loser. */
 export function advance(matches: readonly Match[], key: string, result: MatchResult): Match[] {
   const m = matches.find(x => x.key === key)
   if (!m) throw new Error(`no match ${key}`)

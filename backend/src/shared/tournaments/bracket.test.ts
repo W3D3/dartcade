@@ -1,17 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { advance, roundName, roundRobin, seedEntries, singleElimination, standings, type Match } from './bracket.js'
+import { seededRng } from '../rng.js'
+import {
+  advance,
+  doubleElimination,
+  fillKnockout,
+  groupsKnockout,
+  roundName,
+  roundRobin,
+  seedEntries,
+  singleElimination,
+  snakeGroups,
+  standings,
+  type Match,
+  type Side,
+} from './bracket.js'
 
 const field = (n: number) => Array.from({ length: n }, (_, i) => `e${i + 1}`)
 const seedOf = (entry: string) => Number(entry.slice(1))
 
-/** Plays every open match until none is left; the better seed wins first to `firstTo`. */
-function playOut(start: Match[]): Match[] {
+const betterSeed = (m: Match): 0 | 1 => (seedOf(m.sides[0].entry!) < seedOf(m.sides[1].entry!) ? 0 : 1)
+
+/** Plays every open match in draw order until none is left; `pick` names the winner, first to `firstTo`. */
+function playOut(start: Match[], pick: (m: Match) => 0 | 1 = betterSeed): Match[] {
   let matches = start
   for (;;) {
     const open = matches.find(m => !m.result && m.sides.every(s => s.entry !== null))
     if (!open) return matches
-    const [a, b] = open.sides.map(s => seedOf(s.entry!))
-    const winner = a < b ? 0 : 1
+    const winner = pick(open)
     const legs: [number, number] = winner === 0 ? [open.firstTo, 0] : [0, open.firstTo]
     matches = advance(matches, open.key, { outcome: 'played', winner, legs })
   }
@@ -83,7 +98,10 @@ describe('singleElimination', () => {
     expect(drawn.sort()).toEqual(field(n).sort())
     // Later rounds are filled only through their sources.
     for (const m of draw.filter(m => m.round > 1)) {
-      expect(m.sides.map(s => s.source)).toEqual([`R${m.round - 1}M${2 * m.index - 1}`, `R${m.round - 1}M${2 * m.index}`])
+      expect(m.sides.map(s => s.source)).toEqual([
+        { from: 'winner', match: `R${m.round - 1}M${2 * m.index - 1}` },
+        { from: 'winner', match: `R${m.round - 1}M${2 * m.index}` },
+      ])
     }
 
     const final = playOut(draw)
@@ -102,8 +120,9 @@ describe('singleElimination', () => {
     const through = byes.map(m => m.sides[m.result!.winner].entry!)
     expect(through.map(seedOf).sort((a, b) => a - b)).toEqual(Array.from({ length: size - n }, (_, i) => i + 1))
     for (const bye of byes) {
-      const next = draw.find(m => m.sides.some(s => s.source === bye.key))!
-      expect(next.sides.find(s => s.source === bye.key)!.entry).toBe(bye.sides[bye.result!.winner].entry)
+      const fromBye = (s: Side) => s.source?.from === 'winner' && s.source.match === bye.key
+      const next = draw.find(m => m.sides.some(fromBye))!
+      expect(next.sides.find(fromBye)!.entry).toBe(bye.sides[bye.result!.winner].entry)
     }
     expect(draw.filter(m => m.round === 1 && !m.result)).toHaveLength(n - size / 2)
   })
@@ -191,6 +210,8 @@ describe('standings', () => {
   let n = 0
   const match = (a: string, b: string, legs: [number, number]): Match => ({
     key: `M${++n}`,
+    bracket: 'main',
+    group: null,
     round: 1,
     index: n,
     firstTo: 3,
@@ -291,5 +312,250 @@ describe('roundName', () => {
       { name: 'Final', short: 'Final' },
     ])
     expect(roundName(1, 1).name).toBe('Final')
+  })
+})
+
+const get = (matches: readonly Match[], key: string) => matches.find(m => m.key === key)!
+const sources = (m: Match) => m.sides.map(s => s.source)
+const winnerOf = (match: string) => ({ from: 'winner', match })
+const loserOf = (match: string) => ({ from: 'loser', match })
+const winner = (m: Match) => m.sides[m.result!.winner].entry
+const loser = (m: Match) => m.sides[1 - m.result!.winner].entry
+
+/** Every played match in the order it was played: advance keeps the draw's order, so replay it. */
+function playLog(start: Match[], pick: (m: Match) => 0 | 1): Match[] {
+  const log: Match[] = []
+  playOut(start, m => {
+    const w = pick(m)
+    log.push({ ...m, result: { outcome: 'walkover', winner: w } })
+    return w
+  })
+  return log
+}
+
+describe('doubleElimination', () => {
+  it('drops the losers of eight entries into the lower bracket and meets in the grand final', () => {
+    const draw = doubleElimination(field(8), { firstTo: 2 })
+    expect(draw.filter(m => m.bracket === 'main').map(m => m.key)).toEqual(['R1M1', 'R1M2', 'R1M3', 'R1M4', 'R2M1', 'R2M2', 'R3M1'])
+    const lower = Object.fromEntries(draw.filter(m => m.bracket === 'lower').map(m => [m.key, sources(m)]))
+    expect(lower).toEqual({
+      L1M1: [loserOf('R1M1'), loserOf('R1M2')],
+      L1M2: [loserOf('R1M3'), loserOf('R1M4')],
+      // Reversed: the loser of the top half's semi-final meets the bottom half's survivor.
+      L2M1: [winnerOf('L1M1'), loserOf('R2M2')],
+      L2M2: [winnerOf('L1M2'), loserOf('R2M1')],
+      L3M1: [winnerOf('L2M1'), winnerOf('L2M2')],
+      L4M1: [winnerOf('L3M1'), loserOf('R3M1')],
+    })
+    expect(sources(get(draw, 'GF1'))).toEqual([winnerOf('R3M1'), winnerOf('L4M1')])
+    expect(sources(get(draw, 'GF2'))).toEqual([loserOf('GF1'), winnerOf('GF1')])
+    expect(draw.every(m => m.result === null && m.group === null)).toBe(true)
+  })
+
+  it('sends every winners-bracket loser of sixteen entries down once, and every lower winner on once', () => {
+    const draw = doubleElimination(field(16), { firstTo: 2 })
+    const fed = draw.flatMap(m => m.sides.flatMap(s => (s.source?.from === 'group' || !s.source ? [] : [s.source])))
+    const count = (from: string, match: string) => fed.filter(s => s.from === from && s.match === match).length
+    const lower = draw.filter(m => m.bracket === 'lower')
+    expect(lower.map(m => m.round)).toEqual([1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 6])
+    for (const m of draw.filter(m => m.bracket === 'main')) {
+      expect(count('loser', m.key)).toBe(1)
+      expect(lower.some(l => l.sides.some(s => s.source?.from === 'loser' && s.source.match === m.key))).toBe(true)
+    }
+    for (const m of lower) expect(count('winner', m.key)).toBe(1)
+    // Even lower rounds take the next winners' round's losers, the whole round once.
+    for (const [round, from] of [
+      [2, 2],
+      [4, 3],
+      [6, 4],
+    ]) {
+      const dropped = lower
+        .filter(m => m.round === round)
+        .map(m => m.sides[1].source)
+        .map(s => (s?.from === 'loser' ? s.match : ''))
+      expect(dropped.sort()).toEqual(draw.filter(m => m.bracket === 'main' && m.round === from).map(m => m.key))
+    }
+  })
+
+  it.each([5, 8, 13, 16, 32])('lets every one of %i entries lose twice before it is out, and no more', n => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const rng = seededRng(seed)
+      const log = playLog(doubleElimination(field(n), { firstTo: 1 }), () => (rng() < 0.5 ? 0 : 1))
+      const losses = new Map<string, number>()
+      for (const m of log) {
+        for (const s of m.sides) expect(losses.get(s.entry!) ?? 0).toBeLessThan(2)
+        losses.set(loser(m)!, (losses.get(loser(m)!) ?? 0) + 1)
+      }
+      const champion = winner(log[log.length - 1])!
+      expect(losses.get(champion) ?? 0).toBeLessThan(2)
+      expect(
+        field(n)
+          .filter(e => e !== champion)
+          .every(e => losses.get(e) === 2),
+      ).toBe(true)
+    }
+  })
+
+  it('ends after the grand final when the winners-bracket champion takes it', () => {
+    const draw = playOut(doubleElimination(field(8), { firstTo: 1 }))
+    expect(draw.some(m => m.key === 'GF2')).toBe(false)
+    expect(get(draw, 'GF1').sides.map(s => s.entry)).toEqual(['e1', 'e2'])
+    expect(winner(get(draw, 'GF1'))).toBe('e1')
+    expect(draw.every(m => m.result)).toBe(true)
+  })
+
+  it('plays the reset when the lower-bracket champion takes the grand final', () => {
+    const draw = playOut(doubleElimination(field(8), { firstTo: 1 }), m => (m.key === 'GF1' ? 1 : betterSeed(m)))
+    expect(get(draw, 'GF2').sides.map(s => s.entry)).toEqual(['e1', 'e2'])
+    expect(draw.every(m => m.result)).toBe(true)
+  })
+
+  it('gives byes to the top seeds and lets nobody stand in the lower bracket', () => {
+    const draw = doubleElimination(field(5), { firstTo: 1 })
+    expect(draw.filter(m => m.bracket === 'main' && m.result?.outcome === 'bye').map(winner)).toEqual(['e1', 'e2', 'e3'])
+    // Both of its feeders were byes: nobody goes through, and the next match is a bye too.
+    expect(get(draw, 'L1M2').result?.outcome).toBe('bye')
+    expect(winner(get(draw, 'L1M2'))).toBeNull()
+    expect(playOut(draw).every(m => m.result)).toBe(true)
+  })
+
+  it('makes the grand final longer, and with semis the two brackets’ finals', () => {
+    const lengths = (draw: Match[]) => Object.fromEntries(draw.filter(m => m.firstTo !== 2).map(m => [m.key, m.firstTo]))
+    expect(lengths(doubleElimination(field(8), { firstTo: 2, final: { firstTo: 5, semis: false } }))).toEqual({ GF1: 5, GF2: 5 })
+    expect(lengths(doubleElimination(field(8), { firstTo: 2, final: { firstTo: 5, semis: true } }))).toEqual({
+      R3M1: 5,
+      L4M1: 5,
+      GF1: 5,
+      GF2: 5,
+    })
+  })
+
+  it('needs three entries', () => {
+    expect(() => doubleElimination(field(2), { firstTo: 1 })).toThrow()
+  })
+})
+
+describe('groupsKnockout', () => {
+  /** Plays the groups (better seed wins), fills the knockout, then plays it. */
+  const finish = (draw: Match[], groups: string[][]) => playOut(fillKnockout(playOut(draw), groups))
+  const knockout = (draw: Match[]) => draw.filter(m => m.bracket === 'main')
+
+  it('snake-seeds the groups', () => {
+    expect(snakeGroups(field(16), 4)).toEqual([
+      ['e1', 'e8', 'e9', 'e16'],
+      ['e2', 'e7', 'e10', 'e15'],
+      ['e3', 'e6', 'e11', 'e14'],
+      ['e4', 'e5', 'e12', 'e13'],
+    ])
+    expect(snakeGroups(field(6), 3)).toEqual([
+      ['e1', 'e4', 'e5'],
+      ['e2', 'e3', 'e6'],
+    ])
+    expect(snakeGroups(field(7), 4).map(g => g.length)).toEqual([3, 4])
+  })
+
+  it('draws six teams into two groups of three, the top two of each crossing into the semi-finals', () => {
+    const draw = groupsKnockout(field(6), { size: 3, through: 2 }, { firstTo: 2 })
+    for (const group of [1, 2]) {
+      const matches = draw.filter(m => m.group === group)
+      expect(matches.every(m => m.bracket === 'group' && m.key.startsWith(`G${group}R`))).toBe(true)
+      expect(matches).toHaveLength(3)
+    }
+    expect(knockout(draw).map(m => [m.key, sources(m)])).toEqual([
+      [
+        'R1M1',
+        [
+          { from: 'group', group: 1, place: 1 },
+          { from: 'group', group: 2, place: 2 },
+        ],
+      ],
+      [
+        'R1M2',
+        [
+          { from: 'group', group: 2, place: 1 },
+          { from: 'group', group: 1, place: 2 },
+        ],
+      ],
+      ['R2M1', [winnerOf('R1M1'), winnerOf('R1M2')]],
+    ])
+
+    const final = finish(draw, snakeGroups(field(6), 3))
+    expect(knockout(final)[0].sides.map(s => s.entry)).toEqual(['e1', 'e3'])
+    expect(knockout(final)[1].sides.map(s => s.entry)).toEqual(['e2', 'e4'])
+    expect(winner(knockout(final)[2])).toBe('e1')
+  })
+
+  it('draws sixteen into four groups of four, the winners into a knockout of four', () => {
+    const draw = groupsKnockout(field(16), { size: 4, through: 1 }, { firstTo: 2, final: { firstTo: 3, semis: true } })
+    expect(draw.filter(m => m.bracket === 'group')).toHaveLength(4 * 6)
+    expect(draw.filter(m => m.bracket === 'group').every(m => m.firstTo === 2)).toBe(true)
+    const final = finish(draw, snakeGroups(field(16), 4))
+    expect(knockout(final).map(m => [m.key, m.firstTo, m.sides.map(s => s.entry)])).toEqual([
+      ['R1M1', 3, ['e1', 'e4']],
+      ['R1M2', 3, ['e2', 'e3']],
+      ['R2M1', 3, ['e1', 'e2']],
+    ])
+  })
+
+  it('keeps the knockout waiting until every group match is decided', () => {
+    const groups = snakeGroups(field(16), 4)
+    const draw = groupsKnockout(field(16), { size: 4, through: 1 }, { firstTo: 2 })
+    const keys = draw.filter(m => m.bracket === 'group').map(m => m.key)
+    let matches = draw
+    for (const key of keys) {
+      const waiting = fillKnockout(matches, groups)
+      expect(knockout(waiting).every(m => !m.result && m.sides.every(s => s.entry === null))).toBe(true)
+      expect(() => advance(waiting, 'R1M1', { outcome: 'walkover', winner: 0 })).toThrow(/waiting/)
+      matches = advance(matches, key, { outcome: 'walkover', winner: betterSeed(get(matches, key)) })
+    }
+    const filled = fillKnockout(matches, groups)
+    expect(
+      knockout(filled)
+        .filter(m => m.round === 1)
+        .every(m => m.sides.every(s => s.entry !== null)),
+    ).toBe(true)
+    expect(fillKnockout(filled, groups)).toEqual(filled)
+  })
+
+  it('ranks a group tied all round by the 3-dart average', () => {
+    const groups = snakeGroups(field(6), 3)
+    expect(groups[0]).toEqual(['e1', 'e4', 'e5'])
+    let draw = groupsKnockout(field(6), { size: 3, through: 1 }, { firstTo: 1 })
+    // Group 1 goes round in a circle (e1 beats e4 beats e5 beats e1): every tie-break before the average is level.
+    const beats = (a: string, b: string) => (groups[0].indexOf(b) - groups[0].indexOf(a) + 3) % 3 === 1
+    for (const m of draw.filter(m => m.bracket === 'group')) {
+      const [a, b] = m.sides.map(s => s.entry!)
+      const w = m.group === 1 ? (beats(a, b) ? 0 : 1) : betterSeed(m)
+      draw = advance(draw, m.key, { outcome: 'played', winner: w, legs: w === 0 ? [1, 0] : [0, 1] })
+    }
+    expect(get(fillKnockout(draw, groups), 'R1M1').sides.map(s => s.entry)).toEqual(['e1', 'e2'])
+    const filled = fillKnockout(draw, groups, new Map([['e5', 60]]))
+    expect(get(filled, 'R1M1').sides.map(s => s.entry)).toEqual(['e5', 'e2'])
+  })
+
+  it.each([2, 3, 4, 5, 6, 8])('keeps the two of one group apart in a knockout of %i groups', groups => {
+    const draw = groupsKnockout(field(groups * 4), { size: 4, through: 2 }, { firstTo: 1 })
+    const round1 = knockout(draw).filter(m => m.round === 1)
+    for (const m of round1) {
+      const from = m.sides.map(s => (s.source?.from === 'group' ? s.source.group : null)).filter(g => g !== null)
+      expect(new Set(from).size).toBe(from.length)
+    }
+    // Byes, if any, go to group winners.
+    for (const m of round1.filter(m => m.result?.outcome === 'bye')) {
+      expect(m.sides.find(s => s.source)?.source).toMatchObject({ place: 1 })
+    }
+    // Both halves of the bracket hold one entry of each group whenever there are two halves to fill.
+    if (groups % 2 === 0 && groups > 1) {
+      const half = round1.length / 2
+      const groupsIn = (ms: Match[]) =>
+        ms.flatMap(m => m.sides.flatMap(s => (s.source?.from === 'group' ? [s.source.group] : []))).sort((a, b) => a - b)
+      expect(groupsIn(round1.slice(0, half))).toEqual(Array.from({ length: groups }, (_, i) => i + 1))
+    }
+    expect(finish(draw, snakeGroups(field(groups * 4), 4)).every(m => m.result)).toBe(true)
+  })
+
+  it('refuses groups too small for how many go through, or a single group', () => {
+    expect(() => groupsKnockout(field(4), { size: 3, through: 2 }, { firstTo: 1 })).toThrow(/more entries/)
+    expect(() => groupsKnockout(field(3), { size: 3, through: 1 }, { firstTo: 1 })).toThrow(/two entries/)
   })
 })
