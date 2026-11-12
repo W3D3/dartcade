@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isEditable,
   MATCH_STATUSES,
   MATCH_TRANSITIONS,
   OUTCOME_OF,
@@ -104,5 +105,11 @@ describe('match transitions', () => {
     for (const s of MATCH_STATUSES)
       for (const [event, to] of Object.entries(MATCH_TRANSITIONS[s]))
         if (to === 'finished') expect(Object.keys(OUTCOME_OF), `${s} → ${event}`).toContain(event)
+  })
+})
+
+describe('isEditable', () => {
+  it('lets organizers change a tournament until it starts', () => {
+    expect(TOURNAMENT_STATUSES.filter(isEditable)).toEqual(['draft', 'open'])
   })
 })
