@@ -154,6 +154,32 @@
         }
       ]
     },
+    "TeamInvite": {
+      "title": "TeamInvite",
+      "description": "An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).",
+      "type": "object",
+      "required": ["id", "team", "members", "memberCount", "createdAt", "expiresAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "team": {
+          "type": "object",
+          "required": ["id", "name", "tag", "color"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "tag": { "type": "string" },
+            "color": { "type": "string" }
+          }
+        },
+        "inviter": { "$ref": "#/$defs/UserRef", "description": "Left out once the inviter's account is gone." },
+        "members": { "type": "array", "description": "The first four members, the captain first.", "items": { "$ref": "#/$defs/UserRef" } },
+        "memberCount": { "type": "integer", "minimum": 1 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "UserRef": {
       "title": "UserRef",
       "type": "object",

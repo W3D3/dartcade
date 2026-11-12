@@ -30,6 +30,7 @@ import { homeApiPlugin } from './api/home.js'
 import { progressApiPlugin } from './api/progress.js'
 import { achievementsApiPlugin } from './api/achievements.js'
 import { tournamentsApiPlugin } from './api/tournaments.js'
+import { teamsApiPlugin } from './api/teams.js'
 import { coachApiPlugin } from './api/coach.js'
 import { statsApiPlugin } from './api/stats.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
@@ -277,6 +278,7 @@ export async function buildApp({
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
   await app.register(tournamentsApiPlugin, { db })
+  await app.register(teamsApiPlugin, { db, lobbies, hub })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })

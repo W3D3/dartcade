@@ -93,6 +93,7 @@ export type MeServerMessage =
   | LobbyIdleClosedMessage
   | MatchmakingMessage
   | MatchmakingEndedMessage
+  | TeamInviteMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -412,8 +413,51 @@ export interface ActiveGame {
 export interface MeMessage {
   type: 'me'
   invites: PendingInvite[]
+  /**
+   * Invites to named teams waiting for your answer, newest first.
+   */
+  teamInvites: TeamInvite[]
   lobby: LobbySummary | null
   game: ActiveGame | null
+}
+/**
+ * An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).
+ */
+export interface TeamInvite {
+  id: string
+  team: {
+    id: string
+    name: string
+    tag: string
+    color: string
+  }
+  inviter?: UserRef
+  /**
+   * The first four members, the captain first.
+   */
+  members: UserRef1[]
+  memberCount: number
+  createdAt: string
+  expiresAt: string
+}
+/**
+ * Left out once the inviter's account is gone.
+ */
+export interface UserRef {
+  id: string
+  /**
+   * Their handle, shown as @name
+   */
+  name: string
+  avatar: Avatar1
+}
+export interface UserRef1 {
+  id: string
+  /**
+   * Their handle, shown as @name
+   */
+  name: string
+  avatar: Avatar1
 }
 /**
  * Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.
@@ -471,24 +515,16 @@ export interface FriendOffline {
 }
 export interface IncomingFriendRequest {
   id: string
-  from: UserRef
+  from: UserRef1
   /**
    * Friends you both have ("3 friends in common")
    */
   mutualFriends: number
   createdAt: string
 }
-export interface UserRef {
-  id: string
-  /**
-   * Their handle, shown as @name
-   */
-  name: string
-  avatar: Avatar1
-}
 export interface OutgoingFriendRequest {
   id: string
-  to: UserRef
+  to: UserRef1
   createdAt: string
 }
 /**
@@ -723,4 +759,14 @@ export interface MatchmakingEndedMessage {
    * started: the game that began.
    */
   sessionId: string | null
+}
+/**
+ * Pushed on /ws/me when a captain invites you to their team (once, for a toast; the invite also shows in me.teamInvites).
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "TeamInviteMessage".
+ */
+export interface TeamInviteMessage {
+  type: 'team.invite'
+  invite: TeamInvite
 }

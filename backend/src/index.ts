@@ -21,6 +21,7 @@ import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { boardOwner, getBoardProfile, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
+import { releaseTeamsOf } from './db/teams.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
 import { boardStatus } from './boards/bmState.js'
@@ -212,7 +213,10 @@ const lobbies: LobbyService = new LobbyService({
     })
   },
 })
-setAccountCleanup(userId => cleanUpAccount({ engine, lobbies }, userId))
+setAccountCleanup(async userId => {
+  await cleanUpAccount({ engine, lobbies }, userId)
+  await releaseTeamsOf(db, userId)
+})
 const matchmaking = new MatchmakingService({
   db,
   engine,

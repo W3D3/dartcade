@@ -44,6 +44,7 @@ const lobby = {
 const meMsg = {
   type: 'me',
   invites: [],
+  teamInvites: [],
   game: null,
   lobby: {
     id: 'l1',
@@ -230,6 +231,7 @@ describe('createMeStore', () => {
     FakeSocket.opened[0].receive({ type: 'friends', friends: [], incoming: [], outgoing: [] })
     expect(get(s)).toEqual({
       invites: [],
+      teamInvites: [],
       lobby: null,
       game: null,
       friends: { friends: [], incoming: [], outgoing: [] },

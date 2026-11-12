@@ -96,6 +96,15 @@ type PersonId = string
 // SessionId defines model for SessionId.
 type SessionId = string
 
+// TeamId defines model for TeamId.
+type TeamId = string
+
+// TeamInviteId defines model for TeamInviteId.
+type TeamInviteId = string
+
+// TeamMemberUserId defines model for TeamMemberUserId.
+type TeamMemberUserId = string
+
 // VoicePackId defines model for VoicePackId.
 type VoicePackId = string
 

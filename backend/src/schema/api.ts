@@ -2299,6 +2299,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your teams and the invites waiting for your answer (tournaments.enabled)
+         * @description Every team you are in, oldest membership first, with what the Teams tab shows for each.
+         */
+        get: operations["listTeams"];
+        put?: never;
+        /** Make a team with you as captain, and invite players to it */
+        post: operations["createTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change the team's name, tag or colour (captain) */
+        patch: operations["updateTeam"];
+        trace?: never;
+    };
+    "/api/teams/{id}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite an account to the team (captain); the invite expires after 7 days */
+        post: operations["inviteToTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}/invites/{inviteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take back an invite (captain) */
+        delete: operations["cancelTeamInvite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}/captain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Hand the captaincy to another member (captain) */
+        put: operations["setTeamCaptain"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+                userId: components["parameters"]["TeamMemberUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member (captain), or leave the team (yourself)
+         * @description The captain can't leave while others are in the team: they hand the captaincy over first. A captain alone in the team leaving deletes it.
+         */
+        delete: operations["removeTeamMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team-invites/{inviteId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join the team you were invited to */
+        post: operations["acceptTeamInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team-invites/{inviteId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline an invite to a team */
+        post: operations["declineTeamInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/achievements": {
         parameters: {
             query?: never;
@@ -2980,6 +3139,13 @@ export interface components {
             kind: "upload";
             /** @description Cache-busts GET /api/users/{id}/avatar?v= */
             version: number;
+        };
+        /** UserRef */
+        UserRef: {
+            id: string;
+            /** @description Their handle, shown as @name */
+            name: string;
+            avatar: components["schemas"]["Avatar"];
         };
         /**
          * AvatarChoice
@@ -4924,6 +5090,84 @@ export interface components {
                 celebration?: string;
             };
         };
+        /** @enum {string} */
+        TeamColor: "#9b7bff" | "#4fd1c5" | "#ff8a4a" | "#3fb6e8" | "#eac24f" | "#7fd18f" | "#ff6b9a" | "#c6f24e";
+        /**
+         * TeamInvite
+         * @description An invite to a named team, waiting for the viewer's answer (Teams tab; pushed on /ws/me).
+         */
+        TeamInvite: {
+            id: string;
+            team: {
+                id: string;
+                name: string;
+                tag: string;
+                color: string;
+            };
+            /** @description Left out once the inviter's account is gone. */
+            inviter?: components["schemas"]["UserRef"];
+            /** @description The first four members, the captain first. */
+            members: components["schemas"]["UserRef"][];
+            memberCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        TeamConflict: {
+            error: string;
+            /** @enum {string} */
+            code: "name_taken" | "team_full" | "too_many_teams" | "already_member" | "already_invited" | "captain_must_hand_over" | "unavailable";
+        };
+        /** @description A team you are in, as the Teams tab shows it */
+        Team: {
+            id: string;
+            name: string;
+            tag: string;
+            color: components["schemas"]["TeamColor"];
+            captainUserId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The captain first, then by when they joined */
+            members: {
+                user: components["schemas"]["UserRef"];
+                /** Format: date-time */
+                joinedAt: string;
+                /** @description Their 1v1 ranked rating; null before their placement matches are done */
+                rating: number | null;
+            }[];
+            /** @description Pending invites, oldest first */
+            invites: {
+                id: string;
+                user: components["schemas"]["UserRef"];
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                expiresAt: string;
+                rating: number | null;
+            }[];
+            /** @description Its tournament matches (byes left out) and tournaments */
+            record: {
+                wins: number;
+                losses: number;
+                tournaments: number;
+                bestPlace: number | null;
+            };
+            /** @description The mean of its members' X01 3-dart averages over the last 30 days; null when none played X01 */
+            average: number | null;
+            /** @description The tournaments it entered, the latest first, at most 10 */
+            tournaments: {
+                id: string;
+                name: string;
+                /** Format: date-time */
+                startsAt: string | null;
+                /** @enum {string} */
+                status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
+                /** @enum {string} */
+                entryStatus: "pending" | "registered" | "checked_in" | "withdrawn";
+                finalPlace: number | null;
+            }[];
+        };
         TournamentSummary: {
             id: string;
             name: string;
@@ -5746,13 +5990,6 @@ export interface components {
             avatar: components["schemas"]["Avatar"];
             lastSeen?: components["schemas"]["LastSeen"];
         };
-        /** UserRef */
-        UserRef: {
-            id: string;
-            /** @description Their handle, shown as @name */
-            name: string;
-            avatar: components["schemas"]["Avatar"];
-        };
         /** IncomingFriendRequest */
         IncomingFriendRequest: {
             id: string;
@@ -5911,6 +6148,15 @@ export interface components {
                 "application/json": components["schemas"]["FriendConflict"];
             };
         };
+        /** @description The name is taken, a limit is reached, or the change needs another first (a captain hands over before leaving) */
+        TeamConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["TeamConflict"];
+            };
+        };
         /** @description The course has no holes, or a hole in it fails a check that blocks Publish */
         MinigolfPublishRefused: {
             headers: {
@@ -5964,6 +6210,9 @@ export interface components {
         VoicePackId: string;
         /** @description Lobby code; case, dashes and spaces are ignored */
         LobbyCode: string;
+        TeamId: string;
+        TeamInviteId: string;
+        TeamMemberUserId: string;
         FriendRequestId: string;
         FriendUserId: string;
         MinigolfCourseId: string;
@@ -9732,6 +9981,270 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your teams and invites */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        teams: components["schemas"]["Team"][];
+                        /** @description Newest first */
+                        invites: components["schemas"]["TeamInvite"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 3 to 24 characters once trimmed; unique ignoring case */
+                    name: string;
+                    /** @description 2 to 4 letters, stored in capitals */
+                    tag: string;
+                    color: components["schemas"]["TeamColor"];
+                    /** @description Accounts to invite */
+                    invite?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Made */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["TeamConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    tag?: string;
+                    color?: components["schemas"]["TeamColor"];
+                };
+            };
+        };
+        responses: {
+            /** @description Changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["TeamConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    inviteToTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Invited */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["TeamConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelTeamInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setTeamCaptain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Handed over */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["TeamId"];
+                userId: components["parameters"]["TeamMemberUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["TeamConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptTeamInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Joined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["TeamConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineTeamInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inviteId: components["parameters"]["TeamInviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

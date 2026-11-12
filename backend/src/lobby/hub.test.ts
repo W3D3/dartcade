@@ -6,6 +6,7 @@ const friendsMsg = { type: 'friends' as const, friends: [], incoming: [], outgoi
 const me = (n: number) => ({
   type: 'me' as const,
   invites: [],
+  teamInvites: [],
   game: null,
   lobby:
     n === 0

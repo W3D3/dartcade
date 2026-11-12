@@ -3,6 +3,7 @@ import type { components } from '../schema/api.js'
 import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
 import type { MatchOutcome, MatchStatus, TournamentStatus } from '../shared/tournaments/state.js'
+import type { TeamColor } from '../shared/teams.js'
 import type { RankedRules } from '../session/rankedClock.js'
 import type { RankedEntry } from '../session/types.js'
 
@@ -609,6 +610,8 @@ export interface TournamentEntriesTable {
   seed: ColumnType<number | null, number | null | undefined, number | null>
   final_place: ColumnType<number | null, number | null | undefined, number | null>
   registered_by_user_id: ColumnType<string | null, string | null | undefined, string | null>
+  /** The named team it plays as (migration 067). */
+  team_id: ColumnType<string | null, string | null | undefined, string | null>
   created_at: ColumnType<Date, never, never>
 }
 
@@ -644,6 +647,33 @@ export interface TournamentMatchesTable {
   ready_at: Stamp
   started_at: Stamp
   finished_at: Stamp
+}
+
+/** A named team (migration 067); its captain is always one of its members. */
+export interface TeamsTable {
+  id: string
+  name: string
+  /** 2-4 capital letters. */
+  tag: string
+  color: TeamColor
+  captain_user_id: string
+  created_at: ColumnType<Date, never, never>
+}
+
+export interface TeamMembersTable {
+  team_id: string
+  user_id: string
+  joined_at: Defaulted<Date>
+}
+
+/** A pending invite; answered or cancelled ones are deleted. */
+export interface TeamInvitesTable {
+  id: string
+  team_id: string
+  invitee_user_id: string
+  inviter_user_id: string | null
+  created_at: Defaulted<Date>
+  expires_at: Date
 }
 
 export interface AchievementGamesTable {
@@ -739,4 +769,7 @@ export interface Database {
   tournament_entries: TournamentEntriesTable
   tournament_players: TournamentPlayersTable
   tournament_matches: TournamentMatchesTable
+  teams: TeamsTable
+  team_members: TeamMembersTable
+  team_invites: TeamInvitesTable
 }
