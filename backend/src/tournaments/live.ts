@@ -89,7 +89,8 @@ export async function liveMessage(
       { status: r.status, startedAt: r.started_at?.getTime() ?? null, finishedAt: r.finished_at?.getTime() ?? null },
     ]),
   )
-  const startsAt = (t.started_at ?? t.starts_at)?.getTime() ?? now
+  // The planned start (an organizer start sets it too), not started_at: that is the database's clock, not `now`'s
+  const startsAt = t.starts_at?.getTime() ?? now
   return {
     type: 'tournament.live',
     tournamentId: t.id,
