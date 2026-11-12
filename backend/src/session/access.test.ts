@@ -221,6 +221,18 @@ describe('canSpectateSession', () => {
     expect(await canSpectateSession('max', s, watchable)).toBe(false)
   })
 
+  it('lets anyone who may see the tournament watch its game, friend or not', async () => {
+    const s = running()
+    s.tournamentMatchId = 'm1'
+    const sees = (viewer: string, matchId: string) => Promise.resolve(viewer === 'pia' && matchId === 'm1')
+    expect(await canSpectateSession('pia', s, watchable, sees)).toBe(true)
+    expect(await canSpectateSession('nobody', s, watchable, sees)).toBe(false)
+    // Its own players still play, not watch
+    expect(await canSpectateSession('lena', s, watchable, () => Promise.resolve(true))).toBe(false)
+    // A game outside a tournament never asks
+    expect(await canSpectateSession('pia', running(), watchable, sees)).toBe(false)
+  })
+
   it('asks about the controller of a guest seat too', async () => {
     const ask = vi.fn(watchable)
     const remote = game([

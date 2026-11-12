@@ -30,14 +30,26 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 /** Whether the viewer is a friend of any of these accounts, and that friend is not Invisible. */
 export type WatchableFriend = (viewerId: string, userIds: string[]) => Promise<boolean>
 
+/** Whether the viewer may see the tournament the game's match belongs to. */
+export type TournamentVisible = (viewerId: string, tournamentMatchId: string) => Promise<boolean>
+
+/** For callers without tournaments: nobody sees one. */
+export const noTournaments: TournamentVisible = () => Promise.resolve(false)
+
 /**
  * Who may spectate a running game (Watch): a friend of a seated account (a seat's player or its
- * controller; any seat in a team or remote game) who is not Invisible. Whoever may play or
- * already watch it as a participant uses the game socket as before, so is not a spectator.
- * Ended games are not watched.
+ * controller; any seat in a team or remote game) who is not Invisible, and for a tournament game
+ * anyone who may see the tournament (Q16). Whoever may play or already watch it as a participant
+ * uses the game socket as before, so is not a spectator. Ended games are not watched.
  */
-export async function canSpectateSession(userId: string, session: Session, watchable: WatchableFriend): Promise<boolean> {
+export async function canSpectateSession(
+  userId: string,
+  session: Session,
+  watchable: WatchableFriend,
+  tournamentVisible: TournamentVisible = noTournaments,
+): Promise<boolean> {
   if (session.status !== 'active' || canAccessSession(userId, session)) return false
+  if (session.tournamentMatchId !== null && (await tournamentVisible(userId, session.tournamentMatchId))) return true
   const seated = new Set(session.seats.flatMap(s => [s.userId, s.controllerUserId]).filter((id): id is string => id !== null))
   return seated.size > 0 && (await watchable(userId, [...seated]))
 }

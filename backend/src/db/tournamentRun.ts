@@ -4,17 +4,22 @@ import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import type { Database } from './schema.js'
-import { moveTournament, type TournamentMatchRow, type TournamentRow } from './tournaments.js'
+import { moveTournament, viewerRole, type TournamentMatchRow, type TournamentRow } from './tournaments.js'
 import type { Match } from '../shared/tournaments/bracket.js'
 
 // X01 and Cricket put each seat's legs in its stats
 const LegsSchema = z.object({ legsWon: z.number() }).catch({ legsWon: 0 })
+
+/** The legs a seat won, from its stats (a finished game's stored seat, or a running game's summary); 0 when it says none. */
+export const legsWon = (stats: unknown): number => LegsSchema.parse(stats).legsWon
 
 export interface RunEntry {
   id: string
   name: string
   status: 'pending' | 'registered' | 'checked_in' | 'withdrawn'
   seed: number | null
+  /** Set when the tournament finished. */
+  final_place: number | null
   created_at: Date
   /** The entry's players in team order: a solo entry has one. */
   players: { id: string; userId: string | null; name: string }[]
@@ -56,7 +61,7 @@ export async function listEntries(db: Kysely<Database>, tournamentId: string): P
   const [entries, players] = await Promise.all([
     db
       .selectFrom('tournament_entries')
-      .select(['id', 'name', 'status', 'seed', 'created_at'])
+      .select(['id', 'name', 'status', 'seed', 'final_place', 'created_at'])
       .where('tournament_id', '=', tournamentId)
       .orderBy('created_at')
       .orderBy('id')
@@ -144,6 +149,13 @@ export async function tournamentOfMatch(db: Kysely<Database>, matchId: string): 
   return (await db.selectFrom('tournament_matches').select('tournament_id').where('id', '=', matchId).executeTakeFirst())?.tournament_id
 }
 
+/** Whether `userId` may see the tournament a match belongs to (Watch on its game, Q16). */
+export async function seesTournamentOfMatch(db: Kysely<Database>, matchId: string, userId: string): Promise<boolean> {
+  const id = await tournamentOfMatch(db, matchId)
+  const t = id === undefined ? undefined : await getTournamentRow(db, id)
+  return t !== undefined && (await viewerRole(db, t, userId)) !== null
+}
+
 /** Puts the entries the bracket now knows into a match still waiting for them. */
 export async function setSides(db: Kysely<Database>, matchId: string, a: string | null, b: string | null): Promise<void> {
   await db
@@ -181,7 +193,7 @@ export async function seatResults(db: Kysely<Database>, sessionId: string): Prom
     .where('session_id', '=', sessionId)
     .orderBy('seat')
     .execute()
-  return rows.map(r => ({ placement: r.placement, legsWon: LegsSchema.parse(r.stats).legsWon }))
+  return rows.map(r => ({ placement: r.placement, legsWon: legsWon(r.stats) }))
 }
 
 /** Records which tournament spot each seat of a game plays for, in seat order. */
