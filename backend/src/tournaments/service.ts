@@ -206,7 +206,7 @@ export class TournamentService implements GameEndedConsumer {
       await moveTournament(this.deps.db, t.id, 'cancel')
       return
     }
-    if (!(await writeDraw(this.deps.db, t.id, seeded, matches))) return
+    if (!(await writeDraw(this.deps.db, t.id, seeded, matches, new Date(this.now())))) return
     await this.step(t.id)
   }
 
@@ -254,7 +254,7 @@ export class TournamentService implements GameEndedConsumer {
     const seeded = seededOf(entries)
     const bracket = bracketOf(t, seeded, rows)
     if (isComplete(bracket)) {
-      await finishWithPlaces(db, t.id, finalPlaces(setupOf(t), seeded, bracket))
+      await finishWithPlaces(db, t.id, finalPlaces(setupOf(t), seeded, bracket), new Date(this.now()))
       return false
     }
     let changed = false

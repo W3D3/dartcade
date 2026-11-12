@@ -112,9 +112,10 @@ export async function writeDraw(
   tournamentId: string,
   seeded: readonly string[],
   matches: readonly Match[],
+  at: Date,
 ): Promise<boolean> {
   return db.transaction().execute(async tx => {
-    if ((await moveTournament(tx, tournamentId, 'start')) === null) return false
+    if ((await moveTournament(tx, tournamentId, 'start', at)) === null) return false
     const out = tx.updateTable('tournament_entries').set({ status: 'withdrawn' }).where('tournament_id', '=', tournamentId)
     await (seeded.length > 0 ? out.where('id', 'not in', seeded) : out).where('status', '<>', 'withdrawn').execute()
     for (const [i, id] of seeded.entries())
@@ -208,9 +209,14 @@ export async function linkSeats(db: Kysely<Database>, sessionId: string, playerI
 }
 
 /** Finishes the tournament with every entry's final place; false when it already moved on. */
-export async function finishWithPlaces(db: Kysely<Database>, tournamentId: string, places: ReadonlyMap<string, number>): Promise<boolean> {
+export async function finishWithPlaces(
+  db: Kysely<Database>,
+  tournamentId: string,
+  places: ReadonlyMap<string, number>,
+  at: Date,
+): Promise<boolean> {
   return db.transaction().execute(async tx => {
-    if ((await moveTournament(tx, tournamentId, 'finish')) === null) return false
+    if ((await moveTournament(tx, tournamentId, 'finish', at)) === null) return false
     for (const [entryId, place] of places)
       await tx
         .updateTable('tournament_entries')

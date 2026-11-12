@@ -34,13 +34,18 @@ const STAMP: Partial<Record<TournamentStatus, 'published_at' | 'started_at' | 'e
 }
 
 /** Moves a tournament by `event`; the new status, or null when it is missing or may not move so. */
-export async function moveTournament(db: Kysely<Database>, id: string, event: TournamentEvent): Promise<TournamentStatus | null> {
+export async function moveTournament(
+  db: Kysely<Database>,
+  id: string,
+  event: TournamentEvent,
+  at = new Date(),
+): Promise<TournamentStatus | null> {
   const row = await db.selectFrom('tournaments').select('status').where('id', '=', id).executeTakeFirst()
   const to = row && nextTournamentStatus(row.status, event)
   if (!row || !to) return null
   const set: Updateable<TournamentsTable> = { status: to }
   const stamp = STAMP[to]
-  if (stamp) set[stamp] = new Date()
+  if (stamp) set[stamp] = at
   const res = await db.updateTable('tournaments').set(set).where('id', '=', id).where('status', '=', row.status).executeTakeFirst()
   return res.numUpdatedRows > 0n ? to : null
 }
