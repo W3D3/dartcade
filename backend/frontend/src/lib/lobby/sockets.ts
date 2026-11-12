@@ -25,6 +25,7 @@ import type {
   TeamInvite,
   TeamInviteMessage,
   TournamentCheckInMessage,
+  TournamentDroppedMessage,
   TournamentMatchMessage,
   TournamentRequestMessage,
 } from '../api/lobby-ws'
@@ -117,7 +118,7 @@ export function createMeStore(open?: OpenSocket) {
   const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
   const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
   const teamInvite = writable<TeamInviteMessage | null>(null)
-  const tournament = writable<TournamentCheckInMessage | TournamentMatchMessage | null>(null)
+  const tournament = writable<TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage | null>(null)
   const tournamentRequest = writable<TournamentRequestMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
@@ -136,8 +137,10 @@ export function createMeStore(open?: OpenSocket) {
     idleClosed: { subscribe: idleClosed.subscribe } satisfies Readable<LobbyIdleClosedMessage | null>,
     /** A captain last invited you to their team (team.invite), as it arrives. */
     teamInvite: { subscribe: teamInvite.subscribe } satisfies Readable<TeamInviteMessage | null>,
-    /** Your tournament's check-in opened, or your match's game started (tournament.checkIn, tournament.match), as it arrives. */
-    tournament: { subscribe: tournament.subscribe } satisfies Readable<TournamentCheckInMessage | TournamentMatchMessage | null>,
+    /** Your tournament's check-in opened, the average limit took your spot, or your match's game started (tournament.checkIn, tournament.dropped, tournament.match), as it arrives. */
+    tournament: { subscribe: tournament.subscribe } satisfies Readable<
+      TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage | null
+    >,
     /** Someone last made you a tournament organizer (tournament.request), as it arrives. */
     tournamentRequest: { subscribe: tournamentRequest.subscribe } satisfies Readable<TournamentRequestMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
@@ -166,7 +169,7 @@ export function createMeStore(open?: OpenSocket) {
               idleClosed.set(msg)
             } else if (msg?.type === 'team.invite') {
               teamInvite.set(msg)
-            } else if (msg?.type === 'tournament.checkIn' || msg?.type === 'tournament.match') {
+            } else if (msg?.type === 'tournament.checkIn' || msg?.type === 'tournament.dropped' || msg?.type === 'tournament.match') {
               tournament.set(msg)
             } else if (msg?.type === 'tournament.request') {
               tournamentRequest.set(msg)

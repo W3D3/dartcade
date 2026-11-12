@@ -14,6 +14,7 @@ const settings = {
   plannedFor: null,
   manualScoring: false,
   noShowMinutes: 10,
+  avgLimit: null,
 }
 const base = {
   kind: 'community',
@@ -34,6 +35,7 @@ const base = {
   inviteCode: null,
   friendsIn: ['Lena', 'Max'].map(name => ({ id: name.toLowerCase(), name, avatar: { kind: 'none' } })),
   checkedIn: false,
+  eligibility: null,
 }
 const checkIn = {
   ...base,

@@ -11,6 +11,7 @@ import {
   type TournamentAccess,
   type TournamentFormat,
 } from '$shared/tournaments/setup'
+import { DEFAULT_AVG_LIMIT, avgTag, fromAvgLimit, toAvgLimit, type AvgLimitForm } from './avgLimit'
 
 export type TournamentInput = components['schemas']['TournamentInput']
 export type Tournament = components['schemas']['Tournament']
@@ -52,6 +53,7 @@ export interface CreateForm {
   manualScoring: boolean
   noShow: boolean
   noShowMinutes: 5 | 10 | 15
+  avgLimit: AvgLimitForm
 }
 
 const nums = <T extends number>(values: readonly T[], unit = ''): Choice<T>[] => values.map(value => ({ value, label: `${value}${unit}` }))
@@ -213,6 +215,7 @@ export function defaultForm(now: Date): CreateForm {
     manualScoring: true,
     noShow: true,
     noShowMinutes: 10,
+    avgLimit: DEFAULT_AVG_LIMIT,
   }
 }
 
@@ -241,7 +244,7 @@ export function toInput(f: CreateForm): TournamentInput {
       plannedFor,
       manualScoring: online && f.manualScoring,
       noShowMinutes: online && f.noShow ? f.noShowMinutes : null,
-      avgLimit: null,
+      avgLimit: toAvgLimit(f.avgLimit, online),
     },
   }
 }
@@ -285,6 +288,7 @@ export function fromTournament(t: Tournament, now: Date): CreateForm {
     manualScoring: online ? s.manualScoring : d.manualScoring,
     noShow: online ? s.noShowMinutes !== null : d.noShow,
     noShowMinutes: pick(NO_SHOW_WAIT, s.noShowMinutes, d.noShowMinutes),
+    avgLimit: fromAvgLimit(s.avgLimit),
   }
 }
 
@@ -297,6 +301,7 @@ const FIELD_LABELS: Record<string, string> = {
   'body/settings/checkInMinutes': 'Check-in',
   'body/settings/registrationClosesMinutes': 'Registration',
   'body/settings/longerFinal': 'Longer final',
+  'body/settings/avgLimit': 'Average limit',
 }
 
 /** "Name: must be 3-40 characters", for the server's problems and the form's own. */
@@ -337,6 +342,7 @@ export function previewOf(f: CreateForm): Preview {
   const fixed = !inPerson && startModeOf(f) === 'fixed'
   const start = f.startsAt ? new Date(f.startsAt) : null
   const planned = f.plannedFor ? new Date(f.plannedFor) : null
+  const avgLimit = toAvgLimit(f.avgLimit, !inPerson)
   const when = fixed
     ? start
       ? `${day(start)} · ${pad2(start.getHours())}:${pad2(start.getMinutes())}`
@@ -353,6 +359,7 @@ export function previewOf(f: CreateForm): Preview {
       f.gameId === 'x01' ? `X01 ${f.startScore}` : 'Cricket',
       team ? `TEAMS OF ${f.playersPerTeam}` : 'SOLO',
       FORMATS.find(x => x.value === f.format)?.short ?? f.format,
+      ...(avgLimit ? [avgTag(avgLimit, team ? f.playersPerTeam : 1)] : []),
       ...(inPerson ? ['IN PERSON'] : []),
     ],
     when,

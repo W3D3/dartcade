@@ -9,6 +9,7 @@ const cup = {
   gameId: 'x01',
   name: 'Pub Pairs Showdown',
   owner: { id: 'n', name: 'Nico' },
+  eligibility: null,
 } as const
 const filter = (chips: Chip[] = [], rest: Partial<BrowseFilter> = {}): BrowseFilter => ({
   kind: 'all',
@@ -37,6 +38,17 @@ describe('matches', () => {
   it('keeps open now to tournaments taking registrations', () => {
     expect(matches(cup, filter(['open']))).toBe(true)
     expect(matches({ ...cup, status: 'running' }, filter(['open']))).toBe(false)
+  })
+
+  it('fits my Ø keeps tournaments without a limit and those the caller is eligible for', () => {
+    const limited = (eligible: boolean) => ({
+      ...cup,
+      eligibility: { eligible, reason: eligible ? null : ('above' as const), average: 68.4 },
+    })
+    expect(matches(cup, filter(['fits']))).toBe(true)
+    expect(matches(limited(true), filter(['fits']))).toBe(true)
+    expect(matches(limited(false), filter(['fits']))).toBe(false)
+    expect(matches(limited(false), filter())).toBe(true)
   })
 
   it('searches the name and the organizer', () => {
