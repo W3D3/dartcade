@@ -97,17 +97,19 @@ const HelloSchema = z
     bm_version: nonEmpty.default(null),
     bm_url: BmOrigin.nullable().catch(null).default(null),
     updatable: z.boolean().catch(false).default(false),
+    bm_up: z.boolean().nullable().catch(null).default(null),
   })
-  .catch({ bridge_version: null, bm_version: null, bm_url: null, updatable: false })
+  .catch({ bridge_version: null, bm_version: null, bm_url: null, updatable: false, bm_up: null })
 
 export function parseHello(data: unknown): {
   bridgeVersion: string | null
   bmVersion: string | null
   bmUrl: string | null
   updatable: boolean
+  bmUp: boolean | null
 } {
   const h = HelloSchema.parse(data)
-  return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url, updatable: h.updatable }
+  return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url, updatable: h.updatable, bmUp: h.bm_up }
 }
 
 // The bridge's keepalive (bridge/internal/transport): not an event, never acked. Only our
@@ -117,6 +119,8 @@ const PingSchema = z.object({ ping: z.string() })
 
 // High-rate kinds the games never read (the bridge's telemetry, bridge/internal/transport)
 const TELEMETRY_KINDS = new Set(['bm.frame', 'motion'])
+
+const BmLinkSchema = z.object({ up: z.boolean() })
 
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 
@@ -285,6 +289,7 @@ export function handleBridgeConnection(
           conn.bridgeVersion = hello.bridgeVersion
           conn.bmUrl = hello.bmUrl
           conn.bridgeUpdatable = hello.updatable
+          conn.bmUp = hello.bmUp
           bridgeUpdates.hello(boardDbId, hello.bridgeVersion)
           if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
           callHook('onBridgeHello', boardDbId, () => opts.onBridgeHello?.(boardDbId))
@@ -377,6 +382,14 @@ export function handleBridgeConnection(
         if (!inserted) return
 
         bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
+        if (kind === 'bm.link') {
+          // shortcut: an unacked bm.link replayed from an earlier boot can briefly show its state; the next one corrects it
+          const link = BmLinkSchema.safeParse(data)
+          if (link.success) {
+            conn.bmUp = link.data.up
+            if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
+          }
+        }
         if (id !== null) opts.samples?.event(boardDbId, kind, data, id, conn.bmVersion)
 
         // Already acked: a failure here (e.g. the game's log write) drops this input, so

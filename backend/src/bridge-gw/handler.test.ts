@@ -471,14 +471,26 @@ describe('Board Manager reachability', () => {
     vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev-bm' })
     const onBoardStatus = vi.fn()
     const socket = new FakeSocket()
-    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine: { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any, onBoardStatus })
+    handleBridgeConnection(
+      socket as any,
+      { token: 'tok' },
+      { db: {} as any, engine: { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any, onBoardStatus },
+    )
     socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: hello })))
     await flush()
     return { socket, onBoardStatus }
   }
   const link = (up: boolean) =>
     Buffer.from(
-      JSON.stringify({ v: 1, seq: 1, kind: 'bm.link', bridge_id: 'br', boot_id: 'boot', recv_wall: new Date().toISOString(), data: { up } }),
+      JSON.stringify({
+        v: 1,
+        seq: 1,
+        kind: 'bm.link',
+        bridge_id: 'br',
+        boot_id: 'boot',
+        recv_wall: new Date().toISOString(),
+        data: { up },
+      }),
     )
 
   it('is unknown for a bridge that does not say (0.13 and older)', async () => {
@@ -1036,8 +1048,9 @@ describe('bridge message parsing', () => {
       bmVersion: null,
       bmUrl: 'http://bm',
       updatable: false,
+      bmUp: null,
     })
-    expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null, updatable: false })
+    expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null, updatable: false, bmUp: null })
     expect(parseHello({ updatable: true }).updatable).toBe(true)
     expect(parseHello({ updatable: 'yes' }).updatable).toBe(false)
   })
@@ -1061,6 +1074,7 @@ describe('bridge message parsing', () => {
         bmVersion: null,
         bmUrl: null,
         updatable: false,
+        bmUp: null,
       })
     }
   })

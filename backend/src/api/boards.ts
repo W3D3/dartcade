@@ -123,6 +123,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           name: b.name,
           hardwareId: b.hardware_id,
           online: bridgeConnections.isOnline(b.id),
+          bmReachable: conn?.bmUp ?? null,
           bridgeVersion: conn?.bridgeVersion ?? null,
           bmVersion: conn?.bmVersion ?? null,
           createdAt: new Date(b.created_at).toISOString(),

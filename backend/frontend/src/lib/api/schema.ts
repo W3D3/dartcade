@@ -4522,6 +4522,8 @@ export interface components {
             name: string;
             hardwareId: string | null;
             online: boolean;
+            /** @description Whether the online bridge reaches its Board Manager; null when offline or the bridge doesn't say (0.13 and older) */
+            bmReachable: boolean | null;
             /** @description Bridge build, e.g. v0.4.2 or dev+b503493-dirty */
             bridgeVersion: string | null;
             /** @description Board Manager version */
