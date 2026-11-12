@@ -29,6 +29,8 @@
     type ChaseCam,
     type Insets,
   } from '$lib/minigolf/view3d'
+  import { RecentFrames, glRenderer, gpuTimer, perfOverlayOn, type FrameSample, type PerfSummary } from '$lib/minigolf/perf'
+  import PerfOverlay from './PerfOverlay.svelte'
 
   let {
     hole,
@@ -46,6 +48,7 @@
     insets = { left: 0, right: 0, top: 0, bottom: 0 },
     relief = 1,
     onfail,
+    onframe,
   }: {
     hole: Hole
     /** The ball's centre: course x, y and its height, mm (on the ground when left out). */
@@ -74,6 +77,8 @@
     relief?: number
     /** WebGL couldn't start, or lost its context. */
     onfail?: () => void
+    /** Each drawn frame's timings and counts (the benchmark). */
+    onframe?: (s: FrameSample) => void
   } = $props()
 
   const RAIL_HEIGHT = 70
@@ -87,6 +92,9 @@
   let host: HTMLDivElement
   let canvas: HTMLCanvasElement
   let failed = $state(false)
+  // The frame-time overlay (?perf=1): a summary of the last 2 s, redone twice a second
+  const showPerf = perfOverlayOn()
+  let perf = $state<{ summary: PerfSummary; last: FrameSample; gl: string } | null>(null)
 
   /** Three tones and no blending between them: the cartoon look. */
   function toonRamp(): THREE.DataTexture {
@@ -439,9 +447,30 @@
     let chaseCam: ChaseCam | null = null
     let orbitAngle: number | null = null
     let then = performance.now()
+    const timer = gpuTimer(renderer.getContext())
+    const gl = glRenderer(renderer.getContext())
+    const recent = new RecentFrames()
+    const buffer = new THREE.Vector2()
+    const measured = (now: number, frameMs: number): void => {
+      renderer.getDrawingBufferSize(buffer)
+      const sample: FrameSample = {
+        frameMs,
+        cpuMs: performance.now() - now,
+        gpuMs: timer?.ms ?? null,
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        canvas: [buffer.x, buffer.y],
+      }
+      onframe?.(sample)
+      const summary = showPerf ? recent.add(sample, now) : null
+      if (summary) perf = { summary, last: sample, gl }
+    }
     renderer.setAnimationLoop(now => {
-      const dt = Math.min(0.1, (now - then) / 1000)
+      const frameMs = now - then
+      const dt = Math.min(0.1, frameMs / 1000)
       then = now
+      // rAF's timestamp is the frame's start; the work is timed from here
+      const started = performance.now()
       if (built !== hole || builtFelt !== felt || builtShading !== shading || builtRelief !== relief) rebuild(hole)
       if (!placed || placed.aim !== aim || placed.aims !== aims) {
         placeAim()
@@ -519,11 +548,15 @@
         camera.lookAt(look)
       }
       first = false
+      timer?.begin()
       renderer.render(scene, camera)
+      timer?.end()
+      measured(started, frameMs)
     })
 
     return () => {
       renderer.setAnimationLoop(null)
+      timer?.dispose()
       controls.dispose()
       canvas.removeEventListener('webglcontextlost', lost)
       observer.disconnect()
@@ -538,6 +571,7 @@
   })
 </script>
 
-<div bind:this={host} class="size-full" data-testid="hole-3d">
+<div bind:this={host} class="relative size-full" data-testid="hole-3d">
   <canvas bind:this={canvas} hidden={failed} class="block size-full"></canvas>
+  {#if perf}<PerfOverlay {...perf} />{/if}
 </div>

@@ -14,6 +14,8 @@
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import Playtest from '$lib/components/minigolf/Playtest.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
+  import PerfBench from '$lib/components/minigolf/PerfBench.svelte'
+  import { hrefs } from '$lib/routes'
   import { Toggle } from '$lib/components/ui/toggle/index.js'
   import { Select } from '$lib/components/ui/select/index.js'
   import { Slider } from '$lib/components/ui/slider/index.js'
@@ -59,6 +61,8 @@
   const course = $derived(courses.find(c => c.id === courseId) ?? courses[0])
 
   // Preview round: the draft course (its draft holes, else what's published) instead of the code's courses
+  // The 3D benchmark (?bench=1) takes the whole window
+  const benchmark = $derived(new URLSearchParams($querystring ?? '').get('bench') === '1')
   const draftOf = $derived.by(() => {
     const q = new URLSearchParams($querystring ?? '')
     return q.get('draft') === '1' ? q.get('course') : null
@@ -199,7 +203,9 @@
 </script>
 
 <Layout title="Minigolf bench">
-  {#if $currentUser?.isAdmin}
+  {#if $currentUser?.isAdmin && benchmark}
+    <PerfBench />
+  {:else if $currentUser?.isAdmin}
     <main class="flex min-h-0 grow flex-col gap-4 box-border overflow-y-auto p-4 md:p-[28px_32px] lg:overflow-hidden">
       <header class="flex flex-col gap-3">
         <!-- On phones the app's header already shows the title, same cutoff as it -->
@@ -289,6 +295,7 @@
               <Slider bind:value={relief} min={1} max={5} step={0.5} label="Relief" class="w-24" />
             </div>
             <Toggle bind:pressed={freeCamera}>Free camera</Toggle>
+            <a class="{BUTTON} leading-9 no-underline" href={hrefs.adminMinigolf('bench=1')}>Benchmark 3D</a>
           {/if}
           <Toggle bind:pressed={assist}>Aim assist</Toggle>
         </div>
