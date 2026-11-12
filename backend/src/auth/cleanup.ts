@@ -26,7 +26,7 @@ export function decideCleanupAction(session: Session, userId: string): 'forfeit'
  *  against fakes and tested against the real services without the two drifting apart. */
 export type CleanupDeps = {
   engine: {
-    getSessionByUser(userId: string): Session | undefined
+    sessionsOf(userId: string): Session[]
     onUserAction(sessionId: string, userId: string, action: UserAction): Promise<ActionResult>
     deleteSession(sessionId: string, abortedByUserId?: string | null): Promise<boolean>
   }
@@ -36,14 +36,13 @@ export type CleanupDeps = {
   }
 }
 
-/** Leaves the user's lobby and settles any game they're part of, before better-auth removes
+/** Leaves the user's lobby and settles every game they're part of, before better-auth removes
  *  their row (see options.ts's `beforeDelete`). The one real implementation, wired in index.ts
  *  and exercised directly (not re-implemented) by lobby/service.test.ts. */
 export async function cleanUpAccount(deps: CleanupDeps, userId: string): Promise<void> {
   const lobby = await deps.lobbies.current(userId)
   if (lobby) await deps.lobbies.leave(userId, lobby.id)
-  const game = deps.engine.getSessionByUser(userId)
-  if (game) {
+  for (const game of deps.engine.sessionsOf(userId)) {
     switch (decideCleanupAction(game, userId)) {
       case 'forfeit':
         await deps.engine.onUserAction(game.id, userId, { type: 'forfeit' })

@@ -5,7 +5,7 @@ import type { Database } from '../db/schema.js'
 import { getAccountsByIds, type Avatar } from '../db/users.js'
 import { getOpenLobbyIdOfUser, loadLobby, usualBoards } from '../db/lobbies.js'
 import { matchRatings, rankedOutcomes, recordRankedGame, unrecordedRankedGames, type MatchRating } from '../db/ranked.js'
-import type { GameEnded, SessionEngine } from '../session/engine.js'
+import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError } from '../session/errors.js'
 import type { RankedEntry, Seat } from '../session/types.js'
 import type { X01Config } from '../games/x01.js'
@@ -111,7 +111,7 @@ export function rankedConfig(mode: RankedMode, firstTo: FirstTo): X01Config {
  * Every change runs one after another on one queue. Each user's /ws/me gets their search after
  * every change that concerns them.
  */
-export class MatchmakingService {
+export class MatchmakingService implements GameEndedConsumer {
   private readonly queue = new KeyedQueue()
   /** Running searches, by id; a search in a found match is in `found` instead. */
   private readonly searches = new Map<string, Search>()

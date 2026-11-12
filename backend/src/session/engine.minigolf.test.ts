@@ -68,6 +68,7 @@ it('rebuilds a logged game inline, without the pool', async () => {
     ],
     lobby_id: null,
     lobby_name: null,
+    tournament_match_id: null,
     ranked: null,
   }
   s.getActiveSessions.mockResolvedValue([row])

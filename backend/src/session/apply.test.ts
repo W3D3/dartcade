@@ -17,6 +17,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     boardId: 'b1',
     lobbyId: null,
     lobbyName: null,
+    tournamentMatchId: null,
     players,
     module,
     seats: players.map(p => ({ name: p.name, userId: null, controllerUserId: 'u1', boardId: 'b1', boardName: null, bot: null })),

@@ -100,6 +100,8 @@ export type NewGameSession = {
   lobby_id?: string | null
   /** Set for a game the ranked queue started: stored with the session, in the same transaction. */
   ranked?: RankedGame
+  /** The tournament match the game is played for. */
+  tournament_match_id?: string | null
 }
 /** A seat as read back: the controller can be gone (account deleted), the board's name comes along. */
 export type StoredSeatRow = {
@@ -125,6 +127,7 @@ export type StoredGameSession = {
   lobby_name: string | null
   /** Set for a game the ranked queue started. */
   ranked: RankedGame | null
+  tournament_match_id: string | null
 }
 export type NewSessionEvent = {
   session_id: string
@@ -166,6 +169,7 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
         config: JSON.stringify(s.config),
         status: 'active',
         lobby_id: s.lobby_id ?? null,
+        tournament_match_id: s.tournament_match_id ?? null,
       })
       .execute()
     await trx
@@ -211,6 +215,7 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
       'gs.config',
       'gs.created_at',
       'gs.lobby_id',
+      'gs.tournament_match_id',
       'l.name as lobby_name',
       'rm.mode as ranked_mode',
       'rm.sides as ranked_sides',

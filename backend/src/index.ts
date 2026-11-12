@@ -7,7 +7,7 @@ import { deletePairingCodesExpiredBefore, runMigrations } from './db/queries.js'
 import { pruneActivity } from './db/activity.js'
 import { listOfficialCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
-import { SessionEngine, createEngineStore } from './session/engine.js'
+import { SessionEngine, createEngineStore, type GameEndedConsumer } from './session/engine.js'
 import { browserConnections, forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { bootstrapAdmin } from './auth/bootstrap.js'
@@ -170,7 +170,8 @@ const engine: SessionEngine = new SessionEngine(
     })
     bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
     // Independent: a lobby that fails to reset must not keep the ratings from moving
-    return Promise.allSettled([lobbies.onGameEnded(ended), matchmaking.onGameEnded(ended)]).then(results => {
+    const consumers: GameEndedConsumer[] = [lobbies, matchmaking]
+    return Promise.allSettled(consumers.map(c => c.onGameEnded(ended))).then(results => {
       for (const r of results)
         if (r.status === 'rejected') warn('game-end hook failed', { sessionId: ended.sessionId, error: String(r.reason) })
     })

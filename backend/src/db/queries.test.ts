@@ -28,7 +28,7 @@ import {
 import { PairingCodeClaimedError } from './errors.js'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertTournament, insertUsers } from '../test/fixtures.js'
 
 const url = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/dartcade_test'
 
@@ -162,6 +162,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
           created_at: new Date(),
         })
         .execute()
+    })
+  })
+
+  describe('a tournament game', () => {
+    it('is stored with its match and read back with it, so a restart rebuilds it as one', async () => {
+      await db.deleteFrom('tournaments').where('id', '=', 't-queries').execute()
+      await insertTournament(db, { id: 't-queries', status: 'running' })
+      await db
+        .insertInto('tournament_matches')
+        .values({ id: 'tm-queries', tournament_id: 't-queries', bracket: 'main', round: 1, slot: 0, first_to: 1 })
+        .execute()
+      await insertGameSession(db, {
+        id: '01JTEST00000000000000000TM',
+        owner_user_id: 'u-test-1',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 0,
+        config: {},
+        tournament_match_id: 'tm-queries',
+        players: [{ name: 'Anna', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, bot_level: null }],
+      })
+      const rows = await getActiveGameSessions(db)
+      expect(rows.find(s => s.id === '01JTEST00000000000000000TM')?.tournament_match_id).toBe('tm-queries')
+      expect(rows.find(s => s.id === '01JTEST00000000000000000RK')?.tournament_match_id).toBeNull()
     })
   })
 

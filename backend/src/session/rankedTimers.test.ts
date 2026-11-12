@@ -154,6 +154,7 @@ describe('the ranked clock timer', () => {
         created_at: live?.createdAt,
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: game('1v1', rules),
         players: duel.map(s => ({
           name: s.name,
@@ -245,6 +246,7 @@ describe('the bull off no-show limit', () => {
         created_at: live?.createdAt,
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: game('1v1', rules),
         players: duel.map(s => ({
           name: s.name,
@@ -320,6 +322,7 @@ describe('the ranked disconnect timer', () => {
         created_at: live?.createdAt,
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked: game('1v1', long),
         players: duel.map(s => ({
           name: s.name,

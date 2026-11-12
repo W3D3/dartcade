@@ -31,6 +31,7 @@ function memoryStore() {
             created_at: s.created_at,
             lobby_id: null,
             lobby_name: null,
+            tournament_match_id: null,
             ranked: null,
             players: s.players.map(p => ({ ...p, board_name: null })),
           })),

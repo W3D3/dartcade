@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { decideCleanupAction } from './cleanup.js'
+import { describe, it, expect, vi } from 'vitest'
+import { cleanUpAccount, decideCleanupAction } from './cleanup.js'
+import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { newSession } from '../session/replay.js'
 import { x01Module } from '../games/x01.js'
 import type { Seat } from '../session/types.js'
@@ -51,5 +52,40 @@ describe('decideCleanupAction', () => {
     const s = game([seat('Host', 'host'), seat('Lena', 'lena'), seat('Guest', 'host')])
     s.forfeited.push(2)
     expect(decideCleanupAction(s, 'host')).toBe('forfeit')
+  })
+})
+
+describe('cleanUpAccount', () => {
+  it('ends every tournament game an organizer runs with guest seats they control, not just one', async () => {
+    const abortSession = vi.fn().mockResolvedValue(undefined)
+    const store: EngineStore = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession,
+      getAvatars: vi.fn().mockResolvedValue(new Map()),
+    }
+    const engine = new SessionEngine(store, () => undefined)
+    const guest = (name: string, boardId: string): Seat => ({ ...seat(name, 'org'), userId: null, boardId })
+    const match = (id: string, boardId: string) =>
+      engine.createWithSeats({
+        ownerUserId: 'org',
+        gameId: 'x01',
+        config: x01Module.defaultConfig,
+        seats: [guest('Anna', boardId), guest('Ben', boardId)],
+        tournamentMatchId: id,
+      })
+    const games = [await match('m1', 'board-1'), await match('m2', 'board-2')]
+    const lobbies = { current: vi.fn().mockResolvedValue(null), leave: vi.fn() }
+
+    await cleanUpAccount({ engine, lobbies }, 'org')
+
+    expect(games.map(g => engine.getSession(g.sessionId)?.status ?? 'gone')).toEqual(['gone', 'gone'])
+    expect(abortSession).toHaveBeenCalledTimes(2)
+    expect(engine.sessionsOf('org')).toEqual([])
   })
 })

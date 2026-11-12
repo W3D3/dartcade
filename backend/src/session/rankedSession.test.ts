@@ -62,6 +62,7 @@ describe('a ranked session', () => {
         created_at: new Date(),
         lobby_id: null,
         lobby_name: null,
+        tournament_match_id: null,
         ranked,
         players: [
           { name: 'Ann', user_id: 'ann', controller_user_id: 'ann', board_db_id: null, board_name: null, bot_level: null },

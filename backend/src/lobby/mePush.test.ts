@@ -142,6 +142,7 @@ describe('/ws/me during a lobby game', () => {
       abortedByUserId: 'chris',
       results: [],
       teamGame: false,
+      tournamentMatchId: null,
       userIds: [],
       boardIds: [],
     })
