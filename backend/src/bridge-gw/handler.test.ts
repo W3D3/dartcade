@@ -228,6 +228,7 @@ class FakeSocket extends EventEmitter {
   readyState = 1
   close = vi.fn()
   send = vi.fn()
+  terminate = vi.fn()
 }
 
 const flush = () => new Promise(r => setImmediate(r))
@@ -461,6 +462,29 @@ describe('handleBridgeConnection', () => {
       { type: 'board.status', boardId: 'board-11', online: true },
       { type: 'board.status', boardId: 'board-11', online: false },
     ])
+  })
+})
+
+describe('a bridge that goes silent', () => {
+  it('stays online through a quiet spell, then is dropped and its owner told the board is offline', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-silent', hardware_id: null, owner_user_id: 'u-silent' } as any)
+    const onBoardStatus = vi.fn()
+    const socket = new FakeSocket()
+    // Like ws: the socket is gone at once, without a close handshake
+    socket.terminate.mockImplementation(() => socket.emit('close'))
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine: { onBoardPresence: vi.fn() } as any, onBoardStatus })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    expect(onBoardStatus).toHaveBeenLastCalledWith('u-silent', 'board-silent', true)
+
+    bridgeConnections.closeSilent(Date.now() + BRIDGE_SILENCE_MS / 2)
+    expect(socket.terminate).not.toHaveBeenCalled()
+    expect(bridgeConnections.isOnline('board-silent')).toBe(true)
+
+    bridgeConnections.closeSilent(Date.now() + BRIDGE_SILENCE_MS + 1_000)
+    expect(socket.terminate).toHaveBeenCalled()
+    expect(bridgeConnections.isOnline('board-silent')).toBe(false)
+    expect(onBoardStatus).toHaveBeenLastCalledWith('u-silent', 'board-silent', false)
   })
 })
 
