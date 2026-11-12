@@ -282,6 +282,13 @@ if (samples) sweeps.push(['dart sample', () => pruneSamples(db, sampleBytes)])
 // lobby.idleMinutes.* flags); one whose unranked game had no event for that long is closed too, its
 // game aborted. So they are swept every minute, apart from the rest
 timers.push(every(60 * 1000, 'idle lobby sweep', () => lobbies.closeIdleLobbies()))
+// A bridge whose socket stays open but that stopped talking (a wedged process) goes offline
+timers.push(
+  every(20 * 1000, 'bridge silence sweep', () => {
+    bridgeConnections.closeSilent()
+    return Promise.resolve()
+  }),
+)
 for (const [what, run] of sweeps) timers.push(every(5 * 60 * 1000, `${what} sweep`, run))
 
 const app = await buildApp({

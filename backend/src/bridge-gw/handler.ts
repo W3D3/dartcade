@@ -253,6 +253,7 @@ export function handleBridgeConnection(
   let failed = false
 
   socket.on('message', (raw: Buffer) => {
+    bridgeConnections.seen(conn)
     let parsed: unknown
     try {
       parsed = JSON.parse(raw.toString())

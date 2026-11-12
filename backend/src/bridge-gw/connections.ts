@@ -41,14 +41,29 @@ function isFeedKind(k: string): k is FeedEvent['kind'] {
 }
 const FEED_LIMIT = 50
 
+/** Bridges ping every 20 s: one silent for this long is wedged, though its socket may stay open. */
+export const BRIDGE_SILENCE_MS = 60_000
+
 export class BridgeConnections {
   private byBoard: Map<string, BridgeConn> = new Map()
   private all: Set<BridgeConn> = new Set()
   private feeds: Map<string, FeedEvent[]> = new Map()
   private pending: Map<string, PendingRequest> = new Map()
+  private lastSeen: Map<BridgeConn, number> = new Map()
 
-  add(conn: BridgeConn): void {
+  add(conn: BridgeConn, now = Date.now()): void {
     this.all.add(conn)
+    this.lastSeen.set(conn, now)
+  }
+
+  /** The bridge sent something: it is alive. */
+  seen(conn: BridgeConn, now = Date.now()): void {
+    if (this.lastSeen.has(conn)) this.lastSeen.set(conn, now)
+  }
+
+  /** Drops the bridges that sent nothing for BRIDGE_SILENCE_MS, so a wedged one shows offline instead of online. */
+  closeSilent(now = Date.now()): void {
+    for (const [conn, at] of this.lastSeen) if (now - at > BRIDGE_SILENCE_MS) conn.ws.terminate()
   }
 
   register(conn: BridgeConn, boardDbId: string): void {
@@ -63,6 +78,7 @@ export class BridgeConnections {
 
   remove(conn: BridgeConn): void {
     this.all.delete(conn)
+    this.lastSeen.delete(conn)
     // A replaced connection closes after its successor registered: keep the successor
     if (conn.boardDbId && this.byBoard.get(conn.boardDbId) === conn) this.byBoard.delete(conn.boardDbId)
     for (const p of this.pending.values()) if (p.conn === conn) p.settle(null)
