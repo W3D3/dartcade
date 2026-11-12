@@ -6826,7 +6826,7 @@ components:
         owner: { $ref: '#/components/schemas/TournamentOwner' }
     MyTournaments:
       type: object
-      required: [liveMatch, playing, organizing, past, pastTotal, season]
+      required: [liveMatch, playing, organizing, past, season]
       additionalProperties: false
       properties:
         liveMatch:
@@ -6880,7 +6880,6 @@ components:
               lost: { type: integer }
               average: { type: number, nullable: true, description: Your X01 3-dart average in its matches }
               endedAt: { type: string, format: date-time, nullable: true }
-        pastTotal: { type: integer }
         season:
           type: object
           required: [label, played, titles, won, lost, average, best]

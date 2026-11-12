@@ -49,7 +49,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
       playing: [],
       organizing: [],
       past: [],
-      pastTotal: 0,
       season: { label: 'Q4 2026', played: 0, titles: 0, won: 0, lost: 0, average: null, best: null },
     })
   })
@@ -230,7 +229,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
       ['won', 1, 3, 0, 75],
       ['old', 2, 0, 0, 90],
     ])
-    expect(r.pastTotal).toBe(3)
     expect(r.season).toEqual({
       label: 'Q4 2026',
       played: 2,
