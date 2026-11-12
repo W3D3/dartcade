@@ -843,6 +843,24 @@ describe('Board Manager calls through the bridge (bm.request / bm.response)', ()
     await expect(pending).resolves.toBeNull()
   })
 
+  it('settles the answer while an earlier event is still being applied to the game', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-bm5', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev5' })
+    const engine = { onBridgeEvent: vi.fn(() => new Promise(() => {})), onBoardPresence: vi.fn() } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    const event = { v: 1, seq: 1, kind: 'takeout.started', bridge_id: 'br', boot_id: 'boot', recv_wall: new Date().toISOString(), data: {} }
+    socket.emit('message', Buffer.from(JSON.stringify(event)))
+    await flush()
+    expect(engine.onBridgeEvent).toHaveBeenCalled()
+
+    const pending = bridgeConnections.request('board-bm5', { op: 'start' }, 200)
+    const id = sentRequest(socket).data.id
+    await answer(socket, { id, status: 200 })
+    await expect(pending).resolves.toEqual({ id, status: 200 })
+  })
+
   it('resolves null when the bridge drops before answering, or is not connected', async () => {
     const socket = await connect('board-bm4')
     const pending = bridgeConnections.request('board-bm4', { op: 'camera', cam: 0 }, 10_000)
