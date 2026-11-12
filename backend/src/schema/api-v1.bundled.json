@@ -16537,7 +16537,7 @@
               15,
               null
             ],
-            "description": "Online only: the wait before a no-show forfeits"
+            "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
           }
         }
       },

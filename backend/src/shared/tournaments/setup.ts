@@ -81,8 +81,7 @@ export function setupProblems(t: TournamentSetup): Problem[] {
       bad('settings/checkInMinutes', 'check-in opens once registration has closed')
   }
   if (!online && s.checkInMinutes !== null) bad('settings/checkInMinutes', 'an in-person tournament has no check-in')
-  if (online !== (s.noShowMinutes !== null))
-    bad('settings/noShowMinutes', online ? 'an online tournament needs a no-show wait' : 'an in-person tournament has no no-show wait')
+  if (!online && s.noShowMinutes !== null) bad('settings/noShowMinutes', 'an in-person tournament has no no-show wait')
   return out
 }
 
