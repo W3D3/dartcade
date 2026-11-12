@@ -317,18 +317,22 @@
     {#if view3d}
       <div class="absolute inset-0">
         {#await loadHole3D() then { default: Hole3D }}
-          <Hole3D
-            hole={shownHole}
-            {ball}
-            ballColor={seatColor(up)}
-            {others}
-            aims={aimLines(game, ownBall(game))}
-            {aim}
-            {insets}
-            follow={playing && !orbiting && roll && frame !== null ? { path: roll.own, at: frame } : null}
-            orbit={orbiting}
-            onfail={() => (failed = true)}
-          />
+          <!-- A new quality opens a new view: edge smoothing is fixed when WebGL starts -->
+          {#key settings.minigolfQuality}
+            <Hole3D
+              hole={shownHole}
+              {ball}
+              ballColor={seatColor(up)}
+              {others}
+              aims={aimLines(game, ownBall(game))}
+              {aim}
+              {insets}
+              follow={playing && !orbiting && roll && frame !== null ? { path: roll.own, at: frame } : null}
+              orbit={orbiting}
+              quality={settings.minigolfQuality}
+              onfail={() => (failed = true)}
+            />
+          {/key}
         {/await}
       </div>
     {:else}

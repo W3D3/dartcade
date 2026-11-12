@@ -1,8 +1,9 @@
 // Measuring the 3D view: per-frame samples from Hole3D and their summary, the GPU's name and time,
 // and the frame-time overlay's switch and window.
+import type { Quality } from './quality.js'
 
 /** One drawn frame: since the last one, the main thread's work on it, the GPU's (when the browser
- *  can time it), ms; what three drew, on how big a canvas (device px). */
+ *  can time it), ms; what three drew, on how big a canvas (device px), in which tier and scale. */
 export type FrameSample = {
   frameMs: number
   cpuMs: number
@@ -10,6 +11,8 @@ export type FrameSample = {
   calls: number
   triangles: number
   canvas: [number, number]
+  tier: Quality
+  scale: number
 }
 
 const pct = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0

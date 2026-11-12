@@ -289,24 +289,46 @@ page run once more: registration happens only at install.
 
 ## Minigolf 3D performance
 
-To measure how the 3D hole (`lib/components/minigolf/Hole3D.svelte`) draws, on any device:
+The 3D hole (`lib/components/minigolf/Hole3D.svelte`) draws in one of three quality tiers
+(`lib/minigolf/quality.ts`). The game and its physics are the same in every tier; only the look changes.
+
+| Tier   | Edges smoothed (MSAA) | Shadows                     | Canvas at most                 |
+| ------ | --------------------- | --------------------------- | ------------------------------ |
+| High   | yes                   | yes                         | 2× the CSS pixels              |
+| Medium | no                    | yes                         | 1920×1080, 1.5× the CSS pixels |
+| Low    | no                    | a dark disc under each ball | 1440×810, 1× the CSS pixels    |
+
+Auto (the default) starts from the GPU's name: Low for software GL and the Raspberry Pi's VideoCore
+(`V3D`), Medium for integrated and phone GPUs, High otherwise. While playing it lowers the canvas's
+resolution in two steps, to 64%, when a second's frames run under 45 fps, then the tier, and goes
+back up only after a run of fast seconds. A tier picked by hand stays as picked. Every tier draws a
+frame only when something moved, so an idle hole costs nothing.
+
+The setting is per device: the match screen's settings drawer (3D quality), or `?quality=low` (or
+`medium`, `high`, `auto`) in the URL of the match screen or the big screen. The bridge's kiosk
+browser opens private, so it forgets a stored setting and runs Auto unless its URL carries one.
+
+To measure it, on any device:
 
 1. Open `#/admin/minigolf?perf=1` (or add `perf=1` to a match screen's or big screen's URL): a
    frame-time overlay sits in the 3D view's corner, for this browser until `perf=0`. It shows the
    last 2 s: fps, the 1% low, frame and main-thread ms (GPU ms where the browser can time it), draw
-   calls, triangles, the canvas size and the GPU.
-2. For numbers to compare, open `#/admin/minigolf?bench=1` (the bench's Benchmark 3D button) in a full-screen window. It runs four holes for about 50 s,
+   calls, triangles, the canvas size, the tier and the GPU.
+2. For numbers to compare, open `#/admin/minigolf?bench=1` (the bench's Benchmark 3D button, plus
+   `&quality=low` to pin a tier) in a full-screen window. It runs four holes for about 50 s,
    then shows the result as JSON with a Copy button.
 
 On a Raspberry Pi 5, sign in as an admin in Chromium on the screen the board uses, press F11, open
-`#/admin/minigolf?bench=1` and send the JSON result.
+`#/admin/minigolf?bench=1`, run it once each with `&quality=auto`, `&quality=low` and `&quality=high`,
+and send the three JSON results.
 
 `e2e/perf/minigolf-bench.mjs` runs the same benchmark in Chromium at several window sizes, pixel
 ratios and CPU slowdowns against a running stack, and prints a table (not part of CI):
 
 ```sh
 cd e2e
-node perf/minigolf-bench.mjs --sizes 1920x1080,3840x2160 --dpr 1,2 --throttle 1,6 --out /tmp/bench.json
+node perf/minigolf-bench.mjs --sizes 1920x1080,3840x2160 --dpr 1,2 --throttle 1,6 \
+  --query 'quality=low;quality=high' --out /tmp/bench.json
 ```
 
 It signs in as `BENCH_EMAIL`/`BENCH_PASSWORD` (default: the visual check's admin). Without `--gpu`

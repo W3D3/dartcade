@@ -10,6 +10,8 @@ describe('summarize', () => {
       calls: 9,
       triangles: 99,
       canvas: [1, 1] as [number, number],
+      tier: 'low' as const,
+      scale: 1,
     }))
     const s = summarize(frames)
     expect(s.fps).toBeCloseTo(1000 / 10.9, 1)
@@ -28,6 +30,8 @@ describe('RecentFrames', () => {
     calls: 9,
     triangles: 99,
     canvas: [1, 1] as [number, number],
+    tier: 'low' as const,
+    scale: 1,
   })
 
   it('summarises at most twice a second, over the last 2 s of frames', () => {

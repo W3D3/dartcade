@@ -7,6 +7,7 @@
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import type { BoardView, GameSettings } from '$lib/gameSettings.js'
   import type { ScoreUpdates } from '$lib/heldScore.js'
+  import type { QualityChoice } from '$lib/minigolf/quality.js'
   import { loadVoiceLibrary, voiceLibrary } from '$lib/caller/voices.js'
   import { audioContext } from '$lib/sounds.js'
   import SettingSwitch from './SettingSwitch.svelte'
@@ -42,6 +43,12 @@
   const scoreUpdates: { value: ScoreUpdates; label: string }[] = [
     { value: 'dart', label: 'Every dart' },
     { value: 'visit', label: 'After the visit' },
+  ]
+  const qualities: { value: QualityChoice; label: string }[] = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
   ]
   const boardViews: { value: BoardView; label: string }[] = BOARD_VIEWS.map(v => ({ value: v, label: BOARD_VIEW_LABELS[v] }))
   const allSounds = [
@@ -109,6 +116,15 @@
         </div>
         <SegmentedControl labelledby="setting-boardView" options={boardViews} bind:value={settings.boardView} class="hidden sm:flex" />
       </div>
+      {#if gameId === 'minigolf'}
+        <div class="flex flex-col gap-2">
+          <span class="flex flex-col gap-[2px]">
+            <span id="setting-minigolfQuality" class="text-body text-text">3D quality</span>
+            <span class="text-small text-text-dim">On this device. Lower runs smoother on slow screens such as a Raspberry Pi</span>
+          </span>
+          <SegmentedControl labelledby="setting-minigolfQuality" options={qualities} bind:value={settings.minigolfQuality} />
+        </div>
+      {/if}
       {#if gameId === 'x01'}
         <div class="flex flex-col gap-2">
           <span class="flex flex-col gap-[2px]">

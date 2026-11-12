@@ -1,5 +1,5 @@
 <!--
-  The 3D view's benchmark (#/admin/minigolf?bench=1): the whole
+  The 3D view's benchmark (#/admin/minigolf?bench=1, plus `quality=` to pin a tier): the whole
   window, a fixed set of holes, each aimed at (the preview line turning), left still, chased along
   a made-up roll and circled; then the frame times per hole and phase as JSON, to copy (and on
   window.__minigolfBench for the Playwright script, e2e/perf/). The still phase counts the frames
@@ -104,6 +104,8 @@
         canvas: last ? `${last.canvas[0]}×${last.canvas[1]}` : null,
         cores: navigator.hardwareConcurrency,
       },
+      // Where Auto ended up
+      quality: { tier: last?.tier, scale: last?.scale },
       // The moving phases; the still ones only say how many frames were drawn
       all: summarize(samples.filter((_, k) => steps[k].phase !== 'still').flat()),
       stillFrames: drawn.filter(s => s.phase === 'still').map(s => s.frames),

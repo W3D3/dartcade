@@ -85,7 +85,8 @@ for (const scene of SCENES) {
     expect(res.ok(), `start ${sceneName(scene)}: ${res.status()} ${await res.text()}`).toBeTruthy()
     const { sessionId } = (await res.json()) as { sessionId: string }
     try {
-      await page.goto(`/#/session/${sessionId}`)
+      // Minigolf's 3D view in its full look: Auto would pick by the GPU and adapt while the shot is taken
+      await page.goto(`/#/session/${sessionId}${scene.mode === 'minigolf' ? '?quality=high' : ''}`)
       // "End" in the header, "End game" on phones
       await expect(page.getByRole('button', { name: /^End( game)?$/ })).toBeVisible()
       for (const step of scene.play ?? []) {
