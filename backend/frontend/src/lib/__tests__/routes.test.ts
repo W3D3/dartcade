@@ -28,6 +28,8 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   matchmaking: [hrefs.matchmaking()],
   tournaments: [hrefs.tournaments(), hrefs.tournaments('teams')],
   tournamentJoin: [hrefs.tournamentJoin('K7Q4MD')],
+  tournamentNew: [hrefs.tournamentNew()],
+  tournamentEdit: [hrefs.tournamentEdit('t1'), hrefs.tournamentEdit('t1', 'saved=open')],
   ranks: [hrefs.ranks()],
   progress: [hrefs.progress()],
   rewards: [hrefs.rewards(), hrefs.rewards(15)],
