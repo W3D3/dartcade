@@ -30,6 +30,13 @@ describe('the checkout table', () => {
 })
 
 describe('checkoutHint, double out', () => {
+  it('a single sets up the double where a middle treble is not needed (110 is T20 S10 D20)', () => {
+    expect(checkoutHint(110)).toEqual(['T20', 'S10', 'D20'])
+    expect(checkoutHint(107)).toEqual(['T19', 'S10', 'D20'])
+    expect(checkoutHint(106)).toEqual(['T20', 'S6', 'D20'])
+    expect(checkoutHint(112)).toEqual(['T20', 'S12', 'D20'])
+  })
+
   it("follows the pros' routes", () => {
     expect(checkoutHint(170)).toEqual(['T20', 'T20', 'Bull'])
     expect(checkoutHint(81)).toEqual(['T19', 'D12'])
