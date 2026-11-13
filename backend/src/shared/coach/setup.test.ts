@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { setupModel } from '../../bots/setupModel.js'
 import { minDarts } from './minDarts.js'
+import { loadModel } from './model.js'
 import { setupAim } from './setup.js'
+import { COACH_TIER_IDS } from './tiers.js'
 
 const model = setupModel()
 const aimAt = (left: number, darts = 1) => {
@@ -60,5 +62,19 @@ describe('setupAim', () => {
       expect(s?.leaves, `${left}`).not.toBeNull()
       expect(minDarts(s?.leaves ?? 0), `${left} → ${s?.leaves}`).toBeLessThanOrEqual(3)
     }
+  })
+})
+
+describe('setupAim: the bull and the 25', () => {
+  it('names the 25 to leave 40 from 65 with one dart, at every tier', async () => {
+    for (const tier of COACH_TIER_IDS) {
+      const s = setupAim(await loadModel(tier), 65, 1)
+      expect([tier, s?.label, s?.leaves]).toEqual([tier, '25', 40])
+    }
+  })
+
+  it('names the bull when the 50 is the bed worth more: 82 with one dart leaves D16', async () => {
+    const s = setupAim(await loadModel('semipro'), 82, 1)
+    expect([s?.label, s?.leaves]).toEqual(['Bull', 32])
   })
 })

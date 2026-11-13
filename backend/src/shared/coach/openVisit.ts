@@ -1,7 +1,7 @@
 // The coach on a visit still being thrown (the live panel, the admin sandbox): the visit reviewed the
 // way the coach reviews a real leg, and the next dart's best aims.
 import { AIMS, type Aim } from './aims.js'
-import type { CoachModel, CoachModels } from './model.js'
+import { aimLabel, type CoachModel, type CoachModels } from './model.js'
 import { bestLeaveAim, bogeyChance, BOGEY_THRESHOLD } from './notes.js'
 import { reviewLeg, type ReviewVisit } from './review.js'
 import { dartPhase, walkVisit, type CoachDart, type CoachLeg, type CoachVisit } from './walk.js'
@@ -16,7 +16,8 @@ export type OpenVisitInput = {
   average: number | null
 }
 
-export type AimChance = { aim: Aim; chance: number }
+/** `label` names what to hit (model.ts aimLabel): the bull aim is the 25 or the bull */
+export type AimChance = { aim: Aim; label: string; chance: number }
 
 export type OpenVisit = {
   /** Null before the first dart */
@@ -44,11 +45,11 @@ export function openVisitLeg(input: OpenVisitInput, darts: readonly CoachDart[])
 }
 
 /** The best of each label's aims (outer and inner single share one), best first */
-function bestPerLabel<T extends { aim: Aim }>(xs: readonly T[], by: (x: T) => number, top: number): T[] {
+function bestPerLabel<T extends { label: string }>(xs: readonly T[], by: (x: T) => number, top: number): T[] {
   const best = new Map<string, T>()
   for (const x of xs) {
-    const seen = best.get(x.aim.label)
-    if (!seen || by(x) > by(seen)) best.set(x.aim.label, x)
+    const seen = best.get(x.label)
+    if (!seen || by(x) > by(seen)) best.set(x.label, x)
   }
   return [...best.values()].sort((a, b) => by(b) - by(a)).slice(0, top)
 }
@@ -60,13 +61,17 @@ export function bestAims(model: CoachModel, start: number, left: number, darts: 
   const best = bestLeaveAim(e)
   // A leave dart is graded by its leave (notes.ts leaveCost), so no aim the grade would call a bad setup is offered
   const safe = (i: number) => dartPhase({ left, darts }) !== 'leave' || bogeyChance(e, i) - bogeyChance(e, best) < BOGEY_THRESHOLD
-  const chances = e.values.flatMap((chance, i) => (chance > 0 && safe(i) ? [{ aim: AIMS[i], chance }] : []))
+  const chances = e.values.flatMap((chance, i) => (chance > 0 && safe(i) ? [{ aim: AIMS[i], label: aimLabel(e, i), chance }] : []))
   return bestPerLabel(chances, a => a.chance, top)
 }
 
 /** The `top` aims with the most points a dart (`model`'s), for more than 170 left. */
-export function scoringAims({ landing }: CoachModel, top: number): { aim: Aim; points: number }[] {
-  const points = landing.map((o, i) => ({ aim: AIMS[i], points: o.reduce((s, [, p, , chance]) => s + p * chance, 0) }))
+export function scoringAims({ landing }: CoachModel, top: number): { aim: Aim; label: string; points: number }[] {
+  const points = landing.map((o, i) => ({
+    aim: AIMS[i],
+    label: AIMS[i].label,
+    points: o.reduce((s, [, p, , chance]) => s + p * chance, 0),
+  }))
   return bestPerLabel(points, a => a.points, top)
 }
 

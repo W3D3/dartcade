@@ -88,7 +88,7 @@ export function x01Slots(o: {
   const suggest = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0
   const hint = suggest ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
   const setup = suggest && !hint && o.outMode === 'double' ? o.setup?.(o.remaining, dartsLeft) : null
-  if (setup) return [...done, ...openSlots(done.length, [{ label: setup.aim.label, foot: setupFoot(setup) }])]
+  if (setup) return [...done, ...openSlots(done.length, [{ label: setup.label, foot: setupFoot(setup) }])]
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score

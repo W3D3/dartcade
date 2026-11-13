@@ -2,7 +2,7 @@
 // bull 25/50: how likely each aim is to lead to a checkout this visit, or in the next one weighted by
 // the chance of getting it (w: the opponents don't check out first). The coach judges a player with
 // the model of their target tier (tiers.ts targetTier).
-import type { Outcome } from './aims.js'
+import { AIMS, aimIndex, type Outcome } from './aims.js'
 import { BRILLIANT_TIER, type CoachTierId } from './tiers.js'
 import { afterDart } from './walk.js'
 
@@ -19,6 +19,18 @@ export type Evaluation = {
 }
 
 export type Evaluator = (left: number, darts: number) => Evaluation
+
+const BULL = aimIndex('Bull')
+
+/** The bed a dart at an aim is meant for. Any dart at the bull or the 25 lands in both beds (a wide
+ *  spread hits the 25 ring about as often from the centre as from a point on it), so the aim does not
+ *  say which one to want: the bed worth more does (65 with one dart: the 25 leaves 40, the 50 leaves
+ *  15). Every other aim is its own bed. */
+export function aimLabel(e: Evaluation, aim: number): string {
+  if (AIMS[aim].numbers[0] !== 25) return AIMS[aim].label
+  const value = (name: string) => e.outcomes(BULL).find(o => o.outcome[0] === name)?.value ?? 0
+  return value('25') > value('Bull') ? '25' : 'Bull'
+}
 
 export type CoachModel = {
   /** The tier whose throws the landing table is from */
