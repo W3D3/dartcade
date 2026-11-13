@@ -2,7 +2,7 @@
 // best chance to. The coach's own judgement (model.ts values, notes.ts bestLeaveAim), asked for the
 // score left instead of for a thrown dart: the match screen's setup tip and the bots' aim.
 import { AIMS, aimPoints, aimKind, type Aim } from './aims.js'
-import type { CoachModel, Evaluation } from './model.js'
+import { aimLabel, type CoachModel, type Evaluation } from './model.js'
 import { bestLeaveAim } from './notes.js'
 import { dartPhase } from './walk.js'
 
@@ -11,7 +11,9 @@ export const SETUP_TIER = 'worldclass'
 
 export type Setup = {
   aim: Aim
-  /** The score a dart in the aim's bed leaves; null when that would bust */
+  /** What to hit, by name: the aim's label, or for the bull and the 25 the bed worth more (model.ts aimLabel) */
+  label: string
+  /** The score a dart in that bed leaves; null when that would bust */
   leaves: number | null
 }
 
@@ -35,7 +37,9 @@ export function setupAim(model: CoachModel, left: number, darts: number): Setup 
 
 function solve(model: CoachModel, left: number, darts: number): Setup {
   const e: Evaluation = model.evaluator(left, 1)(left, darts)
-  const aim = AIMS[bestLeaveAim(e, AIM_INDEXES)]
-  const after = left - aimPoints(aim)[0]
-  return { aim, leaves: after >= 2 ? after : null }
+  const i = bestLeaveAim(e, AIM_INDEXES)
+  const aim = AIMS[i]
+  const label = aimLabel(e, i)
+  const after = left - (label === '25' ? 25 : aimPoints(aim)[0])
+  return { aim, label, leaves: after >= 2 ? after : null }
 }

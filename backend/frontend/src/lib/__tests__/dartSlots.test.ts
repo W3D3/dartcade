@@ -27,7 +27,7 @@ describe('x01Slots', () => {
   })
 
   it('tips a setup dart in place of a finish route when none fits the darts left', () => {
-    const setup = (left: number, darts: number) => (left === 47 && darts === 1 ? { aim: aimById('SO7')!, leaves: 40 } : null)
+    const setup = (left: number, darts: number) => (left === 47 && darts === 1 ? { aim: aimById('SO7')!, label: 'S7', leaves: 40 } : null)
     const s = x01Slots({ ...base, darts: [d('T20', 60), d('T20', 60)], remaining: 47, setup })
     expect(s.map(x => [x.kind, x.label, x.foot])).toEqual([
       ['thrown', 'T20', ''],
@@ -38,7 +38,7 @@ describe('x01Slots', () => {
   })
 
   it('keeps the finish route when there is one, and shows no setup when suggestions are off', () => {
-    const setup = () => ({ aim: aimById('SO7')!, leaves: 40 })
+    const setup = () => ({ aim: aimById('SO7')!, label: 'S7', leaves: 40 })
     expect(x01Slots({ ...base, darts: [d('T20', 60)], remaining: 40, setup })[1].foot).toBe('Game shot')
     expect(x01Slots({ ...base, suggest: false, darts: [d('T20', 60), d('T20', 60)], remaining: 47, setup })[2].kind).toBe('empty-next')
   })

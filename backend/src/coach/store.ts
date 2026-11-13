@@ -15,7 +15,7 @@ import { coachable, loadCoachModels, reviewLeg, targetTier } from '../shared/coa
 import { coachDart } from '../shared/coach/walk.js'
 
 /** Bump when a stored review would come out different: every game's rows are then rebuilt */
-export const COACH_VERSION = 33
+export const COACH_VERSION = 34
 
 /** The current coach target of a coach_legs row's player (`cl`): their preference, auto when unset */
 export const currentTarget = sql<string>`coalesce((SELECT u.preferences->>'coachTarget' FROM "user" u WHERE u.id = cl.user_id), 'auto')`

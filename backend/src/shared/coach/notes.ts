@@ -4,7 +4,7 @@
 import { checkoutHint } from '../checkout.js'
 import { AIMS, aimIndex, aimsOn, directOutId, neighbours } from './aims.js'
 import { classifyDart } from './dartClass.js'
-import type { CoachModel, Evaluation, Evaluator } from './model.js'
+import { aimLabel, type CoachModel, type Evaluation, type Evaluator } from './model.js'
 import { minDarts } from './minDarts.js'
 import { dartPhase, landedNumber, nearBull, type Throw } from './walk.js'
 
@@ -137,7 +137,7 @@ export function strategyNotes(throws: readonly Throw[], model: CoachModel, evalu
       left: t.left,
       darts: t.darts,
       thrown,
-      better: AIMS[best].label,
+      better: aimLabel(evaluation, best),
       betterAimId: AIMS[best].id,
       cost,
       reason: reason(t, thrown, model.fin),

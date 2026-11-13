@@ -26,9 +26,11 @@ export type LiveCoach = {
 const TOP = 3
 
 /** "leaves 40", "leaves 37 or 40", "checks out" (a double or the bull to 0), "busts". */
-function leaves(left: number, a: Aim): string {
+function leaves(left: number, a: Aim, label: string): string {
   const word = (x: number | 'out' | 'bust') => (x === 'out' ? 'checks out' : x === 'bust' ? 'busts' : String(x))
-  const each = [...new Set(aimPoints(a).map(p => afterDart(left, p, isDoubleAim(a))))]
+  // The bull and the 25 are two beds of the bull aim: the label says which one is meant
+  const [points, double] = label === '25' ? [[25], false] : label === 'Bull' ? [[50], true] : [aimPoints(a), isDoubleAim(a)]
+  const each = [...new Set(points.map(p => afterDart(left, p, double)))]
   const head = typeof each[0] === 'number' ? `leaves ${each[0]}` : word(each[0])
   return each.length === 1 ? head : `${head} or ${word(each[1])}`
 }
@@ -47,7 +49,7 @@ export function liveCoach(models: CoachModels, start: number, darts: readonly Da
           aimId: aim.id,
           detail: `${points.toFixed(1)} a dart`,
         }))
-      : r.next.map(n => ({ label: n.aim.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim)}` }))
+      : r.next.map(n => ({ label: n.label, aimId: n.aim.id, detail: `${Math.round(n.chance * 100)}% · ${leaves(r.left, n.aim, n.label)}` }))
   return { left: r.left, scoring, aims, visit: r.visit, done: r.done }
 }
 
