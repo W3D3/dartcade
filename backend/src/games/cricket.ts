@@ -137,7 +137,7 @@ function commit(s: CricketState): CricketState {
 }
 
 // `teams` and `teamStart` are set by the lobby, not the setup form
-export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStart'>, ConfigFieldMeta> = {
+export const configMeta: Record<Exclude<keyof CricketConfig, 'teams' | 'teamStart' | 'teamNames'>, ConfigFieldMeta> = {
   format: FORMAT_OPTION,
   mode: {
     label: 'Mode',
@@ -286,7 +286,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       lastVisit: s.lastVisit,
     }
     if (s.cfg.format !== 'teams') return view
-    const teams = teamEntries(s.teamOf, t => ({
+    const teams = teamEntries(s.cfg, s.teamOf, t => ({
       points: s.board.points[t],
       legs: s.legs[t],
     }))
@@ -361,7 +361,7 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
     }
     const targets = [...final.board.targets]
     if (final.cfg.format !== 'teams') return { mode: 'cricket', targets, legs }
-    const teams = teamEntries(final.teamOf)
+    const teams = teamEntries(final.cfg, final.teamOf)
     return { mode: 'cricket', targets, teams, legs }
   },
 

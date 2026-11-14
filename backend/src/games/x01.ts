@@ -191,7 +191,7 @@ function roundLimitWinner(scores: number[]): number {
 }
 
 // `teams` and `teamStart` are set by the lobby, not the setup form
-export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>, ConfigFieldMeta> = {
+export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart' | 'teamNames'>, ConfigFieldMeta> = {
   format: FORMAT_OPTION,
   startScore: {
     label: 'Start score',
@@ -411,7 +411,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       visitStartScores: s.teamOf.map(t => s.visitOpenedScores[t]),
     }
     if (s.cfg.format !== 'teams') return view
-    const teams = teamEntries(s.teamOf, t => ({
+    const teams = teamEntries(s.cfg, s.teamOf, t => ({
       score: s.scores[t],
       legs: s.legs[t],
     }))
@@ -489,7 +489,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       })
     }
     if (final.cfg.format !== 'teams') return { mode: 'x01', legs }
-    const teams = teamEntries(final.teamOf)
+    const teams = teamEntries(final.cfg, final.teamOf)
     return { mode: 'x01', teams, legs }
   },
 
