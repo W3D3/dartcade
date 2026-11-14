@@ -34,5 +34,6 @@ describe('matchTitle', () => {
     expect(matchTitle({ bracket: 'main', group: null, round: 1 }, 5)).toBe('Round 1')
     expect(matchTitle({ bracket: 'group', group: 2, round: 1 }, 0)).toBe('Group 2')
     expect(matchTitle({ bracket: 'final', group: null, round: 1 }, 3)).toBe('Grand final')
+    expect(matchTitle({ bracket: 'final', group: null, round: 2 }, 3)).toBe('Grand final, reset')
   })
 })

@@ -29,7 +29,7 @@ export function matchTitle(m: { bracket: Bracket; group: number | null; round: n
     case 'lower':
       return `Lower bracket, round ${m.round}`
     case 'final':
-      return 'Grand final'
+      return m.round === 1 ? 'Grand final' : 'Grand final, reset'
     case 'main':
       // roundName names a round of many matches ("Quarter-finals"); this one is a single match
       return roundName(m.round, mainRounds).name.replace(/finals$/, 'final')
