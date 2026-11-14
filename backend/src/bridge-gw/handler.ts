@@ -23,6 +23,7 @@ import { lightsStore, type LightsStore, type FoundDevice } from '../lights/store
 import { onceGone } from '../util/socket.js'
 import { hashBoardToken } from '../boards/token.js'
 import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
+import { motionState as defaultMotionState, type MotionState } from '../boards/motionState.js'
 import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 import type { SampleCollector } from '../detection/collector.js'
 
@@ -48,6 +49,8 @@ type Opts = FastifyPluginOptions & {
   onBoardEvent?: (boardId: string, kind: string, data: unknown) => void | Promise<void>
   /** Where the helpers' reports are kept (tests pass their own). */
   bigScreenState?: BigScreenState
+  /** Where each board's motion state is kept (tests pass their own). */
+  motionState?: MotionState
   /** The board's big-screen helper just started (a desktop login): auto mode opens the screen. A
    *  rejection is logged by callHook, never left unhandled. */
   onBigScreenStartup?: (boardId: string) => void | Promise<void>
@@ -121,6 +124,7 @@ const PingSchema = z.object({ ping: z.string() })
 const TELEMETRY_KINDS = new Set(['bm.frame', 'motion'])
 
 const BmLinkSchema = z.object({ up: z.boolean() })
+const MotionStateSchema = z.object({ state: z.enum(['stable', 'waiting', 'dart', 'hand', 'takeout']), takeout: z.enum(['partial', 'full']).optional() })
 
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 
@@ -193,6 +197,8 @@ export function handleBridgeConnection(
     onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
     /** Where the helpers' reports are kept (tests pass their own). */
     bigScreenState?: BigScreenState
+    /** Where each board's motion state is kept (tests pass their own). */
+    motionState?: MotionState
     /** The board's big-screen helper just started: auto mode opens the screen. */
     onBigScreenStartup?: (boardId: string) => void | Promise<void>
   },
@@ -204,6 +210,7 @@ export function handleBridgeConnection(
     lights = lightsStore,
     bridgeUpdates = defaultBridgeUpdates,
     bigScreenState = defaultBigScreenState,
+    motionState = defaultMotionState,
   } = opts
   // A board came online or dropped: its game and the lobbies using it show it
   const presence = (boardId: string) => {
@@ -369,6 +376,14 @@ export function handleBridgeConnection(
           return
         }
 
+        // Kept in memory only (a state goes stale the moment it changes), sent by the bridge on change
+        if (kind === 'motion.state') {
+          const motion = MotionStateSchema.safeParse(data)
+          if (motion.success) motionState.set(boardDbId, motion.data, new Date(recvWall).toISOString())
+          socket.send(JSON.stringify({ ack: seq, boot_id: bootId }))
+          return
+        }
+
         const { inserted, id } = await insertBridgeEvent(db, {
           bridge_id: bridgeId,
           boot_id: bootId,
@@ -388,6 +403,7 @@ export function handleBridgeConnection(
           const link = BmLinkSchema.safeParse(data)
           if (link.success) {
             conn.bmUp = link.data.up
+            if (!link.data.up) motionState.clear(boardDbId)
             if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
           }
         }
@@ -421,6 +437,7 @@ export function handleBridgeConnection(
       opts.samples?.clear(boardDbId)
       lights.clear(boardDbId)
       bigScreenState.clear(boardDbId)
+      motionState.clear(boardDbId)
     }
     presence(boardDbId)
     // Not at auth: the board's versions and Board Manager URL only arrive with the hello

@@ -492,6 +492,23 @@ paths:
         '502': { $ref: '#/components/responses/BoardError' }
         '503': { $ref: '#/components/responses/BoardUnavailable' }
 
+  /api/boards/{id}/motion:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    get:
+      operationId: getBoardMotion
+      summary: The board's last reported motion state (diagnostics)
+      tags: [boards]
+      responses:
+        '200':
+          description: The state, or null when unknown (the bridge is offline or too old to report it)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardMotion' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /api/boards/{id}/events:
     parameters:
       - $ref: '#/components/parameters/BoardId'
@@ -6104,6 +6121,20 @@ components:
         status: { type: string, nullable: true }
         running: { type: boolean }
         event: { type: string, nullable: true }
+    BoardMotion:
+      type: object
+      required: [motion]
+      additionalProperties: false
+      properties:
+        motion:
+          type: object
+          nullable: true
+          required: [state, since]
+          additionalProperties: false
+          properties:
+            state: { type: string, enum: [stable, waiting, dart, hand, takeout] }
+            takeout: { type: string, enum: [partial, full], description: Only with state takeout }
+            since: { type: string, format: date-time, description: When the bridge saw the state begin }
     BoardEvent:
       type: object
       required: [at, kind, data]

@@ -8708,6 +8708,195 @@
         }
       }
     },
+    "/api/boards/{id}/motion": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getBoardMotion",
+        "summary": "The board's last reported motion state (diagnostics)",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "200": {
+            "description": "The state, or null when unknown (the bridge is offline or too old to report it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "motion"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "motion": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "state",
+                        "since"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "stable",
+                            "waiting",
+                            "dart",
+                            "hand",
+                            "takeout"
+                          ]
+                        },
+                        "takeout": {
+                          "type": "string",
+                          "enum": [
+                            "partial",
+                            "full"
+                          ],
+                          "description": "Only with state takeout"
+                        },
+                        "since": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the bridge saw the state begin"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/boards/{id}/events": {
       "parameters": [
         {
@@ -87299,6 +87488,49 @@
           "event": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "BoardMotion": {
+        "type": "object",
+        "required": [
+          "motion"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "motion": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "state",
+              "since"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "stable",
+                  "waiting",
+                  "dart",
+                  "hand",
+                  "takeout"
+                ]
+              },
+              "takeout": {
+                "type": "string",
+                "enum": [
+                  "partial",
+                  "full"
+                ],
+                "description": "Only with state takeout"
+              },
+              "since": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the bridge saw the state begin"
+              }
+            }
           }
         }
       },
