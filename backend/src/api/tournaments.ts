@@ -216,6 +216,7 @@ function gameConfigProblem(t: Setup): Problem | null {
   const foreign = Object.keys(t.gameConfig).find(k => !(k in meta) || TOURNAMENT_OWNED.includes(k))
   if (foreign !== undefined) return { path, message: `${foreign} is not a tournament option` }
   if (!mod) return { path: 'body/gameId', message: 'unknown game' }
+  if (t.teamSize > 1 && !mod.teams) return { path: 'body/gameId', message: 'this game has no team play' }
   const cfg = { ...mod.defaultConfig, ...t.gameConfig }
   const seats = Array.from({ length: t.teamSize * 2 }, (_, i) => ({ name: `Player ${i + 1}` }))
   const message = validateOptions(cfg, meta, { skip: TOURNAMENT_OWNED }) ?? mod.validate?.(cfg, seats) ?? null

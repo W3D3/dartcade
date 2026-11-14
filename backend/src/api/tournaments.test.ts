@@ -169,6 +169,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       expect((await bad({ mode: 'cutthroat' }, 'cricket')).statusCode).toBe(201)
       // Only X01 and Cricket in brackets for now
       expect((await bad({}, 'atc')).statusCode).toBe(400)
+      // A game without team play never runs a team tournament
+      expect(problems(await create('admin', { ...input, gameId: 'hilo' as 'x01', gameConfig: {} }))).toEqual(['body/gameId'])
     })
 
     it('refuses a setup the rules do not allow, naming every problem', async () => {

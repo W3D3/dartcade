@@ -13,6 +13,9 @@ const LegsSchema = z.object({ legsWon: z.number() }).catch({ legsWon: 0 })
 /** The legs a seat won, from its stats (a finished game's stored seat, or a running game's summary); 0 when it says none. */
 export const legsWon = (stats: unknown): number => LegsSchema.parse(stats).legsWon
 
+/** The side (a 0, b 1) a match game's seat plays for: side a's players sit first, then side b's. */
+export const sideOfSeat = (seat: number, seatCount: number): 0 | 1 => (seat < seatCount / 2 ? 0 : 1)
+
 export interface RunEntry {
   id: string
   name: string

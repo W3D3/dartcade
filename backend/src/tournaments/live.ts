@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely'
 import type { WebSocket } from 'ws'
 import type { Database } from '../db/schema.js'
 import type { TournamentRow } from '../db/tournaments.js'
-import { getTournamentRow, latestGame, legsWon, listEntries, listMatches } from '../db/tournamentRun.js'
+import { getTournamentRow, latestGame, legsWon, listEntries, listMatches, sideOfSeat } from '../db/tournamentRun.js'
 import { getAvatars } from '../db/users.js'
 import { currentSeat } from '../session/access.js'
 import type { SessionEngine } from '../session/engine.js'
@@ -29,28 +29,26 @@ const REFRESH_MS = 3_000
 
 type Engine = Pick<SessionEngine, 'getSession'>
 
-/** Legs each side has won so far, from the game's own summary (X01 and Cricket count them). */
+/** Legs each side has won so far, from the game's own summary (X01 and Cricket count them; a team's seats share them). */
 function liveLegs(session: Session): [number, number] {
   const seats = session.module.summarize(session.currentState, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
   const legs = seats.map(s => legsWon(s.stats))
-  return [legs[0] ?? 0, legs[1] ?? 0]
+  return [legs.at(0) ?? 0, legs.at(-1) ?? 0]
 }
 
-/** Each side's running score in the leg (X01's points left, Cricket's points), none in a bull off. */
+/** Each side's running score in the leg (X01's points left, Cricket's points; a team's seats share it), none in a bull off. */
 function liveScore(session: Session): [number, number] | null {
   const m = session.module
   if (m.id === 'x01') {
     const v = m.view(session.currentState, session.players)
-    return v.phase === 'game' ? [v.scores[0] ?? 0, v.scores[1] ?? 0] : null
+    return v.phase === 'game' ? [v.scores.at(0) ?? 0, v.scores.at(-1) ?? 0] : null
   }
   if (m.id === 'cricket') {
     const v = m.view(session.currentState, session.players)
-    return v.phase === 'game' ? [v.points[0] ?? 0, v.points[1] ?? 0] : null
+    return v.phase === 'game' ? [v.points.at(0) ?? 0, v.points.at(-1) ?? 0] : null
   }
   return null
 }
-
-const asSide = (seat: number): 0 | 1 | null => (seat === 0 || seat === 1 ? seat : null)
 
 function tablesOf(t: TournamentRow, seeded: string[], bracket: Match[]): TournamentLiveTable[] {
   const rows = (ms: Match[], entries: string[]) => standings(ms, entries).map(({ entry, ...s }) => ({ entryId: entry, ...s }))
@@ -102,7 +100,9 @@ export async function liveMessage(
         outcome: r.outcome,
         winner,
         legs: session ? liveLegs(session) : [r.legs_a, r.legs_b],
-        game: session ? { sessionId: session.id, throwing: asSide(currentSeat(session)), score: liveScore(session) } : null,
+        game: session
+          ? { sessionId: session.id, throwing: sideOfSeat(currentSeat(session), session.seats.length), score: liveScore(session) }
+          : null,
       }
     }),
   )
