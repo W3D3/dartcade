@@ -30,6 +30,8 @@ type State struct {
 	PrevStatus       string
 	PrevEvent        string
 	PrevRunning      bool
+	PrevMotion       string    // the last motion state sent (see motionKey); empty: nothing sent yet
+	LastMotion       Event     // that state's event, for ReplayMotion
 	TakeoutStartedAt time.Time // zero when !InTakeout
 }
 
@@ -82,6 +84,7 @@ func Process(s State, frame bm.BMFrame) (State, []Event) {
 		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}, RecvWall: wall, RecvMonoNs: mono}}
 	case "bm_disconnect":
 		reason := "disconnected"
+		s.PrevMotion = "" // the backend forgets the state with the link, so the next frame must say it again
 		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: false, Reason: &reason}, RecvWall: wall, RecvMonoNs: mono}}
 	case "ws", "poll":
 		switch frame.BMType {
@@ -289,7 +292,49 @@ func processMotion(s State, frame bm.BMFrame) (State, []Event) {
 		IsTakeoutFull:    cur.IsTakeoutFull,
 		IsWaiting:        cur.IsWaiting,
 	}, RecvWall: wall, RecvMonoNs: mono})
+	if ms := motionState(cur); motionKey(ms) != s.PrevMotion {
+		s.PrevMotion = motionKey(ms)
+		s.LastMotion = Event{Kind: "motion.state", Data: &ms, RecvWall: wall, RecvMonoNs: mono}
+		evs = append(evs, s.LastMotion)
+	}
 	return s, evs
+}
+
+// ReplayMotion is the current motion state again, for a backend that just (re)connected: the
+// differ only emits on change and the backend keeps the state in memory only. Empty before the
+// first motion frame. The event keeps the time the state began.
+func ReplayMotion(s State) []Event {
+	if s.PrevMotion == "" {
+		return nil
+	}
+	return []Event{s.LastMotion}
+}
+
+func motionKey(m schema.MotionStateData) string {
+	if m.Takeout == nil {
+		return string(m.State)
+	}
+	return string(m.State) + "/" + string(*m.Takeout)
+}
+
+// motionState collapses the flags into one state: takeout, hand, dart, waiting, stable, in that priority.
+// No flag set is read as stable, the board's resting state.
+func motionState(m bm.BMMotionData) schema.MotionStateData {
+	switch {
+	case m.IsTakeoutFull:
+		full := schema.MotionStateDataTakeoutFull
+		return schema.MotionStateData{State: schema.MotionStateDataStateTakeout, Takeout: &full}
+	case m.IsTakeoutPartial:
+		partial := schema.MotionStateDataTakeoutPartial
+		return schema.MotionStateData{State: schema.MotionStateDataStateTakeout, Takeout: &partial}
+	case m.IsHand:
+		return schema.MotionStateData{State: schema.MotionStateDataStateHand}
+	case m.IsDart:
+		return schema.MotionStateData{State: schema.MotionStateDataStateDart}
+	case m.IsWaiting:
+		return schema.MotionStateData{State: schema.MotionStateDataStateWaiting}
+	}
+	return schema.MotionStateData{State: schema.MotionStateDataStateStable}
 }
 
 func boardStatusEvents(s State, cur bm.BMStateData, wall time.Time, mono int64) []Event {
