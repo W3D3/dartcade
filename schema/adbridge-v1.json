@@ -285,6 +285,17 @@
       }
     },
 
+    "MotionStateData": {
+      "description": "The board's current motion state, derived from the motion_state flags and sent only when it changes. Priority when several flags are true: takeout (partial or full), hand, dart, waiting, stable. Not stored by the backend. Older bridges never send it (unknown).",
+      "type": "object",
+      "required": ["state"],
+      "additionalProperties": false,
+      "properties": {
+        "state": { "type": "string", "enum": ["stable", "waiting", "dart", "hand", "takeout"] },
+        "takeout": { "type": "string", "enum": ["partial", "full"], "description": "Only with state=takeout." }
+      }
+    },
+
     "MotionData": {
       "description": "motion_state frame forwarded from Board Manager. High-rate; consumers may throttle.",
       "type": "object",
@@ -613,6 +624,12 @@
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
         { "properties": { "kind": { "const": "motion" }, "data": { "$ref": "#/$defs/MotionData" } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "motion.state" }, "data": { "$ref": "#/$defs/MotionStateData" } } }
       ]
     }
   ]

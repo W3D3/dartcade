@@ -390,6 +390,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/motion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        /** The board's last reported motion state (diagnostics) */
+        get: operations["getBoardMotion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/events": {
         parameters: {
             query?: never;
@@ -4833,6 +4852,22 @@ export interface components {
             running: boolean;
             event: string | null;
         };
+        BoardMotion: {
+            motion: {
+                /** @enum {string} */
+                state: "stable" | "waiting" | "dart" | "hand" | "takeout";
+                /**
+                 * @description Only with state takeout
+                 * @enum {string}
+                 */
+                takeout?: "partial" | "full";
+                /**
+                 * Format: date-time
+                 * @description When the bridge saw the state begin
+                 */
+                since: string;
+            } | null;
+        };
         BoardEvent: {
             /** @description When the bridge received it (ISO timestamp) */
             at: string;
@@ -7401,6 +7436,31 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             502: components["responses"]["BoardError"];
             503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    getBoardMotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state, or null when unknown (the bridge is offline or too old to report it) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardMotion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getBoardEvents: {

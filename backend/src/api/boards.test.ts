@@ -7,6 +7,7 @@ import type { Session } from '../session/types.js'
 import { BridgeUpdates } from '../boards/bridgeUpdate.js'
 import { hashBoardToken } from '../boards/token.js'
 import { BigScreenState } from '../boards/bigScreenState.js'
+import { MotionState } from '../boards/motionState.js'
 
 const request = vi.hoisted(() => vi.fn())
 const { send } = vi.hoisted(() => ({ send: vi.fn().mockReturnValue(true) }))
@@ -54,6 +55,7 @@ function makeApp(
     bridgeUpdates?: BridgeUpdates
     bigScreen?: { revoke: (boardId: string, code?: number) => void }
     bigScreenState?: BigScreenState
+    motionState?: MotionState
   } = {},
 ) {
   const app = createFastify()
@@ -743,6 +745,29 @@ describe('GET /api/boards/:id/events', () => {
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards/board-1/events' })
     expect(res.statusCode).toBe(403)
+  })
+})
+
+describe('GET /api/boards/:id/motion', () => {
+  const row = { id: 'board-1', name: 'Board', owner_user_id: 'user-1' } as any
+  const get = (motionState: MotionState) => makeApp({ motionState }).inject({ method: 'GET', url: '/api/boards/board-1/motion' })
+
+  it('shows the last state while the bridge is online, unknown (null) when it said nothing or is offline', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const motionState = new MotionState()
+    vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(true)
+    expect(JSON.parse((await get(motionState)).body)).toEqual({ motion: null })
+
+    motionState.set('board-1', { state: 'hand' }, '2026-01-01T10:00:00.000Z')
+    expect(JSON.parse((await get(motionState)).body)).toEqual({ motion: { state: 'hand', since: '2026-01-01T10:00:00.000Z' } })
+
+    vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(false)
+    expect(JSON.parse((await get(motionState)).body)).toEqual({ motion: null })
+  })
+
+  it("returns 403 for another user's board", async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ ...row, owner_user_id: 'user-2' })
+    expect((await get(new MotionState())).statusCode).toBe(403)
   })
 })
 

@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"dartcade/bridge/internal/bm"
@@ -399,5 +400,46 @@ func TestProcess_UnknownFrame(t *testing.T) {
 	c := countKindAll(all, "bm.frame")
 	if c != 2 {
 		t.Errorf("bm.frame count=%d want 2", c)
+	}
+}
+
+// stable, hand, dart, waiting, takeout (partial then full), stable: one motion.state per change, none for repeats
+func TestProcess_MotionStates(t *testing.T) {
+	all, _ := runFixture(t, "motion-states.jsonl")
+	var got []string
+	for _, e := range all {
+		if e.Kind != "motion.state" {
+			continue
+		}
+		d := e.Data.(*schema.MotionStateData)
+		label := string(d.State)
+		if d.Takeout != nil {
+			label += "/" + string(*d.Takeout)
+		}
+		got = append(got, label)
+	}
+	want := []string{"stable", "hand", "dart", "waiting", "takeout/partial", "takeout/full", "stable"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("motion states = %v, want %v", got, want)
+	}
+}
+
+// The backend clears a board's motion state when the Board Manager link drops, so the same state
+// after a reconnect is sent again.
+func TestProcess_MotionStateResentAfterReconnect(t *testing.T) {
+	frames := loadFixture(t, "motion-states.jsonl")
+	stable := frames[1]
+	s := differ.State{}
+	count := func(evs []differ.Event) int { return countKindAll(evs, "motion.state") }
+
+	s, evs := differ.Process(s, stable)
+	if count(evs) != 1 {
+		t.Fatalf("first stable: %d motion.state, want 1", count(evs))
+	}
+	s, _ = differ.Process(s, bm.BMFrame{Kind: "bm_disconnect"})
+	s, _ = differ.Process(s, bm.BMFrame{Kind: "bm_reconnect"})
+	_, evs = differ.Process(s, stable)
+	if count(evs) != 1 {
+		t.Errorf("stable after reconnect: %d motion.state, want 1", count(evs))
 	}
 }
