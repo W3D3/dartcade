@@ -31,6 +31,10 @@ type Config struct {
 	BridgeID   string `koanf:"bridge_id"`
 	LogLevel   string `koanf:"log_level"`
 	Token      string `koanf:"token"`
+	// TokenBackendURL is the backend_url Token was paired against (set by persistToken
+	// alongside it). A mismatch against the current backend_url means the token is for
+	// another deployment, not a revoked one — see the check in loadConfig.
+	TokenBackendURL string `koanf:"token_backend_url"`
 	// InstallToken is the one-time token from the install command; it is swapped for Token on first start.
 	InstallToken string `koanf:"install_token"`
 }
@@ -84,6 +88,21 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 		cfg.BackendURL = u.String()
 	}
 
+	// A token is only good for the backend it was paired against. If backend_url
+	// changed (CLI flag, DARTCADE_BACKEND_URL, or this bridge.toml reused against a
+	// different deployment) the stored token belongs to someone else's backend, and
+	// sending it just earns the generic "token rejected" from the new one. Treat it
+	// as absent so the usual install-token/pairing path runs again. No stored
+	// token_backend_url (a bridge.toml from before this field existed) means
+	// "unknown, trust it" — otherwise every existing install would be forced to
+	// re-pair for free on upgrade.
+	if cfg.Token != "" && cfg.TokenBackendURL != "" && backendIdentity(cfg.TokenBackendURL) != backendIdentity(cfg.BackendURL) {
+		log.Warn("the stored token was paired against a different backend_url; re-pairing",
+			"paired_for", cfg.TokenBackendURL, "backend_url", cfg.BackendURL)
+		cfg.Token = ""
+		cfg.TokenBackendURL = ""
+	}
+
 	if cfg.BridgeID == "" {
 		cfg.BridgeID = "br_" + ulid.Make().String()
 		log.Info("generated new bridge_id", "bridge_id", cfg.BridgeID)
@@ -122,8 +141,26 @@ func persistBridgeID(path, id string) error {
 	return setConfigKey(path, "bridge_id", id)
 }
 
-func persistToken(path, token string) error {
-	return setConfigKey(path, "token", token)
+func persistToken(path, token, backendURL string) error {
+	if err := setConfigKey(path, "token", token); err != nil {
+		return err
+	}
+	return setConfigKey(path, "token_backend_url", backendURL)
+}
+
+// backendIdentity reduces a backend_url to the parts that name the deployment
+// it points at — scheme, host and path, lower-cased for a forgiving match —
+// so a mismatch only fires on an actual backend change (self-hosted vs
+// play.dartca.de, prod vs a dev server), not an incidental difference like a
+// query string (it can carry a dev-tunnel token that isn't part of which
+// backend this is). Unlike toHTTPBase, the path is kept: different backends
+// can share a host behind different paths.
+func backendIdentity(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	return strings.ToLower(u.Scheme) + "://" + strings.ToLower(u.Host) + u.Path
 }
 
 // setConfigKey writes key = "value" into the TOML file at path, replacing an
