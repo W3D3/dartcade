@@ -28,14 +28,14 @@ func TestResyncMidVisitOpensAVisitID(t *testing.T) {
 		stateFrame(t, 4*time.Second, "Takeout in progress", "Takeout started", s20, s5),
 		stateFrame(t, 5*time.Second, "Throw", "Takeout finished"),
 	)
-	wantKinds(t, evs, "dart.detected", "takeout.started", "motion", "takeout.finished")
+	wantKinds(t, evs, "dart.detected", "takeout.started", "motion", "motion.state", "takeout.finished")
 	if d := evs[0].Data.(*schema.DartDetectedData); d.VisitId != id || d.Index != 1 {
 		t.Errorf("dart.detected visit %q index %d, want %q index 1", d.VisitId, d.Index, id)
 	}
 	if d := evs[1].Data.(*schema.TakeoutStartedData); d.VisitId != id {
 		t.Errorf("takeout.started visit %q, want %q", d.VisitId, id)
 	}
-	if d := evs[3].Data.(*schema.TakeoutFinishedData); d.VisitId != id || d.DurationMs != 2000 {
+	if d := evs[4].Data.(*schema.TakeoutFinishedData); d.VisitId != id || d.DurationMs != 2000 {
 		t.Errorf("takeout.finished visit %q after %dms, want %q after 2000ms", d.VisitId, d.DurationMs, id)
 	}
 }

@@ -31,6 +31,7 @@ var kindToDef = map[string]string{
 	"takeout.finished": "TakeoutFinishedData",
 	"visit.cleared":    "VisitClearedData",
 	"motion":           "MotionData",
+	"motion.state":     "MotionStateData",
 	"bridge.hello":     "BridgeHelloData",
 }
 
