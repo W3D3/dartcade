@@ -5,21 +5,14 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'home' | 'play' | 'ranked' | 'live' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin'
+  icon: 'home' | 'play' | 'ranked' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
   /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
   aria?: string
-  /** Shown dimmed, not a link: Live with no running game, Tournaments while its flag is off. */
+  /** Shown dimmed, not a link: Tournaments while its flag is off. */
   disabled?: boolean
-}
-
-/** Live links to your running game; with none it keeps its place, dimmed. */
-function liveItem(liveSessionId: string | null, label: string): NavTab {
-  return liveSessionId
-    ? { href: `/session/${liveSessionId}`, label, icon: 'live' }
-    : { href: '/session', label, icon: 'live', aria: `${label}: no game running`, disabled: true }
 }
 
 /** What the nav shows besides the fixed pages: counts for the badges and the features that are on. */
@@ -41,7 +34,7 @@ export type NavState = {
  * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Coach
  * while the coach is on, Progress while progression is on (Mobile-Progress), Tournaments while it
  * is on (Tournaments-Phone; dimmed "soon" in Progress's place while both are off), History;
- * pending invites as a badge on Play. No Live tab: a running game is one tap away from
+ * pending invites as a badge on Play. There is no Live entry: a running game is one tap away from
  * Play's Continue and the lobby strip.
  */
 export function navTabs({
@@ -93,17 +86,20 @@ function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
 }
 
 /** The desktop side nav: the same pages under their long names (Coach while the coach is on, Tournaments dimmed "soon" while it is off), then Stats (while it is on), Progress, Settings and Admin (admins and moderators). */
-export function sideLinks(
-  liveSessionId: string | null,
-  { ranked = false, admin = false, progress = null, home = false, coach = false, stats = false, tournaments = false }: NavState = {},
-): SideLink[] {
-  const { href, disabled } = liveItem(liveSessionId, 'Live match')
+export function sideLinks({
+  ranked = false,
+  admin = false,
+  progress = null,
+  home = false,
+  coach = false,
+  stats = false,
+  tournaments = false,
+}: NavState = {}): SideLink[] {
   return [
     ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     { href: '/play', label: 'Play', icon: 'play' },
     ...(ranked ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'ranked' as const }] : []),
     ...(coach ? [{ href: '/coach', label: 'Coach', icon: 'coach' as const }] : []),
-    { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     tournamentsLink(tournaments),
     { href: '/history', label: 'History', icon: 'history' },
     ...(stats ? [{ href: '/stats', label: 'Stats', icon: 'stats' as const }] : []),

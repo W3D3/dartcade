@@ -65,7 +65,7 @@ describe('Home in the nav', () => {
         .slice(0, 2),
     ).toEqual(['Home', 'Play'])
     expect(
-      sideLinks('s1', { home: true })
+      sideLinks({ home: true })
         .map(l => [l.label, l.href])
         .slice(0, 2),
     ).toEqual([
@@ -89,22 +89,21 @@ describe('Progress in the nav', () => {
   it('counts the challenges to claim', () => {
     expect(navTabs({ progress: 2 })[1]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
     expect(
-      sideLinks('s1', { ranked: true, coach: true })
+      sideLinks({ ranked: true, coach: true })
         .map(l => l.label)
         .slice(0, 3),
     ).toEqual(['Play', 'Matchmaking', 'Coach'])
-    expect(sideLinks('s1', { ranked: true, coach: true }).find(l => l.label === 'Coach')).toEqual({
+    expect(sideLinks({ ranked: true, coach: true }).find(l => l.label === 'Coach')).toEqual({
       href: '/coach',
       label: 'Coach',
       icon: 'coach',
     })
-    expect(sideLinks('s1').some(l => l.label === 'Coach')).toBe(false)
-    expect(sideLinks('s1', { progress: 1 }).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
+    expect(sideLinks().some(l => l.label === 'Coach')).toBe(false)
+    expect(sideLinks({ progress: 1 }).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('lists Stats after History while it is on, and on the rail before Settings', () => {
-    expect(sideLinks('s1', { progress: 0, stats: true }).map(l => l.label)).toEqual([
+    expect(sideLinks({ progress: 0, stats: true }).map(l => l.label)).toEqual([
       'Play',
-      'Live match',
       'Tournaments',
       'History',
       'Stats',
@@ -112,54 +111,29 @@ describe('Progress in the nav', () => {
       'Settings',
     ])
     expect(railTabs({ stats: true }).map(t => t.label)).toEqual(['Play', 'Tournaments', 'History', 'Stats', 'Settings'])
-    expect(sideLinks('s1').some(l => l.label === 'Stats')).toBe(false)
+    expect(sideLinks().some(l => l.label === 'Stats')).toBe(false)
   })
   it('sits before Settings in the side nav', () => {
-    expect(sideLinks('s1', { progress: 0 }).map(l => l.label)).toEqual([
-      'Play',
-      'Live match',
-      'Tournaments',
-      'History',
-      'Progress',
-      'Settings',
-    ])
+    expect(sideLinks({ progress: 0 }).map(l => l.label)).toEqual(['Play', 'Tournaments', 'History', 'Progress', 'Settings'])
   })
 })
 
 describe('sideLinks', () => {
   it('lists the design order, with Matchmaking only while it is on', () => {
-    expect(sideLinks('s1').map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings'])
-    expect(sideLinks('s1', { ranked: true }).map(l => l.label)).toEqual([
-      'Play',
-      'Matchmaking',
-      'Live match',
-      'Tournaments',
-      'History',
-      'Settings',
-    ])
+    expect(sideLinks().map(l => l.label)).toEqual(['Play', 'Tournaments', 'History', 'Settings'])
+    expect(sideLinks({ ranked: true }).map(l => l.label)).toEqual(['Play', 'Matchmaking', 'Tournaments', 'History', 'Settings'])
   })
   it('dims Tournaments as soon while its flag is off, and links it once on', () => {
-    expect(sideLinks('s1').find(l => l.label === 'Tournaments')).toMatchObject({ disabled: true, soon: true })
-    expect(sideLinks('s1', { tournaments: true }).find(l => l.label === 'Tournaments')).toEqual({
+    expect(sideLinks().find(l => l.label === 'Tournaments')).toMatchObject({ disabled: true, soon: true })
+    expect(sideLinks({ tournaments: true }).find(l => l.label === 'Tournaments')).toEqual({
       href: '/tournaments',
       label: 'Tournaments',
       icon: 'tournaments',
     })
   })
-  it('links Live match to the running game, disabled without one', () => {
-    expect(sideLinks('s1')[1]).toEqual({ href: '/session/s1', label: 'Live match', icon: 'live' })
-    expect(sideLinks(null)[1]).toMatchObject({ label: 'Live match', disabled: true })
-  })
   it('adds Admin last, admins only', () => {
-    expect(sideLinks(null, { admin: true }).map(l => l.label)).toEqual([
-      'Play',
-      'Live match',
-      'Tournaments',
-      'History',
-      'Settings',
-      'Admin',
-    ])
-    expect(sideLinks(null).map(l => l.label)).not.toContain('Admin')
+    expect(sideLinks({ admin: true }).map(l => l.label)).toEqual(['Play', 'Tournaments', 'History', 'Settings', 'Admin'])
+    expect(sideLinks().map(l => l.label)).not.toContain('Admin')
   })
 })
 
