@@ -254,6 +254,14 @@
 }
 
 @layer base {
+  /* One height for a text field and the buttons beside it (h-(--control-h)); the tall one is for a field above the primary button.
+   * Plain variables, not theme spacing: a theme token equal to 44px or 52px would make the Tailwind lint rewrite every unrelated
+   * h-[44px] and size-[52px] to it. */
+  :root {
+    --control-h: 44px;
+    --control-h-lg: 52px;
+  }
+
   /* The app shell sizes itself to h-dvh and scrolls internally; without this, mobile Safari's
    * elastic bounce can still rubber-band the whole document past the fixed bottom tab bar. */
   html {

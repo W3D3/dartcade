@@ -108,7 +108,8 @@
           autocomplete="off"
           autocapitalize="characters"
           spellcheck="false"
-          class="grow min-w-0 h-[52px] font-mono text-[18px] tracking-[0.12em]"
+          size="lg"
+          class="grow min-w-0 font-mono text-[18px] tracking-[0.12em]"
         />
         <button
           type="submit"

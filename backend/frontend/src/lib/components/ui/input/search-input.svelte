@@ -11,7 +11,7 @@
   }: { value?: string; label: string; oninput?: (value: string) => void; class?: string } = $props()
 </script>
 
-<label class={cn('flex h-11 items-center gap-2 rounded-md border border-line-3 px-3 text-text-muted', className)}>
+<label class={cn('flex h-(--control-h) items-center gap-2 rounded-md border border-line-3 px-3 text-text-muted', className)}>
   <Search size={16} />
   <input
     type="search"
