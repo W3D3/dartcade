@@ -5,6 +5,8 @@ import { randomBytes } from 'node:crypto'
 import type { Kysely, Transaction } from 'kysely'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
+import { BRACKET_ORDER } from '../shared/tournaments/bracket.js'
+import { matchTitle } from '../shared/tournaments/mine.js'
 
 type Played = components['schemas']['TournamentClaim']['played'][number]
 
@@ -79,35 +81,46 @@ export async function holdsOtherSpot(
   return row !== undefined
 }
 
-/** The entry's matches in round order, as the claim page's "Played so far". */
+/** The entry's matches in play order (groups, winners' bracket, lower bracket, final), titled like My tournaments does. */
 export async function playedSoFar(db: Kysely<Database>, spot: Pick<ClaimSpot, 'entryId' | 'tournamentId'>): Promise<Played[]> {
-  const rows = await db
-    .selectFrom('tournament_matches as m')
-    .leftJoin('tournament_entries as a', 'a.id', 'm.entry_a_id')
-    .leftJoin('tournament_entries as b', 'b.id', 'm.entry_b_id')
-    .select([
-      'm.round',
-      'm.status',
-      'm.outcome',
-      'm.winner_entry_id',
-      'm.legs_a',
-      'm.legs_b',
-      'm.entry_a_id',
-      'a.name as a_name',
-      'b.name as b_name',
-    ])
-    .where('m.tournament_id', '=', spot.tournamentId)
-    .where(eb => eb.or([eb('m.entry_a_id', '=', spot.entryId), eb('m.entry_b_id', '=', spot.entryId)]))
-    .orderBy('m.round')
-    .orderBy('m.slot')
-    .execute()
+  const [rows, rounds] = await Promise.all([
+    db
+      .selectFrom('tournament_matches as m')
+      .leftJoin('tournament_entries as a', 'a.id', 'm.entry_a_id')
+      .leftJoin('tournament_entries as b', 'b.id', 'm.entry_b_id')
+      .select([
+        'm.bracket',
+        'm.group_no',
+        'm.round',
+        'm.slot',
+        'm.status',
+        'm.outcome',
+        'm.winner_entry_id',
+        'm.legs_a',
+        'm.legs_b',
+        'm.entry_a_id',
+        'a.name as a_name',
+        'b.name as b_name',
+      ])
+      .where('m.tournament_id', '=', spot.tournamentId)
+      .where(eb => eb.or([eb('m.entry_a_id', '=', spot.entryId), eb('m.entry_b_id', '=', spot.entryId)]))
+      .execute(),
+    db
+      .selectFrom('tournament_matches')
+      .select(eb => eb.fn.max('round').as('rounds'))
+      .where('tournament_id', '=', spot.tournamentId)
+      .where('bracket', '=', 'main')
+      .executeTakeFirst(),
+  ])
+  const mainRounds = rounds?.rounds ?? 0
   return rows
     .filter(r => r.outcome !== 'bye')
+    .sort((x, y) => BRACKET_ORDER[x.bracket] - BRACKET_ORDER[y.bracket] || x.round - y.round || x.slot - y.slot)
     .map(r => {
       const mine = r.entry_a_id === spot.entryId
       const finished = r.status === 'finished'
       return {
-        round: r.round,
+        title: matchTitle({ bracket: r.bracket, group: r.group_no, round: r.round }, mainRounds),
         opponent: mine ? r.b_name : r.a_name,
         state: !finished ? 'next' : r.winner_entry_id === spot.entryId ? 'won' : 'lost',
         legs: finished ? (mine ? `${r.legs_a}-${r.legs_b}` : `${r.legs_b}-${r.legs_a}`) : null,

@@ -80,7 +80,7 @@
           <div class="flex flex-col gap-1.5">
             <h2 class="text-label font-semibold text-text-muted">Played so far as {claim.spotName}</h2>
             <ul class="flex flex-col p-0">
-              {#each claim.played as p (`${p.round}-${p.opponent ?? ''}`)}
+              {#each claim.played as p (`${p.title}-${p.opponent ?? ''}`)}
                 {@const row = playedRow(p)}
                 <li class="flex items-center justify-between gap-3 border-b border-line py-2 text-label last:border-0">
                   <span class="min-w-0 truncate">{row.title}</span>

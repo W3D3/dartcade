@@ -109,6 +109,49 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('claiming a tournament spot', ()
     expect(counted).toEqual([['g1'], []])
   })
 
+  it('titles each match by its bracket and orders groups, winners, lower bracket and final', async () => {
+    const club = (await send('admin', 'GET', '/api/tournaments/club/participants')).json<Participants>()
+    const chris = codeOf(club, 'Chris')
+    const entry = (await db.selectFrom('tournament_players').select('entry_id').where('id', '=', chris.id).executeTakeFirstOrThrow())
+      .entry_id
+    const rival = (
+      await db
+        .selectFrom('tournament_entries')
+        .select('id')
+        .where('id', '<>', entry)
+        .where('tournament_id', '=', 'club')
+        .executeTakeFirstOrThrow()
+    ).id
+    const add = (bracket: 'group' | 'main' | 'lower' | 'final', round: number, group_no: number | null, finished: boolean) =>
+      db
+        .insertInto('tournament_matches')
+        .values({
+          id: `m-${bracket}-${round}`,
+          tournament_id: 'club',
+          bracket,
+          group_no,
+          round,
+          slot: 0,
+          entry_a_id: entry,
+          entry_b_id: rival,
+          first_to: 3,
+          status: finished ? 'finished' : 'ready',
+          outcome: finished ? 'played' : null,
+          winner_entry_id: finished ? entry : null,
+          legs_a: finished ? 3 : 0,
+          legs_b: finished ? 1 : 0,
+        })
+        .execute()
+    await add('final', 1, null, false)
+    await add('lower', 1, null, true)
+    await add('main', 1, null, true)
+    await add('main', 2, null, true)
+    await add('group', 1, 2, true)
+    const page = await send('ben', 'GET', `/api/tournaments/claim/${chris.claimCode}`)
+    expect(page.json<Claim>().played.map(p => p.title)).toEqual(['Group 2', 'Semi-final', 'Final', 'Lower bracket, round 1', 'Grand final'])
+    await db.deleteFrom('tournament_matches').where('tournament_id', '=', 'club').execute()
+  })
+
   it('refuses a claimed spot, a second spot in the same tournament and a draft', async () => {
     const club = (await send('admin', 'GET', '/api/tournaments/club/participants')).json<Participants>()
     expect((await send('ben', 'POST', `/api/tournaments/claim/${codeOf(club, 'Chris').claimCode}`)).statusCode).toBe(409)
