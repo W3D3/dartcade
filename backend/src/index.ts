@@ -303,6 +303,9 @@ const app = await buildApp({
   samples,
   matchmaking,
   tournaments,
+  countGames: async ids => {
+    for (const id of ids) await achievements.countGame(id)
+  },
   frontendDist: join(__dirname, '../frontend/dist'),
 })
 // buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
