@@ -75,7 +75,7 @@
   <div class="flex flex-col gap-[6px]">
     <span class="text-[13px] font-semibold text-ink-2">Not listed? Add by IP</span>
     <div class="flex gap-2">
-      <Input placeholder="192.168.1.90" aria-label="WLED device IP address" bind:value={ip} {disabled} class="h-10 font-mono text-[14px]" />
+      <Input placeholder="192.168.1.90" aria-label="WLED device IP address" bind:value={ip} {disabled} class="font-mono text-[14px]" />
       <Button variant="outline" size="md" disabled={disabled || !ip.trim()} onclick={() => void add()}>Add</Button>
     </div>
     {#if probe?.error && probe.host === submittedHost}<ErrorText>No WLED answered at {probe.host}</ErrorText>{/if}

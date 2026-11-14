@@ -70,6 +70,7 @@
           <div class="flex flex-col gap-2">
             <label for="reset-password" class="field-label">New password</label>
             <Input
+              size="lg"
               id="reset-password"
               type="password"
               bind:value={password}

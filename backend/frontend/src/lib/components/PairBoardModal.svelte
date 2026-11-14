@@ -261,7 +261,7 @@
   {#if mode === 'code' || found}
     <div class="flex flex-col gap-2">
       <span class="text-[13px] text-text-dim">Board name</span>
-      <Input type="text" placeholder="e.g. Living room" bind:value={name} class="h-11" />
+      <Input type="text" placeholder="e.g. Living room" bind:value={name} />
       <div class="flex flex-wrap gap-2">
         {#each CHIPS as chip (chip)}
           <Chip selected={name === chip} onclick={() => (name = chip)}>{chip}</Chip>

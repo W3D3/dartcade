@@ -62,7 +62,15 @@
 
           <div class="flex flex-col gap-2">
             <label for="forgot-email" class="field-label">Email</label>
-            <Input id="forgot-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
+            <Input
+              size="lg"
+              id="forgot-email"
+              type="email"
+              bind:value={email}
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
           </div>
 
           {#if error}

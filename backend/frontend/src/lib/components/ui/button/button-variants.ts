@@ -7,9 +7,9 @@ export const buttonVariants = tv({
   variants: {
     variant: {
       primary: 'h-[54px] px-6 rounded-md bg-accent text-accent-fg font-display font-bold text-xl label-caps ',
-      accent: 'h-11 px-4 rounded-md bg-accent text-accent-fg text-[15px] font-bold',
+      accent: 'h-(--control-h) px-4 rounded-md bg-accent text-accent-fg text-[15px] font-bold',
       // accent's shape in red: the confirm button of something that can't be undone
-      danger: 'h-11 px-4 rounded-md bg-live text-white text-[15px] font-bold',
+      danger: 'h-(--control-h) px-4 rounded-md bg-live text-white text-[15px] font-bold',
       secondary: 'h-[56px] px-6 rounded-lg bg-text text-accent-fg font-display font-bold text-xl label-caps ',
       ghost: 'h-10 px-[14px] rounded-md border border-line-3 text-ink-2 text-sm',
       outline: 'h-10 px-4 rounded-md border border-line-3 text-text text-sm',
@@ -23,7 +23,7 @@ export const buttonVariants = tv({
     // Heights only (each variant has its own default); icon: a square for one icon
     size: {
       sm: 'h-9',
-      md: 'h-11',
+      md: 'h-(--control-h)',
       lg: 'h-12',
       xl: 'h-14',
       icon: 'size-11 px-0',
