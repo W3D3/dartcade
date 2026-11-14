@@ -1,20 +1,7 @@
 <script lang="ts">
   import { hrefs } from '$lib/routes'
   import Wordmark from './Wordmark.svelte'
-  import {
-    ChartColumn,
-    Clock,
-    GraduationCap,
-    House,
-    Mail,
-    Radio,
-    Settings,
-    ShieldCheck,
-    Swords,
-    Target,
-    TrendingUp,
-    Trophy,
-  } from '@lucide/svelte'
+  import { ChartColumn, Clock, GraduationCap, House, Mail, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -22,7 +9,6 @@
   import ReportBugButton from './feedback/ReportBugButton.svelte'
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
-  import { activeSessionId } from '$lib/activeSession'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
@@ -41,7 +27,7 @@
 
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const links = $derived(
-    sideLinks($activeSessionId, {
+    sideLinks({
       ranked: $matchmaking,
       admin: $currentUser?.isModerator,
       progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
@@ -73,8 +59,6 @@
           <Swords size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'coach'}
           <GraduationCap size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'live'}
-          <Radio size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'tournaments'}
           <Trophy size={20} strokeWidth={1.8} />
         {:else if link.icon === 'progress'}
@@ -98,9 +82,6 @@
           >
             <span class="size-[6px] rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{queue.clock}
           </span>
-        {/if}
-        {#if link.icon === 'live' && !link.disabled}
-          <span class="ml-auto size-2 rounded-full bg-live" aria-hidden="true"></span>
         {/if}
         {#if link.badge}
           <NavBadge count={link.badge} label={link.badgeLabel ?? ''} class="ml-auto" />
