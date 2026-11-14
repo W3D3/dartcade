@@ -125,6 +125,7 @@
         <div class="flex flex-col gap-2">
           <label for="login-email" class="field-label">Email</label>
           <Input
+            size="lg"
             id="login-email"
             name="email"
             type="email"
@@ -143,6 +144,7 @@
             {/if}
           </div>
           <Input
+            size="lg"
             id="login-password"
             name="password"
             type="password"
