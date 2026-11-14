@@ -7425,13 +7425,17 @@ components:
         claimedByMe: { type: boolean }
         played:
           type: array
-          description: The entry's matches in round order
+          description: The entry's matches in play order
           items:
             type: object
-            required: [round, opponent, state, legs]
+            required: [title, opponent, state, legs]
             additionalProperties: false
             properties:
-              round: { type: integer }
+              title:
+                {
+                  type: string,
+                  description: 'The match as My tournaments names it: "Quarter-final", "Group 2", "Lower bracket, round 1", "Grand final"',
+                }
               opponent: { type: string, nullable: true }
               state: { type: string, enum: [won, lost, next] }
               legs: { type: string, nullable: true, description: 'Legs won in the match, "3-1" from the entry''s side' }

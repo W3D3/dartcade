@@ -33,9 +33,9 @@ export async function claimSpot(code: string): Promise<ClaimResult> {
   }
 }
 
-/** One "Played so far" row: "Round 1 vs Ben" with "won 3–1", "lost 1–3" or "up next". */
+/** One "Played so far" row: "Quarter-final vs Ben" with "won 3–1", "lost 1–3" or "up next". */
 export function playedRow(p: Played): { title: string; result: string; tone: 'won' | 'lost' | 'next' } {
-  const title = `Round ${p.round}${p.opponent ? ` vs ${p.opponent}` : ''}`
+  const title = p.opponent ? `${p.title} vs ${p.opponent}` : p.title
   if (p.state === 'next') return { title, result: 'up next', tone: 'next' }
   return { title, result: `${p.state} ${p.legs ? p.legs.replace('-', '–') : ''}`.trim(), tone: p.state }
 }

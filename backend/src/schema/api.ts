@@ -5866,9 +5866,10 @@ export interface components {
             teamName: string | null;
             claimable: boolean;
             claimedByMe: boolean;
-            /** @description The entry's matches in round order */
+            /** @description The entry's matches in play order */
             played: {
-                round: number;
+                /** @description The match as My tournaments names it: "Quarter-final", "Group 2", "Lower bracket, round 1", "Grand final" */
+                title: string;
                 opponent: string | null;
                 /** @enum {string} */
                 state: "won" | "lost" | "next";

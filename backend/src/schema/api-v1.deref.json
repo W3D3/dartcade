@@ -51225,19 +51225,20 @@
                     },
                     "played": {
                       "type": "array",
-                      "description": "The entry's matches in round order",
+                      "description": "The entry's matches in play order",
                       "items": {
                         "type": "object",
                         "required": [
-                          "round",
+                          "title",
                           "opponent",
                           "state",
                           "legs"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "round": {
-                            "type": "integer"
+                          "title": {
+                            "type": "string",
+                            "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
                           },
                           "opponent": {
                             "type": "string",
@@ -51442,19 +51443,20 @@
                     },
                     "played": {
                       "type": "array",
-                      "description": "The entry's matches in round order",
+                      "description": "The entry's matches in play order",
                       "items": {
                         "type": "object",
                         "required": [
-                          "round",
+                          "title",
                           "opponent",
                           "state",
                           "legs"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "round": {
-                            "type": "integer"
+                          "title": {
+                            "type": "string",
+                            "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
                           },
                           "opponent": {
                             "type": "string",
@@ -94609,19 +94611,20 @@
           },
           "played": {
             "type": "array",
-            "description": "The entry's matches in round order",
+            "description": "The entry's matches in play order",
             "items": {
               "type": "object",
               "required": [
-                "round",
+                "title",
                 "opponent",
                 "state",
                 "legs"
               ],
               "additionalProperties": false,
               "properties": {
-                "round": {
-                  "type": "integer"
+                "title": {
+                  "type": "string",
+                  "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
                 },
                 "opponent": {
                   "type": "string",
