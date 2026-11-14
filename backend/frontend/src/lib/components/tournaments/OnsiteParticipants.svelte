@@ -2,7 +2,7 @@
   // The organizer page's Players or Teams card (Tournament-Onsite, Tournament-Onsite-Teams): every
   // spot with its claim link or who claimed it, Unlink, and until the start Add, Paste a list,
   // rename and remove. Each change saves the whole list at once.
-  import { Check, Copy, Ellipsis, Link2, Pencil, Unlink } from '@lucide/svelte'
+  import { Check, Copy, Ellipsis, Link2, Pencil, RefreshCw, Unlink } from '@lucide/svelte'
   import { DropdownMenu } from 'bits-ui'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import TeamEmblem from '$lib/components/teams/TeamEmblem.svelte'
@@ -22,6 +22,7 @@
     saveParticipants,
     soloEntry,
     toBody,
+    reissueSpot,
     unlinkSpot,
     type DraftEntry,
     type DraftSpot,
@@ -84,6 +85,13 @@
     return { ...s, claimedBy: null }
   }
 
+  async function reissue(s: DraftSpot) {
+    if (!s.id) return
+    const stored = await reissueSpot(tournamentId, s.id)
+    if (stored) participants = stored
+    else error = 'Couldn’t make a new claim link. Try again.'
+  }
+
   function lines(parsed: ParsedLine[]): string {
     const r = addParsed(draft, parsed, teamSize, max)
     void save(r.draft)
@@ -135,6 +143,13 @@
           {:else}
             <Button variant="outline" size="sm" onclick={() => copyText(s.key, claimUrl(s.claimCode ?? ''))}
               ><Link2 size={14} />{copiedNow(s.key) ? 'Copied' : 'Copy claim link'}</Button
+            >
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="New claim link for {s.name}"
+              title="New claim link"
+              onclick={() => reissue(s)}><RefreshCw size={14} /></Button
             >
           {/if}
           {#if editable}
@@ -201,6 +216,13 @@
                     title={copiedNow(p.key) ? 'Copied' : 'Copy claim link'}
                     onclick={() => copyText(p.key, claimUrl(p.claimCode ?? ''))}
                     >{#if copiedNow(p.key)}<Check size={14} />{:else}<Link2 size={14} />{/if}</Button
+                  >
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="New claim link for {p.name}"
+                    title="New claim link"
+                    onclick={() => reissue(p)}><RefreshCw size={14} /></Button
                   >
                 {/if}
               </span>

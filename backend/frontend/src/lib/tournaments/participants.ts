@@ -266,6 +266,11 @@ export async function unlinkSpot(id: string, playerId: string): Promise<Particip
   return (await api.POST('/api/tournaments/{id}/participants/{playerId}/unlink', { params: { path: { id, playerId } } })).data ?? null
 }
 
+/** Gives an unclaimed spot a new claim link; the old one stops working. */
+export async function reissueSpot(id: string, playerId: string): Promise<Participants | null> {
+  return (await api.POST('/api/tournaments/{id}/participants/{playerId}/reissue', { params: { path: { id, playerId } } })).data ?? null
+}
+
 /** The organizer page's line under the name: "X01 501 · double out · first to 3 · single elimination · 8 players". */
 export function organizerLine(t: Tournament, entries: number): string {
   return [

@@ -32,6 +32,7 @@
   import Tournaments from './routes/Tournaments.svelte'
   import TournamentsRoute from './routes/TournamentsRoute.svelte'
   import TournamentCreate from './routes/TournamentCreate.svelte'
+  import TournamentClaim from './routes/TournamentClaim.svelte'
   import TournamentManage from './routes/TournamentManage.svelte'
   import TournamentMode from './routes/TournamentMode.svelte'
   import Progress from './routes/Progress.svelte'
@@ -165,8 +166,7 @@
     '/matchmaking/ranks': Ranks,
     // Before /tournaments/:tab?, which would read "join" as a tab
     '/tournaments/join/:code': Tournaments,
-    // Browse until claiming a spot gets its own page
-    '/tournaments/claim/:claim': Tournaments,
+    '/tournaments/claim/:claim': TournamentClaim,
     // Before /tournaments/:tab?, which would take "new" for a tab
     '/tournaments/new': TournamentCreate,
     '/tournaments/:id/edit': TournamentCreate,
