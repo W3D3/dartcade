@@ -92,6 +92,8 @@ export type AppDeps = {
   matchmaking: MatchmakingService
   /** Runs online tournaments (see tournaments/service.ts). */
   tournaments: TournamentService
+  /** Counts achievements for games whose seat an account just claimed (see achievements/service.ts). */
+  countGames?: (sessionIds: string[]) => Promise<void>
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -143,6 +145,7 @@ export async function buildApp({
   samples,
   matchmaking,
   tournaments,
+  countGames,
   frontendDist,
   onRoute,
 }: AppDeps): Promise<FastifyInstance> {
@@ -299,7 +302,7 @@ export async function buildApp({
   await app.register(homeApiPlugin, { db })
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
-  await app.register(tournamentsApiPlugin, { db, hub, lobbies, tournaments })
+  await app.register(tournamentsApiPlugin, { db, hub, lobbies, tournaments, countGames })
   await app.register(teamsApiPlugin, { db, lobbies, hub })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })
