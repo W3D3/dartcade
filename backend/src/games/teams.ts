@@ -3,7 +3,13 @@ import type { ConfigFieldMeta, Player } from '../session/types.js'
 import { forfeitPlacements } from './ranking.js'
 
 /** What a game that supports teams reads from its config (see the teams design). */
-export type TeamsConfig = { format?: 'singles' | 'teams'; teams?: number[]; teamStart?: 'first' | 'random' }
+export type TeamsConfig = {
+  format?: 'singles' | 'teams'
+  teams?: number[]
+  teamStart?: 'first' | 'random'
+  /** Each team's name (a tournament's team entries); else Team A, Team B. */
+  teamNames?: string[]
+}
 
 // Teams are Team A (index 0) and Team B (index 1)
 /** Checks a two-team config: in `'teams'` format, `teams` must have one entry per player and both teams a player. */
@@ -115,10 +121,15 @@ export function startTeam(cfg: TeamsConfig, rng?: Rng): number {
 type TeamEntry = { id: (typeof TEAM_IDS)[number]; name: string; seats: number[] }
 
 /** One entry per team (id, name, seats) for a snapshot or detail; `extra` adds the mode's per-team fields. */
-export function teamEntries(teamOf: number[]): TeamEntry[]
-export function teamEntries<E extends object>(teamOf: number[], extra: (team: number) => E): (TeamEntry & E)[]
-export function teamEntries(teamOf: number[], extra?: (team: number) => object): TeamEntry[] {
-  return seatsByTeam(teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats, ...extra?.(t) }))
+export function teamEntries(cfg: TeamsConfig, teamOf: number[]): TeamEntry[]
+export function teamEntries<E extends object>(cfg: TeamsConfig, teamOf: number[], extra: (team: number) => E): (TeamEntry & E)[]
+export function teamEntries(cfg: TeamsConfig, teamOf: number[], extra?: (team: number) => object): TeamEntry[] {
+  return seatsByTeam(teamOf).map((seats, t) => ({
+    id: TEAM_IDS[t],
+    name: cfg.teamNames?.[t] ?? `Team ${TEAM_IDS[t]}`,
+    seats,
+    ...extra?.(t),
+  }))
 }
 
 /** A bull off's `applyStartOrder`: in a team game the winner throws first and the teams take turns. */
