@@ -2611,6 +2611,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/participants/{playerId}/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a spot a new claim link (organizers)
+         * @description The old link stops working at once. 409 `claimed` for a spot someone already claimed (unlink it first).
+         */
+        post: operations["reissueTournamentClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/claim/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * What a claim link names (tournaments.enabled)
+         * @description The spot, its tournament and what it played so far. 404 for an unknown or reissued link. `claimable` is false when the spot is claimed already (`claimedByMe` when by the caller) or the caller holds another spot of the tournament.
+         */
+        get: operations["getTournamentClaim"];
+        put?: never;
+        /**
+         * Claim a spot as the signed-in account (tournaments.enabled)
+         * @description The spot's games move to the caller (history, stats, achievements). 409 `already claimed`, or `already has a spot` when the caller holds another spot of the tournament; claiming a spot you hold already is fine.
+         */
+        post: operations["claimTournamentSpot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/code/{code}": {
         parameters: {
             query?: never;
@@ -5804,6 +5853,29 @@ export interface components {
              */
             color: "#9b7bff" | "#4fd1c5" | "#ff8a4a" | "#3fb6e8" | "#eac24f" | "#7fd18f" | "#ff6b9a" | "#c6f24e" | null;
             players: components["schemas"]["TournamentSpot"][];
+        };
+        TournamentClaim: {
+            tournamentId: string;
+            tournamentName: string;
+            /** @description The owner's name */
+            organizer: string | null;
+            /** Format: date-time */
+            startsAt: string | null;
+            spotName: string;
+            /** @description The team's name in a team tournament */
+            teamName: string | null;
+            claimable: boolean;
+            claimedByMe: boolean;
+            /** @description The entry's matches in play order */
+            played: {
+                /** @description The match as My tournaments names it: "Quarter-final", "Group 2", "Lower bracket, round 1", "Grand final" */
+                title: string;
+                opponent: string | null;
+                /** @enum {string} */
+                state: "won" | "lost" | "next";
+                /** @description Legs won in the match, "3-1" from the entry's side */
+                legs: string | null;
+            }[];
         };
         TournamentParticipants: {
             entries: components["schemas"]["TournamentParticipant"][];
@@ -11065,6 +11137,85 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reissueTournamentClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentParticipants"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournamentClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The spot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentClaim"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    claimTournamentSpot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The spot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentClaim"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];

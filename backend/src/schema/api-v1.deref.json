@@ -50821,6 +50821,827 @@
         }
       }
     },
+    "/api/tournaments/{id}/participants/{playerId}/reissue": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "playerId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reissueTournamentClaim",
+        "summary": "Give a spot a new claim link (organizers)",
+        "description": "The old link stops working at once. 409 `claimed` for a spot someone already claimed (unlink it first).",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "entries",
+                    "startBlocker"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "An entry of an in-person tournament; solo, its one player and the player's name.",
+                        "required": [
+                          "id",
+                          "name",
+                          "tag",
+                          "color",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "tag": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "color": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "#9b7bff",
+                              "#4fd1c5",
+                              "#ff8a4a",
+                              "#3fb6e8",
+                              "#eac24f",
+                              "#7fd18f",
+                              "#ff6b9a",
+                              "#c6f24e",
+                              null
+                            ],
+                            "description": "A TeamColor, or none"
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "description": "One player of an in-person tournament, added by its organizers.",
+                              "required": [
+                                "id",
+                                "name",
+                                "claimCode",
+                                "claimedBy"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "claimCode": {
+                                  "type": "string",
+                                  "description": "The code of its claim link, #/tournaments/claim/<code>"
+                                },
+                                "claimedBy": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The account that claimed it; null while it is a guest",
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "startBlocker": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why it can't start yet (too few entries, a team with empty spots)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/claim/{code}": {
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournamentClaim",
+        "summary": "What a claim link names (tournaments.enabled)",
+        "description": "The spot, its tournament and what it played so far. 404 for an unknown or reissued link. `claimable` is false when the spot is claimed already (`claimedByMe` when by the caller) or the caller holds another spot of the tournament.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The spot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tournamentId",
+                    "tournamentName",
+                    "organizer",
+                    "startsAt",
+                    "spotName",
+                    "teamName",
+                    "claimable",
+                    "claimedByMe",
+                    "played"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tournamentId": {
+                      "type": "string"
+                    },
+                    "tournamentName": {
+                      "type": "string"
+                    },
+                    "organizer": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's name"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "spotName": {
+                      "type": "string"
+                    },
+                    "teamName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The team's name in a team tournament"
+                    },
+                    "claimable": {
+                      "type": "boolean"
+                    },
+                    "claimedByMe": {
+                      "type": "boolean"
+                    },
+                    "played": {
+                      "type": "array",
+                      "description": "The entry's matches in play order",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "title",
+                          "opponent",
+                          "state",
+                          "legs"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
+                          },
+                          "opponent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "won",
+                              "lost",
+                              "next"
+                            ]
+                          },
+                          "legs": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Legs won in the match, \"3-1\" from the entry's side"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "claimTournamentSpot",
+        "summary": "Claim a spot as the signed-in account (tournaments.enabled)",
+        "description": "The spot's games move to the caller (history, stats, achievements). 409 `already claimed`, or `already has a spot` when the caller holds another spot of the tournament; claiming a spot you hold already is fine.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The spot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tournamentId",
+                    "tournamentName",
+                    "organizer",
+                    "startsAt",
+                    "spotName",
+                    "teamName",
+                    "claimable",
+                    "claimedByMe",
+                    "played"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tournamentId": {
+                      "type": "string"
+                    },
+                    "tournamentName": {
+                      "type": "string"
+                    },
+                    "organizer": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The owner's name"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "spotName": {
+                      "type": "string"
+                    },
+                    "teamName": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The team's name in a team tournament"
+                    },
+                    "claimable": {
+                      "type": "boolean"
+                    },
+                    "claimedByMe": {
+                      "type": "boolean"
+                    },
+                    "played": {
+                      "type": "array",
+                      "description": "The entry's matches in play order",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "title",
+                          "opponent",
+                          "state",
+                          "legs"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
+                          },
+                          "opponent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "won",
+                              "lost",
+                              "next"
+                            ]
+                          },
+                          "legs": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Legs won in the match, \"3-1\" from the entry's side"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tournaments/code/{code}": {
       "parameters": [
         {
@@ -93737,6 +94558,90 @@
                       "type": "string"
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TournamentClaim": {
+        "type": "object",
+        "required": [
+          "tournamentId",
+          "tournamentName",
+          "organizer",
+          "startsAt",
+          "spotName",
+          "teamName",
+          "claimable",
+          "claimedByMe",
+          "played"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tournamentId": {
+            "type": "string"
+          },
+          "tournamentName": {
+            "type": "string"
+          },
+          "organizer": {
+            "type": "string",
+            "nullable": true,
+            "description": "The owner's name"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "spotName": {
+            "type": "string"
+          },
+          "teamName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The team's name in a team tournament"
+          },
+          "claimable": {
+            "type": "boolean"
+          },
+          "claimedByMe": {
+            "type": "boolean"
+          },
+          "played": {
+            "type": "array",
+            "description": "The entry's matches in play order",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "opponent",
+                "state",
+                "legs"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
+                },
+                "opponent": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "won",
+                    "lost",
+                    "next"
+                  ]
+                },
+                "legs": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Legs won in the match, \"3-1\" from the entry's side"
                 }
               }
             }

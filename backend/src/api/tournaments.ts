@@ -30,6 +30,7 @@ import {
   type OrganizerRole,
   type TournamentView,
 } from '../db/tournaments.js'
+import { claimSpot, holdsOtherSpot, playedSoFar, reissueCode, spotByCode, type ClaimSpot } from '../db/tournamentClaim.js'
 import { listParticipants, setParticipants, unlinkSpot, type SetParticipantsResult } from '../db/tournamentParticipants.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { checkIn } from '../db/tournamentRun.js'
@@ -76,6 +77,8 @@ type Opts = FastifyPluginOptions & {
   /** Refreshes /ws/me (its tournament requests) for these players. */
   lobbies: Pick<LobbyService, 'pushMe'>
   tournaments: Pick<TournamentService, 'organizerStart' | 'withdrawn'>
+  /** Counts achievements for the games a claim hands to an account; a failure is logged, the claim stands. */
+  countGames?: (sessionIds: string[]) => Promise<void>
 }
 
 type Input = components['schemas']['TournamentInput']
@@ -83,6 +86,7 @@ type Input = components['schemas']['TournamentInput']
 type Setup = Omit<Input, 'gameId' | 'maxEntries'> & { gameId: string; maxEntries: number }
 type Tournament = components['schemas']['Tournament']
 type TeamEntry = components['schemas']['TournamentTeamEntry']
+type Claim = components['schemas']['TournamentClaim']
 
 const forRegistration = (t: TournamentView): RegistrationTournament => ({
   status: t.status,
@@ -603,6 +607,49 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       return participantsOf(t)
     },
   )
+
+  app.post<Route<'reissueTournamentClaim'>>(
+    '/api/tournaments/:id/participants/:playerId/reissue',
+    { schema: fromSpec('reissueTournamentClaim') },
+    async req => {
+      const t = await inPerson(req.params.id, req.userId)
+      const res = await reissueCode(db, t.id, req.params.playerId)
+      if (res === 'missing') throw notFound()
+      if (res === 'claimed') throw conflict(res)
+      return participantsOf(t)
+    },
+  )
+
+  /** What the claim page shows for a spot; claimable unless it is taken or the caller holds another spot there. */
+  async function claimView(spot: ClaimSpot, userId: string): Promise<Claim> {
+    const [played, other] = await Promise.all([playedSoFar(db, spot), holdsOtherSpot(db, spot.tournamentId, userId, spot.id)])
+    return {
+      tournamentId: spot.tournamentId,
+      tournamentName: spot.tournamentName,
+      organizer: spot.organizer,
+      startsAt: spot.startsAt?.toISOString() ?? null,
+      spotName: spot.name,
+      teamName: spot.teamName,
+      claimable: spot.userId === null && !other,
+      claimedByMe: spot.userId === userId,
+      played,
+    }
+  }
+
+  app.get<Route<'getTournamentClaim'>>('/api/tournaments/claim/:code', { schema: fromSpec('getTournamentClaim') }, async req => {
+    const spot = await spotByCode(db, req.params.code)
+    if (!spot) throw notFound()
+    return claimView(spot, req.userId)
+  })
+
+  app.post<Route<'claimTournamentSpot'>>('/api/tournaments/claim/:code', { schema: fromSpec('claimTournamentSpot') }, async req => {
+    const res = await claimSpot(db, req.params.code, req.userId)
+    if (res === 'missing') throw notFound()
+    if (typeof res === 'string') throw conflict(res)
+    // The seat moved in the same transaction; counting is best effort and repeats on the startup backfill
+    await opts.countGames?.(res.sessionIds).catch((err: unknown) => app.log.warn({ err }, 'achievements for a claimed spot failed'))
+    return claimView(res.spot, req.userId)
+  })
 
   const nameOf = async (userId: string) => (await getUsersByIds(db, [userId])).at(0)?.name ?? ''
 

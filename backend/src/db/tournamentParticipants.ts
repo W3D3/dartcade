@@ -1,11 +1,12 @@
 // An in-person tournament's participants (migration 071): the entries its organizers add, each with
 // spots (tournament_players of kind 'spot') that carry a claim link until someone claims them.
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import type { Kysely, Transaction, Updateable } from 'kysely'
 import type { Database, TournamentsTable } from './schema.js'
 import type { TeamColor } from '../shared/teams.js'
 import type { EntryInput } from '../shared/tournaments/participants.js'
 import { isEditable } from '../shared/tournaments/state.js'
+import { moveSeats, newClaimCode } from './tournamentClaim.js'
 
 export interface SpotRow {
   id: string
@@ -21,9 +22,6 @@ export interface ParticipantRow {
   color: TeamColor | null
   players: SpotRow[]
 }
-
-/** 96 random bits: a claim link hands over a spot and its games, so it can't be guessed. */
-const newClaimCode = () => randomBytes(12).toString('base64url')
 
 /** The entries in the organizers' order, each with its spots in team order. */
 export async function listParticipants(db: Kysely<Database>, tournamentId: string): Promise<ParticipantRow[]> {
@@ -152,7 +150,7 @@ async function removeAllBut(
 
 /**
  * Turns a claimed spot back into a guest: the account lets go of it and of the seats it played
- * (Q14: achievements and XP already earned stay). False when it is no claimed spot of the tournament.
+ * (Q14: achievements and XP already earned stay; the games' stored details are rebuilt). False when it is no claimed spot of the tournament.
  */
 export async function unlinkSpot(db: Kysely<Database>, tournamentId: string, spotId: string): Promise<boolean> {
   return db.transaction().execute(async tx => {
@@ -166,7 +164,7 @@ export async function unlinkSpot(db: Kysely<Database>, tournamentId: string, spo
       .returning('id')
       .executeTakeFirst()
     if (!spot) return false
-    await tx.updateTable('game_players').set({ user_id: null }).where('tournament_player_id', '=', spotId).execute()
+    await moveSeats(tx, spotId, null)
     return true
   })
 }

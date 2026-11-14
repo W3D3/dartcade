@@ -6930,6 +6930,134 @@
         }
       }
     },
+    "/api/tournaments/{id}/participants/{playerId}/reissue": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "playerId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reissueTournamentClaim",
+        "summary": "Give a spot a new claim link (organizers)",
+        "description": "The old link stops working at once. 409 `claimed` for a spot someone already claimed (unlink it first).",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The entries now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentParticipants"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tournaments/claim/{code}": {
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTournamentClaim",
+        "summary": "What a claim link names (tournaments.enabled)",
+        "description": "The spot, its tournament and what it played so far. 404 for an unknown or reissued link. `claimable` is false when the spot is claimed already (`claimedByMe` when by the caller) or the caller holds another spot of the tournament.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The spot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentClaim"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "claimTournamentSpot",
+        "summary": "Claim a spot as the signed-in account (tournaments.enabled)",
+        "description": "The spot's games move to the caller (history, stats, achievements). 409 `already claimed`, or `already has a spot` when the caller holds another spot of the tournament; claiming a spot you hold already is fine.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The spot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentClaim"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/tournaments/code/{code}": {
       "parameters": [
         {
@@ -17947,6 +18075,90 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TournamentSpot"
+            }
+          }
+        }
+      },
+      "TournamentClaim": {
+        "type": "object",
+        "required": [
+          "tournamentId",
+          "tournamentName",
+          "organizer",
+          "startsAt",
+          "spotName",
+          "teamName",
+          "claimable",
+          "claimedByMe",
+          "played"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tournamentId": {
+            "type": "string"
+          },
+          "tournamentName": {
+            "type": "string"
+          },
+          "organizer": {
+            "type": "string",
+            "nullable": true,
+            "description": "The owner's name"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "spotName": {
+            "type": "string"
+          },
+          "teamName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The team's name in a team tournament"
+          },
+          "claimable": {
+            "type": "boolean"
+          },
+          "claimedByMe": {
+            "type": "boolean"
+          },
+          "played": {
+            "type": "array",
+            "description": "The entry's matches in play order",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "opponent",
+                "state",
+                "legs"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The match as My tournaments names it: \"Quarter-final\", \"Group 2\", \"Lower bracket, round 1\", \"Grand final\""
+                },
+                "opponent": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "won",
+                    "lost",
+                    "next"
+                  ]
+                },
+                "legs": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Legs won in the match, \"3-1\" from the entry's side"
+                }
+              }
             }
           }
         }
