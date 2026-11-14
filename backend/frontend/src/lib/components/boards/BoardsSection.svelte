@@ -26,6 +26,7 @@
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
   import GameCard from './GameCard.svelte'
   import DetectionCard from './DetectionCard.svelte'
+  import MotionCard from './MotionCard.svelte'
   import BigScreenSetup from './BigScreenSetup.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import BoardChips from './BoardChips.svelte'
@@ -641,6 +642,7 @@
           {#if $detectionOn}
             <DetectionCard board={selected} onchanged={refetchBoards} />
           {/if}
+          <MotionCard board={selected} />
           <SectionCard title="Pairing" icon={Link2}>
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex flex-col gap-1 flex-1 min-w-[200px]">

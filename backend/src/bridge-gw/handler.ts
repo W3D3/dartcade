@@ -124,7 +124,10 @@ const PingSchema = z.object({ ping: z.string() })
 const TELEMETRY_KINDS = new Set(['bm.frame', 'motion'])
 
 const BmLinkSchema = z.object({ up: z.boolean() })
-const MotionStateSchema = z.object({ state: z.enum(['stable', 'waiting', 'dart', 'hand', 'takeout']), takeout: z.enum(['partial', 'full']).optional() })
+const MotionStateSchema = z.object({
+  state: z.enum(['stable', 'waiting', 'dart', 'hand', 'takeout']),
+  takeout: z.enum(['partial', 'full']).optional(),
+})
 
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 
