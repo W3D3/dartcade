@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { WebSocket } from 'ws'
 import type { Database } from '../db/schema.js'
 import type { TournamentRow } from '../db/tournaments.js'
-import { getTournamentRow, latestGame, legsWon, listEntries, listMatches } from '../db/tournamentRun.js'
+import { getTournamentRow, latestGame, legsWon, listEntries, listMatches, sideOfSeat } from '../db/tournamentRun.js'
 import { getAvatars } from '../db/users.js'
 import { currentSeat } from '../session/access.js'
 import type { SessionEngine } from '../session/engine.js'
@@ -21,14 +21,12 @@ const REFRESH_MS = 3_000
 
 type Engine = Pick<SessionEngine, 'getSession'>
 
-/** Legs each side has won so far, from the game's own summary (X01 and Cricket count them). */
+/** Legs each side has won so far, from the game's own summary (X01 and Cricket count them; a team's seats share them). */
 function liveLegs(session: Session): [number, number] {
   const seats = session.module.summarize(session.currentState, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
   const legs = seats.map(s => legsWon(s.stats))
-  return [legs[0] ?? 0, legs[1] ?? 0]
+  return [legs.at(0) ?? 0, legs.at(-1) ?? 0]
 }
-
-const asSide = (seat: number): 0 | 1 | null => (seat === 0 || seat === 1 ? seat : null)
 
 function tablesOf(t: TournamentRow, seeded: string[], bracket: Match[]): TournamentLiveTable[] {
   const rows = (ms: Match[], entries: string[]) => standings(ms, entries).map(({ entry, ...s }) => ({ entryId: entry, ...s }))
@@ -79,7 +77,7 @@ export async function liveMessage(
         outcome: r.outcome,
         winner,
         legs: session ? liveLegs(session) : [r.legs_a, r.legs_b],
-        game: session ? { sessionId: session.id, throwing: asSide(currentSeat(session)) } : null,
+        game: session ? { sessionId: session.id, throwing: sideOfSeat(currentSeat(session), session.seats.length) } : null,
       }
     }),
   )

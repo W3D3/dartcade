@@ -8,7 +8,7 @@ import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
-import { insertTournament, insertUsers } from '../test/fixtures.js'
+import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
 import { TournamentService } from './service.js'
 import { liveMessage } from './live.js'
 
@@ -81,10 +81,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
   }
 
   /**
-   * Plays a 301 game by hand to its end: `winner` wins the bull off and every leg with 180 then
-   * T20 T17 D5, the other side throws S1 S1 S1. Stops early once `until` holds.
+   * Plays a 301 game by hand to its end: `winner` (a winning team's first player) wins the bull off,
+   * and `winner` (or that team) every leg with 180 then T20 T17 D5, the other side throws S1 S1 S1. Stops early once `until` holds.
    */
-  async function play(sessionId: string, winner: string, until: () => Promise<boolean> = () => Promise.resolve(false)): Promise<void> {
+  async function play(
+    sessionId: string,
+    winner: string | string[],
+    until: () => Promise<boolean> = () => Promise.resolve(false),
+  ): Promise<void> {
+    const winners = [winner].flat()
     let winnerVisits = 0
     for (let i = 0; i < 100; i++) {
       const s = engine.getSession(sessionId)
@@ -97,8 +102,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
       }
       const darts =
         state.stage === 'bulloff'
-          ? [user === winner ? BULL : S20]
-          : user !== winner
+          ? [user === winners[0] ? BULL : S20]
+          : !winners.includes(user)
             ? [S1, S1, S1]
             : winnerVisits++ % 2 === 0
               ? [T20, T20, T20]
@@ -203,6 +208,88 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
       .execute()
     expect(seats).toHaveLength(14)
     expect(seats.every(s => s.tournament_player_id !== null)).toBe(true)
+  })
+
+  it.each([2, 3])('plays a team match of %i a side to the end, alternating visits, crediting every seated account', async size => {
+    const id = `team${size}`
+    const [teamA, teamB] = [players.slice(0, size), players.slice(size, 2 * size)]
+    await insertTournament(db, {
+      id,
+      owner_user_id: 'org',
+      status: 'check_in',
+      team_size: size,
+      game_config: JSON.stringify({ startScore: 301 }),
+      starts_at: new Date(now + MIN),
+      settings: settings({ firstTo: 2, longerFinal: null }),
+    })
+    for (const [i, [name, team]] of (
+      [
+        ['Double Agents', teamA],
+        ['Checkout Crew', teamB],
+      ] as const
+    ).entries()) {
+      await insertTournamentEntry(db, { id: `${id}-${i}`, tournament_id: id, name, status: 'checked_in' })
+      await db
+        .insertInto('tournament_players')
+        .values(team.map((u, position) => ({ id: `${id}-${u}`, tournament_id: id, entry_id: `${id}-${i}`, user_id: u, name: u, position })))
+        .execute()
+    }
+
+    now += 2 * MIN
+    await service.tick()
+    const [match] = await matches(id)
+    expect(match.status).toBe('live')
+    // Every player is told, the opponent is the other team
+    const told = sent.filter((x): x is [string, TournamentMatchMessage] => x[1].type === 'tournament.match')
+    expect(told.map(([u, m]) => `${u}:${m.opponent}`).sort()).toEqual(
+      [...teamA.map(u => `${u}:Checkout Crew`), ...teamB.map(u => `${u}:Double Agents`)].sort(),
+    )
+    // Side a sits first: its players are seats 0..size-1, then side b's
+    const sides = match.entry_a_id === `${id}-0` ? [teamA, teamB] : [teamB, teamA]
+    const names = match.entry_a_id === `${id}-0` ? ['Double Agents', 'Checkout Crew'] : ['Checkout Crew', 'Double Agents']
+    const sessionId = gameOf('p1')
+    expect(engine.getSession(sessionId)?.seats.map(s => s.userId)).toEqual(sides.flat())
+    const game = engine.getSnapshot(sessionId)?.game as { teams?: { name: string; seats: number[] }[] }
+    expect(game.teams).toEqual([
+      expect.objectContaining({ name: names[0], seats: sides[0].map((_, i) => i) }),
+      expect.objectContaining({ name: names[1], seats: sides[1].map((_, i) => size + i) }),
+    ])
+
+    // The bracket names the teams
+    const live = () => liveMessage(db, engine, id, now)
+    const before = await live()
+    const entryName = (entryId: string | null) => before?.entries.find(e => e.id === entryId)?.name
+    expect(before?.matches.map(m => m.sides.map(entryName))).toEqual([names])
+
+    // Side b wins the bull off; the teams then take turns, one player's visit at a time
+    const throwers: string[] = []
+    await play(sessionId, sides[1], async () => {
+      const s = engine.getSession(sessionId)
+      const state = s?.currentState as { stage: string } | undefined
+      if (s && state?.stage !== 'bulloff') throwers.push(s.seats[currentSeat(s)].userId ?? '')
+      return (await live())?.matches[0].legs[1] === 1
+    })
+    // A leg won shows for the side, not the seat
+    expect((await live())?.matches[0]).toMatchObject({ legs: [0, 1], game: { sessionId, throwing: 0 } })
+    await play(sessionId, sides[1])
+    // Leg one: b's first player 180, a, b's second player checks out 121
+    const [b1, a1, b2] = throwers
+    expect([b1, a1, b2].map(u => (sides[1].includes(u) ? 'b' : 'a'))).toEqual(['b', 'a', 'b'])
+    expect(b2).not.toBe(b1)
+
+    const [done] = await matches(id)
+    expect(done).toMatchObject({ status: 'finished', outcome: 'played', winner_entry_id: match.entry_b_id, legs_a: 0, legs_b: 2 })
+    expect((await tournament(id)).status).toBe('finished')
+    const seats = await db
+      .selectFrom('game_players')
+      .select(['user_id', 'placement', 'tournament_player_id'])
+      .where('session_id', '=', sessionId)
+      .orderBy('seat')
+      .execute()
+    expect(seats).toEqual([
+      ...sides[0].map(u => ({ user_id: u, placement: 2, tournament_player_id: `${id}-${u}` })),
+      ...sides[1].map(u => ({ user_id: u, placement: 1, tournament_player_id: `${id}-${u}` })),
+    ])
   })
 
   it('checks an unlocked average limit again when check-in opens, and keeps every spot under a locked one', async () => {

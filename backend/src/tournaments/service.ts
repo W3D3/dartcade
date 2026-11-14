@@ -23,6 +23,7 @@ import {
   scheduledTournaments,
   seatResults,
   setSides,
+  sideOfSeat,
   setStartTime,
   tournamentOfMatch,
   writeDraw,
@@ -56,11 +57,13 @@ export type TournamentDeps = {
 export type StartOutcome = 'started' | 'not_startable'
 
 const sidesOf = (r: TournamentMatchRow): [string | null, string | null] => [r.entry_a_id, r.entry_b_id]
-/** A solo entry's player, when they have an account (only accounts play online). */
-function playerOf(e: RunEntry): { id: string; userId: string; name: string } | null {
-  const p = e.players.at(0)
-  return p?.userId != null ? { ...p, userId: p.userId } : null
+type Seated = { id: string; userId: string; name: string }
+/** An entry's players in team order (a solo entry has one), when every one has an account (only accounts play online). */
+function playersOf(e: RunEntry): Seated[] | null {
+  const seated = e.players.flatMap(p => (p.userId === null ? [] : [{ ...p, userId: p.userId }]))
+  return seated.length > 0 && seated.length === e.players.length ? seated : null
 }
+const mean = (xs: number[]) => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length)
 const involves = (r: TournamentMatchRow, entryId: string) => r.entry_a_id === entryId || r.entry_b_id === entryId
 
 /**
@@ -219,12 +222,14 @@ export class TournamentService implements GameEndedConsumer {
       seeding.by === 'rating'
         ? await matchRatings(
             this.deps.db,
-            entries.flatMap(e => playerOf(e)?.userId ?? []),
-            '1v1',
+            entries.flatMap(e => e.players.flatMap(p => p.userId ?? [])),
+            t.team_size === 1 ? '1v1' : '2v2',
           )
         : new Map<string, MatchRating>()
+    // A team is seeded by its players' mean rating
+    const ratingOf = (e: RunEntry) => mean(e.players.flatMap(p => ratings.get(p.userId ?? '')?.rating ?? []))
     return seedEntries(
-      entries.map(e => ({ id: e.id, rating: ratings.get(playerOf(e)?.userId ?? '')?.rating ?? null })),
+      entries.map(e => ({ id: e.id, rating: ratingOf(e) })),
       seeding,
     )
   }
@@ -297,14 +302,16 @@ export class TournamentService implements GameEndedConsumer {
     if (game?.status === 'active') return false
     const quitter = sidesOf(row).findIndex(id => {
       const entry = entries.find(e => e.id === id)
-      return entry !== undefined && game?.aborted_by_user_id != null && playerOf(entry)?.userId === game.aborted_by_user_id
+      return entry !== undefined && entry.players.some(p => p.userId !== null && p.userId === game?.aborted_by_user_id)
     })
     if (quitter === 0 || quitter === 1)
       return (await this.move(row.id, { event: 'walkover', winnerEntryId: sidesOf(row)[1 - quitter], legsA: 0, legsB: 0 })) !== null
     const seats = game?.status === 'finished' ? await seatResults(db, game.id) : []
-    const winner = seats.findIndex(s => s.placement === 1)
-    if (winner !== 0 && winner !== 1) return (await this.move(row.id, { event: 'abort' })) !== null
-    const [legsA, legsB] = [seats[0].legsWon, seats[1].legsWon]
+    // A team's seats share its legs and place
+    const won = seats.findIndex(s => s.placement === 1)
+    if (won === -1) return (await this.move(row.id, { event: 'abort' })) !== null
+    const winner = sideOfSeat(won, seats.length)
+    const [legsA, legsB] = [seats[0].legsWon, seats[seats.length - 1].legsWon]
     const done = Math.max(legsA, legsB) === row.first_to
     // A forfeit ends the game before anyone reached first-to: the match is a walkover
     return (await this.move(row.id, { event: done ? 'finish' : 'walkover', winnerEntryId: sidesOf(row)[winner], legsA, legsB })) !== null
@@ -324,8 +331,8 @@ export class TournamentService implements GameEndedConsumer {
     const others = rows.filter(r => r.id !== row.id && (involves(r, a.id) || involves(r, b.id)))
     if (others.some(r => r.status === 'live' || (r.status === 'ready' && before(r, row) < 0))) return false
     const free = [a, b].map(e => {
-      const p = playerOf(e)
-      return p !== null && this.deps.isOnline(p.userId) && !this.deps.engine.getSessionByUser(p.userId)
+      const players = playersOf(e)
+      return players !== null && players.every(p => this.deps.isOnline(p.userId) && !this.deps.engine.getSessionByUser(p.userId))
     })
     if (free[0] && free[1]) return this.startGame(t, row, [a, b])
     // The wait runs from when both were done with their previous match
@@ -340,9 +347,15 @@ export class TournamentService implements GameEndedConsumer {
   private async startGame(t: TournamentRow, row: TournamentMatchRow, sides: [RunEntry, RunEntry]): Promise<boolean> {
     const { db, engine } = this.deps
     const mod = games[t.game_id]
-    const [pa, pb] = sides.map(playerOf)
-    if (!mod || pa === null || pb === null) return false
-    const seated = [pa, pb]
+    const [pa, pb] = sides.map(playersOf)
+    if (!mod || pa === null || pb === null || pa.length !== pb.length) return false
+    const seated = [...pa, ...pb]
+    const sideOf = (seat: number) => sideOfSeat(seat, seated.length)
+    // Teams: side a is team 0, side b team 1, taking turns visit by visit (alternate visits)
+    const teams =
+      pa.length === 1
+        ? { format: 'singles' }
+        : { format: 'teams', teams: seated.map((_, seat) => sideOf(seat)), teamNames: sides.map(e => e.name) }
     const seats = await ownBoardSeats(db, seated, id => engine.getSessionByBoard(id) !== undefined)
     // Live before the game exists: a restart in between finds a live match without a game and puts it back
     if ((await this.move(row.id, { event: 'start' })) === null) return false
@@ -352,7 +365,7 @@ export class TournamentService implements GameEndedConsumer {
         ownerUserId: seated[0].userId,
         gameId: t.game_id,
         // Online: a bull off decides who starts, thrown again on a tie (like ranked)
-        config: { ...mod.defaultConfig, ...t.game_config, firstTo: row.first_to, format: 'singles', bullOff: 'pdc' },
+        config: { ...mod.defaultConfig, ...t.game_config, firstTo: row.first_to, ...teams, bullOff: 'pdc' },
         seats,
         tournamentMatchId: row.id,
         lobbyName: t.name,
@@ -368,13 +381,13 @@ export class TournamentService implements GameEndedConsumer {
       sessionId,
       seated.map(p => p.id),
     )
-    for (const [i, p] of seated.entries())
+    for (const [seat, p] of seated.entries())
       this.deps.send(p.userId, {
         type: 'tournament.match',
         tournamentId: t.id,
         tournamentName: t.name,
         sessionId,
-        opponent: sides[1 - i].name,
+        opponent: sides[1 - sideOf(seat)].name,
       })
     return true
   }
