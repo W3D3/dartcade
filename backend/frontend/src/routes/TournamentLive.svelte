@@ -11,29 +11,15 @@
   import PageLoading from '$lib/components/PageLoading.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
-  import BracketColumns from '$lib/components/tournaments/live/BracketColumns.svelte'
-  import StandingsTable from '$lib/components/tournaments/live/StandingsTable.svelte'
+  import BracketTab from '$lib/components/tournaments/live/BracketTab.svelte'
+  import PlayersList from '$lib/components/tournaments/live/PlayersList.svelte'
   import YourMatchBanner from '$lib/components/tournaments/live/YourMatchBanner.svelte'
   import type { Tournament } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
-  import { ordinal } from '$lib/fmt'
   import { hrefs } from '$lib/routes'
   import { byLine, formatLong, gameLine, loadByCode, loadTournament } from '$lib/tournaments/browse'
-  import {
-    championOf,
-    createLiveStore,
-    faceOf,
-    groupMatches,
-    headline,
-    myEntryId,
-    recordOf,
-    rulesOf,
-    sectionsOf,
-    stageWhen,
-    yourMatch,
-    type LiveEntry,
-  } from '$lib/tournaments/live'
+  import { createLiveStore, headline, myEntryId, rulesOf, stageWhen, yourMatch } from '$lib/tournaments/live'
 
   let { params }: { params: { id: string } } = $props()
 
@@ -65,25 +51,8 @@
   const m = $derived($message)
   const mine = $derived(m ? myEntryId(m, $currentUser?.id) : null)
   const yours = $derived(m && t ? yourMatch(m, t.format, $currentUser?.id) : null)
-  const sections = $derived(m && t ? sectionsOf(m, t.format) : [])
-  const champion = $derived(m ? championOf(m) : null)
   const head = $derived(m ? headline(m) : null)
   const rules = $derived(t ? rulesOf(t) : [])
-  const players = $derived(
-    m
-      ? [...m.entries].sort(
-          (a, b) => (a.seed ?? Infinity) - (b.seed ?? Infinity) || Number(a.status === 'withdrawn') - Number(b.status === 'withdrawn'),
-        )
-      : [],
-  )
-  function standing(e: LiveEntry): string {
-    if (!m) return ''
-    if (e.finalPlace !== null) return `${ordinal(e.finalPlace)} place`
-    if (e.status === 'withdrawn') return 'Withdrawn'
-    if (m.matches.length === 0) return e.status === 'checked_in' ? 'Checked in' : 'Registered'
-    const r = recordOf(m, e.id)
-    return `${r.won}–${r.lost}`
-  }
 </script>
 
 {#snippet rulesList()}
@@ -136,54 +105,9 @@
       <div class="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div class="flex min-w-0 flex-col gap-5">
           {#if tab === 'bracket'}
-            {#if m.matches.length === 0}
-              <section class="card p-6 text-body text-text-muted">
-                {m.status === 'cancelled'
-                  ? 'This tournament was cancelled.'
-                  : `The bracket is drawn when the tournament starts, from the ${m.entries.filter(e => e.status !== 'withdrawn').length} ${t.teamSize === 1 ? 'players' : 'teams'} in it.`}
-              </section>
-            {/if}
-            {#each m.tables as table (table.group)}
-              <StandingsTable
-                title={table.group === null ? 'Table' : `Group ${table.group}`}
-                {table}
-                entries={m.entries}
-                {mine}
-                matches={table.group === null ? [] : groupMatches(m, table.group)}
-                through={t.settings.groups?.through ?? 0}
-              />
-            {/each}
-            {#each sections as s, i (s.id)}
-              <section class="card min-w-0 p-4 md:px-[26px] md:pt-6 md:pb-[30px]" aria-label={s.title}>
-                {#if sections.length > 1 || m.tables.length > 0}<h3 class="mb-4 text-body-lg font-semibold">{s.title}</h3>{/if}
-                <div class="-mx-4 overflow-x-auto px-4 pt-3 pb-1 md:mx-0 md:px-0" data-testid="bracket-scroll">
-                  <BracketColumns
-                    columns={s.columns}
-                    entries={m.entries}
-                    {mine}
-                    {champion}
-                    trophy={i === sections.length - 1 && t.format !== 'round_robin'}
-                  />
-                </div>
-              </section>
-            {/each}
+            <BracketTab {m} {t} {mine} />
           {:else if tab === 'players'}
-            <section class="card flex flex-col p-2 md:p-3" aria-label="Players">
-              {#each players as e (e.id)}
-                <div
-                  class="flex items-center gap-3 rounded-md px-2 py-2.5 {e.id === mine ? 'bg-surface-picked' : ''} {e.status === 'withdrawn'
-                    ? 'text-text-dim'
-                    : ''}"
-                >
-                  <span class="w-7 text-right type-mono-sm text-text-muted">{e.seed ?? ''}</span>
-                  <Avatar name={e.name} face={faceOf(e)} size={28} />
-                  <span class="min-w-0 grow truncate text-label font-medium">{e.name}{e.id === mine ? ' (you)' : ''}</span>
-                  <span class="text-small text-text-muted">{standing(e)}</span>
-                </div>
-              {:else}
-                <p class="p-3 text-body text-text-muted">Nobody has registered yet.</p>
-              {/each}
-            </section>
+            <PlayersList {m} {mine} />
           {:else}
             <section class="card flex flex-col gap-3 p-5" aria-label="Rules">
               {#if t.description}<p class="text-label text-ink-2">{t.description}</p>{/if}
