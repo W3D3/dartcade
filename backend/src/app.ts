@@ -34,6 +34,8 @@ import { progressApiPlugin } from './api/progress.js'
 import { achievementsApiPlugin } from './api/achievements.js'
 import { tournamentsApiPlugin } from './api/tournaments.js'
 import { teamsApiPlugin } from './api/teams.js'
+import { guestClaimsApiPlugin } from './api/guestClaims.js'
+import { GuestClaimService } from './guestClaims/service.js'
 import { coachApiPlugin } from './api/coach.js'
 import { statsApiPlugin } from './api/stats.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
@@ -305,6 +307,20 @@ export async function buildApp({
   await app.register(achievementsApiPlugin, { db })
   await app.register(tournamentsApiPlugin, { db, hub, lobbies, tournaments, countGames })
   await app.register(teamsApiPlugin, { db, lobbies, hub })
+  const guestClaims = new GuestClaimService({
+    db,
+    announce: async (userId, invite) => {
+      hub.sendGuestClaim(userId, { type: 'guest.claim', invite })
+      await lobbies.pushMe(userId)
+    },
+    refresh: async userIds => {
+      await Promise.allSettled(userIds.map(u => lobbies.pushMe(u)))
+    },
+    available: async userId => flagEnabled('guestClaims.enabled', await loadFlagUser(db, userId)),
+    countGame: id => countGames?.([id]) ?? Promise.resolve(),
+    warn: (message, details) => app.log.warn(details ?? {}, message),
+  })
+  await app.register(guestClaimsApiPlugin, { db, guestClaims })
   await app.register(coachApiPlugin, { db })
   await app.register(statsApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })

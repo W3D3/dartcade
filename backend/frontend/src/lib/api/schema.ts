@@ -213,6 +213,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/games/{id}/guest-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The guest seats of a finished game you hosted, and who you asked to take each over
+         * @description The host sees every guest seat nobody has taken over yet. Anyone else, and a game that cannot be claimed (not finished, invalidated, tournament), gets `canClaim` false and no seats.
+         */
+        get: operations["getGuestClaims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}/guest-claims/{seat}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+                seat: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Ask a friend to take over a guest seat (host); replaces an invite still waiting for that seat */
+        put: operations["inviteGuestClaim"];
+        post?: never;
+        /** Take back the invite waiting for a guest seat (host) */
+        delete: operations["cancelGuestClaim"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guest-claims/{claimId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take over the guest seat you were asked for; the game then counts as yours */
+        post: operations["acceptGuestClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guest-claims/{claimId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline the guest seat you were asked for */
+        post: operations["declineGuestClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/coach/legs": {
         parameters: {
             query?: never;
@@ -5553,6 +5634,30 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
         };
+        GuestClaimConflict: {
+            error: string;
+            /** @enum {string} */
+            code: "not_friend" | "already_seated" | "already_invited" | "not_claimable" | "not_guest" | "unavailable";
+        };
+        GuestClaimSeat: {
+            seat: number;
+            /** @description The guest's name in the game */
+            name: string;
+            /** @description The place, 1 = first */
+            placement: number | null;
+            /** @description The friend asked to take the seat over, waiting for their answer */
+            invite: {
+                id: string;
+                user: components["schemas"]["UserRef"];
+                /** Format: date-time */
+                createdAt: string;
+            } | null;
+        };
+        GuestClaims: {
+            /** @description You hosted the game, it is finished and counts, and it has guest seats */
+            canClaim: boolean;
+            seats: components["schemas"]["GuestClaimSeat"][];
+        };
         TeamConflict: {
             error: string;
             /** @enum {string} */
@@ -6872,6 +6977,15 @@ export interface components {
                 "application/json": components["schemas"]["FriendConflict"];
             };
         };
+        /** @description The game or seat can no longer be claimed, or the friend is seated or asked for another seat already */
+        GuestClaimConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["GuestClaimConflict"];
+            };
+        };
         /** @description The name is taken, a limit is reached, or the change needs another first (a captain hands over before leaving) */
         TeamConflict: {
             headers: {
@@ -7250,6 +7364,138 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GameDetail"];
                 };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getGuestClaims: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The seats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestClaims"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    inviteGuestClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+                seat: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The seats, with the new invite */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestClaims"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["GuestClaimConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelGuestClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+                seat: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptGuestClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The game is yours now */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["GuestClaimConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineGuestClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];

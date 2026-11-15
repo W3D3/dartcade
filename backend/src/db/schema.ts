@@ -687,6 +687,18 @@ export interface TeamInvitesTable {
   expires_at: Date
 }
 
+/** A host's invite to a friend to take over a guest seat of a finished game (migration 072). */
+export interface GameGuestClaimsTable {
+  id: string
+  game_session_id: string
+  seat: number
+  invited_user_id: string
+  invited_by: string
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled'
+  created_at: Defaulted<Date>
+  answered_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
 export interface AchievementGamesTable {
   user_id: string
   game_id: string
@@ -783,4 +795,5 @@ export interface Database {
   teams: TeamsTable
   team_members: TeamMembersTable
   team_invites: TeamInvitesTable
+  game_guest_claims: GameGuestClaimsTable
 }

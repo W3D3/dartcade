@@ -98,6 +98,7 @@ export type MeServerMessage =
   | MatchmakingMessage
   | MatchmakingEndedMessage
   | TeamInviteMessage
+  | GuestClaimMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -422,6 +423,10 @@ export interface MeMessage {
    */
   teamInvites: TeamInvite[]
   /**
+   * Guest seats of finished games a host asked you to take over, newest first.
+   */
+  guestClaims: GuestClaimInvite[]
+  /**
    * Tournament teams you were picked to play for, waiting for your answer, soonest deadline first (tournaments.enabled).
    */
   tournamentRequests: TournamentTeamRequest[]
@@ -466,6 +471,28 @@ export interface UserRef1 {
    */
   name: string
   avatar: Avatar1
+}
+/**
+ * A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.
+ */
+export interface GuestClaimInvite {
+  id: string
+  gameId: string
+  /**
+   * The game mode id.
+   */
+  mode: string
+  playedAt: string
+  host: UserRef1
+  /**
+   * The guest's name in the game.
+   */
+  seatName: string
+  /**
+   * The seat's place, 1 = first; null when the game has none.
+   */
+  placement: number | null
+  createdAt: string
 }
 /**
  * A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.
@@ -868,4 +895,14 @@ export interface MatchmakingEndedMessage {
 export interface TeamInviteMessage {
   type: 'team.invite'
   invite: TeamInvite
+}
+/**
+ * Pushed on /ws/me when a host asks you to take over a guest seat (once, for a toast; the invite also shows in me.guestClaims).
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "GuestClaimMessage".
+ */
+export interface GuestClaimMessage {
+  type: 'guest.claim'
+  invite: GuestClaimInvite
 }

@@ -109,6 +109,7 @@ describe('flags', () => {
       { key: 'auth.passkeys.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'achievements.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'guestClaims.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'progression.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'progression.manualDarts', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'sounds.anyPack', value: true, reason: 'TARGETING_MATCH', variant: 'on' },

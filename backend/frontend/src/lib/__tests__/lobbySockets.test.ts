@@ -45,6 +45,7 @@ const meMsg = {
   type: 'me',
   invites: [],
   teamInvites: [],
+  guestClaims: [],
   tournamentRequests: [],
   game: null,
   lobby: {
@@ -233,6 +234,7 @@ describe('createMeStore', () => {
     expect(get(s)).toEqual({
       invites: [],
       teamInvites: [],
+      guestClaims: [],
       tournamentRequests: [],
       lobby: null,
       game: null,

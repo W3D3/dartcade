@@ -443,7 +443,7 @@ describe('handleBridgeConnection', () => {
     hub.addMeSocket(
       'chris',
       me,
-      { type: 'me', invites: [], teamInvites: [], tournamentRequests: [], lobby: null, game: null },
+      { type: 'me', invites: [], teamInvites: [], guestClaims: [], tournamentRequests: [], lobby: null, game: null },
       { type: 'friends', friends: [], incoming: [], outgoing: [] },
     )
     me.send.mockClear()

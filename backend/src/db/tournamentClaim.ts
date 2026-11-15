@@ -5,6 +5,7 @@ import { randomBytes } from 'node:crypto'
 import type { Kysely, Transaction } from 'kysely'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
+import { handOverSeats } from './seatHandover.js'
 import { BRACKET_ORDER } from '../shared/tournaments/bracket.js'
 import { matchTitle } from '../shared/tournaments/mine.js'
 
@@ -146,25 +147,9 @@ export async function claimSpot(db: Kysely<Database>, code: string, userId: stri
     if (spot.userId !== null) return 'already claimed'
     if (await holdsOtherSpot(tx, spot.tournamentId, userId, spot.id)) return 'already has a spot'
     await tx.updateTable('tournament_players').set({ user_id: userId }).where('id', '=', spot.id).execute()
-    const sessionIds = await moveSeats(tx, spot.id, userId)
+    const sessionIds = await handOverSeats(tx, { tournamentPlayerId: spot.id }, userId)
     return { spot: { ...spot, userId }, sessionIds }
   })
-}
-
-/**
- * Points the spot's seats at `userId` (null: back to the guest) and drops those games' stored details,
- * which hold the seat's account. Returns the games' ids.
- */
-export async function moveSeats(tx: Transaction<Database>, spotId: string, userId: string | null): Promise<string[]> {
-  const seats = await tx
-    .updateTable('game_players')
-    .set({ user_id: userId })
-    .where('tournament_player_id', '=', spotId)
-    .returning('session_id')
-    .execute()
-  const ids = seats.map(s => s.session_id)
-  if (ids.length > 0) await tx.deleteFrom('game_details').where('session_id', 'in', ids).execute()
-  return ids
 }
 
 /** Swaps the spot's claim code for a new one while it is unclaimed; false when it is claimed or not the tournament's. */

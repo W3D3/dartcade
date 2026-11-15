@@ -11,6 +11,7 @@ import type {
   XpGainedMessage,
   AchievementUnlockedMessage,
   TeamInviteMessage,
+  GuestClaimMessage,
   TournamentCheckInMessage,
   TournamentDroppedMessage,
   TournamentMatchMessage,
@@ -125,6 +126,11 @@ export class LobbyHub {
 
   /** Tells the user's /ws/me sockets a captain invited them (once, for a toast). */
   sendTeamInvite(userId: string, msg: TeamInviteMessage): void {
+    this.users.pushEach(userId, () => msg)
+  }
+
+  /** Tells the user's /ws/me sockets a host asked them to take over a guest seat (once, for a toast). */
+  sendGuestClaim(userId: string, msg: GuestClaimMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 
