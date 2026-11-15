@@ -64,7 +64,7 @@ function playerOf(e: RunEntry): { id: string; userId: string; name: string } | n
 const involves = (r: TournamentMatchRow, entryId: string) => r.entry_a_id === entryId || r.entry_b_id === entryId
 
 /**
- * Runs online tournaments (issue #606): opens check-in, draws the bracket at the start, starts each
+ * Runs tournaments (issue #606): opens check-in, draws the bracket at the start, starts each online
  * match's game once both players are online and free, gives a no-show's match to the other side,
  * records each game's result and finishes the tournament with everyone's place. Each tournament's
  * changes run one after another on its own lane. Nothing is kept in memory: every step reads the
@@ -122,12 +122,14 @@ export class TournamentService implements GameEndedConsumer {
 
   /**
    * An organizer starts a tournament that has no start time: the check-in window opens now and the
-   * bracket is drawn when it closes (straight away without one).
+   * bracket is drawn when it closes (straight away without one). In person there is no check-in:
+   * the bracket is drawn from the players the organizers added.
    */
   async organizerStart(tournamentId: string): Promise<StartOutcome> {
     return this.lane(tournamentId, async () => {
       const t = await getTournamentRow(this.deps.db, tournamentId)
-      if (!t || t.status !== 'open' || t.starts_at !== null || t.access === 'in_person') return 'not_startable'
+      if (!t || t.status !== 'open' || t.starts_at !== null) return 'not_startable'
+      if (t.access === 'in_person') return (await this.begin(t)) ? 'started' : 'not_startable'
       const startsAt = new Date(this.now() + (t.settings.checkInMinutes ?? 0) * 60_000)
       if (!(await setStartTime(this.deps.db, t.id, startsAt))) return 'not_startable'
       await this.schedule(t.id)
@@ -157,7 +159,10 @@ export class TournamentService implements GameEndedConsumer {
     if (!registrationOpen({ status: t.status, startsAt: t.starts_at.toISOString(), settings: t.settings }, new Date(now)))
       await releaseUnconfirmed(this.deps.db, t.id)
     const startAt = t.starts_at.getTime()
-    if (now >= startAt) return this.begin(t)
+    if (now >= startAt) {
+      await this.begin(t)
+      return
+    }
     const checkIn = t.settings.checkInMinutes
     if (t.status === 'open' && checkIn !== null && now >= startAt - checkIn * 60_000) {
       // An unlocked average limit is checked again: who no longer fits loses the spot. Before the
@@ -193,8 +198,8 @@ export class TournamentService implements GameEndedConsumer {
     }
   }
 
-  // The start: who plays (after a check-in, only who checked in), seeded and drawn
-  private async begin(t: TournamentRow): Promise<void> {
+  // The start: who plays (after a check-in, only who checked in), seeded and drawn; false when it did not start
+  private async begin(t: TournamentRow): Promise<boolean> {
     // Without a check-in window, the start is where an unlocked average limit is checked again
     if (t.status === 'open') await this.dropIneligible(t)
     const entries = await listEntries(this.deps.db, t.id)
@@ -207,10 +212,11 @@ export class TournamentService implements GameEndedConsumer {
       // Too few entries for the format: nobody can play it
       this.warn('tournament cancelled at its start', { tournamentId: t.id, entries: playing.length, error: String(err) })
       await moveTournament(this.deps.db, t.id, 'cancel')
-      return
+      return false
     }
-    if (!(await writeDraw(this.deps.db, t.id, seeded, matches, new Date(this.now())))) return
+    if (!(await writeDraw(this.deps.db, t.id, seeded, matches, new Date(this.now())))) return false
     await this.step(t.id)
+    return true
   }
 
   private async seed(t: TournamentRow, entries: RunEntry[]): Promise<string[]> {
@@ -282,6 +288,8 @@ export class TournamentService implements GameEndedConsumer {
     if (changed || gone.length > 0) return true
     for (const row of rows.filter(r => r.status === 'live')) changed = (await this.settleLive(row, entries)) || changed
     if (changed) return true
+    // In person the organizers start each match on a venue device (tournament mode); online the runner does
+    if (t.access === 'in_person') return false
     for (const row of rows.filter(r => r.status === 'ready').sort(before))
       changed = (await this.settleReady(t, row, entries, rows)) || changed
     return changed

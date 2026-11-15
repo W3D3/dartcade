@@ -41,7 +41,7 @@ export async function scheduledTournaments(db: Kysely<Database>): Promise<Tourna
 }
 
 export async function runningTournamentIds(db: Kysely<Database>): Promise<string[]> {
-  const rows = await db.selectFrom('tournaments').select('id').where('status', '=', 'running').where('access', '<>', 'in_person').execute()
+  const rows = await db.selectFrom('tournaments').select('id').where('status', '=', 'running').execute()
   return rows.map(r => r.id)
 }
 

@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { registerSolo, withdrawSolo } from '../db/tournaments.js'
 import { checkIn, seesTournamentOfMatch } from '../db/tournamentRun.js'
+import { setParticipants } from '../db/tournamentParticipants.js'
 import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
@@ -390,7 +391,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     // A leg won shows while the game goes on
     const first = gameOf('q1')
     await play(first, 'q1', async () => (await view())?.matches[0].legs[0] === 1)
-    expect((await view())?.matches[0]).toMatchObject({ status: 'live', legs: [1, 0], game: { sessionId: first } })
+    // A fresh leg: both sides on 301 again
+    expect((await view())?.matches[0]).toMatchObject({ status: 'live', legs: [1, 0], game: { sessionId: first, score: [301, 301] } })
 
     // Anyone who may see the tournament may watch its games
     const [semi] = await matches('live4')
@@ -402,5 +404,34 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     const after = await view()
     expect(after?.matches[0]).toMatchObject({ status: 'finished', outcome: 'played', winner: 0, legs: [2, 0], game: null })
     expect(after?.matches[2].sides.map(id => after.entries.find(e => e.id === id)?.name ?? null)).toEqual(['q1', null])
+  })
+
+  it('starts an in-person tournament by hand from its guests, and leaves each match to a venue device', async () => {
+    await insertTournament(db, {
+      id: 'onsite',
+      owner_user_id: 'org',
+      status: 'open',
+      access: 'in_person',
+      settings: settings({ seeding: 'random', checkInMinutes: null, noShowMinutes: null, manualScoring: false }),
+    })
+    const guests = ['Anna', 'Jonas', 'Mia', 'Paul']
+    await setParticipants(
+      db,
+      'onsite',
+      guests.map(name => ({ name, tag: null, color: null, players: [{ name }] })),
+    )
+    expect(await service.organizerStart('onsite')).toBe('started')
+    expect(await service.organizerStart('onsite')).toBe('not_startable')
+    expect((await tournament('onsite')).status).toBe('running')
+    // Long past any no-show wait: nothing starts by itself and nobody forfeits
+    now += 60 * MIN
+    await service.tick()
+    expect((await matches('onsite')).map(m => [m.round, m.status])).toEqual([
+      [1, 'ready'],
+      [1, 'ready'],
+      [2, 'pending'],
+    ])
+    expect(engine.getSessionByUser('org')).toBeUndefined()
+    expect(sent).toEqual([])
   })
 })

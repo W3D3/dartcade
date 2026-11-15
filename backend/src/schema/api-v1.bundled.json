@@ -6061,7 +6061,7 @@
       "post": {
         "operationId": "startTournament",
         "summary": "Start an online tournament that has no start time (organizers)",
-        "description": "Opens the check-in now; the bracket is drawn from who checked in when it closes. 409 when the tournament has a start time, is in person, or is not open.",
+        "description": "Opens the check-in now; the bracket is drawn from who checked in when it closes. In person the bracket is drawn at once from the players the organizers added (409 with the reason while too few, or a team has empty spots). 409 when the tournament has a start time or is not open.",
         "tags": [
           "tournaments"
         ],
