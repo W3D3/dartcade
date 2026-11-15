@@ -3920,7 +3920,7 @@ export interface components {
                 runningGames: number;
             };
             last24h: {
-                /** @description Accounts that played a game started in the last 24 hours */
+                /** @description Accounts that played a game finished in the last 24 hours */
                 players: number;
                 /** @description Games finished in the last 24 hours */
                 games: number;

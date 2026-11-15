@@ -18148,7 +18148,7 @@
                       "properties": {
                         "players": {
                           "type": "integer",
-                          "description": "Accounts that played a game started in the last 24 hours"
+                          "description": "Accounts that played a game finished in the last 24 hours"
                         },
                         "games": {
                           "type": "integer",
@@ -76020,7 +76020,7 @@
             "properties": {
               "players": {
                 "type": "integer",
-                "description": "Accounts that played a game started in the last 24 hours"
+                "description": "Accounts that played a game finished in the last 24 hours"
               },
               "games": {
                 "type": "integer",

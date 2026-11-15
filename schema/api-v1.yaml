@@ -4824,7 +4824,7 @@ components:
           required: [players, games, oneEighties]
           additionalProperties: false
           properties:
-            players: { type: integer, description: 'Accounts that played a game started in the last 24 hours' }
+            players: { type: integer, description: 'Accounts that played a game finished in the last 24 hours' }
             games: { type: integer, description: 'Games finished in the last 24 hours' }
             oneEighties: { type: integer }
         newUsers:
