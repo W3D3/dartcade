@@ -47,6 +47,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   adminGames: [hrefs.adminGames(), hrefs.adminGames('g1')],
   adminFlags: [hrefs.adminFlags()],
   adminRanked: [hrefs.adminRanked()],
+  adminActivity: [hrefs.adminActivity()],
   adminSystem: [hrefs.adminSystem()],
   adminDartSamples: [hrefs.adminDartSamples()],
   adminCosmetics: [hrefs.adminCosmetics()],

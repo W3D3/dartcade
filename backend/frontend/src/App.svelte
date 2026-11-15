@@ -55,6 +55,7 @@
   import AdminRanked from './routes/AdminRanked.svelte'
   import AdminMinigolfReports from './routes/AdminMinigolfReports.svelte'
   import MinigolfBrowse from './routes/MinigolfBrowse.svelte'
+  import AdminActivity from './routes/AdminActivity.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import AdminDartSamples from './routes/AdminDartSamples.svelte'
   import AdminCosmetics from './routes/AdminCosmetics.svelte'
@@ -189,6 +190,7 @@
     '/admin/ranked': AdminRanked,
     '/admin/minigolf/reports': AdminMinigolfReports,
     '/minigolf/browse': MinigolfBrowse,
+    '/admin/activity': AdminActivity,
     '/admin/system': AdminSystem,
     '/admin/dart-samples': AdminDartSamples,
     '/admin/cosmetics': AdminCosmetics,

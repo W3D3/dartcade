@@ -16,6 +16,8 @@ export const rankedTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Ranked queu
 
 export const minigolfReportsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Course reports' }]
 
+export const activityTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Activity' }]
+
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
 export const dartSamplesTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Dart samples' }]
