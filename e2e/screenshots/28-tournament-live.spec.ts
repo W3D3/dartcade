@@ -71,6 +71,7 @@ function live(me: string) {
     firstTo: 3,
     status: 'pending',
     sides: [null, null],
+    finishedAt: null,
     outcome: null,
     winner: null,
     legs: [0, 0],
