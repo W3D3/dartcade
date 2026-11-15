@@ -25,9 +25,32 @@ export type Avatar =
        */
       version: number
     }
+/**
+ * This interface was referenced by `TournamentWs`'s JSON-Schema
+ * via the `definition` "TournamentServerMessage".
+ */
+export type TournamentServerMessage = TournamentLiveMessage | TournamentDevicesMessage
+/**
+ * From a device in tournament mode. Anything else, or a match it may not take, is ignored.
+ *
+ * This interface was referenced by `TournamentWs`'s JSON-Schema
+ * via the `definition` "TournamentClientMessage".
+ */
+export type TournamentClientMessage =
+  | {
+      type: 'device.rename'
+      name: string
+    }
+  | {
+      type: 'device.hold'
+      /**
+       * The match this device plays from now on (a ready one, or a paused one to continue); null lets it go. Refused while another device holds it, or once it finished.
+       */
+      matchKey: string | null
+    }
 
 /**
- * Messages the backend pushes on the tournament socket (/ws/tournament?tournamentId=…[&code=…]): the running state of one tournament, the same for everyone who may see it. It only pushes, again whenever something changed; the tournament's setup comes from GET /api/tournaments/{id}. The server closes it with a WsCloseCode from game-ws-v1.json (NotFound when the caller may not see the tournament).
+ * Messages the backend pushes on the tournament socket (/ws/tournament?tournamentId=…[&code=…]): the running state of one tournament, the same for everyone who may see it. It pushes the state again whenever something changed, and to organizers the venue devices in tournament mode (tournament.devices); the tournament's setup comes from GET /api/tournaments/{id}. The server closes it with a WsCloseCode from game-ws-v1.json (NotFound when the caller may not see the tournament). A device in tournament mode opens it with `device` (its name) and `deviceId` (kept by that browser), and after a reconnect or reload `hold`, the match it played (it gets it back unless another device took it meanwhile): organizers of an in-person tournament only (Forbidden otherwise). Only a device sends messages (TournamentClientMessage).
  */
 export interface TournamentWs {
   [k: string]: unknown
@@ -109,6 +132,10 @@ export interface TournamentLiveMatch {
      * The side whose turn it is.
      */
     throwing: 0 | 1 | null
+    /**
+     * Each side's running score in the leg: X01's points left, Cricket's points; null in a bull off and in other games.
+     */
+    score: [number, number] | null
   } | null
 }
 /**
@@ -168,4 +195,36 @@ export interface TournamentLiveMessage {
   matches: TournamentLiveMatch[]
   tables: TournamentLiveTable[]
   schedule: TournamentLiveStage[]
+}
+/**
+ * This interface was referenced by `TournamentWs`'s JSON-Schema
+ * via the `definition` "TournamentDevice".
+ */
+export interface TournamentDevice {
+  /**
+   * The browser's own id for itself.
+   */
+  id: string
+  /**
+   * Tablet · Bar: asked on first open, kept by that browser.
+   */
+  name: string
+  /**
+   * The match this device plays (TournamentLiveMatch.key); null: free. A live match no device plays is paused, and any device may continue it.
+   */
+  matchKey: string | null
+}
+/**
+ * To the tournament's organizers: the devices in tournament mode, at once whenever one comes, goes, is renamed or takes a match.
+ *
+ * This interface was referenced by `TournamentWs`'s JSON-Schema
+ * via the `definition` "TournamentDevicesMessage".
+ */
+export interface TournamentDevicesMessage {
+  type: 'tournament.devices'
+  tournamentId: string
+  /**
+   * In the order they opened tournament mode.
+   */
+  devices: TournamentDevice[]
 }

@@ -1,5 +1,6 @@
 // The live tournament page's state (schema/tournament-ws-v1.json): the entries, the bracket's
-// matches with the live games' legs, the tables and the schedule, pushed on /ws/tournament.
+// matches with the live games' legs, the tables and the schedule, pushed on /ws/tournament; and,
+// to organizers, the venue devices in tournament mode.
 import type { Kysely } from 'kysely'
 import type { WebSocket } from 'ws'
 import type { Database } from '../db/schema.js'
@@ -9,7 +10,14 @@ import { getAvatars } from '../db/users.js'
 import { currentSeat } from '../session/access.js'
 import type { SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
-import type { TournamentLiveMatch, TournamentLiveMessage, TournamentLiveTable } from '../schema/tournament-ws.js'
+import type {
+  TournamentClientMessage,
+  TournamentDevice,
+  TournamentDevicesMessage,
+  TournamentLiveMatch,
+  TournamentLiveMessage,
+  TournamentLiveTable,
+} from '../schema/tournament-ws.js'
 import { snakeGroups, standings, type Match } from '../shared/tournaments/bracket.js'
 import { samePlace } from '../shared/tournaments/run.js'
 import { schedule, type MatchTimes } from '../shared/tournaments/schedule.js'
@@ -26,6 +34,20 @@ function liveLegs(session: Session): [number, number] {
   const seats = session.module.summarize(session.currentState, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
   const legs = seats.map(s => legsWon(s.stats))
   return [legs[0] ?? 0, legs[1] ?? 0]
+}
+
+/** Each side's running score in the leg (X01's points left, Cricket's points), none in a bull off. */
+function liveScore(session: Session): [number, number] | null {
+  const m = session.module
+  if (m.id === 'x01') {
+    const v = m.view(session.currentState, session.players)
+    return v.phase === 'game' ? [v.scores[0] ?? 0, v.scores[1] ?? 0] : null
+  }
+  if (m.id === 'cricket') {
+    const v = m.view(session.currentState, session.players)
+    return v.phase === 'game' ? [v.points[0] ?? 0, v.points[1] ?? 0] : null
+  }
+  return null
 }
 
 const asSide = (seat: number): 0 | 1 | null => (seat === 0 || seat === 1 ? seat : null)
@@ -79,7 +101,7 @@ export async function liveMessage(
         outcome: r.outcome,
         winner,
         legs: session ? liveLegs(session) : [r.legs_a, r.legs_b],
-        game: session ? { sessionId: session.id, throwing: asSide(currentSeat(session)) } : null,
+        game: session ? { sessionId: session.id, throwing: asSide(currentSeat(session)), score: liveScore(session) } : null,
       }
     }),
   )
@@ -119,15 +141,31 @@ export async function liveMessage(
   }
 }
 
+/** A venue device in tournament mode: an organizer's browser, on its own socket. */
+interface Device extends TournamentDevice {
+  ws: WebSocket
+}
+
+/** Who a socket is: anyone who may see the tournament, an organizer (sees the devices), or a device. */
+export type Viewer =
+  | { organizer: false }
+  /** `device.hold`: the match it played before a reconnect or reload, taken back as it connects. */
+  | { organizer: true; device?: { id: string; name: string; hold?: string } }
+
+/** A match a device may take: ready to play, or live (continuing a paused one). */
+const playable = (m: TournamentLiveMatch) => m.status === 'ready' || m.status === 'live'
+
 /**
  * The open /ws/tournament sockets per tournament. Each watched tournament is rebuilt every few
  * seconds and sent only when it changed, so the bracket, the live legs and the schedule follow
- * the games without the runner telling anyone.
+ * the games without the runner telling anyone. The devices in tournament mode are kept here too
+ * (nothing stored: a device is its open socket), and sent to the organizers at once on a change.
  * shortcut: polls the DB per watched tournament, fine at today's handful; hook the runner's changes in if that grows.
  */
 export class TournamentLive {
-  private readonly sockets = new Map<string, Set<WebSocket>>()
-  private readonly last = new Map<string, string>()
+  private readonly sockets = new Map<string, Map<WebSocket, Viewer>>()
+  private readonly last = new Map<string, { payload: string; msg: TournamentLiveMessage }>()
+  private readonly devices = new Map<string, Device[]>()
   private timer: NodeJS.Timeout | undefined
 
   constructor(
@@ -152,34 +190,96 @@ export class TournamentLive {
     return [...this.sockets.values()].reduce((n, s) => n + s.size, 0)
   }
 
-  /** A socket opened: it gets the state straight away. */
-  async add(tournamentId: string, ws: WebSocket): Promise<void> {
-    const open = this.sockets.get(tournamentId) ?? new Set()
-    open.add(ws)
+  /** A socket opened: it gets the state straight away, an organizer the devices too. */
+  async add(tournamentId: string, ws: WebSocket, viewer: Viewer = { organizer: false }): Promise<void> {
+    const open = this.sockets.get(tournamentId) ?? new Map<WebSocket, Viewer>()
+    open.set(ws, viewer)
     this.sockets.set(tournamentId, open)
-    const payload = this.last.get(tournamentId) ?? (await this.rebuild(tournamentId))
+    // The state first: a device taking its match back is checked against it
+    const payload = this.last.get(tournamentId)?.payload ?? (await this.rebuild(tournamentId))
+    if (viewer.organizer && viewer.device) {
+      const { id, name, hold } = viewer.device
+      const list = this.devices.get(tournamentId) ?? []
+      // The same browser while its old socket is still open: it takes that place over
+      const device = list.find(d => d.id === id) ?? { id, name, matchKey: null, ws }
+      Object.assign(device, { ws, name })
+      if (!list.includes(device)) list.push(device)
+      this.devices.set(tournamentId, list)
+      // A reconnect or reload names the match it played: it gets it back unless another device took it
+      if (hold !== undefined && this.mayHold(tournamentId, device, hold)) device.matchKey = hold
+      this.sendDevices(tournamentId)
+    } else if (viewer.organizer) {
+      send(ws, this.devicesMessage(tournamentId))
+    }
     if (payload !== null && isOpen(ws)) ws.send(payload)
   }
 
   remove(tournamentId: string, ws: WebSocket): void {
     const open = this.sockets.get(tournamentId)
     open?.delete(ws)
+    const list = this.devices.get(tournamentId) ?? []
+    // Leaving tournament mode: a match this device played is paused, any device may continue it
+    const left = list.filter(d => d.ws !== ws)
+    if (left.length !== list.length) {
+      this.devices.set(tournamentId, left)
+      this.sendDevices(tournamentId)
+    }
     if (open?.size === 0) {
       this.sockets.delete(tournamentId)
       this.last.delete(tournamentId)
+      this.devices.delete(tournamentId)
     }
+  }
+
+  /** What a device sends: its new name, or the match it plays (taken only while nobody else plays it). */
+  onMessage(tournamentId: string, ws: WebSocket, msg: TournamentClientMessage): void {
+    const list = this.devices.get(tournamentId) ?? []
+    const device = list.find(d => d.ws === ws)
+    if (!device) return
+    if (msg.type === 'device.rename') device.name = msg.name
+    else if (msg.matchKey === null) device.matchKey = null
+    else if (this.mayHold(tournamentId, device, msg.matchKey)) device.matchKey = msg.matchKey
+    else return
+    this.sendDevices(tournamentId)
+  }
+
+  /** A device may take a match that is ready or live, while no other device plays it. */
+  private mayHold(tournamentId: string, device: Device, matchKey: string): boolean {
+    const match = this.last.get(tournamentId)?.msg.matches.find(m => m.key === matchKey)
+    const taken = (this.devices.get(tournamentId) ?? []).some(d => d !== device && d.matchKey === matchKey)
+    return match !== undefined && playable(match) && !taken
   }
 
   /** Rebuilds the tournament's state and sends it to its sockets if it changed. */
   async refresh(tournamentId: string): Promise<void> {
-    const previous = this.last.get(tournamentId)
+    const previous = this.last.get(tournamentId)?.payload
     const payload = await this.rebuild(tournamentId)
     if (payload === null || payload === previous) return
-    for (const ws of this.sockets.get(tournamentId) ?? []) if (isOpen(ws)) ws.send(payload)
+    for (const ws of this.sockets.get(tournamentId)?.keys() ?? []) if (isOpen(ws)) ws.send(payload)
+    // A device whose match finished is free again
+    const matches = this.last.get(tournamentId)?.msg.matches ?? []
+    const done = (this.devices.get(tournamentId) ?? []).filter(
+      d => d.matchKey !== null && !matches.some(m => m.key === d.matchKey && playable(m)),
+    )
+    for (const d of done) d.matchKey = null
+    if (done.length > 0) this.sendDevices(tournamentId)
   }
 
   async refreshAll(): Promise<void> {
     for (const id of [...this.sockets.keys()]) await this.refresh(id)
+  }
+
+  private devicesMessage(tournamentId: string): TournamentDevicesMessage {
+    return {
+      type: 'tournament.devices',
+      tournamentId,
+      devices: (this.devices.get(tournamentId) ?? []).map(({ id, name, matchKey }) => ({ id, name, matchKey })),
+    }
+  }
+
+  private sendDevices(tournamentId: string): void {
+    const msg = this.devicesMessage(tournamentId)
+    for (const [ws, viewer] of this.sockets.get(tournamentId) ?? []) if (viewer.organizer) send(ws, msg)
   }
 
   private async rebuild(tournamentId: string): Promise<string | null> {
@@ -187,7 +287,11 @@ export class TournamentLive {
     if (msg === null) return null
     const payload = JSON.stringify(msg)
     // Only while someone watches: a socket that closed meanwhile leaves nothing behind
-    if (this.sockets.has(tournamentId)) this.last.set(tournamentId, payload)
+    if (this.sockets.has(tournamentId)) this.last.set(tournamentId, { payload, msg })
     return payload
   }
+}
+
+function send(ws: WebSocket, msg: TournamentDevicesMessage): void {
+  if (isOpen(ws)) ws.send(JSON.stringify(msg))
 }
