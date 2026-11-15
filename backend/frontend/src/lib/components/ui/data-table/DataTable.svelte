@@ -120,6 +120,9 @@
   // Over a row link the cells let clicks through to it, except on their own buttons and links;
   // `relative` paints them above the link
   const overLink = 'relative pointer-events-none cursor-default [&_a]:pointer-events-auto [&_button]:pointer-events-auto'
+  // A row link's focus ring, drawn by its row or card: in a table the link covers one cell
+  const linkRing =
+    'has-[[data-row-link]:focus-visible]:[outline:2px_solid_var(--color-accent)] has-[[data-row-link]:focus-visible]:-outline-offset-2'
 
   const ariaSort = (sorted: false | 'asc' | 'desc'): 'ascending' | 'descending' | 'none' =>
     sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'
@@ -134,9 +137,19 @@
   }
 </script>
 
-{#snippet rowLink(row: TData)}
+<!-- A table row repeats its link in every cell, each covering its own positioned <td>: Safari doesn't
+     make a positioned <tr> the containing block (WebKit bug 240961), so one link per row stretched
+     over the whole page and every tap opened the last row. Only the first is a tab stop and named. -->
+{#snippet rowLink(row: TData, first = true)}
   {#if rowHref}
-    <a href={rowHref(row)} aria-label={rowLabel?.(row)} class="absolute inset-0 -outline-offset-2"></a>
+    <a
+      href={rowHref(row)}
+      aria-label={first ? rowLabel?.(row) : undefined}
+      aria-hidden={first ? undefined : 'true'}
+      tabindex={first ? undefined : -1}
+      data-row-link
+      class="absolute inset-0 outline-none"
+    ></a>
   {/if}
 {/snippet}
 
@@ -216,7 +229,7 @@
             tabindex={onrowclick ? 0 : undefined}
             aria-label={onrowclick && rowLabel ? rowLabel(row.original) : undefined}
             aria-current={selected ? 'true' : undefined}
-            class="border-b border-line-3 last:border-0 outline-none {rowHref ? 'relative' : ''} {selected
+            class="border-b border-line-3 last:border-0 outline-none {rowHref ? linkRing : ''} {selected
               ? 'bg-surface-picked [box-shadow:inset_3px_0_0_var(--color-accent)]'
               : ''} {clickable
               ? 'cursor-pointer hover:bg-surface-hover focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:-outline-offset-2'
@@ -227,9 +240,9 @@
             }}
           >
             {#each row.getVisibleCells() as cell, i (cell.id)}
-              <td class="{cellClass} align-middle {resizable ? 'overflow-hidden' : ''}">
+              <td class="{cellClass} align-middle {rowHref ? 'relative' : ''} {resizable ? 'overflow-hidden' : ''}">
                 {#if rowHref}
-                  {#if i === 0}{@render rowLink(row.original)}{/if}
+                  {@render rowLink(row.original, i === 0)}
                   <div class={overLink}><FlexRender {cell} /></div>
                 {:else}
                   <FlexRender {cell} />
@@ -249,7 +262,7 @@
   {#if narrowRow}
     <ul class="lg:hidden">
       {#each rows as row (row.id)}
-        <li class="relative border-b border-line-3 last:border-0 {rowHref ? 'hover:bg-surface-hover' : ''}">
+        <li class="relative border-b border-line-3 last:border-0 {rowHref ? `hover:bg-surface-hover ${linkRing}` : ''}">
           {@render rowLink(row.original)}
           <div class={rowHref ? overLink : ''}>{@render narrowRow(row.original)}</div>
         </li>
