@@ -7,6 +7,7 @@ const me = (n: number) => ({
   type: 'me' as const,
   invites: [],
   teamInvites: [],
+  guestClaims: [],
   tournamentRequests: [],
   game: null,
   lobby:

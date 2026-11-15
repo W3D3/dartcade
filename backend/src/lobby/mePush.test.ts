@@ -16,6 +16,12 @@ vi.mock('../db/lobbies.js', async importOriginal => ({
   getOpenLobbyIdOfUser: vi.fn(),
 }))
 vi.mock('../db/teams.js', () => ({ pendingInvitesFor: vi.fn().mockResolvedValue([]) }))
+vi.mock('../flags/index.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../flags/index.js')>()),
+  flagEnabled: vi.fn().mockResolvedValue(false),
+  loadFlagUser: vi.fn().mockResolvedValue(null),
+}))
+vi.mock('../db/guestClaims.js', () => ({ pendingClaimsFor: vi.fn().mockResolvedValue([]) }))
 vi.mock('../db/tournamentRoster.js', () => ({ teamRequestsFor: vi.fn().mockResolvedValue([]) }))
 
 const store = (): EngineStore => ({

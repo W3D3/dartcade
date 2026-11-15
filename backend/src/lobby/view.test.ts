@@ -203,6 +203,7 @@ describe('lobbySummary', () => {
     const me = {
       type: 'me' as const,
       teamInvites: [],
+      guestClaims: [],
       tournamentRequests: [],
       invites: [
         inviteView(

@@ -348,7 +348,7 @@
       "title": "MeMessage",
       "description": "Pushed on /ws/me when it opens and whenever it changes.",
       "type": "object",
-      "required": ["type", "invites", "teamInvites", "tournamentRequests", "lobby", "game"],
+      "required": ["type", "invites", "teamInvites", "guestClaims", "tournamentRequests", "lobby", "game"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "me" },
@@ -357,6 +357,11 @@
           "type": "array",
           "description": "Invites to named teams waiting for your answer, newest first.",
           "items": { "$ref": "common-v1.json#/$defs/TeamInvite" }
+        },
+        "guestClaims": {
+          "type": "array",
+          "description": "Guest seats of finished games a host asked you to take over, newest first.",
+          "items": { "$ref": "common-v1.json#/$defs/GuestClaimInvite" }
         },
         "tournamentRequests": {
           "type": "array",
@@ -686,6 +691,17 @@
         "invite": { "$ref": "common-v1.json#/$defs/TeamInvite" }
       }
     },
+    "GuestClaimMessage": {
+      "title": "GuestClaimMessage",
+      "description": "Pushed on /ws/me when a host asks you to take over a guest seat (once, for a toast; the invite also shows in me.guestClaims).",
+      "type": "object",
+      "required": ["type", "invite"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "guest.claim" },
+        "invite": { "$ref": "common-v1.json#/$defs/GuestClaimInvite" }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -702,7 +718,8 @@
         { "$ref": "#/$defs/LobbyIdleClosedMessage" },
         { "$ref": "#/$defs/MatchmakingMessage" },
         { "$ref": "#/$defs/MatchmakingEndedMessage" },
-        { "$ref": "#/$defs/TeamInviteMessage" }
+        { "$ref": "#/$defs/TeamInviteMessage" },
+        { "$ref": "#/$defs/GuestClaimMessage" }
       ]
     }
   }

@@ -3,10 +3,11 @@
 import { randomUUID } from 'node:crypto'
 import type { Kysely, Transaction, Updateable } from 'kysely'
 import type { Database, TournamentsTable } from './schema.js'
+import { handOverSeats } from './seatHandover.js'
 import type { TeamColor } from '../shared/teams.js'
 import type { EntryInput } from '../shared/tournaments/participants.js'
 import { isEditable } from '../shared/tournaments/state.js'
-import { moveSeats, newClaimCode } from './tournamentClaim.js'
+import { newClaimCode } from './tournamentClaim.js'
 
 export interface SpotRow {
   id: string
@@ -164,7 +165,7 @@ export async function unlinkSpot(db: Kysely<Database>, tournamentId: string, spo
       .returning('id')
       .executeTakeFirst()
     if (!spot) return false
-    await moveSeats(tx, spotId, null)
+    await handOverSeats(tx, { tournamentPlayerId: spotId }, null)
     return true
   })
 }

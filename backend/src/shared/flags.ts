@@ -70,6 +70,12 @@ export const FLAG_META = {
       'Turns on achievements: badges with tiers counted from finished games, their XP, the unlock push, the showcase and the profile tab. Counting runs for everyone; this gates what is paid and shown.',
     defaultRule: 'admins',
   },
+  'guestClaims.enabled': {
+    kind: 'boolean',
+    description:
+      'Lets the host of a finished game ask a friend to take over a guest seat (Claim guests on the match details), and the friend answer on Invites. Both need it: off, the API answers 404 and the invite is not shown.',
+    defaultRule: 'admins',
+  },
   'progression.enabled': {
     kind: 'boolean',
     description:

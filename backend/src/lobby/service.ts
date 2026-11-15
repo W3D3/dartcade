@@ -3,13 +3,14 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { LOBBY_IDLE_SHARED_MINUTES, LOBBY_IDLE_SOLO_MINUTES } from '../shared/flags.js'
-import { flagNumber } from '../flags/index.js'
+import { flagEnabled, flagNumber, loadFlagUser } from '../flags/index.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { pendingInvitesFor as pendingTeamInvitesFor } from '../db/teams.js'
+import { pendingClaimsFor } from '../db/guestClaims.js'
 import { teamRequestsFor } from '../db/tournamentRoster.js'
 import type { GameEnded, GameEndedConsumer, GameStarted, SessionEngine } from '../session/engine.js'
 import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
@@ -301,10 +302,16 @@ export class LobbyService implements GameEndedConsumer {
     if (lobby && lobby.closedAt === null) this.send(lobby)
   }
 
+  /** The guest seats the user was asked to take over; none while guestClaims.enabled is off for them. */
+  private async guestClaimsFor(userId: string) {
+    return (await flagEnabled('guestClaims.enabled', await loadFlagUser(this.db, userId))) ? pendingClaimsFor(this.db, userId) : []
+  }
+
   async meMessage(userId: string): Promise<MeMessage> {
-    const [invites, teamInvites, tournamentRequests] = await Promise.all([
+    const [invites, teamInvites, guestClaims, tournamentRequests] = await Promise.all([
       this.listInvites(userId),
       pendingTeamInvitesFor(this.db, userId),
+      this.guestClaimsFor(userId),
       teamRequestsFor(this.db, userId),
     ])
     const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
@@ -314,6 +321,7 @@ export class LobbyService implements GameEndedConsumer {
       type: 'me',
       invites,
       teamInvites,
+      guestClaims,
       tournamentRequests,
       lobby: lobby ? lobbySummary(lobby, userId, this.deps.engine.getLobbySession(lobby.id)) : null,
       game: session

@@ -180,6 +180,23 @@
         "expiresAt": { "type": "string", "format": "date-time" }
       }
     },
+    "GuestClaimInvite": {
+      "title": "GuestClaimInvite",
+      "description": "A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.",
+      "type": "object",
+      "required": ["id", "gameId", "mode", "playedAt", "host", "seatName", "placement", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "mode": { "type": "string", "description": "The game mode id." },
+        "playedAt": { "type": "string", "format": "date-time" },
+        "host": { "$ref": "#/$defs/UserRef" },
+        "seatName": { "type": "string", "description": "The guest's name in the game." },
+        "placement": { "type": ["integer", "null"], "description": "The seat's place, 1 = first; null when the game has none." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "TournamentTeamRequest": {
       "title": "TournamentTeamRequest",
       "description": "A captain picked you to play for their team in a tournament, waiting for I'm in or Can't make it (Tournament-Confirm-Phone; in me.tournamentRequests). The team's spot is held until everyone confirmed, or until registration closes.",

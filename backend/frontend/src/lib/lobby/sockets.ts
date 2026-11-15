@@ -23,6 +23,8 @@ import type {
   AchievementUnlockedMessage,
   LobbyIdleClosedMessage,
   TeamInvite,
+  GuestClaimInvite,
+  GuestClaimMessage,
   TournamentTeamRequest,
   TeamInviteMessage,
   TournamentCheckInMessage,
@@ -101,6 +103,7 @@ export function createLobbyStore(lobbyId: string, open?: OpenSocket) {
 export type MeState = {
   invites: PendingInvite[]
   teamInvites: TeamInvite[]
+  guestClaims: GuestClaimInvite[]
   tournamentRequests: TournamentTeamRequest[]
   lobby: LobbySummary | null
   game: ActiveGame | null
@@ -109,7 +112,16 @@ export type MeState = {
   matchmaking: Matchmaking | null
 }
 
-const EMPTY: MeState = { invites: [], teamInvites: [], tournamentRequests: [], lobby: null, game: null, friends: null, matchmaking: null }
+const EMPTY: MeState = {
+  invites: [],
+  teamInvites: [],
+  guestClaims: [],
+  tournamentRequests: [],
+  lobby: null,
+  game: null,
+  friends: null,
+  matchmaking: null,
+}
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open?: OpenSocket) {
@@ -120,6 +132,7 @@ export function createMeStore(open?: OpenSocket) {
   const matchmakingEnded = writable<MatchmakingEndedMessage | null>(null)
   const idleClosed = writable<LobbyIdleClosedMessage | null>(null)
   const teamInvite = writable<TeamInviteMessage | null>(null)
+  const guestClaim = writable<GuestClaimMessage | null>(null)
   const tournament = writable<TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage | null>(null)
   const tournamentRequest = writable<TournamentRequestMessage | null>(null)
   let socket: ReconnectingSocket | null = null
@@ -139,6 +152,8 @@ export function createMeStore(open?: OpenSocket) {
     idleClosed: { subscribe: idleClosed.subscribe } satisfies Readable<LobbyIdleClosedMessage | null>,
     /** A captain last invited you to their team (team.invite), as it arrives. */
     teamInvite: { subscribe: teamInvite.subscribe } satisfies Readable<TeamInviteMessage | null>,
+    /** A host last asked you to take over a guest seat of their game (guest.claim), as it arrives. */
+    guestClaim: { subscribe: guestClaim.subscribe } satisfies Readable<GuestClaimMessage | null>,
     /** Your tournament's check-in opened, the average limit took your spot, or your match's game started (tournament.checkIn, tournament.dropped, tournament.match), as it arrives. */
     tournament: { subscribe: tournament.subscribe } satisfies Readable<
       TournamentCheckInMessage | TournamentDroppedMessage | TournamentMatchMessage | null
@@ -159,6 +174,7 @@ export function createMeStore(open?: OpenSocket) {
                 ...(s ?? EMPTY),
                 invites: msg.invites,
                 teamInvites: msg.teamInvites,
+                guestClaims: msg.guestClaims,
                 tournamentRequests: msg.tournamentRequests,
                 lobby: msg.lobby,
                 game: msg.game,
@@ -178,6 +194,8 @@ export function createMeStore(open?: OpenSocket) {
               idleClosed.set(msg)
             } else if (msg?.type === 'team.invite') {
               teamInvite.set(msg)
+            } else if (msg?.type === 'guest.claim') {
+              guestClaim.set(msg)
             } else if (msg?.type === 'tournament.checkIn' || msg?.type === 'tournament.dropped' || msg?.type === 'tournament.match') {
               tournament.set(msg)
             } else if (msg?.type === 'tournament.request') {
@@ -207,6 +225,7 @@ export function createMeStore(open?: OpenSocket) {
       matchmakingEnded.set(null)
       idleClosed.set(null)
       teamInvite.set(null)
+      guestClaim.set(null)
       tournament.set(null)
       tournamentRequest.set(null)
     },

@@ -3047,6 +3047,7 @@
         "type",
         "invites",
         "teamInvites",
+        "guestClaims",
         "tournamentRequests",
         "lobby",
         "game"
@@ -3721,6 +3722,142 @@
                 "format": "date-time"
               },
               "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "guestClaims": {
+          "type": "array",
+          "description": "Guest seats of finished games a host asked you to take over, newest first.",
+          "items": {
+            "title": "GuestClaimInvite",
+            "description": "A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.",
+            "type": "object",
+            "required": [
+              "id",
+              "gameId",
+              "mode",
+              "playedAt",
+              "host",
+              "seatName",
+              "placement",
+              "createdAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "gameId": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string",
+                "description": "The game mode id."
+              },
+              "playedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "host": {
+                "title": "UserRef",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "avatar"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Their handle, shown as @name"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "foreground",
+                          "background"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "description": "The finish of the mark in front"
+                          },
+                          "background": {
+                            "type": "string",
+                            "description": "The finish of the disc behind it"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "seatName": {
+                "type": "string",
+                "description": "The guest's name in the game."
+              },
+              "placement": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "The seat's place, 1 = first; null when the game has none."
+              },
+              "createdAt": {
                 "type": "string",
                 "format": "date-time"
               }
@@ -6389,6 +6526,153 @@
         }
       }
     },
+    "GuestClaimMessage": {
+      "title": "GuestClaimMessage",
+      "description": "Pushed on /ws/me when a host asks you to take over a guest seat (once, for a toast; the invite also shows in me.guestClaims).",
+      "type": "object",
+      "required": [
+        "type",
+        "invite"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "guest.claim"
+        },
+        "invite": {
+          "title": "GuestClaimInvite",
+          "description": "A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.",
+          "type": "object",
+          "required": [
+            "id",
+            "gameId",
+            "mode",
+            "playedAt",
+            "host",
+            "seatName",
+            "placement",
+            "createdAt"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "gameId": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string",
+              "description": "The game mode id."
+            },
+            "playedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "host": {
+              "title": "UserRef",
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "avatar"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Their handle, shown as @name"
+                },
+                "avatar": {
+                  "title": "Avatar",
+                  "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "foreground",
+                        "background"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "preset"
+                          ]
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "description": "The finish of the mark in front"
+                        },
+                        "background": {
+                          "type": "string",
+                          "description": "The finish of the disc behind it"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "upload"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "seatName": {
+              "type": "string",
+              "description": "The guest's name in the game."
+            },
+            "placement": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The seat's place, 1 = first; null when the game has none."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -6401,6 +6685,7 @@
             "type",
             "invites",
             "teamInvites",
+            "guestClaims",
             "tournamentRequests",
             "lobby",
             "game"
@@ -7075,6 +7360,142 @@
                     "format": "date-time"
                   },
                   "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "guestClaims": {
+              "type": "array",
+              "description": "Guest seats of finished games a host asked you to take over, newest first.",
+              "items": {
+                "title": "GuestClaimInvite",
+                "description": "A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.",
+                "type": "object",
+                "required": [
+                  "id",
+                  "gameId",
+                  "mode",
+                  "playedAt",
+                  "host",
+                  "seatName",
+                  "placement",
+                  "createdAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "gameId": {
+                    "type": "string"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "The game mode id."
+                  },
+                  "playedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "host": {
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "avatar"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "foreground",
+                              "background"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "description": "The finish of the mark in front"
+                              },
+                              "background": {
+                                "type": "string",
+                                "description": "The finish of the disc behind it"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "seatName": {
+                    "type": "string",
+                    "description": "The guest's name in the game."
+                  },
+                  "placement": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "The seat's place, 1 = first; null when the game has none."
+                  },
+                  "createdAt": {
                     "type": "string",
                     "format": "date-time"
                   }
@@ -9129,6 +9550,153 @@
                   "format": "date-time"
                 },
                 "expiresAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "GuestClaimMessage",
+          "description": "Pushed on /ws/me when a host asks you to take over a guest seat (once, for a toast; the invite also shows in me.guestClaims).",
+          "type": "object",
+          "required": [
+            "type",
+            "invite"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "guest.claim"
+            },
+            "invite": {
+              "title": "GuestClaimInvite",
+              "description": "A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.",
+              "type": "object",
+              "required": [
+                "id",
+                "gameId",
+                "mode",
+                "playedAt",
+                "host",
+                "seatName",
+                "placement",
+                "createdAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "gameId": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string",
+                  "description": "The game mode id."
+                },
+                "playedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "host": {
+                  "title": "UserRef",
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "avatar"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Their handle, shown as @name"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "foreground",
+                            "background"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "description": "The finish of the mark in front"
+                            },
+                            "background": {
+                              "type": "string",
+                              "description": "The finish of the disc behind it"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "seatName": {
+                  "type": "string",
+                  "description": "The guest's name in the game."
+                },
+                "placement": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "The seat's place, 1 = first; null when the game has none."
+                },
+                "createdAt": {
                   "type": "string",
                   "format": "date-time"
                 }
