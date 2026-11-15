@@ -72,6 +72,26 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await page.waitForURL(url => url.hash === '#/history')
 })
 
+test('a tap on History hits what is under it when table rows are not positioned', async ({ authedPage: page }) => {
+  await finishSoloX01(page)
+  await finishSoloX01(page)
+  await page.goto('/#/history')
+  // Safari doesn't make a positioned <tr> the containing block of what is inside it (WebKit bug 240961)
+  await page.addStyleTag({ content: 'tr { position: static !important; }' })
+  const newest = page.getByRole('link', { name: /X01.*details/ }).first()
+  const href = await newest.getAttribute('href')
+
+  const tap = async (box: { x: number; y: number; width: number; height: number } | null) => {
+    if (!box) throw new Error('not on screen')
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  }
+  await tap(await page.getByRole('button', { name: 'X01', exact: true }).boundingBox())
+  await expect(page).toHaveURL(/#\/history\?mode=x01$/)
+
+  await tap(await page.getByRole('row').filter({ has: newest }).getByRole('cell').nth(3).boundingBox())
+  await page.waitForURL(url => url.hash === href)
+})
+
 test("a player's badge opens their profile card, in History and on the details page", async ({ adminPage: page }, testInfo) => {
   // Profile cards come with progression, on for admins
   const name = `e2eadmin${testInfo.parallelIndex}`
