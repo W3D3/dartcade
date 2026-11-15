@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Renders the PNG/ICO app icons in backend/frontend/public from the geometry of
-# favicon.svg (32-unit grid: rings r=13 and r=7, stroke 2.2, bull r=2.4).
-# Needs ImageMagick. Re-run after changing the logo.
+# Renders the app icons in backend/frontend/public: the PNGs from app-icon.svg (Chrome), favicon.ico
+# from the geometry of favicon.svg (32-unit grid: rings r=13 and r=7, stroke 2.2, bull r=2.4; needs
+# ImageMagick). Re-run after changing the logo.
 set -euo pipefail
 out="$(cd "$(dirname "$0")/../backend/frontend/public" && pwd)"
 bg='#0f100e'
 fg='#c6f24e'
 ss=8 # supersampling factor
 
-# render <size> <scale> <rounded 0|1> <file>
-# scale shrinks the target around the centre (maskable icons keep it inside the safe zone).
+# render <size> <scale> <rounded 0|1> <file># scale shrinks the target around the centre (maskable icons keep it inside the safe zone).
 render() {
   local size=$1 scale=$2 rounded=$3 file=$4
   local big=$((size * ss))
@@ -41,12 +40,21 @@ render() {
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-# iOS/iPadOS rounds the corners itself and shows transparency as black: full bleed.
-render 180 1 0 "$out/apple-touch-icon.png"
-# Web app manifest (Android, desktop installs).
-render 192 1 0 "$out/icon-192.png"
-render 512 1 0 "$out/icon-512.png"
-render 512 0.75 0 "$out/icon-maskable-512.png"
-# Legacy favicon.ico for browsers and tools that don't read the SVG.
+# The home-screen and install icons are the default profile picture (Classic finish, both
+# layers) drawn full bleed in app-icon.svg; iOS/iPadOS rounds the corners itself and shows
+# transparency as black. Needs Chrome (CHROME=... to override).
+chrome=${CHROME:-google-chrome}
+app_icon() {
+  local size=$1 file=$2
+  sed -E "s/width=\"1024\" height=\"1024\"/width=\"$size\" height=\"$size\"/" "$(dirname "$0")/app-icon.svg" >"$tmp/app-icon.svg"
+  "$chrome" --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
+    --window-size="$size,$size" --screenshot="$file" "file://$tmp/app-icon.svg" >/dev/null 2>&1
+}
+app_icon 180 "$out/apple-touch-icon.png"
+app_icon 192 "$out/icon-192.png"
+app_icon 512 "$out/icon-512.png"
+# The ring and bull sit inside the maskable safe zone already, so the same art serves.
+app_icon 512 "$out/icon-maskable-512.png"
+# The small favicon keeps the flat mark (the glow does not read at 16 px).
 for s in 16 32 48; do render "$s" 1 1 "$tmp/$s.png"; done
 convert "$tmp/16.png" "$tmp/32.png" "$tmp/48.png" "$out/favicon.ico"
