@@ -1,5 +1,6 @@
 import type { Component } from 'svelte'
 import {
+  Activity,
   Flag,
   FlagTriangleRight,
   GraduationCap,
@@ -83,6 +84,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: ScanEye,
   },
   { category: 'Platform & data', href: '/admin/flags', title: 'Feature flags', desc: 'Turn flags on or off at runtime', icon: ToggleRight },
+  {
+    category: 'Platform & data',
+    href: '/admin/activity',
+    title: 'Activity',
+    desc: 'Signups, games per day, who is online and what is running',
+    icon: Activity,
+  },
   {
     category: 'Platform & data',
     href: '/admin/system',
