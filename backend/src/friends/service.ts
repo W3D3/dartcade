@@ -91,6 +91,9 @@ export class FriendsService {
   dropPresence(userId: string): void {
     this.presence.drop(userId)
   }
+  onlineCount(): number {
+    return this.presence.count()
+  }
   isOnline(userId: string): boolean {
     return this.presence.isOnline(userId)
   }

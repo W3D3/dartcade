@@ -1071,6 +1071,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Platform activity (live counts, signups, games per day, busiest hours, health), cached for a few seconds (admin) */
+        get: operations["getAdminActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/dart-samples": {
         parameters: {
             query?: never;
@@ -3892,6 +3909,65 @@ export interface components {
             commit: string | null;
             /** @description When the image was built (ISO 8601) */
             buildTime: string | null;
+        };
+        AdminActivity: {
+            /** Format: date-time */
+            generatedAt: string;
+            days: number;
+            live: {
+                /** @description Accounts with an open page, invisible ones included */
+                online: number;
+                runningGames: number;
+            };
+            last24h: {
+                /** @description Accounts that played a game started in the last 24 hours */
+                players: number;
+                /** @description Games finished in the last 24 hours */
+                games: number;
+                oneEighties: number;
+            };
+            newUsers: {
+                last7d: number;
+                previous7d: number;
+            };
+            /** @description One count per UTC day, oldest first, ending today */
+            newUsersPerDay: number[];
+            gamesPerDay: {
+                /** @description Game ids, busiest first */
+                modes: string[];
+                /** @description One entry per UTC day, oldest first, ending today: finished games per game id */
+                perDay: {
+                    [key: string]: number;
+                }[];
+            };
+            /** @description Finished games of the last 28 days: 7 rows (Monday first) of 24 UTC hours */
+            busiest: number[][];
+            happeningNow: {
+                tournaments: {
+                    id: string;
+                    name: string;
+                    official: boolean;
+                    /** @enum {string} */
+                    status: "check_in" | "running";
+                    entries: number;
+                }[];
+                rankedQueue: number;
+                openLobbies: number;
+                /** @description Running games per game id */
+                runningGames: {
+                    [key: string]: number;
+                };
+            };
+            health: {
+                bridges: number;
+                boardsOnline: number;
+                /** @description Share of darts entered by hand in the last 24 hours, 0 to 1; null with no darts */
+                manualDartShare: number | null;
+            };
+            highlights: {
+                achievementsUnlocked24h: number;
+                teamsCreated7d: number;
+            };
         };
         AdminSystem: {
             build: {
@@ -8461,6 +8537,33 @@ export interface operations {
                     "application/json": components["schemas"]["AdminSystem"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAdminActivity: {
+        parameters: {
+            query?: {
+                /** @description Days the two daily charts cover, default 30 */
+                days?: 7 | 30 | 90;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The activity overview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
