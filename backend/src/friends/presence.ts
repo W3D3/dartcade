@@ -20,6 +20,11 @@ export class Presence {
     return this.sockets.has(userId) || this.leaving.has(userId)
   }
 
+  /** Accounts online now (grace included). */
+  count(): number {
+    return new Set([...this.sockets.keys(), ...this.leaving.keys()]).size
+  }
+
   connect(userId: string): void {
     if (this.closed) return
     const wasOnline = this.isOnline(userId)

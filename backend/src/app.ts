@@ -44,6 +44,7 @@ import { adminGamesApiPlugin } from './api/adminGames.js'
 import { adminRankedApiPlugin } from './api/adminRanked.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
+import { adminActivityApiPlugin } from './api/adminActivity.js'
 import { adminDartSamplesApiPlugin } from './api/adminDartSamples.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
@@ -344,6 +345,22 @@ export async function buildApp({
         boardsOnline: boards,
         runningGames: engine.getAllSessions().filter(s => s.status === 'active').length,
         openLobbies: (await getOpenLobbyIds(db)).length,
+      }
+    },
+  })
+  await app.register(adminActivityApiPlugin, {
+    db,
+    live: async () => {
+      const { bridges, boards } = bridgeConnections.counts()
+      const runningGames: Record<string, number> = {}
+      for (const s of engine.getAllSessions()) if (s.status === 'active') runningGames[s.module.id] = (runningGames[s.module.id] ?? 0) + 1
+      return {
+        online: friends.onlineCount(),
+        runningGames,
+        rankedQueue: matchmaking.searchList().length,
+        openLobbies: (await getOpenLobbyIds(db)).length,
+        bridges,
+        boardsOnline: boards,
       }
     },
   })

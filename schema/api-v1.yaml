@@ -1335,6 +1335,30 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/admin/activity:
+    get:
+      operationId: getAdminActivity
+      summary: Platform activity (live counts, signups, games per day, busiest hours, health), cached for a few seconds (admin)
+      tags: [admin]
+      parameters:
+        - {
+            name: days,
+            in: query,
+            required: false,
+            description: 'Days the two daily charts cover, default 30',
+            schema: { type: integer, enum: [7, 30, 90] },
+          }
+      responses:
+        '200':
+          description: The activity overview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminActivity' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/admin/dart-samples:
     get:
       operationId: listAdminDartSamples
@@ -4780,6 +4804,94 @@ components:
         version: { type: string, description: 'The release tag (v0.3.0), pr-<n> on a preview, dev otherwise' }
         commit: { type: string, nullable: true, description: The git commit the image was built from }
         buildTime: { type: string, nullable: true, description: 'When the image was built (ISO 8601)' }
+
+    AdminActivity:
+      type: object
+      required: [generatedAt, days, live, last24h, newUsers, newUsersPerDay, gamesPerDay, busiest, happeningNow, health, highlights]
+      additionalProperties: false
+      properties:
+        generatedAt: { type: string, format: date-time }
+        days: { type: integer }
+        live:
+          type: object
+          required: [online, runningGames]
+          additionalProperties: false
+          properties:
+            online: { type: integer, description: 'Accounts with an open page, invisible ones included' }
+            runningGames: { type: integer }
+        last24h:
+          type: object
+          required: [players, games, oneEighties]
+          additionalProperties: false
+          properties:
+            players: { type: integer, description: 'Accounts that played a game started in the last 24 hours' }
+            games: { type: integer, description: 'Games finished in the last 24 hours' }
+            oneEighties: { type: integer }
+        newUsers:
+          type: object
+          required: [last7d, previous7d]
+          additionalProperties: false
+          properties:
+            last7d: { type: integer }
+            previous7d: { type: integer }
+        newUsersPerDay:
+          type: array
+          description: 'One count per UTC day, oldest first, ending today'
+          items: { type: integer }
+        gamesPerDay:
+          type: object
+          required: [modes, perDay]
+          additionalProperties: false
+          properties:
+            modes: { type: array, items: { type: string }, description: 'Game ids, busiest first' }
+            perDay:
+              type: array
+              description: 'One entry per UTC day, oldest first, ending today: finished games per game id'
+              items: { type: object, additionalProperties: { type: integer } }
+        busiest:
+          type: array
+          description: 'Finished games of the last 28 days: 7 rows (Monday first) of 24 UTC hours'
+          items: { type: array, items: { type: integer } }
+        happeningNow:
+          type: object
+          required: [tournaments, rankedQueue, openLobbies, runningGames]
+          additionalProperties: false
+          properties:
+            tournaments:
+              type: array
+              items:
+                type: object
+                required: [id, name, official, status, entries]
+                additionalProperties: false
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  official: { type: boolean }
+                  status: { type: string, enum: [check_in, running] }
+                  entries: { type: integer }
+            rankedQueue: { type: integer }
+            openLobbies: { type: integer }
+            runningGames: { type: object, additionalProperties: { type: integer }, description: 'Running games per game id' }
+        health:
+          type: object
+          required: [bridges, boardsOnline, manualDartShare]
+          additionalProperties: false
+          properties:
+            bridges: { type: integer }
+            boardsOnline: { type: integer }
+            manualDartShare:
+              {
+                type: number,
+                nullable: true,
+                description: 'Share of darts entered by hand in the last 24 hours, 0 to 1; null with no darts',
+              }
+        highlights:
+          type: object
+          required: [achievementsUnlocked24h, teamsCreated7d]
+          additionalProperties: false
+          properties:
+            achievementsUnlocked24h: { type: integer }
+            teamsCreated7d: { type: integer }
 
     AdminSystem:
       type: object
