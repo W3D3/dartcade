@@ -20,7 +20,7 @@
             bg-surface-1 border-r border-line box-border p-[40px_44px] xl:p-[48px_56px]"
 >
   <!-- Logo -->
-  <Wordmark size={32} text="text-[26px] xl:text-[28px]" />
+  <Wordmark size={32} text="text-[26px] xl:text-[28px]" home />
 
   {#if variant === 'register'}
     <!-- Outlined "180", bleeding off the top-right corner -->

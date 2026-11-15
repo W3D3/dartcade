@@ -10,7 +10,7 @@
   <div class="absolute right-[-120px] top-[-40px] opacity-85 pointer-events-none" aria-hidden="true">
     <AuthBoard size={300} />
   </div>
-  <Wordmark text="text-[22px]" />
+  <Wordmark text="text-[22px]" home />
   <div class="relative flex flex-col gap-[10px]">
     <span class="font-[JetBrains_Mono,monospace] text-[12px] tracking-cta text-accent">T20 · T20 · T20 — 180</span>
     <p class="font-display font-bold text-[52px] leading-[0.88] uppercase max-w-[250px]">Step up to the oche.</p>

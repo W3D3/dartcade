@@ -20,3 +20,9 @@ for (const route of ['/#/login', '/#/register', '/#/terms', '/#/privacy', '/#/fo
     await expect.poll(() => scrolledBy(page)).toBeGreaterThan(0)
   })
 }
+
+test('the logo on a phone goes back to the main page', async ({ page }) => {
+  await page.goto('/#/terms')
+  await page.getByRole('link', { name: 'DARTCADE', exact: true }).first().click()
+  await expect(page).not.toHaveURL(/terms/)
+})
