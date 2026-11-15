@@ -44,7 +44,7 @@
   class="hidden xl:flex w-[248px] shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]"
 >
   <!-- Logo -->
-  <div class="px-2"><Wordmark /></div>
+  <div class="px-2"><Wordmark home /></div>
 
   <!-- Nav links -->
   <div class="flex flex-col gap-1">

@@ -35,7 +35,7 @@
 
 <ScrollPage class="bg-bg flex flex-col items-center">
   <div class="w-full max-w-[720px] box-border px-5 md:px-0 pt-8 md:pt-10 pb-16 flex flex-col gap-6 md:gap-7">
-    <Wordmark size={26} text="text-[21px] md:text-[24px]" badge={false} />
+    <Wordmark size={26} text="text-[21px] md:text-[24px]" badge={false} home />
 
     <div class="flex flex-col gap-[10px] border-b border-line pb-4">
       <nav aria-label="Legal documents" class="flex gap-[18px] md:gap-5">

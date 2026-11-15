@@ -67,7 +67,7 @@
          border-r border-line bg-surface-1"
 >
   <div class="shrink-0 flex flex-col items-center gap-2">
-    <BrandMark size={28} />
+    <a href={hrefs.home()} aria-label="Dartcade home"><BrandMark size={28} /></a>
     <AlphaBadge />
     <PreviewBadge />
   </div>
