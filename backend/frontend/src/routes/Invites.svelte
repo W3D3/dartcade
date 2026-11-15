@@ -6,11 +6,14 @@
   import Layout from '$lib/components/Layout.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import InviteCard from '$lib/components/lobby/InviteCard.svelte'
+  import GuestClaimCard from '$lib/components/guestClaims/GuestClaimCard.svelte'
   import InviteFeedback from '$lib/components/lobby/InviteFeedback.svelte'
   import { InviteActions } from '$lib/lobby/invites.svelte'
-  import { me } from '$lib/lobby/sockets'
+  import { me, pendingInvites } from '$lib/lobby/sockets'
 
   const invites = $derived($me?.invites ?? [])
+  const claims = $derived($me?.guestClaims ?? [])
+  const total = $derived(pendingInvites($me))
   // Ticks so "just now" ages while the page is open
   let now = $state(new Date())
   onMount(() => {
@@ -23,11 +26,11 @@
 </script>
 
 <Layout title="Invites">
-  {#snippet headerAction()}{#if invites.length}<span class="text-[13px] text-text-muted">{invites.length} pending</span>{/if}{/snippet}
+  {#snippet headerAction()}{#if total}<span class="text-[13px] text-text-muted">{total} pending</span>{/if}{/snippet}
   <main class="flex grow min-h-0 flex-col gap-3 box-border w-full max-w-[560px] min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-10">
     <h2 class="hidden md:block font-display font-bold text-[48px] leading-none uppercase">Invites</h2>
     <InviteFeedback {actions} />
-    {#if invites.length === 0}
+    {#if total === 0}
       <EmptyState title="No pending invites" text="When a friend adds you to their lobby with your @username, it shows up here.">
         {#snippet icon()}<Mail size={24} />{/snippet}
       </EmptyState>
@@ -36,8 +39,13 @@
         {#each invites as inv (inv.id)}
           <InviteCard invite={inv} {now} {actions} />
         {/each}
+        {#each claims as claim (claim.id)}
+          <GuestClaimCard invite={claim} />
+        {/each}
       </ol>
-      <span class="text-[13px] text-text-dim">Accepting puts you on your usual board; you can change it in the lobby.</span>
+      {#if invites.length}<span class="text-[13px] text-text-dim"
+          >Accepting puts you on your usual board; you can change it in the lobby.</span
+        >{/if}
     {/if}
   </main>
 </Layout>

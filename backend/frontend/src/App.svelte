@@ -51,6 +51,7 @@
   import BadgeDefs from '$lib/components/achievements/BadgeDefs.svelte'
   import AchievementToasts from '$lib/components/achievements/AchievementToasts.svelte'
   import TeamInviteToast from '$lib/components/teams/TeamInviteToast.svelte'
+  import GuestClaimToast from '$lib/components/guestClaims/GuestClaimToast.svelte'
   import TournamentToast from '$lib/components/tournaments/TournamentToast.svelte'
   import TournamentRequestToast from '$lib/components/tournaments/TournamentRequestToast.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
@@ -305,8 +306,8 @@
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser && !bigScreen && !tournamentMode}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast
-        /><TournamentRequestToast /><MatchFound />{/if}
+      {#if $currentUser && !bigScreen && !tournamentMode}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><GuestClaimToast
+        /><TournamentToast /><TournamentRequestToast /><MatchFound />{/if}
     {/if}
   {/if}
   <!-- App-wide: the game screens have no Layout, and the report button is on them too -->

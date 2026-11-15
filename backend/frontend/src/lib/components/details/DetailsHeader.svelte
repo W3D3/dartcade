@@ -1,6 +1,6 @@
 <script lang="ts">
   // The details page's header bar: the breadcrumb back to the list, the mode, the meta line and your result.
-  import { Ban, Trash } from '@lucide/svelte'
+  import { Ban, Trash, UserPlus } from '@lucide/svelte'
   import { Breadcrumb, type BreadcrumbItem } from '$lib/components/ui/breadcrumb/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import type { GameDetail } from '$lib/api'
@@ -13,7 +13,8 @@
     trail,
     oninvalidate,
     ondelete,
-  }: { detail: GameDetail; trail: BreadcrumbItem[]; oninvalidate?: () => void; ondelete?: () => void } = $props()
+    onclaim,
+  }: { detail: GameDetail; trail: BreadcrumbItem[]; oninvalidate?: () => void; ondelete?: () => void; onclaim?: () => void } = $props()
   const result = $derived(resultLabel(detail.game))
 </script>
 
@@ -34,6 +35,9 @@
       class="ml-auto h-[30px] px-3 inline-flex items-center rounded-full text-[13px] font-bold tracking-cta uppercase
              {result.won ? 'bg-accent text-accent-fg' : 'border border-line-chip text-ink-2'}">{result.text}</span
     >
+  {/if}
+  {#if onclaim}
+    <Button variant="outline" size="md" class={result.text ? '' : 'ml-auto'} onclick={onclaim}><UserPlus size={16} />Claim guests</Button>
   {/if}
   {#if oninvalidate}
     <Button variant="destructive" size="md" class={result.text ? '' : 'ml-auto'} onclick={oninvalidate}

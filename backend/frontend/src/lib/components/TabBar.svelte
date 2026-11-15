@@ -3,7 +3,7 @@
   import { progress } from '$lib/progress/store'
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
-  import { me } from '$lib/lobby/sockets'
+  import { me, pendingInvites } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import NavTabItem from './NavTabItem.svelte'
 
@@ -14,7 +14,7 @@
   const tournaments = flag('tournaments.enabled')
   const tabs = $derived(
     navTabs({
-      invites: $me?.invites.length ?? 0,
+      invites: pendingInvites($me),
       ranked: $matchmaking,
       progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
       home: $home,
