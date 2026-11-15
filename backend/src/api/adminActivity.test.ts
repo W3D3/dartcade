@@ -49,7 +49,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('GET /api/admin/activity', { tim
     await game('g5', 'x01', 'finished', HOUR, true)
     await db
       .insertInto('game_players')
-      .values([{ session_id: 'g1', seat: 0, name: 'Player', user_id: 'player' }] as never)
+      .values([
+        { session_id: 'g1', seat: 0, name: 'Player', user_id: 'player' },
+        // seats of a running and an invalidated game are not counted
+        { session_id: 'g4', seat: 0, name: 'Mod', user_id: 'mod' },
+        { session_id: 'g5', seat: 0, name: 'Admin', user_id: 'admin' },
+      ] as never)
       .execute()
     await insertTournament(db, { id: 't1', owner_user_id: 'admin', kind: 'official', status: 'running', name: 'Midweek' } as never)
   })
