@@ -4,7 +4,14 @@
 import { writable, type Readable } from 'svelte/store'
 import type { Tournament } from '$lib/api'
 import { WsCloseCode } from '$lib/api/game-ws.js'
-import type { TournamentLiveEntry, TournamentLiveMatch, TournamentLiveMessage, TournamentLiveStage } from '$lib/api/tournament-ws.js'
+import type {
+  TournamentClientMessage,
+  TournamentDevice,
+  TournamentLiveEntry,
+  TournamentLiveMatch,
+  TournamentLiveMessage,
+  TournamentLiveStage,
+} from '$lib/api/tournament-ws.js'
 import { TournamentServerMessageSchema } from '$lib/api/zod.js'
 import type { Face } from '$lib/face'
 import { LOCALE } from '$lib/fmt'
@@ -14,22 +21,50 @@ import { roundsOf, stageName } from '$shared/tournaments/schedule'
 export type LiveMessage = TournamentLiveMessage
 export type LiveMatch = TournamentLiveMatch
 export type LiveEntry = TournamentLiveEntry
+export type Device = TournamentDevice
 
-/** The socket's latest message; `gone` once the server says the tournament is not there for us. */
+export interface LiveStore {
+  readonly message: Readable<LiveMessage | null>
+  /** The devices in tournament mode; only organizers hear of them. */
+  readonly devices: Readable<Device[]>
+  readonly gone: Readable<boolean>
+  /** A device's message (rename, the match it plays); dropped while the socket is down. */
+  send(msg: TournamentClientMessage): void
+  destroy(): void
+}
+
+/**
+ * The socket's latest state and devices; `gone` once the server says the tournament is not there
+ * for us. `device`: this browser opens it as a device in tournament mode; its current name and
+ * the match it plays are read on each connect, so a reconnect keeps a rename and gets the match back.
+ */
 export function createLiveStore(
   tournamentId: string,
-  code: string | undefined,
+  opts: { code?: string; device?: { id: string; name: () => string; hold: () => string | null } } = {},
   open?: OpenSocket,
-): { message: Readable<LiveMessage | null>; gone: Readable<boolean>; destroy(): void } {
+): LiveStore {
   const message = writable<LiveMessage | null>(null)
+  const devices = writable<Device[]>([])
   const gone = writable(false)
-  const query = new URLSearchParams({ tournamentId, ...(code && { code }) })
+  const { code, device } = opts
+  const url = () => {
+    const hold = device?.hold() ?? null
+    const query = new URLSearchParams({
+      tournamentId,
+      ...(code && { code }),
+      ...(device && { deviceId: device.id, device: device.name() }),
+      ...(hold !== null && { hold }),
+    })
+    return `/ws/tournament?${query}`
+  }
   const socket = reconnectingSocket(
-    `/ws/tournament?${query}`,
+    url,
     {
       onMessage: data => {
         const m = TournamentServerMessageSchema.safeParse(data)
-        if (m.success && m.data.type === 'tournament.live') message.set(m.data)
+        if (!m.success) return
+        if (m.data.type === 'tournament.live') message.set(m.data)
+        else devices.set(m.data.devices)
       },
       onClose: code => {
         const name: string | undefined = WsCloseCode[code]
@@ -42,7 +77,7 @@ export function createLiveStore(
     },
     open,
   )
-  return { message, gone, destroy: () => socket.stop() }
+  return { message, devices, gone, send: msg => socket.send(JSON.stringify(msg)), destroy: () => socket.stop() }
 }
 
 /** The entry `userId` plays for (withdrawn ones too), or null. */

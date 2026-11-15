@@ -1,13 +1,14 @@
 <script lang="ts">
   // The organizer page of an in-person tournament (Tournament-Onsite, Tournament-Onsite-Teams,
   // `#/tournaments/:id/manage`): the header with Edit, Open tournament mode, the players or teams
-  // with their claim links, and how claim links work. Behind tournaments.enabled; organizers only.
+  // with their claim links, the devices in tournament mode, and how claim links work. Behind tournaments.enabled; organizers only.
   import { ChevronLeft, Info, Pencil, TvMinimal } from '@lucide/svelte'
   import { replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import OnsiteParticipants from '$lib/components/tournaments/OnsiteParticipants.svelte'
   import OrganizersCard from '$lib/components/tournaments/OrganizersCard.svelte'
+  import DevicesCard from '$lib/components/tournaments/mode/DevicesCard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { flag, flagsLoaded } from '$lib/flags'
   import { dayMonth, weekday } from '$lib/fmt'
@@ -90,8 +91,7 @@
                 the venue that’s logged in to your account.
               </span>
             </span>
-            <!-- Tournament mode comes with #616 -->
-            <Button variant="accent" disabled title="Tournament mode is coming soon">Open on this device</Button>
+            <Button variant="accent" href={hrefs.tournamentMode(t.id)}>Open on this device</Button>
           </section>
 
           <OnsiteParticipants tournamentId={t.id} bind:participants teamSize={t.teamSize} max={t.maxEntries} {editable} />
@@ -101,7 +101,7 @@
           <div class="card p-[18px]">
             <OrganizersCard tournamentId={t.id} tournamentName={t.name} onleft={() => void replace(hrefs.tournaments('mine').slice(1))} />
           </div>
-          <!-- Devices in tournament mode (#616) mounts here -->
+          <DevicesCard tournamentId={t.id} format={t.format} />
           <section class="card flex flex-col gap-2 p-[18px]" aria-labelledby="onsite-claim">
             <h2 id="onsite-claim" class="flex items-center gap-2 text-body-lg font-semibold">
               <Info size={16} aria-hidden="true" />Claim links

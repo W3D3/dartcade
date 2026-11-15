@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Tournament } from '$lib/api'
 import {
   canWatch,
+  createLiveStore,
   headline,
   myEntryId,
   recordOf,
@@ -153,5 +154,30 @@ describe('live tournament view', () => {
       'Every player plays on their own paired board.',
       'Withdrawing once it runs forfeits your remaining matches.',
     ])
+  })
+})
+
+describe('the tournament socket of a device', () => {
+  it('opens each connection with the name and the held match as they are now', () => {
+    vi.useFakeTimers()
+    const sockets: { url: string; onclose: ((e: { code: number }) => void) | null }[] = []
+    const open = (url: string) => {
+      const ws = { url, onclose: null, close: () => {} }
+      sockets.push(ws)
+      return ws as unknown as WebSocket
+    }
+    let name = 'Tablet · Bar'
+    let held: string | null = null
+    const store = createLiveStore('t1', { device: { id: 'd1', name: () => name, hold: () => held } }, open)
+    // Renamed and playing QF 2, then the connection drops
+    name = 'Tablet · Stage'
+    held = 'R1M2'
+    sockets[0].onclose?.({ code: 1006 })
+    vi.advanceTimersByTime(500)
+    const query = (i: number) => Object.fromEntries(new URL(sockets[i].url, 'http://x').searchParams)
+    expect(query(0)).toEqual({ tournamentId: 't1', deviceId: 'd1', device: 'Tablet · Bar' })
+    expect(query(1)).toEqual({ tournamentId: 't1', deviceId: 'd1', device: 'Tablet · Stage', hold: 'R1M2' })
+    store.destroy()
+    vi.useRealTimers()
   })
 })
