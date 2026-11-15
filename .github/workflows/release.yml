@@ -15,7 +15,9 @@ env:
   TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
-  # The release and its notes: one line per merged PR since the last tag (cliff.toml)
+  # The release and its notes: one line per merged PR since the last tag (cliff.toml). A draft, so
+  # nothing (the Discord webhook, the bridge's update check) sees it until the notes are rewritten
+  # by hand and it is published (AGENTS.md, Commits and merging)
   release-notes:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -36,7 +38,7 @@ jobs:
       - name: Create the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$TAG" --title "$TAG" --notes-file NOTES.md --verify-tag
+        run: gh release create "$TAG" --title "$TAG" --notes-file NOTES.md --verify-tag --draft
 
   release-bridge-binaries:
     # The binaries are attached to the release when the tag is pushed; a rebuild leaves them be

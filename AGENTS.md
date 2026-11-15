@@ -186,7 +186,9 @@ would be much bigger than the problem.
 - A PR with a big feature (a new game, page or flow) or a significant UI change adds a screenshot
   of it under `docs/<feature>/`, or updates the one already there, so `docs/`, the README and the
   release notes show the app as it is.
-- After a release, rewrite its notes by hand (`gh release edit vX.Y.Z --notes-file …`): group the
+- The Release workflow creates the release as a draft. Rewrite its notes by hand, then publish it
+  (`gh release edit vX.Y.Z --notes-file … --draft=false`; the Discord post and the bridge's update
+  check only see it then): group the
   changes by area under emoji headers (🎯 New games, 🎮 Playing, 🗣️ Caller, 📊 Stats, ⚙️ Settings,
   🐛 Fixes, 🐳 Self-hosting), describe each in a player's words, end each line with the PR(s) it
   came from (`([#204](https://github.com/W3D3/dartcade/pull/204))`), mark what is still behind a
