@@ -479,8 +479,10 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
 
   app.post<Route<'startTournament'>>('/api/tournaments/:id/start', { schema: fromSpec('startTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
+    const blocker = t.access === 'in_person' ? (await participantsOf(t)).startBlocker : null
+    if (blocker !== null) throw conflict(blocker)
     if ((await tournaments.organizerStart(t.id)) !== 'started')
-      throw conflict('only an open online tournament without a start time is started by hand')
+      throw conflict('only an open tournament without a start time is started by hand')
     return respond(t.id, role, req.userId)
   })
 
