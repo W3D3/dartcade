@@ -8,7 +8,7 @@
   import { Plus, House, Swords } from '@lucide/svelte'
   import { railTabs, isActiveRoute, railLobby } from '$lib/nav'
   import { currentUser } from '$lib/auth'
-  import { me } from '$lib/lobby/sockets'
+  import { me, pendingInvites } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { createLobby } from '$lib/lobby/create'
   import { acceptMatch } from '$lib/ranked/queue'
@@ -30,7 +30,7 @@
   const stats = flag('stats.enabled')
   const tabs = $derived(
     railTabs({
-      invites: $me?.invites.length ?? 0,
+      invites: pendingInvites($me),
       ranked: $matchmaking,
       progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
       admin: $currentUser?.isModerator ?? false,

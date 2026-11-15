@@ -10,13 +10,13 @@
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
   import { currentUser } from '$lib/auth'
-  import { me } from '$lib/lobby/sockets'
+  import { me, pendingInvites } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import { queueView } from '$lib/ranked/queueCard'
   import { tick } from '$lib/now'
 
-  const inviteCount = $derived($me?.invites.length ?? 0)
+  const inviteCount = $derived(pendingInvites($me))
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')

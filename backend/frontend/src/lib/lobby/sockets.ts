@@ -112,6 +112,9 @@ export type MeState = {
   matchmaking: Matchmaking | null
 }
 
+/** What waits on the Invites page: lobby invites and guest seats to take over. */
+export const pendingInvites = (s: MeState | null): number => (s?.invites.length ?? 0) + (s?.guestClaims.length ?? 0)
+
 const EMPTY: MeState = {
   invites: [],
   teamInvites: [],

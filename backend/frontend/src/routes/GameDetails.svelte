@@ -18,6 +18,8 @@
     RESTORE_WARNING,
     type Invalidation,
   } from '$lib/admin/games'
+  import GuestClaimDialog from '$lib/components/guestClaims/GuestClaimDialog.svelte'
+  import { loadGuestClaims, type GuestClaims } from '$lib/guestClaims/actions'
   import MinigolfSection from '$lib/components/details/MinigolfSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -73,6 +75,14 @@
     }
   }
   onMount(() => void load())
+
+  // The host of a finished game may ask friends to take over its guest seats
+  let guestClaims = $state<GuestClaims | null>(null)
+  let claiming = $state(false)
+  $effect(() => {
+    guestClaims = null
+    if (!admin && phase === 'ready') void loadGuestClaims(params.id).then(c => (guestClaims = c))
+  })
 
   // Admin or moderator: invalidate this game; the page then shows it as invalidated
   let confirmingInvalidate = $state(false)
@@ -134,7 +144,18 @@
           trail={admin ? gamesTrail(title) : [{ label: 'History', href: back.href }, { label: title }]}
           oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined}
           ondelete={admin && $currentUser?.isAdmin ? () => (confirmingDelete = true) : undefined}
+          onclaim={guestClaims?.canClaim ? () => (claiming = true) : undefined}
         />
+        {#if claiming && guestClaims}
+          <GuestClaimDialog
+            gameId={params.id}
+            claims={guestClaims}
+            onclose={() => (claiming = false)}
+            onchange={(c: GuestClaims) => {
+              guestClaims = c
+            }}
+          />
+        {/if}
         {#if invalidated}
           <div
             role="status"
