@@ -49,7 +49,7 @@ const msg: LiveMessage = {
       status: 'live',
       sides: ['chris', 'max'],
       legs: [1, 2],
-      game: { sessionId: 's1', throwing: 1 },
+      game: { sessionId: 's1', throwing: 1, score: null },
     }),
     match({ key: 'R1M2', round: 1, index: 2, status: 'finished', sides: ['lena', 'tom'], outcome: 'played', winner: 0, legs: [3, 1] }),
     match({ key: 'R2M1', round: 2, index: 1, sides: [null, 'lena'] }),

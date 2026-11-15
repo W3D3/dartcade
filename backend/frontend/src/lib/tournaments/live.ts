@@ -5,7 +5,7 @@ import { writable, type Readable } from 'svelte/store'
 import type { Tournament } from '$lib/api'
 import { WsCloseCode } from '$lib/api/game-ws.js'
 import type { TournamentLiveEntry, TournamentLiveMatch, TournamentLiveMessage, TournamentLiveStage } from '$lib/api/tournament-ws.js'
-import { TournamentLiveMessageSchema } from '$lib/api/zod.js'
+import { TournamentServerMessageSchema } from '$lib/api/zod.js'
 import type { Face } from '$lib/face'
 import { LOCALE } from '$lib/fmt'
 import { reconnectingSocket, type OpenSocket } from '$lib/reconnectingSocket.js'
@@ -28,8 +28,8 @@ export function createLiveStore(
     `/ws/tournament?${query}`,
     {
       onMessage: data => {
-        const m = TournamentLiveMessageSchema.safeParse(data)
-        if (m.success) message.set(m.data)
+        const m = TournamentServerMessageSchema.safeParse(data)
+        if (m.success && m.data.type === 'tournament.live') message.set(m.data)
       },
       onClose: code => {
         const name: string | undefined = WsCloseCode[code]

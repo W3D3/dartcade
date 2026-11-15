@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "tournament-ws/v1",
   "title": "TournamentWs",
-  "description": "Messages the backend pushes on the tournament socket (/ws/tournament?tournamentId=…[&code=…]): the running state of one tournament, the same for everyone who may see it. It only pushes, again whenever something changed; the tournament's setup comes from GET /api/tournaments/{id}. The server closes it with a WsCloseCode from game-ws-v1.json (NotFound when the caller may not see the tournament).",
+  "description": "Messages the backend pushes on the tournament socket (/ws/tournament?tournamentId=…[&code=…]): the running state of one tournament, the same for everyone who may see it. It pushes the state again whenever something changed, and to organizers the venue devices in tournament mode (tournament.devices); the tournament's setup comes from GET /api/tournaments/{id}. The server closes it with a WsCloseCode from game-ws-v1.json (NotFound when the caller may not see the tournament). A device in tournament mode opens it with `device` (its name) and `deviceId` (kept by that browser), and after a reconnect or reload `hold`, the match it played (it gets it back unless another device took it meanwhile): organizers of an in-person tournament only (Forbidden otherwise). Only a device sends messages (TournamentClientMessage).",
   "$defs": {
     "TournamentLivePlayer": {
       "title": "TournamentLivePlayer",
@@ -127,7 +127,7 @@
           "oneOf": [
             {
               "type": "object",
-              "required": ["sessionId", "throwing"],
+              "required": ["sessionId", "throwing", "score"],
               "additionalProperties": false,
               "properties": {
                 "sessionId": {
@@ -138,6 +138,27 @@
                   "type": ["integer", "null"],
                   "enum": [0, 1, null],
                   "description": "The side whose turn it is."
+                },
+                "score": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ],
+                      "minItems": 2,
+                      "additionalItems": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Each side's running score in the leg: X01's points left, Cricket's points; null in a bull off and in other games."
                 }
               }
             },
@@ -264,6 +285,97 @@
           }
         }
       }
+    },
+    "TournamentDevice": {
+      "title": "TournamentDevice",
+      "type": "object",
+      "required": ["id", "name", "matchKey"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The browser's own id for itself."
+        },
+        "name": {
+          "type": "string",
+          "description": "Tablet · Bar: asked on first open, kept by that browser."
+        },
+        "matchKey": {
+          "type": ["string", "null"],
+          "description": "The match this device plays (TournamentLiveMatch.key); null: free. A live match no device plays is paused, and any device may continue it."
+        }
+      }
+    },
+    "TournamentDevicesMessage": {
+      "title": "TournamentDevicesMessage",
+      "type": "object",
+      "required": ["type", "tournamentId", "devices"],
+      "additionalProperties": false,
+      "description": "To the tournament's organizers: the devices in tournament mode, at once whenever one comes, goes, is renamed or takes a match.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tournament.devices"
+        },
+        "tournamentId": {
+          "type": "string"
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TournamentDevice"
+          },
+          "description": "In the order they opened tournament mode."
+        }
+      }
+    },
+    "TournamentServerMessage": {
+      "title": "TournamentServerMessage",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TournamentLiveMessage"
+        },
+        {
+          "$ref": "#/$defs/TournamentDevicesMessage"
+        }
+      ]
+    },
+    "TournamentClientMessage": {
+      "title": "TournamentClientMessage",
+      "description": "From a device in tournament mode. Anything else, or a match it may not take, is ignored.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device.rename"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "matchKey"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device.hold"
+            },
+            "matchKey": {
+              "type": ["string", "null"],
+              "description": "The match this device plays from now on (a ready one, or a paused one to continue); null lets it go. Refused while another device holds it, or once it finished."
+            }
+          }
+        }
+      ]
     }
   }
 }
