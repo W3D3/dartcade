@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { push } from 'svelte-spa-router'
@@ -59,7 +60,7 @@
   }
 </script>
 
-<div class="flex flex-col md:flex-row min-h-dvh bg-bg">
+<ScrollPage class="flex flex-col md:flex-row bg-bg">
   <AuthPanel variant="register" />
   <AuthHero />
 
@@ -145,4 +146,4 @@
       <AuthFooter />
     </form>
   </main>
-</div>
+</ScrollPage>
