@@ -30,6 +30,37 @@ export function capsule(a: Pt, b: Pt, d: number): string {
   return `M ${at(plus(a))} L ${at(plus(b))} ${arc} 0 1 ${at(minus(b))} L ${at(minus(a))} ${arc} 0 1 ${at(plus(a))} Z`
 }
 
+/** A mesa's four sides as [outward direction, start of the top's edge, its end, the side's width]. */
+function mesaSides({ mesa }: Terrain): [Pt, Pt, Pt, number][] {
+  const [x0, x1] = [Math.min(mesa.from[0], mesa.to[0]), Math.max(mesa.from[0], mesa.to[0])]
+  const [y0, y1] = [Math.min(mesa.from[1], mesa.to[1]), Math.max(mesa.from[1], mesa.to[1])]
+  const [l, t, r, b] = mesa.edges
+  return [
+    [[-1, 0], [x0, y0], [x0, y1], l],
+    [[0, -1], [x0, y0], [x1, y0], t],
+    [[1, 0], [x1, y0], [x1, y1], r],
+    [[0, 1], [x0, y1], [x1, y1], b],
+  ]
+}
+
+/** A side that falls more than this much per mm of run (the plateau's height over the side's
+ *  width) is a cliff; a gentler one is a ramp, which the contours show. */
+const CLIFF_GRADIENT = 0.5
+/** The least a cliff's shadow is wide (mm), so even a near-vertical drop shows. */
+const CLIFF_SHADOW = 60
+
+/** The shadow a raised plateau's cliffs cast: a strip along each steep side, as wide as the side's
+ *  fall. A pit's walls fall inwards, so it casts none. */
+export function mesaCliffs(t: Terrain): string[] {
+  if (t.mesa.height <= 0) return []
+  return mesaSides(t).flatMap(([out, a, b, width]) => {
+    if (t.mesa.height / width < CLIFF_GRADIENT) return []
+    const w = Math.max(width, CLIFF_SHADOW)
+    const c = (p: Pt): Pt => [p[0] + out[0] * w, p[1] + out[1] * w]
+    return [`M ${at(a)} L ${at(b)} L ${at(c(b))} L ${at(c(a))} Z`]
+  })
+}
+
 export type SlopeLook = {
   /** Higher in the middle (a hill or a bump: shaded light); false for a bowl (shaded dark). */
   raised: boolean
@@ -48,7 +79,11 @@ export function slopeLook(s: Slope): SlopeLook {
   const contours: string[] = []
   for (let d = step; d < reach; d += step) contours.push(capsule(from, to, d))
   const bands = Array.from({ length: BANDS }, (_, k) => capsule(from, to, (reach * (BANDS - k)) / BANDS))
-  return { raised: strength > 0, bands, contours }
+  return {
+    raised: strength > 0,
+    bands,
+    contours,
+  }
 }
 
 /** The outline of a mesa where it has fallen `f` of the way (0: the flat top, 1: its foot): as
@@ -68,6 +103,8 @@ export function mesaRing({ mesa }: Terrain, f: number): string {
 export type MesaLook = SlopeLook & {
   /** The flat top's edge. */
   top: string
+  /** Shadows under the cliffs, one path each. */
+  cliffs: string[]
 }
 
 /** A mesa shaded like a slope: lighter up the plateau (darker down a pit), contours at each
@@ -78,6 +115,7 @@ export function mesaLook(t: Terrain): MesaLook {
     bands: Array.from({ length: BANDS }, (_, k) => mesaRing(t, (BANDS - k) / BANDS)),
     contours: [0.75, 0.5, 0.25].map(f => mesaRing(t, f)),
     top: mesaRing(t, 0),
+    cliffs: mesaCliffs(t),
   }
 }
 

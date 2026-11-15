@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { capsule, contourSpacing, forceArrows, mesaLook, mesaRing, slopeLook } from '$lib/minigolf/terrain'
+import { capsule, contourSpacing, forceArrows, mesaCliffs, mesaLook, mesaRing, slopeLook } from '$lib/minigolf/terrain'
 import type { Hole, Slope, Terrain } from '$shared/minigolf/types'
 
 const summit: Slope = { radial: { center: [900, 600], radius: 400, strength: 1500 } }
@@ -81,5 +81,22 @@ describe('minigolf terrain', () => {
       expect(Math.hypot(end[0] - 900, end[1] - 600)).toBeGreaterThan(Math.hypot(at[0] - 900, at[1] - 600))
     }
     expect(forceArrows({ ...hole, slopes: [] }, 150)).toEqual([])
+  })
+  describe('cliffs', () => {
+    // Top 1000..2000 x 500..800, a 600 mm ramp south, 60 mm cliffs elsewhere
+    const plateau: Terrain = { mesa: { from: [1000, 500], to: [2000, 800], height: 40, edges: [60, 60, 60, 600] } }
+
+    it('shades the foot of each cliff of a raised plateau, and of no pit', () => {
+      expect(mesaCliffs(plateau)).toHaveLength(3)
+      expect(mesaCliffs({ mesa: { ...plateau.mesa, height: -40 } })).toEqual([])
+      expect(mesaLook(plateau).cliffs).toHaveLength(3)
+    })
+
+    it('calls a side a ramp or a cliff by its steepness alone', () => {
+      // 150 mm sides at 60 mm high fall gently, a 40 mm side at 70 mm high is a cliff
+      const gentle: Terrain = { mesa: { from: [1000, 500], to: [2000, 800], height: 60, edges: [550, 150, 150, 150] } }
+      expect(mesaCliffs(gentle)).toEqual([])
+      expect(mesaCliffs({ mesa: { ...gentle.mesa, height: 70, edges: [40, 40, 40, 40] } })).toHaveLength(4)
+    })
   })
 })

@@ -1,6 +1,6 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
-  felt, cream rails, red bumpers, plateaus, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
+  felt, cream rails, red bumpers (a kicker has a ring on it), plateaus, hills, bowls and bumps shaded by height with contour lines and shadows under cliffs (`detail` off, as in thumbnails, leaves out the lines), the tee, the cup and flag,
   and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `forces` draws the slopes' push as arrows, `debug` the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
   The hole editor draws on it: `underlay` over the felt (under everything else), `children` on top,
@@ -32,6 +32,7 @@
     aim = null,
     aims = [],
     camera = null,
+    detail = true,
     frame,
     underlay,
     children,
@@ -58,6 +59,8 @@
     /** Shot preview aim lines; the current try's is bright, replaced ones faint. */
     aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
     camera?: { focus: Pt; t: number } | null
+    /** Contours and cliff shadows on top of the height shading; off for a small thumbnail. */
+    detail?: boolean
     /** The points the view frames (the outline when left out). */
     frame?: readonly Pt[]
     underlay?: Snippet
@@ -125,7 +128,7 @@
   const toward = (at: Pt, a: number, len: number): Pt => [at[0] + Math.cos(a) * len, at[1] - Math.sin(a) * len]
   const pts = (p: readonly Pt[]) => p.map(([x, y]) => `${x},${y}`).join(' ')
   const looks = $derived(hole.slopes.map(slopeLook))
-  const shaded: (SlopeLook & { top?: string })[] = $derived([...(hole.terrain ?? []).map(mesaLook), ...looks])
+  const shaded: (SlopeLook & { top?: string; cliffs?: string[] })[] = $derived([...(hole.terrain ?? []).map(mesaLook), ...looks])
   const uid = $props.id()
   const arrows = $derived(forces ? forceArrows(hole, 150) : [])
 </script>
@@ -162,10 +165,13 @@
   <!-- Terrain and slopes: lighter the higher (a plateau, a hill, a bump), darker the deeper (a pit, a bowl), fading into the felt at the edge and cut off at the rails -->
   {#each shaded as look, i (i)}
     <g pointer-events="none" clip-path="url(#{uid}-course)" data-testid={look.top ? 'mesa' : 'slope'}>
-      {#each look.bands as d, k (k)}<path {d} fill={look.raised ? '#ffffff' : '#000000'} fill-opacity={look.raised ? 0.03 : 0.045} />{/each}
-      <g fill="none" stroke={THEME.boardCream} stroke-opacity="0.2" stroke-width="5">
-        {#each look.contours as d, k (k)}<path {d} />{/each}
-      </g>
+      {#each look.bands as d, k (k)}<path {d} fill={look.raised ? '#ffffff' : '#000000'} fill-opacity={look.raised ? 0.05 : 0.07} />{/each}
+      {#if detail}
+        {#each look.cliffs ?? [] as d, k (k)}<path {d} fill="#000000" fill-opacity="0.4" />{/each}
+        <g fill="none" stroke={THEME.boardCream} stroke-opacity="0.3" stroke-width="5">
+          {#each look.contours as d, k (k)}<path {d} />{/each}
+        </g>
+      {/if}
       {#if look.top}<path d={look.top} fill="none" stroke={THEME.boardCream} stroke-opacity="0.45" stroke-width="6" />{/if}
     </g>
   {/each}
@@ -190,7 +196,18 @@
     {/if}
   {/each}
   {#each hole.bumpers as b, i (i)}
+    <circle cx={b.at[0]} cy={b.at[1] + b.r * 0.15} r={b.r * 1.1} fill="#050604" opacity="0.5" />
     <circle cx={b.at[0]} cy={b.at[1]} r={b.r} fill={THEME.boardRed} stroke="#6e1b18" stroke-width="6" />
+    <circle cx={b.at[0] - b.r * 0.35} cy={b.at[1] - b.r * 0.35} r={b.r * 0.28} fill="#ffffff" opacity="0.35" />
+    {#if b.kick}<circle
+        cx={b.at[0]}
+        cy={b.at[1]}
+        r={b.r * 0.6}
+        fill="none"
+        stroke={THEME.boardCream}
+        stroke-opacity="0.8"
+        stroke-width="5"
+      />{/if}
   {/each}
   <rect
     x={hole.tee[0] - 70}
