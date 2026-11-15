@@ -63,7 +63,8 @@ export async function activityStats(db: Kysely<Database>, days: number, now: num
       .selectFrom('game_players as p')
       .innerJoin('game_sessions as s', 's.id', 'p.session_id')
       .select(sql<string>`count(distinct p.user_id)`.as('n'))
-      .where('s.created_at', '>=', day)
+      .where('s.status', '=', 'finished')
+      .where('s.finished_at', '>=', day)
       .where('s.invalidated_at', 'is', null)
       .executeTakeFirstOrThrow(),
     db
