@@ -112,6 +112,10 @@ export interface TournamentLiveMatch {
    * @minItems 2
    */
   sides: [string | null, string | null]
+  /**
+   * When a finished match was decided.
+   */
+  finishedAt: string | null
   outcome: 'played' | 'walkover' | 'bye' | 'organizer' | null
   /**
    * The winning side once finished.

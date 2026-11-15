@@ -402,7 +402,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
 
     await play(first, 'q1')
     const after = await view()
-    expect(after?.matches[0]).toMatchObject({ status: 'finished', outcome: 'played', winner: 0, legs: [2, 0], game: null })
+    expect(after?.matches[0]).toMatchObject({
+      status: 'finished',
+      outcome: 'played',
+      winner: 0,
+      legs: [2, 0],
+      game: null,
+      finishedAt: new Date(now).toISOString(),
+    })
     expect(after?.matches[2].sides.map(id => after.entries.find(e => e.id === id)?.name ?? null)).toEqual(['q1', null])
   })
 

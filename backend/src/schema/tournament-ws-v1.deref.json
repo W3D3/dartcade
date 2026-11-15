@@ -240,6 +240,7 @@
         "firstTo",
         "status",
         "sides",
+        "finishedAt",
         "outcome",
         "winner",
         "legs",
@@ -304,6 +305,14 @@
           "minItems": 2,
           "additionalItems": false,
           "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
+        },
+        "finishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "When a finished match was decided."
         },
         "outcome": {
           "type": [
@@ -720,6 +729,7 @@
               "firstTo",
               "status",
               "sides",
+              "finishedAt",
               "outcome",
               "winner",
               "legs",
@@ -784,6 +794,14 @@
                 "minItems": 2,
                 "additionalItems": false,
                 "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
+              },
+              "finishedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When a finished match was decided."
               },
               "outcome": {
                 "type": [
@@ -1258,6 +1276,7 @@
                   "firstTo",
                   "status",
                   "sides",
+                  "finishedAt",
                   "outcome",
                   "winner",
                   "legs",
@@ -1322,6 +1341,14 @@
                     "minItems": 2,
                     "additionalItems": false,
                     "description": "The entry ids playing, null while still to be decided (or nobody, in a bye)."
+                  },
+                  "finishedAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time",
+                    "description": "When a finished match was decided."
                   },
                   "outcome": {
                     "type": [

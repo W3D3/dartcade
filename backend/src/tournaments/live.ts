@@ -98,6 +98,7 @@ export async function liveMessage(
         firstTo: r.first_to,
         status: r.status,
         sides: [r.entry_a_id, r.entry_b_id],
+        finishedAt: r.finished_at?.toISOString() ?? null,
         outcome: r.outcome,
         winner,
         legs: session ? liveLegs(session) : [r.legs_a, r.legs_b],
