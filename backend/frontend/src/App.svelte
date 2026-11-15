@@ -204,6 +204,12 @@
   }
 
   let checked = $state(false)
+  // push() only sets the hash; the router's location follows on hashchange. Until it does, the route
+  // of the page the visitor asked for (Home) would flash before the login page.
+  let redirectingTo = $state<string | null>(null)
+  $effect(() => {
+    if (redirectingTo && $location.startsWith(redirectingTo)) redirectingTo = null
+  })
 
   onMount(async () => {
     // better-auth's verify-email callback can land a failed link here with ?error=… before the
@@ -230,6 +236,7 @@
     // signing in); everything else goes to the login page and comes back here after it
     if (!get(currentUser) && !currentHash.startsWith(hrefs.join() + '/')) {
       rememberReturn(sessionStore(), currentHash)
+      redirectingTo = '/login'
       void push('/login')
     }
     checked = true
@@ -287,7 +294,7 @@
 <FinishSprite />
 <BadgeDefs />
 <Tooltip.Provider>
-  {#if checked}
+  {#if checked && !redirectingTo}
     {#if $currentUser?.nameNeedsChange && !bigScreen}
       <PickName />
     {:else}
