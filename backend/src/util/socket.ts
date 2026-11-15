@@ -1,4 +1,4 @@
-import type { WebSocket } from 'ws'
+import type { RawData, WebSocket } from 'ws'
 
 /**
  * Whether the socket is still open. A function rather than an inline check, so a check after
@@ -18,4 +18,10 @@ export function onceGone(socket: WebSocket, fn: () => void): void {
   }
   socket.on('close', onGone)
   socket.on('error', onGone)
+}
+
+// ws hands over a Buffer (its default binaryType); the other forms are handled for completeness
+export function rawText(raw: RawData): string {
+  if (Array.isArray(raw)) return Buffer.concat(raw).toString()
+  return Buffer.isBuffer(raw) ? raw.toString() : Buffer.from(raw).toString()
 }

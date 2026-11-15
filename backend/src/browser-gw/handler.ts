@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { BrowserConnections } from './connections.js'
 import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import { withAuthedSocket, socketQuery } from './authedSocket.js'
-import { isOpen, onceGone } from '../util/socket.js'
+import { isOpen, onceGone, rawText } from '../util/socket.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
 import type { Session } from '../session/types.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
@@ -27,12 +27,6 @@ const MAX_SOCKETS_PER_WATCHER = 2
 // newer or buggy client adds, at every level, before the action reaches the engine and
 // gets persisted or pushed in snapshots.
 const SessionQuerySchema = z.object({ sessionId: z.string().min(1), watch: z.literal('1').optional() })
-
-// ws hands over a Buffer (its default binaryType); the other forms are handled for completeness
-function rawText(raw: RawData): string {
-  if (Array.isArray(raw)) return Buffer.concat(raw).toString()
-  return Buffer.isBuffer(raw) ? raw.toString() : Buffer.from(raw).toString()
-}
 
 type Opts = FastifyPluginOptions & {
   engine: SessionEngine
