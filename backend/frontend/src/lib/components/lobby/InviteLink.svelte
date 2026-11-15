@@ -1,6 +1,7 @@
 <script lang="ts">
   // An invite link opened while signed out (Lobby-Invite-Link): the lobby first, then sign in
   // or sign up, and come straight back to the link.
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { push } from 'svelte-spa-router'
   import type { components } from '$lib/api/schema'
@@ -38,8 +39,8 @@
   }
 </script>
 
-<div
-  class="min-h-dvh box-border flex flex-col gap-[22px] px-4 pt-[18px] pb-5 md:px-11 md:py-[34px] text-text bg-[radial-gradient(900px_500px_at_50%_30%,#1a2012,var(--color-bg)_70%)]"
+<ScrollPage
+  class="box-border flex flex-col gap-[22px] px-4 pt-[18px] pb-5 md:px-11 md:py-[34px] text-text bg-[radial-gradient(900px_500px_at_50%_30%,#1a2012,var(--color-bg)_70%)]"
 >
   <header class="flex items-center justify-between">
     <Wordmark text="text-[26px]" badge={false} />
@@ -88,4 +89,4 @@
       </div>
     </section>
   </main>
-</div>
+</ScrollPage>

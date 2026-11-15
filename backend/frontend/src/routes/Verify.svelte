@@ -2,6 +2,7 @@
   // Landing page for the mail Register/Login just triggered. A verification link itself goes
   // straight to its destination (verifyCallback); this page is only "check your inbox" plus resend,
   // or (an expired/invalid link, or no email known at all) a way to get a fresh one.
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
@@ -93,7 +94,7 @@
   }
 </script>
 
-<div class="flex flex-col md:flex-row min-h-dvh bg-bg">
+<ScrollPage class="flex flex-col md:flex-row bg-bg">
   <AuthPanel />
   <AuthHero />
 
@@ -150,4 +151,4 @@
       <a href={hrefs.register()} class="self-center text-[14px] no-underline">Wrong address? Start over</a>
     </div>
   </main>
-</div>
+</ScrollPage>

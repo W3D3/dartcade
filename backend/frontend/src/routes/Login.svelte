@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
   import { FingerprintPattern } from '@lucide/svelte'
@@ -97,7 +98,7 @@
   }
 </script>
 
-<div class="flex flex-col md:flex-row min-h-dvh bg-bg">
+<ScrollPage class="flex flex-col md:flex-row bg-bg">
   <AuthPanel />
   <AuthHero />
 
@@ -205,4 +206,4 @@
       <AuthFooter />
     </form>
   </main>
-</div>
+</ScrollPage>

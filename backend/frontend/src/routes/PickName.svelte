@@ -1,6 +1,7 @@
 <script lang="ts">
   // A one-time screen for accounts whose name broke the new rules or duplicated an older one.
   // The app stays closed until a name is saved. Spec: "Pick your name".
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
@@ -33,7 +34,7 @@
   }
 </script>
 
-<div class="flex flex-col md:flex-row min-h-dvh bg-bg">
+<ScrollPage class="flex flex-col md:flex-row bg-bg">
   <AuthPanel />
   <AuthHero />
   <main class="flex grow md:items-center md:justify-center">
@@ -59,4 +60,4 @@
       >
     </form>
   </main>
-</div>
+</ScrollPage>

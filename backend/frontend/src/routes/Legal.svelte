@@ -1,5 +1,6 @@
 <script lang="ts">
   // Terms, Privacy Policy and Imprint (#/terms, #/privacy, #/imprint), see Legal.dc.html / Mobile-Legal.dc.html.
+  import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { location } from 'svelte-spa-router'
   import Wordmark from '$lib/components/Wordmark.svelte'
@@ -32,7 +33,7 @@
   })
 </script>
 
-<div class="min-h-dvh bg-bg flex flex-col items-center">
+<ScrollPage class="bg-bg flex flex-col items-center">
   <div class="w-full max-w-[720px] box-border px-5 md:px-0 pt-8 md:pt-10 pb-16 flex flex-col gap-6 md:gap-7">
     <Wordmark size={26} text="text-[21px] md:text-[24px]" badge={false} />
 
@@ -62,7 +63,7 @@
       <p class="m-0 text-body text-text-muted">Loading…</p>
     {/if}
   </div>
-</div>
+</ScrollPage>
 
 <style>
   /* The text comes from the operator's own Markdown (backend/src/legal/defaults), rendered server-side. */
