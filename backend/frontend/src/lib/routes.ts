@@ -41,6 +41,8 @@ export const hrefs = {
   tournamentClaim: (code: string) => at(`/tournaments/claim/${code}`),
   /** The organizer page of an in-person tournament (Tournament-Onsite). */
   tournamentManage: (id: string) => at(`/tournaments/${id}/manage`),
+  /** A venue device's full-screen view of an in-person tournament (Tournament-Mode). */
+  tournamentMode: (id: string) => at(`/tournament-mode/${id}`),
   /** `saved`: say so above the form (after creating it, the page this one replaced). */
   tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
   ranks: () => at('/matchmaking/ranks'),

@@ -33,6 +33,7 @@
   import TournamentsRoute from './routes/TournamentsRoute.svelte'
   import TournamentCreate from './routes/TournamentCreate.svelte'
   import TournamentManage from './routes/TournamentManage.svelte'
+  import TournamentMode from './routes/TournamentMode.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
   import Achievements from './routes/Achievements.svelte'
@@ -169,6 +170,7 @@
     '/tournaments/new': TournamentCreate,
     '/tournaments/:id/edit': TournamentCreate,
     '/tournaments/:id/manage': TournamentManage,
+    '/tournament-mode/:id': TournamentMode,
     // One route (tab optional), like Customise; any other value is a tournament's id (TournamentsRoute)
     '/tournaments/:tab?': TournamentsRoute,
     '/progress': Progress,
@@ -265,6 +267,8 @@
   // per-user socket, the name prompt, the banner; the frame not even the account's settings (the page has them)
   const bigScreen = $derived($location.startsWith('/big-screen'))
   const bigScreenFrame = $derived($location.startsWith('/big-screen-frame'))
+  // A venue device in tournament mode shows only the tournament: no toasts over it
+  const tournamentMode = $derived($location.startsWith('/tournament-mode/'))
 
   // Account-wide settings follow the signed-in user (sign-in, sign-out, a switch of user)
   let settingsUser: string | null | undefined
@@ -299,8 +303,8 @@
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser && !bigScreen}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast /><TournamentRequestToast
-        /><MatchFound />{/if}
+      {#if $currentUser && !bigScreen && !tournamentMode}<ProgressToasts /><AchievementToasts /><TeamInviteToast /><TournamentToast
+        /><TournamentRequestToast /><MatchFound />{/if}
     {/if}
   {/if}
   <!-- App-wide: the game screens have no Layout, and the report button is on them too -->

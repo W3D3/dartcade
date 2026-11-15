@@ -24,7 +24,8 @@ export interface ReconnectingSocket {
   readonly stopped: boolean
 }
 
-export function reconnectingSocket(url: string, handlers: SocketHandlers, open: OpenSocket = openWs): ReconnectingSocket {
+/** `url`: a function when each connection says something new (tournament mode's held match). */
+export function reconnectingSocket(url: string | (() => string), handlers: SocketHandlers, open: OpenSocket = openWs): ReconnectingSocket {
   let ws: WebSocket | null = null
   let stopped = false
   let delay = FIRST_DELAY
@@ -33,7 +34,7 @@ export function reconnectingSocket(url: string, handlers: SocketHandlers, open: 
   function connect() {
     retry = null
     if (stopped) return
-    const socket = open(url)
+    const socket = open(typeof url === 'string' ? url : url())
     ws = socket
     // Only the current socket counts: a replaced or stopped one may still fire late
     const current = () => ws === socket && !stopped

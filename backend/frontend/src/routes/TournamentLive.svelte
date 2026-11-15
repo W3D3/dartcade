@@ -35,7 +35,7 @@
   // The route's tournament and code are fixed for the page's life
   const code = new URLSearchParams($querystring).get('code') ?? undefined
   // svelte-ignore state_referenced_locally
-  const live = createLiveStore(params.id, code)
+  const live = createLiveStore(params.id, { code })
   const { message, gone } = live
   onDestroy(() => live.destroy())
 

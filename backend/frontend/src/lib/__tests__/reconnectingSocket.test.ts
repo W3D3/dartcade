@@ -60,6 +60,15 @@ describe('reconnectingSocket', () => {
     s.stop()
   })
 
+  it('asks a url function again on every connect', () => {
+    let n = 0
+    const s = reconnectingSocket(() => `/ws/test?n=${++n}`, { onMessage: () => undefined }, open)
+    last().drop()
+    waitForReconnect()
+    expect(FakeSocket.opened.map(x => x.url)).toEqual(['/ws/test?n=1', '/ws/test?n=2'])
+    s.stop()
+  })
+
   it('waits 500 ms after a drop, doubling up to 30 s', () => {
     const s = start()
     const waits: number[] = []
