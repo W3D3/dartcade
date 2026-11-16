@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
-import { clearDeviceCookie, setDeviceCookie } from '../auth/deviceSession.js'
+import { setDeviceCookie } from '../auth/deviceSession.js'
 import { requireAuth } from '../auth/middleware.js'
 import type { Database } from '../db/schema.js'
 import { addDevice, listDevices, pairDevice, renameDevice, revokeDevices, type DeviceRow } from '../db/tournamentDevices.js'
@@ -27,7 +27,7 @@ const listed = (d: DeviceRow) => ({
 
 /**
  * Venue devices of an in-person tournament (tournament mode): organizers add, list and revoke
- * them; a device opens its pairing code and then names, reads and leaves its own session. The
+ * them; a device opens its pairing code and then names and reads its own session. The
  * session itself is enforced in auth/middleware.ts (an allow list of routes) and the sockets.
  */
 export function tournamentDevicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -81,17 +81,6 @@ export function tournamentDevicesApiPlugin(app: FastifyInstance, opts: Opts, don
         if (!name) throw new ApiError(400, { error: 'invalid request', details: [{ path: 'body/name', message: 'is empty' }] })
         await renameDevice(db, d.id, name)
         return { id: d.id, tournamentId: d.tournamentId, name }
-      },
-    )
-    own.delete<Route<'leaveTournamentMode'>>(
-      '/api/tournament-device',
-      { config, schema: fromSpec('leaveTournamentMode') },
-      async (req, reply) => {
-        const d = req.tournamentDevice
-        if (!d) throw notFound()
-        cutDevices(await revokeDevices(db, d.tournamentId, d.id, new Date()))
-        clearDeviceCookie(reply)
-        return reply.code(204).send()
       },
     )
     next()

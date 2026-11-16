@@ -47832,58 +47832,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "operationId": "leaveTournamentMode",
-        "summary": "Forget this device session (Leave tournament mode)",
-        "description": "Revokes it and clears the cookie.",
-        "tags": [
-          "tournaments"
-        ],
-        "responses": {
-          "204": {
-            "description": "Left"
-          },
-          "401": {
-            "description": "Not signed in",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "ErrorResponse",
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "path",
-                          "message"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "path": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/tournaments/{id}/check-in": {

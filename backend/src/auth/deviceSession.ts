@@ -42,7 +42,3 @@ export function setDeviceCookie(reply: FastifyReply, token: string): void {
     `${DEVICE_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_MS / 1000)}${secure()}`,
   )
 }
-
-export function clearDeviceCookie(reply: FastifyReply): void {
-  void reply.header('set-cookie', `${DEVICE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure()}`)
-}
