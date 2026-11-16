@@ -40,7 +40,7 @@
         pt-[calc(12px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))] pl-[calc(12px+env(safe-area-inset-left))] pr-3 outline-none md:hidden"
     >
       <div class="flex items-center justify-between pl-2">
-        <Dialog.Title class="font-display text-section-title uppercase">Menu</Dialog.Title>
+        <Dialog.Title class="type-section-title">Menu</Dialog.Title>
         <Dialog.Close
           aria-label="Close menu"
           class="flex size-11 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-text-dim hover:text-text"
