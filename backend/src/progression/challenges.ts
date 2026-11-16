@@ -95,8 +95,9 @@ const distinct =
     return { progress: set.length, state: { ...s, set } }
   }
 
-const isDouble = (s: Seg) => s.m === 2
 const isBull = (s: Seg) => (s.n === 25 && s.m === 2) || s.n === 50
+/** The inner bull is the double 25 (stored as 50), so it counts here; finishedOn keeps to D1-D20. */
+const isDouble = (s: Seg) => s.m === 2 || isBull(s)
 const trebles = (g: ChallengeGame) => g.visits.reduce((a, v) => a + v.segs.filter(s => s.m === 3).length, 0)
 const doubles = (g: ChallengeGame) => g.visits.reduce((a, v) => a + v.segs.filter(isDouble).length, 0)
 const tons = (g: ChallengeGame, min: number) => g.visits.filter(v => !v.bust && (v.scored ?? 0) >= min).length
@@ -222,7 +223,7 @@ export const TEMPLATES: readonly Template[] = [
     period: 'daily',
     difficulty: 'medium',
     metric: 'doubles',
-    title: n => `Hit ${n} doubles`,
+    title: n => `Hit ${n} doubles (the bull counts)`,
     base: 6,
     floor: 2,
     scale: 'darts',
@@ -280,8 +281,8 @@ export const TEMPLATES: readonly Template[] = [
     base: 10,
     step: distinct(g =>
       allSegs(g)
-        .filter(s => isDouble(s) && (s.n <= 20 || s.n === 25))
-        .map(s => s.n),
+        .filter(s => isDouble(s) && (s.n <= 20 || s.n === 25 || s.n === 50))
+        .map(s => (s.n === 50 ? 25 : s.n)),
     ),
   },
   {

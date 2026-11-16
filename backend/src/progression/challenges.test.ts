@@ -167,6 +167,14 @@ describe('applyGame', () => {
     expect(challengeChips({ templateId: c.templateId, state: after.state })).toEqual(['D20', 'D16'])
   })
 
+  it('counts the bull as a double', () => {
+    const bull = { n: 50, m: 1 }
+    const visits = [{ leg: 0, segs: [bull, { n: 20, m: 2 }, { n: 25, m: 1 }], scored: null, bust: false }]
+    expect(applyGame({ templateId: 'd.doubles', progress: 0, state: {} }, game({ visits }))!.progress).toBe(2)
+    const ten = applyGame({ templateId: 'd.ten-doubles', progress: 0, state: {} }, game({ visits }))!
+    expect(challengeChips({ templateId: 'd.ten-doubles', state: ten.state })).toEqual(['Bull', 'D20'])
+  })
+
   it('sets the leg dart limit by average class, at every class boundary', () => {
     const classes = Object.keys(LEG_DART_LIMIT).map(Number)
     expect(classes).toEqual(Array.from({ length: 17 }, (_, i) => 20 + 5 * i))
