@@ -102,7 +102,7 @@ export function tournamentDevicesApiPlugin(app: FastifyInstance, opts: Opts, don
       { config: { rateLimit: RATE.strict }, schema: fromSpec('addTournamentDevice') },
       async (req, reply) => {
         const t = await organized(req.params.id, req.userId)
-        if (t.access !== 'in_person') throw new ApiError(409, { error: 'only an in-person tournament has devices' })
+        if (t.play !== 'in_person') throw new ApiError(409, { error: 'only an in-person tournament has devices' })
         if (t.status === 'finished' || t.status === 'cancelled')
           throw new ApiError(409, { error: `a ${t.status} tournament takes no devices` })
         const d = await addDevice(db, t.id, req.userId, new Date())
