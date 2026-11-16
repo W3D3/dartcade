@@ -6623,22 +6623,6 @@
             "$ref": "#/components/responses/NotFound"
           }
         }
-      },
-      "delete": {
-        "operationId": "leaveTournamentMode",
-        "summary": "Forget this device session (Leave tournament mode)",
-        "description": "Revokes it and clears the cookie.",
-        "tags": [
-          "tournaments"
-        ],
-        "responses": {
-          "204": {
-            "description": "Left"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
       }
     },
     "/api/tournaments/{id}/check-in": {

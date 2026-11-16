@@ -2504,11 +2504,7 @@ export interface paths {
         get: operations["getTournamentDeviceSession"];
         put?: never;
         post?: never;
-        /**
-         * Forget this device session (Leave tournament mode)
-         * @description Revokes it and clears the cookie.
-         */
-        delete: operations["leaveTournamentMode"];
+        delete?: never;
         options?: never;
         head?: never;
         /** Name this device (asked on first open) */
@@ -11297,25 +11293,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    leaveTournamentMode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Left */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
         };
     };
     renameTournamentDevice: {

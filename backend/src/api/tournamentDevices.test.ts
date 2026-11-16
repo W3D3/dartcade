@@ -182,13 +182,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     expect((await as('boss', 'GET', '/api/tournaments/venue/devices')).json<{ devices: object[] }>().devices).toEqual([])
   })
 
-  it('leaving forgets the session, and the session ends with the tournament, its age or idleness', async () => {
-    const left = await paired()
-    const leave = await withCookie(left.cookie, 'DELETE', '/api/tournament-device')
-    expect(leave.statusCode).toBe(204)
-    expect(String(leave.headers['set-cookie'])).toMatch(/Max-Age=0/)
-    expect((await withCookie(left.cookie, 'GET', '/api/tournaments/venue')).statusCode).toBe(401)
-
+  it('the session ends with the tournament, its age or idleness', async () => {
     const ended = await paired('over')
     expect((await withCookie(ended.cookie, 'GET', '/api/tournaments/over')).statusCode).toBe(200)
     await db.updateTable('tournaments').set({ status: 'finished' }).where('id', '=', 'over').execute()
