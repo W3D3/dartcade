@@ -4,6 +4,9 @@ import {
   checkInChoices,
   defaultForm,
   finalChoices,
+  joinChoices,
+  joinFields,
+  joinOf,
   formProblems,
   fromTournament,
   matchLengthLine,
@@ -43,9 +46,9 @@ describe('toInput', () => {
   it('sends a setup the server accepts for every kind of tournament', () => {
     const setups: Partial<CreateForm>[] = [
       {},
-      { access: 'friends', startMode: 'organizer', plannedFor: '2026-11-20T19:00' },
-      { access: 'invite', startMode: 'organizer', noShow: false },
-      { access: 'in_person', plannedFor: '2026-11-28T00:00' },
+      { visibility: 'friends', startMode: 'organizer', plannedFor: '2026-11-20T19:00' },
+      { visibility: 'invite', startMode: 'organizer', noShow: false },
+      { play: 'in_person', preselected: true, plannedFor: '2026-11-28T00:00' },
       { gameId: 'cricket', cricketMode: 'cutthroat', entry: 'teams', playersPerTeam: 3 },
       { format: 'groups_knockout', groupSize: 5, through: 1, longerFinal: true, finalSemis: true },
       { format: 'round_robin', maxEntries: 64, longerFinal: true },
@@ -58,14 +61,14 @@ describe('toInput', () => {
   })
 
   it('always gives a public tournament a start time, whatever was picked before', () => {
-    const input = toInput(form({ access: 'public', startMode: 'organizer' }))
+    const input = toInput(form({ visibility: 'public', startMode: 'organizer' }))
     expect(input.startsAt).toBe(new Date(2026, 10, 13, 19, 0).toISOString())
     expect(input.settings.registrationClosesMinutes).toBe(60)
     expect(input.settings.checkInMinutes).toBe(30)
   })
 
   it('has an organizer start use the check-in after the start and the planned-for hint', () => {
-    const input = toInput(form({ access: 'friends', startMode: 'organizer', checkInAfter: 2, plannedFor: '2026-11-20T19:00' }))
+    const input = toInput(form({ visibility: 'friends', startMode: 'organizer', checkInAfter: 2, plannedFor: '2026-11-20T19:00' }))
     expect(input.startsAt).toBeNull()
     expect(input.settings).toMatchObject({
       registrationClosesMinutes: null,
@@ -75,7 +78,9 @@ describe('toInput', () => {
   })
 
   it('leaves an in-person tournament without a start time, check-in or no-show wait, scored by hand or on its boards', () => {
-    const input = toInput(form({ access: 'in_person', plannedFor: '2026-11-28T00:00', manualScoring: false, boardIds: ['b1'] }))
+    const input = toInput(
+      form({ play: 'in_person', preselected: true, plannedFor: '2026-11-28T00:00', manualScoring: false, boardIds: ['b1'] }),
+    )
     expect(input.startsAt).toBeNull()
     expect(input.maxEntries).toBe(64)
     expect(input.settings).toMatchObject({
@@ -129,17 +134,45 @@ describe('toInput', () => {
   })
 })
 
+describe('where it is played and who can join', () => {
+  it('lets anyone register for an in-person tournament, and lets the organizers choose the players only in person', () => {
+    const walkIn = form({ play: 'in_person', plannedFor: '2026-11-28T00:00' })
+    expect(formProblems(walkIn, now)).toEqual([])
+    expect(toInput(walkIn)).toMatchObject({ play: 'in_person', preselected: false, visibility: 'public', startsAt: null })
+    expect(previewOf(walkIn)).toMatchObject({ size: '16 players', primary: 'Create & open registration' })
+    expect(joinChoices(form()).find(c => c.value === 'organizer')?.disabled).toMatch(/Only for in-person tournaments/)
+    expect(joinChoices(walkIn).find(c => c.value === 'organizer')?.disabled).toBeUndefined()
+    expect(joinChoices(walkIn, true).find(c => c.value === 'organizer')?.disabled).toMatch(/registered already/)
+    // Chosen by organizer left on while switching to online cannot be saved
+    expect(formProblems(form({ preselected: true }), now)).toEqual(['Who can join: online the players register themselves'])
+  })
+
+  it('keeps who sees it when the organizers choose the players, private included', () => {
+    const chosen = { ...form({ play: 'in_person', visibility: 'friends' }), ...joinFields('organizer') }
+    expect(joinOf(chosen)).toBe('organizer')
+    expect(chosen.visibility).toBe('friends')
+    const hidden = { ...chosen, visibility: 'private' as const }
+    expect(formProblems(hidden, now)).toEqual([])
+    expect(previewOf(hidden).audience).toBe('private · players added by you')
+    const back = { ...hidden, ...joinFields('invite') }
+    expect(back).toMatchObject({ preselected: false, visibility: 'invite' })
+    expect(joinOf(back)).toBe('invite')
+  })
+})
+
 describe('switching between online and in person', () => {
   it('keeps the planned-for value usable both ways', () => {
-    const online = form({ access: 'friends', startMode: 'organizer', plannedFor: '2026-11-20T19:00' })
-    const inPerson = { ...online, access: 'in_person' as const }
+    const online = form({ visibility: 'friends', startMode: 'organizer', plannedFor: '2026-11-20T19:00' })
+    const inPerson = { ...online, play: 'in_person' as const, preselected: true }
     expect(toInput(inPerson).settings.plannedFor).toBe(new Date(2026, 10, 20, 19, 0).toISOString())
     expect(formProblems(inPerson, now)).toEqual([])
     expect(previewOf(inPerson).when).toBe('Fri 20 Nov · in person')
 
     const back = {
-      ...form({ access: 'in_person', plannedFor: '2026-11-28T00:00' }),
-      access: 'invite' as const,
+      ...form({ play: 'in_person', preselected: true, plannedFor: '2026-11-28T00:00' }),
+      play: 'online' as const,
+      preselected: false,
+      visibility: 'invite' as const,
       startMode: 'organizer' as const,
     }
     expect(toInput(back).settings.plannedFor).toBe(new Date(2026, 10, 28).toISOString())
@@ -151,10 +184,12 @@ describe('fromTournament', () => {
   it('shows a stored tournament as it was set up, so saving it unchanged changes nothing', () => {
     const setups: Partial<CreateForm>[] = [
       {},
-      { access: 'friends', startMode: 'organizer', checkInAfter: 10, plannedFor: '2026-11-20T19:00', noShow: false },
-      { access: 'invite', startMode: 'organizer' },
-      { access: 'in_person', plannedFor: '2026-11-28T00:00' },
-      { access: 'in_person' },
+      { visibility: 'friends', startMode: 'organizer', checkInAfter: 10, plannedFor: '2026-11-20T19:00', noShow: false },
+      { visibility: 'invite', startMode: 'organizer' },
+      { play: 'in_person', preselected: true, plannedFor: '2026-11-28T00:00' },
+      { play: 'in_person', preselected: true },
+      { play: 'in_person', preselected: true, visibility: 'private' },
+      { play: 'in_person', visibility: 'friends', maxEntries: 32 },
       { gameId: 'cricket', cricketMode: 'cutthroat', entry: 'teams', playersPerTeam: 3, firstTo: 2 },
       { format: 'double_elimination', maxEntries: 32, longerFinal: true, finalFirstTo: 9, finalSemis: true, seeding: 'manual' },
       { format: 'groups_knockout', groupSize: 3, through: 1 },
@@ -207,12 +242,12 @@ describe('formProblems', () => {
 describe('previewOf', () => {
   it('describes the tournament as Browse will list it', () => {
     expect(previewOf(form())).toEqual({
-      access: 'public',
+      audience: 'public',
       name: 'Pub Pairs Showdown',
       pills: ['X01 501', 'SOLO', 'Single elim.'],
       when: 'Fri 13 Nov · 19:00',
       size: '16 players',
-      help: 'Community tournaments don’t give season points. You can edit everything until the first player registers; after that only the start time and description.',
+      help: 'Community tournaments don’t give season points. You can edit everything until the first player registers; after that only the start time, who can see it and the description.',
       primary: 'Create & open registration',
       footnote: 'You’ll get a link to share.',
     })
@@ -220,18 +255,27 @@ describe('previewOf', () => {
 
   it('follows teams, organizer starts and in-person tournaments', () => {
     const teams = previewOf(
-      form({ access: 'invite', startMode: 'organizer', gameId: 'cricket', entry: 'teams', playersPerTeam: 3, format: 'groups_knockout' }),
+      form({
+        visibility: 'invite',
+        startMode: 'organizer',
+        gameId: 'cricket',
+        entry: 'teams',
+        playersPerTeam: 3,
+        format: 'groups_knockout',
+      }),
     )
     expect(teams).toMatchObject({
-      access: 'invite link',
+      audience: 'invite link',
       pills: ['Cricket', 'TEAMS OF 3', 'Groups + knockout'],
       when: 'Starts when you start it',
       size: '16 teams',
     })
     expect(teams.help).toContain('until the first team registers')
 
-    expect(previewOf(form({ access: 'in_person', plannedFor: '2026-11-28T00:00', format: 'round_robin', maxEntries: 64 }))).toMatchObject({
-      access: 'players added by you',
+    expect(
+      previewOf(form({ play: 'in_person', preselected: true, plannedFor: '2026-11-28T00:00', format: 'round_robin', maxEntries: 64 })),
+    ).toMatchObject({
+      audience: 'public · players added by you',
       pills: ['X01 501', 'SOLO', 'Round robin', 'IN PERSON'],
       when: 'Sat 28 Nov · in person',
       size: 'players added by you',
@@ -255,8 +299,8 @@ describe('problemText', () => {
     expect(problemText({ path: 'body/participants/entries/0/name', message: 'two teams have this name' })).toBe(
       'Participants: two teams have this name',
     )
-    expect(problemText({ path: 'body/access', message: 'remove the players before it can be joined online' })).toBe(
-      'Who can join: remove the players before it can be joined online',
+    expect(problemText({ path: 'body/preselected', message: 'remove the players before they can register themselves' })).toBe(
+      'Who can join: remove the players before they can register themselves',
     )
   })
 })

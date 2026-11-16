@@ -18,7 +18,9 @@ const settings = {
 }
 const base = {
   kind: 'community',
-  access: 'friends',
+  play: 'online',
+  preselected: false,
+  visibility: 'friends',
   gameId: 'x01',
   gameConfig: { startScore: 501, outMode: 'double' },
   format: 'single_elimination',
@@ -62,7 +64,9 @@ const summary = (t: typeof checkIn | typeof organizing) => ({
   id: t.id,
   name: t.name,
   kind: t.kind,
-  access: t.access,
+  play: t.play,
+  preselected: t.preselected,
+  visibility: t.visibility,
   status: t.status,
   gameId: t.gameId,
   gameConfig: t.gameConfig,

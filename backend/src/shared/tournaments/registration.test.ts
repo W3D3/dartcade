@@ -4,7 +4,8 @@ import { registrationClosesAt, registrationState, type RegistrationTournament } 
 const now = new Date('2026-11-16T12:00:00Z')
 const open: RegistrationTournament = {
   status: 'open',
-  access: 'public',
+  play: 'online',
+  preselected: false,
   teamSize: 1,
   maxEntries: 8,
   entries: 3,
@@ -49,9 +50,19 @@ describe('registrationState', () => {
     expect(registrationState({ ...open, status: 'running', entries: 8 }, { ...me, registered: true }, now)).toBe('registered')
   })
 
-  it('leaves team and in-person tournaments to their captains and organizers', () => {
+  it('leaves team tournaments to their captains, and preselected ones to their organizers', () => {
     expect(registrationState({ ...open, teamSize: 2 }, me, now)).toBe('team')
-    expect(registrationState({ ...open, access: 'in_person', startsAt: null }, me, now)).toBe('in_person')
+    expect(registrationState({ ...open, play: 'in_person', preselected: true, startsAt: null }, me, now)).toBe('preselected')
+  })
+
+  it('lets anyone register in person without a board: the venue scores', () => {
+    const inPerson = {
+      ...open,
+      play: 'in_person' as const,
+      startsAt: null,
+      settings: { ...open.settings, registrationClosesMinutes: null },
+    }
+    expect(registrationState(inPerson, { ...me, hasBoard: false }, now)).toBe('open')
   })
 })
 

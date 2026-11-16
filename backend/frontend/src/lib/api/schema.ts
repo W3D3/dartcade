@@ -2595,7 +2595,7 @@ export interface paths {
         get: operations["listTournamentParticipants"];
         /**
          * Replace the players or teams of an in-person tournament until it starts (organizers)
-         * @description 409 `not in person` for an online tournament, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.
+         * @description 409 `not preselected` unless the organizers add the players, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.
          */
         put: operations["setTournamentParticipants"];
         post?: never;
@@ -2712,7 +2712,7 @@ export interface paths {
         put?: never;
         /**
          * Register alone (tournaments.enabled)
-         * @description Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).
+         * @description Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring; online only), `team tournament` (a captain registers a team) or `added by the organizers` (preselected).
          */
         post: operations["registerForTournament"];
         /**
@@ -2760,7 +2760,7 @@ export interface paths {
         put?: never;
         /**
          * Register a team (tournaments.enabled)
-         * @description The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.
+         * @description The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.
          */
         post: operations["registerTeamForTournament"];
         delete?: never;
@@ -5608,10 +5608,20 @@ export interface components {
             }[];
         };
         /**
-         * @description The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)
+         * @description Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)
          * @enum {string}
          */
-        TournamentRegistration: "registered" | "in_person" | "closed" | "team" | "full" | "not_eligible" | "board_needed" | "open";
+        TournamentPlay: "online" | "in_person";
+        /**
+         * @description Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it.
+         * @enum {string}
+         */
+        TournamentVisibility: "public" | "friends" | "invite" | "private";
+        /**
+         * @description The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)
+         * @enum {string}
+         */
+        TournamentRegistration: "registered" | "preselected" | "closed" | "team" | "full" | "not_eligible" | "board_needed" | "open";
         /** @description Null once the owner's account is gone */
         TournamentOwner: {
             id: string;
@@ -5655,8 +5665,10 @@ export interface components {
             name: string;
             /** @enum {string} */
             kind: "official" | "community";
-            /** @enum {string} */
-            access: "public" | "friends" | "invite" | "in_person";
+            play: components["schemas"]["TournamentPlay"];
+            /** @description The organizers add the players or teams and nobody registers (in person only) */
+            preselected: boolean;
+            visibility: components["schemas"]["TournamentVisibility"];
             /** @enum {string} */
             status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
             gameId: string;
@@ -5791,8 +5803,10 @@ export interface components {
             registration: components["schemas"]["TournamentRegistration"];
             /** @enum {string} */
             kind: "official" | "community";
-            /** @enum {string} */
-            access: "public" | "friends" | "invite" | "in_person";
+            play: components["schemas"]["TournamentPlay"];
+            /** @description The organizers add the players or teams and nobody registers (in person only) */
+            preselected: boolean;
+            visibility: components["schemas"]["TournamentVisibility"];
             /** @enum {string} */
             status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
             /** @description The game every match plays */
@@ -5863,8 +5877,10 @@ export interface components {
             name: string;
             /** @description At most 280 characters, no control characters */
             description: string;
-            /** @enum {string} */
-            access: "public" | "friends" | "invite" | "in_person";
+            play: components["schemas"]["TournamentPlay"];
+            /** @description The organizers add the players or teams and nobody registers (in person only) */
+            preselected: boolean;
+            visibility: components["schemas"]["TournamentVisibility"];
             /** @enum {string} */
             gameId: "x01" | "cricket";
             /** @description The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game */
@@ -5879,7 +5895,7 @@ export interface components {
             maxEntries: 8 | 16 | 32 | 64;
             /**
              * Format: date-time
-             * @description Null: an organizer starts it (not for public ones; always for in person)
+             * @description Null: an organizer starts it (not for public online ones; always for in person)
              */
             startsAt: string | null;
             settings: components["schemas"]["TournamentSettings"];
@@ -5888,8 +5904,10 @@ export interface components {
         TournamentPatch: {
             name?: string;
             description?: string;
-            /** @enum {string} */
-            access?: "public" | "friends" | "invite" | "in_person";
+            play?: components["schemas"]["TournamentPlay"];
+            /** @description The organizers add the players or teams and nobody registers (in person only) */
+            preselected?: boolean;
+            visibility?: components["schemas"]["TournamentVisibility"];
             /** @enum {string} */
             gameId?: "x01" | "cricket";
             gameConfig?: {
@@ -5903,7 +5921,7 @@ export interface components {
             /** Format: date-time */
             startsAt?: string | null;
             settings?: components["schemas"]["TournamentSettings"];
-            /** @description In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`). */
+            /** @description In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and preselected stays on (409 `locked`). */
             participants?: components["schemas"]["TournamentParticipantsInput"];
         };
         /** @description One player of an in-person tournament, added by its organizers. */
@@ -5997,8 +6015,10 @@ export interface components {
             description: string;
             /** @enum {string} */
             kind: "official" | "community";
-            /** @enum {string} */
-            access: "public" | "friends" | "invite" | "in_person";
+            play: components["schemas"]["TournamentPlay"];
+            /** @description The organizers add the players or teams and nobody registers (in person only) */
+            preselected: boolean;
+            visibility: components["schemas"]["TournamentVisibility"];
             /** @enum {string} */
             status: "draft" | "open" | "check_in" | "running" | "finished" | "cancelled";
             gameId: string;

@@ -53,7 +53,7 @@ export function tournamentGwPlugin(app: FastifyInstance, opts: Opts, done: (err?
         query.device !== undefined && query.deviceId !== undefined
           ? { id: query.deviceId, name: query.device, hold: query.hold }
           : undefined
-      if (device && (t.access !== 'in_person' || !canOrganize(seen.role))) {
+      if (device && (t.play !== 'in_person' || !canOrganize(seen.role))) {
         socket.close(WsCloseCode.Forbidden, 'only organizers of an in-person tournament open tournament mode')
         return
       }

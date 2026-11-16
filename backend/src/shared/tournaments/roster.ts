@@ -2,7 +2,7 @@
 // each picked player confirms, and the spot is held while anyone is still to confirm. Pure, shared
 // with the SPA: the Who plays? list and the register and change-player routes judge picks alike.
 import { entryEligibility, type Eligibility, type Form } from './avgLimit.js'
-import type { RegistrationTournament } from './registration.js'
+import { needsBoard, type RegistrationTournament } from './registration.js'
 
 /** A team member as Who plays? judges them. */
 export interface Candidate {
@@ -21,7 +21,7 @@ export type PickProblem = 'count' | 'taken' | 'not_eligible' | 'board_needed'
 
 /** What stands in the way of these picks (null: none), and how they fare against the average limit (null without one). */
 export function pickProblem(
-  t: Pick<RegistrationTournament, 'teamSize' | 'settings'>,
+  t: Pick<RegistrationTournament, 'teamSize' | 'play' | 'settings'>,
   picked: readonly Candidate[],
 ): { problem: PickProblem | null; eligibility: Eligibility | null } {
   const limit = t.settings.avgLimit
@@ -40,7 +40,7 @@ export function pickProblem(
         ? 'taken'
         : eligibility !== null && !eligibility.eligible
           ? 'not_eligible'
-          : !t.settings.manualScoring && picked.some(p => !p.hasBoard)
+          : needsBoard(t) && picked.some(p => !p.hasBoard)
             ? 'board_needed'
             : null
   return { problem, eligibility }

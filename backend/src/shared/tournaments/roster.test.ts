@@ -3,8 +3,9 @@ import type { AvgLimit } from './avgLimit.js'
 import { pickProblem, rosterComplete, slotsOf, waitingFor, type Candidate, type RosterSlot } from './roster.js'
 
 const limit: AvgLimit = { min: 55, max: null, teams: 'team', minLegs: 0, lock: true }
-const t = (avgLimit: AvgLimit | null = null, manualScoring = false) => ({
+const t = (avgLimit: AvgLimit | null = null, manualScoring = false, play: 'online' | 'in_person' = 'online') => ({
   teamSize: 2,
+  play,
   settings: { registrationClosesMinutes: null, manualScoring, avgLimit },
 })
 const player = (userId: string, average: number | null, more: Partial<Candidate> = {}): Candidate => ({
@@ -26,6 +27,7 @@ describe('pickProblem', () => {
     expect(pickProblem(t(), [player('c', 60), player('l', 60, { taken: true })]).problem).toBe('taken')
     expect(pickProblem(t(), [player('c', 60), player('l', 60, { hasBoard: false })]).problem).toBe('board_needed')
     expect(pickProblem(t(null, true), [player('c', 60), player('l', 60, { hasBoard: false })]).problem).toBeNull()
+    expect(pickProblem(t(null, false, 'in_person'), [player('c', 60), player('l', 60, { hasBoard: false })]).problem).toBeNull()
   })
 
   it('judges the team average from the picked players (the board: 68.4 and 41.2 miss 55+)', () => {

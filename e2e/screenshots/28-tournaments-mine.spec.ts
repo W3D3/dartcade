@@ -6,7 +6,9 @@ import { VIEW, open, openHash, shot } from './helpers.js'
 // night you play in, what you organize and what you have played.
 const ref = {
   kind: 'community',
-  access: 'public',
+  play: 'online',
+  preselected: false,
+  visibility: 'public',
   status: 'open',
   gameId: 'x01',
   gameConfig: { startScore: 501, outMode: 'double' },
@@ -62,7 +64,12 @@ const mine = {
       { format: 'round_robin', status: 'running', gameConfig: { startScore: 301 }, startsAt: '2026-11-14T20:00:00Z' },
       { opponent: 'Tom' },
     ),
-    playing('pub', 'Anchor Pub League · Week 3', { access: 'in_person', startsAt: '2026-11-12T21:00:00Z' }, { playerName: 'Chris' }),
+    playing(
+      'pub',
+      'Anchor Pub League · Week 3',
+      { play: 'in_person', preselected: true, visibility: 'public', startsAt: '2026-11-12T21:00:00Z' },
+      { playerName: 'Chris' },
+    ),
   ],
   organizing: [
     {
@@ -70,7 +77,9 @@ const mine = {
         ...ref,
         id: 'club',
         name: 'Spring Club Night',
-        access: 'in_person',
+        play: 'in_person',
+        preselected: true,
+        visibility: 'public',
         maxEntries: 8,
         startsAt: '2026-11-28T19:00:00Z',
         owner: { id: 'me', name: 'Christoph' },
@@ -80,7 +89,16 @@ const mine = {
       createdAt: '2026-11-01T10:00:00Z',
     },
     {
-      tournament: { ...ref, id: 'office', name: 'Office Cup 2026', access: 'invite', entries: 11, startsAt: '2026-12-13T18:00:00Z' },
+      tournament: {
+        ...ref,
+        id: 'office',
+        name: 'Office Cup 2026',
+        play: 'online',
+        preselected: false,
+        visibility: 'invite',
+        entries: 11,
+        startsAt: '2026-12-13T18:00:00Z',
+      },
       role: 'organizer',
       claimed: null,
       createdAt: '2026-11-02T10:00:00Z',
@@ -96,7 +114,7 @@ const mine = {
     past(
       'p1',
       'Anchor Pub League · Week 2',
-      { access: 'in_person' },
+      { play: 'in_person', preselected: true, visibility: 'public' },
       { playerName: 'Chris', place: 3, won: 2, lost: 1, average: 66.5, endedAt: '2026-11-04T20:00:00Z' },
     ),
     past(

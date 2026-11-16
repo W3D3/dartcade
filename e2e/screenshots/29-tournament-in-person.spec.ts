@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { BASE, VIEW, api, open, openHash, shot } from './helpers.js'
 import { root } from './compose.js'
 
-// In-person tournaments (Tournament-Create's Added by you and Participants, Edit team, and the
+// In-person tournaments (Tournament-Create's Chosen by organizer and Participants, Edit team, and the
 // organizer page Tournament-Onsite / -Onsite-Teams). Claiming a spot has no page yet, so two
 // spots are claimed in the database for the organizer page.
 
@@ -45,7 +45,9 @@ async function inPerson(page: Page, name: string, teamSize: number, format: stri
   const t = (await api(page).post('/api/tournaments', {
     name,
     description: '',
-    access: 'in_person',
+    play: 'in_person',
+    preselected: true,
+    visibility: 'public',
     gameId: 'x01',
     gameConfig: { startScore: 501, outMode: 'double' },
     format,
@@ -80,7 +82,8 @@ test('tournaments: create in person with teams, and Edit team', async ({ browser
   await s.page.setViewportSize({ width: 1440, height: 3000 })
   await openHash(s.page, '/tournaments/new')
   await s.page.getByLabel('Name', { exact: true }).fill('Spring Club Doubles')
-  await s.page.getByRole('radiogroup', { name: 'Who can join' }).getByRole('radio', { name: 'Added by you' }).click()
+  await s.page.getByRole('radiogroup', { name: 'Where is it played?' }).getByRole('radio', { name: 'In person' }).click()
+  await s.page.getByRole('radiogroup', { name: 'Who can join' }).getByRole('radio', { name: 'Chosen by organizer' }).click()
   await s.page.getByRole('radio', { name: /^Teams/ }).click()
   await s.page.getByRole('radiogroup', { name: 'Players per team' }).getByRole('radio', { name: '3' }).click()
   await s.page.getByRole('button', { name: 'Paste a list' }).click()
@@ -105,7 +108,8 @@ test('tournaments: create in person solo on a phone', async ({ browser }) => {
   await s.page.setViewportSize({ width: 390, height: 3600 })
   await openHash(s.page, '/tournaments/new')
   await s.page.getByLabel('Name', { exact: true }).fill('Spring Club Night')
-  await s.page.getByRole('radiogroup', { name: 'Who can join' }).getByRole('radio', { name: 'Added by you' }).click()
+  await s.page.getByRole('radiogroup', { name: 'Where is it played?' }).getByRole('radio', { name: 'In person' }).click()
+  await s.page.getByRole('radiogroup', { name: 'Who can join' }).getByRole('radio', { name: 'Chosen by organizer' }).click()
   await s.page.getByRole('button', { name: 'Paste a list' }).click()
   await s.page.getByRole('dialog').locator('textarea').fill('Anna Berger\nJonas\nMia K.\nPaul')
   await s.page.getByRole('button', { name: 'Add to the list' }).click()

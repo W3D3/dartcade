@@ -28,7 +28,9 @@ async function prepare(admin: Page, luke: Page, phil: Page): Promise<void> {
   await api(admin).post('/api/tournaments', {
     name: 'November Doubles Cup',
     description: 'Two players per team, alternate visits.',
-    access: 'public',
+    play: 'online',
+    preselected: false,
+    visibility: 'public',
     gameId: 'x01',
     gameConfig: { startScore: 501, outMode: 'double' },
     format: 'double_elimination',

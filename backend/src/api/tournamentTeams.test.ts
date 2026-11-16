@@ -328,7 +328,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
   })
 
   it("leaves a claimed in-person spot alone: no answer, no team card, the organizer's entry kept", async () => {
-    await insertTournament(db, { id: 'pub', name: 'Pub Pairs', status: 'open', access: 'in_person', team_size: 2, owner_user_id: 'anna' })
+    await insertTournament(db, {
+      id: 'pub',
+      name: 'Pub Pairs',
+      status: 'open',
+      play: 'in_person',
+      preselected: true,
+      team_size: 2,
+      owner_user_id: 'anna',
+    })
     await insertTournamentEntry(db, { id: 'pub-e', tournament_id: 'pub', name: 'The Pair', status: 'registered' })
     await db
       .insertInto('tournament_players')

@@ -51,7 +51,9 @@ export async function insertTournament(db: Kysely<Database>, { id, ...rest }: Ne
     .insertInto('tournaments')
     .values({
       kind: 'community',
-      access: 'public',
+      play: 'online',
+      preselected: false,
+      visibility: 'public',
       name: `${id} cup`,
       game_id: 'x01',
       game_config: JSON.stringify({ start: 501 }),

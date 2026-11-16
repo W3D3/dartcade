@@ -3102,7 +3102,7 @@ paths:
       operationId: setTournamentParticipants
       summary: Replace the players or teams of an in-person tournament until it starts (organizers)
       description: >-
-        409 `not in person` for an online tournament, `started` once it runs, `claimed` when a
+        409 `not preselected` unless the organizers add the players, `started` once it runs, `claimed` when a
         claimed spot would be renamed (unlink it first); 400 with the problems of the list.
       tags: [tournaments]
       requestBody:
@@ -3220,8 +3220,8 @@ paths:
         Takes a spot, or takes back the one the caller withdrew from; registering twice is fine.
         An invite link's tournament answers 404 without its code, unless the caller is already in it.
         409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the
-        organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person`
-        (the organizers add the players).
+        organizer allows manual scoring; online only), `team tournament` (a captain registers a team) or `added by the organizers`
+        (preselected).
       tags: [tournaments]
       responses:
         '200': { description: The tournament, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
@@ -3271,7 +3271,7 @@ paths:
         captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with
         the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit),
         `paired board needed`, `already registered` (the team has a spot), `wrong player count`,
-        `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.
+        `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.
       parameters:
         - { name: code, in: query, required: false, schema: { type: string }, description: "An invite link's tournament needs its code" }
       tags: [tournaments]
@@ -7123,11 +7123,22 @@ components:
               entryStatus: { type: string, enum: [pending, registered, checked_in, withdrawn] }
               finalPlace: { type: integer, minimum: 1, nullable: true }
 
+    TournamentPlay:
+      type: string
+      enum: [online, in_person]
+      description: "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+    TournamentVisibility:
+      type: string
+      enum: [public, friends, invite, private]
+      description: >-
+        Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link),
+        private (its organizers and players only; needs preselected). Organizers and anyone holding
+        a spot always see it.
     TournamentRegistration:
       type: string
-      enum: [registered, in_person, closed, team, full, not_eligible, board_needed, open]
+      enum: [registered, preselected, closed, team, full, not_eligible, board_needed, open]
       description: >-
-        The caller and registration: registered (holds a spot), in_person (the organizers add
+        The caller and registration: registered (holds a spot), preselected (the organizers add
         everyone), closed (not open, or past the close), team (a captain registers a team), full,
         not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)
     TournamentOwner:
@@ -7176,13 +7187,16 @@ components:
         average: { type: number, nullable: true, description: "The caller's 30-day average" }
     MyTournamentRef:
       type: object
-      required: [id, name, kind, access, status, gameId, gameConfig, format, teamSize, maxEntries, entries, startsAt, owner]
+      required:
+        [id, name, kind, play, preselected, visibility, status, gameId, gameConfig, format, teamSize, maxEntries, entries, startsAt, owner]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
         kind: { type: string, enum: [official, community] }
-        access: { type: string, enum: [public, friends, invite, in_person] }
+        play: { $ref: '#/components/schemas/TournamentPlay' }
+        preselected: { type: boolean, description: 'The organizers add the players or teams and nobody registers (in person only)' }
+        visibility: { $ref: '#/components/schemas/TournamentVisibility' }
         status: { type: string, enum: [draft, open, check_in, running, finished, cancelled] }
         gameId: { type: string }
         gameConfig: { type: object, additionalProperties: true }
@@ -7349,7 +7363,9 @@ components:
           id,
           name,
           kind,
-          access,
+          play,
+          preselected,
+          visibility,
           status,
           gameId,
           gameConfig,
@@ -7373,7 +7389,9 @@ components:
         owner: { $ref: '#/components/schemas/TournamentOwner' }
         registration: { $ref: '#/components/schemas/TournamentRegistration' }
         kind: { type: string, enum: [official, community] }
-        access: { type: string, enum: [public, friends, invite, in_person] }
+        play: { $ref: '#/components/schemas/TournamentPlay' }
+        preselected: { type: boolean, description: 'The organizers add the players or teams and nobody registers (in person only)' }
+        visibility: { $ref: '#/components/schemas/TournamentVisibility' }
         status: { type: string, enum: [draft, open, check_in, running, finished, cancelled] }
         gameId: { type: string, description: The game every match plays }
         format: { type: string, enum: [single_elimination, double_elimination, round_robin, groups_knockout] }
@@ -7444,12 +7462,14 @@ components:
           description: 'In person only: the boards the venue devices may score on; absent or null, none'
     TournamentInput:
       type: object
-      required: [name, description, access, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings]
+      required: [name, description, play, preselected, visibility, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings]
       additionalProperties: false
       properties:
         name: { type: string, description: '3-40 characters after trimming, no control characters' }
         description: { type: string, description: 'At most 280 characters, no control characters' }
-        access: { type: string, enum: [public, friends, invite, in_person] }
+        play: { $ref: '#/components/schemas/TournamentPlay' }
+        preselected: { type: boolean, description: 'The organizers add the players or teams and nobody registers (in person only)' }
+        visibility: { $ref: '#/components/schemas/TournamentVisibility' }
         gameId: { type: string, enum: [x01, cricket] }
         gameConfig:
           type: object
@@ -7463,7 +7483,7 @@ components:
             type: string,
             format: date-time,
             nullable: true,
-            description: 'Null: an organizer starts it (not for public ones; always for in person)',
+            description: 'Null: an organizer starts it (not for public online ones; always for in person)',
           }
         settings: { $ref: '#/components/schemas/TournamentSettings' }
     TournamentPatch:
@@ -7474,7 +7494,9 @@ components:
       properties:
         name: { type: string }
         description: { type: string }
-        access: { type: string, enum: [public, friends, invite, in_person] }
+        play: { $ref: '#/components/schemas/TournamentPlay' }
+        preselected: { type: boolean, description: 'The organizers add the players or teams and nobody registers (in person only)' }
+        visibility: { $ref: '#/components/schemas/TournamentVisibility' }
         gameId: { type: string, enum: [x01, cricket] }
         gameConfig: { type: object, additionalProperties: true }
         format: { type: string, enum: [single_elimination, double_elimination, round_robin, groups_knockout] }
@@ -7485,7 +7507,7 @@ components:
         participants:
           description: >-
             In person: the players or teams, stored with the rest in one go (as setTournamentParticipants).
-            Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).
+            Once it has any, a new teamSize needs them, and preselected stays on (409 `locked`).
           allOf: [{ $ref: '#/components/schemas/TournamentParticipantsInput' }]
     TournamentSpot:
       type: object
@@ -7618,7 +7640,9 @@ components:
           name,
           description,
           kind,
-          access,
+          play,
+          preselected,
+          visibility,
           status,
           gameId,
           gameConfig,
@@ -7647,7 +7671,9 @@ components:
         name: { type: string }
         description: { type: string }
         kind: { type: string, enum: [official, community] }
-        access: { type: string, enum: [public, friends, invite, in_person] }
+        play: { $ref: '#/components/schemas/TournamentPlay' }
+        preselected: { type: boolean, description: 'The organizers add the players or teams and nobody registers (in person only)' }
+        visibility: { $ref: '#/components/schemas/TournamentVisibility' }
         status: { type: string, enum: [draft, open, check_in, running, finished, cancelled] }
         gameId: { type: string }
         gameConfig: { type: object, additionalProperties: true }

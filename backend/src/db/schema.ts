@@ -3,6 +3,7 @@ import type { components } from '../schema/api.js'
 import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
 import type { MatchOutcome, MatchStatus, TournamentStatus } from '../shared/tournaments/state.js'
+import type { TournamentPlay, TournamentVisibility } from '../shared/tournaments/setup.js'
 import type { TeamColor } from '../shared/teams.js'
 import type { RankedRules } from '../session/rankedClock.js'
 import type { RankedEntry } from '../session/types.js'
@@ -574,7 +575,10 @@ export interface TournamentsTable {
   id: string
   owner_user_id: string | null
   kind: 'official' | 'community'
-  access: 'public' | 'friends' | 'invite' | 'in_person'
+  /** Where it is played, whether the organizers add the players (in person only) and who sees it (migration 073). */
+  play: TournamentPlay
+  preselected: boolean
+  visibility: TournamentVisibility
   status: Defaulted<TournamentStatus>
   name: string
   description: Defaulted<string>

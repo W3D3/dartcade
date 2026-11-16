@@ -484,7 +484,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     // Anyone who may see the tournament may watch its games
     const [semi] = await matches('live4')
     expect(await seesTournamentOfMatch(db, semi.id, 'p8')).toBe(true)
-    await db.updateTable('tournaments').set({ access: 'friends' }).where('id', '=', 'live4').execute()
+    await db.updateTable('tournaments').set({ visibility: 'friends' }).where('id', '=', 'live4').execute()
     expect(await seesTournamentOfMatch(db, semi.id, 'p8')).toBe(false)
 
     await play(first, 'q1')
@@ -505,7 +505,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
       id: 'onsite',
       owner_user_id: 'org',
       status: 'open',
-      access: 'in_person',
+      play: 'in_person',
+      preselected: true,
       settings: settings({ seeding: 'random', checkInMinutes: null, noShowMinutes: null, manualScoring: false }),
     })
     const guests = ['Anna', 'Jonas', 'Mia', 'Paul']
@@ -527,5 +528,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     ])
     expect(engine.getSessionByUser('org')).toBeUndefined()
     expect(sent).toEqual([])
+  })
+
+  it('draws an in-person tournament players registered for from who registered, dropping a team still unconfirmed', async () => {
+    await insertTournament(db, {
+      id: 'walkin',
+      owner_user_id: 'org',
+      status: 'open',
+      play: 'in_person',
+      settings: settings({ seeding: 'random', checkInMinutes: null, noShowMinutes: null }),
+    })
+    for (const id of ['w1', 'w2', 'w3']) await insertTournamentEntry(db, { id, tournament_id: 'walkin' })
+    await insertTournamentEntry(db, { id: 'w4', tournament_id: 'walkin', status: 'pending' })
+    expect(await service.organizerStart('walkin')).toBe('started')
+    const drawn = (await matches('walkin')).flatMap(m => [m.entry_a_id, m.entry_b_id]).filter(id => id !== null)
+    expect(new Set(drawn)).toEqual(new Set(['w1', 'w2', 'w3']))
+    const w4 = await db.selectFrom('tournament_entries').select('status').where('id', '=', 'w4').executeTakeFirstOrThrow()
+    expect(w4.status).toBe('withdrawn')
   })
 })

@@ -4,7 +4,9 @@ import { lockedChanges, setupProblems, startProblems, type TournamentSetup } fro
 const fixed: TournamentSetup = {
   name: 'Pub Pairs Showdown',
   description: '',
-  access: 'public',
+  play: 'online',
+  preselected: false,
+  visibility: 'public',
   format: 'single_elimination',
   maxEntries: 16,
   startsAt: '2026-11-23T15:00:00.000Z',
@@ -23,13 +25,14 @@ const fixed: TournamentSetup = {
 }
 const organizerStart: TournamentSetup = {
   ...fixed,
-  access: 'friends',
+  visibility: 'friends',
   startsAt: null,
   settings: { ...fixed.settings, registrationClosesMinutes: null, checkInMinutes: 5, plannedFor: '2026-11-23T15:00:00.000Z' },
 }
 const inPerson: TournamentSetup = {
   ...organizerStart,
-  access: 'in_person',
+  play: 'in_person',
+  preselected: true,
   settings: { ...organizerStart.settings, checkInMinutes: null, noShowMinutes: null },
 }
 
@@ -76,9 +79,21 @@ describe('setupProblems', () => {
     expect(paths(with_(fixed, {}, { longerFinal: { firstTo: 3, semis: false } }))).toEqual(['body/settings/longerFinal'])
   })
 
-  it('lets an organizer start only a tournament that is not public', () => {
-    expect(paths(with_(organizerStart, { access: 'public' }))).toEqual(['body/startsAt'])
-    expect(paths(with_(organizerStart, { access: 'invite' }))).toEqual([])
+  it('lets an organizer start only an online tournament that is not public', () => {
+    expect(paths(with_(organizerStart, { visibility: 'public' }))).toEqual(['body/startsAt'])
+    expect(paths(with_(organizerStart, { visibility: 'invite' }))).toEqual([])
+    expect(paths(with_(inPerson, { visibility: 'public' }))).toEqual([])
+  })
+
+  it('lets the organizers add the players only in person, and keeps registration open to everyone who sees it', () => {
+    expect(paths(with_(organizerStart, { preselected: true }))).toEqual(['body/preselected'])
+    expect(paths(with_(inPerson, { preselected: false }))).toEqual([])
+  })
+
+  it('gives every visibility to a preselected tournament, but private needs preselected', () => {
+    for (const visibility of ['public', 'friends', 'invite', 'private'] as const) expect(paths(with_(inPerson, { visibility }))).toEqual([])
+    expect(paths(with_(inPerson, { visibility: 'private', preselected: false }))).toEqual(['body/visibility'])
+    expect(paths(with_(organizerStart, { visibility: 'private' }))).toEqual(['body/visibility'])
   })
 
   it('always has an organizer start an in-person tournament, with no check-in or no-show wait', () => {
@@ -138,9 +153,10 @@ describe('startProblems', () => {
 
 describe('lockedChanges', () => {
   const input = { ...fixed, gameConfig: { startScore: 501, outMode: 'double' } }
-  it('leaves out the start time, its registration and check-in settings, and the description', () => {
+  it('leaves out the visibility, the start time, its registration and check-in settings, and the description', () => {
     const moved = {
       ...input,
+      visibility: 'friends',
       startsAt: '2026-11-24T15:00:00.000Z',
       description: 'Bring a partner',
       settings: { ...input.settings, checkInMinutes: 15 },
@@ -151,10 +167,11 @@ describe('lockedChanges', () => {
     const changed = {
       ...input,
       name: 'Other',
+      play: 'in_person',
       gameConfig: { startScore: 301, outMode: 'double' },
       settings: { ...input.settings, firstTo: 4 },
     }
-    expect(lockedChanges(input, changed)).toEqual(['name', 'settings.firstTo', 'gameConfig'])
+    expect(lockedChanges(input, changed)).toEqual(['name', 'play', 'settings.firstTo', 'gameConfig'])
   })
   it('does not count reordered keys as a change', () => {
     expect(lockedChanges(input, { ...input, gameConfig: { outMode: 'double', startScore: 501 } })).toEqual([])

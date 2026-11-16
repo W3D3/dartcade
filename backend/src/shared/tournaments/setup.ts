@@ -4,7 +4,10 @@
 import { CONTROL_CHARS } from '../names.js'
 import type { AvgLimit } from './avgLimit.js'
 
-export type TournamentAccess = 'public' | 'friends' | 'invite' | 'in_person'
+/** Where the matches are played: on the players' own boards, or at one venue on the organizers' devices. */
+export type TournamentPlay = 'online' | 'in_person'
+/** Who sees it: Browse, the owner's friends, whoever has the link, or only its organizers and players. */
+export type TournamentVisibility = 'public' | 'friends' | 'invite' | 'private'
 export type TournamentFormat = 'single_elimination' | 'double_elimination' | 'round_robin' | 'groups_knockout'
 
 export interface TournamentSettings {
@@ -25,7 +28,10 @@ export interface TournamentSettings {
 export interface TournamentSetup {
   readonly name: string
   readonly description: string
-  readonly access: TournamentAccess
+  readonly play: TournamentPlay
+  /** The organizers add the players or teams themselves and nobody registers: in person only. */
+  readonly preselected: boolean
+  readonly visibility: TournamentVisibility
   readonly format: TournamentFormat
   readonly maxEntries: number
   readonly startsAt: string | null
@@ -53,7 +59,7 @@ export function setupProblems(t: TournamentSetup): Problem[] {
   const out: Problem[] = []
   const bad = (path: string, message: string) => out.push({ path: `body/${path}`, message })
   const s = t.settings
-  const online = t.access !== 'in_person'
+  const online = t.play === 'online'
 
   const nameLength = Array.from(t.name).length
   if (nameLength < TOURNAMENT_TEXT.nameMin || nameLength > TOURNAMENT_TEXT.nameMax)
@@ -62,6 +68,8 @@ export function setupProblems(t: TournamentSetup): Problem[] {
     bad('description', `must be at most ${TOURNAMENT_TEXT.descriptionMax} characters`)
   for (const field of ['name', 'description'] as const) if (CONTROL_CHARS.test(t[field])) bad(field, 'must not contain control characters')
 
+  if (t.preselected && online) bad('preselected', 'online the players register themselves')
+  if (t.visibility === 'private' && !t.preselected) bad('visibility', 'nobody could find a private tournament to register')
   if (t.format === 'groups_knockout' && !s.groups) bad('settings/groups', 'groups + knockout needs a group size')
   if (t.format !== 'groups_knockout' && s.groups) bad('settings/groups', 'only groups + knockout has groups')
   if (t.format === 'round_robin' && t.maxEntries > ROUND_ROBIN_MAX_ENTRIES)
@@ -70,7 +78,7 @@ export function setupProblems(t: TournamentSetup): Problem[] {
   if (s.longerFinal && s.longerFinal.firstTo <= s.firstTo) bad('settings/longerFinal', 'the final must be longer than a match')
 
   if (t.startsAt === null) {
-    if (t.access === 'public') bad('startsAt', 'a public tournament needs a start time')
+    if (online && t.visibility === 'public') bad('startsAt', 'a public online tournament needs a start time')
     if (s.registrationClosesMinutes !== null) bad('settings/registrationClosesMinutes', 'only for a fixed start time')
     if (online && !CHECK_IN_AFTER.includes(s.checkInMinutes ?? -1))
       bad('settings/checkInMinutes', `after the start an organizer presses, check-in is ${CHECK_IN_AFTER.join(', ')} minutes`)
@@ -105,6 +113,7 @@ export function startProblems(t: TournamentSetup, now: Date): Problem[] {
 
 /** Settings an organizer may still change once someone has registered, with startsAt and description. */
 const EDITABLE_WHEN_LOCKED: ReadonlySet<string> = new Set([
+  'visibility',
   'startsAt',
   'description',
   'settings.registrationClosesMinutes',

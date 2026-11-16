@@ -142,7 +142,7 @@ const friendsWith = (userId: string, other: string) =>
 /**
  * Published tournaments not yet over that `userId` may browse, soonest first (organizer-started
  * ones last): public ones, friends-only ones of a friend, and any they hold a spot in or organize
- * (an invite link's stays hidden from everyone else).
+ * (an invite link's or a private one stays hidden from everyone else).
  */
 export async function listBrowseTournaments(db: Kysely<Database>, userId: string): Promise<BrowseRow[]> {
   const rows = await viewQuery(db)
@@ -150,9 +150,9 @@ export async function listBrowseTournaments(db: Kysely<Database>, userId: string
     .where('t.status', 'in', ['open', 'check_in', 'running'])
     .where(eb =>
       eb.or([
-        eb('t.access', '=', 'public'),
+        eb('t.visibility', '=', 'public'),
         eb('t.owner_user_id', '=', userId),
-        eb.and([eb('t.access', '=', 'friends'), friendsWith(userId, 't.owner_user_id')]),
+        eb.and([eb('t.visibility', '=', 'friends'), friendsWith(userId, 't.owner_user_id')]),
         registeredBy(eb, userId),
         eb.exists(
           eb
@@ -216,23 +216,26 @@ export async function organizerRole(
 }
 
 /**
- * Whether `userId` may see the tournament, with their organizer role; null for a draft, a
- * friends-only one of someone not their friend, or an invite link's they hold no spot in and came
- * to without its `code`. The API, the live socket and Watch all ask this.
+ * Whether `userId` may see the tournament, with their organizer role; null for a draft, or unless
+ * it is public, a friends-only one of their friend, an invite link's they came to with its `code`,
+ * or one they hold a spot in (private ones only that way). The API, the live socket and Watch all
+ * ask this.
  */
 export async function viewerRole(
   db: Kysely<Database>,
-  t: Pick<TournamentRow, 'id' | 'owner_user_id' | 'status' | 'access' | 'invite_code'>,
+  t: Pick<TournamentRow, 'id' | 'owner_user_id' | 'status' | 'visibility' | 'invite_code'>,
   userId: string,
   code?: string,
 ): Promise<{ role: OrganizerRole | null } | null> {
   const role = await organizerRole(db, t, userId)
   if (role) return { role }
   if (t.status === 'draft') return null
-  if (t.access === 'friends' && !(t.owner_user_id !== null && (await areFriends(db, t.owner_user_id, userId)))) return null
-  if (t.access === 'invite' && !(code !== undefined && code.toUpperCase() === t.invite_code) && !(await isRegistered(db, t.id, userId)))
-    return null
-  return { role: null }
+  const sees =
+    t.visibility === 'public' ||
+    (t.visibility === 'friends' && t.owner_user_id !== null && (await areFriends(db, t.owner_user_id, userId))) ||
+    (t.visibility === 'invite' && code !== undefined && code.toUpperCase() === t.invite_code) ||
+    (await isRegistered(db, t.id, userId))
+  return sees ? { role: null } : null
 }
 
 /** Inserts the tournament unless its owner already has the most unfinished ones; false then. */
@@ -428,7 +431,8 @@ export async function registerSolo(
     const state = registrationState(
       {
         status: t.status,
-        access: t.access,
+        play: t.play,
+        preselected: t.preselected,
         teamSize: t.team_size,
         maxEntries: t.max_entries,
         entries: Number(n),
