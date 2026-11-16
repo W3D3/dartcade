@@ -11,7 +11,6 @@
   import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
   import { DataTable, type Features } from '$lib/components/ui/data-table/index.js'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
-  import { flag } from '$lib/flags'
   import { getGameView } from '$lib/gameViews'
   import {
     formatWhen,
@@ -33,7 +32,6 @@
   // previous filter's request in flight, and "load more" can be overtaken by a filter
   // switch too. Only the most recently started request is allowed to apply its result.
   const requests = createRequestGuard()
-  const coachEnabled = flag('coach.enabled')
 
   let modes = $state<GameInfo[]>([])
   // The filter lives in the URL (#/history?mode=x01), so Back from a match keeps it; All is no param.
@@ -160,12 +158,6 @@
   })
 </script>
 
-<!-- The coach page link: shown next to the title on desktop, and as the phone header's action
-     (PhoneHeader is md:hidden, so it never renders in both places at once). -->
-{#snippet coachLink()}
-  {#if $coachEnabled}<a class="text-[14px] underline-offset-2 hover:underline" href={hrefs.coach()}>Coach: review your X01 games</a>{/if}
-{/snippet}
-
 <!-- A player in throw order, opening their profile; your own badge is outlined in the accent colour.
      pointer-events-auto: a badge with no profile card (progression off, a guest, a bot) takes its
      own click and does nothing, rather than letting it fall through to the row's link. -->
@@ -279,7 +271,6 @@
 {/snippet}
 
 <Layout title="History">
-  {#snippet headerAction()}{@render coachLink()}{/snippet}
   <main
     bind:this={scroller}
     onscroll={saveScroll}
@@ -289,7 +280,6 @@
       <div class="hidden md:flex flex-col gap-1.5">
         <h1 class="type-page-title">History</h1>
         <p class="text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
-        {@render coachLink()}
       </div>
       <div
         role="group"

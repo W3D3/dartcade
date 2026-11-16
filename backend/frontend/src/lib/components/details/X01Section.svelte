@@ -8,6 +8,7 @@
   // highlight picker (party games) and Heatmap's "Where every dart landed" note sit alongside
   // the title-tabs, as the artboards show.
   import { hrefs } from '$lib/routes'
+  import { Button } from '$lib/components/ui/button'
   import type { GameDetail } from '$lib/api'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import X01Legs from './X01Legs.svelte'
@@ -92,9 +93,9 @@
               {/each}
             </div>
           {/if}
-          {#if canCoach && legSel !== null}
-            <a class="text-[14px] font-semibold underline-offset-2 hover:underline" href={hrefs.coachLeg(detail.game.id, legSel)}
-              >Coach review</a
+          {#if canCoach && legs.length > 0}
+            <Button variant="outline" href={hrefs.coachLeg(detail.game.id, legSel ?? legs[0])} class="h-10 text-[15px] font-semibold"
+              >Coach review</Button
             >
           {/if}
         </div>
