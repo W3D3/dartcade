@@ -23,7 +23,8 @@
         ><b>{r.from?.name ?? 'Your captain'}</b> picked you to play for <b>{r.team.name}</b> in <b>{r.tournamentName}</b></span
       >
       <span class="text-small text-text-muted">
-        {r.confirmBy ? `Confirm by ${shortWhen(r.confirmBy)}` : 'Confirm before an organizer starts it'} · the team’s spot is held until then
+        {r.confirmBy ? `Confirm by ${shortWhen(r.confirmBy)}` : 'Confirm before an organizer starts the tournament'}. The team’s spot is
+        held until then.
       </span>
     </span>
     <Button variant="accent" size="sm" onclick={() => (open = r)}>Answer</Button>

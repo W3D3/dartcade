@@ -142,7 +142,7 @@ describe('where it is played and who can join', () => {
     expect(previewOf(walkIn)).toMatchObject({ size: '16 players', primary: 'Create & open registration' })
     expect(joinChoices(form()).find(c => c.value === 'organizer')?.disabled).toMatch(/Only for in-person tournaments/)
     expect(joinChoices(walkIn).find(c => c.value === 'organizer')?.disabled).toBeUndefined()
-    expect(joinChoices(walkIn, true).find(c => c.value === 'organizer')?.disabled).toMatch(/registered already/)
+    expect(joinChoices(walkIn, true).find(c => c.value === 'organizer')?.disabled).toMatch(/already registered/)
     // Chosen by organizer left on while switching to online cannot be saved
     expect(formProblems(form({ preselected: true }), now)).toEqual([
       'Who can join: online, players register themselves, so you can’t choose them',

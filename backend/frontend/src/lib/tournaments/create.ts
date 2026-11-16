@@ -119,14 +119,14 @@ export const joinChoices = (f: Pick<CreateForm, 'play'>, registered = false): Ch
     value: 'organizer',
     label: 'Chosen by organizer',
     disabled:
-      f.play === 'online' ? ORGANIZER_IN_PERSON : registered ? 'Players registered already, so they can’t be chosen by you.' : undefined,
+      f.play === 'online' ? ORGANIZER_IN_PERSON : registered ? 'Players have already registered, so you can’t choose them.' : undefined,
   },
 ]
 export const JOIN_HELP: Record<Join, string> = {
   public: 'Anyone can find it in Browse and register.',
   friends: 'Only your friends see it and can register.',
   invite: 'Hidden from Browse. Only people with the link can register.',
-  organizer: 'Nobody registers: you add the players or teams, and they can claim their spot with a link.',
+  organizer: 'Nobody registers. You add the players or teams, and they can claim their spot with a link.',
 }
 /** Shown when an online tournament still has Chosen by organizer picked. */
 export const ORGANIZER_ONLINE = 'Chosen by organizer only works for in-person tournaments. Pick who can join.'
@@ -145,7 +145,7 @@ export const VISIBILITY_HELP: Record<TournamentVisibility, string> = {
   private: 'Only the organizers and the players who claimed their spot see it.',
 }
 
-const LATER = 'Coming later: tournaments play X01 or Cricket for now.'
+const LATER = 'Coming later. Tournaments only support X01 and Cricket for now.'
 export const GAMES: (Choice<CreateForm['gameId'] | 'atc' | 'minigolf'> & { sub: string })[] = [
   { value: 'x01', label: 'X01', sub: '301 / 501 / 701' },
   { value: 'cricket', label: 'Cricket', sub: 'Standard or cut-throat' },
@@ -221,7 +221,7 @@ export const finalFirstToOf = (f: CreateForm): FinalFirstTo =>
 export const checkInChoices = (f: CreateForm): Choice<CreateForm['checkInBefore']>[] =>
   CHECK_IN_BEFORE.map(c => ({
     ...c,
-    disabled: c.value !== null && c.value > f.registrationCloses ? 'Check-in opens once registration has closed.' : undefined,
+    disabled: c.value !== null && c.value > f.registrationCloses ? 'Check-in can only open after registration has closed.' : undefined,
   }))
 export const checkInBeforeOf = (f: CreateForm): CreateForm['checkInBefore'] =>
   f.checkInBefore !== null && f.checkInBefore > f.registrationCloses ? 15 : f.checkInBefore
@@ -429,8 +429,8 @@ export function previewOf(f: CreateForm): Preview {
     when,
     size: f.preselected ? `${team ? 'teams' : 'players'} added by you` : `${maxEntriesOf(f)} ${team ? 'teams' : 'players'}`,
     help: f.preselected
-      ? 'Played in Tournament mode on your devices. You can edit the players until you start it.'
-      : `${inPerson ? 'Played in Tournament mode on your devices.' : 'Community tournaments don’t give season points.'} You can edit everything until the first ${team ? 'team' : 'player'} registers; after that only the start time, who can see it and the description.`,
+      ? 'Played in tournament mode on your devices. You can edit the players until you start the tournament.'
+      : `${inPerson ? 'Played in tournament mode on your devices.' : 'Community tournaments don’t give season points.'} You can edit everything until the first ${team ? 'team' : 'player'} registers; after that only the start time, who can see it and the description.`,
     primary: f.preselected ? 'Create tournament' : 'Create & open registration',
     footnote: f.preselected ? 'You’ll get claim links for every spot.' : 'You’ll get a link to share.',
   }

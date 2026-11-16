@@ -106,7 +106,7 @@ export const shortWhen = (iso: string): string => {
   return `${d.toLocaleDateString(LOCALE, { weekday: 'short' })} ${d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })}`
 }
 
-/** "registration closes Sat 18:00", or an organizer starts it. */
+/** "registration closes Sat 18:00", or "an organizer starts the tournament". */
 const closing = (confirmBy: string | null) =>
   confirmBy === null ? 'an organizer starts the tournament' : `registration closes ${shortWhen(confirmBy)}`
 
@@ -122,7 +122,7 @@ export const sendLabel = (asked: readonly string[]): string =>
 
 /** The note under Who plays?. */
 export const holdNote = (asked: readonly string[], confirmBy: string | null): string =>
-  `${asked.length === 0 ? 'Your teammates get' : `${joinNames(asked)} ${asked.length === 1 ? 'gets' : 'get'}`} a request to confirm. Your team’s spot is held until everyone has confirmed, or until ${closing(confirmBy)}. If someone declines you can pick another teammate.`
+  `${asked.length === 0 ? 'Your teammates get' : `${joinNames(asked)} ${asked.length === 1 ? 'gets' : 'get'}`} a request to confirm. Your team’s spot is held until everyone has confirmed, or until ${closing(confirmBy)}. If someone declines, you can pick another teammate.`
 
 /** Who still has to confirm, by name. */
 export const waitingNames = (e: TeamEntry): string[] => waitingFor(e.slots).flatMap(s => (s.user === null ? [] : [s.user.name]))

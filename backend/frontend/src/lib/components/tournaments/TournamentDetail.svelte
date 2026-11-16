@@ -62,7 +62,7 @@
   const checkIn = $derived.by(() => {
     const m = t.settings.checkInMinutes
     if (m === null || !online) return null
-    if (t.startsAt === null) return `${m} min check-in once an organizer starts it`
+    if (t.startsAt === null) return `Check-in opens when an organizer starts it, for ${m} min`
     return `Check-in ${time(new Date(Date.parse(t.startsAt) - m * 60_000).toISOString())}–${time(t.startsAt)}`
   })
 </script>
@@ -159,7 +159,7 @@
         <div class="flex w-full items-center gap-3">
           <span class="flex grow items-center gap-1.5 text-label font-semibold text-accent">
             <Check size={16} />{t.checkedIn
-              ? "You're checked in"
+              ? 'You’re checked in'
               : t.team?.status === 'pending'
                 ? 'Your team’s spot is held'
                 : t.team
