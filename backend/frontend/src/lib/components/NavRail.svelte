@@ -3,13 +3,12 @@
   // and Admin, the Lobby item, Friends and the avatar that opens the account menu. Desktops get
   // SideNav instead.
   import { hrefs } from '$lib/routes'
-  import { progress } from '$lib/progress/store'
   import { location, push } from 'svelte-spa-router'
   import { Plus, House, Swords } from '@lucide/svelte'
   import { railTabs, isActiveRoute, railLobby } from '$lib/nav'
+  import { navState } from '$lib/navState'
   import { currentUser } from '$lib/auth'
-  import { me, pendingInvites } from '$lib/lobby/sockets'
-  import { flag } from '$lib/flags'
+  import { me } from '$lib/lobby/sockets'
   import { createLobby } from '$lib/lobby/create'
   import { acceptMatch } from '$lib/ranked/queue'
   import { queueView } from '$lib/ranked/queueCard'
@@ -22,24 +21,7 @@
   import FriendsNavItem from './friends/FriendsNavItem.svelte'
   import NavTabItem from './NavTabItem.svelte'
 
-  const matchmaking = flag('matchmaking.enabled')
-  const progression = flag('progression.enabled')
-  const home = flag('home.enabled', true)
-  const coach = flag('coach.enabled')
-  const tournaments = flag('tournaments.enabled')
-  const stats = flag('stats.enabled')
-  const tabs = $derived(
-    railTabs({
-      invites: pendingInvites($me),
-      ranked: $matchmaking,
-      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
-      admin: $currentUser?.isModerator ?? false,
-      home: $home,
-      coach: $coach,
-      tournaments: $tournaments,
-      stats: $stats,
-    }),
-  )
+  const tabs = $derived(railTabs($navState))
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)
