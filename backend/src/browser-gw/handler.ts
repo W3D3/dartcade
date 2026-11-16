@@ -5,6 +5,7 @@ import type { RawData, WebSocket } from 'ws'
 import { z } from 'zod'
 import { BrowserConnections } from './connections.js'
 import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
+import type { DeviceSession } from '../db/tournamentDevices.js'
 import { withAuthedSocket, socketQuery } from './authedSocket.js'
 import { isOpen, onceGone, rawText } from '../util/socket.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
@@ -35,89 +36,107 @@ type Opts = FastifyPluginOptions & {
   stills?: CameraStills
   /** Whether the user may watch this game without playing in it (Watch: flag, friendship, Invisible); default: nobody. */
   canSpectate?: (userId: string, session: Session) => Promise<boolean>
+  /** Whether a venue device (tournament mode) may open this game: it is a match of the device's own tournament. Default: never. */
+  deviceMayOpen?: (device: DeviceSession, session: Session) => Promise<boolean>
 }
 
 export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { engine, isLobbyMember = noLobbies, stills = cameraStills, canSpectate = () => Promise.resolve(false) } = opts
+  const {
+    engine,
+    isLobbyMember = noLobbies,
+    stills = cameraStills,
+    canSpectate = () => Promise.resolve(false),
+    deviceMayOpen = () => Promise.resolve(false),
+  } = opts
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
-    withAuthedSocket(connection, req, async (socket, userId) => {
-      const query = socketQuery(socket, req.query, SessionQuerySchema, 'missing sessionId')
-      if (!query) return
-      const { sessionId } = query
+    withAuthedSocket(
+      connection,
+      req,
+      async (socket, userId, _impersonated, device) => {
+        const query = socketQuery(socket, req.query, SessionQuerySchema, 'missing sessionId')
+        if (!query) return
+        const { sessionId } = query
 
-      const session = engine.getSession(sessionId)
-      if (!session) {
-        socket.close(WsCloseCode.NotFound, 'session not found')
-        return
-      }
-      if (query.watch) {
-        await spectate(socket, userId, session)
-        return
-      }
-      if (!(await canWatchSession(userId, session, isLobbyMember))) {
-        socket.close(WsCloseCode.Forbidden, 'forbidden')
-        return
-      }
-      // Closed while access was checked: no close event will come to remove it again
-      if (!isOpen(socket)) return
-
-      browserConnections.add(sessionId, socket, userId)
-      engine.onPresenceChange(sessionId)
-      const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
-      if (!snap) {
-        browserConnections.remove(sessionId, socket)
-        socket.close(WsCloseCode.NotFound, 'session not found')
-        return
-      }
-      checkSnapshot(snap, msg => app.log.error(msg))
-      socket.send(JSON.stringify(snap))
-      // The game's boards' camera stills so far; new ones follow as they come (pushCamera)
-      for (const boardId of new Set(session.seats.flatMap(s => s.boardId ?? []))) {
-        for (const { cam, version } of stills.versions(boardId)) {
-          socket.send(JSON.stringify({ type: 'camera', boardId, cam, version } satisfies CameraMessage))
-        }
-      }
-      // The others see this player connect
-      pushSnapshot(sessionId, engine)
-
-      const onMessage = async (raw: RawData) => {
-        let msg: unknown
-        try {
-          msg = JSON.parse(rawText(raw))
-        } catch {
-          app.log.warn({ sessionId }, 'ignoring non-JSON client message')
+        const session = engine.getSession(sessionId)
+        if (!session) {
+          socket.close(WsCloseCode.NotFound, 'session not found')
           return
         }
-        // Invalid messages are dropped, not fatal: a buggy client shouldn't kick a player out
-        const parsed = ClientMessageSchema.safeParse(msg)
-        if (!parsed.success) {
-          app.log.warn({ sessionId, issues: parsed.error.issues }, 'ignoring invalid client message')
+        if (device) {
+          // A venue device opens only a match of its own tournament, and only to play it
+          if (query.watch || !(await deviceMayOpen(device, session))) {
+            socket.close(WsCloseCode.Forbidden, 'forbidden')
+            return
+          }
+        } else if (query.watch) {
+          await spectate(socket, userId, session)
+          return
+        } else if (!(await canWatchSession(userId, session, isLobbyMember))) {
+          socket.close(WsCloseCode.Forbidden, 'forbidden')
           return
         }
-        // A failed store write (e.g. the input log) must not crash the server or close the
-        // socket: the action is not applied and the player can try again
-        try {
-          const res = await engine.onUserAction(sessionId, userId, parsed.data.action)
-          if (!res.ok)
-            socket.send(JSON.stringify({ type: 'error', code: res.code, action: parsed.data.action.type } satisfies ErrorMessage))
-        } catch (err: unknown) {
-          app.log.error({ sessionId, action: parsed.data.action.type, err }, 'user action not applied')
-        }
-      }
-      socket.on('message', (raw: RawData) => {
-        void onMessage(raw)
-      })
+        // Closed while access was checked: no close event will come to remove it again
+        if (!isOpen(socket)) return
 
-      // The others see this player drop
-      onceGone(socket, () => {
-        browserConnections.remove(sessionId, socket)
-        // A game that's gone has nobody to wait for (forgetSession ran before this socket closed)
-        if (!engine.getSession(sessionId)) browserConnections.forget(sessionId)
+        browserConnections.add(sessionId, socket, userId)
         engine.onPresenceChange(sessionId)
+        const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
+        if (!snap) {
+          browserConnections.remove(sessionId, socket)
+          socket.close(WsCloseCode.NotFound, 'session not found')
+          return
+        }
+        checkSnapshot(snap, msg => app.log.error(msg))
+        socket.send(JSON.stringify(snap))
+        // The game's boards' camera stills so far; new ones follow as they come (pushCamera)
+        for (const boardId of new Set(session.seats.flatMap(s => s.boardId ?? []))) {
+          for (const { cam, version } of stills.versions(boardId)) {
+            socket.send(JSON.stringify({ type: 'camera', boardId, cam, version } satisfies CameraMessage))
+          }
+        }
+        // The others see this player connect
         pushSnapshot(sessionId, engine)
-      })
-    })
+
+        const onMessage = async (raw: RawData) => {
+          let msg: unknown
+          try {
+            msg = JSON.parse(rawText(raw))
+          } catch {
+            app.log.warn({ sessionId }, 'ignoring non-JSON client message')
+            return
+          }
+          // Invalid messages are dropped, not fatal: a buggy client shouldn't kick a player out
+          const parsed = ClientMessageSchema.safeParse(msg)
+          if (!parsed.success) {
+            app.log.warn({ sessionId, issues: parsed.error.issues }, 'ignoring invalid client message')
+            return
+          }
+          // A failed store write (e.g. the input log) must not crash the server or close the
+          // socket: the action is not applied and the player can try again
+          try {
+            const res = await engine.onUserAction(sessionId, userId, parsed.data.action)
+            if (!res.ok)
+              socket.send(JSON.stringify({ type: 'error', code: res.code, action: parsed.data.action.type } satisfies ErrorMessage))
+          } catch (err: unknown) {
+            app.log.error({ sessionId, action: parsed.data.action.type, err }, 'user action not applied')
+          }
+        }
+        socket.on('message', (raw: RawData) => {
+          void onMessage(raw)
+        })
+
+        // The others see this player drop
+        onceGone(socket, () => {
+          browserConnections.remove(sessionId, socket)
+          // A game that's gone has nobody to wait for (forgetSession ran before this socket closed)
+          if (!engine.getSession(sessionId)) browserConnections.forget(sessionId)
+          engine.onPresenceChange(sessionId)
+          pushSnapshot(sessionId, engine)
+        })
+      },
+      { device: true },
+    )
   })
   /** A friend's read-only socket: the game's snapshots, no actions, no camera stills (they are the owner's). */
   async function spectate(socket: WebSocket, userId: string, session: Session) {

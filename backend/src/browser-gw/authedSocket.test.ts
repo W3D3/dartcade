@@ -20,7 +20,7 @@ describe('withAuthedSocket', () => {
     const setup = vi.fn().mockResolvedValue(undefined)
     withAuthedSocket({ socket } as any, {} as any, setup)
     await flush()
-    expect(setup).toHaveBeenCalledWith(socket, 'chris', false)
+    expect(setup).toHaveBeenCalledWith(socket, 'chris', false, null)
     expect(socket.close).not.toHaveBeenCalled()
   })
 

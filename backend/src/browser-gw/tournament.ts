@@ -37,42 +37,49 @@ export function tournamentGwPlugin(app: FastifyInstance, opts: Opts, done: (err?
   const { db, live } = opts
 
   app.get('/ws/tournament', { websocket: true }, (connection: SocketStream, req) => {
-    withAuthedSocket(connection, req, async (socket, userId) => {
-      const query = socketQuery(socket, req.query, QuerySchema, 'missing tournamentId')
-      if (!query) return
-      const t = (await flagEnabled('tournaments.enabled', await loadFlagUser(db, userId)))
-        ? await getTournamentRow(db, query.tournamentId)
-        : undefined
-      const seen = t && (await viewerRole(db, t, userId, query.code))
-      if (!isOpen(socket)) return
-      if (!seen) {
-        socket.close(WsCloseCode.NotFound, 'tournament not found')
-        return
-      }
-      const device =
-        query.device !== undefined && query.deviceId !== undefined
-          ? { id: query.deviceId, name: query.device, hold: query.hold }
+    withAuthedSocket(
+      connection,
+      req,
+      async (socket, userId, _impersonated, session) => {
+        const query = socketQuery(socket, req.query, QuerySchema, 'missing tournamentId')
+        if (!query) return
+        const t = (await flagEnabled('tournaments.enabled', await loadFlagUser(db, userId)))
+          ? await getTournamentRow(db, query.tournamentId)
           : undefined
-      if (device && (t.play !== 'in_person' || !canOrganize(seen.role))) {
-        socket.close(WsCloseCode.Forbidden, 'only organizers of an in-person tournament open tournament mode')
-        return
-      }
-      const viewer: Viewer = canOrganize(seen.role) ? { organizer: true, device } : { organizer: false }
-      socket.on('message', (raw: RawData) => {
-        let data: unknown
-        try {
-          data = JSON.parse(rawText(raw))
-        } catch {
+        const seen = t && (await viewerRole(db, t, userId, query.code))
+        if (!isOpen(socket)) return
+        // A venue device sees only its own tournament, as the device it is (named by the server)
+        if (!seen || (session && session.tournamentId !== query.tournamentId)) {
+          socket.close(WsCloseCode.NotFound, 'tournament not found')
           return
         }
-        const msg = TournamentClientMessageSchema.safeParse(data)
-        if (msg.success) live.onMessage(query.tournamentId, socket, msg.data)
-      })
-      onceGone(socket, () => {
-        live.remove(query.tournamentId, socket)
-      })
-      await live.add(query.tournamentId, socket, viewer)
-    })
+        const device = session
+          ? { id: session.id, name: session.name ?? 'Device', hold: query.hold }
+          : query.device !== undefined && query.deviceId !== undefined
+            ? { id: query.deviceId, name: query.device, hold: query.hold }
+            : undefined
+        if (device && (t.play !== 'in_person' || !canOrganize(seen.role))) {
+          socket.close(WsCloseCode.Forbidden, 'only organizers of an in-person tournament open tournament mode')
+          return
+        }
+        const viewer: Viewer = canOrganize(seen.role) ? { organizer: true, device } : { organizer: false }
+        socket.on('message', (raw: RawData) => {
+          let data: unknown
+          try {
+            data = JSON.parse(rawText(raw))
+          } catch {
+            return
+          }
+          const msg = TournamentClientMessageSchema.safeParse(data)
+          if (msg.success) live.onMessage(query.tournamentId, socket, msg.data)
+        })
+        onceGone(socket, () => {
+          live.remove(query.tournamentId, socket)
+        })
+        await live.add(query.tournamentId, socket, viewer)
+      },
+      { device: true },
+    )
   })
 
   done()

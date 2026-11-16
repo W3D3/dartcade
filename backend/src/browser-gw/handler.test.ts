@@ -6,6 +6,7 @@ import { BrowserConnections } from './connections.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
+vi.mock('../auth/deviceSession.js', () => ({ getDeviceSession: vi.fn().mockResolvedValue(null) }))
 
 describe('BrowserConnections', () => {
   it('pushEach sends every socket of a game its payload', () => {
@@ -168,6 +169,49 @@ describe('WS auth', () => {
     })
 
     expect(code).toBe(WsCloseCode.Unauthorized)
+  })
+
+  it('lets a venue device open only a match of its own tournament', async () => {
+    const { getDeviceSession } = await import('../auth/deviceSession.js')
+    const device = { id: 'd1', tournamentId: 'venue', createdBy: 'boss', name: 'Bar' }
+    const engine = {
+      getSession: vi.fn((id: string) => ({
+        id,
+        ownerUserId: 'boss',
+        seats: [],
+        tournamentMatchId: id === 'mine' ? 'm1' : id === 'other' ? 'm2' : null,
+      })),
+      getSnapshot: vi.fn().mockReturnValue({ type: 'snapshot' }),
+      onPresenceChange: vi.fn(),
+      onUserAction: vi.fn(),
+    } as any
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, {
+      engine,
+      deviceMayOpen: (d: { tournamentId: string }, session: { tournamentMatchId: string | null }) =>
+        Promise.resolve(session.tournamentMatchId === 'm1' && d.tournamentId === 'venue'),
+    })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+    const closeCode = (sessionId: string, extra = '') => {
+      vi.mocked(getDeviceSession).mockResolvedValueOnce(device)
+      return new Promise<number | 'open'>(resolve => {
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}${extra}`)
+        ws.addEventListener('close', e => resolve((e as any).code))
+        ws.addEventListener('message', () => {
+          resolve('open')
+          ws.close()
+        })
+        setTimeout(() => resolve('open'), 1500)
+      })
+    }
+    // Past the gate (what the engine mock cannot serve is not the gate's business)
+    expect([WsCloseCode.Forbidden, WsCloseCode.Unauthorized]).not.toContain(await closeCode('mine'))
+    expect(await closeCode('other')).toBe(WsCloseCode.Forbidden)
+    expect(await closeCode('nomatch')).toBe(WsCloseCode.Forbidden)
+    expect(await closeCode('mine', '&watch=1')).toBe(WsCloseCode.Forbidden)
   })
 
   it('closes with 4403 when the session belongs to another user', async () => {

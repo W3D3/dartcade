@@ -2892,6 +2892,129 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/tournaments/{id}/devices:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: listTournamentDevices
+      summary: The venue devices of an in-person tournament (organizers)
+      description: Devices waiting to pair and paired ones, never revoked or expired ones. A device session is a scoped, cookie-bound session for tournament mode, not a login.
+      tags: [tournaments]
+      responses:
+        '200':
+          description: The devices
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [devices]
+                additionalProperties: false
+                properties:
+                  devices: { type: array, items: { $ref: '#/components/schemas/TournamentDevice' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      operationId: addTournamentDevice
+      summary: Add a venue device (organizers)
+      description: Makes a one-time pairing code, good for 15 minutes, shown once. Opening it on the device (`POST /api/tournament-devices/pair`) starts that device's session. 409 once the tournament ended or when it is not in person.
+      tags: [tournaments]
+      responses:
+        '201':
+          { description: The code, content: { application/json: { schema: { $ref: '#/components/schemas/TournamentDevicePairing' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: revokeTournamentDevices
+      summary: Revoke every device of the tournament (organizers)
+      description: Their sockets are closed at once.
+      tags: [tournaments]
+      responses:
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tournaments/{id}/devices/{deviceId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: deviceId, in: path, required: true, schema: { type: string } }
+    delete:
+      operationId: revokeTournamentDevice
+      summary: Revoke one venue device (organizers)
+      description: Its sockets are closed at once and its cookie stops working.
+      tags: [tournaments]
+      responses:
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tournament-devices/pair:
+    post:
+      operationId: pairTournamentDevice
+      summary: Open a pairing code on a venue device
+      description: Sets the device's session cookie (httpOnly, SameSite) and nothing else. The code works once, for 15 minutes; any other answer is 404. Limited per IP.
+      tags: [tournaments]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              additionalProperties: false
+              properties:
+                code: { type: string, maxLength: 32 }
+      responses:
+        '200': { description: Paired, content: { application/json: { schema: { $ref: '#/components/schemas/TournamentDeviceSession' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/tournament-device:
+    get:
+      operationId: getTournamentDeviceSession
+      summary: The venue device session this browser holds
+      description: 404 without one (or when it was revoked or ended).
+      tags: [tournaments]
+      responses:
+        '200':
+          { description: The session, content: { application/json: { schema: { $ref: '#/components/schemas/TournamentDeviceSession' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: renameTournamentDevice
+      summary: Name this device (asked on first open)
+      tags: [tournaments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 40 }
+      responses:
+        '200':
+          { description: The session, content: { application/json: { schema: { $ref: '#/components/schemas/TournamentDeviceSession' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: leaveTournamentMode
+      summary: Forget this device session (Leave tournament mode)
+      description: Revokes it and clears the cookie.
+      tags: [tournaments]
+      responses:
+        '204': { description: Left }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /api/tournaments/{id}/check-in:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
@@ -7266,6 +7389,33 @@ components:
         The caller and registration: registered (holds a spot), preselected (the organizers add
         everyone), closed (not open, or past the close), team (a captain registers a team), full,
         not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)
+    TournamentDevice:
+      type: object
+      required: [id, name, paired, createdAt, lastSeenAt, expiresAt]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string, nullable: true, description: 'Asked on first open; null until then' }
+        paired: { type: boolean, description: 'False while the pairing code is still waiting to be opened' }
+        createdAt: { type: string, format: date-time }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+        expiresAt: { type: string, format: date-time, description: "The pairing code's expiry, then the session's max age" }
+    TournamentDevicePairing:
+      type: object
+      required: [id, code, expiresAt]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        code: { type: string, description: 'Shown once; the link is #/tournament-mode/pair/<code>' }
+        expiresAt: { type: string, format: date-time }
+    TournamentDeviceSession:
+      type: object
+      required: [id, tournamentId, name]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        tournamentId: { type: string }
+        name: { type: string, nullable: true }
     TournamentOwner:
       type: object
       nullable: true
