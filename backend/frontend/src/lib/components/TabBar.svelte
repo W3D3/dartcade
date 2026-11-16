@@ -1,27 +1,11 @@
 <script lang="ts">
   // The phone's main navigation (below md): Home, Play, Ranked, Coach, Progress, Tournaments, History.
-  import { progress } from '$lib/progress/store'
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
-  import { me, pendingInvites } from '$lib/lobby/sockets'
-  import { flag } from '$lib/flags'
+  import { navState } from '$lib/navState'
   import NavTabItem from './NavTabItem.svelte'
 
-  const matchmaking = flag('matchmaking.enabled')
-  const progression = flag('progression.enabled')
-  const home = flag('home.enabled', true)
-  const coach = flag('coach.enabled')
-  const tournaments = flag('tournaments.enabled')
-  const tabs = $derived(
-    navTabs({
-      invites: pendingInvites($me),
-      ranked: $matchmaking,
-      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
-      home: $home,
-      coach: $coach,
-      tournaments: $tournaments,
-    }),
-  )
+  const tabs = $derived(navTabs($navState))
 </script>
 
 <nav
