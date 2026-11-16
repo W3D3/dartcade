@@ -19,7 +19,7 @@
 
   let {
     hole,
-    ball,
+    ball = null,
     ballColor = THEME.accent,
     halo = true,
     wallThickness = DEFAULT_PHYSICS.wallThickness,
@@ -38,7 +38,8 @@
     children,
   }: {
     hole: Hole
-    ball: Pt
+    /** Where the ball rests; none draws no ball (a hole shown on its own). */
+    ball?: Pt | null
     /** The putter's colour: its ball and halo (lime on the bench). */
     ballColor?: string
     /** The ring that keeps a resting ball findable; off while it rolls. */
@@ -347,43 +348,45 @@
       {/each}
     </g>
   {/if}
-  {#if onPlace}
+  {#if ball}
+    {#if onPlace}
+      <circle
+        cx={ball[0]}
+        cy={ball[1]}
+        r={BALL_R * 3}
+        fill={THEME.accent}
+        fill-opacity="0.15"
+        stroke={THEME.accent}
+        stroke-dasharray="10 8"
+        stroke-width="4"
+      />
+    {/if}
     <circle
       cx={ball[0]}
       cy={ball[1]}
-      r={BALL_R * 3}
-      fill={THEME.accent}
-      fill-opacity="0.15"
-      stroke={THEME.accent}
-      stroke-dasharray="10 8"
-      stroke-width="4"
+      r={onPlace ? BALL_R * 3 : BALL_R}
+      fill="transparent"
+      class={onPlace ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''}
+      onpointerdown={dragStart}
+      onpointermove={dragMove}
+      onpointerup={() => (dragging = false)}
+      onpointercancel={() => (dragging = false)}
+      role="presentation"
+    />
+    <!-- The ball is true to scale (4.3 cm): a halo keeps it findable from across the room -->
+    {#if halo}
+      <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill={ballColor} fill-opacity="0.22" pointer-events="none" />
+    {/if}
+    <circle
+      cx={ball[0]}
+      cy={ball[1]}
+      r={BALL_R}
+      fill={ballColor}
+      stroke="#0a0b09"
+      stroke-width="5"
+      pointer-events="none"
+      data-testid="ball"
     />
   {/if}
-  <circle
-    cx={ball[0]}
-    cy={ball[1]}
-    r={onPlace ? BALL_R * 3 : BALL_R}
-    fill="transparent"
-    class={onPlace ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''}
-    onpointerdown={dragStart}
-    onpointermove={dragMove}
-    onpointerup={() => (dragging = false)}
-    onpointercancel={() => (dragging = false)}
-    role="presentation"
-  />
-  <!-- The ball is true to scale (4.3 cm): a halo keeps it findable from across the room -->
-  {#if halo}
-    <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill={ballColor} fill-opacity="0.22" pointer-events="none" />
-  {/if}
-  <circle
-    cx={ball[0]}
-    cy={ball[1]}
-    r={BALL_R}
-    fill={ballColor}
-    stroke="#0a0b09"
-    stroke-width="5"
-    pointer-events="none"
-    data-testid="ball"
-  />
   {@render children?.()}
 </svg>

@@ -1,12 +1,13 @@
 <!--
-  A hole's 2D overview: everyone's strokes on it, drawn in their seat colour, and a caption with
-  each player's score. Shown between holes (ScorecardOverlay) and on the match details page.
+  A hole's 2D overview: the hole as the match draws it (HoleView: rails, bumpers, heights) with everyone's
+  strokes on it in their seat colour, and a caption with each player's score. Shown between holes
+  (ScorecardOverlay) and on the match details page.
 -->
 <script lang="ts">
-  import { THEME } from '$lib/theme'
   import { seatColor } from '$lib/details/chartColors'
+  import { toHole, type HoleData } from '$lib/minigolf/match'
   import { bounds } from '$shared/minigolf/geometry'
-  import type { Pt } from '$shared/minigolf/types'
+  import HoleView from './HoleView.svelte'
 
   let {
     hole,
@@ -16,11 +17,7 @@
     label,
     height = 'max-h-[300px]',
   }: {
-    hole: {
-      outline: number[][]
-      walls: { points: number[][]; closed?: boolean; thickness?: number }[]
-      cup: { at: number[]; r: number }
-    }
+    hole: HoleData
     /** Per seat, every stroke's path. */
     paths: number[][][][]
     scores: (number | null)[]
@@ -30,44 +27,25 @@
     height?: string
   } = $props()
 
-  const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
+  const shown = $derived(toHole(hole))
   const pts = (p: number[][]) => p.map(q => `${q[0] ?? 0},${q[1] ?? 0}`).join(' ')
-  const viewBox = $derived.by(() => {
-    const b = bounds(hole.outline.map(pt))
-    return `${b.minX - 80} ${b.minY - 80} ${b.maxX - b.minX + 160} ${b.maxY - b.minY + 160}`
+  // HoleView fills its box and keeps its own aspect: the box takes the hole's, capped by `height`
+  const aspect = $derived.by(() => {
+    const b = bounds(shown.outline)
+    return `${b.maxX - b.minX + 240} / ${b.maxY - b.minY + 240}`
   })
 </script>
 
-<figure class="flex flex-col gap-2">
-  <svg {viewBox} class="{height} w-full rounded-xl bg-bg-deep" role="img" aria-label={label}>
-    <polygon points={pts(hole.outline)} fill="#2a7045" stroke={THEME.boardCream} stroke-width="20" stroke-linejoin="round" />
-    {#each hole.walls as w, i (i)}
-      {#if w.closed}
-        <polygon
-          points={pts(w.points)}
-          fill={THEME.boardCream}
-          stroke={THEME.boardCream}
-          stroke-width={w.thickness ?? 20}
-          stroke-linejoin="round"
-        />
-      {:else}
-        <polyline
-          points={pts(w.points)}
-          fill="none"
-          stroke={THEME.boardCream}
-          stroke-width={w.thickness ?? 20}
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      {/if}
-    {/each}
-    <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r} fill="#050604" />
-    {#each paths as strokes, seat (seat)}
-      {#each strokes as path, k (k)}
-        <polyline points={pts(path)} fill="none" stroke={seatColor(seat)} stroke-width="14" stroke-opacity="0.8" stroke-linecap="round" />
+<figure class="flex flex-col gap-2" aria-label={label}>
+  <div class="{height} w-full overflow-hidden rounded-xl bg-bg-deep" style:aspect-ratio={aspect}>
+    <HoleView hole={shown}>
+      {#each paths as strokes, seat (seat)}
+        {#each strokes as path, k (k)}
+          <polyline points={pts(path)} fill="none" stroke={seatColor(seat)} stroke-width="14" stroke-opacity="0.8" stroke-linecap="round" />
+        {/each}
       {/each}
-    {/each}
-  </svg>
+    </HoleView>
+  </div>
   <figcaption class="flex flex-wrap gap-3 text-[13px]">
     {#each players as p, seat (seat)}
       <span class="flex items-center gap-1">

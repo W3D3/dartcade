@@ -416,11 +416,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       mode: 'minigolf',
       course: final.courseName,
       holes: final.holes.map((h, i) => ({
-        name: h.name,
-        par: h.par,
-        outline: h.outline.map(pt),
-        walls: h.walls.map(w => ({ points: w.points.map(pt), closed: w.closed, thickness: w.thickness })),
-        cup: { at: pt(h.cup.at), r: h.cup.r },
+        hole: holeView(h),
         paths: paths[i].map(seat => seat.map(path => path.map(roundPt))),
       })),
       scores: final.scores,

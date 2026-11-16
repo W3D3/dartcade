@@ -15,7 +15,8 @@ const putt = [
   [250, 2750],
   [250, 300],
 ]
-const hole = (name: string, paths: number[][][][]) => ({ name, par: 2, outline, walls: [], cup, paths })
+const geometry = (name: string) => ({ id: name, name, par: 2, outline, walls: [], bumpers: [], slopes: [], tee: [250, 2800], cup })
+const hole = (name: string, paths: number[][][][]) => ({ hole: geometry(name), paths })
 const players = [
   { seat: 1, name: 'Phil' },
   { seat: 0, name: 'Luke' },
@@ -58,11 +59,11 @@ describe('MinigolfSection', () => {
 })
 
 describe('HoleShots', () => {
-  it("draws the walls, every stroke in its seat's colour and lists each player's score", () => {
+  it("draws the walls, bumpers and heights, every stroke in its seat's colour and lists each player's score", () => {
     const { body } = render(HoleShots, {
       props: {
         hole: {
-          outline,
+          ...geometry('Bumpy'),
           walls: [
             {
               points: [
@@ -71,7 +72,8 @@ describe('HoleShots', () => {
               ],
             },
           ],
-          cup,
+          bumpers: [{ at: [250, 1500], r: 60 }],
+          terrain: [{ mesa: { from: [0, 1800], to: [500, 2200], height: 40, edges: [60, 60, 60, 600] } }],
         },
         paths: [[putt], []],
         scores: [1, null],
@@ -81,6 +83,9 @@ describe('HoleShots', () => {
     })
     // The wall and Luke's putt
     expect(body.match(/<polyline/g)).toHaveLength(2)
+    // The felt as the match draws it: a bumper and a plateau, not just the rails
+    expect(body).toContain('r="60"')
+    expect(body).toContain('data-testid="mesa"')
     expect(body).toMatch(/Luke · 1[\s\S]*Phil · –/)
   })
 })

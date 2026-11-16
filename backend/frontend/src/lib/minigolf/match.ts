@@ -62,8 +62,13 @@ export function trySlots(g: MinigolfGame): Slot[] {
 
 const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
 
-/** The snapshot's hole (points as plain arrays) as the core's Hole, for HoleView. */
-export function toHole(h: MinigolfHole): Hole {
+/** A hole as the snapshot or a game's details carry it: the two schemas differ only in how they type a mesa's four edges. */
+export type HoleData = Omit<MinigolfHole, 'terrain'> & {
+  terrain?: { mesa: { from: number[]; to: number[]; height: number; edges: number[] } }[]
+}
+
+/** The snapshot's or the details' hole (points as plain arrays) as the core's Hole, for HoleView. */
+export function toHole(h: HoleData): Hole {
   return {
     ...h,
     outline: h.outline.map(pt),
@@ -74,7 +79,9 @@ export function toHole(h: MinigolfHole): Hole {
         ? { radial: { ...s.radial, center: pt(s.radial.center) } }
         : { bump: { ...s.bump, from: pt(s.bump.from), to: pt(s.bump.to) } },
     ),
-    terrain: h.terrain?.map(t => ({ mesa: { ...t.mesa, from: pt(t.mesa.from), to: pt(t.mesa.to) } })),
+    terrain: h.terrain?.map(({ mesa }) => ({
+      mesa: { ...mesa, from: pt(mesa.from), to: pt(mesa.to), edges: [mesa.edges[0], mesa.edges[1], mesa.edges[2], mesa.edges[3]] },
+    })),
     tee: pt(h.tee),
     cup: { at: pt(h.cup.at), r: h.cup.r },
   }
