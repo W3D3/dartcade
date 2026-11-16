@@ -7,7 +7,12 @@
   // size with CSS (e.g. to clamp it to the viewport on phones) while keeping the 1:1 aspect
   // ratio from the viewBox. `border` in encode() is the quiet zone (in modules) phones need
   // to focus on the code; keep it even when the code is shrunk to fit a small screen.
-  let { text, size = 168, class: className = '' }: { text: string; size?: number; class?: string } = $props()
+  let {
+    text,
+    size = 168,
+    label = 'QR code of the join link',
+    class: className = '',
+  }: { text: string; size?: number; label?: string; class?: string } = $props()
   const qr = $derived(encode(text, { border: 2 }))
 </script>
 
@@ -16,7 +21,7 @@
   width={size}
   height={size}
   role="img"
-  aria-label="QR code of the join link"
+  aria-label={label}
   shape-rendering="crispEdges"
   class="block shrink-0 rounded-sm bg-text {className}"
 >

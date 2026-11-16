@@ -13,6 +13,8 @@
   import { flag, flagsLoaded } from '$lib/flags'
   import { dayMonth, weekday } from '$lib/fmt'
   import { hrefs } from '$lib/routes'
+  import ErrorText from '$lib/components/ErrorText.svelte'
+  import { startNow } from '$lib/tournaments/browse'
   import { loadTournament, type Tournament } from '$lib/tournaments/create'
   import { loadParticipants, organizerLine, type Participants } from '$lib/tournaments/participants'
   import { isEditable } from '$shared/tournaments/state'
@@ -33,6 +35,16 @@
       t = found
     })
   })
+
+  let starting = $state(false)
+  let startError = $state<string | null>(null)
+  async function start() {
+    starting = true
+    const r = await startNow(params.id ?? '')
+    starting = false
+    startError = 'error' in r ? r.error : null
+    if ('tournament' in r) t = r.tournament
+  }
 
   const editable = $derived(!!t && isEditable(t.status))
   const when = $derived.by(() => {
@@ -87,12 +99,27 @@
             <span class="flex min-w-0 grow basis-60 flex-col gap-1">
               <h2 id="onsite-mode" class="text-body-lg font-semibold">Open tournament mode</h2>
               <span class="text-small text-text-muted">
-                Turns this device into a tournament screen: pick a match, press Play, enter scores. Do the same on every tablet or laptop at
-                the venue that’s logged in to your account.
+                Turns this device into a tournament screen: pick a match, press Play, enter scores. For the other tablets at the venue, add
+                them as devices below: they pair with a code and only keep score.
               </span>
             </span>
             <Button variant="accent" href={hrefs.tournamentMode(t.id)}>Open on this device</Button>
           </section>
+
+          {#if t.status === 'open'}
+            <section class="card flex flex-col items-start gap-3 p-[18px] md:px-[22px]" aria-labelledby="onsite-start">
+              <h2 id="onsite-start" class="text-body-lg font-semibold">Ready when you are</h2>
+              <p class="text-small text-text-muted">
+                Starting draws the bracket from the {t.entries}
+                {t.teamSize === 1 ? 'players' : 'teams'} on the list. After that the list can’t change. Tournament mode devices can’t start it.
+              </p>
+              {#if participants?.startBlocker}<p class="text-small text-text-muted">{participants.startBlocker}</p>{/if}
+              {#if startError}<ErrorText>{startError}</ErrorText>{/if}
+              <Button variant="accent" disabled={starting || !!participants?.startBlocker} onclick={() => void start()}>
+                Start tournament
+              </Button>
+            </section>
+          {/if}
 
           {#if participants}
             <OnsiteParticipants tournamentId={t.id} bind:participants teamSize={t.teamSize} max={t.maxEntries} {editable} />
@@ -103,7 +130,7 @@
           <div class="card p-[18px]">
             <OrganizersCard tournamentId={t.id} tournamentName={t.name} onleft={() => void replace(hrefs.tournaments('mine').slice(1))} />
           </div>
-          <DevicesCard tournamentId={t.id} format={t.format} />
+          <DevicesCard tournamentId={t.id} format={t.format} open={t.status !== 'finished' && t.status !== 'cancelled'} />
           {#if participants}
             <section class="card flex flex-col gap-2 p-[18px]" aria-labelledby="onsite-claim">
               <h2 id="onsite-claim" class="flex items-center gap-2 text-body-lg font-semibold">

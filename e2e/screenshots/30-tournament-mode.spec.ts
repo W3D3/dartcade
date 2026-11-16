@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { BASE, VIEW, api, open, openHash, shot } from './helpers.js'
 
-// Tournament mode on venue devices (Tournament-Mode, Tournament-Mode-Exit, Tournament-Onsite's
-// devices card). The running state is mocked like the design's quarter-finals (QF 2 live on
-// another tablet, QF 3 ready, QF 1 and a forfeit done); the devices card and the start run on the
-// real server, two browsers on one account each in tournament mode.
+// Tournament mode on venue devices (Tournament-Mode, Tournament-Onsite's devices card; the Exit
+// artboards are superseded: a device leaves only by revoke, end or expiry). The running state is mocked like the design's quarter-finals (QF 2 live on
+// another tablet, QF 3 ready, QF 1 and a forfeit done); the devices card, the pairing and the start run on
+// the real server: a signed-out browser pairs with a code and keeps score.
 
 const tournament = {
   id: 'venue',
@@ -111,6 +111,8 @@ async function mock(page: Page, device: { id: string; name: string }, devices: o
     },
     [device.id, device.name],
   )
+  // This browser is a signed-in organizer, not a venue device
+  await page.route('**/api/tournament-device', r => r.fulfill({ status: 404, json: { error: 'not found' } }))
   await page.route('**/api/tournaments/venue', r => r.fulfill({ json: tournament }))
   await page.routeWebSocket('**/ws/tournament?*', ws => {
     ws.send(JSON.stringify(state))
@@ -137,7 +139,7 @@ for (const [name, view] of [
   })
 }
 
-test('tournament mode: a paused match, and leaving with a match running', async ({ browser }) => {
+test('tournament mode: a paused match any device may continue', async ({ browser }) => {
   // The stage tablet left: QF 2 is paused and this tablet may continue it
   const bar1 = await open(browser, 'admin', VIEW.tablet)
   await mock(bar1.page, bar, [bar, office])
@@ -145,15 +147,6 @@ test('tournament mode: a paused match, and leaving with a match running', async 
   await expect(bar1.page.getByText('PAUSED')).toBeVisible()
   await expect(bar1.page.getByRole('button', { name: 'Continue here' })).toBeVisible()
   await shot(bar1.page, 'tournaments/mode-paused-tablet.png')
-
-  // On the stage tablet, playing QF 2: Exit says it pauses
-  const s = await open(browser, 'admin', VIEW.tablet)
-  await mock(s.page, stage, [bar, stage, office])
-  await openHash(s.page, '/tournament-mode/venue')
-  await expect(s.page.getByText('QF 2 · on this device')).toBeVisible()
-  await s.page.getByRole('button', { name: 'Exit' }).click()
-  await expect(s.page.getByRole('dialog', { name: 'Leave tournament mode?' })).toContainText('QF 2 is running on this device')
-  await shot(s.page, 'tournaments/mode-exit-tablet.png')
 })
 
 test('tournament mode: name the device, start, and every device on the organizer page', async ({ browser }) => {
@@ -184,33 +177,45 @@ test('tournament mode: name the device, start, and every device on the organizer
     entries: NAMES.map(name => ({ name, tag: null, color: null, players: [{ name }] })),
   })
 
-  // First open: the device is named, then the organizer starts the tournament from it
-  const tablet = await open(browser, 'admin', VIEW.tablet)
-  await openHash(tablet.page, `/tournament-mode/${t.id}`)
+  // The organizer starts it on their own page: tournament mode has no Start
+  await openHash(admin.page, `/tournaments/${t.id}/manage`)
+  await admin.page.getByRole('button', { name: 'Start tournament' }).click()
+  await expect(admin.page.getByText('Quarter-finals')).toHaveCount(0)
+  await expect(admin.page.getByRole('button', { name: 'Start tournament' })).toHaveCount(0)
+
+  // Add device: a one-time code, link and QR code
+  await admin.page.setViewportSize({ width: 1440, height: 1500 })
+  await admin.page.getByRole('button', { name: 'Add device' }).click()
+  const dialog = admin.page.getByRole('dialog', { name: 'Add a device' })
+  const code = ((await dialog.getByLabel('Pairing code').textContent()) ?? '').replace(/\s/g, '')
+  expect(code).toMatch(/^[A-Z2-9]{8}$/)
+  await shot(admin.page, 'tournaments/device-add-desktop.png')
+  await dialog.getByRole('button', { name: 'Done' }).click()
+
+  // A tablet with no account opens the link, is named, and keeps score: nothing else is reachable
+  const tablet = await open(browser, null, VIEW.tablet)
+  // Opened straight from the link, once: the code works one time
+  await tablet.page.goto(`/#/tournament-mode/pair/${code}`)
   await expect(tablet.page.getByRole('dialog', { name: 'Name this device' })).toBeVisible()
-  await shot(tablet.page, 'tournaments/mode-name-tablet.png')
+  await shot(tablet.page, 'tournaments/device-name-tablet.png')
   await tablet.page.getByRole('textbox').fill('Tablet · Bar')
   await tablet.page.getByRole('button', { name: 'Save' }).click()
-  await tablet.page.getByRole('button', { name: 'Start tournament' }).click()
   await expect(tablet.page.getByText('Quarter-finals: 0 of 4 done')).toBeVisible()
+  await expect(tablet.page.getByRole('button', { name: /Start tournament|Exit/ })).toHaveCount(0)
+  await shot(tablet.page, 'tournaments/device-mode-tablet.png')
+  // The code works once; another page sends the device back to its tournament
+  expect((await tablet.page.request.post('/api/tournament-devices/pair', { data: { code }, headers: { Origin: BASE } })).status()).toBe(404)
+  await openHash(tablet.page, '/stats')
+  await expect(tablet.page.getByText('Quarter-finals: 0 of 4 done')).toBeVisible()
+  expect((await tablet.page.request.get('/api/me')).status()).toBe(403)
 
-  // A second browser on the same account: both see each other within a second
-  const laptop = await open(browser, 'admin', VIEW.wide)
-  await laptop.page.addInitScript(() => localStorage.setItem('tournamentMode.deviceName', 'Laptop · Office'))
-  await openHash(laptop.page, `/tournament-mode/${t.id}`)
-  await expect(laptop.page.getByText('2 devices in tournament mode')).toBeVisible()
-  await expect(tablet.page.getByText('2 devices in tournament mode')).toBeVisible({ timeout: 1_000 })
-
+  // The organizer sees it, and revokes it
   await openHash(admin.page, `/tournaments/${t.id}/manage`)
-  const card = admin.page.getByRole('region', { name: 'Devices in tournament mode' })
+  const card = admin.page.getByRole('region', { name: 'Devices' })
   await expect(card).toContainText('Tablet · Bar')
-  await expect(card).toContainText('Laptop · Office')
-  await admin.page.setViewportSize({ width: 1440, height: 1500 })
-  await shot(admin.page, 'tournaments/mode-devices-desktop.png')
-
-  // Leaving tournament mode takes the device off the list at once
-  await laptop.page.getByRole('button', { name: 'Exit' }).click()
-  await laptop.page.getByRole('button', { name: 'Leave' }).click()
-  await expect(card).not.toContainText('Laptop · Office', { timeout: 1_000 })
-  await expect(tablet.page.getByText('1 device in tournament mode')).toBeVisible({ timeout: 1_000 })
+  await shot(admin.page, 'tournaments/device-list-desktop.png')
+  await card.getByRole('button', { name: 'Revoke Tablet · Bar' }).click()
+  await admin.page.getByRole('dialog').getByRole('button', { name: 'Revoke' }).click()
+  await expect(card).not.toContainText('Tablet · Bar')
+  await expect(tablet.page.getByText('This device was removed from the tournament')).toBeVisible({ timeout: 3_000 })
 })
