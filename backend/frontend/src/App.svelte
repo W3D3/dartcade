@@ -237,12 +237,11 @@
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
     // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user.
-    // A venue device in tournament mode has none either: its cookie session is checked by the server, and
-    // every other page sends it to the login page, which it can't use
+    // The pairing page of a venue device has none either; the device's own pages go through the fallback below
     if (
       currentHash.startsWith(hrefs.bigScreen('')) ||
       currentHash.startsWith(hrefs.bigScreenFrame()) ||
-      currentHash.startsWith('#/tournament-mode/')
+      currentHash.startsWith(hrefs.tournamentPair())
     ) {
       checked = true
       return
