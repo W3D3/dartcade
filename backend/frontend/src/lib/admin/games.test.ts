@@ -158,7 +158,7 @@ describe('voiding and the ranked queue', () => {
   })
 
   it('loads the queue, null when the request fails', async () => {
-    vi.mocked(api.GET).mockResolvedValueOnce({ data: { searches: [] }, response: new Response() } as never)
+    vi.mocked(api.GET).mockResolvedValueOnce({ data: { searches: [] }, response: new Response() })
     expect(await loadQueue()).toEqual([])
     vi.mocked(api.GET).mockResolvedValueOnce({ error: { error: 'x' }, response: new Response() })
     expect(await loadQueue()).toBeNull()
