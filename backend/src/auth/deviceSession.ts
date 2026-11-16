@@ -16,8 +16,12 @@ declare module 'fastify' {
     deviceRefused?: boolean
   }
   interface FastifyContextConfig {
-    /** The route may be called by a venue device (of the tournament in `:id`, when it has one). */
-    tournamentDevice?: boolean
+    /**
+     * The route may be called by a venue device, and says where its tournament is: the name of the
+     * path param that holds the tournament id, or 'own' for a route that acts on the device's own
+     * session. A device is refused on a route that names a param the route does not have.
+     */
+    tournamentDevice?: string
   }
 }
 
