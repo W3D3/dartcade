@@ -2417,6 +2417,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The venue devices of an in-person tournament (organizers)
+         * @description Devices waiting to pair and paired ones, never revoked or expired ones. A device session is a scoped, cookie-bound session for tournament mode, not a login.
+         */
+        get: operations["listTournamentDevices"];
+        put?: never;
+        /**
+         * Add a venue device (organizers)
+         * @description Makes a one-time pairing code, good for 15 minutes, shown once. Opening it on the device (`POST /api/tournament-devices/pair`) starts that device's session. 409 once the tournament ended or when it is not in person.
+         */
+        post: operations["addTournamentDevice"];
+        /**
+         * Revoke every device of the tournament (organizers)
+         * @description Their sockets are closed at once.
+         */
+        delete: operations["revokeTournamentDevices"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/devices/{deviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke one venue device (organizers)
+         * @description Its sockets are closed at once and its cookie stops working.
+         */
+        delete: operations["revokeTournamentDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournament-devices/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a pairing code on a venue device
+         * @description Sets the device's session cookie (httpOnly, SameSite) and nothing else. The code works once, for 15 minutes; any other answer is 404. Limited per IP.
+         */
+        post: operations["pairTournamentDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournament-device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue device session this browser holds
+         * @description 404 without one (or when it was revoked or ended).
+         */
+        get: operations["getTournamentDeviceSession"];
+        put?: never;
+        post?: never;
+        /**
+         * Forget this device session (Leave tournament mode)
+         * @description Revokes it and clears the cookie.
+         */
+        delete: operations["leaveTournamentMode"];
+        options?: never;
+        head?: never;
+        /** Name this device (asked on first open) */
+        patch: operations["renameTournamentDevice"];
+        trace?: never;
+    };
     "/api/tournaments/{id}/check-in": {
         parameters: {
             query?: never;
@@ -5727,6 +5825,34 @@ export interface components {
          * @enum {string}
          */
         TournamentRegistration: "registered" | "preselected" | "closed" | "team" | "full" | "not_eligible" | "board_needed" | "open";
+        TournamentDevice: {
+            id: string;
+            /** @description Asked on first open; null until then */
+            name: string | null;
+            /** @description False while the pairing code is still waiting to be opened */
+            paired: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastSeenAt: string | null;
+            /**
+             * Format: date-time
+             * @description The pairing code's expiry, then the session's max age
+             */
+            expiresAt: string;
+        };
+        TournamentDevicePairing: {
+            id: string;
+            /** @description Shown once; the link is #/tournament-mode/pair/<code> */
+            code: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        TournamentDeviceSession: {
+            id: string;
+            tournamentId: string;
+            name: string | null;
+        };
         /** @description Null once the owner's account is gone */
         TournamentOwner: {
             id: string;
@@ -11020,6 +11146,205 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTournamentDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The devices */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        devices: components["schemas"]["TournamentDevice"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addTournamentDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The code */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentDevicePairing"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    revokeTournamentDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeTournamentDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    pairTournamentDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Paired */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentDeviceSession"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getTournamentDeviceSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentDeviceSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    leaveTournamentMode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    renameTournamentDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentDeviceSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     checkInToTournament: {

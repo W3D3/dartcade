@@ -22,7 +22,7 @@ export function registerResponseValidation(app: FastifyInstance): void {
   // oxlint-disable-next-line typescript/require-await
   app.addHook('onSend', async (req, reply, payload) => {
     const operationId = req.routeOptions.schema?.operationId
-    if (!operationId || reply.statusCode >= 500) return payload
+    if (!operationId || reply.statusCode >= 500 || req.deviceRefused) return payload
 
     const fail = (message: string) => {
       req.log.error({ operationId }, `response does not match the API spec: ${message}`)

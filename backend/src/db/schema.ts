@@ -602,6 +602,24 @@ export interface TournamentsTable {
   invite_code: ColumnType<string | null, string | undefined, never>
 }
 
+/** A venue device in tournament mode (migration 074): its pairing code and token are kept only as hashes. */
+export interface TournamentDevicesTable {
+  id: string
+  tournament_id: string
+  created_by: string
+  name: string | null
+  /** Set while the code is unused; null once the device paired. */
+  pair_code_hash: ColumnType<string | null, string, string | null>
+  pair_expires_at: Date
+  token_hash: ColumnType<string | null, string | undefined, string | null>
+  created_at: ColumnType<Date, never, never>
+  paired_at: Stamp
+  last_seen_at: Stamp
+  revoked_at: Stamp
+  /** The session's max age, from pairing. */
+  expires_at: Stamp
+}
+
 export interface TournamentOrganizersTable {
   tournament_id: string
   user_id: string
@@ -793,6 +811,7 @@ export interface Database {
   coach_games: CoachGamesTable
   tournaments: TournamentsTable
   tournament_organizers: TournamentOrganizersTable
+  tournament_devices: TournamentDevicesTable
   tournament_entries: TournamentEntriesTable
   tournament_players: TournamentPlayersTable
   tournament_matches: TournamentMatchesTable

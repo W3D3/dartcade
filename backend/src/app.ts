@@ -25,7 +25,7 @@ import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
 import { canSpectateSession } from './session/access.js'
-import { seesTournamentOfMatch } from './db/tournamentRun.js'
+import { seesTournamentOfMatch, tournamentOfMatch } from './db/tournamentRun.js'
 import { tournamentGwPlugin } from './browser-gw/tournament.js'
 import { TournamentLive, liveMessage } from './tournaments/live.js'
 import { rankedApiPlugin } from './api/ranked.js'
@@ -33,6 +33,7 @@ import { homeApiPlugin } from './api/home.js'
 import { progressApiPlugin } from './api/progress.js'
 import { achievementsApiPlugin } from './api/achievements.js'
 import { tournamentsApiPlugin } from './api/tournaments.js'
+import { tournamentDevicesApiPlugin } from './api/tournamentDevices.js'
 import { teamsApiPlugin } from './api/teams.js'
 import { guestClaimsApiPlugin } from './api/guestClaims.js'
 import { GuestClaimService } from './guestClaims/service.js'
@@ -238,6 +239,8 @@ export async function buildApp({
   })
   await app.register(browserGwPlugin, {
     engine,
+    deviceMayOpen: async (device, session) =>
+      session.tournamentMatchId !== null && (await tournamentOfMatch(db, session.tournamentMatchId)) === device.tournamentId,
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
     canSpectate: async (userId, session) => {
       const user = await loadFlagUser(db, userId)
@@ -306,6 +309,7 @@ export async function buildApp({
   await app.register(progressApiPlugin, { db })
   await app.register(achievementsApiPlugin, { db })
   await app.register(tournamentsApiPlugin, { db, hub, lobbies, tournaments, countGames })
+  await app.register(tournamentDevicesApiPlugin, { db })
   await app.register(teamsApiPlugin, { db, lobbies, hub })
   const guestClaims = new GuestClaimService({
     db,
