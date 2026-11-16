@@ -1,8 +1,8 @@
 <script lang="ts">
   // The account badge and its menu (User-Badge board): who you are (with progression, a compact
   // version of your profile card that opens your profile), your status (Online /
-  // Invisible), Friends (drawer), Settings (phones only, the rail and side nav list it), Sign out.
-  // Phones: the avatar in the header (menu below it); every other page is in the burger menu
+  // Invisible), Friends (a page on phones, the drawer elsewhere), Progress and Settings (phones only, the rail and side nav list them), Sign out.
+  // Phones: the avatar in the header (menu below it); the other pages are in the burger menu
   // (`MobileMenu.svelte`). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
   // A bits-ui DropdownMenu: focus moves in on open and back to the badge on close, arrow keys and
@@ -10,7 +10,7 @@
   // it is a lower layer and stays open).
   import { hrefs } from '$lib/routes'
   import { DropdownMenu } from 'bits-ui'
-  import { ChevronUp, LogOut, Settings, UsersRound } from '@lucide/svelte'
+  import { ChevronUp, LogOut, Settings, TrendingUp, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -36,9 +36,7 @@
   const email = $derived($currentUser?.email ?? '')
   const invisible = $derived($currentUser?.invisible ?? false)
   const friends = $derived(friendsEntry($me?.friends ?? null))
-  const requestsText = $derived(
-    placement !== 'header' && friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '',
-  )
+  const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
   const triggerLabel = $derived(`Account${name ? `: ${name}` : ''}, ${invisible ? 'Invisible' : 'Online'}${requestsText}`)
   const level = $derived($progressXp === null ? null : levelOf($progressXp).level)
   // Your card, once progression is on and it has loaded
@@ -113,6 +111,9 @@
           : 'size-11 '} relative flex items-center justify-center bg-transparent border-0 cursor-pointer"
       >
         {@render avatar(placement === 'rail' ? 40 : 36)}
+        {#if placement === 'header' && friends.requests > 0}
+          <NavBadge count={friends.requests} hidden label="" class="absolute top-0 right-0 border-2 border-surface-1" />
+        {/if}
       </DropdownMenu.Trigger>
     {/if}
     <DropdownMenu.Portal>
@@ -200,17 +201,31 @@
         </DropdownMenu.RadioGroup>
         {#if statusError}<ErrorText>{statusError}</ErrorText>{/if}
         <DropdownMenu.Separator class="h-px bg-line-3" />
-        <!-- Desktops and tablets open the Friends drawer beside the nav; phones have Friends in the burger menu -->
-        {#if placement !== 'header'}
-          <DropdownMenu.Item textValue="Friends" onSelect={() => friendsDrawerOpen.set(true)} class={ITEM}
-            >{@render friendsRow()}</DropdownMenu.Item
-          >
-        {:else}
+        <!-- Desktops and tablets open the Friends drawer beside the nav; phones go to the Friends page -->
+        {#if placement === 'header'}
+          <DropdownMenu.Item textValue="Friends">
+            {#snippet child({ props })}<a {...props} href={hrefs.friends()} class={ITEM}>{@render friendsRow()}</a>{/snippet}
+          </DropdownMenu.Item>
+          {#if level !== null}
+            <DropdownMenu.Item textValue="Progress">
+              {#snippet child({ props })}
+                <a {...props} href={hrefs.progress()} class={ITEM}
+                  ><TrendingUp size={18} strokeWidth={1.8} />Progress<span
+                    class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span
+                  ></a
+                >
+              {/snippet}
+            </DropdownMenu.Item>
+          {/if}
           <DropdownMenu.Item textValue="Settings">
             {#snippet child({ props })}
               <a {...props} href={hrefs.settings()} class={ITEM}><Settings size={18} strokeWidth={1.8} />Settings</a>
             {/snippet}
           </DropdownMenu.Item>
+        {:else}
+          <DropdownMenu.Item textValue="Friends" onSelect={() => friendsDrawerOpen.set(true)} class={ITEM}
+            >{@render friendsRow()}</DropdownMenu.Item
+          >
         {/if}
         <DropdownMenu.Separator class="h-px bg-line-3" />
         <DropdownMenu.Item
