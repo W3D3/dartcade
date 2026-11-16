@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import type { Database } from './schema.js'
 import { moveTournament, viewerRole, type TournamentMatchRow, type TournamentRow } from './tournaments.js'
+import { awardPrizes } from './tournamentPrizes.js'
 import type { Match } from '../shared/tournaments/bracket.js'
 
 // X01 and Cricket put each seat's legs in its stats
@@ -211,7 +212,7 @@ export async function linkSeats(db: Kysely<Database>, sessionId: string, playerI
       .execute()
 }
 
-/** Finishes the tournament with every entry's final place; false when it already moved on. */
+/** Finishes the tournament with every entry's final place and pays an official one's prizes; false when it already moved on. */
 export async function finishWithPlaces(
   db: Kysely<Database>,
   tournamentId: string,
@@ -227,6 +228,7 @@ export async function finishWithPlaces(
         .where('id', '=', entryId)
         .where('tournament_id', '=', tournamentId)
         .execute()
+    await awardPrizes(tx, tournamentId, at)
     return true
   })
 }

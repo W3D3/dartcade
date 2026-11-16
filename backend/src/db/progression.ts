@@ -366,6 +366,50 @@ export async function hasPerk(db: Kysely<Database>, userId: string, perkId: stri
   return (await unlockedPerks(db, userId)).includes(perkId)
 }
 
+/** One ledger row an outside source pays: its kind, what paid it and the amount (kind 'admin' or 'tournament'). */
+export interface XpCredit {
+  kind: string
+  sourceId: string
+  amount: number
+  meta: Record<string, unknown>
+}
+
+/**
+ * Credits `credit` to an account outside any game: locks the user, writes the ledger row (kind and
+ * source type are the same word), adds the total, and unlocks the perks the new level reaches plus
+ * `extraPerks`. Null when that source already paid this account (the ledger's unique key), so a
+ * repeat changes nothing.
+ */
+export async function creditXp(
+  trx: Kysely<Database>,
+  userId: string,
+  credit: XpCredit,
+  at: Date,
+  extraPerks: { id: string; source: string }[] = [],
+): Promise<{ before: number; after: number; unlocked: string[] } | null> {
+  await lockUser(trx, userId)
+  const row = await trx
+    .insertInto('xp_ledger')
+    .values({
+      user_id: userId,
+      kind: credit.kind,
+      source_type: credit.kind,
+      source_id: credit.sourceId,
+      amount: credit.amount,
+      local_date: localDate(at, await userTimeZone(trx, userId)),
+      meta: JSON.stringify(credit.meta),
+      created_at: at,
+    })
+    .onConflict(oc => oc.columns(['user_id', 'kind', 'source_type', 'source_id']).doNothing())
+    .returning('id')
+    .executeTakeFirst()
+  if (!row) return null
+  const { before, after } = await addXp(trx, userId, credit.amount)
+  const streak = (await getStreak(trx, userId)).current
+  const reached = reachedPerks({ level: levelOf(after).level, streak, ranked: await rankedDeeds(trx, userId) })
+  return { before, after, unlocked: await unlock(trx, userId, [...reached, ...extraPerks], at) }
+}
+
 /**
  * An admin gives an account XP (to test unlocks): a ledger row of kind 'admin' keyed by a fresh id,
  * so no game's revoke, day tally or streak ever reads it; then the total, the perks the new level
@@ -379,25 +423,11 @@ export async function grantXp(
 ): Promise<{ xp: number; level: number; unlocked: string[] } | 'not-found'> {
   return db.transaction().execute(async trx => {
     if (!(await trx.selectFrom('user').select('id').where('id', '=', userId).executeTakeFirst())) return 'not-found'
-    await lockUser(trx, userId)
     const now = new Date()
-    await trx
-      .insertInto('xp_ledger')
-      .values({
-        user_id: userId,
-        kind: 'admin',
-        source_type: 'admin',
-        source_id: randomUUID(),
-        amount,
-        local_date: localDate(now, await userTimeZone(trx, userId)),
-        meta: JSON.stringify({ adminId }),
-        created_at: now,
-      })
-      .execute()
-    const { before, after } = await addXp(trx, userId, amount)
+    const credited = await creditXp(trx, userId, { kind: 'admin', sourceId: randomUUID(), amount, meta: { adminId } }, now)
+    if (!credited) return 'not-found'
+    const { before, after, unlocked } = credited
     const level = levelOf(after).level
-    const streak = (await getStreak(trx, userId)).current
-    const unlocked = await unlock(trx, userId, reachedPerks({ level, streak, ranked: await rankedDeeds(trx, userId) }), now)
     await trx
       .insertInto('admin_audit')
       .values({

@@ -40762,7 +40762,9 @@
                           "registration",
                           "avgLimit",
                           "eligibility",
-                          "team"
+                          "team",
+                          "tags",
+                          "prizes"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -41063,6 +41065,51 @@
                                 "description": "The caller's 30-day average"
                               }
                             }
+                          },
+                          "tags": {
+                            "type": "array",
+                            "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                            },
+                            "maxItems": 4
+                          },
+                          "prizes": {
+                            "type": "array",
+                            "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "from",
+                                "to",
+                                "xp",
+                                "title"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "from": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "to": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "description": "Final places from to to (inclusive) each win this"
+                                },
+                                "xp": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10000
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "A title perk id the winners unlock"
+                                }
+                              }
+                            },
+                            "maxItems": 8
                           }
                         }
                       }
@@ -41516,6 +41563,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -42083,6 +42132,51 @@
                         }
                       }
                     },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
+                    },
                     "locked": {
                       "type": "boolean",
                       "description": "Someone registered: only startsAt (with its settings) and description can change"
@@ -42259,6 +42353,1218 @@
           },
           "409": {
             "description": "limit reached: the owner already has 5 unfinished tournaments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournaments/official": {
+      "post": {
+        "operationId": "createOfficialTournament",
+        "summary": "Create an official tournament as a draft (admins, tournaments.enabled)",
+        "description": "Made by Dartcade: kind official, public, online, a 10 minute no-show wait. Tags and prizes (XP and a title by final place) are paid when it finishes. Publish it like any draft.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tournament",
+                  "tags",
+                  "prizes"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "tournament": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "description",
+                      "play",
+                      "preselected",
+                      "visibility",
+                      "gameId",
+                      "gameConfig",
+                      "format",
+                      "teamSize",
+                      "maxEntries",
+                      "startsAt",
+                      "settings"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "3-40 characters after trimming, no control characters"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "At most 280 characters, no control characters"
+                      },
+                      "play": {
+                        "type": "string",
+                        "enum": [
+                          "online",
+                          "in_person"
+                        ],
+                        "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                      },
+                      "preselected": {
+                        "type": "boolean",
+                        "description": "The organizers add the players or teams and nobody registers (in person only)"
+                      },
+                      "visibility": {
+                        "type": "string",
+                        "enum": [
+                          "public",
+                          "friends",
+                          "invite",
+                          "private"
+                        ],
+                        "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
+                      },
+                      "gameId": {
+                        "type": "string",
+                        "enum": [
+                          "x01",
+                          "cricket"
+                        ]
+                      },
+                      "gameConfig": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "description": "The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game"
+                      },
+                      "format": {
+                        "type": "string",
+                        "enum": [
+                          "single_elimination",
+                          "double_elimination",
+                          "round_robin",
+                          "groups_knockout"
+                        ]
+                      },
+                      "teamSize": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 4,
+                        "description": "1 is solo; teams play alternate visits"
+                      },
+                      "maxEntries": {
+                        "type": "integer",
+                        "enum": [
+                          8,
+                          16,
+                          32,
+                          64
+                        ]
+                      },
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Null: an organizer starts it (not for public online ones; always for in person)"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                        "required": [
+                          "seeding",
+                          "firstTo",
+                          "longerFinal",
+                          "groups",
+                          "registrationClosesMinutes",
+                          "checkInMinutes",
+                          "plannedFor",
+                          "manualScoring",
+                          "noShowMinutes",
+                          "avgLimit"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "seeding": {
+                            "type": "string",
+                            "enum": [
+                              "rating",
+                              "random",
+                              "manual"
+                            ]
+                          },
+                          "firstTo": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7,
+                            "description": "Legs to win a match"
+                          },
+                          "longerFinal": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Knockout formats only; longer than firstTo",
+                            "required": [
+                              "firstTo",
+                              "semis"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "firstTo": {
+                                "type": "integer",
+                                "enum": [
+                                  2,
+                                  3,
+                                  4,
+                                  5,
+                                  6,
+                                  7,
+                                  9,
+                                  11
+                                ]
+                              },
+                              "semis": {
+                                "type": "boolean",
+                                "description": "The semi-finals too"
+                              }
+                            }
+                          },
+                          "groups": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Groups + knockout only (and required there)",
+                            "required": [
+                              "size",
+                              "through"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "size": {
+                                "type": "integer",
+                                "enum": [
+                                  3,
+                                  4,
+                                  5
+                                ]
+                              },
+                              "through": {
+                                "type": "integer",
+                                "enum": [
+                                  1,
+                                  2
+                                ],
+                                "description": "Entries per group that go through"
+                              }
+                            }
+                          },
+                          "registrationClosesMinutes": {
+                            "type": "integer",
+                            "nullable": true,
+                            "enum": [
+                              15,
+                              60,
+                              180,
+                              1440,
+                              null
+                            ],
+                            "description": "Before a fixed start"
+                          },
+                          "checkInMinutes": {
+                            "type": "integer",
+                            "nullable": true,
+                            "enum": [
+                              2,
+                              5,
+                              10,
+                              15,
+                              30,
+                              60,
+                              null
+                            ]
+                          },
+                          "plannedFor": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Organizer start: a hint, not a start time"
+                          },
+                          "manualScoring": {
+                            "type": "boolean",
+                            "description": "Online players without a paired board may type their scores"
+                          },
+                          "noShowMinutes": {
+                            "type": "integer",
+                            "nullable": true,
+                            "enum": [
+                              5,
+                              10,
+                              15,
+                              null
+                            ],
+                            "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                          },
+                          "avgLimit": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                            "required": [
+                              "min",
+                              "max",
+                              "teams",
+                              "minLegs",
+                              "lock"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "min": {
+                                "type": "number",
+                                "nullable": true,
+                                "minimum": 0,
+                                "maximum": 180,
+                                "description": "Null: at most max"
+                              },
+                              "max": {
+                                "type": "number",
+                                "nullable": true,
+                                "minimum": 0,
+                                "maximum": 180,
+                                "description": "Null: at least min"
+                              },
+                              "teams": {
+                                "type": "string",
+                                "enum": [
+                                  "every",
+                                  "team"
+                                ],
+                                "description": "Teams: every player within it, or the mean of their averages"
+                              },
+                              "minLegs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500,
+                                "description": "Legs each player played in the 30 days"
+                              },
+                              "lock": {
+                                "type": "boolean",
+                                "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                              }
+                            }
+                          },
+                          "boardIds": {
+                            "type": "array",
+                            "nullable": true,
+                            "maxItems": 20,
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "In person only: the boards the venue devices may score on; absent or null, none"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                    },
+                    "maxItems": 4
+                  },
+                  "prizes": {
+                    "type": "array",
+                    "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "from",
+                        "to",
+                        "xp",
+                        "title"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "from": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "to": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "Final places from to to (inclusive) each win this"
+                        },
+                        "xp": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "title": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "A title perk id the winners unlock"
+                        }
+                      }
+                    },
+                    "maxItems": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "kind",
+                    "play",
+                    "preselected",
+                    "visibility",
+                    "status",
+                    "gameId",
+                    "gameConfig",
+                    "format",
+                    "teamSize",
+                    "maxEntries",
+                    "startsAt",
+                    "settings",
+                    "entries",
+                    "owner",
+                    "role",
+                    "locked",
+                    "tags",
+                    "prizes",
+                    "createdAt",
+                    "publishedAt",
+                    "registration",
+                    "registrationClosesAt",
+                    "friendsIn",
+                    "inviteCode",
+                    "checkedIn",
+                    "eligibility",
+                    "team"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "official",
+                        "community"
+                      ]
+                    },
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
+                      "type": "string",
+                      "enum": [
+                        "public",
+                        "friends",
+                        "invite",
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "check_in",
+                        "running",
+                        "finished",
+                        "cancelled"
+                      ]
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "gameConfig": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "single_elimination",
+                        "double_elimination",
+                        "round_robin",
+                        "groups_knockout"
+                      ]
+                    },
+                    "teamSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4
+                    },
+                    "maxEntries": {
+                      "type": "integer"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "settings": {
+                      "type": "object",
+                      "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                      "required": [
+                        "seeding",
+                        "firstTo",
+                        "longerFinal",
+                        "groups",
+                        "registrationClosesMinutes",
+                        "checkInMinutes",
+                        "plannedFor",
+                        "manualScoring",
+                        "noShowMinutes",
+                        "avgLimit"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seeding": {
+                          "type": "string",
+                          "enum": [
+                            "rating",
+                            "random",
+                            "manual"
+                          ]
+                        },
+                        "firstTo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7,
+                          "description": "Legs to win a match"
+                        },
+                        "longerFinal": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Knockout formats only; longer than firstTo",
+                          "required": [
+                            "firstTo",
+                            "semis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "firstTo": {
+                              "type": "integer",
+                              "enum": [
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                9,
+                                11
+                              ]
+                            },
+                            "semis": {
+                              "type": "boolean",
+                              "description": "The semi-finals too"
+                            }
+                          }
+                        },
+                        "groups": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Groups + knockout only (and required there)",
+                          "required": [
+                            "size",
+                            "through"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "size": {
+                              "type": "integer",
+                              "enum": [
+                                3,
+                                4,
+                                5
+                              ]
+                            },
+                            "through": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ],
+                              "description": "Entries per group that go through"
+                            }
+                          }
+                        },
+                        "registrationClosesMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            15,
+                            60,
+                            180,
+                            1440,
+                            null
+                          ],
+                          "description": "Before a fixed start"
+                        },
+                        "checkInMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            2,
+                            5,
+                            10,
+                            15,
+                            30,
+                            60,
+                            null
+                          ]
+                        },
+                        "plannedFor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Organizer start: a hint, not a start time"
+                        },
+                        "manualScoring": {
+                          "type": "boolean",
+                          "description": "Online players without a paired board may type their scores"
+                        },
+                        "noShowMinutes": {
+                          "type": "integer",
+                          "nullable": true,
+                          "enum": [
+                            5,
+                            10,
+                            15,
+                            null
+                          ],
+                          "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                        },
+                        "avgLimit": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                          "required": [
+                            "min",
+                            "max",
+                            "teams",
+                            "minLegs",
+                            "lock"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "min": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at most max"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true,
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "Null: at least min"
+                            },
+                            "teams": {
+                              "type": "string",
+                              "enum": [
+                                "every",
+                                "team"
+                              ],
+                              "description": "Teams: every player within it, or the mean of their averages"
+                            },
+                            "minLegs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500,
+                              "description": "Legs each player played in the 30 days"
+                            },
+                            "lock": {
+                              "type": "boolean",
+                              "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "boardIds": {
+                          "type": "array",
+                          "nullable": true,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "In person only: the boards the venue devices may score on; absent or null, none"
+                        }
+                      }
+                    },
+                    "entries": {
+                      "type": "integer",
+                      "description": "Entries registered so far (withdrawn ones not counted)"
+                    },
+                    "owner": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Null once the owner's account is gone",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "registration": {
+                      "type": "string",
+                      "enum": [
+                        "registered",
+                        "preselected",
+                        "closed",
+                        "team",
+                        "full",
+                        "not_eligible",
+                        "board_needed",
+                        "open"
+                      ],
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                    },
+                    "registrationClosesAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Before a fixed start; null while an organizer starts it"
+                    },
+                    "eligibility": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller against the average limit; null when the tournament has none",
+                      "required": [
+                        "eligible",
+                        "reason",
+                        "average"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "eligible": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "few_legs",
+                            "no_average",
+                            "below",
+                            "above",
+                            null
+                          ],
+                          "description": "Why not: too few legs, no X01 average, below the minimum, above the maximum"
+                        },
+                        "average": {
+                          "type": "number",
+                          "nullable": true,
+                          "description": "The caller's 30-day average"
+                        }
+                      }
+                    },
+                    "friendsIn": {
+                      "type": "array",
+                      "description": "The caller's friends who hold a spot, by name",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "avatar"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "foreground",
+                                  "background"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "foreground": {
+                                    "type": "string",
+                                    "description": "The finish of the mark in front"
+                                  },
+                                  "background": {
+                                    "type": "string",
+                                    "description": "The finish of the disc behind it"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "inviteCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The invite link's code (#/tournaments/join/<code>); only for organizers, null for everyone else"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "owner",
+                        "organizer",
+                        null
+                      ],
+                      "description": "The caller's part in it"
+                    },
+                    "checkedIn": {
+                      "type": "boolean",
+                      "description": "The caller holds a spot and checked in"
+                    },
+                    "team": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The caller's team in this tournament (as its captain or a picked player); null otherwise. Pending while a place is empty or waits for its player; the spot counts as taken meanwhile.",
+                      "required": [
+                        "entryId",
+                        "status",
+                        "team",
+                        "captainId",
+                        "confirmBy",
+                        "slots"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "registered",
+                            "checked_in"
+                          ]
+                        },
+                        "team": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Null once the team was deleted",
+                          "required": [
+                            "id",
+                            "name",
+                            "tag",
+                            "color"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "tag": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "captainId": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Who registered it; null once their account is gone"
+                        },
+                        "confirmBy": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When registration closes; null while an organizer starts it"
+                        },
+                        "slots": {
+                          "type": "array",
+                          "description": "One per place, in throwing order",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "position",
+                              "user",
+                              "confirmed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "user": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Null when the player declined and nobody took the place yet",
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "confirmed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
+                    },
+                    "locked": {
+                      "type": "boolean",
+                      "description": "Someone registered: only startsAt (with its settings) and description can change"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -43457,6 +44763,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -44023,6 +45331,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -44551,6 +45904,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -45117,6 +46472,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -45626,6 +47026,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -46192,6 +47594,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -46493,6 +47940,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -47059,6 +48508,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -48465,6 +49959,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -49031,6 +50527,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -49253,6 +50794,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -49819,6 +51362,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -55246,6 +56834,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -55812,6 +57402,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -56007,6 +57642,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -56573,6 +58210,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -56784,6 +58466,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -57350,6 +59034,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -57936,6 +59665,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -58502,6 +60233,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -58993,6 +60769,8 @@
                     "owner",
                     "role",
                     "locked",
+                    "tags",
+                    "prizes",
                     "createdAt",
                     "publishedAt",
                     "registration",
@@ -59559,6 +61337,51 @@
                           }
                         }
                       }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{1,19}$"
+                      },
+                      "maxItems": 4
+                    },
+                    "prizes": {
+                      "type": "array",
+                      "description": "What the final places win; paid when the tournament finishes (official ones only)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "xp",
+                          "title"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "to": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Final places from to to (inclusive) each win this"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A title perk id the winners unlock"
+                          }
+                        }
+                      },
+                      "maxItems": 8
                     },
                     "locked": {
                       "type": "boolean",
@@ -98576,6 +100399,422 @@
           }
         }
       },
+      "TournamentTags": {
+        "type": "array",
+        "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,19}$"
+        },
+        "maxItems": 4
+      },
+      "TournamentPrize": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "xp",
+          "title"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Final places from to to (inclusive) each win this"
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "A title perk id the winners unlock"
+          }
+        }
+      },
+      "TournamentPrizes": {
+        "type": "array",
+        "description": "What the final places win; paid when the tournament finishes (official ones only)",
+        "items": {
+          "type": "object",
+          "required": [
+            "from",
+            "to",
+            "xp",
+            "title"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Final places from to to (inclusive) each win this"
+            },
+            "xp": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "title": {
+              "type": "string",
+              "nullable": true,
+              "description": "A title perk id the winners unlock"
+            }
+          }
+        },
+        "maxItems": 8
+      },
+      "OfficialTournamentInput": {
+        "type": "object",
+        "required": [
+          "tournament",
+          "tags",
+          "prizes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tournament": {
+            "type": "object",
+            "required": [
+              "name",
+              "description",
+              "play",
+              "preselected",
+              "visibility",
+              "gameId",
+              "gameConfig",
+              "format",
+              "teamSize",
+              "maxEntries",
+              "startsAt",
+              "settings"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "3-40 characters after trimming, no control characters"
+              },
+              "description": {
+                "type": "string",
+                "description": "At most 280 characters, no control characters"
+              },
+              "play": {
+                "type": "string",
+                "enum": [
+                  "online",
+                  "in_person"
+                ],
+                "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+              },
+              "preselected": {
+                "type": "boolean",
+                "description": "The organizers add the players or teams and nobody registers (in person only)"
+              },
+              "visibility": {
+                "type": "string",
+                "enum": [
+                  "public",
+                  "friends",
+                  "invite",
+                  "private"
+                ],
+                "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
+              },
+              "gameId": {
+                "type": "string",
+                "enum": [
+                  "x01",
+                  "cricket"
+                ]
+              },
+              "gameConfig": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "The game's own options (X01: startScore, inMode, outMode, bullValue; Cricket: mode), checked by the game"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "single_elimination",
+                  "double_elimination",
+                  "round_robin",
+                  "groups_knockout"
+                ]
+              },
+              "teamSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4,
+                "description": "1 is solo; teams play alternate visits"
+              },
+              "maxEntries": {
+                "type": "integer",
+                "enum": [
+                  8,
+                  16,
+                  32,
+                  64
+                ]
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Null: an organizer starts it (not for public online ones; always for in person)"
+              },
+              "settings": {
+                "type": "object",
+                "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
+                "required": [
+                  "seeding",
+                  "firstTo",
+                  "longerFinal",
+                  "groups",
+                  "registrationClosesMinutes",
+                  "checkInMinutes",
+                  "plannedFor",
+                  "manualScoring",
+                  "noShowMinutes",
+                  "avgLimit"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "seeding": {
+                    "type": "string",
+                    "enum": [
+                      "rating",
+                      "random",
+                      "manual"
+                    ]
+                  },
+                  "firstTo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 7,
+                    "description": "Legs to win a match"
+                  },
+                  "longerFinal": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Knockout formats only; longer than firstTo",
+                    "required": [
+                      "firstTo",
+                      "semis"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstTo": {
+                        "type": "integer",
+                        "enum": [
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          7,
+                          9,
+                          11
+                        ]
+                      },
+                      "semis": {
+                        "type": "boolean",
+                        "description": "The semi-finals too"
+                      }
+                    }
+                  },
+                  "groups": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Groups + knockout only (and required there)",
+                    "required": [
+                      "size",
+                      "through"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "size": {
+                        "type": "integer",
+                        "enum": [
+                          3,
+                          4,
+                          5
+                        ]
+                      },
+                      "through": {
+                        "type": "integer",
+                        "enum": [
+                          1,
+                          2
+                        ],
+                        "description": "Entries per group that go through"
+                      }
+                    }
+                  },
+                  "registrationClosesMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      15,
+                      60,
+                      180,
+                      1440,
+                      null
+                    ],
+                    "description": "Before a fixed start"
+                  },
+                  "checkInMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      2,
+                      5,
+                      10,
+                      15,
+                      30,
+                      60,
+                      null
+                    ]
+                  },
+                  "plannedFor": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true,
+                    "description": "Organizer start: a hint, not a start time"
+                  },
+                  "manualScoring": {
+                    "type": "boolean",
+                    "description": "Online players without a paired board may type their scores"
+                  },
+                  "noShowMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      5,
+                      10,
+                      15,
+                      null
+                    ],
+                    "description": "Online only: the wait before a no-show forfeits; null: no forfeit"
+                  },
+                  "avgLimit": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Who may join by their X01 3-dart average over the last 30 days (min and/or max, inclusive) and the legs they played then; online only. Null: anyone.",
+                    "required": [
+                      "min",
+                      "max",
+                      "teams",
+                      "minLegs",
+                      "lock"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "min": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 180,
+                        "description": "Null: at most max"
+                      },
+                      "max": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 180,
+                        "description": "Null: at least min"
+                      },
+                      "teams": {
+                        "type": "string",
+                        "enum": [
+                          "every",
+                          "team"
+                        ],
+                        "description": "Teams: every player within it, or the mean of their averages"
+                      },
+                      "minLegs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 500,
+                        "description": "Legs each player played in the 30 days"
+                      },
+                      "lock": {
+                        "type": "boolean",
+                        "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                      }
+                    }
+                  },
+                  "boardIds": {
+                    "type": "array",
+                    "nullable": true,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "In person only: the boards the venue devices may score on; absent or null, none"
+                  }
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,19}$"
+            },
+            "maxItems": 4
+          },
+          "prizes": {
+            "type": "array",
+            "description": "What the final places win; paid when the tournament finishes (official ones only)",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to",
+                "xp",
+                "title"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "to": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Final places from to to (inclusive) each win this"
+                },
+                "xp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "A title perk id the winners unlock"
+                }
+              }
+            },
+            "maxItems": 8
+          }
+        }
+      },
       "TournamentSummary": {
         "type": "object",
         "required": [
@@ -98597,7 +100836,9 @@
           "registration",
           "avgLimit",
           "eligibility",
-          "team"
+          "team",
+          "tags",
+          "prizes"
         ],
         "additionalProperties": false,
         "properties": {
@@ -98898,6 +101139,51 @@
                 "description": "The caller's 30-day average"
               }
             }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,19}$"
+            },
+            "maxItems": 4
+          },
+          "prizes": {
+            "type": "array",
+            "description": "What the final places win; paid when the tournament finishes (official ones only)",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to",
+                "xp",
+                "title"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "to": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Final places from to to (inclusive) each win this"
+                },
+                "xp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "A title perk id the winners unlock"
+                }
+              }
+            },
+            "maxItems": 8
           }
         }
       },
@@ -100179,6 +102465,8 @@
           "owner",
           "role",
           "locked",
+          "tags",
+          "prizes",
           "createdAt",
           "publishedAt",
           "registration",
@@ -100745,6 +103033,51 @@
                 }
               }
             }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,19}$"
+            },
+            "maxItems": 4
+          },
+          "prizes": {
+            "type": "array",
+            "description": "What the final places win; paid when the tournament finishes (official ones only)",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to",
+                "xp",
+                "title"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "to": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Final places from to to (inclusive) each win this"
+                },
+                "xp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "A title perk id the winners unlock"
+                }
+              }
+            },
+            "maxItems": 8
           },
           "locked": {
             "type": "boolean",

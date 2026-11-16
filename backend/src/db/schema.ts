@@ -3,6 +3,7 @@ import type { components } from '../schema/api.js'
 import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
 import type { MatchOutcome, MatchStatus, TournamentStatus } from '../shared/tournaments/state.js'
+import type { Prize } from '../shared/tournaments/prizes.js'
 import type { TournamentPlay, TournamentVisibility } from '../shared/tournaments/setup.js'
 import type { TeamColor } from '../shared/teams.js'
 import type { RankedRules } from '../session/rankedClock.js'
@@ -600,6 +601,10 @@ export interface TournamentsTable {
   ended_at: Stamp
   /** The invite link's code (migration 068); null on tournaments made before it. */
   invite_code: ColumnType<string | null, string | undefined, never>
+  /** Labels shown next to the name (migration 075), e.g. 'weekly'; official ones are marked by `kind`. */
+  tags: ColumnType<string[], string[] | undefined, string[]>
+  /** What the final places win (migration 075); empty for community tournaments. */
+  prizes: ColumnType<Prize[], string | undefined, string>
 }
 
 /** A venue device in tournament mode (migration 074): its pairing code and token are kept only as hashes. */

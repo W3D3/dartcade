@@ -58,6 +58,7 @@ import {
 } from '../shared/tournaments/setup.js'
 import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
 import { REMIND_EVERY_MS, pickProblem, waitingFor, type Candidate, type PickProblem } from '../shared/tournaments/roster.js'
+import { prizeProblems } from '../shared/tournaments/prizes.js'
 import { isEditable } from '../shared/tournaments/state.js'
 import {
   registrationClosesAt,
@@ -137,6 +138,8 @@ const summary = (t: BrowseRow, hasBoard: boolean, form: Form, team: TeamEntry, n
       now,
     ),
     team,
+    tags: t.tags,
+    prizes: t.prizes,
   }
 }
 
@@ -178,6 +181,8 @@ function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, no
     inviteCode: role ? t.invite_code : null,
     checkedIn: viewer.checkedIn,
     team: viewer.team,
+    tags: t.tags,
+    prizes: t.prizes,
   }
 }
 
@@ -384,6 +389,40 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       })
     return reply.code(201).send(await respond(id, 'owner', req.userId))
   })
+
+  app.post<Route<'createOfficialTournament'>>(
+    '/api/tournaments/official',
+    { schema: fromSpec('createOfficialTournament') },
+    async (req, reply) => {
+      const user = await loadFlagUser(db, req.userId)
+      if (!(user && isAdmin(user))) throw new ApiError(403, { error: 'only admins make official tournaments' })
+      const { tags, prizes } = req.body
+      const problems = prizeProblems(prizes)
+      if (problems.length > 0)
+        throw new ApiError(400, { error: 'invalid prizes', details: problems.map(message => ({ path: 'body/prizes', message })) })
+      const input = cleanText(req.body.tournament)
+      // Official ones are public and online, and wait the same ten minutes for a no-show
+      input.play = 'online'
+      input.preselected = false
+      input.visibility = 'public'
+      input.settings = { ...input.settings, noShowMinutes: 10 }
+      check(input, new Date())
+      const id = randomUUID()
+      const created = await withFreshCode(code =>
+        insertTournamentCapped(db, {
+          id,
+          owner_user_id: req.userId,
+          kind: 'official',
+          invite_code: code,
+          tags,
+          prizes: JSON.stringify(prizes),
+          ...columns(input),
+        }),
+      )
+      if (!created) throw new ApiError(409, { error: 'limit reached' })
+      return reply.code(201).send(await respond(id, 'owner', req.userId))
+    },
+  )
 
   app.get<Route<'listMyTournaments'>>('/api/tournaments/mine', { schema: fromSpec('listMyTournaments') }, async req => {
     return myTournaments(db, req.userId, new Date())

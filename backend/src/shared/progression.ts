@@ -210,7 +210,11 @@ export type PerkKind = (typeof PERK_KINDS)[number]
 export type EquipKind = Exclude<PerkKind, 'picture'>
 export const EQUIP_KINDS: readonly EquipKind[] = PERK_KINDS.filter((k): k is EquipKind => k !== 'picture')
 /** What unlocks a perk: a level, a day-streak milestone, something done once, or a challenge (its text; nothing unlocks one yet). */
-export type Unlock = { level: number } | { streak: number } | { event: 'rankedWins' | 'rankedGold' } | { challenge: string }
+export type Unlock =
+  | { level: number }
+  | { streak: number }
+  | { event: 'rankedWins' | 'rankedGold' | 'weeklyChampion' }
+  | { challenge: string }
 /** `animated`: it moves (a sweep, a shimmer, a flicker), which makes it one of the bigger rewards. */
 export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock; animated?: true }
 
@@ -258,6 +262,7 @@ export const PERKS: readonly Perk[] = [
   { id: 'title.grand-master', kind: 'title', name: 'Grand Master', unlock: { level: 46 } },
   { id: 'title.almost-legendary', kind: 'title', name: 'Almost Legendary', unlock: { level: 49 } },
   { id: 'title.dartcade-legend', kind: 'title', name: 'Dartcade Legend', unlock: { level: 50 } },
+  { id: 'title.weekly-champion', kind: 'title', name: 'Weekly Champion', unlock: { event: 'weeklyChampion' } },
   { id: 'title.fortnight', kind: 'title', name: 'Fortnight', unlock: { streak: 14 } },
   { id: 'title.never-misses', kind: 'title', name: 'Never Misses', unlock: { streak: 100 } },
   { id: 'banner.plain', kind: 'banner', name: 'Plain', unlock: { level: 1 } },
@@ -389,7 +394,7 @@ export function unlockText(u: Unlock): string {
   if ('level' in u) return `Level ${u.level}`
   if ('streak' in u) return `${u.streak}-day streak`
   if ('challenge' in u) return u.challenge
-  return { rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[u.event]
+  return { rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold', weeklyChampion: 'Win a Weekly Open' }[u.event]
 }
 
 /** A stored look, with every missing, unknown, retired or wrong-kind pick back at its default. */
