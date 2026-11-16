@@ -2782,6 +2782,25 @@ paths:
           }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/tournaments/official:
+    post:
+      operationId: createOfficialTournament
+      summary: Create an official tournament as a draft (admins, tournaments.enabled)
+      description: >-
+        Made by Dartcade: kind official, public, online, a 10 minute no-show wait. Tags and prizes
+        (XP and a title by final place) are paid when it finishes. Publish it like any draft.
+      tags: [tournaments]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/OfficialTournamentInput' } } }
+      responses:
+        '201': { description: The draft, content: { application/json: { schema: { $ref: '#/components/schemas/Tournament' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/tournaments/mine:
     get:
       operationId: listMyTournaments
@@ -7672,6 +7691,33 @@ components:
                     form: { $ref: '#/components/schemas/TournamentForm' }
                     board: { type: string, nullable: true, description: Their first paired board's name }
                     taken: { type: boolean, description: They hold a spot in this tournament already }
+    TournamentTags:
+      type: array
+      description: 'Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind)'
+      items: { type: string, pattern: '^[a-z][a-z0-9-]{1,19}$' }
+      maxItems: 4
+    TournamentPrize:
+      type: object
+      required: [from, to, xp, title]
+      additionalProperties: false
+      properties:
+        from: { type: integer, minimum: 1 }
+        to: { type: integer, minimum: 1, description: 'Final places from to to (inclusive) each win this' }
+        xp: { type: integer, minimum: 0, maximum: 10000 }
+        title: { type: string, nullable: true, description: 'A title perk id the winners unlock' }
+    TournamentPrizes:
+      type: array
+      description: What the final places win; paid when the tournament finishes (official ones only)
+      items: { $ref: '#/components/schemas/TournamentPrize' }
+      maxItems: 8
+    OfficialTournamentInput:
+      type: object
+      required: [tournament, tags, prizes]
+      additionalProperties: false
+      properties:
+        tournament: { $ref: '#/components/schemas/TournamentInput' }
+        tags: { $ref: '#/components/schemas/TournamentTags' }
+        prizes: { $ref: '#/components/schemas/TournamentPrizes' }
     TournamentSummary:
       type: object
       required:
@@ -7695,6 +7741,8 @@ components:
           avgLimit,
           eligibility,
           team,
+          tags,
+          prizes,
         ]
       additionalProperties: false
       properties:
@@ -7717,6 +7765,8 @@ components:
         startsAt: { type: string, format: date-time, nullable: true, description: 'Null: an organizer starts it' }
         avgLimit: { $ref: '#/components/schemas/AvgLimit' }
         eligibility: { $ref: '#/components/schemas/TournamentEligibility' }
+        tags: { $ref: '#/components/schemas/TournamentTags' }
+        prizes: { $ref: '#/components/schemas/TournamentPrizes' }
     TournamentSettings:
       type: object
       description: >-
@@ -7971,6 +8021,8 @@ components:
           owner,
           role,
           locked,
+          tags,
+          prizes,
           createdAt,
           publishedAt,
           registration,
@@ -8022,6 +8074,8 @@ components:
         role: { type: string, nullable: true, enum: [owner, organizer, null], description: "The caller's part in it" }
         checkedIn: { type: boolean, description: 'The caller holds a spot and checked in' }
         team: { $ref: '#/components/schemas/TournamentTeamEntry' }
+        tags: { $ref: '#/components/schemas/TournamentTags' }
+        prizes: { $ref: '#/components/schemas/TournamentPrizes' }
         locked: { type: boolean, description: 'Someone registered: only startsAt (with its settings) and description can change' }
         createdAt: { type: string, format: date-time }
         publishedAt: { type: string, format: date-time, nullable: true }

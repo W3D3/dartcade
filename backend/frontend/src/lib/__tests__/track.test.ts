@@ -34,6 +34,7 @@ describe('the rewards track', () => {
       ['Never Misses', '100-day streak'],
       ['Crystal', 'Win 10 ranked games'],
       ['Oche red', 'Reach ranked Gold'],
+      ['Weekly Champion', 'Win a Weekly Open'],
     ])
     // Everything you can earn but the four level 1 "nothing" picks and the eight basics past Classic
     expect(TRACK.flatMap(l => l.perks).length + off.flatMap(o => o.perks).length).toBe(PERKS.filter(obtainable).length - 12)

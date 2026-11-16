@@ -2306,6 +2306,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/official": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an official tournament as a draft (admins, tournaments.enabled)
+         * @description Made by Dartcade: kind official, public, online, a 10 minute no-show wait. Tags and prizes (XP and a title by final place) are paid when it finishes. Publish it like any draft.
+         */
+        post: operations["createOfficialTournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/mine": {
         parameters: {
             query?: never;
@@ -6051,6 +6071,23 @@ export interface components {
                 }[];
             }[];
         };
+        /** @description Labels shown next to the name, e.g. weekly (an official tournament is marked by its kind) */
+        TournamentTags: string[];
+        TournamentPrize: {
+            from: number;
+            /** @description Final places from to to (inclusive) each win this */
+            to: number;
+            xp: number;
+            /** @description A title perk id the winners unlock */
+            title: string | null;
+        };
+        /** @description What the final places win; paid when the tournament finishes (official ones only) */
+        TournamentPrizes: components["schemas"]["TournamentPrize"][];
+        OfficialTournamentInput: {
+            tournament: components["schemas"]["TournamentInput"];
+            tags: components["schemas"]["TournamentTags"];
+            prizes: components["schemas"]["TournamentPrizes"];
+        };
         TournamentSummary: {
             id: string;
             name: string;
@@ -6084,6 +6121,8 @@ export interface components {
             startsAt: string | null;
             avgLimit: components["schemas"]["AvgLimit"];
             eligibility: components["schemas"]["TournamentEligibility"];
+            tags: components["schemas"]["TournamentTags"];
+            prizes: components["schemas"]["TournamentPrizes"];
         };
         /** @description Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button. */
         TournamentSettings: {
@@ -6317,6 +6356,8 @@ export interface components {
             /** @description The caller holds a spot and checked in */
             checkedIn: boolean;
             team: components["schemas"]["TournamentTeamEntry"];
+            tags: components["schemas"]["TournamentTags"];
+            prizes: components["schemas"]["TournamentPrizes"];
             /** @description Someone registered: only startsAt (with its settings) and description can change */
             locked: boolean;
             /** Format: date-time */
@@ -10990,6 +11031,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createOfficialTournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficialTournamentInput"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tournament"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

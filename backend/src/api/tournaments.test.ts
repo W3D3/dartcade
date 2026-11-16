@@ -71,6 +71,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           registration: 'board_needed',
           avgLimit: null,
           eligibility: null,
+          tags: [],
+          prizes: [],
           team: null,
         },
       ],

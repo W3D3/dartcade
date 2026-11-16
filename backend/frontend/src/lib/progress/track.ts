@@ -53,6 +53,8 @@ export function levelTier(level: number): 'top' | 'ten' | 'five' | null {
 /** The next fifth level after `level` (the next big one), up to the top. */
 export const nextBigLevel = (level: number): number => Math.min(TOP_LEVEL, Math.ceil((level + 1) / 5) * 5)
 
+const EVENT_ORDER = ['rankedWins', 'rankedGold', 'weeklyChampion'] as const
+
 export type OffTrack = { perks: Perk[]; name: string; when: string }
 
 /**
@@ -66,12 +68,12 @@ export function offTrack(held: readonly string[]): OffTrack[] {
     const when = unlockText(p.unlock)
     groups.set(when, [...(groups.get(when) ?? []), p])
   }
-  // Streaks by length, then ranked (ten wins before reaching Gold), then the challenges
+  // Streaks by length, then ranked (ten wins before reaching Gold), a Weekly Open, then the challenges
   const order = (ps: Perk[]) => {
     const u = ps[0].unlock
     if ('streak' in u) return u.streak
-    if ('event' in u) return u.event === 'rankedWins' ? 1e6 : 1e6 + 1
-    return 1e6 + 2
+    if ('event' in u) return 1e6 + EVENT_ORDER.indexOf(u.event)
+    return 1e6 + EVENT_ORDER.length
   }
   return [...groups]
     .map(([when, perks]) => ({ perks, when, name: perks.map(p => p.name).join(' + ') }))
