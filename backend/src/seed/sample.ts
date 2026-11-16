@@ -29,7 +29,7 @@ const LEVEL: Record<Who, number> = { admin: 8, luke: 17, phil: 15, michael: 13, 
 type SampleGame = { game: GameId; config?: object; players: Who[]; script?: DartScript }
 
 // New ones go at the end: a preview that's already seeded only plays the games after the ones it has
-const GAMES: SampleGame[] = [
+export const GAMES: SampleGame[] = [
   { game: 'x01', config: { startScore: 501, firstTo: 1 }, players: ['luke', 'phil'] },
   { game: 'x01', config: { startScore: 501, firstTo: 1 }, players: ['admin', 'luke'] },
   { game: 'x01', config: { startScore: 301, firstTo: 1 }, players: ['admin', 'michael'] },
@@ -51,6 +51,7 @@ const GAMES: SampleGame[] = [
   { game: 'cricket', players: ['luke', 'gerwyn'] },
   { game: 'cricket', config: { mode: 'cutthroat' }, players: ['admin', 'phil', 'michael'] },
   ...COACH_GAMES.map(({ players, config, script }): SampleGame => ({ game: 'x01', config, players, script })),
+  { game: 'x01', config: { startScore: 501, firstTo: 1 }, players: ['admin', 'luke', 'gerwyn', 'phil'] },
 ]
 
 const TAKEOUT: UserAction = { type: 'takeout' }
