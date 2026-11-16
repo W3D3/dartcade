@@ -13,7 +13,7 @@ import { outcome, refusal, type Outcome } from './browse'
 export type TeamOption = components['schemas']['TournamentTeamOptions']['teams'][number]
 export type TeamEntry = NonNullable<components['schemas']['TournamentTeamEntry']>
 type Member = TeamOption['members'][number]
-type Rules = Pick<Tournament, 'teamSize' | 'settings'>
+type Rules = Pick<Tournament, 'teamSize' | 'play' | 'settings'>
 
 const avg = (m: Member) => (m.form.average === null ? '–' : m.form.average.toFixed(1))
 const candidate = (m: Member): Candidate => ({ userId: m.user.id, form: m.form, hasBoard: m.board !== null, taken: m.taken })

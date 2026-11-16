@@ -49,12 +49,12 @@
   } = $props()
 
   const s = $derived(spots(t))
-  const online = $derived(t.access !== 'in_person')
+  const online = $derived(t.play === 'online')
   const friends = $derived(t.friendsIn.slice(0, 4))
-  const link = $derived(t.inviteCode && t.access === 'invite' ? `${location.origin}/${hrefs.tournamentJoin(t.inviteCode)}` : null)
+  const link = $derived(t.inviteCode && t.visibility === 'invite' ? `${location.origin}/${hrefs.tournamentJoin(t.inviteCode)}` : null)
   const startable = $derived(t.role !== null && online && t.status === 'open' && t.startsAt === null)
   // An invite-link tournament opens for someone without a spot only with its code
-  const page = $derived(hrefs.tournament(t.id, code && t.access === 'invite' ? `code=${encodeURIComponent(code)}` : undefined))
+  const page = $derived(hrefs.tournament(t.id, code && t.visibility === 'invite' ? `code=${encodeURIComponent(code)}` : undefined))
   // Only the captain withdraws a team; a picked player answers Can't make it instead
   const mayWithdraw = $derived(canWithdraw(t.status) && (t.team === null || t.team.captainId === $currentUser?.id))
   const copy = createCopy()
@@ -149,7 +149,7 @@
       {#if startable}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onstart}>Start now · open check-in</Button>
       {/if}
-      {#if t.access === 'in_person' && t.role}
+      {#if !online && t.role}
         <Button variant="accent" class="w-full" href={hrefs.tournamentManage(t.id)}>Manage</Button>
       {:else if t.registration === 'open'}
         <Button variant="accent" class="w-full" disabled={busy} onclick={onregister}>Register</Button>

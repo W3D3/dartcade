@@ -37,7 +37,7 @@
   <div class="flex flex-col gap-2.5 rounded-card border border-line bg-surface-1 p-4">
     <div class="flex items-center gap-2">
       <Avatar name={owner} face={null} tone="accent" size={20} />
-      <span class="text-caption text-text-muted">by {owner} · {preview.access}</span>
+      <span class="text-caption text-text-muted">by {owner} · {preview.audience}</span>
     </div>
     <span class="wrap-break-word type-section-title leading-none">{preview.name}</span>
     <div class="flex flex-wrap gap-1.5">

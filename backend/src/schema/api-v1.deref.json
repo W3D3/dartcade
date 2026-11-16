@@ -40161,7 +40161,9 @@
                           "id",
                           "name",
                           "kind",
-                          "access",
+                          "play",
+                          "preselected",
+                          "visibility",
                           "status",
                           "gameId",
                           "gameConfig",
@@ -40314,7 +40316,7 @@
                             "type": "string",
                             "enum": [
                               "registered",
-                              "in_person",
+                              "preselected",
                               "closed",
                               "team",
                               "full",
@@ -40322,7 +40324,7 @@
                               "board_needed",
                               "open"
                             ],
-                            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                            "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                           },
                           "kind": {
                             "type": "string",
@@ -40331,14 +40333,27 @@
                               "community"
                             ]
                           },
-                          "access": {
+                          "play": {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "in_person"
+                            ],
+                            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                          },
+                          "preselected": {
+                            "type": "boolean",
+                            "description": "The organizers add the players or teams and nobody registers (in person only)"
+                          },
+                          "visibility": {
                             "type": "string",
                             "enum": [
                               "public",
                               "friends",
                               "invite",
-                              "in_person"
-                            ]
+                              "private"
+                            ],
+                            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                           },
                           "status": {
                             "type": "string",
@@ -40606,7 +40621,9 @@
                 "required": [
                   "name",
                   "description",
-                  "access",
+                  "play",
+                  "preselected",
+                  "visibility",
                   "gameId",
                   "gameConfig",
                   "format",
@@ -40625,14 +40642,27 @@
                     "type": "string",
                     "description": "At most 280 characters, no control characters"
                   },
-                  "access": {
+                  "play": {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "in_person"
+                    ],
+                    "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                  },
+                  "preselected": {
+                    "type": "boolean",
+                    "description": "The organizers add the players or teams and nobody registers (in person only)"
+                  },
+                  "visibility": {
                     "type": "string",
                     "enum": [
                       "public",
                       "friends",
                       "invite",
-                      "in_person"
-                    ]
+                      "private"
+                    ],
+                    "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                   },
                   "gameId": {
                     "type": "string",
@@ -40674,7 +40704,7 @@
                     "type": "string",
                     "format": "date-time",
                     "nullable": true,
-                    "description": "Null: an organizer starts it (not for public ones; always for in person)"
+                    "description": "Null: an organizer starts it (not for public online ones; always for in person)"
                   },
                   "settings": {
                     "type": "object",
@@ -40885,7 +40915,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -40926,14 +40958,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -41193,7 +41238,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -41201,7 +41246,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -41750,7 +41795,9 @@
                             "id",
                             "name",
                             "kind",
-                            "access",
+                            "play",
+                            "preselected",
+                            "visibility",
                             "status",
                             "gameId",
                             "gameConfig",
@@ -41776,14 +41823,27 @@
                                 "community"
                               ]
                             },
-                            "access": {
+                            "play": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "in_person"
+                              ],
+                              "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                            },
+                            "preselected": {
+                              "type": "boolean",
+                              "description": "The organizers add the players or teams and nobody registers (in person only)"
+                            },
+                            "visibility": {
                               "type": "string",
                               "enum": [
                                 "public",
                                 "friends",
                                 "invite",
-                                "in_person"
-                              ]
+                                "private"
+                              ],
+                              "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                             },
                             "status": {
                               "type": "string",
@@ -41884,7 +41944,9 @@
                               "id",
                               "name",
                               "kind",
-                              "access",
+                              "play",
+                              "preselected",
+                              "visibility",
                               "status",
                               "gameId",
                               "gameConfig",
@@ -41910,14 +41972,27 @@
                                   "community"
                                 ]
                               },
-                              "access": {
+                              "play": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "in_person"
+                                ],
+                                "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                              },
+                              "preselected": {
+                                "type": "boolean",
+                                "description": "The organizers add the players or teams and nobody registers (in person only)"
+                              },
+                              "visibility": {
                                 "type": "string",
                                 "enum": [
                                   "public",
                                   "friends",
                                   "invite",
-                                  "in_person"
-                                ]
+                                  "private"
+                                ],
+                                "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                               },
                               "status": {
                                 "type": "string",
@@ -42121,7 +42196,9 @@
                               "id",
                               "name",
                               "kind",
-                              "access",
+                              "play",
+                              "preselected",
+                              "visibility",
                               "status",
                               "gameId",
                               "gameConfig",
@@ -42147,14 +42224,27 @@
                                   "community"
                                 ]
                               },
-                              "access": {
+                              "play": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "in_person"
+                                ],
+                                "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                              },
+                              "preselected": {
+                                "type": "boolean",
+                                "description": "The organizers add the players or teams and nobody registers (in person only)"
+                              },
+                              "visibility": {
                                 "type": "string",
                                 "enum": [
                                   "public",
                                   "friends",
                                   "invite",
-                                  "in_person"
-                                ]
+                                  "private"
+                                ],
+                                "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                               },
                               "status": {
                                 "type": "string",
@@ -42261,7 +42351,9 @@
                               "id",
                               "name",
                               "kind",
-                              "access",
+                              "play",
+                              "preselected",
+                              "visibility",
                               "status",
                               "gameId",
                               "gameConfig",
@@ -42287,14 +42379,27 @@
                                   "community"
                                 ]
                               },
-                              "access": {
+                              "play": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "in_person"
+                                ],
+                                "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                              },
+                              "preselected": {
+                                "type": "boolean",
+                                "description": "The organizers add the players or teams and nobody registers (in person only)"
+                              },
+                              "visibility": {
                                 "type": "string",
                                 "enum": [
                                   "public",
                                   "friends",
                                   "invite",
-                                  "in_person"
-                                ]
+                                  "private"
+                                ],
+                                "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                               },
                               "status": {
                                 "type": "string",
@@ -42751,7 +42856,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -42792,14 +42899,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -43059,7 +43179,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -43067,7 +43187,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -43478,14 +43598,27 @@
                   "description": {
                     "type": "string"
                   },
-                  "access": {
+                  "play": {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "in_person"
+                    ],
+                    "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                  },
+                  "preselected": {
+                    "type": "boolean",
+                    "description": "The organizers add the players or teams and nobody registers (in person only)"
+                  },
+                  "visibility": {
                     "type": "string",
                     "enum": [
                       "public",
                       "friends",
                       "invite",
-                      "in_person"
-                    ]
+                      "private"
+                    ],
+                    "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                   },
                   "gameId": {
                     "type": "string",
@@ -43719,7 +43852,7 @@
                     }
                   },
                   "participants": {
-                    "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).",
+                    "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and preselected stays on (409 `locked`).",
                     "allOf": [
                       {
                         "type": "object",
@@ -43817,7 +43950,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -43858,14 +43993,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -44125,7 +44273,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -44133,7 +44281,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -44877,7 +45025,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -44918,14 +45068,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -45185,7 +45348,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -45193,7 +45356,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -45729,7 +45892,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -45770,14 +45935,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -46037,7 +46215,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -46045,7 +46223,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -46542,7 +46720,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -46583,14 +46763,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -46850,7 +47043,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -46858,7 +47051,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -47315,7 +47508,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -47356,14 +47551,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -47623,7 +47831,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -47631,7 +47839,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -51673,7 +51881,7 @@
       "put": {
         "operationId": "setTournamentParticipants",
         "summary": "Replace the players or teams of an in-person tournament until it starts (organizers)",
-        "description": "409 `not in person` for an online tournament, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.",
+        "description": "409 `not preselected` unless the organizers add the players, `started` once it runs, `claimed` when a claimed spot would be renamed (unlink it first); 400 with the problems of the list.",
         "tags": [
           "tournaments"
         ],
@@ -53293,7 +53501,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -53334,14 +53544,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -53601,7 +53824,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -53609,7 +53832,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -54023,7 +54246,7 @@
             "description": "An invite link's tournament needs its code"
           }
         ],
-        "description": "Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring), `team tournament` (a captain registers a team) or `in person` (the organizers add the players).",
+        "description": "Takes a spot, or takes back the one the caller withdrew from; registering twice is fine. An invite link's tournament answers 404 without its code, unless the caller is already in it. 409 with the reason: `full`, `registration closed`, `not eligible` (the average limit), `paired board needed` (unless the organizer allows manual scoring; online only), `team tournament` (a captain registers a team) or `added by the organizers` (preselected).",
         "tags": [
           "tournaments"
         ],
@@ -54039,7 +54262,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -54080,14 +54305,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -54347,7 +54585,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -54355,7 +54593,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -54801,7 +55039,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -54842,14 +55082,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -55109,7 +55362,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -55117,7 +55370,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -55882,7 +56135,7 @@
       "post": {
         "operationId": "registerTeamForTournament",
         "summary": "Register a team (tournaments.enabled)",
-        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `in person`.",
+        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.",
         "parameters": [
           {
             "name": "code",
@@ -55938,7 +56191,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -55979,14 +56234,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -56246,7 +56514,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -56254,7 +56522,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -56980,7 +57248,9 @@
                     "name",
                     "description",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -57021,14 +57291,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -57288,7 +57571,7 @@
                       "type": "string",
                       "enum": [
                         "registered",
-                        "in_person",
+                        "preselected",
                         "closed",
                         "team",
                         "full",
@@ -57296,7 +57579,7 @@
                         "board_needed",
                         "open"
                       ],
-                      "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+                      "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
                     },
                     "registrationClosesAt": {
                       "type": "string",
@@ -94267,11 +94550,29 @@
           }
         }
       },
+      "TournamentPlay": {
+        "type": "string",
+        "enum": [
+          "online",
+          "in_person"
+        ],
+        "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+      },
+      "TournamentVisibility": {
+        "type": "string",
+        "enum": [
+          "public",
+          "friends",
+          "invite",
+          "private"
+        ],
+        "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
+      },
       "TournamentRegistration": {
         "type": "string",
         "enum": [
           "registered",
-          "in_person",
+          "preselected",
           "closed",
           "team",
           "full",
@@ -94279,7 +94580,7 @@
           "board_needed",
           "open"
         ],
-        "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+        "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
       },
       "TournamentOwner": {
         "type": "object",
@@ -94405,7 +94706,9 @@
           "id",
           "name",
           "kind",
-          "access",
+          "play",
+          "preselected",
+          "visibility",
           "status",
           "gameId",
           "gameConfig",
@@ -94431,14 +94734,27 @@
               "community"
             ]
           },
-          "access": {
+          "play": {
+            "type": "string",
+            "enum": [
+              "online",
+              "in_person"
+            ],
+            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+          },
+          "preselected": {
+            "type": "boolean",
+            "description": "The organizers add the players or teams and nobody registers (in person only)"
+          },
+          "visibility": {
             "type": "string",
             "enum": [
               "public",
               "friends",
               "invite",
-              "in_person"
-            ]
+              "private"
+            ],
+            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
           },
           "status": {
             "type": "string",
@@ -94534,7 +94850,9 @@
                   "id",
                   "name",
                   "kind",
-                  "access",
+                  "play",
+                  "preselected",
+                  "visibility",
                   "status",
                   "gameId",
                   "gameConfig",
@@ -94560,14 +94878,27 @@
                       "community"
                     ]
                   },
-                  "access": {
+                  "play": {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "in_person"
+                    ],
+                    "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                  },
+                  "preselected": {
+                    "type": "boolean",
+                    "description": "The organizers add the players or teams and nobody registers (in person only)"
+                  },
+                  "visibility": {
                     "type": "string",
                     "enum": [
                       "public",
                       "friends",
                       "invite",
-                      "in_person"
-                    ]
+                      "private"
+                    ],
+                    "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                   },
                   "status": {
                     "type": "string",
@@ -94668,7 +94999,9 @@
                     "id",
                     "name",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -94694,14 +95027,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -94905,7 +95251,9 @@
                     "id",
                     "name",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -94931,14 +95279,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -95045,7 +95406,9 @@
                     "id",
                     "name",
                     "kind",
-                    "access",
+                    "play",
+                    "preselected",
+                    "visibility",
                     "status",
                     "gameId",
                     "gameConfig",
@@ -95071,14 +95434,27 @@
                         "community"
                       ]
                     },
-                    "access": {
+                    "play": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "in_person"
+                      ],
+                      "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+                    },
+                    "preselected": {
+                      "type": "boolean",
+                      "description": "The organizers add the players or teams and nobody registers (in person only)"
+                    },
+                    "visibility": {
                       "type": "string",
                       "enum": [
                         "public",
                         "friends",
                         "invite",
-                        "in_person"
-                      ]
+                        "private"
+                      ],
+                      "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
                     },
                     "status": {
                       "type": "string",
@@ -95514,7 +95890,9 @@
           "id",
           "name",
           "kind",
-          "access",
+          "play",
+          "preselected",
+          "visibility",
           "status",
           "gameId",
           "gameConfig",
@@ -95667,7 +96045,7 @@
             "type": "string",
             "enum": [
               "registered",
-              "in_person",
+              "preselected",
               "closed",
               "team",
               "full",
@@ -95675,7 +96053,7 @@
               "board_needed",
               "open"
             ],
-            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+            "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
           },
           "kind": {
             "type": "string",
@@ -95684,14 +96062,27 @@
               "community"
             ]
           },
-          "access": {
+          "play": {
+            "type": "string",
+            "enum": [
+              "online",
+              "in_person"
+            ],
+            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+          },
+          "preselected": {
+            "type": "boolean",
+            "description": "The organizers add the players or teams and nobody registers (in person only)"
+          },
+          "visibility": {
             "type": "string",
             "enum": [
               "public",
               "friends",
               "invite",
-              "in_person"
-            ]
+              "private"
+            ],
+            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
           },
           "status": {
             "type": "string",
@@ -96015,7 +96406,9 @@
         "required": [
           "name",
           "description",
-          "access",
+          "play",
+          "preselected",
+          "visibility",
           "gameId",
           "gameConfig",
           "format",
@@ -96034,14 +96427,27 @@
             "type": "string",
             "description": "At most 280 characters, no control characters"
           },
-          "access": {
+          "play": {
+            "type": "string",
+            "enum": [
+              "online",
+              "in_person"
+            ],
+            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+          },
+          "preselected": {
+            "type": "boolean",
+            "description": "The organizers add the players or teams and nobody registers (in person only)"
+          },
+          "visibility": {
             "type": "string",
             "enum": [
               "public",
               "friends",
               "invite",
-              "in_person"
-            ]
+              "private"
+            ],
+            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
           },
           "gameId": {
             "type": "string",
@@ -96083,7 +96489,7 @@
             "type": "string",
             "format": "date-time",
             "nullable": true,
-            "description": "Null: an organizer starts it (not for public ones; always for in person)"
+            "description": "Null: an organizer starts it (not for public online ones; always for in person)"
           },
           "settings": {
             "type": "object",
@@ -96291,14 +96697,27 @@
           "description": {
             "type": "string"
           },
-          "access": {
+          "play": {
+            "type": "string",
+            "enum": [
+              "online",
+              "in_person"
+            ],
+            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+          },
+          "preselected": {
+            "type": "boolean",
+            "description": "The organizers add the players or teams and nobody registers (in person only)"
+          },
+          "visibility": {
             "type": "string",
             "enum": [
               "public",
               "friends",
               "invite",
-              "in_person"
-            ]
+              "private"
+            ],
+            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
           },
           "gameId": {
             "type": "string",
@@ -96532,7 +96951,7 @@
             }
           },
           "participants": {
-            "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and access stays in_person (409 `locked`).",
+            "description": "In person: the players or teams, stored with the rest in one go (as setTournamentParticipants). Once it has any, a new teamSize needs them, and preselected stays on (409 `locked`).",
             "allOf": [
               {
                 "type": "object",
@@ -97053,7 +97472,9 @@
           "name",
           "description",
           "kind",
-          "access",
+          "play",
+          "preselected",
+          "visibility",
           "status",
           "gameId",
           "gameConfig",
@@ -97094,14 +97515,27 @@
               "community"
             ]
           },
-          "access": {
+          "play": {
+            "type": "string",
+            "enum": [
+              "online",
+              "in_person"
+            ],
+            "description": "Online: on the players' own boards. In person: at one venue, on the organizers' devices (Tournament mode)"
+          },
+          "preselected": {
+            "type": "boolean",
+            "description": "The organizers add the players or teams and nobody registers (in person only)"
+          },
+          "visibility": {
             "type": "string",
             "enum": [
               "public",
               "friends",
               "invite",
-              "in_person"
-            ]
+              "private"
+            ],
+            "description": "Who sees it: public (Browse), friends (the owner's friends), invite (whoever has the link), private (its organizers and players only; needs preselected). Organizers and anyone holding a spot always see it."
           },
           "status": {
             "type": "string",
@@ -97361,7 +97795,7 @@
             "type": "string",
             "enum": [
               "registered",
-              "in_person",
+              "preselected",
               "closed",
               "team",
               "full",
@@ -97369,7 +97803,7 @@
               "board_needed",
               "open"
             ],
-            "description": "The caller and registration: registered (holds a spot), in_person (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
+            "description": "The caller and registration: registered (holds a spot), preselected (the organizers add everyone), closed (not open, or past the close), team (a captain registers a team), full, not_eligible (outside the average limit, see eligibility), board_needed (online play needs a paired board unless manualScoring), open (may register)"
           },
           "registrationClosesAt": {
             "type": "string",

@@ -90,7 +90,8 @@ type Claim = components['schemas']['TournamentClaim']
 
 const forRegistration = (t: TournamentView): RegistrationTournament => ({
   status: t.status,
-  access: t.access,
+  play: t.play,
+  preselected: t.preselected,
   teamSize: t.team_size,
   maxEntries: t.max_entries,
   entries: t.entries,
@@ -116,7 +117,9 @@ const summary = (t: BrowseRow, hasBoard: boolean, form: Form, team: TeamEntry, n
     id: t.id,
     name: t.name,
     kind: t.kind,
-    access: t.access,
+    play: t.play,
+    preselected: t.preselected,
+    visibility: t.visibility,
     status: t.status,
     gameId: t.game_id,
     gameConfig: t.game_config,
@@ -147,8 +150,8 @@ interface Viewer {
   team: TeamEntry
 }
 
-/** Someone registered for an online tournament: its setup is locked. In person the organizers add the players and keep editing. */
-const isLocked = (t: TournamentView) => t.access !== 'in_person' && t.has_entries
+/** Someone registered: the setup is locked. When the organizers add the players themselves they keep editing. */
+const isLocked = (t: TournamentView) => !t.preselected && t.has_entries
 
 function toApi(t: TournamentView, role: OrganizerRole | null, viewer: Viewer, now: Date): Tournament {
   const input = storedInput(t)
@@ -182,7 +185,9 @@ function storedInput(t: TournamentView): Setup {
   return {
     name: t.name,
     description: t.description,
-    access: t.access,
+    play: t.play,
+    preselected: t.preselected,
+    visibility: t.visibility,
     gameId: t.game_id,
     gameConfig: t.game_config,
     format: t.format,
@@ -196,7 +201,9 @@ function storedInput(t: TournamentView): Setup {
 const columns = (t: Setup) => ({
   name: t.name,
   description: t.description,
-  access: t.access,
+  play: t.play,
+  preselected: t.preselected,
+  visibility: t.visibility,
   game_id: t.gameId,
   game_config: JSON.stringify(t.gameConfig),
   format: t.format,
@@ -244,7 +251,7 @@ const REFUSED: Record<Exclude<RegistrationState, 'open' | 'registered'>, string>
   not_eligible: 'not eligible',
   board_needed: 'paired board needed',
   team: 'team tournament',
-  in_person: 'in person',
+  preselected: 'added by the organizers',
 }
 
 /** The list cleaned, or 400 with its problems (at `path` in the body) for that team size and cap. */
@@ -290,10 +297,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   app.addHook('preValidation', requireAuth)
   app.addHook('preValidation', async req => requireTournamentsFlag(db, req.userId))
 
-  /**
-   * The tournament with the caller's role; 404 for a draft, a friends-only one of someone not
-   * their friend, or an invite link's they hold no spot in and came to without its `code`.
-   */
+  /** The tournament with the caller's role; 404 when viewerRole hides it from them. */
   const visible = async (id: string, userId: string, code?: string) => seen(await getTournament(db, id), userId, code)
 
   /** As visible, for a tournament found another way (by its invite code). */
@@ -440,17 +444,17 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
         error: 'locked',
         details: changed.map(f => ({ path: `body/${f.replace('.', '/')}`, message: 'cannot change once someone registered' })),
       })
-    if (list && next.access !== 'in_person') throw conflict('not in person')
-    // In person the spots are entries: who may join stays, and a new team size comes with its new list
+    if (list && !next.preselected) throw conflict('not preselected')
+    // The organizers' list is the entries: it stays theirs, and a new team size comes with its new list
     const shape = {
-      access: next.access !== before.access,
+      preselected: next.preselected !== before.preselected,
       teamSize: next.teamSize !== before.teamSize && !list,
     }
-    if (t.access === 'in_person' && t.has_entries && (shape.access || shape.teamSize))
+    if (t.preselected && t.has_entries && (shape.preselected || shape.teamSize))
       throw new ApiError(409, {
         error: 'locked',
         details: [
-          ...(shape.access ? [{ path: 'body/access', message: 'remove the players before it can be joined online' }] : []),
+          ...(shape.preselected ? [{ path: 'body/preselected', message: 'remove the players before they can register themselves' }] : []),
           ...(shape.teamSize ? [{ path: 'body/teamSize', message: 'send the players with the new team size' }] : []),
         ],
       })
@@ -461,8 +465,8 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       replaced(await setParticipants(db, t.id, checkedEntries(list.entries, next, 'body/participants/entries'), columns(next)))
       return respond(t.id, role, req.userId)
     }
-    // A registration (or in person, a spot) landing meanwhile locks the fields this changes
-    const unregistered = t.access === 'in_person' ? shape.access || shape.teamSize : changed.length > 0
+    // A registration (or an organizer's spot) landing meanwhile locks the fields this changes
+    const unregistered = t.preselected ? shape.preselected || shape.teamSize : changed.length > 0
     if (!(await updateTournament(db, t.id, columns(next), { status: t.status, unregistered })))
       throw conflict('the tournament changed meanwhile')
     return respond(t.id, role, req.userId)
@@ -484,7 +488,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
 
   app.post<Route<'startTournament'>>('/api/tournaments/:id/start', { schema: fromSpec('startTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
-    const blocker = t.access === 'in_person' ? (await participantsOf(t)).startBlocker : null
+    const blocker = t.preselected ? (await participantsOf(t)).startBlocker : null
     if (blocker !== null) throw conflict(blocker)
     if ((await tournaments.organizerStart(t.id)) !== 'started')
       throw conflict('only an open tournament without a start time is started by hand')
@@ -574,9 +578,9 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   }
 
   /** As organized, and 409 unless its organizers add the players themselves. */
-  async function inPerson(id: string, userId: string): Promise<TournamentView> {
+  async function preselected(id: string, userId: string): Promise<TournamentView> {
     const { t } = await organized(id, userId)
-    if (t.access !== 'in_person') throw conflict('not in person')
+    if (!t.preselected) throw conflict('not preselected')
     return t
   }
 
@@ -588,14 +592,14 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   app.get<Route<'listTournamentParticipants'>>(
     '/api/tournaments/:id/participants',
     { schema: fromSpec('listTournamentParticipants') },
-    async req => participantsOf(await inPerson(req.params.id, req.userId)),
+    async req => participantsOf(await preselected(req.params.id, req.userId)),
   )
 
   app.put<Route<'setTournamentParticipants'>>(
     '/api/tournaments/:id/participants',
     { schema: fromSpec('setTournamentParticipants') },
     async req => {
-      const t = await inPerson(req.params.id, req.userId)
+      const t = await preselected(req.params.id, req.userId)
       replaced(await setParticipants(db, t.id, checkedEntries(req.body.entries, storedInput(t), 'body/entries')))
       return participantsOf(t)
     },
@@ -605,7 +609,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     '/api/tournaments/:id/participants/:playerId/unlink',
     { schema: fromSpec('unlinkTournamentSpot') },
     async req => {
-      const t = await inPerson(req.params.id, req.userId)
+      const t = await preselected(req.params.id, req.userId)
       if (!(await unlinkSpot(db, t.id, req.params.playerId))) throw notFound()
       return participantsOf(t)
     },
@@ -615,7 +619,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     '/api/tournaments/:id/participants/:playerId/reissue',
     { schema: fromSpec('reissueTournamentClaim') },
     async req => {
-      const t = await inPerson(req.params.id, req.userId)
+      const t = await preselected(req.params.id, req.userId)
       const res = await reissueCode(db, t.id, req.params.playerId)
       if (res === 'missing') throw notFound()
       if (res === 'claimed') throw conflict(res)

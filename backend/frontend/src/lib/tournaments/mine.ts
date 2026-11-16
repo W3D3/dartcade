@@ -37,7 +37,7 @@ const KEEP: Record<MineFilter, (t: MyTournamentRef) => boolean> = {
   playing: () => true,
   organizing: () => true,
   teams: t => t.teamSize > 1,
-  in_person: t => t.access === 'in_person',
+  in_person: t => t.play === 'in_person',
 }
 
 /** What a filter leaves: Playing keeps the ones you play in, Organizing those you run, the others narrow both. */
@@ -61,20 +61,20 @@ export function statusLine(p: Playing, myId: string): { text: string; tone: Tone
   const team = p.team && teamStatus(p.team, myId)
   if (team) return { text: team.long, tone: 'warn' }
   if (t.status === 'check_in') return { text: 'Check-in is open', tone: 'good' }
-  if (t.access === 'in_person') return { text: `Claimed spot · played on ${t.owner?.name ?? 'the organizer'}'s devices`, tone: 'plain' }
+  if (t.preselected) return { text: `Claimed spot · played on ${t.owner?.name ?? 'the organizer'}'s devices`, tone: 'plain' }
   return { text: t.status === 'running' ? 'In progress' : 'Registered', tone: 'good' }
 }
 
 /** "as Double Agents", "vs Tom", "as “Chris”": who you play as or against. */
 export function asLine(p: Playing): string {
   if (p.tournament.teamSize > 1) return `as ${p.entryName}`
-  if (p.tournament.access === 'in_person') return `as “${p.playerName}”`
+  if (p.tournament.preselected) return `as “${p.playerName}”`
   return p.opponent ? `vs ${p.opponent}` : 'Solo'
 }
 
 /** A past row's "Played as" cell. */
 export const playedAs = (p: Past): string =>
-  p.tournament.teamSize > 1 ? p.entryName : p.tournament.access === 'in_person' ? `as “${p.playerName}”` : 'Solo'
+  p.tournament.teamSize > 1 ? p.entryName : p.tournament.preselected ? `as “${p.playerName}”` : 'Solo'
 
 /** "X01 501 · 8 players · 2 claimed" and the like: the subtitle of an organizing row. */
 export function organizingLine(o: Organizing, when: string | null): string {

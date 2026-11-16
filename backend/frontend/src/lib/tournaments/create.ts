@@ -9,8 +9,9 @@ import {
   ROUND_ROBIN_MAX_ENTRIES,
   setupProblems,
   startProblems,
-  type TournamentAccess,
   type TournamentFormat,
+  type TournamentPlay,
+  type TournamentVisibility,
 } from '$shared/tournaments/setup'
 import { DEFAULT_AVG_LIMIT, avgTag, fromAvgLimit, toAvgLimit, type AvgLimitForm } from './avgLimit'
 
@@ -27,7 +28,10 @@ export interface Choice<T> {
 export interface CreateForm {
   name: string
   description: string
-  access: TournamentAccess
+  play: TournamentPlay
+  /** Chosen by organizer: the organizers add the players or teams and nobody registers (in person only). */
+  preselected: boolean
+  visibility: TournamentVisibility
   gameId: 'x01' | 'cricket'
   startScore: 301 | 501 | 701
   outMode: 'double' | 'straight' | 'master'
@@ -89,18 +93,56 @@ export const ENTRY: (Choice<CreateForm['entry']> & { sub: string })[] = [
   { value: 'teams', label: 'Teams', sub: 'Two or more players per team' },
 ]
 
-export const ACCESS: Choice<TournamentAccess>[] = [
+export const PLAY: Choice<TournamentPlay>[] = [
+  { value: 'online', label: 'Online' },
+  { value: 'in_person', label: 'In person' },
+]
+export const PLAY_HELP: Record<TournamentPlay, string> = {
+  online: 'Everyone plays from home on their own board, matched up like ranked games.',
+  in_person: 'Everyone meets at one place and plays on boards there. Matches run in Tournament mode on the organizers’ devices.',
+}
+
+/** Who can join, as the form asks it: who sees it and registers, or Chosen by organizer (preselected). */
+export type Join = 'public' | 'friends' | 'invite' | 'organizer'
+export const joinOf = (f: Pick<CreateForm, 'preselected' | 'visibility'>): Join =>
+  f.preselected ? 'organizer' : f.visibility === 'private' ? 'invite' : f.visibility
+/** The fields a pick sets: Chosen by organizer keeps who sees it, the others are who sees it. */
+export const joinFields = (j: Join): Pick<CreateForm, 'preselected'> & Partial<Pick<CreateForm, 'visibility'>> =>
+  j === 'organizer' ? { preselected: true } : { preselected: false, visibility: j }
+const ORGANIZER_IN_PERSON = 'Only for in-person tournaments: you add the players or teams yourself and nobody registers.'
+/** `registered`: someone registered, so the players can't become the organizers' list anymore. */
+export const joinChoices = (f: Pick<CreateForm, 'play'>, registered = false): Choice<Join>[] => [
   { value: 'public', label: 'Public' },
   { value: 'friends', label: 'Friends' },
   { value: 'invite', label: 'Invite link' },
-  { value: 'in_person', label: 'Added by you' },
+  {
+    value: 'organizer',
+    label: 'Chosen by organizer',
+    disabled:
+      f.play === 'online' ? ORGANIZER_IN_PERSON : registered ? 'Players registered already, so they can’t be chosen by you.' : undefined,
+  },
 ]
-export const ACCESS_HELP: Record<TournamentAccess, string> = {
+export const JOIN_HELP: Record<Join, string> = {
   public: 'Anyone can find it in Browse and register.',
   friends: 'Only your friends see it and can register.',
   invite: 'Hidden from Browse. Only people with the link can register.',
-  in_person:
-    'Played at one place, on devices logged in to your account. Nobody registers: you add the players or teams, and they can claim their spot with a link.',
+  organizer: 'Nobody registers: you add the players or teams, and they can claim their spot with a link.',
+}
+/** Shown when an online tournament still has Chosen by organizer picked. */
+export const ORGANIZER_ONLINE = 'Chosen by organizer only works for in-person tournaments. Pick who can join.'
+
+/** Who sees a tournament whose players the organizers add. */
+export const VISIBILITY: Choice<TournamentVisibility>[] = [
+  { value: 'public', label: 'Public' },
+  { value: 'friends', label: 'Friends' },
+  { value: 'invite', label: 'Invite link' },
+  { value: 'private', label: 'Private' },
+]
+export const VISIBILITY_HELP: Record<TournamentVisibility, string> = {
+  public: 'Anyone can find it in Browse and follow it.',
+  friends: 'Only your friends see it.',
+  invite: 'Hidden from Browse. Anyone with the link can see it.',
+  private: 'Only the organizers and the players who claimed their spot see it.',
 }
 
 const LATER = 'Coming later: tournaments play X01 or Cricket for now.'
@@ -146,7 +188,8 @@ export const matchLengthLine = (n: number): string =>
 export const ORGANIZER_START_DISABLED =
   'Only for tournaments that aren’t public. Public tournaments always need a start time; switch to Friends or Invite link to start it yourself.'
 
-export const startModeOf = (f: CreateForm): CreateForm['startMode'] => (f.access === 'public' ? 'fixed' : f.startMode)
+export const startModeOf = (f: CreateForm): CreateForm['startMode'] =>
+  f.play === 'online' && f.visibility === 'public' ? 'fixed' : f.startMode
 
 export const sizeChoices = (f: CreateForm): Choice<CreateForm['maxEntries']>[] =>
   SIZES.map(({ value: n, label }) => ({
@@ -157,9 +200,9 @@ export const sizeChoices = (f: CreateForm): Choice<CreateForm['maxEntries']>[] =
         ? `A round robin has at most ${ROUND_ROBIN_MAX_ENTRIES}: everyone plays everyone.`
         : undefined,
   }))
-/** In person there is no size to pick: the organizers' list is capped at the largest. */
+/** Chosen by organizer there is no size to pick: the organizers' list is capped at the largest. */
 export const maxEntriesOf = (f: CreateForm): CreateForm['maxEntries'] => {
-  const size = f.access === 'in_person' ? IN_PERSON_MAX : f.maxEntries
+  const size = f.preselected ? IN_PERSON_MAX : f.maxEntries
   return f.format === 'round_robin' && size > ROUND_ROBIN_MAX_ENTRIES ? ROUND_ROBIN_MAX_ENTRIES : size
 }
 
@@ -196,7 +239,9 @@ export function defaultForm(now: Date): CreateForm {
   return {
     name: '',
     description: '',
-    access: 'public',
+    play: 'online',
+    preselected: false,
+    visibility: 'public',
     gameId: 'x01',
     startScore: 501,
     outMode: 'double',
@@ -228,13 +273,15 @@ export function defaultForm(now: Date): CreateForm {
 
 /** What the form sends: only the settings that apply to what is picked. */
 export function toInput(f: CreateForm): TournamentInput {
-  const online = f.access !== 'in_person'
+  const online = f.play === 'online'
   const fixed = online && startModeOf(f) === 'fixed'
   const plannedFor = !fixed && f.plannedFor ? fromLocal(f.plannedFor) : null
   return {
     name: f.name.trim(),
     description: f.description.trim(),
-    access: f.access,
+    play: f.play,
+    preselected: f.preselected,
+    visibility: f.visibility,
     gameId: f.gameId,
     gameConfig: f.gameId === 'x01' ? { startScore: f.startScore, outMode: f.outMode } : { mode: f.cricketMode },
     format: f.format,
@@ -266,13 +313,15 @@ export function fromTournament(t: Tournament, now: Date): CreateForm {
   const d = defaultForm(now)
   const s = t.settings
   const cfg = t.gameConfig
-  const online = t.access !== 'in_person'
+  const online = t.play === 'online'
   const team = t.teamSize > 1
   return {
     ...d,
     name: t.name,
     description: t.description,
-    access: t.access,
+    play: t.play,
+    preselected: t.preselected,
+    visibility: t.visibility,
     gameId: t.gameId === 'cricket' ? 'cricket' : 'x01',
     startScore: pick(START_SCORES, cfg.startScore, d.startScore),
     outMode: pick(OUT_MODES, cfg.outMode, d.outMode),
@@ -312,7 +361,9 @@ const FIELD_LABELS: Record<string, string> = {
   'body/settings/registrationClosesMinutes': 'Registration',
   'body/settings/longerFinal': 'Longer final',
   'body/settings/avgLimit': 'Average limit',
-  'body/access': 'Who can join',
+  'body/play': 'Where is it played',
+  'body/preselected': 'Who can join',
+  'body/visibility': 'Who can see it',
   'body/teamSize': 'Players per team',
 }
 
@@ -323,13 +374,13 @@ export const problemText = (p: { path: string; message: string }): string =>
 /** What keeps the form from saving, checked as the server will (a start time in the past included). */
 export function formProblems(f: CreateForm, now: Date): string[] {
   const input = toInput(f)
-  if (input.startsAt === null && startModeOf(f) === 'fixed' && f.access !== 'in_person')
+  if (input.startsAt === null && startModeOf(f) === 'fixed' && f.play === 'online')
     return [problemText({ path: 'body/startsAt', message: 'pick a start time' })]
   return [...setupProblems(input), ...startProblems(input, now)].map(problemText)
 }
 
 export interface Preview {
-  access: string
+  audience: string
   name: string
   pills: string[]
   when: string
@@ -339,18 +390,18 @@ export interface Preview {
   footnote: string
 }
 
-const ACCESS_PREVIEW: Record<TournamentAccess, string> = {
+const VISIBILITY_PREVIEW: Record<TournamentVisibility, string> = {
   public: 'public',
   friends: 'friends only',
   invite: 'invite link',
-  in_person: 'players added by you',
+  private: 'private',
 }
 
 const day = (d: Date) => `${weekday(d)} ${dayMonth(d)}`
 
 /** The preview card: the tournament as Browse will list it. */
 export function previewOf(f: CreateForm): Preview {
-  const inPerson = f.access === 'in_person'
+  const inPerson = f.play === 'in_person'
   const team = f.entry === 'teams'
   const fixed = !inPerson && startModeOf(f) === 'fixed'
   const start = f.startsAt ? new Date(f.startsAt) : null
@@ -366,7 +417,7 @@ export function previewOf(f: CreateForm): Preview {
         : 'In person'
       : 'Starts when you start it'
   return {
-    access: ACCESS_PREVIEW[f.access],
+    audience: [VISIBILITY_PREVIEW[f.visibility], ...(f.preselected ? ['players added by you'] : [])].join(' · '),
     name: f.name.trim() || 'Your tournament',
     pills: [
       f.gameId === 'x01' ? `X01 ${f.startScore}` : 'Cricket',
@@ -376,12 +427,12 @@ export function previewOf(f: CreateForm): Preview {
       ...(inPerson ? ['IN PERSON'] : []),
     ],
     when,
-    size: inPerson ? `${team ? 'teams' : 'players'} added by you` : `${maxEntriesOf(f)} ${team ? 'teams' : 'players'}`,
-    help: inPerson
+    size: f.preselected ? `${team ? 'teams' : 'players'} added by you` : `${maxEntriesOf(f)} ${team ? 'teams' : 'players'}`,
+    help: f.preselected
       ? 'Played in Tournament mode on your devices. You can edit the players until you start it.'
-      : `Community tournaments don’t give season points. You can edit everything until the first ${team ? 'team' : 'player'} registers; after that only the start time and description.`,
-    primary: inPerson ? 'Create tournament' : 'Create & open registration',
-    footnote: inPerson ? 'You’ll get claim links for every spot.' : 'You’ll get a link to share.',
+      : `${inPerson ? 'Played in Tournament mode on your devices.' : 'Community tournaments don’t give season points.'} You can edit everything until the first ${team ? 'team' : 'player'} registers; after that only the start time, who can see it and the description.`,
+    primary: f.preselected ? 'Create tournament' : 'Create & open registration',
+    footnote: f.preselected ? 'You’ll get claim links for every spot.' : 'You’ll get a link to share.',
   }
 }
 
@@ -393,9 +444,9 @@ const failed = (error: components['schemas']['ErrorResponse'] | undefined, statu
     return { ok: false, errors: ['You already have 5 tournaments that aren’t finished. Finish or cancel one first.'] }
   const refused = status === 409 && error ? PARTICIPANTS_REFUSED[error.error] : undefined
   if (refused) return { ok: false, errors: [refused] }
-  // In person the lock names what can't change (who can join, a team size without its players)
-  if (status === 409 && error?.error === 'locked' && !error.details?.some(d => d.path === 'body/access' || d.path === 'body/teamSize'))
-    return { ok: false, errors: ['Someone registered, so only the start time and description can change.'] }
+  // Chosen by organizer the lock names what can't change (who can join, a team size without its players)
+  if (status === 409 && error?.error === 'locked' && !error.details?.some(d => d.path === 'body/preselected' || d.path === 'body/teamSize'))
+    return { ok: false, errors: ['Someone registered, so only the start time, who can see it and the description can change.'] }
   const details = error?.details ?? []
   return { ok: false, errors: details.length > 0 ? details.map(problemText) : ['Couldn’t save the tournament. Try again.'] }
 }

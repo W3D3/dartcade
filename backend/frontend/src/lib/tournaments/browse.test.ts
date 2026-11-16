@@ -76,8 +76,11 @@ it('describes the game and the organizer', () => {
   expect(gamePill('x01', { startScore: 501 })).toBe('X01 501')
   expect(gamePill('cricket', { mode: 'cutthroat' })).toBe('Cricket · cut-throat')
   expect(gameLine('x01', { startScore: 501, outMode: 'double' }, 3)).toBe('X01 501 · double out · first to 3')
-  expect(byLine({ kind: 'community', owner: { id: 'l', name: 'Lena' }, access: 'friends' })).toBe('by Lena · friends')
-  expect(byLine({ kind: 'official', owner: null, access: 'public' })).toBe('Official')
+  expect(byLine({ kind: 'community', owner: { id: 'l', name: 'Lena' }, visibility: 'friends', play: 'online' })).toBe('by Lena · friends')
+  expect(byLine({ kind: 'community', owner: { id: 'l', name: 'Lena' }, visibility: 'private', play: 'in_person' })).toBe(
+    'by Lena · private · in person',
+  )
+  expect(byLine({ kind: 'official', owner: null, visibility: 'public', play: 'online' })).toBe('Official')
 })
 
 it('loadBrowse answers null when the request fails, so the page says it could not load', async () => {

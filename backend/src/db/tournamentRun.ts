@@ -38,7 +38,7 @@ export async function scheduledTournaments(db: Kysely<Database>): Promise<Tourna
     .selectFrom('tournaments')
     .selectAll()
     .where('status', 'in', ['open', 'check_in'])
-    .where('access', '<>', 'in_person')
+    .where('play', '=', 'online')
     .where('starts_at', 'is not', null)
     .execute()
 }

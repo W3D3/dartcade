@@ -146,7 +146,7 @@ describe('live tournament view', () => {
       noShowMinutes: 10,
       avgLimit: null,
     }
-    expect(rulesOf({ access: 'friends', settings })).toEqual([
+    expect(rulesOf({ play: 'online', settings })).toEqual([
       'Every match is first to 3 legs.',
       'The final is first to 5.',
       'Next round starts as soon as both players are ready.',

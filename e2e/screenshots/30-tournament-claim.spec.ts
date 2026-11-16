@@ -44,7 +44,9 @@ async function setUp(page: Page): Promise<string> {
   const t = (await api(page).post('/api/tournaments', {
     name: 'Anchor Pub League · Week 3',
     description: '',
-    access: 'in_person',
+    play: 'in_person',
+    preselected: true,
+    visibility: 'public',
     gameId: 'x01',
     gameConfig: { startScore: 501, outMode: 'double' },
     format: 'round_robin',

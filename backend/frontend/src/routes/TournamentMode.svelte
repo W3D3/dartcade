@@ -55,7 +55,7 @@
     void loadTournament(params.id).then(r => (t = 'tournament' in r ? r.tournament : null))
   })
 
-  const allowed = $derived(!!t?.role && t.access === 'in_person')
+  const allowed = $derived(!!t?.role && t.play === 'in_person')
   // The socket opens once the device has a name; it stays open while this tab is in tournament mode
   $effect(() => {
     if (allowed && name && !mode) mode = openMode(params.id, name)

@@ -43,7 +43,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('claiming a tournament spot', ()
       await insertTournament(db, {
         id,
         owner_user_id: 'admin',
-        access: 'in_person',
+        play: 'in_person',
+        preselected: true,
         status: id === 'draft' ? 'draft' : 'open',
         settings: SETTINGS,
         game_config: JSON.stringify({ startScore: 501 }),

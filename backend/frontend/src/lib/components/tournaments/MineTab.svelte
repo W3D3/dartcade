@@ -117,7 +117,7 @@
                 <span class="flex flex-wrap items-center gap-2">
                   <span class="truncate text-body-lg font-semibold">{t.name}</span>
                   {#if t.kind === 'official'}{@render tag('OFFICIAL')}{/if}
-                  {#if t.access === 'in_person'}{@render tag('IN PERSON')}{/if}
+                  {#if t.play === 'in_person'}{@render tag('IN PERSON')}{/if}
                   {#if t.teamSize > 1}{@render tag(`TEAMS OF ${t.teamSize}`)}{/if}
                 </span>
                 <span class="truncate text-small text-text-muted"
@@ -150,11 +150,14 @@
               <span class="flex min-w-0 flex-1 flex-col gap-1">
                 <span class="flex flex-wrap items-center gap-2">
                   {@render tag(o.role === 'owner' ? 'OWNER' : 'ORGANIZER')}
-                  {#if t.access === 'in_person'}{@render tag('IN PERSON')}{:else if t.access === 'invite'}{@render tag('INVITE LINK')}{/if}
+                  {#if t.play === 'in_person'}{@render tag('IN PERSON')}{/if}
+                  {#if t.visibility === 'invite'}{@render tag('INVITE LINK')}{:else if t.visibility === 'private'}{@render tag(
+                      'PRIVATE',
+                    )}{/if}
                   {#if t.teamSize > 1}{@render tag(`TEAMS OF ${t.teamSize}`)}{/if}
                   {#if t.status === 'draft'}{@render tag('DRAFT')}{/if}
                 </span>
-                {#if t.access === 'in_person'}
+                {#if t.play === 'in_person'}
                   <a href={hrefs.tournamentManage(t.id)} class="truncate text-body-lg font-semibold text-text no-underline hover:underline"
                     >{t.name}</a
                   >
@@ -167,7 +170,7 @@
                 {/if}
                 <span class="text-small text-text-muted">{organizingLine(o, t.startsAt && dayLabel(t.startsAt))}</span>
               </span>
-              {#if t.access === 'in_person'}
+              {#if t.play === 'in_person'}
                 <Button variant="outline" size="sm" href={hrefs.tournamentManage(t.id)}>Manage</Button>
               {:else if t.status === 'draft'}
                 <Button variant="outline" size="sm" href={hrefs.tournamentEdit(t.id)}>Continue editing</Button>
@@ -212,7 +215,7 @@
                 <span class="flex min-w-0 flex-wrap items-center gap-2 font-semibold">
                   <span class="truncate">{t.name}</span>
                   {#if t.kind === 'official'}{@render tag('OFFICIAL')}{/if}
-                  {#if t.access === 'in_person'}{@render tag('CLAIMED')}{/if}
+                  {#if t.preselected}{@render tag('CLAIMED')}{/if}
                 </span>
                 <span class="text-small font-semibold md:order-last md:hidden">{place}</span>
                 <span class="text-small text-text-muted md:text-body"

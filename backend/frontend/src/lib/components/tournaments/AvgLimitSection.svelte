@@ -27,7 +27,7 @@
     Number.isFinite(e.currentTarget.valueAsNumber) ? e.currentTarget.valueAsNumber : old
 </script>
 
-{#if form.access !== 'in_person'}
+{#if form.play === 'online'}
   <FormSection {n} title="Average limit">
     <SwitchRow
       id="tc-avg-on"

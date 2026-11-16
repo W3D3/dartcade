@@ -40,7 +40,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
     await setupFlags(new Set())
     const inPerson = {
       owner_user_id: 'admin',
-      access: 'in_person' as const,
+      play: 'in_person' as const,
+      preselected: true,
       settings: IN_PERSON_SETTINGS,
       game_config: JSON.stringify({ startScore: 501 }),
     }
@@ -166,11 +167,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
     const patch = (id: string, body: object) => send('admin', 'PATCH', `/api/tournaments/${id}`, body)
     const team = (name: string, tag: string, ...players: Entry['players']): Entry => ({ name, tag, color: null, players })
 
-    it('keeps it in person: its spots would be stuck in an online tournament', async () => {
-      const res = await patch('club', { access: 'friends' })
+    it('keeps its players the organizers: open registration would leave their spots stuck', async () => {
+      const res = await patch('club', { preselected: false })
       expect(res.statusCode).toBe(409)
-      expect(res.json()).toMatchObject({ error: 'locked', details: [{ path: 'body/access' }] })
+      expect(res.json()).toMatchObject({ error: 'locked', details: [{ path: 'body/preselected' }] })
       expect((await send('admin', 'GET', '/api/tournaments/club/participants')).statusCode).toBe(200)
+    })
+
+    it('changes who sees it until it starts', async () => {
+      expect((await patch('club', { visibility: 'private' })).json()).toMatchObject({ visibility: 'private', preselected: true })
+      expect((await patch('club', { visibility: 'public' })).json()).toMatchObject({ visibility: 'public' })
     })
 
     it('refuses a new team size without its new list', async () => {
@@ -213,7 +219,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
     })
 
     it('takes a list only for an in-person tournament', async () => {
-      expect((await patch('online', { description: 'x', participants: { entries: [] } })).json()).toMatchObject({ error: 'not in person' })
+      expect((await patch('online', { description: 'x', participants: { entries: [] } })).json()).toMatchObject({
+        error: 'not preselected',
+      })
     })
   })
 
@@ -222,7 +230,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
       send('boss', 'POST', '/api/tournaments', {
         name: 'Board Night',
         description: '',
-        access: 'in_person',
+        play: 'in_person',
+        preselected: true,
+        visibility: 'public',
         gameId: 'x01',
         gameConfig: { startScore: 501 },
         format: 'single_elimination',
@@ -238,7 +248,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
       await insertTournament(db, {
         id: 'venue',
         owner_user_id: 'boss',
-        access: 'in_person',
+        play: 'in_person',
+        preselected: true,
         settings: IN_PERSON_SETTINGS,
         game_config: JSON.stringify({ startScore: 501 }),
       })
@@ -267,12 +278,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('in-person participants API', ()
 
   it('is for organizers of an in-person tournament that has not started', async () => {
     expect((await put('club', solo('A', 'B'), 'stranger')).statusCode).toBe(404)
-    expect((await put('online', solo('A', 'B'))).json()).toMatchObject({ error: 'not in person' })
+    expect((await put('online', solo('A', 'B'))).json()).toMatchObject({ error: 'not preselected' })
     expect((await put('started', solo('A', 'B'))).json()).toMatchObject({ error: 'started' })
   })
 
   it('starts an in-person tournament only once its list can play, with the reason it cannot yet', async () => {
-    await insertTournament(db, { id: 'tiny', owner_user_id: 'admin', status: 'open', access: 'in_person', settings: IN_PERSON_SETTINGS })
+    await insertTournament(db, {
+      id: 'tiny',
+      owner_user_id: 'admin',
+      status: 'open',
+      play: 'in_person',
+      preselected: true,
+      settings: IN_PERSON_SETTINGS,
+    })
     await put('tiny', solo('Anna'))
     const early = await send('admin', 'POST', '/api/tournaments/tiny/start')
     expect(early.statusCode).toBe(409)

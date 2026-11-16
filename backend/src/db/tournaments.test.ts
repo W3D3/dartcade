@@ -265,12 +265,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament tables', () => {
       await insertUsers(db, ['cat', 'dan'])
       await db.insertInto('friendships').values({ id: 'ann-cat', requester_id: 'cat', addressee_id: 'ann', status: 'accepted' }).execute()
       await db.insertInto('friendships').values({ id: 'ann-dan', requester_id: 'ann', addressee_id: 'dan', status: 'pending' }).execute()
-      await insertTournament(db, { id: 'cats', status: 'open', access: 'friends', owner_user_id: 'cat', starts_at: at(3) })
-      await insertTournament(db, { id: 'dans', status: 'open', access: 'friends', owner_user_id: 'dan', starts_at: at(4) })
-      await insertTournament(db, { id: 'link', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(5) })
-      await insertTournament(db, { id: 'joined', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(6) })
-      await insertTournament(db, { id: 'left', status: 'open', access: 'invite', owner_user_id: 'dan', starts_at: at(7) })
-      await insertTournament(db, { id: 'mine', status: 'open', access: 'invite', owner_user_id: 'ann', starts_at: at(8) })
+      await insertTournament(db, { id: 'cats', status: 'open', visibility: 'friends', owner_user_id: 'cat', starts_at: at(3) })
+      await insertTournament(db, { id: 'dans', status: 'open', visibility: 'friends', owner_user_id: 'dan', starts_at: at(4) })
+      await insertTournament(db, { id: 'link', status: 'open', visibility: 'invite', owner_user_id: 'dan', starts_at: at(5) })
+      await insertTournament(db, { id: 'joined', status: 'open', visibility: 'invite', owner_user_id: 'dan', starts_at: at(6) })
+      await insertTournament(db, { id: 'left', status: 'open', visibility: 'invite', owner_user_id: 'dan', starts_at: at(7) })
+      await insertTournament(db, { id: 'mine', status: 'open', visibility: 'invite', owner_user_id: 'ann', starts_at: at(8) })
       for (const [t, status] of [
         ['joined', 'registered'],
         ['left', 'withdrawn'],

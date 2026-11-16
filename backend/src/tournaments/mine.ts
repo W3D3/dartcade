@@ -17,7 +17,9 @@ export const refOf = (t: TournamentView): Ref => ({
   id: t.id,
   name: t.name,
   kind: t.kind,
-  access: t.access,
+  play: t.play,
+  preselected: t.preselected,
+  visibility: t.visibility,
   status: t.status,
   gameId: t.game_id,
   gameConfig: t.game_config,
@@ -60,7 +62,7 @@ export async function myTournaments(db: Kysely<Database>, userId: string, now: D
     ),
     claimedCounts(
       db,
-      organized.filter(t => t.access === 'in_person').map(t => t.id),
+      organized.filter(t => t.preselected).map(t => t.id),
     ),
   ])
 
@@ -101,7 +103,7 @@ export async function myTournaments(db: Kysely<Database>, userId: string, now: D
       .map(t => ({
         tournament: refOf(t),
         role: t.owner_user_id === userId ? ('owner' as const) : ('organizer' as const),
-        claimed: t.access === 'in_person' ? (claimed.get(t.id) ?? 0) : null,
+        claimed: t.preselected ? (claimed.get(t.id) ?? 0) : null,
         createdAt: t.created_at.toISOString(),
       })),
     past: past.slice(0, MAX_PAST).map(s => ({

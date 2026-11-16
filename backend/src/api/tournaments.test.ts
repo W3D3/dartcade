@@ -54,7 +54,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           id: 'weekly',
           name: 'Weekly Open',
           kind: 'community',
-          access: 'public',
+          play: 'online',
+          preselected: false,
+          visibility: 'public',
           status: 'open',
           gameId: 'x01',
           gameConfig: { start: 501 },
@@ -88,7 +90,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
     const input: Input = {
       name: '  Pub Pairs Showdown ',
       description: 'Bring your partner!',
-      access: 'public',
+      play: 'online',
+      preselected: false,
+      visibility: 'public',
       gameId: 'x01',
       gameConfig: { startScore: 301, outMode: 'double' },
       format: 'single_elimination',
@@ -220,7 +224,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
     it("shows a friends-only tournament to the owner's friends only", async () => {
       await setOverrides(new Map([on('tournaments.enabled', ['admin', 'player', 'friend'])]))
       await db.insertInto('friendships').values({ id: 'fr', requester_id: 'admin', addressee_id: 'friend', status: 'accepted' }).execute()
-      const t = await created('admin', { ...input, access: 'friends' })
+      const t = await created('admin', { ...input, visibility: 'friends' })
       expect((await send('admin', 'POST', `/api/tournaments/${t.id}/publish`)).statusCode).toBe(200)
       expect((await get('friend', `/api/tournaments/${t.id}`)).json()).toMatchObject({ id: t.id, role: null })
       expect((await get('player', `/api/tournaments/${t.id}`)).statusCode).toBe(404)
@@ -292,7 +296,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
     it('keeps an in-person tournament editable when its organizers added players, but its team size comes with its list', async () => {
       const t = await created('admin', {
         ...input,
-        access: 'in_person',
+        play: 'in_person',
+        preselected: true,
         startsAt: null,
         settings: { ...input.settings, registrationClosesMinutes: null, checkInMinutes: null, noShowMinutes: null },
       })
@@ -301,6 +306,29 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json()).toMatchObject({ name: 'Bar Night', locked: false })
       expect((await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { teamSize: 3 })).json()).toMatchObject({ error: 'locked' })
+    })
+
+    it('lets players register for an in-person tournament without a board, then locks it but its visibility', async () => {
+      await setOverrides(new Map([on('tournaments.enabled', ['admin', 'player'])]))
+      const t = await created('admin', {
+        ...input,
+        play: 'in_person',
+        teamSize: 1,
+        startsAt: null,
+        settings: { ...input.settings, registrationClosesMinutes: null, checkInMinutes: null, noShowMinutes: null },
+      })
+      await send('admin', 'POST', `/api/tournaments/${t.id}/publish`)
+      const joined = await send('player', 'POST', `/api/tournaments/${t.id}/registration`)
+      expect(joined.json()).toMatchObject({ play: 'in_person', preselected: false, registration: 'registered' })
+      expect((await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { name: 'Renamed' })).json()).toMatchObject({ error: 'locked' })
+      const hidden = await send('admin', 'PATCH', `/api/tournaments/${t.id}`, { visibility: 'invite' })
+      expect(hidden.json()).toMatchObject({ visibility: 'invite', locked: true })
+      expect((await get('player', `/api/tournaments/${t.id}`)).json()).toMatchObject({ registration: 'registered' })
+    })
+
+    it('refuses preselected players online and a private tournament players would register for', async () => {
+      expect(problems(await create('admin', { ...input, preselected: true }))).toEqual(['body/preselected'])
+      expect(problems(await create('admin', { ...input, visibility: 'private' }))).toContain('body/visibility')
     })
 
     it('cancels a published tournament and refuses to change it after', async () => {
@@ -454,12 +482,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
     it('leaves team and in-person tournaments to captains and organizers', async () => {
       await open('pairs', { team_size: 2 })
       expect(error(await register('player', 'pairs'))).toBe('team tournament')
-      await open('venue', { access: 'in_person', starts_at: null })
-      expect(error(await register('player', 'venue'))).toBe('in person')
+      await open('venue', { play: 'in_person', preselected: true, starts_at: null })
+      expect(error(await register('player', 'venue'))).toBe('added by the organizers')
     })
 
     it("hides a friends-only tournament from all but the owner's friends, on Browse and to register", async () => {
-      await open('friends', { access: 'friends' })
+      await open('friends', { visibility: 'friends' })
       await db.insertInto('friendships').values({ id: 'f1', requester_id: 'friend', addressee_id: 'cohost', status: 'accepted' }).execute()
       const ids = async (u: string) => (await get(u)).json<{ tournaments: { id: string }[] }>().tournaments.map(t => t.id)
       expect(await ids('friend')).toContain('friends')
@@ -473,7 +501,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       const res = await send('admin', 'POST', '/api/tournaments', {
         name: 'Living Room Classic',
         description: '',
-        access: 'invite',
+        play: 'online',
+        preselected: false,
+        visibility: 'invite',
         gameId: 'x01',
         gameConfig: {},
         format: 'single_elimination',
@@ -515,6 +545,66 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
       expect(await ids('player')).toContain(draft.id)
       expect(await ids('friend')).not.toContain(draft.id)
     })
+
+    it('shows each visibility of an in-person tournament to exactly who may see it, on Browse and the detail', async () => {
+      // cohost owns it, p4 co-organizes, p3 holds a claimed spot, friend is cohost's friend; admin is
+      // an admin who does not organize it and sees no more than any player
+      await db.insertInto('friendships').values({ id: 'f2', requester_id: 'friend', addressee_id: 'cohost', status: 'accepted' }).execute()
+      const viewers = ['cohost', 'p4', 'p3', 'friend', 'player', 'admin'] as const
+      const seenBy: Record<'public' | 'friends' | 'invite' | 'private', (typeof viewers)[number][]> = {
+        public: ['cohost', 'p4', 'p3', 'friend', 'player', 'admin'],
+        friends: ['cohost', 'p4', 'p3', 'friend'],
+        invite: ['cohost', 'p4', 'p3'],
+        private: ['cohost', 'p4', 'p3'],
+      }
+      for (const visibility of Object.keys(seenBy) as (keyof typeof seenBy)[]) {
+        const id = `venue-${visibility}`
+        await open(id, {
+          play: 'in_person',
+          preselected: true,
+          visibility,
+          starts_at: null,
+          invite_code: `CODE${visibility.slice(0, 2).toUpperCase()}`,
+        })
+        await db.insertInto('tournament_organizers').values({ tournament_id: id, user_id: 'p4' }).execute()
+        await insertTournamentEntry(db, { id: `${id}-e`, tournament_id: id })
+        await db
+          .insertInto('tournament_players')
+          .values({
+            id: `${id}-p`,
+            tournament_id: id,
+            entry_id: `${id}-e`,
+            user_id: 'p3',
+            name: 'P3',
+            position: 0,
+            kind: 'spot',
+            claim_code: `CLAIM-${id}`,
+          })
+          .execute()
+        for (const u of viewers) {
+          const listed = (await get(u)).json<{ tournaments: { id: string }[] }>().tournaments.some(t => t.id === id)
+          const detail = (await get(u, `/api/tournaments/${id}`)).statusCode
+          expect({ visibility, u, listed, detail }).toEqual({
+            visibility,
+            u,
+            listed: seenBy[visibility].includes(u),
+            detail: seenBy[visibility].includes(u) ? 200 : 404,
+          })
+        }
+      }
+      // The link opens an invite one to anyone, never a private one
+      expect((await get('player', '/api/tournaments/code/CODEIN')).statusCode).toBe(200)
+      expect((await get('player', '/api/tournaments/code/CODEPR')).statusCode).toBe(404)
+      // Signed out sees nothing
+      const app = createFastify()
+      app.register(tournamentsApiPlugin, {
+        db,
+        hub: { sendTournamentRequest: () => {} },
+        lobbies: { pushMe: () => Promise.resolve() },
+        tournaments,
+      })
+      expect((await app.inject({ method: 'GET', url: '/api/tournaments/venue-public' })).statusCode).toBe(401)
+    }, 60_000)
 
     it("names the caller's friends who are in", async () => {
       await open('social')

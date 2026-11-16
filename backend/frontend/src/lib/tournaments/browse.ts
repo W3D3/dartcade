@@ -98,16 +98,20 @@ export function gameLine(gameId: string, config: Record<string, unknown>, firstT
   return [gamePill(gameId, config), ...out, `first to ${firstTo}`].join(' · ')
 }
 
-const ACCESS_LABEL: Record<TournamentSummary['access'], string> = {
+const VISIBILITY_LABEL: Record<TournamentSummary['visibility'], string> = {
   public: 'public',
   friends: 'friends',
   invite: 'invite link',
-  in_person: 'in person',
+  private: 'private',
 }
 
-/** "by Lena · friends"; "Official" for Dartcade's own. */
-export const byLine = (t: Pick<TournamentSummary, 'kind' | 'owner' | 'access'>): string =>
-  t.kind === 'official' ? 'Official' : `by ${t.owner?.name ?? 'a former player'} · ${ACCESS_LABEL[t.access]}`
+/** "by Lena · friends", "by Lena · public · in person"; "Official" for Dartcade's own. */
+export const byLine = (t: Pick<TournamentSummary, 'kind' | 'owner' | 'visibility' | 'play'>): string =>
+  t.kind === 'official'
+    ? 'Official'
+    : [`by ${t.owner?.name ?? 'a former player'}`, VISIBILITY_LABEL[t.visibility], ...(t.play === 'in_person' ? ['in person'] : [])].join(
+        ' · ',
+      )
 
 /** The players column: "27 / 32" and "5 spots left" or "Full". */
 export function spots(t: Pick<TournamentSummary, 'entries' | 'maxEntries'>): { left: string; full: boolean; percent: number } {
@@ -128,7 +132,7 @@ export const REGISTRATION_NOTE: Record<RegistrationState, string> = {
   board_needed: 'Paired board needed',
   not_eligible: 'Not eligible',
   team: 'Open · captains register their team',
-  in_person: 'Added by the organizers',
+  preselected: 'Added by the organizers',
 }
 
 /** "Lena, Max and 2 friends are in". */

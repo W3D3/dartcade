@@ -32,8 +32,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('/ws/tournament', () => {
     await setupFlags(new Set())
     await setOverrides(new Map([['tournaments.enabled', { mode: 'users', userIds: ['org', 'max', 'pia'] }]]))
     await insertUsers(db, ['org', 'max', 'pia', 'off'])
-    await insertTournament(db, { id: 'pub', owner_user_id: 'org', status: 'open', access: 'public' })
-    await insertTournament(db, { id: 'inv', owner_user_id: 'org', status: 'open', access: 'invite', invite_code: 'K7Q4MD' })
+    await insertTournament(db, { id: 'pub', owner_user_id: 'org', status: 'open', visibility: 'public' })
+    await insertTournament(db, { id: 'inv', owner_user_id: 'org', status: 'open', visibility: 'invite', invite_code: 'K7Q4MD' })
     await insertTournament(db, { id: 'draft', owner_user_id: 'org', status: 'draft' })
     live = new TournamentLive(id => liveMessage(db, { getSession: () => undefined }, id, Date.now()))
     app = Fastify()
@@ -103,7 +103,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('/ws/tournament', () => {
 
   describe('devices in tournament mode', () => {
     beforeAll(async () => {
-      await insertTournament(db, { id: 'venue', owner_user_id: 'org', status: 'open', access: 'in_person' })
+      await insertTournament(db, { id: 'venue', owner_user_id: 'org', status: 'open', play: 'in_person', preselected: true })
       await addOrganizer(db, 'venue', 'pia')
       await setParticipants(
         db,

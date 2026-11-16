@@ -29,7 +29,7 @@
     if (!id) return
     t = undefined
     void loadTournament(id).then(async found => {
-      participants = found?.role && found.access === 'in_person' ? await loadParticipants(id) : null
+      participants = found?.role && found.preselected ? await loadParticipants(id) : null
       t = found
     })
   })
@@ -55,7 +55,7 @@
       <p class="text-body text-text-muted">This tournament isn't there anymore.</p>
     {:else if !t.role}
       <p class="text-body text-text-muted">Only the tournament's organizers can manage it.</p>
-    {:else if t.access !== 'in_person' || !participants}
+    {:else if t.play !== 'in_person' || (t.preselected && !participants)}
       <p class="text-body text-text-muted">Only in-person tournaments have an organizer page.</p>
     {:else}
       <header class="flex flex-wrap items-start gap-4">
@@ -75,7 +75,7 @@
             {t.role === 'owner' ? 'You own this tournament' : 'You organize this tournament'}{when}
           </span>
           <h1 class="type-page-title wrap-break-word">{t.name}</h1>
-          <span class="text-label text-text-muted">{organizerLine(t, participants.entries.length)}</span>
+          <span class="text-label text-text-muted">{organizerLine(t, participants?.entries.length ?? t.entries)}</span>
         </div>
         {#if editable}<Button variant="outline" href={hrefs.tournamentEdit(t.id)}><Pencil size={16} />Edit</Button>{/if}
       </header>
@@ -94,7 +94,9 @@
             <Button variant="accent" href={hrefs.tournamentMode(t.id)}>Open on this device</Button>
           </section>
 
-          <OnsiteParticipants tournamentId={t.id} bind:participants teamSize={t.teamSize} max={t.maxEntries} {editable} />
+          {#if participants}
+            <OnsiteParticipants tournamentId={t.id} bind:participants teamSize={t.teamSize} max={t.maxEntries} {editable} />
+          {/if}
         </div>
 
         <aside class="flex min-w-0 flex-col gap-5" aria-label="About this tournament">
@@ -102,30 +104,32 @@
             <OrganizersCard tournamentId={t.id} tournamentName={t.name} onleft={() => void replace(hrefs.tournaments('mine').slice(1))} />
           </div>
           <DevicesCard tournamentId={t.id} format={t.format} />
-          <section class="card flex flex-col gap-2 p-[18px]" aria-labelledby="onsite-claim">
-            <h2 id="onsite-claim" class="flex items-center gap-2 text-body-lg font-semibold">
-              <Info size={16} aria-hidden="true" />Claim links
-            </h2>
-            {#if t.teamSize > 1}
-              <p class="text-small text-text-muted">
-                Claim links are per player, not per team. When a player claims their spot, the team’s matches count for that player’s
-                account. Teams here are only for this tournament. They aren’t saved as Dartcade teams, so a team made of guests doesn’t need
-                anyone to sign up.
-              </p>
-              <p class="text-small text-text-muted">
-                Only organizers can add, rename or remove teams and players. Claimed players can’t be renamed; unlink them first.
-              </p>
-            {:else}
-              <p class="text-small text-text-muted">
-                Every player starts as a guest. Send someone their claim link; when they open it with their Dartcade account, the spot
-                becomes theirs. Matches they already played move to their account: stats, history and achievements. One person can claim one
-                spot per tournament.
-              </p>
-              <p class="text-small text-text-muted">
-                Only organizers can add, rename or remove players. Renaming a claimed player isn’t possible; unlink them first.
-              </p>
-            {/if}
-          </section>
+          {#if participants}
+            <section class="card flex flex-col gap-2 p-[18px]" aria-labelledby="onsite-claim">
+              <h2 id="onsite-claim" class="flex items-center gap-2 text-body-lg font-semibold">
+                <Info size={16} aria-hidden="true" />Claim links
+              </h2>
+              {#if t.teamSize > 1}
+                <p class="text-small text-text-muted">
+                  Claim links are per player, not per team. When a player claims their spot, the team’s matches count for that player’s
+                  account. Teams here are only for this tournament. They aren’t saved as Dartcade teams, so a team made of guests doesn’t
+                  need anyone to sign up.
+                </p>
+                <p class="text-small text-text-muted">
+                  Only organizers can add, rename or remove teams and players. Claimed players can’t be renamed; unlink them first.
+                </p>
+              {:else}
+                <p class="text-small text-text-muted">
+                  Every player starts as a guest. Send someone their claim link; when they open it with their Dartcade account, the spot
+                  becomes theirs. Matches they already played move to their account: stats, history and achievements. One person can claim
+                  one spot per tournament.
+                </p>
+                <p class="text-small text-text-muted">
+                  Only organizers can add, rename or remove players. Renaming a claimed player isn’t possible; unlink them first.
+                </p>
+              {/if}
+            </section>
+          {/if}
         </aside>
       </div>
     {/if}

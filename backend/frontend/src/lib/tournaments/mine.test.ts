@@ -6,7 +6,9 @@ const ref = (id: string, over: Partial<MyTournamentRef> = {}): MyTournamentRef =
   id,
   name: id,
   kind: 'community',
-  access: 'public',
+  play: 'online',
+  preselected: false,
+  visibility: 'public',
   status: 'open',
   gameId: 'x01',
   gameConfig: {},
@@ -50,10 +52,10 @@ const mine: MyTournaments = {
         },
       },
     ),
-    playing('club', { access: 'in_person' }, { playerName: 'Chris' }),
+    playing('club', { play: 'in_person', preselected: true }, { playerName: 'Chris' }),
   ],
   organizing: [
-    { tournament: ref('own', { access: 'in_person' }), role: 'owner', claimed: 2, createdAt: '2026-11-01T00:00:00Z' },
+    { tournament: ref('own', { play: 'in_person', preselected: true }), role: 'owner', claimed: 2, createdAt: '2026-11-01T00:00:00Z' },
     { tournament: ref('draft', { status: 'draft' }), role: 'owner', claimed: null, createdAt: '2026-11-01T00:00:00Z' },
   ],
   past: [

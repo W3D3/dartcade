@@ -188,9 +188,9 @@ export function stageWhen(s: TournamentLiveStage, now: Date = new Date()): strin
 }
 
 /** The tournament's rules as the organizer set them. */
-export function rulesOf(t: Pick<Tournament, 'access' | 'settings'>): string[] {
+export function rulesOf(t: Pick<Tournament, 'play' | 'settings'>): string[] {
   const s = t.settings
-  const online = t.access !== 'in_person'
+  const online = t.play === 'online'
   const final = s.longerFinal
     ? [`The final is first to ${s.longerFinal.firstTo}${s.longerFinal.semis ? ', and so are the semi-finals' : ''}.`]
     : []

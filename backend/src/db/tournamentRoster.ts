@@ -28,7 +28,8 @@ type TeamOption = components['schemas']['TournamentTeamOptions']['teams'][number
 
 const forRules = (t: TournamentRow, entries: number): RegistrationTournament => ({
   status: t.status,
-  access: t.access,
+  play: t.play,
+  preselected: t.preselected,
   teamSize: t.team_size,
   maxEntries: t.max_entries,
   entries,
@@ -252,8 +253,8 @@ export async function teamEntriesOf(
     .select(['tm.id as team_id', 'tm.name as team_name', 'tm.tag', 'tm.color'])
     .where('e.tournament_id', 'in', tournamentIds)
     .where('t.team_size', '>', 1)
-    // In-person teams are the organizers' list, not a captain's registration
-    .where('t.access', '<>', 'in_person')
+    // The organizers' teams are their list, not a captain's registration
+    .where('t.preselected', '=', false)
     .where('e.status', '<>', 'withdrawn')
     .where(eb =>
       eb.or([
@@ -306,8 +307,8 @@ export async function answerRequest(
 ): Promise<{ captainId: string | null } | RosterRefusal> {
   return db.transaction().execute(async tx => {
     const t = await lockTournament(tx, tournamentId)
-    // In person the organizers add (and players claim) the spots: nobody confirms them
-    if (!t || t.team_size < 2 || t.access === 'in_person') return 'none'
+    // The organizers add (and players claim) their spots: nobody confirms them
+    if (!t || t.team_size < 2 || t.preselected) return 'none'
     if (!openAt(t, now)) return 'closed'
     const mine = await tx
       .selectFrom('tournament_players as p')
@@ -346,7 +347,7 @@ export async function changePlayer(
 ): Promise<'changed' | RosterRefusal> {
   return db.transaction().execute(async tx => {
     const t = await lockTournament(tx, tournamentId)
-    if (!t || position >= t.team_size || t.access === 'in_person') return 'none'
+    if (!t || position >= t.team_size || t.preselected) return 'none'
     if (!openAt(t, now)) return 'closed'
     const entry = await tx
       .selectFrom('tournament_entries')

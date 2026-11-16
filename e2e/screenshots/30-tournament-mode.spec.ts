@@ -10,7 +10,9 @@ const tournament = {
   id: 'venue',
   name: 'Spring Club Night',
   kind: 'community',
-  access: 'in_person',
+  play: 'in_person',
+  preselected: true,
+  visibility: 'public',
   status: 'running',
   gameId: 'x01',
   gameConfig: { startScore: 501, outMode: 'double' },
@@ -37,7 +39,7 @@ const tournament = {
   locked: false,
   createdAt: '2026-11-01T10:00:00Z',
   publishedAt: '2026-11-01T10:00:00Z',
-  registration: 'in_person',
+  registration: 'preselected',
   registrationClosesAt: null,
   inviteCode: null,
   friendsIn: [],
@@ -161,11 +163,14 @@ test('tournament mode: name the device, start, and every device on the organizer
     if (t.status === 'draft') await admin.page.request.delete(`/api/tournaments/${t.id}`, { headers: { Origin: BASE } })
     else if (t.status === 'open' || t.status === 'running') await api(admin.page).post(`/api/tournaments/${t.id}/cancel`)
   }
-  const { name, description, access, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings } = tournament
+  const { name, description, play, preselected, visibility, gameId, gameConfig, format, teamSize, maxEntries, startsAt, settings } =
+    tournament
   const t = (await api(admin.page).post('/api/tournaments', {
     name,
     description,
-    access,
+    play,
+    preselected,
+    visibility,
     gameId,
     gameConfig,
     format,

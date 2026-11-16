@@ -141,7 +141,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('myTournaments', () => {
 
   it('lists what you organize, drafts and in person tournaments with their claimed spots', async () => {
     await insertTournament(db, { id: 'draft', owner_user_id: 'me', name: 'Cracker' })
-    await insertTournament(db, { id: 'club', status: 'open', access: 'in_person', owner_user_id: 'me', name: 'Club Night' })
+    await insertTournament(db, {
+      id: 'club',
+      status: 'open',
+      play: 'in_person',
+      preselected: true,
+      owner_user_id: 'me',
+      name: 'Club Night',
+    })
     await insertTournamentEntry(db, { id: 'c1', tournament_id: 'club' })
     await insertTournamentEntry(db, { id: 'c2', tournament_id: 'club' })
     await db

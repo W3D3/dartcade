@@ -291,3 +291,46 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('070_light_calibration_started m
     expect(board.light_effect_overrides).toEqual({ 'turn|mine||': false })
   })
 })
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('073_tournament_play_visibility migration', () => {
+  const SCHEMA_073 = 'mig_073_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_073} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_073}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_073}`)
+    await runMigrations(db, { until: '071_tournament_spots.sql' })
+    for (const access of ['public', 'friends', 'invite', 'in_person'])
+      await sql`INSERT INTO tournaments (id, kind, access, name, game_id, game_config, format, team_size, max_entries)
+        VALUES (${access}, 'community', ${access}, ${access}, 'x01', '{}', 'single_elimination', 1, 8)`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_073} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('keeps every tournament as it behaved: in person was public with the players added by the organizers', async () => {
+    const rows = await db.selectFrom('tournaments').select(['id', 'play', 'preselected', 'visibility']).orderBy('id').execute()
+    expect(rows).toEqual([
+      { id: 'friends', play: 'online', preselected: false, visibility: 'friends' },
+      { id: 'in_person', play: 'in_person', preselected: true, visibility: 'public' },
+      { id: 'invite', play: 'online', preselected: false, visibility: 'invite' },
+      { id: 'public', play: 'online', preselected: false, visibility: 'public' },
+    ])
+  })
+
+  it('refuses players added by the organizers online, and a private tournament nobody is added to', async () => {
+    const insert = (id: string, play: string, preselected: boolean, visibility: string) =>
+      sql`INSERT INTO tournaments (id, kind, play, preselected, visibility, name, game_id, game_config, format, team_size, max_entries)
+        VALUES (${id}, 'community', ${play}, ${preselected}, ${visibility}, ${id}, 'x01', '{}', 'single_elimination', 1, 8)`.execute(db)
+    await expect(insert('a', 'online', true, 'public')).rejects.toThrow(/tournaments_preselected_in_person/)
+    await expect(insert('b', 'in_person', false, 'private')).rejects.toThrow(/tournaments_private_preselected/)
+    await insert('c', 'in_person', true, 'private')
+  })
+})

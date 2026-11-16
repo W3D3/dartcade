@@ -34,6 +34,7 @@ const team: TeamOption = {
 const teamAvg: AvgLimit = { min: 55, max: null, teams: 'team', minLegs: 0, lock: true }
 const rules = (avgLimit: AvgLimit | null = teamAvg) => ({
   teamSize: 2,
+  play: 'online' as const,
   settings: {
     avgLimit,
     manualScoring: false,
