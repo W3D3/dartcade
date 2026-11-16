@@ -144,7 +144,9 @@ describe('where it is played and who can join', () => {
     expect(joinChoices(walkIn).find(c => c.value === 'organizer')?.disabled).toBeUndefined()
     expect(joinChoices(walkIn, true).find(c => c.value === 'organizer')?.disabled).toMatch(/registered already/)
     // Chosen by organizer left on while switching to online cannot be saved
-    expect(formProblems(form({ preselected: true }), now)).toEqual(['Who can join: online the players register themselves'])
+    expect(formProblems(form({ preselected: true }), now)).toEqual([
+      'Who can join: online, players register themselves, so you can’t choose them',
+    ])
   })
 
   it('keeps who sees it when the organizers choose the players, private included', () => {

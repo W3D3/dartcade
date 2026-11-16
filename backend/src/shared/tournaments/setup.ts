@@ -68,39 +68,47 @@ export function setupProblems(t: TournamentSetup): Problem[] {
     bad('description', `must be at most ${TOURNAMENT_TEXT.descriptionMax} characters`)
   for (const field of ['name', 'description'] as const) if (CONTROL_CHARS.test(t[field])) bad(field, 'must not contain control characters')
 
-  if (t.preselected && online) bad('preselected', 'online the players register themselves')
-  if (t.visibility === 'private' && !t.preselected) bad('visibility', 'nobody could find a private tournament to register')
+  if (t.preselected && online) bad('preselected', 'online, players register themselves, so you can’t choose them')
+  if (t.visibility === 'private' && !t.preselected)
+    bad('visibility', 'a private tournament needs players you choose, because nobody can find it to register')
   if (t.format === 'groups_knockout' && !s.groups) bad('settings/groups', 'groups + knockout needs a group size')
-  if (t.format !== 'groups_knockout' && s.groups) bad('settings/groups', 'only groups + knockout has groups')
+  if (t.format !== 'groups_knockout' && s.groups) bad('settings/groups', 'only groups + knockout uses groups')
   if (t.format === 'round_robin' && t.maxEntries > ROUND_ROBIN_MAX_ENTRIES)
-    bad('maxEntries', `a round robin has at most ${ROUND_ROBIN_MAX_ENTRIES} entries`)
+    bad('maxEntries', `a round robin allows at most ${ROUND_ROBIN_MAX_ENTRIES} entries`)
   if (s.longerFinal && t.format === 'round_robin') bad('settings/longerFinal', 'a round robin has no final')
-  if (s.longerFinal && s.longerFinal.firstTo <= s.firstTo) bad('settings/longerFinal', 'the final must be longer than a match')
+  if (s.longerFinal && s.longerFinal.firstTo <= s.firstTo) bad('settings/longerFinal', 'the final must be longer than the other matches')
 
   if (t.startsAt === null) {
     if (online && t.visibility === 'public') bad('startsAt', 'a public online tournament needs a start time')
-    if (s.registrationClosesMinutes !== null) bad('settings/registrationClosesMinutes', 'only for a fixed start time')
+    if (s.registrationClosesMinutes !== null) bad('settings/registrationClosesMinutes', 'only applies to a tournament with a start time')
     if (online && !CHECK_IN_AFTER.includes(s.checkInMinutes ?? -1))
-      bad('settings/checkInMinutes', `after the start an organizer presses, check-in is ${CHECK_IN_AFTER.join(', ')} minutes`)
+      bad(
+        'settings/checkInMinutes',
+        `check-in opens when an organizer presses Start and stays open for ${CHECK_IN_AFTER.slice(0, -1).join(', ')} or ${CHECK_IN_AFTER.at(-1)} minutes`,
+      )
   } else {
-    if (!online) bad('startsAt', 'an organizer starts an in-person tournament')
-    if (s.plannedFor !== null) bad('settings/plannedFor', 'only when an organizer starts it')
-    if (s.registrationClosesMinutes === null) bad('settings/registrationClosesMinutes', 'a fixed start needs a registration close')
+    if (!online) bad('startsAt', 'an in-person tournament has no start time; an organizer starts it')
+    if (s.plannedFor !== null) bad('settings/plannedFor', 'only applies when an organizer starts the tournament')
+    if (s.registrationClosesMinutes === null)
+      bad('settings/registrationClosesMinutes', 'a tournament with a start time needs a registration close time')
     if (s.checkInMinutes !== null && !CHECK_IN_BEFORE.includes(s.checkInMinutes))
-      bad('settings/checkInMinutes', `before a fixed start, check-in is none or ${CHECK_IN_BEFORE.join(', ')} minutes`)
+      bad(
+        'settings/checkInMinutes',
+        `check-in opens ${CHECK_IN_BEFORE.slice(0, -1).join(', ')} or ${CHECK_IN_BEFORE.at(-1)} minutes before the start, or not at all`,
+      )
     // Registration happens while the tournament is open, so check-in may open only once it has closed
     else if (s.checkInMinutes !== null && s.registrationClosesMinutes !== null && s.checkInMinutes > s.registrationClosesMinutes)
-      bad('settings/checkInMinutes', 'check-in opens once registration has closed')
+      bad('settings/checkInMinutes', 'check-in can only open after registration has closed')
   }
-  if (!online && s.checkInMinutes !== null) bad('settings/checkInMinutes', 'an in-person tournament has no check-in')
-  if (!online && s.noShowMinutes !== null) bad('settings/noShowMinutes', 'an in-person tournament has no no-show wait')
+  if (!online && s.checkInMinutes !== null) bad('settings/checkInMinutes', 'in-person tournaments have no check-in')
+  if (!online && s.noShowMinutes !== null) bad('settings/noShowMinutes', 'in-person tournaments have no no-show wait')
   if (s.avgLimit) {
     const { min, max } = s.avgLimit
-    if (!online) bad('settings/avgLimit', 'an in-person tournament has no average limit')
-    if (min === null && max === null) bad('settings/avgLimit', 'needs a minimum, a maximum or both')
+    if (!online) bad('settings/avgLimit', 'in-person tournaments have no average limit')
+    if (min === null && max === null) bad('settings/avgLimit', 'set a minimum, a maximum or both')
     if (min !== null && max !== null && min >= max) bad('settings/avgLimit', 'the minimum must be below the maximum')
   }
-  if (online && s.boardIds) bad('settings/boardIds', 'only an in-person tournament picks its boards')
+  if (online && s.boardIds) bad('settings/boardIds', 'only in-person tournaments choose their boards')
   return out
 }
 
