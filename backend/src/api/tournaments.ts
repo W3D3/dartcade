@@ -392,7 +392,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
   // A venue device (tournament mode) may read its own tournament, without the organizers' invite link
   app.get<Route<'getTournament'>>(
     '/api/tournaments/:id',
-    { config: { tournamentDevice: true }, schema: fromSpec('getTournament') },
+    { config: { tournamentDevice: 'id' }, schema: fromSpec('getTournament') },
     async req => {
       const { t, role } = await visible(req.params.id, req.userId)
       const view = await present(t, role, req.userId)

@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify'
+import { z } from 'zod'
 import { getDeviceSession } from './deviceSession.js'
 import { getAuthUser } from './session.js'
 
@@ -32,12 +33,16 @@ async function signIn(req: FastifyRequest, reply: FastifyReply): Promise<boolean
     void reply.code(403).send({ error: 'not available in tournament mode' })
     return false
   }
-  const params = req.params
-  const id = typeof params === 'object' && params !== null && 'id' in params ? params.id : undefined
-  if (id !== undefined && id !== device.tournamentId) {
-    req.deviceRefused = true
-    void reply.code(404).send({ error: 'not found' })
-    return false
+  const scope = req.routeOptions.config.tournamentDevice
+  if (scope !== 'own') {
+    // Fails closed: a route naming a param it does not have, or another tournament's id, is refused
+    const params = z.record(z.string(), z.unknown()).safeParse(req.params)
+    const id = params.success ? params.data[scope] : undefined
+    if (id !== device.tournamentId) {
+      req.deviceRefused = true
+      void reply.code(id === undefined ? 403 : 404).send({ error: id === undefined ? 'not available in tournament mode' : 'not found' })
+      return false
+    }
   }
   req.userId = device.createdBy
   req.tournamentDevice = device

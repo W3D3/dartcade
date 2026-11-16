@@ -46,6 +46,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     })
     app.register(tournamentDevicesApiPlugin, { db })
     // Any other page's API: signed in, nothing about devices
+    // Routes that opt in wrongly: naming a param they lack, or one that is not a tournament's id
+    app.get('/api/opt-in/no-param', { preValidation: requireAuth, config: { tournamentDevice: 'tournamentId' } }, () => ({ ok: true }))
+    app.get('/api/opt-in/:tournamentId/ok', { preValidation: requireAuth, config: { tournamentDevice: 'tournamentId' } }, () => ({
+      ok: true,
+    }))
     app.get('/api/anything-else', { preValidation: requireAuth }, () => ({ ok: true }))
     await app.ready()
   })
@@ -168,6 +173,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     const t = await db.selectFrom('tournaments').select(['name', 'status']).where('id', '=', 'venue').executeTakeFirstOrThrow()
     expect(t.status).toBe('open')
     expect(t.name).not.toBe('Hijacked')
+  })
+
+  it('a route that opts in must name where its tournament is: a missing param fails closed', async () => {
+    const { cookie } = await paired()
+    expect((await withCookie(cookie, 'GET', '/api/opt-in/no-param')).statusCode).toBe(403)
+    expect((await withCookie(cookie, 'GET', '/api/opt-in/other/ok')).statusCode).toBe(404)
+    expect((await withCookie(cookie, 'GET', '/api/opt-in/venue/ok')).statusCode).toBe(200)
   })
 
   it('an organizer revokes one device at once; the others keep working', async () => {

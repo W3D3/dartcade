@@ -60,7 +60,7 @@ export function tournamentDevicesApiPlugin(app: FastifyInstance, opts: Opts, don
       if (!req.tournamentDevice) throw notFound()
       await requireTournamentsFlag(db, req.userId)
     })
-    const config = { tournamentDevice: true }
+    const config = { tournamentDevice: 'own' }
 
     own.get<Route<'getTournamentDeviceSession'>>(
       '/api/tournament-device',
