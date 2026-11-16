@@ -1,7 +1,7 @@
 <script lang="ts">
   import { hrefs } from '$lib/routes'
   import Wordmark from './Wordmark.svelte'
-  import { ChartColumn, Clock, GraduationCap, House, Mail, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
+  import { Mail } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -9,34 +9,16 @@
   import ReportBugButton from './feedback/ReportBugButton.svelte'
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
+  import { NAV_ICONS, navState } from '$lib/navState'
   import { currentUser } from '$lib/auth'
   import { me, pendingInvites } from '$lib/lobby/sockets'
-  import { flag } from '$lib/flags'
-  import { progress } from '$lib/progress/store'
   import { queueView } from '$lib/ranked/queueCard'
   import { tick } from '$lib/now'
 
   const inviteCount = $derived(pendingInvites($me))
 
-  const matchmaking = flag('matchmaking.enabled')
-  const progression = flag('progression.enabled')
-  const home = flag('home.enabled', true)
-  const coach = flag('coach.enabled')
-  const tournaments = flag('tournaments.enabled')
-  const stats = flag('stats.enabled')
-
   const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
-  const links = $derived(
-    sideLinks({
-      ranked: $matchmaking,
-      admin: $currentUser?.isModerator,
-      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
-      home: $home,
-      coach: $coach,
-      tournaments: $tournaments,
-      stats: $stats,
-    }),
-  )
+  const links = $derived(sideLinks($navState))
 </script>
 
 <nav
@@ -51,27 +33,8 @@
     {#each links as link (link.href)}
       {@const active = isActiveRoute($location, link.href)}
       <NavLink href={`#${link.href}`} {active} disabled={link.disabled}>
-        {#if link.icon === 'home'}
-          <House size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'play'}
-          <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'ranked'}
-          <Swords size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'coach'}
-          <GraduationCap size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'tournaments'}
-          <Trophy size={20} strokeWidth={1.8} />
-        {:else if link.icon === 'progress'}
-          <TrendingUp size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'history'}
-          <Clock size={20} strokeWidth={1.8} />
-        {:else if link.icon === 'stats'}
-          <ChartColumn size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'settings'}
-          <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'admin'}
-          <ShieldCheck size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {/if}
+        {@const Icon = NAV_ICONS[link.icon]}
+        <Icon size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {link.label}
         {#if link.icon === 'ranked' && queue?.kind === 'searching'}
           <!-- Searching: the blinking dot and the time so far, wherever you browse -->

@@ -1,79 +1,21 @@
 <script lang="ts">
   // The phone's burger menu (below md): a left drawer listing every page the desktop side nav does,
-  // under four headings, from the same data (`menuSections`). The tab bar keeps the main pages one
+  // Home first, then four headings, from the same data (`menuSections`). The tab bar keeps the main pages one
   // tap away. A bits-ui Dialog: focus stays in the drawer, Escape, the backdrop and any navigation
   // close it, and focus goes back to the burger.
   import { Dialog } from 'bits-ui'
   import { location } from 'svelte-spa-router'
-  import {
-    ChartColumn,
-    Clock,
-    GraduationCap,
-    House,
-    Mail,
-    Menu,
-    Monitor,
-    Settings,
-    ShieldCheck,
-    Swords,
-    Target,
-    TrendingUp,
-    Trophy,
-    UsersRound,
-    X,
-  } from '@lucide/svelte'
-  import type { Component } from 'svelte'
-  import { friendsEntry, isActiveRoute, menuSections, type NavTab } from '$lib/nav'
-  import { currentUser } from '$lib/auth'
-  import { me } from '$lib/lobby/sockets'
-  import { flag } from '$lib/flags'
-  import { progress } from '$lib/progress/store'
+  import { Menu, X } from '@lucide/svelte'
+  import { isActiveRoute, menuSections } from '$lib/nav'
+  import { NAV_ICONS, navState } from '$lib/navState'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
 
-  const ICONS: Record<NavTab['icon'], Component> = {
-    home: House,
-    play: Target,
-    ranked: Swords,
-    coach: GraduationCap,
-    tournaments: Trophy,
-    progress: TrendingUp,
-    history: Clock,
-    stats: ChartColumn,
-    settings: Settings,
-    admin: ShieldCheck,
-    friends: UsersRound,
-    invites: Mail,
-    boards: Monitor,
-  }
-
-  const matchmaking = flag('matchmaking.enabled')
-  const progression = flag('progression.enabled')
-  const home = flag('home.enabled', true)
-  const coach = flag('coach.enabled')
-  const tournaments = flag('tournaments.enabled')
-  const stats = flag('stats.enabled')
-
-  const sections = $derived(
-    menuSections({
-      invites: $me?.invites.length ?? 0,
-      friendRequests: friendsEntry($me?.friends ?? null).requests,
-      ranked: $matchmaking,
-      admin: $currentUser?.isModerator,
-      progress: $progression ? ($progress?.challengesToClaim ?? 0) : null,
-      home: $home,
-      coach: $coach,
-      tournaments: $tournaments,
-      stats: $stats,
-    }),
-  )
+  const sections = $derived(menuSections($navState))
   // Something to look at on the burger itself while it is closed
   const waiting = $derived(sections.flatMap(s => s.links).reduce((n, l) => n + (l.badge ?? 0), 0))
 
   let open = $state(false)
-  // Boards is a Settings section, so Settings is not also the current page there
-  const isActive = (loc: string, href: string) => isActiveRoute(loc, href) && !(href === '/settings' && loc.startsWith('/settings/boards'))
-
   // Any navigation closes it
   $effect(() => location.subscribe(() => (open = false)))
 </script>
@@ -104,11 +46,11 @@
         </Dialog.Close>
       </div>
       {#each sections as section (section.label)}
-        <nav aria-label={section.label} class="flex flex-col gap-1">
-          <h3 class="px-3 pb-1 text-caption font-semibold label-caps text-text-muted">{section.label}</h3>
+        <nav aria-label={section.label ?? 'Home'} class="flex flex-col gap-1">
+          {#if section.label}<h3 class="px-3 pb-1 text-caption font-semibold label-caps text-text-muted">{section.label}</h3>{/if}
           {#each section.links as link (link.href)}
-            {@const Icon = ICONS[link.icon]}
-            {@const active = isActive($location, link.href)}
+            {@const Icon = NAV_ICONS[link.icon]}
+            {@const active = isActiveRoute($location, link.href)}
             <NavLink href={`#${link.href}`} {active} disabled={link.disabled}>
               <Icon size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
               {link.label}
