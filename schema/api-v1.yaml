@@ -4799,35 +4799,10 @@ components:
           description: The holes in the order played
           items:
             type: object
-            required: [name, par, outline, walls, cup, paths]
+            required: [hole, paths]
             additionalProperties: false
             properties:
-              name: { type: string }
-              par: { type: integer, minimum: 1 }
-              outline:
-                type: array
-                description: The hole's outline, [x, y] in millimetres
-                items: { $ref: '#/components/schemas/MinigolfDetailPt' }
-              walls:
-                type: array
-                description: The walls on the felt
-                items:
-                  type: object
-                  required: [points]
-                  additionalProperties: false
-                  properties:
-                    points:
-                      type: array
-                      items: { $ref: '#/components/schemas/MinigolfDetailPt' }
-                    closed: { type: boolean }
-                    thickness: { type: number, description: Millimetres }
-              cup:
-                type: object
-                required: [at, r]
-                additionalProperties: false
-                properties:
-                  at: { $ref: '#/components/schemas/MinigolfDetailPt' }
-                  r: { type: number }
+              hole: { $ref: '#/components/schemas/MinigolfHole' }
               paths:
                 type: array
                 description: "Per seat, every stroke's path on the felt ([x, y], millimetres); empty for a hole not played"

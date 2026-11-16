@@ -4130,86 +4130,379 @@
                               "items": {
                                 "type": "object",
                                 "required": [
-                                  "name",
-                                  "par",
-                                  "outline",
-                                  "walls",
-                                  "cup",
+                                  "hole",
                                   "paths"
                                 ],
                                 "additionalProperties": false,
                                 "properties": {
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "par": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                  },
-                                  "outline": {
-                                    "type": "array",
-                                    "description": "The hole's outline, [x, y] in millimetres",
-                                    "items": {
-                                      "type": "array",
-                                      "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                      "items": {
-                                        "type": "number"
-                                      },
-                                      "minItems": 2,
-                                      "maxItems": 2
-                                    }
-                                  },
-                                  "walls": {
-                                    "type": "array",
-                                    "description": "The walls on the felt",
-                                    "items": {
-                                      "type": "object",
-                                      "required": [
-                                        "points"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "points": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "array",
-                                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                            "items": {
-                                              "type": "number"
-                                            },
-                                            "minItems": 2,
-                                            "maxItems": 2
-                                          }
-                                        },
-                                        "closed": {
-                                          "type": "boolean"
-                                        },
-                                        "thickness": {
-                                          "type": "number",
-                                          "description": "Millimetres"
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "cup": {
+                                  "hole": {
                                     "type": "object",
+                                    "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                                     "required": [
-                                      "at",
-                                      "r"
+                                      "id",
+                                      "name",
+                                      "par",
+                                      "outline",
+                                      "walls",
+                                      "bumpers",
+                                      "slopes",
+                                      "tee",
+                                      "cup"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                      "at": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "par": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "outline": {
                                         "type": "array",
-                                        "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "walls": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "points"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "points": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "array",
+                                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                "items": {
+                                                  "type": "number"
+                                                },
+                                                "minItems": 2,
+                                                "maxItems": 2
+                                              }
+                                            },
+                                            "closed": {
+                                              "type": "boolean"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "thickness": {
+                                              "type": "number",
+                                              "description": "This wall only; the physics default (20 mm) otherwise"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "bumpers": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "at",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "at": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "kick": {
+                                              "type": "number"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "slopes": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "radial"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "radial": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "center",
+                                                    "radius",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "center": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "radius": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "bump"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "bump": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "from",
+                                                    "to",
+                                                    "width",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "from": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "to": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "width": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "terrain": {
+                                        "type": "array",
+                                        "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "mesa"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "mesa": {
+                                              "type": "object",
+                                              "required": [
+                                                "from",
+                                                "to",
+                                                "height",
+                                                "edges"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "from": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "to": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "height": {
+                                                  "type": "number"
+                                                },
+                                                "edges": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 4,
+                                                  "maxItems": 4
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "shape": {
+                                        "type": "object",
+                                        "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                        "required": [
+                                          "corners",
+                                          "curves",
+                                          "circles"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "corners": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            }
+                                          },
+                                          "curves": {
+                                            "type": "array",
+                                            "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                                  "required": [
+                                                    "c1",
+                                                    "c2"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "c1": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "c2": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "nullable": true,
+                                                  "enum": [
+                                                    null
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "circles": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "required": [
+                                                "center",
+                                                "r"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "center": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "r": {
+                                                  "type": "number",
+                                                  "description": "The server refuses r <= 0 on save"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "tee": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                                         "items": {
                                           "type": "number"
                                         },
                                         "minItems": 2,
                                         "maxItems": 2
                                       },
-                                      "r": {
-                                        "type": "number"
+                                      "cup": {
+                                        "type": "object",
+                                        "required": [
+                                          "at",
+                                          "r"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "at": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "r": {
+                                            "type": "number"
+                                          }
+                                        }
                                       }
                                     }
                                   },
@@ -21686,86 +21979,379 @@
                               "items": {
                                 "type": "object",
                                 "required": [
-                                  "name",
-                                  "par",
-                                  "outline",
-                                  "walls",
-                                  "cup",
+                                  "hole",
                                   "paths"
                                 ],
                                 "additionalProperties": false,
                                 "properties": {
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "par": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                  },
-                                  "outline": {
-                                    "type": "array",
-                                    "description": "The hole's outline, [x, y] in millimetres",
-                                    "items": {
-                                      "type": "array",
-                                      "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                      "items": {
-                                        "type": "number"
-                                      },
-                                      "minItems": 2,
-                                      "maxItems": 2
-                                    }
-                                  },
-                                  "walls": {
-                                    "type": "array",
-                                    "description": "The walls on the felt",
-                                    "items": {
-                                      "type": "object",
-                                      "required": [
-                                        "points"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "points": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "array",
-                                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                            "items": {
-                                              "type": "number"
-                                            },
-                                            "minItems": 2,
-                                            "maxItems": 2
-                                          }
-                                        },
-                                        "closed": {
-                                          "type": "boolean"
-                                        },
-                                        "thickness": {
-                                          "type": "number",
-                                          "description": "Millimetres"
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "cup": {
+                                  "hole": {
                                     "type": "object",
+                                    "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                                     "required": [
-                                      "at",
-                                      "r"
+                                      "id",
+                                      "name",
+                                      "par",
+                                      "outline",
+                                      "walls",
+                                      "bumpers",
+                                      "slopes",
+                                      "tee",
+                                      "cup"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                      "at": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "par": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "outline": {
                                         "type": "array",
-                                        "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "walls": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "points"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "points": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "array",
+                                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                "items": {
+                                                  "type": "number"
+                                                },
+                                                "minItems": 2,
+                                                "maxItems": 2
+                                              }
+                                            },
+                                            "closed": {
+                                              "type": "boolean"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "thickness": {
+                                              "type": "number",
+                                              "description": "This wall only; the physics default (20 mm) otherwise"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "bumpers": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "at",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "at": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number"
+                                            },
+                                            "restitution": {
+                                              "type": "number"
+                                            },
+                                            "kick": {
+                                              "type": "number"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "slopes": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "radial"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "radial": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "center",
+                                                    "radius",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "center": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "radius": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "bump"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "bump": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "from",
+                                                    "to",
+                                                    "width",
+                                                    "strength"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "from": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "to": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "width": {
+                                                      "type": "number"
+                                                    },
+                                                    "strength": {
+                                                      "type": "number"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "terrain": {
+                                        "type": "array",
+                                        "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "mesa"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "mesa": {
+                                              "type": "object",
+                                              "required": [
+                                                "from",
+                                                "to",
+                                                "height",
+                                                "edges"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "from": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "to": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "height": {
+                                                  "type": "number"
+                                                },
+                                                "edges": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 4,
+                                                  "maxItems": 4
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "shape": {
+                                        "type": "object",
+                                        "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                        "required": [
+                                          "corners",
+                                          "curves",
+                                          "circles"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "corners": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            }
+                                          },
+                                          "curves": {
+                                            "type": "array",
+                                            "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                                  "required": [
+                                                    "c1",
+                                                    "c2"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "c1": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    },
+                                                    "c2": {
+                                                      "type": "array",
+                                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                      "items": {
+                                                        "type": "number"
+                                                      },
+                                                      "minItems": 2,
+                                                      "maxItems": 2
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "nullable": true,
+                                                  "enum": [
+                                                    null
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "circles": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "required": [
+                                                "center",
+                                                "r"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "center": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "r": {
+                                                  "type": "number",
+                                                  "description": "The server refuses r <= 0 on save"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "tee": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                                         "items": {
                                           "type": "number"
                                         },
                                         "minItems": 2,
                                         "maxItems": 2
                                       },
-                                      "r": {
-                                        "type": "number"
+                                      "cup": {
+                                        "type": "object",
+                                        "required": [
+                                          "at",
+                                          "r"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "at": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "r": {
+                                            "type": "number"
+                                          }
+                                        }
                                       }
                                     }
                                   },
@@ -78539,86 +79125,379 @@
             "items": {
               "type": "object",
               "required": [
-                "name",
-                "par",
-                "outline",
-                "walls",
-                "cup",
+                "hole",
                 "paths"
               ],
               "additionalProperties": false,
               "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "par": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "outline": {
-                  "type": "array",
-                  "description": "The hole's outline, [x, y] in millimetres",
-                  "items": {
-                    "type": "array",
-                    "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                    "items": {
-                      "type": "number"
-                    },
-                    "minItems": 2,
-                    "maxItems": 2
-                  }
-                },
-                "walls": {
-                  "type": "array",
-                  "description": "The walls on the felt",
-                  "items": {
-                    "type": "object",
-                    "required": [
-                      "points"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "points": {
-                        "type": "array",
-                        "items": {
-                          "type": "array",
-                          "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                          "items": {
-                            "type": "number"
-                          },
-                          "minItems": 2,
-                          "maxItems": 2
-                        }
-                      },
-                      "closed": {
-                        "type": "boolean"
-                      },
-                      "thickness": {
-                        "type": "number",
-                        "description": "Millimetres"
-                      }
-                    }
-                  }
-                },
-                "cup": {
+                "hole": {
                   "type": "object",
+                  "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                   "required": [
-                    "at",
-                    "r"
+                    "id",
+                    "name",
+                    "par",
+                    "outline",
+                    "walls",
+                    "bumpers",
+                    "slopes",
+                    "tee",
+                    "cup"
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "at": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "par": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "outline": {
                       "type": "array",
-                      "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                      "items": {
+                        "type": "array",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    },
+                    "walls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "points"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "points": {
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "closed": {
+                            "type": "boolean"
+                          },
+                          "restitution": {
+                            "type": "number"
+                          },
+                          "thickness": {
+                            "type": "number",
+                            "description": "This wall only; the physics default (20 mm) otherwise"
+                          }
+                        }
+                      }
+                    },
+                    "bumpers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "at",
+                          "r"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "at": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "r": {
+                            "type": "number"
+                          },
+                          "restitution": {
+                            "type": "number"
+                          },
+                          "kick": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "slopes": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "radial"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "radial": {
+                                "type": "object",
+                                "required": [
+                                  "center",
+                                  "radius",
+                                  "strength"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "center": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "radius": {
+                                    "type": "number"
+                                  },
+                                  "strength": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "bump"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "bump": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "width",
+                                  "strength"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "to": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "width": {
+                                    "type": "number"
+                                  },
+                                  "strength": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "terrain": {
+                      "type": "array",
+                      "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "mesa"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "mesa": {
+                            "type": "object",
+                            "required": [
+                              "from",
+                              "to",
+                              "height",
+                              "edges"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "from": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "to": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "height": {
+                                "type": "number"
+                              },
+                              "edges": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 4,
+                                "maxItems": 4
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "shape": {
+                      "type": "object",
+                      "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                      "required": [
+                        "corners",
+                        "curves",
+                        "circles"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "corners": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "curves": {
+                          "type": "array",
+                          "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                "required": [
+                                  "c1",
+                                  "c2"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "c1": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "c2": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                }
+                              },
+                              {
+                                "type": "string",
+                                "nullable": true,
+                                "enum": [
+                                  null
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "circles": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "center",
+                              "r"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "center": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "r": {
+                                "type": "number",
+                                "description": "The server refuses r <= 0 on save"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "tee": {
+                      "type": "array",
+                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                       "items": {
                         "type": "number"
                       },
                       "minItems": 2,
                       "maxItems": 2
                     },
-                    "r": {
-                      "type": "number"
+                    "cup": {
+                      "type": "object",
+                      "required": [
+                        "at",
+                        "r"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "at": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "r": {
+                          "type": "number"
+                        }
+                      }
                     }
                   }
                 },
@@ -87471,86 +88350,379 @@
                     "items": {
                       "type": "object",
                       "required": [
-                        "name",
-                        "par",
-                        "outline",
-                        "walls",
-                        "cup",
+                        "hole",
                         "paths"
                       ],
                       "additionalProperties": false,
                       "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "par": {
-                          "type": "integer",
-                          "minimum": 1
-                        },
-                        "outline": {
-                          "type": "array",
-                          "description": "The hole's outline, [x, y] in millimetres",
-                          "items": {
-                            "type": "array",
-                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                            "items": {
-                              "type": "number"
-                            },
-                            "minItems": 2,
-                            "maxItems": 2
-                          }
-                        },
-                        "walls": {
-                          "type": "array",
-                          "description": "The walls on the felt",
-                          "items": {
-                            "type": "object",
-                            "required": [
-                              "points"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "points": {
-                                "type": "array",
-                                "items": {
-                                  "type": "array",
-                                  "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                  "items": {
-                                    "type": "number"
-                                  },
-                                  "minItems": 2,
-                                  "maxItems": 2
-                                }
-                              },
-                              "closed": {
-                                "type": "boolean"
-                              },
-                              "thickness": {
-                                "type": "number",
-                                "description": "Millimetres"
-                              }
-                            }
-                          }
-                        },
-                        "cup": {
+                        "hole": {
                           "type": "object",
+                          "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                           "required": [
-                            "at",
-                            "r"
+                            "id",
+                            "name",
+                            "par",
+                            "outline",
+                            "walls",
+                            "bumpers",
+                            "slopes",
+                            "tee",
+                            "cup"
                           ],
                           "additionalProperties": false,
                           "properties": {
-                            "at": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "par": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "outline": {
                               "type": "array",
-                              "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "walls": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "points"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "points": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  },
+                                  "closed": {
+                                    "type": "boolean"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "thickness": {
+                                    "type": "number",
+                                    "description": "This wall only; the physics default (20 mm) otherwise"
+                                  }
+                                }
+                              }
+                            },
+                            "bumpers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "at",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "at": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "kick": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            },
+                            "slopes": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "radial"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "radial": {
+                                        "type": "object",
+                                        "required": [
+                                          "center",
+                                          "radius",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "center": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "radius": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "bump"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "bump": {
+                                        "type": "object",
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "width",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "to": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "width": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "terrain": {
+                              "type": "array",
+                              "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "mesa"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "mesa": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "height",
+                                      "edges"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "to": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "height": {
+                                        "type": "number"
+                                      },
+                                      "edges": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 4,
+                                        "maxItems": 4
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "tee": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                               "items": {
                                 "type": "number"
                               },
                               "minItems": 2,
                               "maxItems": 2
                             },
-                            "r": {
-                              "type": "number"
+                            "cup": {
+                              "type": "object",
+                              "required": [
+                                "at",
+                                "r"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "at": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "r": {
+                                  "type": "number"
+                                }
+                              }
                             }
                           }
                         },
@@ -89034,86 +90206,379 @@
                     "items": {
                       "type": "object",
                       "required": [
-                        "name",
-                        "par",
-                        "outline",
-                        "walls",
-                        "cup",
+                        "hole",
                         "paths"
                       ],
                       "additionalProperties": false,
                       "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "par": {
-                          "type": "integer",
-                          "minimum": 1
-                        },
-                        "outline": {
-                          "type": "array",
-                          "description": "The hole's outline, [x, y] in millimetres",
-                          "items": {
-                            "type": "array",
-                            "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                            "items": {
-                              "type": "number"
-                            },
-                            "minItems": 2,
-                            "maxItems": 2
-                          }
-                        },
-                        "walls": {
-                          "type": "array",
-                          "description": "The walls on the felt",
-                          "items": {
-                            "type": "object",
-                            "required": [
-                              "points"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "points": {
-                                "type": "array",
-                                "items": {
-                                  "type": "array",
-                                  "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                                  "items": {
-                                    "type": "number"
-                                  },
-                                  "minItems": 2,
-                                  "maxItems": 2
-                                }
-                              },
-                              "closed": {
-                                "type": "boolean"
-                              },
-                              "thickness": {
-                                "type": "number",
-                                "description": "Millimetres"
-                              }
-                            }
-                          }
-                        },
-                        "cup": {
+                        "hole": {
                           "type": "object",
+                          "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                           "required": [
-                            "at",
-                            "r"
+                            "id",
+                            "name",
+                            "par",
+                            "outline",
+                            "walls",
+                            "bumpers",
+                            "slopes",
+                            "tee",
+                            "cup"
                           ],
                           "additionalProperties": false,
                           "properties": {
-                            "at": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "par": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "outline": {
                               "type": "array",
-                              "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "walls": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "points"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "points": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  },
+                                  "closed": {
+                                    "type": "boolean"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "thickness": {
+                                    "type": "number",
+                                    "description": "This wall only; the physics default (20 mm) otherwise"
+                                  }
+                                }
+                              }
+                            },
+                            "bumpers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "at",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "at": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number"
+                                  },
+                                  "restitution": {
+                                    "type": "number"
+                                  },
+                                  "kick": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            },
+                            "slopes": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "radial"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "radial": {
+                                        "type": "object",
+                                        "required": [
+                                          "center",
+                                          "radius",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "center": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "radius": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "bump"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "bump": {
+                                        "type": "object",
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "width",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "to": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "width": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "terrain": {
+                              "type": "array",
+                              "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "mesa"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "mesa": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "height",
+                                      "edges"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "to": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "height": {
+                                        "type": "number"
+                                      },
+                                      "edges": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 4,
+                                        "maxItems": 4
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "tee": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                               "items": {
                                 "type": "number"
                               },
                               "minItems": 2,
                               "maxItems": 2
                             },
-                            "r": {
-                              "type": "number"
+                            "cup": {
+                              "type": "object",
+                              "required": [
+                                "at",
+                                "r"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "at": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "r": {
+                                  "type": "number"
+                                }
+                              }
                             }
                           }
                         },
@@ -108076,86 +109541,379 @@
                 "items": {
                   "type": "object",
                   "required": [
-                    "name",
-                    "par",
-                    "outline",
-                    "walls",
-                    "cup",
+                    "hole",
                     "paths"
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "par": {
-                      "type": "integer",
-                      "minimum": 1
-                    },
-                    "outline": {
-                      "type": "array",
-                      "description": "The hole's outline, [x, y] in millimetres",
-                      "items": {
-                        "type": "array",
-                        "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                        "items": {
-                          "type": "number"
-                        },
-                        "minItems": 2,
-                        "maxItems": 2
-                      }
-                    },
-                    "walls": {
-                      "type": "array",
-                      "description": "The walls on the felt",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "points"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "points": {
-                            "type": "array",
-                            "items": {
-                              "type": "array",
-                              "description": "[x, y] on a minigolf hole, millimetres (y down)",
-                              "items": {
-                                "type": "number"
-                              },
-                              "minItems": 2,
-                              "maxItems": 2
-                            }
-                          },
-                          "closed": {
-                            "type": "boolean"
-                          },
-                          "thickness": {
-                            "type": "number",
-                            "description": "Millimetres"
-                          }
-                        }
-                      }
-                    },
-                    "cup": {
+                    "hole": {
                       "type": "object",
+                      "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
                       "required": [
-                        "at",
-                        "r"
+                        "id",
+                        "name",
+                        "par",
+                        "outline",
+                        "walls",
+                        "bumpers",
+                        "slopes",
+                        "tee",
+                        "cup"
                       ],
                       "additionalProperties": false,
                       "properties": {
-                        "at": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "par": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "outline": {
                           "type": "array",
-                          "description": "[x, y] on a minigolf hole, millimetres (y down)",
+                          "items": {
+                            "type": "array",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "walls": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "points"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "points": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "restitution": {
+                                "type": "number"
+                              },
+                              "thickness": {
+                                "type": "number",
+                                "description": "This wall only; the physics default (20 mm) otherwise"
+                              }
+                            }
+                          }
+                        },
+                        "bumpers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "at",
+                              "r"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "at": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "r": {
+                                "type": "number"
+                              },
+                              "restitution": {
+                                "type": "number"
+                              },
+                              "kick": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        },
+                        "slopes": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "radial"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "radial": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "radius",
+                                      "strength"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "radius": {
+                                        "type": "number"
+                                      },
+                                      "strength": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "bump"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "bump": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "width",
+                                      "strength"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "to": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "width": {
+                                        "type": "number"
+                                      },
+                                      "strength": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "terrain": {
+                          "type": "array",
+                          "description": "Shaped by height ($shared/minigolf/3d/ground.ts)",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "mesa"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mesa": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "height",
+                                  "edges"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "to": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "height": {
+                                    "type": "number"
+                                  },
+                                  "edges": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 4,
+                                    "maxItems": 4
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "shape": {
+                          "type": "object",
+                          "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                          "required": [
+                            "corners",
+                            "curves",
+                            "circles"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "corners": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "curves": {
+                              "type": "array",
+                              "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                    "required": [
+                                      "c1",
+                                      "c2"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "c1": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "c2": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "circles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "center",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "center": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number",
+                                    "description": "The server refuses r <= 0 on save"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "tee": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
                           "items": {
                             "type": "number"
                           },
                           "minItems": 2,
                           "maxItems": 2
                         },
-                        "r": {
-                          "type": "number"
+                        "cup": {
+                          "type": "object",
+                          "required": [
+                            "at",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "at": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number"
+                            }
+                          }
                         }
                       }
                     },

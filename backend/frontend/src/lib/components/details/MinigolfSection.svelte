@@ -29,7 +29,7 @@
 
     <Tabs.Content value="summary" class="flex min-w-0 flex-col gap-3">
       <h3 class="font-display text-[14px] font-bold uppercase tracking-wordmark text-text-dim">Scorecard · {golf.course}</h3>
-      <Scorecard scores={golf.scores} pars={golf.holes.map(h => h.par)} {players} />
+      <Scorecard scores={golf.scores} pars={golf.holes.map(h => h.hole.par)} {players} />
     </Tabs.Content>
 
     <Tabs.Content value="shots" class="flex min-w-0 flex-col gap-4">
@@ -41,7 +41,7 @@
             <Tabs.Trigger
               variant="pill"
               value={String(i)}
-              aria-label="Hole {i + 1}, {h.name}"
+              aria-label="Hole {i + 1}, {h.hole.name}"
               class="h-10 min-w-11 shrink-0 px-3 text-[15px] hover:text-ink-2 data-[state=active]:bg-accent data-[state=active]:font-bold data-[state=active]:text-accent-fg"
               >{i + 1}</Tabs.Trigger
             >
@@ -50,12 +50,13 @@
         {#if shown}
           <Tabs.Content value={hole} class="flex min-w-0 flex-col gap-2">
             <h3 class="flex items-baseline justify-between gap-2 text-[17px] font-semibold">
-              <span>Hole {Number(hole) + 1} · {shown.name}</span><span class="text-[14px] font-normal text-text-muted">Par {shown.par}</span
+              <span>Hole {Number(hole) + 1} · {shown.hole.name}</span><span class="text-[14px] font-normal text-text-muted"
+                >Par {shown.hole.par}</span
               >
             </h3>
             {#if shown.paths.some(s => s.length > 0)}
               <HoleShots
-                hole={shown}
+                hole={shown.hole}
                 paths={shown.paths}
                 scores={golf.scores[Number(hole)] ?? []}
                 {players}

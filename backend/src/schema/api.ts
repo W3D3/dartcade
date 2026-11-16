@@ -3957,21 +3957,7 @@ export interface components {
             course: string;
             /** @description The holes in the order played */
             holes: {
-                name: string;
-                par: number;
-                /** @description The hole's outline, [x, y] in millimetres */
-                outline: components["schemas"]["MinigolfDetailPt"][];
-                /** @description The walls on the felt */
-                walls: {
-                    points: components["schemas"]["MinigolfDetailPt"][];
-                    closed?: boolean;
-                    /** @description Millimetres */
-                    thickness?: number;
-                }[];
-                cup: {
-                    at: components["schemas"]["MinigolfDetailPt"];
-                    r: number;
-                };
+                hole: components["schemas"]["MinigolfHole"];
                 /** @description Per seat, every stroke's path on the felt ([x, y], millimetres); empty for a hole not played */
                 paths: components["schemas"]["MinigolfDetailPt"][][][];
             }[];
