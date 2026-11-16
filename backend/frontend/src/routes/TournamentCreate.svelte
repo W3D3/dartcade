@@ -529,8 +529,9 @@
                 </div>
               {:else}
                 <p class="rounded-md border border-line bg-surface-1 p-3.5 text-label text-text-muted">
-                  No set time. Registration stays open until you press <b class="text-text">Start tournament</b> on the tournament page. Players
-                  get a notification and have a few minutes to check in; anyone who doesn’t is removed and the bracket is drawn from who’s there.
+                  No set time. Registration stays open until you press <b class="text-text">Start tournament</b> on the tournament page. Check-in
+                  then opens for the number of minutes you choose below. Players get a notification, and anyone who doesn’t check in is removed
+                  before the bracket is drawn.
                 </p>
                 <div class="grid gap-4 md:grid-cols-2">
                   <div class="flex flex-col gap-2">
@@ -540,7 +541,7 @@
                     <DateTimeField label="Planned" value={form.plannedFor} onchange={(v: string) => set('plannedFor', v)} />
                   </div>
                   <div class="flex flex-col gap-2">
-                    <span id="tc-check-in-after" class="text-label font-semibold">Check-in after start</span>
+                    <span id="tc-check-in-after" class="text-label font-semibold">Check-in length after you press Start</span>
                     <SegmentedControl
                       labelledby="tc-check-in-after"
                       options={seg(CHECK_IN_AFTER)}

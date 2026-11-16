@@ -90,7 +90,7 @@ describe('Who plays?', () => {
 
   it('tells how long the spot is held', () => {
     expect(holdNote(['Lena'], null)).toBe(
-      'Lena gets a request to confirm. Your team’s spot is held until everyone has confirmed, or until an organizer starts the tournament. If someone declines you can pick another teammate.',
+      'Lena gets a request to confirm. Your team’s spot is held until everyone has confirmed, or until an organizer starts the tournament. If someone declines, you can pick another teammate.',
     )
     expect(sendLabel(['Lena', 'Max'])).toBe('Send requests to Lena and Max')
   })

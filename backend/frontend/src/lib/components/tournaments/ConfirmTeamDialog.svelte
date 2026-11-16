@@ -42,8 +42,8 @@
             [
               'Check-in',
               t.startsAt
-                ? `${time(new Date(Date.parse(t.startsAt) - checkIn * 60_000).toISOString())}–${time(t.startsAt)}, your board`
-                : `${checkIn} min once it starts, your board`,
+                ? `${time(new Date(Date.parse(t.startsAt) - checkIn * 60_000).toISOString())}–${time(t.startsAt)} on your board`
+                : `Opens when an organizer starts it, for ${checkIn} min, on your board`,
             ],
           ]),
     ]

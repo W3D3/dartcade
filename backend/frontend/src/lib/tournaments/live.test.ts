@@ -149,10 +149,10 @@ describe('live tournament view', () => {
     expect(rulesOf({ play: 'online', settings })).toEqual([
       'Every match is first to 3 legs.',
       'The final is first to 5.',
-      'Next round starts as soon as both players are ready.',
-      'No-show for 10 minutes = forfeit.',
+      'Each match starts as soon as both players are ready.',
+      'A player who hasn’t joined after 10 minutes forfeits the match.',
       'Every player plays on their own paired board.',
-      'Withdrawing once it runs forfeits your remaining matches.',
+      'If you withdraw after the tournament has started, you forfeit your remaining matches.',
     ])
   })
 })

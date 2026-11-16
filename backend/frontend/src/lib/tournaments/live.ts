@@ -196,12 +196,12 @@ export function rulesOf(t: Pick<Tournament, 'play' | 'settings'>): string[] {
     : []
   const play = online
     ? [
-        'Next round starts as soon as both players are ready.',
+        'Each match starts as soon as both players are ready.',
         s.noShowMinutes === null
-          ? 'No forfeits: a match waits until both players are there.'
-          : `No-show for ${s.noShowMinutes} minutes = forfeit.`,
+          ? 'There are no forfeits. A match waits until both players are there.'
+          : `A player who hasn’t joined after ${s.noShowMinutes} minutes forfeits the match.`,
         ...(s.checkInMinutes !== null
-          ? [`Check in during the ${s.checkInMinutes} minutes before the start, or you're left out of the draw.`]
+          ? [`Check in during the ${s.checkInMinutes} minutes before the start, or you’re left out of the draw.`]
           : []),
         s.manualScoring ? 'Scores may be typed in without a paired board.' : 'Every player plays on their own paired board.',
       ]
@@ -210,7 +210,7 @@ export function rulesOf(t: Pick<Tournament, 'play' | 'settings'>): string[] {
     `Every match is first to ${s.firstTo} ${s.firstTo === 1 ? 'leg' : 'legs'}.`,
     ...final,
     ...play,
-    'Withdrawing once it runs forfeits your remaining matches.',
+    'If you withdraw after the tournament has started, you forfeit your remaining matches.',
   ]
 }
 
