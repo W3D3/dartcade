@@ -33,6 +33,12 @@ const legOf = (detail: X01Detail, leg: number) => detail.legs.find(l => l.leg ==
 const sideVisits = (detail: X01Detail, leg: number, side: Side): Visit[] =>
   (legOf(detail, leg)?.visits ?? []).filter(v => side.seats.includes(v.seat))
 
+/** The side that threw first in a leg (a team when one of its members started), null if the leg is unknown. */
+export function legStarterKey(detail: X01Detail, leg: number, sides: Side[]): number | null {
+  const starter = legOf(detail, leg)?.starter
+  return sides.find(s => s.seats.includes(starter ?? -1))?.key ?? null
+}
+
 export function legSeries(detail: X01Detail, leg: number, sides: Side[], start: number) {
   return sides.map(side => ({
     key: side.key,
@@ -88,11 +94,7 @@ export function legSummary(
 ): string {
   const l = legOf(detail, leg)
   if (!l) return ''
-  const first = `${nameOf(l.starter)} threw first`
-  if (l.winner === null) {
-    if (forfeitedBy) return `Not finished: ${forfeitedBy} gave up · ${first}`
-    return `No winner: the round limit ended it · ${first}`
-  }
+  if (l.winner === null) return forfeitedBy ? `Not finished: ${forfeitedBy} gave up` : 'No winner: the round limit ended it'
   const winner = l.winner
   const side = sides.find(s => s.seats.includes(winner))
   const winnerName = side && side.seats.length > 1 ? side.name : nameOf(winner)
@@ -102,5 +104,5 @@ export function legSummary(
       .at(-1)
       ?.darts.map(d => dartLabel(d.segment))
       .join(' · ') ?? ''
-  return `${winnerName} won in ${darts} darts, checking out ${checkout} · ${first}`
+  return `${winnerName} won in ${darts} darts, checking out ${checkout}`
 }

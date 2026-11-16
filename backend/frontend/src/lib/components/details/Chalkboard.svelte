@@ -3,24 +3,35 @@
   // the darts, and the points left, crossed out once passed; "Out" on the checkout. In a team
   // game each cell names who threw.
   import type { ChalkRow, Side } from '$lib/details/x01'
+  import StarterDot from './StarterDot.svelte'
 
   let {
     rows,
     sides,
     showThrower = false,
     nameOf,
-  }: { rows: ChalkRow[]; sides: Side[]; showThrower?: boolean; nameOf: (seat: number) => string } = $props()
-  const cols = $derived(`40px repeat(${sides.length}, minmax(0, 1fr))`)
+    starter = null,
+  }: { rows: ChalkRow[]; sides: Side[]; showThrower?: boolean; nameOf: (seat: number) => string; starter?: number | null } = $props()
+  // From three sides each column keeps room for a visit's total, darts and points left (the dart chips
+  // show from sm up; a phone has room for three sides, not four), so a wide table scrolls sideways instead of its cells running into each other.
+  const cols = $derived(`40px repeat(${sides.length}, minmax(var(--col-min, 0px), 1fr))`)
+  const minWidth = $derived(
+    sides.length >= 4 ? '[--col-min:7.5rem] sm:[--col-min:15rem]' : sides.length === 3 ? 'sm:[--col-min:15rem]' : '',
+  )
 </script>
 
-<div role="table" aria-label="Visits in this leg, dart by dart" class="flex flex-col overflow-x-auto">
+<div role="table" aria-label="Visits in this leg, dart by dart" class="flex flex-col overflow-x-auto {minWidth}">
   <div
     role="row"
     class="grid gap-[10px] h-7 items-center border-b border-line-2 text-[12px] label-caps text-text-dim"
     style:grid-template-columns={cols}
   >
     <span role="columnheader">#</span>
-    {#each sides as s (s.key)}<span role="columnheader" class="truncate">{s.name}</span>{/each}
+    {#each sides as s (s.key)}
+      <span role="columnheader" class="flex items-center gap-2 min-w-0 px-2"
+        >{#if s.key === starter}<StarterDot />{/if}<span class="truncate">{s.name}</span></span
+      >
+    {/each}
   </div>
   {#each rows as row (row.n)}
     <div role="row" class="grid gap-[10px] min-h-[38px] items-center border-b border-line" style:grid-template-columns={cols}>

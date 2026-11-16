@@ -128,6 +128,15 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
+        <!-- X01 with 3+ players or teams: the breakdown's columns are too wide beside the results -->
+        {@const stacked = layout !== 'duel' && d.game.mode === 'x01'}
+        {@const resultsClass = stacked
+          ? layout === 'teams'
+            ? 'lg:grid lg:grid-cols-2 lg:items-start'
+            : ''
+          : layout === 'party'
+            ? 'lg:shrink-0 lg:w-[560px]'
+            : 'lg:shrink-0 lg:w-[420px] xl:w-[520px]'}
         {@const title = getGameView(d.game.mode).title}
         <DetailsHeader
           detail={d}
@@ -177,16 +186,15 @@
           />
         {:else}
           <main
-            class="relative grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
+            class="relative grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col gap-4 md:gap-6 {stacked
+              ? ''
+              : 'lg:flex-row'}"
           >
-            <section
-              aria-label="Result and statistics"
-              class="flex flex-col gap-4 min-w-0 lg:shrink-0 {layout === 'party' ? 'lg:w-[560px]' : 'lg:w-[420px] xl:w-[520px]'}"
-            >
+            <section aria-label="Result and statistics" class="flex flex-col gap-4 min-w-0 {resultsClass}">
               {#if layout === 'party'}
                 <Standings rows={d.stats.rows} {sides} />
               {:else}
-                <ResultCard detail={d} {sides} />
+                <div class={stacked ? 'lg:col-span-2' : ''}><ResultCard detail={d} {sides} /></div>
                 <StatsTable rows={d.stats.rows} {sides} title={layout === 'teams' ? 'Team stats' : 'Match stats'} />
                 {#if layout === 'teams'}<TeamShares detail={d} />{/if}
               {/if}

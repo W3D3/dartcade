@@ -164,7 +164,7 @@ describe('details components', () => {
     expect(sharesOut).toContain('P0')
     expect(sharesOut).toContain('2')
 
-    const legsOut = render(X01Legs, { props: { detail: d, party: false, leg: 0, highlight: null } }).body
+    const legsOut = render(X01Legs, { props: { detail: d, leg: 0, highlight: null } }).body
     expect(legsOut).toContain('P0')
     expect(legsOut).toContain('P1')
   })
@@ -213,8 +213,10 @@ describe('X01 Breakdown, one leg', () => {
   it('shows the given leg: summary, chart and chalkboard', () => {
     const d = game(2)
     d.detail = twoLegs()
-    const out = render(X01Legs, { props: { detail: d, party: false, leg: 0, highlight: null } }).body
-    expect(out).toContain('P0 threw first')
+    const out = render(X01Legs, { props: { detail: d, leg: 0, highlight: null } }).body
+    expect(out).not.toContain('threw first')
+    // the starter's dot: once in the chart legend and once in the chalkboard header
+    expect(out.match(/aria-label="Threw first"/g)).toHaveLength(2)
     expect(out).toContain('<svg')
     expect(out).toContain('T20')
     // seat 0's first visit (321 left) is crossed out once passed, not the checkout visit
@@ -225,8 +227,9 @@ describe('X01 Breakdown, one leg', () => {
   it('a selected leg renders only that leg, not the others', () => {
     const d = game(2)
     d.detail = twoLegs()
-    const out = render(X01Legs, { props: { detail: d, party: false, leg: 1, highlight: null } }).body
-    expect(out).toContain('P1 threw first')
+    const out = render(X01Legs, { props: { detail: d, leg: 1, highlight: null } }).body
+    expect(out).not.toContain('threw first')
+    expect(out.match(/aria-label="Threw first"/g)).toHaveLength(2)
     expect(out).toContain('T19')
     // Leg 0's own content doesn't leak into leg 1's block.
     expect(out).not.toContain('T20')

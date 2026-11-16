@@ -107,11 +107,11 @@
           {#each legs as l (l)}
             <div class="flex flex-col gap-4 min-w-0">
               <h3 class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-dim">Leg {l + 1}</h3>
-              <X01Legs {detail} {party} leg={l} {highlight} />
+              <X01Legs {detail} leg={l} {highlight} />
             </div>
           {/each}
         {:else}
-          <X01Legs {detail} {party} leg={legSel} {highlight} />
+          <X01Legs {detail} leg={legSel} {highlight} />
         {/if}
       {/if}
     </Tabs.Content>

@@ -7,8 +7,14 @@
   import { ordinal } from '$lib/fmt'
   import { betterIndexes, formatStat } from '$lib/details/stats'
   import type { DetailSide } from '$lib/details/page'
+  import StarterDot from './StarterDot.svelte'
 
-  let { rows, sides, ranked = true }: { rows: StatRow[]; sides: DetailSide[]; ranked?: boolean } = $props()
+  let {
+    rows,
+    sides,
+    ranked = true,
+    starter = null,
+  }: { rows: StatRow[]; sides: DetailSide[]; ranked?: boolean; starter?: number | null } = $props()
   const compact = $derived(rows.filter(r => r.compact))
   const order = $derived(ranked ? [...sides].sort((a, b) => a.placement - b.placement) : sides)
   const all = $derived(sides.map(s => ({ index: s.index, values: s.values })))
@@ -32,7 +38,8 @@
               ><ProfilePopover userId={s.userId} name={s.name}
                 ><Avatar name={s.name} size={28} guest={s.guest} face={s} /><span class="font-semibold whitespace-nowrap">{s.name}</span
                 ></ProfilePopover
-              >{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span>{/if}</span
+              >{#if s.index === starter}<StarterDot />{/if}{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span
+                >{/if}</span
             ></td
           >
           {#each compact as row (row.key)}
