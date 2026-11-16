@@ -34,7 +34,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     await insertUsers(db, [{ id: 'boss', role: 'admin' }, { id: 'helper', role: 'admin' }, 'stranger'])
     await setupFlags(new Set())
     for (const id of ['venue', 'other', 'over']) {
-      await insertTournament(db, { id, owner_user_id: 'boss', access: 'in_person', status: id === 'over' ? 'running' : 'open' })
+      await insertTournament(db, { id, owner_user_id: 'boss', play: 'in_person', status: id === 'over' ? 'running' : 'open' })
     }
     app = createFastify()
     await app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
@@ -100,7 +100,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     expect((await as('stranger', 'POST', '/api/tournaments/venue/devices')).statusCode).toBe(404)
     await insertTournament(db, { id: 'online', owner_user_id: 'boss', status: 'open' })
     expect((await as('boss', 'POST', '/api/tournaments/online/devices')).statusCode).toBe(409)
-    await insertTournament(db, { id: 'done', owner_user_id: 'boss', access: 'in_person', status: 'finished' })
+    await insertTournament(db, { id: 'done', owner_user_id: 'boss', play: 'in_person', status: 'finished' })
     expect((await as('boss', 'POST', '/api/tournaments/done/devices')).statusCode).toBe(409)
   })
 
