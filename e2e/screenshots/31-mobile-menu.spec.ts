@@ -26,8 +26,8 @@ for (const [size, view] of Object.entries(SIZES)) {
       await burger.click()
       const menu = page.getByRole('dialog')
       await expect(menu).toBeVisible()
-      for (const name of ['Play', 'History', 'Friends', 'Boards', 'Settings', 'Admin'])
-        await expect(menu.getByRole('link', { name })).toBeVisible()
+      for (const name of ['Home', 'Play', 'History', 'Settings', 'Admin']) await expect(menu.getByRole('link', { name })).toBeVisible()
+      for (const gone of ['Boards', 'Progress', 'Friends']) await expect(menu.getByRole('link', { name: gone, exact: true })).toHaveCount(0)
       await expect(menu.getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page')
       await shot(page, file(size, 'open'))
       await page.keyboard.press('Escape')
@@ -35,8 +35,8 @@ for (const [size, view] of Object.entries(SIZES)) {
       await expect(burger).toBeFocused()
 
       await burger.click()
-      await menu.getByRole('link', { name: 'Friends' }).click()
-      await expect(page).toHaveURL(/#\/friends/)
+      await menu.getByRole('link', { name: 'Settings' }).click()
+      await expect(page).toHaveURL(/#\/settings/)
       await expect(menu).toBeHidden()
     }
 
@@ -44,9 +44,10 @@ for (const [size, view] of Object.entries(SIZES)) {
       await openHash(page, '/history')
       await closeToasts(page)
       await openAccountMenu(page)
-      if (!before)
-        for (const name of ['Progress', 'Stats', 'Admin', 'Friends'])
-          await expect(page.getByRole('menuitem', { name, exact: true })).toHaveCount(0)
+      if (!before) {
+        for (const name of ['Stats', 'Admin']) await expect(page.getByRole('menuitem', { name, exact: true })).toHaveCount(0)
+        for (const name of [/^Friends/, /^Progress/]) await expect(page.getByRole('menuitem', { name })).toHaveCount(1)
+      }
       await shot(page, file(size, 'account-menu'))
     }
     await ctx.close()
