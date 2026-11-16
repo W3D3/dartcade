@@ -5,7 +5,20 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'home' | 'play' | 'ranked' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin'
+  icon:
+    | 'home'
+    | 'play'
+    | 'ranked'
+    | 'coach'
+    | 'tournaments'
+    | 'progress'
+    | 'history'
+    | 'stats'
+    | 'settings'
+    | 'admin'
+    | 'friends'
+    | 'invites'
+    | 'boards'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -28,6 +41,8 @@ export type NavState = {
   coach?: boolean
   stats?: boolean
   tournaments?: boolean
+  /** Friend requests waiting for you, a badge on Friends in the phone menu. */
+  friendRequests?: number
 }
 
 /**
@@ -107,6 +122,42 @@ export function sideLinks({
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
+}
+
+export type MenuSection = { label: string; links: SideLink[] }
+
+/** The phone menu's headings, each with the entries it holds in order. */
+const MENU_SECTIONS: { label: string; icons: SideLink['icon'][] }[] = [
+  { label: 'Play', icons: ['home', 'play', 'ranked', 'coach', 'tournaments'] },
+  { label: 'You', icons: ['progress', 'history', 'stats'] },
+  { label: 'Social', icons: ['friends', 'invites'] },
+  { label: 'Account', icons: ['boards', 'settings', 'admin'] },
+]
+
+/**
+ * The phone's burger menu: every page the desktop side nav lists (same flags, same badges), plus
+ * Friends, Invites (while some are pending) and Boards, which phones have no other list for, grouped
+ * under four headings. A heading with nothing under it is left out.
+ */
+export function menuSections(nav: NavState = {}): MenuSection[] {
+  const invites = nav.invites ?? 0
+  const requests = nav.friendRequests ?? 0
+  const links: SideLink[] = [
+    ...sideLinks(nav),
+    {
+      href: '/friends',
+      label: 'Friends',
+      icon: 'friends',
+      ...(requests > 0 ? { badge: requests, badgeLabel: `${requests} friend ${requests === 1 ? 'request' : 'requests'}` } : {}),
+    },
+    ...(invites > 0
+      ? [{ href: '/invites', label: 'Invites', icon: 'invites' as const, badge: invites, badgeLabel: `${invites} pending` }]
+      : []),
+    { href: '/settings/boards', label: 'Boards', icon: 'boards' },
+  ]
+  return MENU_SECTIONS.map(({ label, icons }) => ({ label, links: icons.flatMap(icon => links.filter(l => l.icon === icon)) })).filter(
+    s => s.links.length > 0,
+  )
 }
 
 /** The route itself or a page under it (`/matchmaking/ranks` is still Matchmaking). */
