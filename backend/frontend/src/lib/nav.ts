@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'home' | 'play' | 'ranked' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin'
+  icon: 'home' | 'play' | 'ranked' | 'coach' | 'tournaments' | 'progress' | 'history' | 'stats' | 'settings' | 'admin' | 'invites'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -107,6 +107,36 @@ export function sideLinks({
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
+}
+
+/** `label` is null for the ungrouped first entry (Home). */
+export type MenuSection = { label: string | null; links: SideLink[] }
+
+/** The phone menu's headings, each with the entries it holds in order. */
+const MENU_SECTIONS: { label: string | null; icons: SideLink['icon'][] }[] = [
+  { label: null, icons: ['home'] },
+  { label: 'Play', icons: ['play', 'ranked', 'coach', 'tournaments'] },
+  { label: 'You', icons: ['history', 'stats'] },
+  { label: 'Social', icons: ['invites'] },
+  { label: 'Account', icons: ['settings', 'admin'] },
+]
+
+/**
+ * The phone's burger menu: the pages the desktop side nav lists (same flags, same badges) except
+ * Progress, plus Invites while some are pending: Home first with no heading, then four headings.
+ * Progress and Friends are in the account menu, Boards in Settings. A heading with nothing under it is left out.
+ */
+export function menuSections(nav: NavState = {}): MenuSection[] {
+  const invites = nav.invites ?? 0
+  const links: SideLink[] = [
+    ...sideLinks(nav),
+    ...(invites > 0
+      ? [{ href: '/invites', label: 'Invites', icon: 'invites' as const, badge: invites, badgeLabel: `${invites} pending` }]
+      : []),
+  ]
+  return MENU_SECTIONS.map(({ label, icons }) => ({ label, links: icons.flatMap(icon => links.filter(l => l.icon === icon)) })).filter(
+    s => s.links.length > 0,
+  )
 }
 
 /** The route itself or a page under it (`/matchmaking/ranks` is still Matchmaking). */
