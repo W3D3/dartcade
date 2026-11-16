@@ -6,7 +6,7 @@ import { closePool } from '../games/minigolfPool.js'
 import { gameList } from '../games/index.js'
 import { storedDetail } from '../history/detail.js'
 import type { Database } from '../db/schema.js'
-import { seedSample } from './sample.js'
+import { GAMES, seedSample } from './sample.js'
 import { COACH_GAMES } from './coachGames.js'
 import { insertUsers } from '../test/fixtures.js'
 
@@ -61,9 +61,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
       }
       expect(game && (await storedDetail(db, game, warn)), game_id).toBeTruthy()
     }
-    // The scripted games, the last ones played, throw exactly their script
+    // The scripted games throw exactly their script (found by their place in the seed's list)
     const scripted = await db.selectFrom('game_sessions').select('id').orderBy('created_at').execute()
-    for (const [i, { id }] of scripted.slice(-COACH_GAMES.length).entries()) {
+    const firstScripted = GAMES.findIndex(g => g.script)
+    for (const [i, { id }] of scripted.slice(firstScripted, firstScripted + COACH_GAMES.length).entries()) {
       const { script } = COACH_GAMES[i]
       const game = await getFinishedGame(db, id)
       const built = game && (await storedDetail(db, game, () => undefined))
