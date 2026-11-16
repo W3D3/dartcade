@@ -104,6 +104,12 @@ describe('init', () => {
     expect(s.bullOff.active).toBe(false)
   })
 
+  it('startWith picks the seat that throws first when there is no bull off', () => {
+    const s = x01Module.init({ ...defaultCfg, startWith: 1 }, players)
+    expect(x01Module.getCurrentPlayer(s)).toBe(1)
+    expect(x01Module.getCurrentPlayer(x01Module.init(defaultCfg, players))).toBe(0)
+  })
+
   it('validate: rejects bull off with fewer than two players', () => {
     const solo: Player[] = [{ name: 'Solo' }]
     expect(x01Module.validate!({ ...defaultCfg, bullOff: 'wdc' }, solo)).toMatch(/at least two players/)

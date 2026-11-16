@@ -19,7 +19,11 @@ export type WithBullOffState<S> = {
   game: S
 }
 
-export type BullOffGameConfig = { bullOff?: BullOffMode }
+export type BullOffGameConfig = {
+  bullOff?: BullOffMode
+  /** Without a bull off, the seat that throws first (a tournament's organizer picks it); default seat 0. */
+  startWith?: number
+}
 
 export type BullOffHooks<S> = {
   /** Start the game with players throwing in this order (closest to the bull first). */
@@ -112,10 +116,13 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       // validate() rejects such new games; this also covers sessions created
       // before that check existed when they are rebuilt.
       const doBullOff = enabled(cfg) && n >= 2
+      const inner = game.init(cfg, players, rng, version)
+      const first = cfg.startWith
+      const fixed = !doBullOff && first !== undefined && first > 0 && first < n
       return {
         stage: doBullOff ? 'bulloff' : 'game',
         bullOff: initBullOff({ mode: doBullOff ? (cfg.bullOff ?? 'off') : 'off', playerCount: n }),
-        game: game.init(cfg, players, rng, version),
+        game: fixed ? hooks.applyStartOrder(inner, [first, ...players.map((_, i) => i).filter(i => i !== first)]) : inner,
       }
     },
 
