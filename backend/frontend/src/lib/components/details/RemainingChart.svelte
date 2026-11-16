@@ -12,6 +12,7 @@
   import { createChartNav, flattenByX } from '$lib/details/chartNav.svelte'
   import { chartGrid, integerTicks } from '$lib/charts/grid'
   import { otherColor } from '$lib/details/chartColors'
+  import StarterDot from './StarterDot.svelte'
 
   type Visit = { visit: number; left: number; scored: number }
   /** A visit tagged with its side: the tooltip names the side from the point it's on. */
@@ -23,7 +24,14 @@
     sides,
     start,
     highlight = null,
-  }: { series: { key: number; points: Visit[] }[]; sides: Side[]; start: number; highlight?: number | null } = $props()
+    starter = null,
+  }: {
+    series: { key: number; points: Visit[] }[]
+    sides: Side[]
+    start: number
+    highlight?: number | null
+    starter?: number | null
+  } = $props()
 
   const tagged = $derived(series.map(s => ({ key: s.key, points: s.points.map(p => ({ ...p, side: s.key })) })))
   const maxVisits = $derived(Math.max(1, ...series.map(s => s.points.length - 1)))
@@ -78,7 +86,7 @@
     <span>Points remaining after each visit</span>
     {#each series as s (s.key)}
       <span class="inline-flex items-center gap-[6px] {s.key === lead ? 'ml-auto md:ml-0' : ''}"
-        ><span class="w-4 h-[2px]" style:background={colorOf(s.key)}></span>{name(s.key)}</span
+        ><span class="w-4 h-[2px]" style:background={colorOf(s.key)}></span>{name(s.key)}{#if s.key === starter}<StarterDot />{/if}</span
       >
     {/each}
   </figcaption>

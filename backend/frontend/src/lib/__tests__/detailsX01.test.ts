@@ -93,16 +93,14 @@ describe('X01 details helpers', () => {
   })
 
   it('sums the leg up', () => {
-    expect(legSummary(detail, 0, sides, s => game.players[s].name, null)).toBe(
-      'Christoph won in 6 darts, checking out T20 · S20 · D18 · Christoph threw first',
-    )
+    expect(legSummary(detail, 0, sides, s => game.players[s].name, null)).toBe('Christoph won in 6 darts, checking out T20 · S20 · D18')
     const cut = { ...detail, legs: [{ ...detail.legs[0], winner: null }] }
-    expect(legSummary(cut, 0, sides, s => game.players[s].name, null)).toBe('No winner: the round limit ended it · Christoph threw first')
+    expect(legSummary(cut, 0, sides, s => game.players[s].name, null)).toBe('No winner: the round limit ended it')
   })
 
   it('says who gave up when the unfinished leg ended in a forfeit', () => {
     const cut = { ...detail, legs: [{ ...detail.legs[0], winner: null }] }
-    expect(legSummary(cut, 0, sides, s => game.players[s].name, 'Guest 1')).toBe('Not finished: Guest 1 gave up · Christoph threw first')
+    expect(legSummary(cut, 0, sides, s => game.players[s].name, 'Guest 1')).toBe('Not finished: Guest 1 gave up')
   })
 
   it('keeps remaining-chart ticks ascending, duplicate-free and no higher than the start score', () => {
