@@ -44,9 +44,10 @@ for (const [size, view] of Object.entries(SIZES)) {
       await openHash(page, '/history')
       await closeToasts(page)
       await openAccountMenu(page)
-      if (!before)
-        for (const name of ['Progress', 'Stats', 'Admin', 'Friends'])
-          await expect(page.getByRole('menuitem', { name, exact: true })).toHaveCount(0)
+      if (!before) {
+        for (const name of ['Progress', 'Stats', 'Admin']) await expect(page.getByRole('menuitem', { name, exact: true })).toHaveCount(0)
+        await expect(page.getByRole('menuitem', { name: /^Friends/ })).toHaveCount(1)
+      }
       await shot(page, file(size, 'account-menu'))
     }
     await ctx.close()
