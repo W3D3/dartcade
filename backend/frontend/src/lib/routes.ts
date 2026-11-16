@@ -43,6 +43,8 @@ export const hrefs = {
   tournamentManage: (id: string) => at(`/tournaments/${id}/manage`),
   /** A venue device's full-screen view of an in-person tournament (Tournament-Mode). */
   tournamentMode: (id: string) => at(`/tournament-mode/${id}`),
+  /** A venue device opens its one-time code (with or without the code in the link). */
+  tournamentPair: (code?: string) => at(code ? `/tournament-mode/pair/${code}` : '/tournament-mode/pair'),
   /** `saved`: say so above the form (after creating it, the page this one replaced). */
   tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
   ranks: () => at('/matchmaking/ranks'),

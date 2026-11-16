@@ -1,11 +1,14 @@
 <script lang="ts">
   // Tournament mode (Tournament-Mode, #/tournament-mode/:id): a venue device's full-screen view of
   // an in-person tournament, with no nav, lobby, friends or toasts. The bar (name, format,
-  // progress, this device, Exit), Matches / Bracket / Players and how many devices are in
-  // tournament mode. The device's name is asked on first open and kept by this browser (Q15).
-  // Organizers only; behind tournaments.enabled. Playing a match (Play) comes with #617.
+  // progress, this device), Matches / Bracket / Players and how many devices are in tournament
+  // mode. Scorekeeping only: starting and every other organizer action stay on the organizer page,
+  // and there is no Exit (a device goes when an organizer revokes it, the tournament ends or its
+  // session expires). A venue device holds a session paired with a code (no account; its name is
+  // asked on first open and kept by the server); an organizer signed in may open it too (the name
+  // is kept by this browser, Q15). Playing a match (Play) comes with #617.
   import { onMount } from 'svelte'
-  import { LogOut, MonitorSmartphone, Play, TabletSmartphone, Trophy } from '@lucide/svelte'
+  import { MonitorSmartphone, TabletSmartphone, Trophy } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
@@ -13,24 +16,14 @@
   import SpotNameDialog from '$lib/components/tournaments/SpotNameDialog.svelte'
   import BracketTab from '$lib/components/tournaments/live/BracketTab.svelte'
   import PlayersList from '$lib/components/tournaments/live/PlayersList.svelte'
-  import ExitModeDialog from '$lib/components/tournaments/mode/ExitModeDialog.svelte'
   import ModeMatchCard from '$lib/components/tournaments/mode/ModeMatchCard.svelte'
-  import { Button } from '$lib/components/ui/button/index.js'
   import type { Tournament } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
   import { hrefs } from '$lib/routes'
-  import { loadTournament, startNow } from '$lib/tournaments/browse'
+  import { loadTournament } from '$lib/tournaments/browse'
+  import { deviceSessionStore, loadDeviceSession, renameDeviceSession, type DeviceSession } from '$lib/tournaments/devices'
   import type { Device, LiveMatch, LiveMessage } from '$lib/tournaments/live'
-  import {
-    barLine,
-    DEVICE_NAME_MAX,
-    deviceName,
-    matchGroups,
-    matchLabel,
-    openMode,
-    rememberDeviceName,
-    type ModeSession,
-  } from '$lib/tournaments/mode'
+  import { barLine, DEVICE_NAME_MAX, deviceName, matchGroups, openMode, rememberDeviceName, type ModeSession } from '$lib/tournaments/mode'
 
   let { params }: { params: { id: string } } = $props()
 
@@ -44,18 +37,23 @@
 
   const enabled = flag('tournaments.enabled')
   let t = $state<Tournament | null | undefined>(undefined)
-  let name = $state(deviceName())
+  let name = $state<string | null>(deviceName())
   let naming = $state(false)
-  let leaving = $state(false)
-  let starting = $state(false)
-  let startError = $state<string | null>(null)
   let mode = $state<ModeSession | null>(null)
 
-  onMount(() => {
-    void loadTournament(params.id).then(r => (t = 'tournament' in r ? r.tournament : null))
+  // The session this browser holds as a venue device; null for a signed-in organizer. Undefined while it loads
+  let device = $state<DeviceSession | null | undefined>(undefined)
+
+  onMount(async () => {
+    device = await loadDeviceSession()
+    deviceSessionStore.set(device)
+    if (device) name = device.name
+    const r = await loadTournament(params.id)
+    t = 'tournament' in r ? r.tournament : null
   })
 
-  const allowed = $derived(!!t?.role && t.play === 'in_person')
+  // The server decides what a device may do: it sees only its own tournament. A signed-in organizer needs the role
+  const allowed = $derived(device ? device.tournamentId === params.id : !!t?.role && t.play === 'in_person')
   // The socket opens once the device has a name; it stays open while this tab is in tournament mode
   $effect(() => {
     if (allowed && name && !mode) mode = openMode(params.id, name)
@@ -77,12 +75,11 @@
   })
   const myId = $derived(mode?.deviceId ?? null)
   const groups = $derived(m ? matchGroups(m) : null)
-  // The match this device plays, if any
-  const held = $derived(m?.matches.find(x => devices.some(d => d.id === myId && d.matchKey === x.key)))
 
   function saveName(next: string) {
     const clean = next.trim().slice(0, DEVICE_NAME_MAX)
-    rememberDeviceName(clean)
+    if (device) void renameDeviceSession(clean)
+    else rememberDeviceName(clean)
     name = clean
     naming = false
     mode?.rename(clean)
@@ -92,18 +89,6 @@
     if (!mode || !match.game) return
     mode.hold(match.key)
     void push(hrefs.session(match.game.sessionId).slice(1))
-  }
-
-  function leave() {
-    mode?.close()
-    void push(hrefs.tournamentManage(params.id).slice(1))
-  }
-
-  async function start() {
-    starting = true
-    const r = await startNow(params.id)
-    starting = false
-    startError = 'error' in r ? r.error : null
   }
 </script>
 
@@ -115,11 +100,16 @@
 {/snippet}
 
 <div class="flex h-dvh flex-col bg-bg text-text">
-  {#if !$flagsLoaded || t === undefined}
+  {#if (!device && !$flagsLoaded) || device === undefined || t === undefined}
     <PageLoading />
-  {:else if !$enabled || !t || !allowed || gone}
+  {:else if (!device && !$enabled) || !t || !allowed || gone}
     <main class="grid grow place-items-center p-6">
-      <EmptyState title="Not available" text="Tournament mode is for the organizers of an in-person tournament.">
+      <EmptyState
+        title="Not available"
+        text={gone && device
+          ? 'This device was removed from the tournament, or the tournament is over. Ask an organizer for a new code.'
+          : 'Tournament mode is for the organizers of an in-person tournament, and for devices they paired.'}
+      >
         {#snippet icon()}<Trophy size={24} />{/snippet}
       </EmptyState>
     </main>
@@ -129,7 +119,7 @@
       subtitle="Other devices at the venue see it by this name, like “Tablet · Bar”."
       max={DEVICE_NAME_MAX}
       onsave={saveName}
-      onclose={() => void push(hrefs.tournamentManage(params.id).slice(1))}
+      onclose={() => (device ? undefined : void push(hrefs.tournamentManage(params.id).slice(1)))}
     />
   {:else}
     <header
@@ -152,7 +142,6 @@
       >
         <TabletSmartphone size={16} aria-hidden="true" />{name}
       </button>
-      <Button variant="outline" onclick={() => (leaving = true)}><LogOut size={16} aria-hidden="true" />Exit</Button>
     </header>
 
     <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:px-6 md:py-5">
@@ -179,16 +168,9 @@
       {:else if tab === 'players'}
         <PlayersList {m} />
       {:else if m.status === 'open'}
-        <section class="card flex flex-col items-start gap-3 p-5 md:max-w-xl" aria-labelledby="mode-start">
-          <h2 id="mode-start" class="type-section-title font-bold">Ready when you are</h2>
-          <p class="text-body text-ink-2">
-            Starting draws the bracket from the {m.entries.length}
-            {t.teamSize === 1 ? 'players' : 'teams'} on the list. After that the list can’t change.
-          </p>
-          {#if startError}<p class="text-label text-danger" role="alert">{startError}</p>{/if}
-          <Button variant="accent" size="lg" disabled={starting} onclick={() => void start()}>
-            <Play size={18} aria-hidden="true" />Start tournament
-          </Button>
+        <section class="card flex flex-col items-start gap-2 p-5 md:max-w-xl" aria-labelledby="mode-wait">
+          <h2 id="mode-wait" class="type-section-title font-bold">Waiting for the organizers</h2>
+          <p class="text-body text-ink-2">The tournament has not started. The bracket shows here as soon as an organizer starts it.</p>
         </section>
       {:else}
         <div class="grid min-w-0 grid-cols-1 items-start gap-[22px] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
@@ -226,9 +208,6 @@
 
     {#if naming}
       <SpotNameDialog title="Rename this device" {name} max={DEVICE_NAME_MAX} onsave={saveName} onclose={() => (naming = false)} />
-    {/if}
-    {#if leaving}
-      <ExitModeDialog playing={held && m ? matchLabel(m, t.format, held) : null} onleave={leave} onclose={() => (leaving = false)} />
     {/if}
   {/if}
 </div>

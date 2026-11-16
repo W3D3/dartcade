@@ -35,6 +35,7 @@
   import TournamentClaim from './routes/TournamentClaim.svelte'
   import TournamentManage from './routes/TournamentManage.svelte'
   import TournamentMode from './routes/TournamentMode.svelte'
+  import TournamentPair from './routes/TournamentPair.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
   import Achievements from './routes/Achievements.svelte'
@@ -74,6 +75,7 @@
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
   import { isPublicRoute } from '$lib/publicRoutes'
+  import { deviceSessionStore, loadDeviceSession } from '$lib/tournaments/devices'
   import { authRedirect } from '$lib/authRedirect'
 
   // Match details pulls in LayerChart for its two charts; load it only when someone opens it.
@@ -172,6 +174,8 @@
     '/tournaments/new': TournamentCreate,
     '/tournaments/:id/edit': TournamentCreate,
     '/tournaments/:id/manage': TournamentManage,
+    // Before :id, which would take "pair" for a tournament
+    '/tournament-mode/pair/:code?': TournamentPair,
     '/tournament-mode/:id': TournamentMode,
     // One route (tab optional), like Customise; any other value is a tournament's id (TournamentsRoute)
     '/tournaments/:tab?': TournamentsRoute,
@@ -232,14 +236,28 @@
     }
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
-    // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user
-    if (currentHash.startsWith(hrefs.bigScreen('')) || currentHash.startsWith(hrefs.bigScreenFrame())) {
+    // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user.
+    // A venue device in tournament mode has none either: its cookie session is checked by the server, and
+    // every other page sends it to the login page, which it can't use
+    if (
+      currentHash.startsWith(hrefs.bigScreen('')) ||
+      currentHash.startsWith(hrefs.bigScreenFrame()) ||
+      currentHash.startsWith('#/tournament-mode/')
+    ) {
       checked = true
       return
     }
     // A join link or QR code opened while signed out shows its lobby first (and comes back after
     // signing in); everything else goes to the login page and comes back here after it
     if (!get(currentUser) && !currentHash.startsWith(hrefs.join() + '/')) {
+      // A venue device (no account) goes back to its tournament, not to a login page it can't use
+      const device = await loadDeviceSession()
+      if (device) {
+        deviceSessionStore.set(device)
+        void push(hrefs.tournamentMode(device.tournamentId).slice(1))
+        checked = true
+        return
+      }
       rememberReturn(sessionStore(), currentHash)
       redirectingTo = '/login'
       void push('/login')
@@ -272,6 +290,14 @@
   const bigScreenFrame = $derived($location.startsWith('/big-screen-frame'))
   // A venue device in tournament mode shows only the tournament: no toasts over it
   const tournamentMode = $derived($location.startsWith('/tournament-mode/'))
+
+  // A venue device has no account: the one other page it may open is the game of a match it plays; anything else comes back to its tournament
+  $effect(() => {
+    const d = $deviceSessionStore
+    if (d && !$currentUser && !$location.startsWith('/tournament-mode') && !$location.startsWith('/session/')) {
+      void push(hrefs.tournamentMode(d.tournamentId).slice(1))
+    }
+  })
 
   // Account-wide settings follow the signed-in user (sign-in, sign-out, a switch of user)
   let settingsUser: string | null | undefined
