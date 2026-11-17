@@ -10,6 +10,7 @@ import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
+import { withdrawEntriesOf } from '../db/tournamentAccount.js'
 import { TournamentService } from './service.js'
 import { liveMessage } from './live.js'
 
@@ -123,7 +124,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('tournament_service_test'))
-    await insertUsers(db, ['org', 'z1', 'z2', ...players])
+    await insertUsers(db, ['org', 'z1', 'z2', 'z3', 'z4', ...players])
   })
 
   afterAll(async () => {
@@ -547,6 +548,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     const w4 = await db.selectFrom('tournament_entries').select('status').where('id', '=', 'w4').executeTakeFirstOrThrow()
     expect(w4.status).toBe('withdrawn')
   })
+
   it('gives the players the full no-show wait again after a long game is aborted by nobody in it', async () => {
     await insertTournament(db, {
       id: 'ab',
@@ -568,5 +570,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     await engine.deleteSession(first)
     await service.tick()
     expect((await matches('ab'))[0].status).toBe('ready')
+  })
+
+  it('forfeits what is left for a deleted account, so a match does not wait forever', async () => {
+    await insertTournament(db, {
+      id: 'del',
+      owner_user_id: 'org',
+      status: 'open',
+      max_entries: 2,
+      game_config: JSON.stringify({ startScore: 301 }),
+      settings: settings({ seeding: 'manual', registrationClosesMinutes: null, checkInMinutes: 2, longerFinal: null, noShowMinutes: null }),
+    })
+    await register('del', ['z3', 'z4'])
+    await service.organizerStart('del')
+    for (const u of ['z3', 'z4']) await checkIn(db, 'del', u)
+    online.add('z3').add('z4').delete('z4')
+    now += 2 * MIN
+    await service.tick()
+    // the cleanup that runs before the account row goes (index.ts)
+    for (const e of await withdrawEntriesOf(db, 'z4')) if (e.running) await service.withdrawn(e.tournamentId, e.entryId)
+    await db.deleteFrom('user').where('id', '=', 'z4').execute()
+    const [final] = await matches('del')
+    expect(final).toMatchObject({ status: 'finished', outcome: 'walkover' })
   })
 })
