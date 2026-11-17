@@ -156,6 +156,13 @@ export async function removeMember(db: Kysely<Database>, teamId: string, userId:
 
 export async function setCaptain(db: Kysely<Database>, teamId: string, userId: string): Promise<void> {
   await db.updateTable('teams').set({ captain_user_id: userId }).where('id', '=', teamId).execute()
+  // A tournament entry's captain (`registered_by_user_id`) is who may withdraw it, remind or change players: it follows the team
+  await db
+    .updateTable('tournament_entries')
+    .set({ registered_by_user_id: userId })
+    .where('team_id', '=', teamId)
+    .where('status', '<>', 'withdrawn')
+    .execute()
 }
 
 /**

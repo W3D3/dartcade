@@ -5,6 +5,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import type { components } from '../schema/api.js'
 import type { TournamentRequestMessage } from '../schema/lobby-ws.js'
+import { removeMember, setCaptain } from '../db/teams.js'
 import { teamRequestsFor } from '../db/tournamentRoster.js'
 import { insertBoard, insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
 import { setOverrides, setupFlags } from '../flags/index.js'
@@ -416,5 +417,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
       .execute()
     const res = await answer('lena', true)
     expect([res.statusCode, error(res)]).toEqual([409, 'registration closed'])
+  })
+
+  it('lets the new captain, not the old one who left, withdraw the team', async () => {
+    expect((await registerTeam('chris', 'da', ['lena', 'max'])).statusCode).toBe(200)
+    await setCaptain(db, 'da', 'lena')
+    await removeMember(db, 'da', 'chris')
+    const byOld = await send('chris', 'DELETE', '/api/tournaments/cup/registration')
+    const byNew = await send('lena', 'DELETE', '/api/tournaments/cup/registration')
+    expect({ old: byOld.statusCode, new: byNew.statusCode }).toEqual({ old: 409, new: 200 })
   })
 })
