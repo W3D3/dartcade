@@ -42,6 +42,8 @@
   import { Toast } from '$lib/components/ui/toast/index.js'
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import WinScreen from '../lib/components/WinScreen.svelte'
+  import ModeBar from '../lib/components/tournaments/mode/ModeBar.svelte'
+  import { activeMode } from '../lib/tournaments/mode'
   import { flag } from '$lib/flags'
   import { coachable } from '$shared/coach/coachable'
   import LiveCoachSkeleton from '$lib/components/coach/LiveCoachSkeleton.svelte'
@@ -267,6 +269,9 @@
   type EndKind = 'end' | 'leave' | 'forfeit'
   // null for a viewer with no end control (a watcher): nothing to end, nothing to send
   const endKind = $derived<EndKind | null>(control === null ? null : snapshot?.ranked ? 'forfeit' : control)
+  // A match played in tournament mode goes back to that device's matches, not to a lobby
+  const tmode = activeMode()
+  const exitRoute = (snap: Snapshot | null) => (tmode ? `/tournament-mode/${tmode.tournamentId}` : afterGameRoute(snap))
   const END_COPY: Record<EndKind, { title: string; body: string; confirm: string }> = {
     end: { title: 'End this game?', body: 'The current game will be cancelled and all progress will be lost.', confirm: 'End game' },
     leave: {
@@ -285,7 +290,7 @@
     // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
     if (leavePending) {
       leavePending = false
-      void push(afterGameRoute(snapshot))
+      void push(exitRoute(snapshot))
     }
   })
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat).
@@ -360,7 +365,7 @@
       endError = 'Could not end the game.'
       return
     }
-    void push(afterGameRoute(snapshot))
+    void push(exitRoute(snapshot))
   }
 
   /** Anyone else with seats: forfeits them over the game socket. Confirmed by the next
@@ -409,21 +414,34 @@
   // The win screen's buttons (winActions). Rematch goes through the lobby page, which starts the
   // same game again (solo) or marks the host ready (shared) - see rematchStep
   // A ranked game goes on to the next match (its End control is the server's to decide, see endControl)
-  type WinKey = WinAction | 'ranked'
+  type WinKey = WinAction | 'ranked' | 'matches'
   const winButtons = $derived<{ primary: WinKey; secondary: WinAction | null }>(
-    snapshot?.ranked ? { primary: 'ranked', secondary: null } : winActions(snapshot, viewerId),
+    tmode
+      ? { primary: 'matches', secondary: null }
+      : snapshot?.ranked
+        ? { primary: 'ranked', secondary: null }
+        : winActions(snapshot, viewerId),
   )
   const WIN_LABELS: Record<WinKey, string> = {
     rematch: 'Rematch',
     lobby: 'Back to lobby',
     play: 'Back to Play',
     ranked: 'Find next match',
+    matches: 'Back to matches',
   }
-  const WIN_ROUTES: Record<WinKey, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play', ranked: '/matchmaking' }
+  const WIN_ROUTES: Record<WinKey, string> = {
+    rematch: '/lobby?rematch=1',
+    lobby: '/lobby',
+    play: '/play',
+    ranked: '/matchmaking',
+    matches: tmode ? `/tournament-mode/${tmode.tournamentId}` : '/',
+  }
   async function finishWin(next: WinKey) {
     if (!sessionId) return
     // The host ends the game for everyone; a 404 means it was ended already, which is fine
-    if (endKind === 'end') await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    // A venue device may not end a game, and the finished game needs no ending
+    if (endKind === 'end' && !tmode) await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    if (next === 'matches') tmode?.hold(null)
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
@@ -463,6 +481,9 @@
 {/snippet}
 
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>
+  {#if tmode && sessionId && !win}
+    <ModeBar mode={tmode} {sessionId} />
+  {/if}
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
       <span class="text-text-muted text-lg">Connecting…</span>
@@ -506,7 +527,7 @@
         {canEnd}
         endMode={endKind ?? 'end'}
         bind:settings
-        onleave={() => push(afterGameRoute(snapshot))}
+        onleave={() => push(exitRoute(snapshot))}
         onend={() => (showEndConfirm = true)}
         onviewmode={setViewMode}
       />

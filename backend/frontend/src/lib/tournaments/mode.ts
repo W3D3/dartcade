@@ -47,13 +47,17 @@ export interface ModeSession {
   readonly deviceId: string
   readonly live: LiveStore
   /** The match this device plays, kept to take it again after a reconnect. */
-  hold(matchKey: string | null): void
+  /** `sessionId`: the match's game when already known, as the live state may not have it yet. */
+  hold(matchKey: string | null, sessionId?: string): void
   rename(name: string): void
   /** Leaves tournament mode: the socket closes, a match this device played is paused. */
   close(): void
 }
 
 let current: ModeSession | null = null
+
+/** The tournament-mode session of this tab, if it is in tournament mode. */
+export const activeMode = (): ModeSession | null => current
 
 /**
  * The tournament-mode session of this tab, opened once and kept while the tab shows tournament
@@ -64,20 +68,22 @@ export function openMode(tournamentId: string, name: string): ModeSession {
   if (current?.tournamentId === tournamentId) return current
   current?.close()
   let held: string | null = null
+  let heldSession: string | undefined
   let named = name
   const id = deviceId()
   const live = createLiveStore(tournamentId, {
     // The server forgets a device when its socket drops: each connect gives its name now and the match to take back
     device: { id, name: () => named, hold: () => held },
   })
-  const playingSession = () => get(live.message)?.matches.find(m => m.key === held)?.game?.sessionId
+  const playingSession = () => heldSession ?? get(live.message)?.matches.find(m => m.key === held)?.game?.sessionId
   let stopFollowing = () => {}
   const session: ModeSession = {
     tournamentId,
     deviceId: id,
     live,
-    hold(matchKey) {
+    hold(matchKey, sessionId) {
       held = matchKey
+      heldSession = sessionId
       live.send({ type: 'device.hold', matchKey })
     },
     rename(next) {

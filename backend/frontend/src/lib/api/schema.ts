@@ -11194,6 +11194,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        /** @description Whether the game can start with a chosen player (otherwise who throws first is not asked) */
+                        choosesFirst: boolean;
                         boards: {
                             id: string;
                             name: string;
