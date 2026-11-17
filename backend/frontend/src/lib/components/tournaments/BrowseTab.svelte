@@ -12,6 +12,7 @@
   import SearchInput from '$lib/components/ui/input/search-input.svelte'
   import type { Tournament, TournamentSummary } from '$lib/api'
   import { me } from '$lib/lobby/sockets'
+  import { heroOf } from '$lib/tournaments/prizes'
   import {
     CHIPS,
     CHIP_LABELS,
@@ -28,6 +29,7 @@
     type Outcome,
   } from '$lib/tournaments/browse'
   import RegisterTeamDialog from './RegisterTeamDialog.svelte'
+  import OfficialHero from './OfficialHero.svelte'
   import TournamentDetail from './TournamentDetail.svelte'
   import TournamentRow from './TournamentRow.svelte'
 
@@ -46,15 +48,23 @@
   let error = $state('')
 
   const shown = $derived((list ?? []).filter(t => matches(t, { kind, chips, query })))
+  // The featured official tournament, loaded whole for its friends and registration deadline; the
+  // list below leaves it out
+  let hero = $state<Tournament | null>(null)
+  const heroShown = $derived(hero !== null && shown.some(t => t.id === hero?.id))
+  const rows = $derived(shown.filter(t => !heroShown || t.id !== hero?.id))
   const SECTIONS = [
     { kind: 'official', title: 'Official', text: 'Run by Dartcade' },
     { kind: 'community', title: 'Community', text: 'Made by players · anyone can create one' },
   ] as const
 
   async function refresh() {
-    const rows = await loadBrowse()
-    failed = rows === null
-    if (rows) list = rows
+    const next = await loadBrowse()
+    failed = next === null
+    if (next) list = next
+    const id = heroOf(next ?? [])?.id
+    const res = id ? await loadTournament(id) : null
+    hero = res && 'tournament' in res ? res.tournament : null
   }
 
   /** Register or Withdraw in Details: the answer shows there, and in the list's row. */
@@ -157,9 +167,19 @@
           {#snippet icon()}<Trophy size={24} />{/snippet}
         </EmptyState>
       {:else}
+        {#if hero && heroShown}
+          {@const h = hero}
+          <OfficialHero
+            t={hero}
+            {busy}
+            onopen={() => show(h.id)}
+            onregister={() => registerFromRow(h.id)}
+            onregisterteam={() => (registering = h)}
+          />
+        {/if}
         {#each SECTIONS as sec (sec.kind)}
-          {@const rows = shown.filter(t => t.kind === sec.kind)}
-          {#if rows.length > 0}
+          {@const secRows = rows.filter(t => t.kind === sec.kind)}
+          {#if secRows.length > 0}
             <section
               aria-label={sec.title}
               class="flex flex-col gap-2.5 md:gap-0 md:rounded-card md:border md:border-line md:bg-surface-panel md:px-1.5 md:pt-4 md:pb-1.5"
@@ -174,7 +194,7 @@
               >
                 <span>When</span><span>Tournament</span><span>Entry · format</span><span>Players</span><span></span>
               </div>
-              {#each rows as t (t.id)}
+              {#each secRows as t (t.id)}
                 <TournamentRow
                   {t}
                   {busy}

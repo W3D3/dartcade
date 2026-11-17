@@ -18,6 +18,8 @@
   import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, formatLong, friendsInLine, fullWhen, gameLine, spots } from '$lib/tournaments/browse'
   import { currentUser } from '$lib/auth'
+  import PrizesCard from './PrizesCard.svelte'
+  import TagPills from './TagPills.svelte'
   import TeamEntryCard from './TeamEntryCard.svelte'
 
   let {
@@ -81,6 +83,7 @@
   </ul>
 
   <div class="flex flex-wrap gap-1.5">
+    <TagPills {t} />
     {#if t.settings.avgLimit}
       <span class="inline-flex h-[22px] items-center rounded-full bg-accent-tint px-2 text-caption font-bold text-accent"
         >{avgTag(t.settings.avgLimit, t.teamSize)} · 30 days</span
@@ -102,6 +105,8 @@
   </div>
 
   {#if t.description}<p class="text-label text-text-muted">{t.description}</p>{/if}
+
+  <PrizesCard prizes={t.prizes} />
 
   <div class="flex flex-col gap-1.5">
     <div class="flex justify-between text-small text-text-muted">
