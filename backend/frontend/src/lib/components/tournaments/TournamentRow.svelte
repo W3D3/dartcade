@@ -5,6 +5,7 @@
   import { Check, User, UsersRound } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button'
+  import TagPills from './TagPills.svelte'
   import type { TournamentSummary } from '$lib/api'
   import { avgTag, notEligibleLine } from '$lib/tournaments/avgLimit'
   import { REGISTRATION_NOTE, byLine, entryLabel, formatLine, gamePill, spots, whenParts } from '$lib/tournaments/browse'
@@ -46,6 +47,7 @@
       </span>
     {/if}
     <span class="flex flex-wrap gap-1.5">
+      <TagPills {t} />
       <span class="inline-flex h-[22px] items-center rounded-full bg-surface-chip px-2 text-caption font-bold tracking-section text-ink-2">
         {gamePill(t.gameId, t.gameConfig)}
       </span>

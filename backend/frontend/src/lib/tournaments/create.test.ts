@@ -26,6 +26,8 @@ const stored = (f: CreateForm): Tournament => ({
   ...toInput(f),
   id: 't1',
   kind: 'community',
+  tags: [],
+  prizes: [],
   status: 'draft',
   entries: 0,
   owner: { id: 'u1', name: 'Christoph' },
