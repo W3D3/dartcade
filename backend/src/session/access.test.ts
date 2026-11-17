@@ -243,3 +243,41 @@ describe('canSpectateSession', () => {
     expect(ask).toHaveBeenCalledWith('max', expect.arrayContaining(['lena', 'host']))
   })
 })
+
+describe('a tournament game has no host', () => {
+  const bull = { name: '50', number: 50, bed: 'Double', multiplier: 1 } as const
+  const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
+  const tournamentGame = () => ({
+    ...newSession({
+      id: 's1',
+      ownerUserId: 'ann',
+      boardId: null,
+      module: x01Module,
+      config: { ...x01Module.defaultConfig, bullOff: 'pdc' },
+      seats: [seat('Ann', 'ann', null), seat('Bob', 'bob', null)],
+      seed: 1,
+      createdAt: new Date(),
+    }),
+    tournamentMatchId: 'm1',
+  })
+
+  it('does not let the first seat redo a bull off the other side won', () => {
+    const s = tournamentGame()
+    for (const segment of [miss, bull]) {
+      applyInput(s, { source: 'user', action: { type: 'add_dart', segment } }, new Date())
+      applyInput(s, { source: 'user', action: { type: 'takeout' } }, new Date())
+    }
+    expect(authorizeAction(s, 'ann', { type: 'bulloff_rethrow' })).toBeNull()
+    expect(authorizeAction(s, 'bob', { type: 'bulloff_rethrow' })).toBeNull()
+  })
+
+  it('lets either seat start the bull off, and nobody else', () => {
+    const s = tournamentGame()
+    for (const segment of [bull, miss]) {
+      applyInput(s, { source: 'user', action: { type: 'add_dart', segment } }, new Date())
+      applyInput(s, { source: 'user', action: { type: 'takeout' } }, new Date())
+    }
+    expect(authorizeAction(s, 'bob', { type: 'bulloff_start' })).toEqual({ type: 'bulloff_start' })
+    expect(authorizeAction(s, 'cy', { type: 'bulloff_start' })).toBeNull()
+  })
+})

@@ -3,7 +3,7 @@ import { games } from '../games/index.js'
 import { applyInput, awaitsFinish, isManualReset, overflowsVisit, takeoutWins, type GameInput } from './apply.js'
 import type { GameConfig, RankedGame, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
-import { authorizeAction, currentSeat } from './access.js'
+import { authorizeAction, currentSeat, hasHost } from './access.js'
 import { newSeed, seededRng, shuffle } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, resolveInputWork, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
@@ -708,6 +708,7 @@ export class SessionEngine {
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
+      hasHost: hasHost(session),
       scoreBased: session.module.scoreBased === true,
       seats: seatViews(session, view),
       spectators: view.spectators,

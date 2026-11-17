@@ -13,6 +13,7 @@ const base = {
   canUndoVisit: false,
   scoreBased: false,
   ownerUserId: 'u1',
+  hasHost: true,
   lobbyId: null,
   lobbyName: null,
   mySeats: [0],

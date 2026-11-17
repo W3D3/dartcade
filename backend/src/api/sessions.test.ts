@@ -192,6 +192,7 @@ describe('session ownership', () => {
   const session = (id: string, ownerUserId: string, boardId: string | null = null) => ({
     id,
     ownerUserId,
+    tournamentMatchId: null,
     boardId,
     module: { id: 'atc' },
     status: 'active',
@@ -255,6 +256,7 @@ describe('a controller who is not the host', () => {
   const lobbyGame = {
     id: 's1',
     ownerUserId: 'user-2',
+    tournamentMatchId: null,
     seats: [{ controllerUserId: 'user-1' }],
     status: 'active',
     module: { id: 'x01' },
@@ -312,6 +314,7 @@ describe('lobby games', () => {
   const lobbySession = {
     id: 's1',
     ownerUserId: 'host',
+    tournamentMatchId: null,
     boardId: null,
     lobbyId: 'l1',
     status: 'active',

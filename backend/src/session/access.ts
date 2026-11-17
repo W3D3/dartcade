@@ -10,9 +10,12 @@ export function canAccessSession(userId: string, session: Session): boolean {
   return isHost(userId, session) || session.seats.some(s => s.controllerUserId === userId)
 }
 
-/** The host started the game: starts the bull off, aborts. A ranked game has none. */
+/** Ranked and tournament games have no host: neither side may decide for the other. */
+export const hasHost = (session: Session): boolean => !session.ranked && session.tournamentMatchId === null
+
+/** The host started the game: starts the bull off, aborts. A ranked or tournament game has none. */
 export function isHost(userId: string, session: Session): boolean {
-  return !session.ranked && session.ownerUserId === userId
+  return hasHost(session) && session.ownerUserId === userId
 }
 
 /** Whether the user is a member of the lobby (LobbyService.isMember). */
@@ -81,9 +84,9 @@ export function authorizeAction(session: Session, userId: string, action: UserAc
     if (covered.size >= new Set(teamOf).size) return null
     return { type: 'forfeit', seats: mine }
   }
-  // A ranked game has no host to wait for: either side starts the bull off, and repeats it only
+  // A game without a host has none to wait for: either side starts the bull off, and repeats it only
   // when its result calls for that (a tie, nobody on the bull), never to get a second go
-  if (session.ranked && BULL_OFF_ACTIONS.has(action.type)) {
+  if (!hasHost(session) && BULL_OFF_ACTIONS.has(action.type)) {
     if (action.type === 'bulloff_rethrow' && !bullOffNeedsRethrow(session)) return null
     return session.seats.some(s => s.controllerUserId === userId) ? action : null
   }
