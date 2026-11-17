@@ -16,7 +16,9 @@
           >{placeLabel(p)}</span
         >
         <span class="flex-1">
-          {#if title}Title <b>{title}</b>{#if p.xp > 0}&nbsp;·&nbsp;{/if}{/if}{#if p.xp > 0}{xpLabel(p.xp)}{/if}
+          {#if title}Title <b>{title}</b>{#if p.xp > 0}&nbsp;·&nbsp;{/if}{/if}{#if p.xp > 0}<span class="whitespace-nowrap"
+              >{xpLabel(p.xp)}</span
+            >{/if}
         </span>
       </div>
     {/each}
