@@ -17,6 +17,7 @@
     devices,
     deviceId,
     oncontinue,
+    onplay,
   }: {
     m: LiveMessage
     match: LiveMatch
@@ -26,6 +27,8 @@
     /** This device's own id: its match opens rather than continues. */
     deviceId: string | null
     oncontinue: (match: LiveMatch) => void
+    /** Play on a ready match: pick the board and start it. */
+    onplay: (match: LiveMatch) => void
   } = $props()
 
   const label = $derived(matchLabel(m, format, match))
@@ -120,8 +123,7 @@
       {@render side(sides[1], null)}
     </div>
     {#if match.status === 'ready'}
-      <!-- Picking the board and starting the match come with #617 -->
-      <Button variant="accent" size="lg" disabled title="Playing a match from tournament mode is coming soon">
+      <Button variant="accent" size="lg" onclick={() => onplay(match)}>
         <Play size={18} aria-hidden="true" />Play
       </Button>
     {:else if match.status === 'pending'}

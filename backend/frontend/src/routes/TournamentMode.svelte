@@ -6,7 +6,7 @@
   // and there is no Exit (a device goes when an organizer revokes it, the tournament ends or its
   // session expires). A venue device holds a session paired with a code (no account; its name is
   // asked on first open and kept by the server); an organizer signed in may open it too (the name
-  // is kept by this browser, Q15). Playing a match (Play) comes with #617.
+  // is kept by this browser, Q15). Play picks a board and starts the match (PlayMatchDialog).
   import { onMount } from 'svelte'
   import { MonitorSmartphone, TabletSmartphone, Trophy } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
@@ -16,6 +16,7 @@
   import SpotNameDialog from '$lib/components/tournaments/SpotNameDialog.svelte'
   import BracketTab from '$lib/components/tournaments/live/BracketTab.svelte'
   import PlayersList from '$lib/components/tournaments/live/PlayersList.svelte'
+  import PlayMatchDialog from '$lib/components/tournaments/mode/PlayMatchDialog.svelte'
   import ModeMatchCard from '$lib/components/tournaments/mode/ModeMatchCard.svelte'
   import type { Tournament } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
@@ -39,6 +40,7 @@
   let t = $state<Tournament | null | undefined>(undefined)
   let name = $state<string | null>(deviceName())
   let naming = $state(false)
+  let playing = $state<LiveMatch | null>(null)
   let mode = $state<ModeSession | null>(null)
 
   // The session this browser holds as a venue device; null for a signed-in organizer. Undefined while it loads
@@ -87,8 +89,19 @@
 
   function continueMatch(match: LiveMatch) {
     if (!mode || !match.game) return
-    mode.hold(match.key)
+    mode.hold(match.key, match.game.sessionId)
     void push(hrefs.session(match.game.sessionId).slice(1))
+  }
+
+  function play(match: LiveMatch) {
+    playing = match
+  }
+
+  /** The match is on: this device plays it, and its game opens. */
+  function started(match: LiveMatch, sessionId: string) {
+    mode?.hold(match.key, sessionId)
+    playing = null
+    void push(hrefs.session(sessionId).slice(1))
   }
 </script>
 
@@ -177,28 +190,64 @@
           <div class="flex min-w-0 flex-col gap-3">
             {@render heading('Ready to play', 'tap Play on the device you’re throwing at')}
             {#each groups.ready as match (match.key)}
-              <ModeMatchCard {m} {match} format={t.format} gameId={t.gameId} {devices} deviceId={myId} oncontinue={continueMatch} />
+              <ModeMatchCard
+                {m}
+                {match}
+                format={t.format}
+                gameId={t.gameId}
+                {devices}
+                deviceId={myId}
+                oncontinue={continueMatch}
+                onplay={play}
+              />
             {:else}
               <p class="text-label text-text-muted">No match is waiting for its players.</p>
             {/each}
             {#if groups.upNext.length > 0}
               {@render heading('Up next')}
               {#each groups.upNext as match (match.key)}
-                <ModeMatchCard {m} {match} format={t.format} gameId={t.gameId} {devices} deviceId={myId} oncontinue={continueMatch} />
+                <ModeMatchCard
+                  {m}
+                  {match}
+                  format={t.format}
+                  gameId={t.gameId}
+                  {devices}
+                  deviceId={myId}
+                  oncontinue={continueMatch}
+                  onplay={play}
+                />
               {/each}
             {/if}
           </div>
           <div class="flex min-w-0 flex-col gap-3">
             {@render heading('Playing now')}
             {#each groups.playing as match (match.key)}
-              <ModeMatchCard {m} {match} format={t.format} gameId={t.gameId} {devices} deviceId={myId} oncontinue={continueMatch} />
+              <ModeMatchCard
+                {m}
+                {match}
+                format={t.format}
+                gameId={t.gameId}
+                {devices}
+                deviceId={myId}
+                oncontinue={continueMatch}
+                onplay={play}
+              />
             {:else}
               <p class="text-label text-text-muted">No match is being played.</p>
             {/each}
             {#if groups.finished.length > 0}
               {@render heading('Finished')}
               {#each groups.finished as match (match.key)}
-                <ModeMatchCard {m} {match} format={t.format} gameId={t.gameId} {devices} deviceId={myId} oncontinue={continueMatch} />
+                <ModeMatchCard
+                  {m}
+                  {match}
+                  format={t.format}
+                  gameId={t.gameId}
+                  {devices}
+                  deviceId={myId}
+                  oncontinue={continueMatch}
+                  onplay={play}
+                />
               {/each}
             {/if}
           </div>
@@ -206,6 +255,10 @@
       {/if}
     </main>
 
+    {#if playing && m}
+      {@const match = playing}
+      <PlayMatchDialog tournament={t} {m} {match} onstarted={(id: string) => started(match, id)} onclose={() => (playing = null)} />
+    {/if}
     {#if naming}
       <SpotNameDialog title="Rename this device" {name} max={DEVICE_NAME_MAX} onsave={saveName} onclose={() => (naming = false)} />
     {/if}
