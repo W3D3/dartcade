@@ -14,7 +14,7 @@ const game = (o: Partial<CallGame> = {}): CallGame => ({
   currentVisitDarts: [],
   visitStartScores: [501, 501],
   totalVisits: [0, 0],
-  config: { outMode: 'double', startScore: 501, inMode: 'straight', botSpeed: 'normal' },
+  config: { outMode: 'double', startScore: 501, inMode: 'straight', bullValue: '25_50', botSpeed: 'normal' },
   ...o,
 })
 
@@ -190,7 +190,13 @@ describe('checkoutFor', () => {
   })
 
   it('follows the out mode: 180 finishes in straight out', () => {
-    const config = { outMode: 'straight' as const, startScore: 501, inMode: 'straight' as const, botSpeed: 'normal' as const }
+    const config = {
+      outMode: 'straight' as const,
+      startScore: 501,
+      inMode: 'straight' as const,
+      bullValue: '25_50' as const,
+      botSpeed: 'normal' as const,
+    }
     expect(checkoutFor(over({ scores: [141, 180], config }), next({ scores: [141, 180], config }))).toEqual({
       seat: 1,
       remaining: 180,

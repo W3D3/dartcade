@@ -846,6 +846,7 @@
                                     "outMode",
                                     "startScore",
                                     "inMode",
+                                    "bullValue",
                                     "botSpeed"
                                   ],
                                   "additionalProperties": false,
@@ -868,6 +869,13 @@
                                         "straight",
                                         "double",
                                         "master"
+                                      ]
+                                    },
+                                    "bullValue": {
+                                      "type": "string",
+                                      "enum": [
+                                        "25_50",
+                                        "50_50"
                                       ]
                                     },
                                     "botSpeed": {
@@ -7995,6 +8003,7 @@
                                     "outMode",
                                     "startScore",
                                     "inMode",
+                                    "bullValue",
                                     "botSpeed"
                                   ],
                                   "additionalProperties": false,
@@ -8017,6 +8026,13 @@
                                         "straight",
                                         "double",
                                         "master"
+                                      ]
+                                    },
+                                    "bullValue": {
+                                      "type": "string",
+                                      "enum": [
+                                        "25_50",
+                                        "50_50"
                                       ]
                                     },
                                     "botSpeed": {
@@ -15215,6 +15231,7 @@
                                         "outMode",
                                         "startScore",
                                         "inMode",
+                                        "bullValue",
                                         "botSpeed"
                                       ],
                                       "additionalProperties": false,
@@ -15237,6 +15254,13 @@
                                             "straight",
                                             "double",
                                             "master"
+                                          ]
+                                        },
+                                        "bullValue": {
+                                          "type": "string",
+                                          "enum": [
+                                            "25_50",
+                                            "50_50"
                                           ]
                                         },
                                         "botSpeed": {
@@ -22364,6 +22388,7 @@
                                         "outMode",
                                         "startScore",
                                         "inMode",
+                                        "bullValue",
                                         "botSpeed"
                                       ],
                                       "additionalProperties": false,
@@ -22386,6 +22411,13 @@
                                             "straight",
                                             "double",
                                             "master"
+                                          ]
+                                        },
+                                        "bullValue": {
+                                          "type": "string",
+                                          "enum": [
+                                            "25_50",
+                                            "50_50"
                                           ]
                                         },
                                         "botSpeed": {

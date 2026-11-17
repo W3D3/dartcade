@@ -223,7 +223,7 @@
             },
             "config": {
               "type": "object",
-              "required": ["outMode", "startScore", "inMode", "botSpeed"],
+              "required": ["outMode", "startScore", "inMode", "bullValue", "botSpeed"],
               "additionalProperties": false,
               "properties": {
                 "outMode": {
@@ -237,6 +237,10 @@
                 "inMode": {
                   "type": "string",
                   "enum": ["straight", "double", "master"]
+                },
+                "bullValue": {
+                  "type": "string",
+                  "enum": ["25_50", "50_50"]
                 },
                 "botSpeed": {
                   "type": "string",
