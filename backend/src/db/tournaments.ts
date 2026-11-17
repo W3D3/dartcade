@@ -62,7 +62,7 @@ function matchChanges(move: MatchMove, now: Date): Updateable<TournamentMatchesT
     case 'start':
       return { started_at: now }
     case 'abort':
-      return { started_at: null }
+      return { started_at: null, ready_at: now }
     default:
       return {
         outcome: OUTCOME_OF[move.event],

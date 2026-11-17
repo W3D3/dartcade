@@ -123,7 +123,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('tournament_service_test'))
-    await insertUsers(db, ['org', ...players])
+    await insertUsers(db, ['org', 'z1', 'z2', ...players])
   })
 
   afterAll(async () => {
@@ -546,5 +546,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     expect(new Set(drawn)).toEqual(new Set(['w1', 'w2', 'w3']))
     const w4 = await db.selectFrom('tournament_entries').select('status').where('id', '=', 'w4').executeTakeFirstOrThrow()
     expect(w4.status).toBe('withdrawn')
+  })
+  it('gives the players the full no-show wait again after a long game is aborted by nobody in it', async () => {
+    await insertTournament(db, {
+      id: 'ab',
+      owner_user_id: 'org',
+      status: 'open',
+      max_entries: 2,
+      game_config: JSON.stringify({ startScore: 301 }),
+      settings: settings({ seeding: 'manual', registrationClosesMinutes: null, checkInMinutes: 2, longerFinal: null }),
+    })
+    online.add('z1').add('z2')
+    await register('ab', ['z1', 'z2'])
+    await service.organizerStart('ab')
+    for (const u of ['z1', 'z2']) await checkIn(db, 'ab', u)
+    now += 2 * MIN
+    await service.tick()
+    const first = gameOf('z1')
+    now += 20 * MIN
+    online.delete('z2')
+    await engine.deleteSession(first)
+    await service.tick()
+    expect((await matches('ab'))[0].status).toBe('ready')
   })
 })
