@@ -62,7 +62,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('official tournaments', () => {
       db,
       hub: { sendTournamentRequest: () => {} },
       lobbies: { pushMe: () => Promise.resolve() },
-      tournaments: { organizerStart: () => Promise.resolve('started' as const), withdrawn: () => Promise.resolve() },
+      tournaments: {
+        organizerStart: () => Promise.resolve('started' as const),
+        withdrawn: () => Promise.resolve(),
+        startByHand: () => Promise.resolve({ ok: false as const, error: 'not_found' as const }),
+        playBoards: () => Promise.resolve([]),
+      },
     })
     return app.inject({ method: 'POST', url: '/api/tournaments/official', payload, headers: { 'x-user': user } })
   }
