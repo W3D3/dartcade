@@ -1,14 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  clearCurrentBullOffThrow,
-  initBullOff,
-  onBullOffDart,
-  onBullOffTakeout,
-  rank,
-  rethrowBullOff,
-  skipBullOffThrow,
-  throwFromDart,
-} from './bullOff.js'
+import { initBullOff, onBullOffDart, onBullOffTakeout, rank, rethrowBullOff, skipBullOffThrow, throwFromDart } from './bullOff.js'
 import type { BullOffThrow } from './bullOff.js'
 import type { Dart } from './types.js'
 
@@ -78,13 +69,6 @@ describe('turns', () => {
     const s = skipBullOffThrow(initBullOff({ mode: 'wdc', playerCount: 2 }))
     expect(s.throws[0]?.mm).toBeNull()
     expect(s.currentPlayer).toBe(1)
-  })
-
-  it('clearing a throw lets the current player throw again', () => {
-    let s = onBullOffDart(initBullOff({ mode: 'wdc', playerCount: 2 }), dart())
-    s = clearCurrentBullOffThrow(s)
-    expect(s.throws[0]).toBeNull()
-    expect(s.currentPlayer).toBe(0)
   })
 
   it('rethrows in reverse order, reversing again each time', () => {

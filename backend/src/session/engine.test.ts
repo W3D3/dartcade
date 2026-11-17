@@ -619,6 +619,43 @@ describe('onUserAction', () => {
     expect(session.totalVisits).toEqual([0, 1])
   })
 
+  // A takeout the bridge didn't see start (no hand, no "Takeout in progress") arrives as
+  // visit.cleared with reason unknown; only a manual reset keeps the turn
+  it.each([
+    ['takeout.finished', {}],
+    ['visit.cleared', { visit_id: 'v', reason: 'unknown' }],
+  ])('%s passes the turn after fewer darts than a visit has, in the bull off and the game', async (kind, data) => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [
+      { name: 'Alice' },
+      { name: 'Bob' },
+    ])
+    const dart = (r: number, index = 0) => ({
+      visit_id: 'v',
+      index,
+      source_seq: 1,
+      dart: { segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 }, score: 20, polar: { r, theta_deg: 0 } },
+    })
+    const current = () => engine.getSnapshot(sessionId)!.game.currentPlayer
+
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.2))
+    await engine.onBridgeEvent('board-1', kind, data)
+    expect(current()).toBe(1)
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.05))
+    await engine.onBridgeEvent('board-1', kind, data)
+    expect(current()).toBe(1) // Bob won the bull off and throws first
+
+    // Two darts seen, the third missed by the cameras
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.5, 0))
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.5, 1))
+    await engine.onBridgeEvent('board-1', kind, data)
+    expect(current()).toBe(0)
+    expect((engine.getSnapshot(sessionId)!.game as X01Game).scores).toEqual([501, 461])
+  })
+
   it('passes other actions to the game module (bull off start)', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [

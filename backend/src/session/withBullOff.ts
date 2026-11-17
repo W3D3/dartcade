@@ -2,7 +2,6 @@ import type { BoardEvent, Effect, GameModule, Player, UserAction } from './types
 import type { BullOffViewField } from './views.js'
 import { validateOptions } from '../games/configMeta.js'
 import {
-  clearCurrentBullOffThrow,
   initBullOff,
   onBullOffDart,
   onBullOffTakeout,
@@ -141,10 +140,10 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
         }
         case 'dart.detected':
           return { state: { ...s, bullOff: onBullOffDart(bullOff, e.data.dart) } }
+        // A manual reset never gets here (apply.ts drops the open darts), so a cleared visit is a takeout
         case 'takeout.finished':
-          return { state: { ...s, bullOff: onBullOffTakeout(bullOff) } }
         case 'visit.cleared':
-          return { state: { ...s, bullOff: clearCurrentBullOffThrow(bullOff) } }
+          return { state: { ...s, bullOff: onBullOffTakeout(bullOff) } }
         default:
           return { state: s }
       }

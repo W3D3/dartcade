@@ -110,12 +110,6 @@ export function skipBullOffThrow(s: BullOffState): BullOffState {
   return onBullOffTakeout({ ...s, throws })
 }
 
-/** Clears the current player's dart so they throw again (e.g. the board was reset). */
-export function clearCurrentBullOffThrow(s: BullOffState): BullOffState {
-  if (s.result) return s
-  return { ...s, throws: s.throws.map((t, i) => (i === s.currentPlayer ? null : t)) }
-}
-
 /** Everyone throws again, in reverse order: whoever threw last now throws first. */
 export function rethrowBullOff(s: BullOffState): BullOffState {
   const sequence = [...s.sequence].reverse()
