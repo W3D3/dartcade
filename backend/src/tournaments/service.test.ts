@@ -65,6 +65,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
       db,
       engine,
       isOnline: u => online.has(u),
+      boardOnline: () => false,
       send: (u, m) => sent.push([u, m]),
       now: () => now,
       warn: () => {},

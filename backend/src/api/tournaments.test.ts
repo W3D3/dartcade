@@ -26,6 +26,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
 
   const tournaments = {
     organizerStart: vi.fn(() => Promise.resolve('started' as const)),
+    startByHand: vi.fn(),
+    playBoards: vi.fn(() => Promise.resolve([])),
     withdrawn: vi.fn(() => Promise.resolve()),
   }
   const send = (user: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object) => {

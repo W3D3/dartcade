@@ -105,7 +105,7 @@ describe('init', () => {
   })
 
   it('startWith picks the seat that throws first when there is no bull off', () => {
-    const s = x01Module.init({ ...defaultCfg, startWith: 1 }, players)
+    const s = x01Module.init({ ...defaultCfg, startWith: 1 } as X01Config, players)
     expect(x01Module.getCurrentPlayer(s)).toBe(1)
     expect(x01Module.getCurrentPlayer(x01Module.init(defaultCfg, players))).toBe(0)
   })

@@ -2417,6 +2417,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{id}/play-boards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The boards a match of an in-person tournament may be played on (organizers, venue devices)
+         * @description The organizer's own boards, narrowed to the tournament's when it names some. A board in use or offline cannot be picked; `matchKey` is the bracket key of the tournament match that uses it.
+         */
+        get: operations["listTournamentPlayBoards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{id}/matches/{matchKey}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                /** @description The match's key in the bracket, like R2M3 */
+                matchKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a ready match of an in-person tournament by hand (organizers, venue devices)
+         * @description Starts the match's game on a free board, or with `boardId` null for scores typed in. `first` is who throws first, a bull off or side a or b. 409 when the match is not waiting (another device started it), the board is in use or offline, or a player is in another game.
+         */
+        post: operations["startTournamentMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{id}/devices": {
         parameters: {
             query?: never;
@@ -11128,6 +11174,79 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listTournamentPlayBoards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The boards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Whether the game can start with a chosen player (otherwise who throws first is not asked) */
+                        choosesFirst: boolean;
+                        boards: {
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "free" | "in_use" | "offline";
+                            matchKey: string | null;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    startTournamentMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                /** @description The match's key in the bracket, like R2M3 */
+                matchKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    boardId: string | null;
+                    /** @enum {string} */
+                    first: "bull_off" | "a" | "b";
+                };
+            };
+        };
+        responses: {
+            /** @description The game to open */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sessionId: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listTournamentDevices: {

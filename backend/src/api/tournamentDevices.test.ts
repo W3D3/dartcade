@@ -8,7 +8,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createHash } from 'node:crypto'
 import { setupFlags } from '../flags/index.js'
-import { insertTournament, insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertTournament, insertUsers } from '../test/fixtures.js'
 import { createFastify } from './fastify.js'
 import { tournamentsApiPlugin } from './tournaments.js'
 import { tournamentDevicesApiPlugin } from './tournamentDevices.js'
@@ -24,6 +24,7 @@ vi.mock('../auth/session.js', () => ({
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', () => {
+  const startByHand = vi.fn(() => Promise.resolve({ ok: true as const, sessionId: 'game1' }))
   let db: Kysely<Database>
   let close: () => Promise<void>
   let app: FastifyInstance
@@ -32,6 +33,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     ;({ db, close } = await openTestSchema('tournament_devices_test'))
     useDbSingleton(db)
     await insertUsers(db, [{ id: 'boss', role: 'admin' }, { id: 'helper', role: 'admin' }, 'stranger'])
+    await insertBoard(db, { id: 'b1', owner_user_id: 'boss' })
     await setupFlags(new Set())
     for (const id of ['venue', 'other', 'over']) {
       await insertTournament(db, { id, owner_user_id: 'boss', play: 'in_person', status: id === 'over' ? 'running' : 'open' })
@@ -42,7 +44,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
       db,
       hub: { sendTournamentRequest: () => {} },
       lobbies: { pushMe: () => Promise.resolve() },
-      tournaments: { organizerStart: () => Promise.resolve('started' as const), withdrawn: () => Promise.resolve() },
+      tournaments: {
+        startByHand,
+        playBoards: () => Promise.resolve([{ id: 'b1', name: 'Board b1', state: 'free', matchKey: null }]),
+        organizerStart: () => Promise.resolve('started' as const),
+        withdrawn: () => Promise.resolve(),
+      },
     })
     app.register(tournamentDevicesApiPlugin, { db })
     // Any other page's API: signed in, nothing about devices
@@ -173,6 +180,38 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournament device sessions', ()
     const t = await db.selectFrom('tournaments').select(['name', 'status']).where('id', '=', 'venue').executeTakeFirstOrThrow()
     expect(t.status).toBe('open')
     expect(t.name).not.toBe('Hijacked')
+  })
+
+  it('a device plays a match of its own tournament: lists boards and starts it, for the organizer who paired it', async () => {
+    const { cookie } = await paired()
+    const boards = await withCookie(cookie, 'GET', '/api/tournaments/venue/play-boards')
+    expect(boards.json()).toEqual({ boards: [{ id: 'b1', name: 'Board b1', state: 'free', matchKey: null }], choosesFirst: true })
+    const start = await withCookie(cookie, 'POST', '/api/tournaments/venue/matches/R1M1/start', { boardId: 'b1', first: 'b' })
+    expect(start.json()).toEqual({ sessionId: 'game1' })
+    expect(startByHand).toHaveBeenCalledWith('venue', 'R1M1', {
+      by: 'boss',
+      boardId: 'b1',
+      boards: [expect.objectContaining({ id: 'b1' })],
+      first: 1,
+    })
+    // A board the service refuses, and another tournament's matches, stay closed
+    startByHand.mockResolvedValueOnce({ ok: false as never, error: 'not_a_board' } as never)
+    expect(
+      (await withCookie(cookie, 'POST', '/api/tournaments/venue/matches/R1M1/start', { boardId: 'nope', first: 'a' })).statusCode,
+    ).toBe(409)
+    expect((await withCookie(cookie, 'POST', '/api/tournaments/other/matches/R1M1/start', { boardId: null, first: 'a' })).statusCode).toBe(
+      404,
+    )
+    expect((await withCookie(cookie, 'GET', '/api/tournaments/other/play-boards')).statusCode).toBe(404)
+  })
+
+  it('only an organizer plays a match', async () => {
+    expect((await as('stranger', 'POST', '/api/tournaments/venue/matches/R1M1/start', { boardId: null, first: 'a' })).statusCode).toBe(404)
+    expect((await as('stranger', 'GET', '/api/tournaments/venue/play-boards')).statusCode).toBe(404)
+    startByHand.mockResolvedValueOnce({ ok: false as never, error: 'not_ready' } as never)
+    expect((await as('boss', 'POST', '/api/tournaments/venue/matches/R1M1/start', { boardId: null, first: 'bull_off' })).statusCode).toBe(
+      409,
+    )
   })
 
   it('a route that opts in must name where its tournament is: a missing param fails closed', async () => {
