@@ -90,8 +90,13 @@ func TestCompositorSendsACombinedStillAfterARound(t *testing.T) {
 	c := newTestCompositor(cs.srv.URL, sink)
 	ctx := context.Background()
 	now := time.Now()
-	for i, col := range []color.RGBA{{200, 0, 0, 255}, {0, 200, 0, 255}, {0, 0, 200, 255}} {
-		c.Add(ctx, Still{Cam: i, CapturedAt: now, JPEG: solidJPEG(t, 60, col)})
+	// Encode first: under -race the encodes between Adds outlast the debounce and split the round
+	var jpegs [][]byte
+	for _, col := range []color.RGBA{{200, 0, 0, 255}, {0, 200, 0, 255}, {0, 0, 200, 255}} {
+		jpegs = append(jpegs, solidJPEG(t, 60, col))
+	}
+	for i, j := range jpegs {
+		c.Add(ctx, Still{Cam: i, CapturedAt: now, JPEG: j})
 	}
 	st := sink.next(t)
 	if st.Cam != CombinedCam || !st.CapturedAt.Equal(now) {
