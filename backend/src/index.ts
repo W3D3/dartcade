@@ -21,6 +21,7 @@ import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { boardOwner, getBoardProfile, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
+import { handOverTournamentsOf, withdrawEntriesOf } from './db/tournamentAccount.js'
 import { releaseTeamsOf } from './db/teams.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
@@ -217,6 +218,8 @@ const lobbies: LobbyService = new LobbyService({
 })
 setAccountCleanup(async userId => {
   await cleanUpAccount({ engine, lobbies }, userId)
+  for (const e of await withdrawEntriesOf(db, userId)) if (e.running) await tournaments.withdrawn(e.tournamentId, e.entryId)
+  await handOverTournamentsOf(db, userId)
   await releaseTeamsOf(db, userId)
 })
 const matchmaking = new MatchmakingService({
