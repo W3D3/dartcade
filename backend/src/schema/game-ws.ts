@@ -24,6 +24,7 @@ export type X01Game = EngineGameFields & {
     outMode: 'straight' | 'double' | 'master'
     startScore: number
     inMode: 'straight' | 'double' | 'master'
+    bullValue: '25_50' | '50_50'
     botSpeed: 'fast' | 'normal' | 'slow'
   }
   visitLocked: boolean

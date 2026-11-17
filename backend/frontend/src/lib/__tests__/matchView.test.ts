@@ -43,7 +43,7 @@ function x01(darts = [dart('T20', 60, 20), dart('T20', 60, 20)], scores = [40, 8
       winner: null,
       opened: scores.map(() => true),
       bustThisVisit: false,
-      config: { outMode: 'double', inMode: 'straight', startScore: 501, botSpeed: 'normal' },
+      config: { outMode: 'double', inMode: 'straight', bullValue: '25_50', startScore: 501, botSpeed: 'normal' },
       visitLocked: false,
       bullOff: null,
       currentVisitDarts: darts,

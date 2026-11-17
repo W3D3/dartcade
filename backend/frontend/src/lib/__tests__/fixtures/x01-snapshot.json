@@ -35,6 +35,7 @@
       "outMode": "double",
       "startScore": 501,
       "inMode": "straight",
+      "bullValue": "25_50",
       "botSpeed": "normal"
     },
     "visitLocked": false,

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { coachable } from '../shared/coach/coachable.js'
 import { x01Game, x01Module, configMeta } from './x01.js'
 import type { X01Config, X01State } from './x01.js'
 import type { BoardEvent, Player } from '../session/types.js'
@@ -552,6 +553,14 @@ describe('view', () => {
     expect(v.currentPlayer).toBe(1)
     expect(v.winner).toBeNull()
     expect((v.config as any).outMode).toBe('double')
+  })
+
+  it('carries the bull setting, so the live coach can skip a 50/50 game', () => {
+    const players = [{ name: 'Christoph' }]
+    const s = x01Game.init({ ...x01Game.defaultConfig, bullValue: '50_50' }, players)
+    const config = x01Game.view(s, players).config
+    expect(config.bullValue).toBe('50_50')
+    expect(coachable('x01', config)).toBe(false)
   })
 
   it('does not include totalDarts (tracked by engine, not module)', () => {
