@@ -58,7 +58,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('claiming a tournament spot', ()
       db,
       hub: { sendTournamentRequest: () => {} },
       lobbies: { pushMe: () => Promise.resolve() },
-      tournaments: { organizerStart: () => Promise.resolve('started' as const), withdrawn: () => Promise.resolve() },
+      tournaments: {
+        startByHand: () => Promise.reject(new Error('not used')),
+        playBoards: () => Promise.resolve([]),
+        organizerStart: () => Promise.resolve('started' as const),
+        withdrawn: () => Promise.resolve(),
+      },
       countGames: ids => {
         counted.push(ids)
         return Promise.resolve()

@@ -35,13 +35,13 @@ import { listParticipants, setParticipants, unlinkSpot, type SetParticipantsResu
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { checkIn } from '../db/tournamentRun.js'
 import { answerRequest, candidatesOf, changePlayer, registerTeam, teamEntriesOf, teamOptions } from '../db/tournamentRoster.js'
-import { getUsersByIds } from '../db/queries.js'
+import { getBoardsByOwner, getUsersByIds } from '../db/queries.js'
 import { x01Forms } from '../db/ranked.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { NO_FORM, viewerEligibility, type Eligibility, type Form } from '../shared/tournaments/avgLimit.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { LobbyService } from '../lobby/service.js'
-import type { TournamentService } from '../tournaments/service.js'
+import { choosesFirst, type TournamentService } from '../tournaments/service.js'
 import { myTournaments } from '../tournaments/mine.js'
 import { newLobbyCode } from '../lobby/code.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
@@ -76,7 +76,7 @@ type Opts = FastifyPluginOptions & {
   hub: Pick<LobbyHub, 'sendTournamentRequest'>
   /** Refreshes /ws/me (its tournament requests) for these players. */
   lobbies: Pick<LobbyService, 'pushMe'>
-  tournaments: Pick<TournamentService, 'organizerStart' | 'withdrawn'>
+  tournaments: Pick<TournamentService, 'organizerStart' | 'withdrawn' | 'startByHand' | 'playBoards'>
   /** Counts achievements for the games a claim hands to an account; a failure is logged, the claim stands. */
   countGames?: (sessionIds: string[]) => Promise<void>
 }
@@ -500,6 +500,47 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       throw conflict('only an open tournament without a start time is started by hand')
     return respond(t.id, role, req.userId)
   })
+
+  // Playing a match from tournament mode: a venue device acts for the organizer who paired it, on its own tournament only
+  const playConfig = { tournamentDevice: 'id' }
+  const STARTS: Record<string, [number, string]> = {
+    not_found: [404, 'not found'],
+    not_a_board: [409, 'that board is not one of this tournament’s boards'],
+    not_ready: [409, 'this match is not waiting to be played (another device may have started it)'],
+    board_busy: [409, 'that board is in use'],
+    board_offline: [409, 'that board is offline'],
+    players_busy: [409, 'a player is in another game'],
+    not_startable: [409, 'this match cannot be started here'],
+  }
+
+  app.get<Route<'listTournamentPlayBoards'>>(
+    '/api/tournaments/:id/play-boards',
+    { config: playConfig, schema: fromSpec('listTournamentPlayBoards') },
+    async req => {
+      const { t } = await organized(req.params.id, req.userId)
+      return { boards: await tournaments.playBoards(t.id, await getBoardsByOwner(db, req.userId)), choosesFirst: choosesFirst(t.game_id) }
+    },
+  )
+
+  app.post<Route<'startTournamentMatch'>>(
+    '/api/tournaments/:id/matches/:matchKey/start',
+    { config: playConfig, schema: fromSpec('startTournamentMatch') },
+    async req => {
+      const { t } = await organized(req.params.id, req.userId)
+      const { boardId, first } = req.body
+      const res = await tournaments.startByHand(t.id, req.params.matchKey, {
+        by: req.userId,
+        boardId,
+        boards: await getBoardsByOwner(db, req.userId),
+        first: first === 'bull_off' ? 'bull_off' : first === 'a' ? 0 : 1,
+      })
+      if (!res.ok) {
+        const [status, error] = STARTS[res.error]
+        throw new ApiError(status, { error })
+      }
+      return { sessionId: res.sessionId }
+    },
+  )
 
   app.post<Route<'checkInToTournament'>>('/api/tournaments/:id/check-in', { schema: fromSpec('checkInToTournament') }, async req => {
     const { t, role } = await visible(req.params.id, req.userId)

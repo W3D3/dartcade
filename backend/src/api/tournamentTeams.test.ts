@@ -136,7 +136,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
           return Promise.resolve()
         },
       },
-      tournaments: { organizerStart: () => Promise.resolve('started' as const), withdrawn },
+      tournaments: {
+        startByHand: () => Promise.reject(new Error('not used')),
+        playBoards: () => Promise.resolve([]),
+        organizerStart: () => Promise.resolve('started' as const),
+        withdrawn,
+      },
     })
   })
   const send = (user: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: object) =>
@@ -381,6 +386,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
       db,
       engine: {} as never,
       isOnline: () => false,
+      boardOnline: () => false,
       send: () => {},
       now: () => Date.parse('2030-11-15T19:10:00Z'),
       warn: () => {},
@@ -399,6 +405,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
       db,
       engine: {} as never,
       isOnline: () => false,
+      boardOnline: () => false,
       send: () => {},
       now: () => Date.parse('2030-11-15T19:10:00Z'),
       warn: () => {},

@@ -32,6 +32,8 @@ import {
 import { releaseUnconfirmed } from '../db/tournamentRoster.js'
 import { games } from '../games/index.js'
 import type { GameEnded, GameEndedConsumer, SessionEngine } from '../session/engine.js'
+import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
+import type { Seat } from '../session/types.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
 import { seedEntries, type Seeding } from '../shared/tournaments/bracket.js'
 import { drawFor, finalPlaces, isComplete, samePlace } from '../shared/tournaments/run.js'
@@ -45,6 +47,8 @@ const TICK_MS = 5_000
 export type TournamentDeps = {
   db: Kysely<Database>
   engine: Pick<SessionEngine, 'getSessionByUser' | 'getSessionByBoard' | 'createWithSeats' | 'deleteSession'>
+  /** The board's bridge is connected (bridgeConnections.isOnline). */
+  boardOnline: (boardId: string) => boolean
   /** The player has a /ws/me socket open (FriendsService.isOnline). */
   isOnline: (userId: string) => boolean
   /** LobbyHub.sendTournament. */
@@ -56,6 +60,22 @@ export type TournamentDeps = {
 
 export type StartOutcome = 'started' | 'not_startable'
 
+/** How an organizer starts a match by hand: on a board (null: scores typed in) and who throws first. */
+export type HandStart = {
+  /** The organizer the venue device acts for: controls every seat. */
+  by: string
+  /** The board picked, among `boards` (the organizer's own): it must be one of the tournament's and free. */
+  boardId: string | null
+  boards: readonly { id: string; name: string }[]
+  first: 'bull_off' | 0 | 1
+}
+export type HandStartOutcome =
+  | { ok: true; sessionId: string }
+  | { ok: false; error: 'not_found' | 'not_ready' | 'not_a_board' | 'board_busy' | 'board_offline' | 'players_busy' | 'not_startable' }
+
+/** A board a match may be played on: free, in use by a game (the bracket key of its tournament match, if it is one) or offline. */
+export type PlayBoard = { id: string; name: string; state: 'free' | 'in_use' | 'offline'; matchKey: string | null }
+
 const sidesOf = (r: TournamentMatchRow): [string | null, string | null] => [r.entry_a_id, r.entry_b_id]
 type Seated = { id: string; userId: string; name: string }
 /** An entry's players in team order (a solo entry has one), when every one has an account (only accounts play online). */
@@ -63,6 +83,18 @@ function playersOf(e: RunEntry): Seated[] | null {
   const seated = e.players.flatMap(p => (p.userId === null ? [] : [{ ...p, userId: p.userId }]))
   return seated.length > 0 && seated.length === e.players.length ? seated : null
 }
+/** Whether the game can start with a chosen player: the modes with a bull off (`withBullOff`) read `startWith`. */
+export const choosesFirst = (gameId: string): boolean => games[gameId]?.configMeta?.bullOff !== undefined
+
+/** Teams: side a is team 0, side b team 1, taking turns visit by visit (alternate visits); singles otherwise. */
+const teamsConfig = (sides: [RunEntry, RunEntry], seatCount: number) =>
+  sides[0].players.length === 1
+    ? { format: 'singles' }
+    : {
+        format: 'teams',
+        teams: Array.from({ length: seatCount }, (_, seat) => sideOfSeat(seat, seatCount)),
+        teamNames: sides.map(e => e.name),
+      }
 const mean = (xs: number[]) => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length)
 const involves = (r: TournamentMatchRow, entryId: string) => r.entry_a_id === entryId || r.entry_b_id === entryId
 
@@ -256,6 +288,80 @@ export class TournamentService implements GameEndedConsumer {
     }
   }
 
+  /**
+   * An organizer starts a ready match of an in-person tournament on a venue device: the game on the
+   * chosen board, or with the scores typed in without one. The match goes live first, so of two
+   * devices starting it at once only one wins (the other gets `not_ready`).
+   */
+  async startByHand(tournamentId: string, matchKey: string, start: HandStart): Promise<HandStartOutcome> {
+    return this.lane(tournamentId, async () => {
+      const { db } = this.deps
+      const t = await getTournamentRow(db, tournamentId)
+      if (t?.play !== 'in_person' || t.status !== 'running') return { ok: false, error: 'not_startable' }
+      const [entries, rows] = await Promise.all([listEntries(db, t.id), listMatches(db, t.id)])
+      const bracket = bracketOf(t, seededOf(entries), rows)
+      const row = rows.find(r => bracket.some(m => m.key === matchKey && samePlace(placeOf(r), m)))
+      if (!row) return { ok: false, error: 'not_found' }
+      if (row.status !== 'ready') return { ok: false, error: 'not_ready' }
+      const sides = sidesOf(row).map(id => entries.find(e => e.id === id))
+      const [a, b] = sides
+      const mod = games[t.game_id]
+      if (!a || !b || !mod || a.players.length === 0 || a.players.length !== b.players.length) return { ok: false, error: 'not_startable' }
+      const board =
+        start.boardId === null ? null : ((await this.playBoards(t.id, start.boards)).find(b => b.id === start.boardId) ?? undefined)
+      if (board === undefined) return { ok: false, error: 'not_a_board' }
+      if (board && board.state !== 'free') return { ok: false, error: board.state === 'offline' ? 'board_offline' : 'board_busy' }
+      const seated = [...a.players, ...b.players]
+      const teams = teamsConfig([a, b], seated.length)
+      if (start.first !== 'bull_off' && !choosesFirst(t.game_id)) return { ok: false, error: 'not_startable' }
+      const first =
+        start.first === 'bull_off' ? { bullOff: 'pdc' } : { bullOff: 'off', startWith: start.first === 1 ? a.players.length : 0 }
+      const launched = await this.launch(t, row, seated, {
+        ownerUserId: start.by,
+        config: { ...teams, ...first },
+        seats: seated.map(p => ({
+          name: p.name,
+          userId: p.userId,
+          controllerUserId: start.by,
+          boardId: board?.id ?? null,
+          boardName: board?.name ?? null,
+          bot: null,
+        })),
+      })
+      if (launched === null) return { ok: false, error: 'not_ready' }
+      if ('error' in launched) {
+        const { error } = launched
+        return {
+          ok: false,
+          error: error instanceof BoardBusyError ? 'board_busy' : error instanceof ActiveSessionError ? 'players_busy' : 'not_startable',
+        }
+      }
+      const { sessionId } = launched
+      return { ok: true, sessionId }
+    })
+  }
+
+  /** The organizer's boards a match may be played on, narrowed to the ones the tournament names. */
+  async playBoards(tournamentId: string, boards: readonly { id: string; name: string }[]): Promise<PlayBoard[]> {
+    const { db, engine } = this.deps
+    const t = await getTournamentRow(db, tournamentId)
+    if (!t) return []
+    const [entries, rows] = await Promise.all([listEntries(db, t.id), listMatches(db, t.id)])
+    const bracket = bracketOf(t, seededOf(entries), rows)
+    const keyOfRow = (id: string | null) => {
+      const row = rows.find(r => r.id === id)
+      return row ? (bracket.find(m => samePlace(placeOf(row), m))?.key ?? null) : null
+    }
+    const named = t.settings.boardIds
+    return boards
+      .filter(b => !named || named.length === 0 || named.includes(b.id))
+      .map(b => {
+        const session = engine.getSessionByBoard(b.id)
+        const state = !this.deps.boardOnline(b.id) ? 'offline' : session ? 'in_use' : 'free'
+        return { id: b.id, name: b.name, state, matchKey: keyOfRow(session?.tournamentMatchId ?? null) }
+      })
+  }
+
   // ---- the running bracket ---------------------------------------------------------------
 
   /** Moves the bracket on until nothing changes. */
@@ -356,6 +462,45 @@ export class TournamentService implements GameEndedConsumer {
     return walkover(free[1] && !free[0] ? 1 : 0)
   }
 
+  /**
+   * Starts a match's game: the match goes live first (a restart in between finds a live match
+   * without a game and puts it back), then the game is created and its seats linked to the
+   * entries' players. Null when the match is no longer ready; the error when the game could not be
+   * created, the match then being put back to ready.
+   */
+  private async launch(
+    t: TournamentRow,
+    row: TournamentMatchRow,
+    seated: readonly { id: string }[],
+    spec: { ownerUserId: string; seats: Seat[]; config: Record<string, unknown> },
+  ): Promise<{ sessionId: string } | { error: unknown } | null> {
+    const { db, engine } = this.deps
+    const mod = games[t.game_id]
+    if (!mod) return { error: new Error(`unknown game ${t.game_id}`) }
+    if ((await this.move(row.id, { event: 'start' })) === null) return null
+    let sessionId: string
+    try {
+      ;({ sessionId } = await engine.createWithSeats({
+        ownerUserId: spec.ownerUserId,
+        gameId: t.game_id,
+        config: { ...mod.defaultConfig, ...t.game_config, firstTo: row.first_to, ...spec.config },
+        seats: spec.seats,
+        tournamentMatchId: row.id,
+        lobbyName: t.name,
+      }))
+    } catch (error) {
+      this.warn('tournament game did not start', { matchId: row.id, error: String(error) })
+      await this.move(row.id, { event: 'abort' })
+      return { error }
+    }
+    await linkSeats(
+      db,
+      sessionId,
+      seated.map(p => p.id),
+    )
+    return { sessionId }
+  }
+
   private async startGame(t: TournamentRow, row: TournamentMatchRow, sides: [RunEntry, RunEntry]): Promise<boolean> {
     const { db, engine } = this.deps
     const mod = games[t.game_id]
@@ -363,36 +508,13 @@ export class TournamentService implements GameEndedConsumer {
     if (!mod || pa === null || pb === null || pa.length !== pb.length) return false
     const seated = [...pa, ...pb]
     const sideOf = (seat: number) => sideOfSeat(seat, seated.length)
-    // Teams: side a is team 0, side b team 1, taking turns visit by visit (alternate visits)
-    const teams =
-      pa.length === 1
-        ? { format: 'singles' }
-        : { format: 'teams', teams: seated.map((_, seat) => sideOf(seat)), teamNames: sides.map(e => e.name) }
+    const teams = teamsConfig(sides, seated.length)
     const seats = await ownBoardSeats(db, seated, id => engine.getSessionByBoard(id) !== undefined)
-    // Live before the game exists: a restart in between finds a live match without a game and puts it back
-    if ((await this.move(row.id, { event: 'start' })) === null) return false
-    let sessionId: string
-    try {
-      ;({ sessionId } = await engine.createWithSeats({
-        ownerUserId: seated[0].userId,
-        gameId: t.game_id,
-        // Online: a bull off decides who starts, thrown again on a tie (like ranked)
-        config: { ...mod.defaultConfig, ...t.game_config, firstTo: row.first_to, ...teams, bullOff: 'pdc' },
-        seats,
-        tournamentMatchId: row.id,
-        lobbyName: t.name,
-      }))
-    } catch (err) {
-      // Someone started another game meanwhile: tried again next time
-      this.warn('tournament game did not start', { matchId: row.id, error: String(err) })
-      await this.move(row.id, { event: 'abort' })
-      return false
-    }
-    await linkSeats(
-      db,
-      sessionId,
-      seated.map(p => p.id),
-    )
+    // Online: a bull off decides who starts, thrown again on a tie (like ranked)
+    const launched = await this.launch(t, row, seated, { ownerUserId: seated[0].userId, config: { ...teams, bullOff: 'pdc' }, seats })
+    // Someone started another game meanwhile: tried again next time
+    if (launched === null || 'error' in launched) return false
+    const { sessionId } = launched
     for (const [seat, p] of seated.entries())
       this.deps.send(p.userId, {
         type: 'tournament.match',

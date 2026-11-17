@@ -110,7 +110,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('/ws/tournament', () => {
         'venue',
         ['Anna', 'Jonas', 'Mia', 'Paul'].map(name => ({ name, tag: null, color: null, players: [{ name }] })),
       )
-      const runner = new TournamentService({ db, engine: {} as never, isOnline: () => false, send: () => {} })
+      const runner = new TournamentService({ db, engine: {} as never, isOnline: () => false, boardOnline: () => false, send: () => {} })
       expect(await runner.organizerStart('venue')).toBe('started')
       // R1M1's game is on (#617 starts it from a device)
       await db

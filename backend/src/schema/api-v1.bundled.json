@@ -6347,6 +6347,182 @@
         }
       }
     },
+    "/api/tournaments/{id}/play-boards": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listTournamentPlayBoards",
+        "summary": "The boards a match of an in-person tournament may be played on (organizers, venue devices)",
+        "description": "The organizer's own boards, narrowed to the tournament's when it names some. A board in use or offline cannot be picked; `matchKey` is the bracket key of the tournament match that uses it.",
+        "tags": [
+          "tournaments"
+        ],
+        "responses": {
+          "200": {
+            "description": "The boards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "boards",
+                    "choosesFirst"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "choosesFirst": {
+                      "type": "boolean",
+                      "description": "Whether the game can start with a chosen player (otherwise who throws first is not asked)"
+                    },
+                    "boards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "state",
+                          "matchKey"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "free",
+                              "in_use",
+                              "offline"
+                            ]
+                          },
+                          "matchKey": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/tournaments/{id}/matches/{matchKey}/start": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "matchKey",
+          "in": "path",
+          "required": true,
+          "description": "The match's key in the bracket, like R2M3",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "startTournamentMatch",
+        "summary": "Start a ready match of an in-person tournament by hand (organizers, venue devices)",
+        "description": "Starts the match's game on a free board, or with `boardId` null for scores typed in. `first` is who throws first, a bull off or side a or b. 409 when the match is not waiting (another device started it), the board is in use or offline, or a player is in another game.",
+        "tags": [
+          "tournaments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "boardId",
+                  "first"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "boardId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "first": {
+                    "type": "string",
+                    "enum": [
+                      "bull_off",
+                      "a",
+                      "b"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The game to open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "sessionId"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "sessionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/api/tournaments/{id}/devices": {
       "parameters": [
         {

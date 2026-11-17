@@ -235,6 +235,7 @@ const tournaments = new TournamentService({
   db,
   engine,
   isOnline: userId => friends.isOnline(userId),
+  boardOnline: id => bridgeConnections.isOnline(id),
   send: (userId, msg) => {
     hub.sendTournament(userId, msg)
   },
