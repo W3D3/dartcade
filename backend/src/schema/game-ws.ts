@@ -783,6 +783,10 @@ export interface SnapshotBase {
    */
   ownerUserId: string
   /**
+   * Whether `ownerUserId` is a host who may end the game. A ranked or tournament game has none: nobody ends it for everyone and either side starts the bull off.
+   */
+  hasHost: boolean
+  /**
    * The game has a running score the caller announces (the game module's scoreBased).
    */
   scoreBased: boolean

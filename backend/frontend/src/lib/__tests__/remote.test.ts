@@ -43,6 +43,7 @@ const remote = (
     ...base,
     boardId: null,
     ownerUserId: 'host',
+    hasHost: true,
     status: o.status ?? 'active',
     mySeats: o.mySeats ?? [0],
     players: [{ name: 'Christoph' }, { name: 'Lena' }],

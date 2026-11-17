@@ -76,6 +76,7 @@
   "canUndoVisit": false,
   "scoreBased": true,
   "ownerUserId": "u1",
+  "hasHost": true,
   "lobbyId": null,
   "lobbyName": null,
   "seats": [

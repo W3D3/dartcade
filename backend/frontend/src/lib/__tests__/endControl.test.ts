@@ -14,13 +14,16 @@ const RANKED: NonNullable<Snapshot['ranked']> = {
   seats: [],
 }
 
-const snap = (patch: { ownerUserId?: string; mySeats?: number[]; ranked?: Snapshot['ranked']; lobbyId?: string | null } = {}): Snapshot => {
+const snap = (
+  patch: { ownerUserId?: string; mySeats?: number[]; ranked?: Snapshot['ranked']; hasHost?: boolean; lobbyId?: string | null } = {},
+): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
   return {
     ...base,
     ownerUserId: patch.ownerUserId ?? base.ownerUserId,
     mySeats: patch.mySeats ?? base.mySeats,
     ranked: patch.ranked ?? null,
+    hasHost: patch.hasHost ?? true,
     lobbyId: patch.lobbyId === undefined ? base.lobbyId : patch.lobbyId,
   }
 }
@@ -30,8 +33,9 @@ describe('endControl', () => {
     expect(endControl(snap({ ownerUserId: 'host', mySeats: [0] }), 'host')).toBe('end')
   })
 
-  it('gives the owner of a ranked game Leave, never End', () => {
-    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], ranked: RANKED }), 'host')).toBe('leave')
+  it('gives the owner of a game without a host (ranked, tournament) Leave, never End', () => {
+    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], ranked: RANKED, hasHost: false }), 'host')).toBe('leave')
+    expect(endControl(snap({ ownerUserId: 'host', mySeats: [0], hasHost: false }), 'host')).toBe('leave')
   })
 
   it('gives a seated non-host Leave', () => {

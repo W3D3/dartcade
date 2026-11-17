@@ -21,6 +21,7 @@ function snap(gameId: string, names: string[], game: Record<string, unknown>, st
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
+    hasHost: true,
     seats: names.map(() => ({ userId: null, boardName: 'Living room', forfeited: false, bot: null })),
     mySeats: [0],
   } as unknown as Snapshot

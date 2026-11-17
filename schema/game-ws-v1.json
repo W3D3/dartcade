@@ -861,6 +861,7 @@
         "canUndoVisit",
         "scoreBased",
         "ownerUserId",
+        "hasHost",
         "seats",
         "mySeats",
         "results",
@@ -922,6 +923,10 @@
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
+        },
+        "hasHost": {
+          "type": "boolean",
+          "description": "Whether `ownerUserId` is a host who may end the game. A ranked or tournament game has none: nobody ends it for everyone and either side starts the bull off."
         },
         "scoreBased": {
           "type": "boolean",

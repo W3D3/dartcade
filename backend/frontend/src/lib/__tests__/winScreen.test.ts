@@ -51,6 +51,7 @@ function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: n
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
+    hasHost: true,
     seats: names.map((_, i) => seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}` })),
     mySeats: [0],
   } as unknown as Snapshot
@@ -418,6 +419,7 @@ function hilo(
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
+    hasHost: true,
     seats: players.map((_, i) => seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}`, forfeited: seats[i]?.forfeited ?? false })),
     mySeats: [0],
   } as unknown as Snapshot & { game: HiloGame }
@@ -619,6 +621,7 @@ function cricket(players: string[], o: CricketFixture = {}): Snapshot & { game: 
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
+    hasHost: true,
     seats: players.map((_, i) =>
       seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}`, forfeited: o.forfeited?.includes(i) ?? false }),
     ),
