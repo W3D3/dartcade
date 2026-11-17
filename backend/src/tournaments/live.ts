@@ -198,6 +198,8 @@ export class TournamentLive {
     this.sockets.set(tournamentId, open)
     // The state first: a device taking its match back is checked against it
     const payload = this.last.get(tournamentId)?.payload ?? (await this.rebuild(tournamentId))
+    // The socket closed while the state was built: remove() ran first and found nothing to drop
+    if (!this.sockets.get(tournamentId)?.has(ws)) return
     if (viewer.organizer && viewer.device) {
       const { id, name, hold } = viewer.device
       const list = this.devices.get(tournamentId) ?? []
