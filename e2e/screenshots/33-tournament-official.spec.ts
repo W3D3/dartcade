@@ -25,7 +25,7 @@ async function weekly(page: Page): Promise<string> {
         firstTo: 3,
         longerFinal: null,
         groups: null,
-        registrationClosesMinutes: 30,
+        registrationClosesMinutes: 60,
         checkInMinutes: 30,
         plannedFor: null,
         manualScoring: true,
@@ -53,7 +53,7 @@ for (const [name, view] of [
     const id = await weekly(s.page)
     try {
       await openHash(s.page, '/tournaments/browse')
-      await expect(s.page.getByRole('region', { name: 'Featured tournament' }).getByText('WEEKLY')).toBeVisible()
+      await expect(s.page.getByRole('region', { name: 'Featured tournament' }).getByText('WEEKLY', { exact: true })).toBeVisible()
       await shot(s.page, `tournaments/official-hero-${name}.png`)
       await s.page.getByRole('button', { name: 'Details' }).first().click()
       await expect(s.page.getByLabel('Prizes').last()).toBeVisible()
