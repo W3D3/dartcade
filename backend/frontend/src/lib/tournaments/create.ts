@@ -436,7 +436,7 @@ export function previewOf(f: CreateForm): Preview {
       team ? `TEAMS OF ${f.playersPerTeam}` : 'SOLO',
       FORMATS.find(x => x.value === f.format)?.short ?? f.format,
       ...(avgLimit ? [avgTag(avgLimit, team ? f.playersPerTeam : 1)] : []),
-      ...(toInput(f).settings.guests ? ['GUESTS OK'] : []),
+      ...(team && !inPerson && f.guestsOn ? ['GUESTS OK'] : []),
       ...(inPerson ? ['IN PERSON'] : []),
     ],
     when,
