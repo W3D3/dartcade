@@ -3,6 +3,7 @@
 // server.
 import { CONTROL_CHARS } from '../names.js'
 import type { AvgLimit } from './avgLimit.js'
+import { GUEST_AVERAGE_RANGE, type GuestRules } from './guests.js'
 
 /** Where the matches are played: on the players' own boards, or at one venue on the organizers' devices. */
 export type TournamentPlay = 'online' | 'in_person'
@@ -21,6 +22,8 @@ export interface TournamentSettings {
   readonly manualScoring: boolean
   readonly noShowMinutes: number | null
   readonly avgLimit: AvgLimit | null
+  /** Teams: guests (no account) may fill places; null, none. */
+  readonly guests: GuestRules | null
   /** In person: the organizer's boards the venue's devices may score on; absent or null, none. */
   readonly boardIds?: readonly string[] | null
 }
@@ -33,6 +36,7 @@ export interface TournamentSetup {
   readonly preselected: boolean
   readonly visibility: TournamentVisibility
   readonly format: TournamentFormat
+  readonly teamSize: number
   readonly maxEntries: number
   readonly startsAt: string | null
   readonly settings: TournamentSettings
@@ -107,6 +111,13 @@ export function setupProblems(t: TournamentSetup): Problem[] {
     if (!online) bad('settings/avgLimit', 'in-person tournaments have no average limit')
     if (min === null && max === null) bad('settings/avgLimit', 'set a minimum, a maximum or both')
     if (min !== null && max !== null && min >= max) bad('settings/avgLimit', 'the minimum must be below the maximum')
+  }
+  if (s.guests) {
+    const { average } = s.guests
+    if (!online) bad('settings/guests', 'in-person tournaments have no guest teammates: everyone starts as a guest there')
+    if (t.teamSize < 2) bad('settings/guests', 'guests play in teams')
+    if (average < GUEST_AVERAGE_RANGE.min || average > GUEST_AVERAGE_RANGE.max)
+      bad('settings/guests', `the guest average must be ${GUEST_AVERAGE_RANGE.min}-${GUEST_AVERAGE_RANGE.max}`)
   }
   if (online && s.boardIds) bad('settings/boardIds', 'only in-person tournaments choose their boards')
   return out

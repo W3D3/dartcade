@@ -24,6 +24,7 @@ const SETTINGS = JSON.stringify({
   manualScoring: true,
   noShowMinutes: null,
   avgLimit: null,
+  guests: null,
 })
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('claiming a tournament spot', () => {

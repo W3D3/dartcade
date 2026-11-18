@@ -2,6 +2,7 @@
 // each picked player confirms, and the spot is held while anyone is still to confirm. Pure, shared
 // with the SPA: the Who plays? list and the register and change-player routes judge picks alike.
 import { entryEligibility, type Eligibility, type Form } from './avgLimit.js'
+import { guestForms, maxGuests } from './guests.js'
 import { needsBoard, type RegistrationTournament } from './registration.js'
 
 /** A team member as Who plays? judges them. */
@@ -14,35 +15,39 @@ export interface Candidate {
 }
 
 /**
- * count: not teamSize different players. taken: someone holds another spot. not_eligible: the
- * average limit. board_needed: someone has no paired board. In registrationState's order.
+ * count: not teamSize different places, or nobody with an account. guests: more than the organizer
+ * allows. taken: someone holds another spot. not_eligible: the average limit. board_needed: someone
+ * has no paired board (a guest plays on the captain's). In registrationState's order.
  */
-export type PickProblem = 'count' | 'taken' | 'not_eligible' | 'board_needed'
+export type PickProblem = 'count' | 'guests' | 'taken' | 'not_eligible' | 'board_needed'
 
-/** What stands in the way of these picks (null: none), and how they fare against the average limit (null without one). */
+/**
+ * What stands in the way of these picks (null: none), and how they fare against the average limit
+ * (null without one). `guests` fill the other places; each counts as the organizer's guest average.
+ */
 export function pickProblem(
   t: Pick<RegistrationTournament, 'teamSize' | 'play' | 'settings'>,
   picked: readonly Candidate[],
+  guests = 0,
+  captainHasBoard = true,
 ): { problem: PickProblem | null; eligibility: Eligibility | null } {
   const limit = t.settings.avgLimit
-  const eligibility =
-    limit === null || picked.length === 0
-      ? null
-      : entryEligibility(
-          limit,
-          picked.map(p => p.form),
-        )
+  const rules = t.settings.guests
+  const forms = [...picked.map(p => p.form), ...guestForms(limit, rules, guests)]
+  const eligibility = limit === null || forms.length === 0 ? null : entryEligibility(limit, forms)
   const distinct = new Set(picked.map(p => p.userId)).size === picked.length
   const problem: PickProblem | null =
-    picked.length !== t.teamSize || !distinct
+    picked.length + guests !== t.teamSize || picked.length === 0 || !distinct
       ? 'count'
-      : picked.some(p => p.taken)
-        ? 'taken'
-        : eligibility !== null && !eligibility.eligible
-          ? 'not_eligible'
-          : needsBoard(t) && picked.some(p => !p.hasBoard)
-            ? 'board_needed'
-            : null
+      : guests > 0 && (rules === null || guests > maxGuests(rules, t.teamSize))
+        ? 'guests'
+        : picked.some(p => p.taken)
+          ? 'taken'
+          : eligibility !== null && !eligibility.eligible
+            ? 'not_eligible'
+            : needsBoard(t) && (picked.some(p => !p.hasBoard) || (guests > 0 && !captainHasBoard))
+              ? 'board_needed'
+              : null
   return { problem, eligibility }
 }
 
@@ -50,6 +55,8 @@ export function pickProblem(
 export interface RosterSlot {
   readonly position: number
   readonly user: { readonly id: string; readonly name: string } | null
+  /** A guest's name: a guest plays on the captain's board and is confirmed at once. */
+  readonly guest: string | null
   readonly confirmed: boolean
 }
 
@@ -57,13 +64,13 @@ export interface RosterSlot {
 export function slotsOf(players: readonly RosterSlot[], teamSize: number): RosterSlot[] {
   return Array.from(
     { length: teamSize },
-    (_, position) => players.find(p => p.position === position) ?? { position, user: null, confirmed: false },
+    (_, position) => players.find(p => p.position === position) ?? { position, user: null, guest: null, confirmed: false },
   )
 }
 
 /** The entry is complete once every place is held by someone who confirmed. */
 export const rosterComplete = (players: readonly RosterSlot[], teamSize: number): boolean =>
-  slotsOf(players, teamSize).every(s => s.user !== null && s.confirmed)
+  slotsOf(players, teamSize).every(s => (s.user !== null || s.guest !== null) && s.confirmed)
 
 /** The picked players still to confirm. */
 export const waitingFor = (players: readonly RosterSlot[]): RosterSlot[] => players.filter(s => s.user !== null && !s.confirmed)

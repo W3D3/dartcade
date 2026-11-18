@@ -72,6 +72,7 @@ export async function insertTournament(db: Kysely<Database>, { id, ...rest }: Ne
         manualScoring: false,
         noShowMinutes: 10,
         avgLimit: null,
+        guests: null,
       }),
       ...rest,
       id,

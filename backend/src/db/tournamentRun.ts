@@ -25,8 +25,10 @@ export interface RunEntry {
   /** Set when the tournament finished. */
   final_place: number | null
   created_at: Date
-  /** The entry's players in team order: a solo entry has one. */
-  players: { id: string; userId: string | null; name: string }[]
+  /** Who registered it: a team's captain, whose board a guest plays on; null once their account is gone. */
+  captainId: string | null
+  /** The entry's players in team order: a solo entry has one. A guest has no account. */
+  players: { id: string; userId: string | null; name: string; guest: boolean }[]
 }
 
 export async function getTournamentRow(db: Kysely<Database>, id: string): Promise<TournamentRow | undefined> {
@@ -65,21 +67,22 @@ export async function listEntries(db: Kysely<Database>, tournamentId: string): P
   const [entries, players] = await Promise.all([
     db
       .selectFrom('tournament_entries')
-      .select(['id', 'name', 'status', 'seed', 'final_place', 'created_at'])
+      .select(['id', 'name', 'status', 'seed', 'final_place', 'created_at', 'registered_by_user_id'])
       .where('tournament_id', '=', tournamentId)
       .orderBy('created_at')
       .orderBy('id')
       .execute(),
     db
       .selectFrom('tournament_players')
-      .select(['id', 'entry_id', 'user_id', 'name'])
+      .select(['id', 'entry_id', 'user_id', 'name', 'kind'])
       .where('tournament_id', '=', tournamentId)
       .orderBy('position')
       .execute(),
   ])
-  return entries.map(e => ({
+  return entries.map(({ registered_by_user_id, ...e }) => ({
     ...e,
-    players: players.filter(p => p.entry_id === e.id).map(p => ({ id: p.id, userId: p.user_id, name: p.name })),
+    captainId: registered_by_user_id,
+    players: players.filter(p => p.entry_id === e.id).map(p => ({ id: p.id, userId: p.user_id, name: p.name, guest: p.kind === 'guest' })),
   }))
 }
 

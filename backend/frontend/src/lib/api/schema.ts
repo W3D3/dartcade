@@ -3001,7 +3001,7 @@ export interface paths {
         put?: never;
         /**
          * Register a team (tournaments.enabled)
-         * @description The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.
+         * @description The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `guests not allowed` (no guests here, or more than allowed), `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.
          */
         post: operations["registerTeamForTournament"];
         delete?: never;
@@ -6042,6 +6042,8 @@ export interface components {
             /** @description One per place, in throwing order */
             slots: {
                 position: number;
+                /** @description A guest's name; the place is confirmed at once */
+                guest: string | null;
                 /** @description Null when the player declined and nobody took the place yet */
                 user: {
                     id: string;
@@ -6124,6 +6126,16 @@ export interface components {
             tags: components["schemas"]["TournamentTags"];
             prizes: components["schemas"]["TournamentPrizes"];
         };
+        /** @description Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official). */
+        GuestRules: {
+            /**
+             * @description Guests one team may field: 1, or null for any (a team keeps one player with an account)
+             * @enum {integer|null}
+             */
+            perTeam: 1 | null;
+            /** @description 3-dart average a guest counts as */
+            average: number;
+        } | null;
         /** @description Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button. */
         TournamentSettings: {
             /** @enum {string} */
@@ -6167,6 +6179,7 @@ export interface components {
              */
             noShowMinutes: 5 | 10 | 15 | null;
             avgLimit: components["schemas"]["AvgLimit"];
+            guests: components["schemas"]["GuestRules"];
             /** @description In person only: the boards the venue devices may score on; absent or null, none */
             boardIds?: string[] | null;
         };
@@ -12190,6 +12203,8 @@ export interface operations {
                     teamId: string;
                     /** @description The user ids who play, in throwing order */
                     players: string[];
+                    /** @description Guests who fill the other places (only where the organizer allows them), after the players */
+                    guests?: string[];
                 };
             };
         };

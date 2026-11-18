@@ -65,6 +65,7 @@ async function inPerson(page: Page, name: string, teamSize: number, format: stri
       manualScoring: true,
       noShowMinutes: null,
       avgLimit: null,
+      guests: null,
     },
   })) as { id: string }
   await api(page).post(`/api/tournaments/${t.id}/publish`)

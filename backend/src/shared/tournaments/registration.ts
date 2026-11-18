@@ -1,6 +1,7 @@
 // Whether someone may register for a tournament now, and if not why: one rule for the Register
 // button on Browse and the register route's answer. Pure, shared with the SPA.
 import type { AvgLimit } from './avgLimit.js'
+import type { GuestRules } from './guests.js'
 import type { TournamentPlay } from './setup.js'
 import type { TournamentStatus } from './state.js'
 
@@ -17,6 +18,7 @@ export interface RegistrationTournament {
     readonly registrationClosesMinutes: number | null
     readonly manualScoring: boolean
     readonly avgLimit: AvgLimit | null
+    readonly guests: GuestRules | null
   }
 }
 

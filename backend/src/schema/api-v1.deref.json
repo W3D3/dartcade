@@ -40844,6 +40844,7 @@
                                   "required": [
                                     "position",
                                     "user",
+                                    "guest",
                                     "confirmed"
                                   ],
                                   "additionalProperties": false,
@@ -40851,6 +40852,11 @@
                                     "position": {
                                       "type": "integer",
                                       "minimum": 0
+                                    },
+                                    "guest": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "A guest's name; the place is confirmed at once"
                                     },
                                     "user": {
                                       "type": "object",
@@ -41352,7 +41358,8 @@
                       "plannedFor",
                       "manualScoring",
                       "noShowMinutes",
-                      "avgLimit"
+                      "avgLimit",
+                      "guests"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -41520,6 +41527,33 @@
                           }
                         }
                       },
+                      "guests": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                        "required": [
+                          "perTeam",
+                          "average"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "perTeam": {
+                            "type": "integer",
+                            "nullable": true,
+                            "enum": [
+                              1,
+                              null
+                            ],
+                            "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                          },
+                          "average": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "3-dart average a guest counts as"
+                          }
+                        }
+                      },
                       "boardIds": {
                         "type": "array",
                         "nullable": true,
@@ -41668,7 +41702,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -41833,6 +41868,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -42098,6 +42160,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -42105,6 +42168,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -42556,7 +42624,8 @@
                           "plannedFor",
                           "manualScoring",
                           "noShowMinutes",
-                          "avgLimit"
+                          "avgLimit",
+                          "guests"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -42721,6 +42790,33 @@
                               "lock": {
                                 "type": "boolean",
                                 "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                              }
+                            }
+                          },
+                          "guests": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                            "required": [
+                              "perTeam",
+                              "average"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "perTeam": {
+                                "type": "integer",
+                                "nullable": true,
+                                "enum": [
+                                  1,
+                                  null
+                                ],
+                                "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                              },
+                              "average": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 180,
+                                "description": "3-dart average a guest counts as"
                               }
                             }
                           },
@@ -42919,7 +43015,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -43084,6 +43181,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -43349,6 +43473,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -43356,6 +43481,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -44028,6 +44158,7 @@
                                   "required": [
                                     "position",
                                     "user",
+                                    "guest",
                                     "confirmed"
                                   ],
                                   "additionalProperties": false,
@@ -44035,6 +44166,11 @@
                                     "position": {
                                       "type": "integer",
                                       "minimum": 0
+                                    },
+                                    "guest": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "A guest's name; the place is confirmed at once"
                                     },
                                     "user": {
                                       "type": "object",
@@ -44868,7 +45004,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -45033,6 +45170,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -45298,6 +45462,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -45305,6 +45470,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -45611,7 +45781,8 @@
                       "plannedFor",
                       "manualScoring",
                       "noShowMinutes",
-                      "avgLimit"
+                      "avgLimit",
+                      "guests"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -45776,6 +45947,33 @@
                           "lock": {
                             "type": "boolean",
                             "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                          }
+                        }
+                      },
+                      "guests": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                        "required": [
+                          "perTeam",
+                          "average"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "perTeam": {
+                            "type": "integer",
+                            "nullable": true,
+                            "enum": [
+                              1,
+                              null
+                            ],
+                            "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                          },
+                          "average": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 180,
+                            "description": "3-dart average a guest counts as"
                           }
                         }
                       },
@@ -46009,7 +46207,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -46174,6 +46373,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -46439,6 +46665,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -46446,6 +46673,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -47131,7 +47363,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -47296,6 +47529,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -47561,6 +47821,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -47568,6 +47829,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -48045,7 +48311,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -48210,6 +48477,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -48475,6 +48769,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -48482,6 +48777,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -50492,7 +50792,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -50657,6 +50958,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -50922,6 +51250,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -50929,6 +51258,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -51327,7 +51661,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -51492,6 +51827,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -51757,6 +52119,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -51764,6 +52127,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -57367,7 +57735,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -57532,6 +57901,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -57797,6 +58193,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -57804,6 +58201,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -58175,7 +58577,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -58340,6 +58743,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -58605,6 +59035,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -58612,6 +59043,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -58999,7 +59435,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -59164,6 +59601,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -59429,6 +59893,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -59436,6 +59901,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -60022,7 +60492,7 @@
       "post": {
         "operationId": "registerTeamForTournament",
         "summary": "Register a team (tournaments.enabled)",
-        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.",
+        "description": "The captain registers their team with the players who play. The spot is held (the entry is pending) until every picked player confirmed; each gets a tournament.request on /ws/me. The captain, when picked, counts as confirmed. 403 unless the caller captains the team. 409 with the reason: `full`, `registration closed`, `not eligible` (the picks against the average limit), `paired board needed`, `already registered` (the team has a spot), `wrong player count`, `guests not allowed` (no guests here, or more than allowed), `not a member`, `already in this tournament` (a picked player holds a spot) or `added by the organizers`.",
         "parameters": [
           {
             "name": "code",
@@ -60054,12 +60524,22 @@
                   },
                   "players": {
                     "type": "array",
-                    "minItems": 2,
+                    "minItems": 1,
                     "maxItems": 4,
                     "items": {
                       "type": "string"
                     },
                     "description": "The user ids who play, in throwing order"
+                  },
+                  "guests": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 24
+                    },
+                    "description": "Guests who fill the other places (only where the organizer allows them), after the players"
                   }
                 }
               }
@@ -60198,7 +60678,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -60363,6 +60844,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -60628,6 +61136,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -60635,6 +61144,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -61302,7 +61816,8 @@
                         "plannedFor",
                         "manualScoring",
                         "noShowMinutes",
-                        "avgLimit"
+                        "avgLimit",
+                        "guests"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -61467,6 +61982,33 @@
                             "lock": {
                               "type": "boolean",
                               "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                            }
+                          }
+                        },
+                        "guests": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                          "required": [
+                            "perTeam",
+                            "average"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "perTeam": {
+                              "type": "integer",
+                              "nullable": true,
+                              "enum": [
+                                1,
+                                null
+                              ],
+                              "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                            },
+                            "average": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 180,
+                              "description": "3-dart average a guest counts as"
                             }
                           }
                         },
@@ -61732,6 +62274,7 @@
                             "required": [
                               "position",
                               "user",
+                              "guest",
                               "confirmed"
                             ],
                             "additionalProperties": false,
@@ -61739,6 +62282,11 @@
                               "position": {
                                 "type": "integer",
                                 "minimum": 0
+                              },
+                              "guest": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "A guest's name; the place is confirmed at once"
                               },
                               "user": {
                                 "type": "object",
@@ -100134,6 +100682,7 @@
                         "required": [
                           "position",
                           "user",
+                          "guest",
                           "confirmed"
                         ],
                         "additionalProperties": false,
@@ -100141,6 +100690,11 @@
                           "position": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "guest": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A guest's name; the place is confirmed at once"
                           },
                           "user": {
                             "type": "object",
@@ -100616,6 +101170,7 @@
               "required": [
                 "position",
                 "user",
+                "guest",
                 "confirmed"
               ],
               "additionalProperties": false,
@@ -100623,6 +101178,11 @@
                 "position": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "guest": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "A guest's name; the place is confirmed at once"
                 },
                 "user": {
                   "type": "object",
@@ -101015,7 +101575,8 @@
                   "plannedFor",
                   "manualScoring",
                   "noShowMinutes",
-                  "avgLimit"
+                  "avgLimit",
+                  "guests"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -101183,6 +101744,33 @@
                       }
                     }
                   },
+                  "guests": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                    "required": [
+                      "perTeam",
+                      "average"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "perTeam": {
+                        "type": "integer",
+                        "nullable": true,
+                        "enum": [
+                          1,
+                          null
+                        ],
+                        "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                      },
+                      "average": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 180,
+                        "description": "3-dart average a guest counts as"
+                      }
+                    }
+                  },
                   "boardIds": {
                     "type": "array",
                     "nullable": true,
@@ -101346,6 +101934,7 @@
                   "required": [
                     "position",
                     "user",
+                    "guest",
                     "confirmed"
                   ],
                   "additionalProperties": false,
@@ -101353,6 +101942,11 @@
                     "position": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "guest": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "A guest's name; the place is confirmed at once"
                     },
                     "user": {
                       "type": "object",
@@ -101615,6 +102209,33 @@
           }
         }
       },
+      "GuestRules": {
+        "type": "object",
+        "nullable": true,
+        "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+        "required": [
+          "perTeam",
+          "average"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "perTeam": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              1,
+              null
+            ],
+            "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+          },
+          "average": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180,
+            "description": "3-dart average a guest counts as"
+          }
+        }
+      },
       "TournamentSettings": {
         "type": "object",
         "description": "Everything else the organizer chose. A fixed start (startsAt) has registrationClosesMinutes and checkInMinutes 15/30/60 or null (none) before it; an organizer start has a plannedFor hint and, online, checkInMinutes 2/5/10 after the start button.",
@@ -101628,7 +102249,8 @@
           "plannedFor",
           "manualScoring",
           "noShowMinutes",
-          "avgLimit"
+          "avgLimit",
+          "guests"
         ],
         "additionalProperties": false,
         "properties": {
@@ -101796,6 +102418,33 @@
               }
             }
           },
+          "guests": {
+            "type": "object",
+            "nullable": true,
+            "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+            "required": [
+              "perTeam",
+              "average"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "perTeam": {
+                "type": "integer",
+                "nullable": true,
+                "enum": [
+                  1,
+                  null
+                ],
+                "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+              },
+              "average": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 180,
+                "description": "3-dart average a guest counts as"
+              }
+            }
+          },
           "boardIds": {
             "type": "array",
             "nullable": true,
@@ -101910,7 +102559,8 @@
               "plannedFor",
               "manualScoring",
               "noShowMinutes",
-              "avgLimit"
+              "avgLimit",
+              "guests"
             ],
             "additionalProperties": false,
             "properties": {
@@ -102075,6 +102725,33 @@
                   "lock": {
                     "type": "boolean",
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
+              },
+              "guests": {
+                "type": "object",
+                "nullable": true,
+                "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                "required": [
+                  "perTeam",
+                  "average"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "perTeam": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      1,
+                      null
+                    ],
+                    "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                  },
+                  "average": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "3-dart average a guest counts as"
                   }
                 }
               },
@@ -102177,7 +102854,8 @@
               "plannedFor",
               "manualScoring",
               "noShowMinutes",
-              "avgLimit"
+              "avgLimit",
+              "guests"
             ],
             "additionalProperties": false,
             "properties": {
@@ -102342,6 +103020,33 @@
                   "lock": {
                     "type": "boolean",
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
+              },
+              "guests": {
+                "type": "object",
+                "nullable": true,
+                "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                "required": [
+                  "perTeam",
+                  "average"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "perTeam": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      1,
+                      null
+                    ],
+                    "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                  },
+                  "average": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "3-dart average a guest counts as"
                   }
                 }
               },
@@ -102998,7 +103703,8 @@
               "plannedFor",
               "manualScoring",
               "noShowMinutes",
-              "avgLimit"
+              "avgLimit",
+              "guests"
             ],
             "additionalProperties": false,
             "properties": {
@@ -103163,6 +103869,33 @@
                   "lock": {
                     "type": "boolean",
                     "description": "On: a spot is kept when the average moves; off: rechecked at check-in"
+                  }
+                }
+              },
+              "guests": {
+                "type": "object",
+                "nullable": true,
+                "description": "Teams, online: guests (players with no account) may fill places. They play on the captain's board, need no confirmation and count as `average` for the average limit; null, no guests (always for official).",
+                "required": [
+                  "perTeam",
+                  "average"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "perTeam": {
+                    "type": "integer",
+                    "nullable": true,
+                    "enum": [
+                      1,
+                      null
+                    ],
+                    "description": "Guests one team may field: 1, or null for any (a team keeps one player with an account)"
+                  },
+                  "average": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 180,
+                    "description": "3-dart average a guest counts as"
                   }
                 }
               },
@@ -103428,6 +104161,7 @@
                   "required": [
                     "position",
                     "user",
+                    "guest",
                     "confirmed"
                   ],
                   "additionalProperties": false,
@@ -103435,6 +104169,11 @@
                     "position": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "guest": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "A guest's name; the place is confirmed at once"
                     },
                     "user": {
                       "type": "object",

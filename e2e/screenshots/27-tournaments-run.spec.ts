@@ -15,6 +15,7 @@ const settings = {
   manualScoring: false,
   noShowMinutes: 10,
   avgLimit: null,
+  guests: null,
 }
 const base = {
   kind: 'community',

@@ -30,6 +30,7 @@ const settings = (over: object = {}) =>
     manualScoring: false,
     noShowMinutes: 10,
     avgLimit: null,
+    guests: null,
     ...over,
   })
 const teamAverage55 = { min: 55, max: null, teams: 'team', minLegs: 0, lock: true }
@@ -147,8 +148,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
   })
   const send = (user: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: object) =>
     app.inject({ method, url, payload, headers: { 'x-user': user } })
-  const registerTeam = (user: string, teamId: string, players: string[]) =>
-    send(user, 'POST', '/api/tournaments/cup/teams', { teamId, players })
+  const registerTeam = (user: string, teamId: string, players: string[], guests?: string[]) =>
+    send(user, 'POST', '/api/tournaments/cup/teams', { teamId, players, guests })
   const answer = (user: string, accept: boolean) => send(user, 'POST', '/api/tournaments/cup/roster/answer', { accept })
   const detail = async (user: string) => (await send(user, 'GET', '/api/tournaments/cup')).json<Tournament>()
   const error = (res: { json: () => unknown }) => (res.json() as { error: string }).error
@@ -252,6 +253,51 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
     await insertBoard(db, { id: 'board-lena', owner_user_id: 'lena', name: "lena's board" })
   })
 
+  it('confirms a team with a guest at once, nothing stored for the guest but the seat name', async () => {
+    const setGuests = (over: object = {}) =>
+      db
+        .updateTable('tournaments')
+        .set({ settings: settings({ guests: { perTeam: 1, average: 50 }, ...over }) })
+        .where('id', '=', 'cup')
+        .execute()
+    // Off by default; a guest fills a place; a team can't be all guests
+    expect(error(await registerTeam('chris', 'da', ['chris'], ['Papa']))).toBe('guests not allowed')
+    await setGuests()
+    expect(error(await registerTeam('chris', 'da', ['chris', 'lena'], ['Papa']))).toBe('wrong player count')
+    expect(error(await registerTeam('chris', 'da', ['chris'], [' ']))).toBe('guest names must not be empty or contain control characters')
+    const res = await registerTeam('chris', 'da', ['chris'], ['  Papa '])
+    expect(res.statusCode).toBe(200)
+    expect(res.json<Tournament>().team).toMatchObject({
+      status: 'registered',
+      slots: [
+        { position: 0, user: { id: 'chris' }, guest: null, confirmed: true },
+        { position: 1, user: null, guest: 'Papa', confirmed: true },
+      ],
+    })
+    expect(requests).toEqual([])
+    const rows = await db.selectFrom('tournament_players').select(['user_id', 'name', 'kind']).orderBy('position').execute()
+    expect(rows).toEqual([
+      { user_id: 'chris', name: 'Christoph', kind: 'player' },
+      { user_id: null, name: 'Papa', kind: 'guest' },
+    ])
+  })
+
+  it('counts a guest as the organizer’s average, and plays on the captain’s board', async () => {
+    const guests = { perTeam: 1, average: 50 }
+    await db
+      .updateTable('tournaments')
+      .set({ settings: settings({ guests, avgLimit: teamAverage55 }) })
+      .where('id', '=', 'cup')
+      .execute()
+    // Lena 61.2 with a guest at 50 is 55.6: in; Max 41.2 with the guest is 45.6: out
+    expect(error(await registerTeam('chris', 'da', ['max'], ['Papa']))).toBe('not eligible')
+    // The guest plays on the captain's board: without one the team can't register
+    await db.deleteFrom('boards').where('owner_user_id', '=', 'chris').execute()
+    expect(error(await registerTeam('chris', 'da', ['lena'], ['Papa']))).toBe('paired board needed')
+    await insertBoard(db, { id: 'board-chris', owner_user_id: 'chris', name: "chris's board" })
+    expect((await registerTeam('chris', 'da', ['lena'], ['Papa'])).statusCode).toBe(200)
+  })
+
   it('registers the team once everyone confirmed', async () => {
     await registerTeam('chris', 'da', ['chris', 'lena'])
     expect((await answer('lena', true)).statusCode).toBe(204)
@@ -273,7 +319,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
     requests = []
     const changed = await send('chris', 'PUT', '/api/tournaments/cup/roster/1', { userId: 'max' })
     expect(changed.statusCode).toBe(200)
-    expect(changed.json<Tournament>().team?.slots[1]).toEqual({ position: 1, user: { id: 'max', name: 'Max' }, confirmed: false })
+    expect(changed.json<Tournament>().team?.slots[1]).toEqual({
+      position: 1,
+      guest: null,
+      user: { id: 'max', name: 'Max' },
+      confirmed: false,
+    })
     expect(requests.map(([u]) => u)).toEqual(['max'])
     await answer('max', true)
     expect((await detail('chris')).team?.status).toBe('registered')
@@ -290,6 +341,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('registering a team', () => {
     expect(error(await send('chris', 'PUT', '/api/tournaments/cup/roster/1', { userId: 'max' }))).toBe('not eligible')
     expect(error(await send('chris', 'PUT', '/api/tournaments/cup/roster/1', { userId: 'anna' }))).toBe('not a member')
     expect((await send('lena', 'PUT', '/api/tournaments/cup/roster/1', { userId: 'max' })).statusCode).toBe(404)
+  })
+
+  it('changes a player on a guest team whose captain does not play, judging the captain’s board for the guest', async () => {
+    await db
+      .updateTable('tournaments')
+      .set({ settings: settings({ guests: { perTeam: 1, average: 50 } }) })
+      .where('id', '=', 'cup')
+      .execute()
+    expect((await registerTeam('chris', 'da', ['lena'], ['Papa'])).statusCode).toBe(200)
+    const changed = await send('chris', 'PUT', '/api/tournaments/cup/roster/0', { userId: 'max' })
+    expect(changed.statusCode).toBe(200)
+    // Without the captain's board the guest has nowhere to play
+    await db.deleteFrom('boards').where('owner_user_id', '=', 'chris').execute()
+    expect(error(await send('chris', 'PUT', '/api/tournaments/cup/roster/0', { userId: 'lena' }))).toBe('paired board needed')
+    await insertBoard(db, { id: 'board-chris', owner_user_id: 'chris', name: "chris's board" })
   })
 
   it('reminds the players still to confirm, at most every 15 minutes', async () => {

@@ -659,7 +659,7 @@ export interface TournamentPlayersTable {
   position: number
   confirmed_at: Stamp
   /** A registered player, or a spot an organizer added in person (migration 071). */
-  kind: Defaulted<'player' | 'spot'>
+  kind: Defaulted<'player' | 'spot' | 'guest'>
   /** A spot's claim link code; null for a player. */
   claim_code: ColumnType<string | null, string | null | undefined, string | null>
   created_at: ColumnType<Date, never, never>

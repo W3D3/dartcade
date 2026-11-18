@@ -31,6 +31,7 @@ async function weekly(page: Page): Promise<string> {
         manualScoring: true,
         noShowMinutes: 10,
         avgLimit: null,
+        guests: null,
       },
     },
     tags: ['weekly'],

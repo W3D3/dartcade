@@ -9,7 +9,7 @@ import { SessionEngine, createEngineStore } from '../session/engine.js'
 import { currentSeat } from '../session/access.js'
 import type { Segment } from '../session/types.js'
 import type { TournamentCheckInMessage, TournamentDroppedMessage, TournamentMatchMessage } from '../schema/lobby-ws.js'
-import { insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
+import { insertBoard, insertTournament, insertTournamentEntry, insertUsers } from '../test/fixtures.js'
 import { withdrawEntriesOf } from '../db/tournamentAccount.js'
 import { TournamentService } from './service.js'
 import { liveMessage } from './live.js'
@@ -40,6 +40,7 @@ const settings = (over: object = {}) =>
     manualScoring: true,
     noShowMinutes: 10,
     avgLimit: null,
+    guests: null,
     ...over,
   })
 
@@ -530,6 +531,123 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('TournamentService', () => {
     ])
     expect(engine.getSessionByUser('org')).toBeUndefined()
     expect(sent).toEqual([])
+  })
+
+  it('seats a guest on the captain’s board, controlled by the captain, and the match counts for the team', async () => {
+    for (const u of ['z1', 'z2', 'z3']) online.add(u)
+    await insertBoard(db, { id: 'board-g1', owner_user_id: 'z1' })
+    await insertTournament(db, {
+      id: 'guests',
+      owner_user_id: 'org',
+      status: 'open',
+      team_size: 2,
+      max_entries: 2,
+      game_config: JSON.stringify({ startScore: 301 }),
+      starts_at: new Date(now + 60 * MIN),
+      settings: settings({ guests: { perTeam: 1, average: 50 } }),
+    })
+    const team = async (id: string, captain: string, others: { user?: string; guest?: string }[]) => {
+      await insertTournamentEntry(db, { id, tournament_id: 'guests', status: 'registered', registered_by_user_id: captain })
+      const places = [{ user: captain }, ...others]
+      await db
+        .insertInto('tournament_players')
+        .values(
+          places.map((p, position) => ({
+            id: `${id}-${position}`,
+            tournament_id: 'guests',
+            entry_id: id,
+            user_id: p.user ?? null,
+            name: p.user ?? p.guest ?? '',
+            kind: p.user ? ('player' as const) : ('guest' as const),
+            position,
+            confirmed_at: new Date(now),
+          })),
+        )
+        .execute()
+    }
+    await team('team-a', 'z1', [{ guest: 'Papa' }])
+    await team('team-b', 'z2', [{ user: 'z3' }])
+    now += 31 * MIN
+    await service.tick()
+    for (const u of ['z1', 'z2']) expect(await checkIn(db, 'guests', u)).toBe(true)
+    now += 30 * MIN
+    await service.tick()
+
+    const game = engine.getSession(gameOf('z1'))
+    const seats = game?.seats.map(x => ({ name: x.name, userId: x.userId, controllerUserId: x.controllerUserId, boardId: x.boardId }))
+    expect(seats).toEqual([
+      { name: 'z1', userId: 'z1', controllerUserId: 'z1', boardId: 'board-g1' },
+      { name: 'Papa', userId: null, controllerUserId: 'z1', boardId: 'board-g1' },
+      { name: 'z2', userId: 'z2', controllerUserId: 'z2', boardId: null },
+      { name: 'z3', userId: 'z3', controllerUserId: 'z3', boardId: null },
+    ])
+    // The guest has no account to tell: only the players with one hear of the match
+    expect(
+      sent
+        .filter(([, m]) => m.type === 'tournament.match')
+        .map(([u]) => u)
+        .sort(),
+    ).toEqual(['z1', 'z2', 'z3'])
+
+    // Both of the captain's seats throw from his account, so the other team wins the bull off
+    await play(gameOf('z1'), ['z2', 'z3'])
+    expect((await tournament('guests')).status).toBe('finished')
+    const places = await db.selectFrom('tournament_entries').select(['id', 'final_place']).where('tournament_id', '=', 'guests').execute()
+    expect(places.map(e => [e.id, e.final_place]).sort()).toEqual([
+      ['team-a', 2],
+      ['team-b', 1],
+    ])
+  })
+
+  it('waits for the captain who lends a guest their board, and forfeits the team if they never show', async () => {
+    for (const u of ['z1', 'z2', 'z3']) online.add(u)
+    await insertTournament(db, {
+      id: 'lender',
+      owner_user_id: 'org',
+      status: 'open',
+      starts_at: new Date(now + 60 * MIN),
+      team_size: 2,
+      max_entries: 2,
+      game_config: JSON.stringify({ startScore: 301 }),
+      settings: settings({ guests: { perTeam: 1, average: 50 } }),
+    })
+    // Team A is z4 (captain, not playing, offline) lending a board to the guest next to z1
+    const entry = async (id: string, captain: string, places: { user?: string; guest?: string }[]) => {
+      await insertTournamentEntry(db, {
+        id,
+        tournament_id: 'lender',
+        status: 'registered',
+        registered_by_user_id: captain,
+      })
+      await db
+        .insertInto('tournament_players')
+        .values(
+          places.map((p, position) => ({
+            id: `${id}-${position}`,
+            tournament_id: 'lender',
+            entry_id: id,
+            user_id: p.user ?? null,
+            name: p.user ?? p.guest ?? '',
+            kind: p.user ? ('player' as const) : ('guest' as const),
+            position,
+            confirmed_at: new Date(now),
+          })),
+        )
+        .execute()
+    }
+    await entry('lend-a', 'z4', [{ user: 'z1' }, { guest: 'Papa' }])
+    await entry('lend-b', 'z2', [{ user: 'z2' }, { user: 'z3' }])
+    now += 31 * MIN
+    await service.tick()
+    for (const u of ['z1', 'z2']) expect(await checkIn(db, 'lender', u)).toBe(true)
+    now += 30 * MIN
+    await service.tick()
+    expect((await matches('lender')).map(m => m.status)).toEqual(['ready'])
+    expect(engine.getSessionByUser('z1')).toBeUndefined()
+    // Past the no-show wait the team whose captain never came loses
+    now += 11 * MIN
+    await service.tick()
+    expect((await matches('lender')).map(m => [m.status, m.outcome])).toEqual([['finished', 'walkover']])
   })
 
   it('draws an in-person tournament players registered for from who registered, dropping a team still unconfirmed', async () => {
