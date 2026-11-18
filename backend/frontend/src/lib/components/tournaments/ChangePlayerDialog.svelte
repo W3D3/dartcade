@@ -30,9 +30,10 @@
   const leaving = $derived(entry.slots[position]?.user ?? null)
   // Everyone else keeps their place
   const others = $derived(entry.slots.flatMap(s => (s.position === position || s.user === null ? [] : [s.user.id])))
+  const guests = $derived(entry.slots.filter(s => s.guest !== null).length)
   const rows = $derived(
     t && team
-      ? pickRows({ ...t, teamSize: others.length + 1 }, team, others, myId).filter(
+      ? pickRows({ ...t, teamSize: others.length + 1 + guests }, team, others, myId, guests).filter(
           r => !others.includes(r.member.user.id) && r.member.user.id !== leaving?.id,
         )
       : [],

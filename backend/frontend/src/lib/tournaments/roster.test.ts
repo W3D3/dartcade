@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { AvgLimit } from '$shared/tournaments/avgLimit'
+import type { GuestRules } from '$shared/tournaments/guests'
 import {
   holdNote,
+  openPlaces,
   limitLine,
   pickRows,
   sendLabel,
@@ -32,11 +34,12 @@ const team: TeamOption = {
   members: [member('c', 'Christoph', 68.4, { board: 'Living room' }), member('l', 'Lena', 61.2), member('m', 'Max', 41.2)],
 }
 const teamAvg: AvgLimit = { min: 55, max: null, teams: 'team', minLegs: 0, lock: true }
-const rules = (avgLimit: AvgLimit | null = teamAvg) => ({
+const rules = (avgLimit: AvgLimit | null = teamAvg, guests: GuestRules | null = null) => ({
   teamSize: 2,
   play: 'online' as const,
   settings: {
     avgLimit,
+    guests,
     manualScoring: false,
     seeding: 'random' as const,
     firstTo: 3,
@@ -96,6 +99,36 @@ describe('Who plays?', () => {
   })
 })
 
+describe('Who plays? with a guest', () => {
+  const guests: GuestRules = { perTeam: 1, average: 50 }
+
+  it('fills the other place: the captain’s pick is full, and the team average counts the guest', () => {
+    const rows = pickRows(rules(teamAvg, guests), team, ['c'], 'c', 1)
+    expect(rows.filter(r => !r.picked).every(r => r.disabled)).toBe(true)
+    expect(limitLine(rules(teamAvg, guests), team, ['c'], 1)).toEqual({
+      lead: 'Team average: ',
+      value: '59.2',
+      tail: ' · needs 55+',
+      fits: true,
+    })
+    expect(sendProblem(rules(teamAvg, guests), team, ['c'], 'c', 1)).toBeNull()
+  })
+
+  it('says why Send is off: no guests here, or the captain has no board for the guest', () => {
+    expect(sendProblem(rules(null), team, ['c'], 'c', 1)).toBe('Too many guests for this tournament')
+    const noBoard = { ...team, members: [member('c', 'Christoph', 68.4, { board: null }), team.members[1]] }
+    expect(sendProblem(rules(null, guests), noBoard, ['l'], 'c', 1)).toBe('Everyone, and the captain for a guest, needs a paired board')
+  })
+
+  it('a guest’s place is not an open one', () => {
+    const slots = [
+      { position: 0, user: { id: 'c', name: 'Christoph' }, guest: null, confirmed: true },
+      { position: 1, user: null, guest: 'Papa', confirmed: true },
+    ]
+    expect(openPlaces({ entryId: 'e', status: 'registered', team: null, captainId: 'c', confirmBy: null, slots })).toBe(0)
+  })
+})
+
 describe('a team still to complete', () => {
   const entry = (slots: TeamEntry['slots'], status: TeamEntry['status'] = 'pending'): TeamEntry => ({
     entryId: 'e',
@@ -105,8 +138,8 @@ describe('a team still to complete', () => {
     confirmBy: null,
     slots,
   })
-  const chris = { position: 0, user: { id: 'c', name: 'Christoph' }, confirmed: true }
-  const lena = { position: 1, user: { id: 'l', name: 'Lena' }, confirmed: false }
+  const chris = { position: 0, user: { id: 'c', name: 'Christoph' }, guest: null, confirmed: true }
+  const lena = { position: 1, user: { id: 'l', name: 'Lena' }, guest: null, confirmed: false }
 
   it('waits on Lena', () => {
     expect(waitingCard(entry([chris, lena]), 'November Doubles Cup')).toEqual({
@@ -118,7 +151,7 @@ describe('a team still to complete', () => {
   })
 
   it('asks for another player once someone declined', () => {
-    const open = entry([chris, { position: 1, user: null, confirmed: false }])
+    const open = entry([chris, { position: 1, user: null, guest: null, confirmed: false }])
     expect(waitingCard(open, 'Cup')?.title).toBe('Pick a player for Cup')
     expect(teamStatus(open, 'c')?.long).toBe('Pick another player')
   })

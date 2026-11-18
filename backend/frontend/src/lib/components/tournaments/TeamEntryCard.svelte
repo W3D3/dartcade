@@ -79,6 +79,10 @@
             <Avatar name={s.user.name} face={null} size={26} />
             <span class="grow font-semibold">{s.user.name}{s.user.id === myId ? ' (you)' : ''}</span>
             <span class="text-small {s.confirmed ? 'text-accent' : 'text-text-muted'}">{s.confirmed ? 'Confirmed' : 'Waiting'}</span>
+          {:else if s.guest !== null}
+            <Avatar name={s.guest} face={null} size={26} />
+            <span class="grow font-semibold">{s.guest}</span>
+            <span class="text-small text-text-muted">Guest · plays on the captain’s board</span>
           {:else}
             <span class="size-[26px] rounded-full border-[1.5px] border-dashed border-line-chip"></span>
             <span class="grow text-text-muted">Open place</span>

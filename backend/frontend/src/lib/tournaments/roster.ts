@@ -6,6 +6,7 @@ import { api, type Tournament } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { LOCALE, joinNames } from '$lib/fmt'
 import { entryEligibility } from '$shared/tournaments/avgLimit'
+import { guestForms } from '$shared/tournaments/guests'
 import { pickProblem, waitingFor, type Candidate } from '$shared/tournaments/roster'
 import { avgRange } from './avgLimit'
 import { outcome, refusal, type Outcome } from './browse'
@@ -28,8 +29,8 @@ export interface PickRow {
   detail: string
 }
 
-/** Who plays? for `team`, with `picked` ticked; `myId` is the caller (only a captain picks). */
-export function pickRows(t: Rules, team: TeamOption, picked: readonly string[], myId: string): PickRow[] {
+/** Who plays? for `team`, with `picked` ticked and `guests` places filled with guests; `myId` is the caller (only a captain picks). */
+export function pickRows(t: Rules, team: TeamOption, picked: readonly string[], myId: string, guests = 0): PickRow[] {
   const mine = team.captainId === myId
   const limit = t.settings.avgLimit
   const pickedMembers = byId(team, picked)
@@ -44,12 +45,9 @@ export function pickRows(t: Rules, team: TeamOption, picked: readonly string[], 
     else if (noBoard) parts.push('no paired board')
     else if (on && member.user.id === myId && member.board !== null) parts.push(`board: ${member.board}`)
     else if (on) parts.push('will get a request to confirm')
-    else if (limit !== null && pickedMembers.length === t.teamSize - 1) {
+    else if (limit !== null && pickedMembers.length + guests === t.teamSize - 1) {
       // Would picking them break the limit? Said before the captain tries
-      const e = entryEligibility(
-        limit,
-        [...pickedMembers, member].map(m => m.form),
-      )
+      const e = entryEligibility(limit, [...[...pickedMembers, member].map(m => m.form), ...guestForms(limit, t.settings.guests, guests)])
       if (!e.eligible)
         parts.push(
           limit.teams === 'team' && e.average !== null
@@ -57,7 +55,7 @@ export function pickRows(t: Rules, team: TeamOption, picked: readonly string[], 
             : `outside the limit (${avgRange(limit)})`,
         )
     }
-    const full = !on && picked.length >= t.teamSize
+    const full = !on && picked.length + guests >= t.teamSize
     return { member, picked: on, captain, disabled: !mine || member.taken || noBoard || full, detail: parts.join(' · ') }
   })
 }
@@ -67,11 +65,12 @@ export function limitLine(
   t: Rules,
   team: TeamOption,
   picked: readonly string[],
+  guests = 0,
 ): { lead: string; value: string; tail: string; fits: boolean } | null {
   const limit = t.settings.avgLimit
   if (limit === null) return null
   if (limit.teams === 'every') return { lead: 'Every player needs ', value: avgRange(limit), tail: '', fits: true }
-  const { eligibility } = pickProblem(t, byId(team, picked).map(candidate))
+  const { eligibility } = pickProblem(t, byId(team, picked).map(candidate), guests)
   const mean = eligibility?.average
   return {
     lead: 'Team average: ',
@@ -82,19 +81,22 @@ export function limitLine(
 }
 
 /** Whether Send may be pressed, and why not. */
-export function sendProblem(t: Rules, team: TeamOption, picked: readonly string[], myId: string): string | null {
+export function sendProblem(t: Rules, team: TeamOption, picked: readonly string[], myId: string, guests = 0): string | null {
   if (team.captainId !== myId) return 'Only the captain can register this team'
   if (team.entered) return 'This team is in already'
-  const { problem } = pickProblem(t, byId(team, picked).map(candidate))
+  const captain = team.members.find(m => m.user.id === myId)
+  const { problem } = pickProblem(t, byId(team, picked).map(candidate), guests, captain?.board != null)
   switch (problem) {
     case 'count':
       return `Pick ${t.teamSize}`
+    case 'guests':
+      return 'Too many guests for this tournament'
     case 'taken':
       return 'Someone you picked already plays in this tournament'
     case 'not_eligible':
       return 'Outside the average limit'
     case 'board_needed':
-      return 'Everyone needs a paired board'
+      return guests > 0 ? 'Everyone, and the captain for a guest, needs a paired board' : 'Everyone needs a paired board'
     default:
       return null
   }
@@ -128,7 +130,7 @@ export const holdNote = (asked: readonly string[], confirmBy: string | null): st
 export const waitingNames = (e: TeamEntry): string[] => waitingFor(e.slots).flatMap(s => (s.user === null ? [] : [s.user.name]))
 
 /** Places left empty by a decline. */
-export const openPlaces = (e: TeamEntry): number => e.slots.filter(s => s.user === null).length
+export const openPlaces = (e: TeamEntry): number => e.slots.filter(s => s.user === null && s.guest === null).length
 
 /** A captain's view of a team still to complete: the card title and the line under it; null once complete. */
 export function waitingCard(e: TeamEntry, tournamentName: string): { title: string; detail: string } | null {
@@ -166,8 +168,8 @@ export async function loadTeamOptions(id: string): Promise<TeamOption[] | null> 
 }
 
 /** `code`: the invite link it was opened by, which an invite link's tournament needs. */
-export const registerTeam = (id: string, teamId: string, players: string[], code?: string): Promise<Outcome> =>
-  outcome(api.POST('/api/tournaments/{id}/teams', { params: { path: { id }, query: { code } }, body: { teamId, players } }))
+export const registerTeam = (id: string, teamId: string, players: string[], guests: string[], code?: string): Promise<Outcome> =>
+  outcome(api.POST('/api/tournaments/{id}/teams', { params: { path: { id }, query: { code } }, body: { teamId, players, guests } }))
 
 export const changePlayer = (id: string, position: number, userId: string): Promise<Outcome> =>
   outcome(api.PUT('/api/tournaments/{id}/roster/{position}', { params: { path: { id, position } }, body: { userId } }))

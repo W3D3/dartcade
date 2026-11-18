@@ -58,6 +58,7 @@ describe('toInput', () => {
       { registrationCloses: 15, checkInBefore: 60 },
       { avgLimit: { ...defaultForm(now).avgLimit, on: true } },
       { entry: 'teams', avgLimit: { ...defaultForm(now).avgLimit, on: true, mode: 'at_most', max: 45, teams: 'every' } },
+      { entry: 'teams', guestsOn: true, guestsPerTeam: null, guestAverage: 47.5 },
     ]
     for (const s of setups) expect(setupProblems(toInput(form(s))), JSON.stringify(s)).toEqual([])
   })
@@ -126,6 +127,15 @@ describe('toInput', () => {
     expect(toInput(form({ registrationCloses: 15, checkInBefore: 60 })).settings.checkInMinutes).toBe(15)
     expect(toInput(form({ registrationCloses: 15, checkInBefore: null })).settings.checkInMinutes).toBeNull()
     expect(toInput(form({ registrationCloses: 1440, checkInBefore: 60 })).settings.checkInMinutes).toBe(60)
+  })
+
+  it('sends guests only for online teams, and tags the preview', () => {
+    const on = { guestsOn: true, guestsPerTeam: 1 as const, guestAverage: 50 }
+    expect(toInput(form({ entry: 'teams', ...on })).settings.guests).toEqual({ perTeam: 1, average: 50 })
+    expect(toInput(form({ entry: 'solo', ...on })).settings.guests).toBeNull()
+    expect(toInput(form({ entry: 'teams', play: 'in_person', preselected: true, ...on })).settings.guests).toBeNull()
+    expect(toInput(form({ entry: 'teams', guestsOn: false })).settings.guests).toBeNull()
+    expect(previewOf(form({ entry: 'teams', ...on })).pills).toContain('GUESTS OK')
   })
 
   it('trims the name and description', () => {
@@ -198,6 +208,8 @@ describe('fromTournament', () => {
       { format: 'double_elimination', maxEntries: 32, longerFinal: true, finalFirstTo: 9, finalSemis: true, seeding: 'manual' },
       { format: 'groups_knockout', groupSize: 3, through: 1 },
       { registrationCloses: 1440, checkInBefore: null, manualScoring: false },
+      { entry: 'teams', guestsOn: true, guestsPerTeam: 1, guestAverage: 50 },
+      { entry: 'teams', guestsOn: true, guestsPerTeam: null, guestAverage: 42 },
     ]
     for (const s of setups) {
       const input = toInput(form(s))

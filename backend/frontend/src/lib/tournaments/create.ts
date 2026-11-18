@@ -59,6 +59,10 @@ export interface CreateForm {
   noShow: boolean
   noShowMinutes: 5 | 10 | 15
   avgLimit: AvgLimitForm
+  /** Teams, online: guests may fill places, up to `guestsPerTeam` (null: any), counting as `guestAverage`. */
+  guestsOn: boolean
+  guestsPerTeam: 1 | null
+  guestAverage: number
   /** In person: the paired boards the venue's devices may score on; null, none. */
   boardIds: string[] | null
 }
@@ -267,6 +271,9 @@ export function defaultForm(now: Date): CreateForm {
     noShow: true,
     noShowMinutes: 10,
     avgLimit: DEFAULT_AVG_LIMIT,
+    guestsOn: false,
+    guestsPerTeam: 1,
+    guestAverage: 50,
     boardIds: null,
   }
 }
@@ -300,6 +307,7 @@ export function toInput(f: CreateForm): TournamentInput {
       manualScoring: !online || f.manualScoring,
       noShowMinutes: online && f.noShow ? f.noShowMinutes : null,
       avgLimit: toAvgLimit(f.avgLimit, online),
+      guests: online && f.entry === 'teams' && f.guestsOn ? { perTeam: f.guestsPerTeam, average: f.guestAverage } : null,
       boardIds: online ? null : f.boardIds,
     },
   }
@@ -347,6 +355,9 @@ export function fromTournament(t: Tournament, now: Date): CreateForm {
     noShow: online ? s.noShowMinutes !== null : d.noShow,
     noShowMinutes: pick(NO_SHOW_WAIT, s.noShowMinutes, d.noShowMinutes),
     avgLimit: fromAvgLimit(s.avgLimit),
+    guestsOn: s.guests !== null,
+    guestsPerTeam: s.guests ? s.guests.perTeam : d.guestsPerTeam,
+    guestAverage: s.guests?.average ?? d.guestAverage,
     boardIds: s.boardIds ? [...s.boardIds] : null,
   }
 }
@@ -361,6 +372,7 @@ const FIELD_LABELS: Record<string, string> = {
   'body/settings/registrationClosesMinutes': 'Registration',
   'body/settings/longerFinal': 'Longer final',
   'body/settings/avgLimit': 'Average limit',
+  'body/settings/guests': 'Guests',
   'body/play': 'Where is it played',
   'body/preselected': 'Who can join',
   'body/visibility': 'Who can see it',
@@ -424,6 +436,7 @@ export function previewOf(f: CreateForm): Preview {
       team ? `TEAMS OF ${f.playersPerTeam}` : 'SOLO',
       FORMATS.find(x => x.value === f.format)?.short ?? f.format,
       ...(avgLimit ? [avgTag(avgLimit, team ? f.playersPerTeam : 1)] : []),
+      ...(toInput(f).settings.guests ? ['GUESTS OK'] : []),
       ...(inPerson ? ['IN PERSON'] : []),
     ],
     when,

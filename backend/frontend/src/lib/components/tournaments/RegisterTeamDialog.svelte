@@ -2,16 +2,18 @@
   // Register a team (Tournament-Register-Team): 1 · Which team? (yours to register, one someone
   // else captains, or New team), 2 · Who plays? with each player's 30-day average and the team
   // average against the limit, the note about held spots, and Send request. Only the captain sends.
-  import { Check, Clock, Crown, Plus } from '@lucide/svelte'
+  import { Check, Clock, Crown, Plus, X } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import TeamEmblem from '$lib/components/teams/TeamEmblem.svelte'
   import { Button } from '$lib/components/ui/button'
+  import { Input } from '$lib/components/ui/input/index.js'
   import { Modal } from '$lib/components/ui/modal'
   import type { Tournament } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { hrefs } from '$lib/routes'
+  import { GUEST_NAME_MAX, maxGuests } from '$shared/tournaments/guests'
   import { entryLabel, spots } from '$lib/tournaments/browse'
   import {
     holdNote,
@@ -33,13 +35,31 @@
   let failed = $state(false)
   let teamId = $state<string | null>(null)
   let picked = $state<string[]>([])
+  /** The guests' names, typed in their rows: they fill the places the picks leave. */
+  let guests = $state<string[]>([])
   let busy = $state(false)
   let error = $state('')
 
   const team = $derived(teams?.find(o => o.id === teamId) ?? null)
-  const rows = $derived(team ? pickRows(t, team, picked, myId) : [])
-  const limit = $derived(team ? limitLine(t, team, picked) : null)
-  const problem = $derived(team ? sendProblem(t, team, picked, myId) : 'Pick a team')
+  const rows = $derived(team ? pickRows(t, team, picked, myId, guests.length) : [])
+  const limit = $derived(team ? limitLine(t, team, picked, guests.length) : null)
+  const problem = $derived(
+    team ? (guests.some(g => g.trim() === '') ? 'Name your guest' : sendProblem(t, team, picked, myId, guests.length)) : 'Pick a team',
+  )
+  const rules = $derived(t.settings.guests)
+  const myBoard = $derived(team?.members.find(m => m.user.id === myId)?.board ?? null)
+  /** Why Play with a guest is off, or null when a guest can be added. */
+  const guestBlock = $derived(
+    rules === null
+      ? 'Guests aren’t allowed in this tournament'
+      : team?.captainId !== myId
+        ? 'Only the captain adds a guest'
+        : guests.length >= maxGuests(rules, t.teamSize)
+          ? `At most ${guests.length} guest${guests.length === 1 ? '' : 's'} per team`
+          : picked.length + guests.length >= t.teamSize
+            ? 'Untick a player to make room'
+            : null,
+  )
   const asked = $derived(team ? toAsk(team, picked, myId) : [])
   const s = $derived(spots(t))
   const noun = $derived(t.teamSize === 1 ? 'players' : 'teams')
@@ -48,6 +68,7 @@
   function choose(o: TeamOption) {
     teamId = o.id
     error = ''
+    guests = []
     const free = pickRows(t, o, [], myId).filter(r => !r.disabled)
     picked = o.captainId === myId ? free.slice(0, t.teamSize).map(r => r.member.user.id) : []
   }
@@ -59,7 +80,13 @@
   async function send() {
     if (!team) return
     busy = true
-    const res = await registerTeam(t.id, team.id, picked, code)
+    const res = await registerTeam(
+      t.id,
+      team.id,
+      picked,
+      guests.map(g => g.trim()),
+      code,
+    )
     busy = false
     if ('error' in res) error = res.error
     else onregistered(res.tournament)
@@ -163,19 +190,64 @@
               </button>
             </li>
           {/each}
-          <!-- Guests come with #612: the row is there, switched off -->
-          <li class="flex items-center gap-3 rounded-xl border border-dashed border-surface-inset px-3 py-2.5 text-ink-faint">
-            <span class="flex size-[34px] flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-line-chip"
-              ><Plus size={16} /></span
+          {#each guests as _, i (i)}
+            <li class="flex items-center gap-3 rounded-xl border border-accent-line bg-card-active px-3 py-2.5">
+              <span class="flex size-[34px] flex-none items-center justify-center rounded-full bg-surface-chip text-small font-bold"
+                >{(guests[i].trim().charAt(0) || '?').toUpperCase()}</span
+              >
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="flex items-center gap-2">
+                  <Input
+                    bind:value={guests[i]}
+                    maxlength={GUEST_NAME_MAX}
+                    placeholder="Guest’s name"
+                    aria-label="Guest {i + 1} name"
+                    class="h-8 max-w-[200px]"
+                  />
+                  <span class="rounded-full bg-surface-chip px-2 py-0.5 text-caption font-bold tracking-wide">GUEST</span>
+                </span>
+                <span class="text-small text-text-muted"
+                  >Plays on your board{myBoard ? ` (${myBoard})` : ''} · no account{rules
+                    ? ` · counts as avg ${rules.average.toFixed(1)}`
+                    : ''}</span
+                >
+              </span>
+              <button
+                type="button"
+                aria-label="Remove guest {i + 1}"
+                class="flex size-8 items-center justify-center rounded-md text-text-muted hover:text-text"
+                onclick={() => (guests = guests.filter((_, j) => j !== i))}><X size={16} /></button
+              >
+            </li>
+          {/each}
+          <li>
+            <button
+              type="button"
+              disabled={guestBlock !== null}
+              onclick={() => (guests = [...guests, ''])}
+              class="flex w-full items-center gap-3 rounded-xl border border-dashed border-surface-inset px-3 py-2.5 text-left {guestBlock
+                ? 'cursor-not-allowed text-ink-faint'
+                : 'text-ink-2 hover:border-line-chip'}"
             >
-            <span class="flex flex-col">
-              <span class="text-body font-semibold">Play with a guest</span>
-              <span class="text-small">Guests aren’t allowed in this tournament</span>
-            </span>
+              <span
+                class="flex size-[34px] flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-line-chip"
+                ><Plus size={16} /></span
+              >
+              <span class="flex flex-col">
+                <span class="text-body font-semibold">Play with a guest</span>
+                <span class="text-small">{guestBlock ?? 'No account needed. Plays on your board, confirmed right away.'}</span>
+              </span>
+            </button>
           </li>
         </ul>
       </section>
 
+      {#if guests.length > 0}
+        <p class="flex gap-3 rounded-xl border border-line-2 px-4 py-3.5 text-label text-ink-2">
+          Guests don’t need an account and don’t have to confirm. They throw on your board, and you start each match from your account.
+          Results count for you and {team.name}; nothing is saved for the guest.
+        </p>
+      {/if}
       {#if team.captainId === myId && !team.entered}
         <p class="flex gap-3 rounded-xl border border-accent-line bg-card-active px-4 py-3.5 text-label text-ink-2">
           <Clock size={18} class="mt-px flex-none text-accent" aria-hidden="true" />

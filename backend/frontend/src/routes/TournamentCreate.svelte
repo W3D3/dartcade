@@ -8,6 +8,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
+  import GuestOptions from '$lib/components/tournaments/GuestOptions.svelte'
   import AvgLimitSection from '$lib/components/tournaments/AvgLimitSection.svelte'
   import CreatePreview from '$lib/components/tournaments/CreatePreview.svelte'
   import InPersonBoards from '$lib/components/tournaments/InPersonBoards.svelte'
@@ -386,6 +387,16 @@
                 <span class="text-caption text-text-dim"
                   >Captains register their team and pick who plays. Every picked player has to confirm.</span
                 >
+                {#if form.play === 'online'}
+                  <GuestOptions
+                    {form}
+                    {locked}
+                    onchange={(v: Partial<CreateForm>) => {
+                      Object.assign(form, v)
+                      errors = []
+                    }}
+                  />
+                {/if}
               {/if}
             {/if}
             {#if preselected}
