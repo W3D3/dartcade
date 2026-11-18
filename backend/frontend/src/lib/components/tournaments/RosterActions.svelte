@@ -11,7 +11,7 @@
   let { tournamentId, entry, onchanged }: { tournamentId: string; entry: TeamEntry; onchanged: () => void } = $props()
 
   const waiting = $derived(waitingNames(entry))
-  const changeable = $derived(entry.slots.find(s => s.user === null) ?? entry.slots.find(s => !s.confirmed))
+  const changeable = $derived(entry.slots.find(s => s.user === null && s.guest === null) ?? entry.slots.find(s => !s.confirmed))
   let changing = $state<number | null>(null)
   let busy = $state(false)
   let note = $state('')
