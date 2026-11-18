@@ -248,7 +248,7 @@
           Results count for you and {team.name}; nothing is saved for the guest.
         </p>
       {/if}
-      {#if team.captainId === myId && !team.entered}
+      {#if team.captainId === myId && !team.entered && asked.length > 0}
         <p class="flex gap-3 rounded-xl border border-accent-line bg-card-active px-4 py-3.5 text-label text-ink-2">
           <Clock size={18} class="mt-px flex-none text-accent" aria-hidden="true" />
           <span>{holdNote(asked, t.registrationClosesAt)}</span>
