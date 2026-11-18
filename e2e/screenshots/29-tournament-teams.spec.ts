@@ -48,6 +48,7 @@ async function prepare(admin: Page, luke: Page, phil: Page): Promise<void> {
       manualScoring: true,
       noShowMinutes: 10,
       avgLimit: null,
+      guests: null,
     },
   })
   const draft = (await organized(admin)).find(t => t.name === 'November Doubles Cup' && t.status === 'draft')

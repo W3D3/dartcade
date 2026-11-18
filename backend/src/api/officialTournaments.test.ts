@@ -21,6 +21,7 @@ const SETTINGS = {
   manualScoring: false,
   noShowMinutes: 5,
   avgLimit: null,
+  guests: null,
 }
 const WEEKLY = {
   tournament: {
@@ -85,6 +86,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('official tournaments', () => {
       settings: { noShowMinutes: 10 },
       prizes: WEEKLY.prizes,
     })
+  })
+
+  it('never takes guest teammates, whatever the form asked for', async () => {
+    const asked = {
+      ...WEEKLY,
+      tournament: { ...WEEKLY.tournament, teamSize: 2, settings: { ...WEEKLY.tournament.settings, guests: { perTeam: 1, average: 50 } } },
+    }
+    const res = await post('admin', asked)
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ teamSize: 2, settings: { guests: null } })
   })
 
   it('refuses overlapping prizes and a title that is not one', async () => {

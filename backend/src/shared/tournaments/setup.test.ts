@@ -8,6 +8,7 @@ const fixed: TournamentSetup = {
   preselected: false,
   visibility: 'public',
   format: 'single_elimination',
+  teamSize: 2,
   maxEntries: 16,
   startsAt: '2026-11-23T15:00:00.000Z',
   settings: {
@@ -21,6 +22,7 @@ const fixed: TournamentSetup = {
     manualScoring: false,
     noShowMinutes: 10,
     avgLimit: null,
+    guests: null,
   },
 }
 const organizerStart: TournamentSetup = {
@@ -130,6 +132,15 @@ describe('setupProblems', () => {
     expect(paths(with_(fixed, {}, { avgLimit: { ...limit, min: null, max: null } }))).toEqual(['body/settings/avgLimit'])
     expect(paths(with_(fixed, {}, { avgLimit: { ...limit, min: 70 } }))).toEqual(['body/settings/avgLimit'])
     expect(paths(with_(inPerson, {}, { avgLimit: limit }))).toEqual(['body/settings/avgLimit'])
+  })
+
+  it('gives guests to an online team tournament, with an average from 0 to 180', () => {
+    const guests = { perTeam: 1 as const, average: 50 }
+    expect(paths(with_(fixed, {}, { guests }))).toEqual([])
+    expect(paths(with_(fixed, {}, { guests: { perTeam: null, average: 50 } }))).toEqual([])
+    expect(paths(with_(fixed, {}, { guests: { ...guests, average: 181 } }))).toEqual(['body/settings/guests'])
+    expect(paths(with_(fixed, { teamSize: 1 }, { guests }))).toEqual(['body/settings/guests'])
+    expect(paths(with_(inPerson, {}, { guests }))).toEqual(['body/settings/guests'])
   })
 
   it('opens check-in only once registration has closed', () => {

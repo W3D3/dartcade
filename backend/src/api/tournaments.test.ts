@@ -114,6 +114,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
         manualScoring: false,
         noShowMinutes: 10,
         avgLimit: null,
+        guests: null,
       },
     }
     const create = (user: string, body: object = input) => send(user, 'POST', '/api/tournaments', body)
@@ -525,6 +526,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('tournaments API', () => {
           manualScoring: false,
           noShowMinutes: 10,
           avgLimit: null,
+          guests: null,
         },
       })
       const draft = res.json<Tournament>()

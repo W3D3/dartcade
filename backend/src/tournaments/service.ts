@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely'
 import { warn } from '../log.js'
 import type { Database } from '../db/schema.js'
-import { ownBoardSeats } from '../db/lobbies.js'
+import { ownBoardSeats, usualBoards } from '../db/lobbies.js'
 import { matchRatings, type MatchRating } from '../db/ranked.js'
 import {
   dropIneligibleEntries,
@@ -77,11 +77,15 @@ export type HandStartOutcome =
 export type PlayBoard = { id: string; name: string; state: 'free' | 'in_use' | 'offline'; matchKey: string | null }
 
 const sidesOf = (r: TournamentMatchRow): [string | null, string | null] => [r.entry_a_id, r.entry_b_id]
-type Seated = { id: string; userId: string; name: string }
-/** An entry's players in team order (a solo entry has one), when every one has an account (only accounts play online). */
+type Seated = { id: string; userId: string | null; name: string }
+/**
+ * An entry's players in team order (a solo entry has one), when each is a guest or has an account
+ * (only accounts play online) and a guest has a captain whose board to play on.
+ */
 function playersOf(e: RunEntry): Seated[] | null {
-  const seated = e.players.flatMap(p => (p.userId === null ? [] : [{ ...p, userId: p.userId }]))
-  return seated.length > 0 && seated.length === e.players.length ? seated : null
+  const guests = e.players.some(p => p.guest)
+  if (e.players.length === 0 || e.players.every(p => p.guest) || (guests && e.captainId === null)) return null
+  return e.players.every(p => p.guest || p.userId !== null) ? e.players : null
 }
 /** Whether the game can start with a chosen player: the modes with a bull off (`withBullOff`) read `startWith`. */
 export const choosesFirst = (gameId: string): boolean => games[gameId]?.configMeta?.bullOff !== undefined
@@ -448,10 +452,7 @@ export class TournamentService implements GameEndedConsumer {
     if (a.status === 'withdrawn' || b.status === 'withdrawn') return walkover(a.status === 'withdrawn' ? 1 : 0)
     const others = rows.filter(r => r.id !== row.id && (involves(r, a.id) || involves(r, b.id)))
     if (others.some(r => r.status === 'live' || (r.status === 'ready' && before(r, row) < 0))) return false
-    const free = [a, b].map(e => {
-      const players = playersOf(e)
-      return players !== null && players.every(p => this.deps.isOnline(p.userId) && !this.deps.engine.getSessionByUser(p.userId))
-    })
+    const free = await Promise.all([a, b].map(e => this.canPlay(e)))
     if (free[0] && free[1]) return this.startGame(t, row, [a, b])
     // The wait runs from when both were done with their previous match
     const since = Math.max(row.ready_at?.getTime() ?? 0, ...others.map(r => r.finished_at?.getTime() ?? 0))
@@ -502,20 +503,24 @@ export class TournamentService implements GameEndedConsumer {
   }
 
   private async startGame(t: TournamentRow, row: TournamentMatchRow, sides: [RunEntry, RunEntry]): Promise<boolean> {
-    const { db, engine } = this.deps
     const mod = games[t.game_id]
     const [pa, pb] = sides.map(playersOf)
     if (!mod || pa === null || pb === null || pa.length !== pb.length) return false
     const seated = [...pa, ...pb]
     const sideOf = (seat: number) => sideOfSeat(seat, seated.length)
     const teams = teamsConfig(sides, seated.length)
-    const seats = await ownBoardSeats(db, seated, id => engine.getSessionByBoard(id) !== undefined)
+    const seats = await this.onlineSeats(sides, seated)
     // Online: a bull off decides who starts, thrown again on a tie (like ranked)
-    const launched = await this.launch(t, row, seated, { ownerUserId: seated[0].userId, config: { ...teams, bullOff: 'pdc' }, seats })
+    const launched = await this.launch(t, row, seated, {
+      ownerUserId: seats.find(s => s.userId !== null)?.userId ?? '', // a team has a player with an account
+      config: { ...teams, bullOff: 'pdc' },
+      seats,
+    })
     // Someone started another game meanwhile: tried again next time
     if (launched === null || 'error' in launched) return false
     const { sessionId } = launched
-    for (const [seat, p] of seated.entries())
+    for (const [seat, p] of seated.entries()) {
+      if (p.userId === null) continue
       this.deps.send(p.userId, {
         type: 'tournament.match',
         tournamentId: t.id,
@@ -523,6 +528,54 @@ export class TournamentService implements GameEndedConsumer {
         sessionId,
         opponent: sides[1 - sideOf(seat)].name,
       })
+    }
     return true
+  }
+
+  /**
+   * Everyone who must be there for the entry's seats is online and in no game: its players and, for
+   * a guest, the captain who throws for them, whose board must not be in use either.
+   */
+  private async canPlay(e: RunEntry): Promise<boolean> {
+    const { db, engine, isOnline } = this.deps
+    const players = playersOf(e)
+    if (players === null) return false
+    const who = [
+      ...players.flatMap(p => (p.userId === null ? [] : [p.userId])),
+      ...(e.players.some(p => p.guest) && e.captainId ? [e.captainId] : []),
+    ]
+    if (!who.every(id => isOnline(id) && !engine.getSessionByUser(id))) return false
+    const lender = e.players.some(p => p.guest) ? e.captainId : null
+    const board = lender === null ? undefined : (await usualBoards(db, [lender])).get(lender)
+    return board === undefined || engine.getSessionByBoard(board.id) === undefined
+  }
+
+  /** Online seats: each player on their own board; a guest on their captain's, controlled by the captain. */
+  private async onlineSeats(sides: [RunEntry, RunEntry], seated: readonly Seated[]): Promise<Seat[]> {
+    const { db, engine } = this.deps
+    const real = seated.flatMap(p => (p.userId === null ? [] : [{ ...p, userId: p.userId }]))
+    // A captain who does not play still lends their board: asked for last, so they take no player's
+    const lenders = sides.flatMap(e => (e.players.some(p => p.guest) && e.captainId !== null ? [e.captainId] : []))
+    const own = await ownBoardSeats(
+      db,
+      [...real, ...lenders.filter(id => !real.some(p => p.userId === id)).map(id => ({ userId: id, name: '' }))],
+      id => engine.getSessionByBoard(id) !== undefined,
+    )
+    const byUser = new Map(own.map(s => [s.userId, s]))
+    return seated.map((p, i) => {
+      const mine = byUser.get(p.userId)
+      if (mine) return mine
+      // playersOf left only guests of an entry with a captain here
+      const captain = sides[sideOfSeat(i, seated.length)].captainId ?? ''
+      const lent = byUser.get(captain)
+      return {
+        name: p.name,
+        userId: null,
+        controllerUserId: captain,
+        boardId: lent?.boardId ?? null,
+        boardName: lent?.boardName ?? null,
+        bot: null,
+      }
+    })
   }
 }

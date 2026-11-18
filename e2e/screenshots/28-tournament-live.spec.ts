@@ -32,6 +32,7 @@ const tournament = {
     manualScoring: false,
     noShowMinutes: 10,
     avgLimit: null,
+    guests: null,
   },
   role: null,
   locked: true,

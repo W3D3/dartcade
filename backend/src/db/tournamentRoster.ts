@@ -75,7 +75,7 @@ async function clearWithdrawn(tx: Transaction<Database>, tournamentId: string, u
 async function settleEntry(tx: Transaction<Database>, entryId: string, teamSize: number): Promise<void> {
   const players = await tx
     .selectFrom('tournament_players')
-    .select(['position', 'user_id', 'name', 'confirmed_at'])
+    .select(['position', 'user_id', 'name', 'kind', 'confirmed_at'])
     .where('entry_id', '=', entryId)
     .execute()
   const complete = rosterComplete(players.map(slotOf), teamSize)
@@ -87,9 +87,16 @@ async function settleEntry(tx: Transaction<Database>, entryId: string, teamSize:
     .execute()
 }
 
-const slotOf = (p: { position: number; user_id: string | null; name: string; confirmed_at: Date | null }): RosterSlot => ({
+const slotOf = (p: {
+  position: number
+  user_id: string | null
+  name: string
+  kind: 'player' | 'spot' | 'guest'
+  confirmed_at: Date | null
+}): RosterSlot => ({
   position: p.position,
   user: p.user_id === null ? null : { id: p.user_id, name: p.name },
+  guest: p.kind === 'guest' ? p.name : null,
   confirmed: p.confirmed_at !== null,
 })
 
@@ -180,6 +187,8 @@ export async function registerTeam(
     team: { id: string; name: string }
     captainId: string
     players: readonly { id: string; name: string }[]
+    /** Names of guests (no account) who fill the other places; they are confirmed at once. */
+    guests?: readonly string[]
     hasBoard: boolean
     eligible: boolean
   },
@@ -229,6 +238,22 @@ export async function registerTeam(
         })),
       )
       .execute()
+    if (entry.guests?.length)
+      await tx
+        .insertInto('tournament_players')
+        .values(
+          entry.guests.map((name, i) => ({
+            id: randomUUID(),
+            tournament_id: tournamentId,
+            entry_id: entryId,
+            user_id: null,
+            name,
+            kind: 'guest' as const,
+            position: entry.players.length + i,
+            confirmed_at: now,
+          })),
+        )
+        .execute()
     await settleEntry(tx, entryId, t.team_size)
     return state
   })
@@ -269,7 +294,7 @@ export async function teamEntriesOf(
   if (entries.length === 0) return out
   const players = await db
     .selectFrom('tournament_players')
-    .select(['entry_id', 'position', 'user_id', 'name', 'confirmed_at'])
+    .select(['entry_id', 'position', 'user_id', 'name', 'kind', 'confirmed_at'])
     .where(
       'entry_id',
       'in',

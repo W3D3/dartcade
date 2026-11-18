@@ -27,6 +27,7 @@ const valid = {
     manualScoring: false,
     noShowMinutes: 10,
     avgLimit: null,
+    guests: null,
   }),
 }
 

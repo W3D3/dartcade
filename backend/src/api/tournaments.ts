@@ -47,7 +47,7 @@ import { newLobbyCode } from '../lobby/code.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { validateOptions } from '../games/configMeta.js'
 import { games } from '../games/index.js'
-import { normalizeName } from '../shared/names.js'
+import { CONTROL_CHARS, normalizeName } from '../shared/names.js'
 import {
   MAX_ORGANIZERS,
   MAX_UNFINISHED_TOURNAMENTS,
@@ -278,6 +278,7 @@ function replaced(res: SetParticipantsResult): void {
 /** The 409 for each reason picks are refused. */
 const PICK_REFUSED: Record<PickProblem, string> = {
   count: 'wrong player count',
+  guests: 'guests not allowed',
   taken: 'already in this tournament',
   not_eligible: REFUSED.not_eligible,
   board_needed: REFUSED.board_needed,
@@ -405,7 +406,8 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       input.play = 'online'
       input.preselected = false
       input.visibility = 'public'
-      input.settings = { ...input.settings, noShowMinutes: 10 }
+      // ...and never take guests
+      input.settings = { ...input.settings, noShowMinutes: 10, guests: null }
       check(input, new Date())
       const id = randomUUID()
       const created = await withFreshCode(code =>
@@ -790,11 +792,16 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       const picked = req.body.players.map(id => team.members.find(m => m.user.id === id))
       const members = picked.filter(m => m !== undefined)
       if (members.length < picked.length) throw conflict('not a member')
+      const guests = (req.body.guests ?? []).map(normalizeName)
+      if (guests.some(g => g === '' || CONTROL_CHARS.test(g))) throw conflict('guest names must not be empty or contain control characters')
+      const captainHasBoard = (await candidatesOf(db, t.id, [req.userId]))(req.userId).hasBoard
       const { problem } = pickProblem(
         forRegistration(t),
         members.map(m => candidate(m.user.id, m)),
+        guests.length,
+        captainHasBoard,
       )
-      if (problem === 'count') throw conflict(PICK_REFUSED.count)
+      if (problem === 'count' || problem === 'guests') throw conflict(PICK_REFUSED[problem])
       const state = await registerTeam(
         db,
         t.id,
@@ -802,6 +809,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
           team,
           captainId: req.userId,
           players: members.map(m => m.user),
+          guests,
           hasBoard: problem !== 'board_needed',
           eligible: problem !== 'not_eligible',
         },
@@ -847,9 +855,10 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
       // Judged with the others who keep their places, as a registration would be. They hold their
       // places in this entry, so only the new player can be taken elsewhere: changePlayer checks that
       const others = entry.slots.flatMap(s => (s.position === position || s.user === null ? [] : [s.user.id]))
-      const judge = await candidatesOf(db, t.id, [...others, userId])
+      const judge = await candidatesOf(db, t.id, [...others, userId, req.userId])
       const picks = [...others, userId].map(id => ({ ...judge(id), taken: false }))
-      const { problem } = pickProblem({ ...forRegistration(t), teamSize: picks.length }, picks)
+      const guests = entry.slots.filter(s => s.guest !== null).length
+      const { problem } = pickProblem({ ...forRegistration(t), teamSize: picks.length + guests }, picks, guests, judge(req.userId).hasBoard)
       if (problem === 'not_eligible' || problem === 'board_needed') throw conflict(PICK_REFUSED[problem])
       const changed = await changePlayer(db, t.id, req.userId, position, member.user, new Date())
       if (changed === 'none') throw notFound()

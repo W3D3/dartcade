@@ -10,7 +10,7 @@ const open: RegistrationTournament = {
   maxEntries: 8,
   entries: 3,
   startsAt: '2026-11-16T18:00:00Z',
-  settings: { registrationClosesMinutes: 60, manualScoring: false, avgLimit: null },
+  settings: { registrationClosesMinutes: 60, manualScoring: false, avgLimit: null, guests: null },
 }
 const me = { registered: false, hasBoard: true, eligible: true }
 
