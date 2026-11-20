@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { GameSummary, X01Detail } from '../api'
-import { chalkboardRows, dartLabel, legSeries, legSummary, remainingTicks, x01Sides } from '../details/x01.js'
+import { chalkboardRows, dartLabel, legSeries, legSummary, remainingTicks, sideRules, x01Sides } from '../details/x01.js'
 
 const seg = (name: string, number: number, multiplier: 0 | 1 | 2 | 3) => ({
   name,
@@ -76,10 +76,19 @@ describe('X01 details helpers', () => {
     ])
   })
 
-  it('charts points left from the start score', () => {
-    expect(legSeries(detail, 0, sides, 301).map(s => s.points.map(p => p.left))).toEqual([
+  it("charts points left from each side's start score", () => {
+    expect(legSeries(detail, 0, sides, [301, 301]).map(s => s.points.map(p => p.left))).toEqual([
       [301, 121, 5],
       [301, 261],
+    ])
+    expect(legSeries(detail, 0, sides, [301, 501]).map(s => s.points[0].left)).toEqual([301, 501])
+  })
+
+  it("reads each side's rules from the stored config: the game's, or a handicapped player's", () => {
+    const config = { startScore: 501, inMode: 'straight', outMode: 'double', handicaps: [null, { startScore: 301, inMode: 'double' }] }
+    expect(sideRules(config, sides)).toEqual([
+      { startScore: 501, inMode: 'straight', outMode: 'double' },
+      { startScore: 301, inMode: 'double', outMode: 'double' },
     ])
   })
 

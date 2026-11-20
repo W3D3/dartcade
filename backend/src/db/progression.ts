@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { gameCounts } from './counts.js'
 import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
@@ -35,14 +36,14 @@ export type XpGame = {
 
 const SegSchema = z.object({ number: z.number(), multiplier: z.number() }).catch({ number: 0, multiplier: 0 })
 
-/** A finished game that still counts (not invalidated), with its result; undefined otherwise. */
+/** A finished game that still counts (gameCounts), with its result; undefined otherwise. */
 export async function getXpGame(db: Kysely<Database>, id: string): Promise<XpGame | undefined> {
   const game = await db
     .selectFrom('game_sessions')
     .select(['id', 'game_id', 'finished_at', 'lobby_id', 'config'])
     .where('id', '=', id)
     .where('status', '=', 'finished')
-    .where('invalidated_at', 'is', null)
+    .where(gameCounts('game_sessions'))
     .where('finished_at', 'is not', null)
     .$narrowType<{ finished_at: NotNull }>()
     .executeTakeFirst()
@@ -114,7 +115,7 @@ export async function finishedGameIds(db: Kysely<Database>): Promise<string[]> {
     .selectFrom('game_sessions')
     .select('id')
     .where('status', '=', 'finished')
-    .where('invalidated_at', 'is', null)
+    .where(gameCounts('game_sessions'))
     .where('finished_at', 'is not', null)
     .orderBy('finished_at')
     .orderBy('id')
@@ -170,7 +171,7 @@ export async function previousBest(
     .where('gp.placement', 'is not', null)
     .where('gs.game_id', '=', mode)
     .where('gs.status', '=', 'finished')
-    .where('gs.invalidated_at', 'is', null)
+    .where(gameCounts('gs'))
     .where('gs.id', '!=', excludeId)
     .where(sql<boolean>`gp.stats ? ${key}`)
     .executeTakeFirst()

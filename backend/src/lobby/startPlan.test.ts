@@ -19,6 +19,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   team: null,
   bot: null,
   avatar: { kind: 'none' },
+  handicap: null,
   ...over,
 })
 const chris = person({
@@ -78,7 +79,58 @@ describe('planGame', () => {
       { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null, bot: null },
     ])
     expect(r.ok && r.plan.personIds).toEqual(['c', 'g', 'm'])
-    expect(r.ok && r.plan.shuffleSeats).toBe(false)
+  })
+
+  describe('handicaps', () => {
+    const fast = { startScore: 301, inMode: 'double' as const }
+    const handicapped = (over: Partial<LobbyState> = {}) =>
+      lobby({ people: [{ ...chris, handicap: fast }, lena, guest, { ...max, handicap: { outMode: 'straight' } }], ...over })
+
+    it('gives each seat its handicap, null for the others', () => {
+      const r = planGame(handicapped(), all, online)
+      expect(r.ok && r.plan.config.handicaps).toEqual([fast, null, null, { outMode: 'straight' }])
+    })
+
+    it('a shuffled seat keeps its own handicap', () => {
+      const r = planGame(handicapped({ throwOrder: 'random' }), all, { ...online, random: () => 0 })
+      if (!r.ok) throw new Error('refused')
+      const ofSeat = r.plan.personIds.map(id => handicapped().people.find(p => p.id === id)?.handicap)
+      expect(r.plan.config.handicaps).toEqual(ofSeat)
+      expect(r.plan.personIds).not.toEqual(['c', 'l', 'g', 'm'])
+    })
+
+    it('only X01 singles plays them; a game with none has no handicaps key', () => {
+      expect(planGame(lobby(), all, online)).toMatchObject({
+        ok: true,
+        plan: { config: expect.not.objectContaining({ handicaps: expect.anything() }) },
+      })
+      const atc = planGame(handicapped(), { ...all, gameId: 'atc', config: {} }, online)
+      expect(atc.ok && 'handicaps' in atc.plan.config).toBe(false)
+      const people = [
+        { ...chris, team: 'A' as const, handicap: fast },
+        { ...lena, team: 'B' as const },
+      ]
+      const teamsGame = planGame(lobby({ people }), { gameId: 'x01', config: { format: 'teams' }, personIds: ['c', 'l'] }, online)
+      expect(teamsGame.ok && 'handicaps' in teamsGame.plan.config).toBe(false)
+    })
+
+    it("leaves out a handicap that matches the game's rules: the game counts for stats", () => {
+      // Mia was given 301; the game itself is now 301
+      const same = lobby({ people: [chris, { ...lena, handicap: { startScore: 301 } }, guest, max] })
+      const r = planGame(same, all, online)
+      expect(r.ok && 'handicaps' in r.plan.config).toBe(false)
+      // One that still changes something is kept, the matching one written as null
+      const mixed = lobby({
+        people: [{ ...chris, handicap: { startScore: 301, inMode: 'double' } }, { ...lena, handicap: { startScore: 301 } }, guest, max],
+      })
+      const m = planGame(mixed, all, online)
+      expect(m.ok && m.plan.config.handicaps).toEqual([{ startScore: 301, inMode: 'double' }, null, null, null])
+    })
+
+    it("ignores handicaps smuggled into the game's settings", () => {
+      const r = planGame(lobby(), { ...all, config: { handicaps: [fast, null, null, null] } }, online)
+      expect(r.ok && 'handicaps' in r.plan.config).toBe(false)
+    })
   })
 
   it("merges the settings over the game's defaults", () => {
@@ -91,8 +143,12 @@ describe('planGame', () => {
     expect(bull.ok && bull.plan.config.bullOff).toBe('wdc')
     const pdc = planGame(lobby({ throwOrder: 'bulloff' }), { ...all, config: { bullOff: 'pdc' } }, online)
     expect(pdc.ok && pdc.plan.config.bullOff).toBe('pdc')
-    const random = planGame(lobby({ throwOrder: 'random' }), { ...all, config: { bullOff: 'pdc' } }, online)
-    expect(random.ok && random.plan).toMatchObject({ shuffleSeats: true, config: { bullOff: 'off' } })
+    const random = planGame(lobby({ throwOrder: 'random' }), { ...all, config: { bullOff: 'pdc' } }, { ...online, random: () => 0 })
+    expect(random.ok && random.plan.config.bullOff).toBe('off')
+    expect(random.ok && random.plan.personIds).not.toEqual(['c', 'l', 'g', 'm'])
+    expect(random.ok && random.plan.seats.map(s => s.name)).toEqual(
+      random.ok && random.plan.personIds.map(id => lobby().people.find(p => p.id === id)?.name),
+    )
   })
 
   it('refuses a bull off for a game without one, an unknown game, nobody playing, and an invalid config', () => {
@@ -234,7 +290,6 @@ describe('planGame', () => {
       expect(r.ok && r.plan.seats.map(s => s.name)).toEqual(['Christoph', 'Lena', 'Guest 1', 'Max', 'Sam'])
       expect(r.ok && r.plan.personIds).toEqual(['c', 'l', 'g', 'm', 's'])
       expect(r.ok && r.plan.config).toMatchObject({ format: 'teams', teams: [0, 1, 0, 1, 0] })
-      expect(r.ok && r.plan.shuffleSeats).toBe(false)
       // Team A has three in a row in lobby order: still interleaved, Sam last
       const ordered = teamLobby({
         people: [
@@ -250,15 +305,18 @@ describe('planGame', () => {
     })
 
     it("random throw order: a random team starts, seats aren't shuffled", () => {
-      const r = planGame(teamLobby({ throwOrder: 'random' }), teams, online)
-      expect(r.ok && r.plan).toMatchObject({ shuffleSeats: false, config: { teamStart: 'random', teams: [0, 1, 0, 1, 0] } })
+      const r = planGame(teamLobby({ throwOrder: 'random' }), teams, { ...online, random: () => 0 })
+      expect(r.ok && r.plan).toMatchObject({
+        personIds: ['c', 'l', 'g', 'm', 's'],
+        config: { teamStart: 'random', teams: [0, 1, 0, 1, 0] },
+      })
       const inOrder = planGame(teamLobby(), teams, online)
       expect(inOrder.ok && inOrder.plan.config.teamStart).toBe('first')
     })
 
     it('bull off: the bull off stays on', () => {
       const r = planGame(teamLobby({ throwOrder: 'bulloff' }), teams, online)
-      expect(r.ok && r.plan).toMatchObject({ shuffleSeats: false, config: { bullOff: 'wdc', format: 'teams', teams: [0, 1, 0, 1, 0] } })
+      expect(r.ok && r.plan).toMatchObject({ config: { bullOff: 'wdc', format: 'teams', teams: [0, 1, 0, 1, 0] } })
     })
 
     it('refuses an empty team', () => {
@@ -281,7 +339,6 @@ describe('planGame', () => {
 
     it('singles ignores the teams', () => {
       const r = planGame(teamLobby({ throwOrder: 'random' }), { ...teams, config: { format: 'singles' } }, online)
-      expect(r.ok && r.plan.shuffleSeats).toBe(true)
       expect(r.ok && r.plan.config.teams).toBeUndefined()
     })
   })

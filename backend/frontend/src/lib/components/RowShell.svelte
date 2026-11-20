@@ -18,6 +18,7 @@
     pill,
     seat = null,
     rank = null,
+    rules = null,
     class: className,
     children,
     tone = null,
@@ -30,6 +31,8 @@
     seat?: SeatLine | null
     /** A ranked game: the seat's rank chip under the name. */
     rank?: SeatRank | null
+    /** A handicapped X01 game: the rules this player plays by, under the name. */
+    rules?: string | null
     /** The row's grid columns and vertical padding. */
     class: string
     children: Snippet
@@ -60,6 +63,7 @@
         <PlayerName {name} {seat} nameClass="text-[18px] xl:text-[21px] {nameTone(active, tone)}" youClass="text-[13px]" gap="gap-[2px]" />
       </span>
       {#if rank}<RankChip rank={rank.rank} rating={rank.rating} />{/if}
+      {#if rules}<span class="text-caption label-caps text-accent">{rules}</span>{/if}
       {#if pill}<PlayerPill kind={pill} small label={pillLabel} />{/if}
     </div>
     {@render children()}

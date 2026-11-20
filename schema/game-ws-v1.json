@@ -245,6 +245,13 @@
                 "botSpeed": {
                   "type": "string",
                   "enum": ["fast", "normal", "slow"]
+                },
+                "handicaps": {
+                  "type": "array",
+                  "description": "Per seat, the lobby host's handicap (null: the game's own rules); absent when nobody has one.",
+                  "items": {
+                    "anyOf": [{ "$ref": "common-v1.json#/$defs/Handicap" }, { "type": "null" }]
+                  }
                 }
               }
             },

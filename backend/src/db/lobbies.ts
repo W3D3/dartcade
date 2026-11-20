@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely'
+import type { Handicap } from '../shared/handicap.js'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import { toAvatar } from './users.js'
@@ -46,12 +47,19 @@ export type PersonUpdate = {
   plays?: boolean
   ready?: boolean
   team?: TeamId | null
+  handicap?: Handicap | null
 }
 
 // JSON columns are read defensively: a value that doesn't parse reads as absent
 const ConfigSchema = z.record(z.string(), z.unknown())
 const NextGameSchema = z.object({ gameId: z.string(), config: ConfigSchema })
 const ThrowOrderSchema = z.enum(['lobby', 'random', 'bulloff'])
+const InOutSchema = z.enum(['straight', 'double', 'master'])
+const HandicapSchema = z.object({
+  startScore: z.number().int().optional(),
+  inMode: InOutSchema.optional(),
+  outMode: InOutSchema.optional(),
+})
 const AccessSchema = z.enum(['friends', 'invite'])
 const ActivityKindSchema = z.enum(ACTIVITY_KINDS)
 const ActivityDataSchema = z.object({
@@ -236,6 +244,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       'p.joined_at',
       'p.team',
       'p.bot_level',
+      'p.handicap',
       'u.avatar_kind',
       'u.avatar_preset',
       'u.avatar_background',
@@ -301,6 +310,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       usualBoardName: p.user_id === null ? null : (usual.get(p.user_id)?.name ?? null),
       team: p.team,
       bot: p.bot_level === null ? null : { level: p.bot_level },
+      handicap: parsed(HandicapSchema, p.handicap),
       // Guests and bots have no account row to join, so no avatar to show either.
       avatar: toAvatar(p),
     })),

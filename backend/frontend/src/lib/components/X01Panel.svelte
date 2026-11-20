@@ -51,7 +51,7 @@
   )
 </script>
 
-<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} {rank} pillInRow={solo}>
+<PanelShell {who} {active} {solo} {portrait} {pill} {seat} {waiting} {rank} rules={p.rules} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

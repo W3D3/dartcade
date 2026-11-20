@@ -1,10 +1,12 @@
 import { games } from '../games/index.js'
 import type { GameConfig, Seat } from '../session/types.js'
-import { assignTeams, controllerOf, effectiveReady, isTeamFormat } from './rules.js'
+import { shuffle } from '../session/rng.js'
+import { changesRules, readRulesConfig } from '../shared/handicap.js'
+import { assignTeams, controllerOf, effectiveReady, isTeamFormat, playsHandicaps } from './rules.js'
 import type { LobbyPerson, LobbyState, StartGame } from './types.js'
 
 /** The game a lobby start creates. */
-export type GamePlan = { gameId: string; config: GameConfig; seats: Seat[]; shuffleSeats: boolean; personIds: string[] }
+export type GamePlan = { gameId: string; config: GameConfig; seats: Seat[]; personIds: string[] }
 
 export type PlanProblem =
   | { status: 400; error: string }
@@ -46,11 +48,12 @@ function teamSeating(players: LobbyPerson[]): { players: LobbyPerson[]; teams: n
  * falls back to manual entry until it's back) and people who aren't ready. Without force,
  * board_offline is answered before not_ready. The starter and the rows they control (their
  * own, and any guest they added) count as ready: they're about to confirm by starting.
+ * A random throw order shuffles the seats here, so each keeps its handicap; `random` as Math.random.
  */
 export function planGame(
   lobby: LobbyState,
   game: StartGame,
-  opts: { force: boolean; isBoardOnline: (boardId: string) => boolean; starterUserId: string },
+  opts: { force: boolean; isBoardOnline: (boardId: string) => boolean; starterUserId: string; random?: () => number },
 ): { ok: true; plan: GamePlan } | { ok: false; problem: PlanProblem } {
   const mod = games[game.gameId]
   if (!mod) return { ok: false, problem: { status: 400, error: `unknown game: ${game.gameId}` } }
@@ -63,7 +66,8 @@ export function planGame(
   if (lobby.throwOrder === 'bulloff' && !hasBullOff) {
     return { ok: false, problem: { status: 400, error: `${game.gameId} has no bull off: pick another throw order` } }
   }
-  const config: GameConfig = { ...mod.defaultConfig, ...game.config }
+  // Handicaps come from the people, never from the game's own settings
+  const { handicaps: _, ...config }: GameConfig = { ...mod.defaultConfig, ...game.config }
   if (hasBullOff) {
     const chosen = config.bullOff
     const keep = typeof chosen === 'string' && BULL_OFF_MODES.has(chosen)
@@ -81,6 +85,12 @@ export function planGame(
     config.teamStart = shuffleSeats ? 'random' : 'first'
     shuffleSeats = false
   }
+  if (shuffleSeats) players = shuffle(players, opts.random ?? Math.random)
+  // Only handicaps that still change something: one matching the game's rules would otherwise
+  // take the whole game out of everyone's stats (gameCounts)
+  const rules = readRulesConfig(config)
+  const handicaps = players.map(p => (changesRules(rules, p.handicap) ? p.handicap : null))
+  if (playsHandicaps({ gameId: game.gameId, config }) && handicaps.some(h => h !== null)) config.handicaps = handicaps
   const invalid = mod.validate?.(
     config,
     players.map(p => ({ name: p.name })),
@@ -106,7 +116,6 @@ export function planGame(
     plan: {
       gameId: game.gameId,
       config,
-      shuffleSeats,
       personIds: players.map(p => p.id),
       seats: players.map(p => ({
         name: p.name,

@@ -174,6 +174,18 @@ export interface LobbyPerson {
   bot: {
     level: number
   } | null
+  /**
+   * Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles.
+   */
+  handicap: Handicap | null
+}
+/**
+ * An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.
+ */
+export interface Handicap {
+  startScore?: number
+  inMode?: 'straight' | 'double' | 'master'
+  outMode?: 'straight' | 'double' | 'master'
 }
 /**
  * A pending invite, shown after the joined people ("Waiting for X to confirm").

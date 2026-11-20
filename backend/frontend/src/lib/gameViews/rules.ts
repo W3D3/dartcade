@@ -14,6 +14,7 @@ const X01ConfigSchema = z.object({
   inMode: ModeSchema.catch('straight'),
   outMode: ModeSchema.catch('straight'),
   firstTo: int.catch(3),
+  handicaps: z.array(z.unknown()).optional(),
 })
 const AtcConfigSchema = z.object({
   order: z.enum(['asc', 'desc', 'random']),

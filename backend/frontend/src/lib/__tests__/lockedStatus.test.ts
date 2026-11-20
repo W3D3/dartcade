@@ -21,6 +21,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   presence: null,
   bot: null,
   avatar: { kind: 'none' },
+  handicap: null,
   ...over,
 })
 const body = (p: LobbyPerson) => render(LockedStatus, { props: { person: p } }).body

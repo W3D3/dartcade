@@ -2,6 +2,7 @@
 // views, the open visit's slots and band, the board's highlights. GameDisplay and the big screen
 // both call this, so the two screens show the same things.
 import type { PillKind } from './components/pills.js'
+import { seatRules } from '$shared/handicap'
 import { atcTargetSegment, atcLeaders } from './atc.js'
 import { boardCheckoutTargets, atcSlots, x01Slots } from './dartSlots.js'
 import { setupTip } from './setupTip.svelte.js'
@@ -59,7 +60,7 @@ export function matchView(snapshot: Snapshot | null, history: VisitHistory, sett
   const slots = isX01
     ? x01Slots({
         darts,
-        outMode: x01.config.outMode,
+        outMode: seatRules(x01.config, currentPlayer).outMode,
         bust,
         remaining,
         opened,

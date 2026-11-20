@@ -3693,6 +3693,17 @@ export interface components {
             name: string;
         };
         /**
+         * Handicap
+         * @description An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.
+         */
+        Handicap: {
+            startScore?: number;
+            /** @enum {string} */
+            inMode?: "straight" | "double" | "master";
+            /** @enum {string} */
+            outMode?: "straight" | "double" | "master";
+        };
+        /**
          * Dart
          * @description A thrown dart. coords/polar are absent for manual entry and bounce-outs.
          */
@@ -6661,6 +6672,8 @@ export interface components {
              * @enum {string}
              */
             team?: "A" | "B";
+            /** @description Host, X01 singles: their own start score, check-in or check-out; null or {} clears it (behind lobby.handicap.enabled) */
+            handicap?: components["schemas"]["Handicap"] | (null);
         };
         StartLobbyRequest: {
             /** @description Start even though people who play aren't ready */

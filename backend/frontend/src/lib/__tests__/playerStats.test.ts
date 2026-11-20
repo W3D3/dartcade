@@ -55,6 +55,15 @@ describe('x01Player darts', () => {
 })
 
 describe('x01Player', () => {
+  it("a handicapped game: each card names its player's rules and suggests by their own out rule", () => {
+    const config = { startScore: 501, inMode: 'straight', outMode: 'double', handicaps: [{ startScore: 301, outMode: 'straight' }, null] }
+    const alice = x01Player(game({ config }), 0, { active: true, suggest: true })
+    expect(alice.rules).toBe('301 · straight in · straight out')
+    expect(alice.canFinish).not.toBe('T19 · D12')
+    expect(x01Player(game({ config }), 1, { active: false, suggest: true }).rules).toBe('501 · straight in · double out')
+    expect(x01Player(game(), 0, { active: true, suggest: true }).rules).toBeNull()
+  })
+
   it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
     const p = x01Player(game(), 0, { active: true, suggest: true })
     expect(p).toMatchObject({

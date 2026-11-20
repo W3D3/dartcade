@@ -96,7 +96,8 @@ export function checkoutFor(before: CallGame | null, after: CallGame): Checkout 
   if (leg !== legsPlayed(before)) return null
   const seat = after.currentPlayer
   const remaining = after.teams?.find(t => t.seats.includes(seat))?.score ?? after.scores[seat]
-  return canCheckOut(remaining, after.config.outMode) ? { seat, remaining, leg } : null
+  const outMode = after.config.handicaps?.[seat]?.outMode ?? after.config.outMode
+  return canCheckOut(remaining, outMode) ? { seat, remaining, leg } : null
 }
 
 /** "Game shot, and the nth leg": the voice's own clip, else stitched from the clips it has (a pack without

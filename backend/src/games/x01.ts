@@ -22,6 +22,7 @@ import { BOT_SPEED_OPTION, BULL_OFF_OPTION, OUT_MODE_OPTION } from './commonOpti
 import { x01MatchStats } from './x01Stats.js'
 import { meetsMode, scoreDart } from './outRules.js'
 import { DARTS_PER_VISIT, MAX_VISIT, perVisitAverage } from '../shared/darts.js'
+import { handicapProblem, isHandicap, seatRules, type Handicap } from '../shared/handicap.js'
 
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
@@ -34,6 +35,8 @@ export type X01Config = {
   firstTo: number
   /** How fast a bot seat throws. Only shown in GameSettings when a bot is in the lobby. */
   botSpeed: 'fast' | 'normal' | 'slow'
+  /** Per seat, a lobby host's handicap (null: none). Singles only, so a team index is its seat. */
+  handicaps?: (Handicap | null)[]
 } & TeamsConfig
 
 /** A committed visit: for the Chalkboard, the leg average and the last visit. */
@@ -170,14 +173,22 @@ function upNext(s: X01State): number | null {
   return round > s.cfg.maxRounds ? null : nextPlayer
 }
 
+// Each team's score and check-in at the start of a leg, by its own rules
+function legStartScores(cfg: X01Config, teams: number): Pick<X01State, 'scores' | 'opened' | 'visitOpenedScores'> {
+  const rules = Array.from({ length: teams }, (_, t) => seatRules(cfg, t))
+  return {
+    scores: rules.map(r => r.startScore),
+    opened: rules.map(r => r.inMode === 'straight'),
+    visitOpenedScores: rules.map(r => r.startScore),
+  }
+}
+
 function freshLeg(s: X01State, legs: number[]): Partial<X01State> {
   const teams = teamCount(s.teamOf)
   const turn = legStart(s.order, legs)
   return {
-    scores: Array<number>(teams).fill(s.cfg.startScore),
-    opened: Array<boolean>(teams).fill(s.cfg.inMode === 'straight'),
+    ...legStartScores(s.cfg, teams),
     bustThisVisit: false,
-    visitOpenedScores: Array<number>(teams).fill(s.cfg.startScore),
     turn,
     currentPlayer: s.order[turn],
     round: 1,
@@ -191,7 +202,7 @@ function roundLimitWinner(scores: number[]): number {
 }
 
 // `teams` and `teamStart` are set by the lobby, not the setup form
-export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart' | 'teamNames'>, ConfigFieldMeta> = {
+export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart' | 'teamNames' | 'handicaps'>, ConfigFieldMeta> = {
   format: FORMAT_OPTION,
   startScore: {
     label: 'Start score',
@@ -250,7 +261,17 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   teams: true,
   scoreBased: true,
 
-  validate: validateTwoTeams,
+  validate(cfg, players) {
+    const teams = validateTwoTeams(cfg, players)
+    if (teams || !cfg.handicaps) return teams
+    if (cfg.format === 'teams') return 'handicaps are for singles only'
+    if (cfg.handicaps.length !== players.length) return 'one handicap per seat'
+    for (const h of cfg.handicaps) {
+      const problem = isHandicap(h) ? handicapProblem(h) : null
+      if (problem) return problem
+    }
+    return null
+  },
 
   init(cfg: X01Config, players: Player[], rng?: Rng): X01State {
     const n = players.length
@@ -263,15 +284,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       cfg,
       phase: 'game',
       teamOf,
-      scores: Array<number>(teams).fill(cfg.startScore),
+      ...legStartScores(cfg, teams),
       legs: Array<number>(teams).fill(0),
-      opened: Array<boolean>(teams).fill(cfg.inMode === 'straight'),
       order,
       turn: 0,
       currentPlayer: order[0],
       round: 1,
       bustThisVisit: false,
-      visitOpenedScores: Array<number>(teams).fill(cfg.startScore),
       winner: null,
       playerCount: n,
       pointsScored: Array<number>(n).fill(0),
@@ -306,6 +325,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         const dart = e.data.dart
         // The thrower's team: its score counts down
         const t = s.teamOf[s.currentPlayer]
+        const { inMode, outMode } = seatRules(s.cfg, t)
 
         if (s.scores[t] === 0) return { state: s }
 
@@ -314,10 +334,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         if (s.bustThisVisit) return { state: thrown }
 
         if (!s.opened[t]) {
-          const opens = meetsMode(dart, s.cfg.inMode)
+          const opens = meetsMode(dart, inMode)
           if (!opens) return { state: thrown }
           const opened = s.opened.map((o, i) => (i === t ? true : o))
-          const newScore = scoreDart(s.scores[t], dart, s.cfg.outMode, s.cfg.bullValue)
+          const newScore = scoreDart(s.scores[t], dart, outMode, s.cfg.bullValue)
           if (newScore === 'bust') {
             return {
               state: { ...thrown, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
@@ -328,10 +348,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
 
         const cp = s.currentPlayer
         // A dart thrown on a one-dart finish is a dart at the double, wherever it lands (see #119 for 25)
-        const attempt = checkoutHint(s.scores[t], s.cfg.outMode, 1) !== null
+        const attempt = checkoutHint(s.scores[t], outMode, 1) !== null
         const counted = attempt ? { ...thrown, checkoutAttempts: s.checkoutAttempts.map((a, i) => (i === cp ? a + 1 : a)) } : thrown
 
-        const newScore = scoreDart(s.scores[t], dart, s.cfg.outMode, s.cfg.bullValue)
+        const newScore = scoreDart(s.scores[t], dart, outMode, s.cfg.bullValue)
         if (newScore === 'bust') {
           return { state: { ...counted, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
@@ -405,6 +425,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         inMode: s.cfg.inMode,
         bullValue: s.cfg.bullValue,
         botSpeed: readBotSpeed(s.cfg),
+        ...(s.cfg.handicaps && { handicaps: s.cfg.handicaps }),
       },
       visitLocked: s.bustThisVisit || s.scores[s.teamOf[s.currentPlayer]] === 0,
       pointsScored: s.pointsScored,
@@ -431,9 +452,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   // without ever calling this (see backend/src/bots/scheduler.ts).
   botTarget(s: X01State, seatIndex: number, dartsThrown: number): Point | 'takeout' | null {
     const t = s.teamOf[seatIndex]
+    const { inMode, outMode } = seatRules(s.cfg, t)
     const visitOver = s.bustThisVisit || s.scores[t] === 0 || dartsThrown >= DARTS_PER_VISIT || s.winner !== null
     if (visitOver) return 'takeout'
-    return pickTarget(s.scores[t] ?? 0, DARTS_PER_VISIT - dartsThrown, s.cfg.outMode, { opened: s.opened[t] ?? true, inMode: s.cfg.inMode })
+    return pickTarget(s.scores[t] ?? 0, DARTS_PER_VISIT - dartsThrown, outMode, { opened: s.opened[t] ?? true, inMode })
   },
 
   getLeg(s: X01State): number {

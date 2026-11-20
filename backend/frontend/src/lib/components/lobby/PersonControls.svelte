@@ -1,13 +1,18 @@
 <script lang="ts">
   // The right-hand side of a person's row on the lobby page: "In" / "Sits out" and Ready for
-  // your own rows (read-only status for others), and the ⋯ menu with what you may do.
+  // your own rows (read-only status for others), the host's handicap cog, and the ⋯ menu with
+  // what you may do.
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import { flag } from '$lib/flags'
+  import type { Handicap } from '$shared/handicap'
+  import { gameModes } from '$lib/gameModes'
+  import HandicapButton from './HandicapButton.svelte'
   import LockedStatus from './LockedStatus.svelte'
   import PersonStatus from './PersonStatus.svelte'
   import RowMenu from './RowMenu.svelte'
   import ToggleChip from './ToggleChip.svelte'
-  import { canMove, canRemove, canSetReady, isMine, type PersonPatch } from '$lib/lobby/rules'
+  import { canMove, canRemove, canSetHandicap, canSetReady, gameRules, isMine, playsHandicaps, type PersonPatch } from '$lib/lobby/rules'
 
   let {
     lobby,
@@ -38,6 +43,8 @@
   const mover = $derived(canMove(lobby, viewerId))
   const last = $derived(lobby.people.length - 1)
   let removing = $state(false)
+  const handicapsOn = flag('lobby.handicap.enabled')
+  const x01Defaults = $derived($gameModes.find(g => g.id === 'x01')?.defaultConfig)
 </script>
 
 {#snippet readyChip()}
@@ -71,6 +78,13 @@
   {/if}
 {:else}
   <PersonStatus {person} {showReady} />
+{/if}
+{#if !locked && $handicapsOn && canSetHandicap(lobby, viewerId) && lobby.nextGame && playsHandicaps(lobby.nextGame)}
+  <HandicapButton
+    {person}
+    rules={gameRules(lobby.nextGame.config, x01Defaults)}
+    onsave={(handicap: Handicap | null) => onupdate(person.id, { handicap })}
+  />
 {/if}
 {#if !locked}<RowMenu
     name={person.name}
