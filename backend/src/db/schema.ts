@@ -1,4 +1,5 @@
 import type { ColumnType, Generated, RawBuilder } from 'kysely'
+import type { Handicap } from '../shared/handicap.js'
 import type { components } from '../schema/api.js'
 import type { Rule, SegmentMode } from '../shared/lights/types.js'
 import type { LegReview } from '../shared/coach/review.js'
@@ -248,6 +249,8 @@ export interface LobbyPeopleTable {
   team: ColumnType<'A' | 'B' | null, 'A' | 'B' | null | undefined, 'A' | 'B' | null>
   /** The person is a bot the server throws itself, at this difficulty 1-20; null for a member or guest (migration 017). */
   bot_level: number | null
+  /** The host's X01 handicap for them (migration 077); null: the game's own rules. */
+  handicap: ColumnType<unknown, Handicap | null | undefined, Handicap | null>
 }
 
 export interface LobbyInvitesTable {

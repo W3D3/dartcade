@@ -206,6 +206,7 @@ const lobbies: LobbyService = new LobbyService({
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
   autoStartBoards: boardIds => autoStartBoards(db, boardIds, warn),
   gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
+  handicapsAvailable: async userId => flagEnabled('lobby.handicap.enabled', await loadFlagUser(db, userId)),
   warn,
   onStatusChange: userIds => {
     friends.touch(userIds)

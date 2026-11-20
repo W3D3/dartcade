@@ -598,6 +598,46 @@
                     "normal",
                     "slow"
                   ]
+                },
+                "handicaps": {
+                  "type": "array",
+                  "description": "Per seat, the lobby host's handicap (null: the game's own rules); absent when nobody has one.",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "title": "Handicap",
+                        "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "startScore": {
+                            "type": "integer",
+                            "minimum": 101,
+                            "maximum": 1001
+                          },
+                          "inMode": {
+                            "type": "string",
+                            "enum": [
+                              "straight",
+                              "double",
+                              "master"
+                            ]
+                          },
+                          "outMode": {
+                            "type": "string",
+                            "enum": [
+                              "straight",
+                              "double",
+                              "master"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
                 }
               }
             },
@@ -3645,6 +3685,46 @@
                             "normal",
                             "slow"
                           ]
+                        },
+                        "handicaps": {
+                          "type": "array",
+                          "description": "Per seat, the lobby host's handicap (null: the game's own rules); absent when nobody has one.",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "title": "Handicap",
+                                "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "startScore": {
+                                    "type": "integer",
+                                    "minimum": 101,
+                                    "maximum": 1001
+                                  },
+                                  "inMode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "straight",
+                                      "double",
+                                      "master"
+                                    ]
+                                  },
+                                  "outMode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "straight",
+                                      "double",
+                                      "master"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
                         }
                       }
                     },
@@ -13492,6 +13572,46 @@
                                 "normal",
                                 "slow"
                               ]
+                            },
+                            "handicaps": {
+                              "type": "array",
+                              "description": "Per seat, the lobby host's handicap (null: the game's own rules); absent when nobody has one.",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "title": "Handicap",
+                                    "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "startScore": {
+                                        "type": "integer",
+                                        "minimum": 101,
+                                        "maximum": 1001
+                                      },
+                                      "inMode": {
+                                        "type": "string",
+                                        "enum": [
+                                          "straight",
+                                          "double",
+                                          "master"
+                                        ]
+                                      },
+                                      "outMode": {
+                                        "type": "string",
+                                        "enum": [
+                                          "straight",
+                                          "double",
+                                          "master"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
                             }
                           }
                         },

@@ -182,6 +182,13 @@ export const isTeamFormat = (gameId: string, config: GameConfig): boolean => gam
 export const isTeamGame = (lobby: { nextGame: NextGame | null }): boolean =>
   lobby.nextGame !== null && isTeamFormat(lobby.nextGame.gameId, lobby.nextGame.config)
 
+/** Only the host gives someone a handicap. */
+export const canSetHandicap = (lobby: LobbyState, actorUserId: string): boolean => isHost(lobby, actorUserId)
+
+/** A game that plays handicaps: X01 singles (in teams a score belongs to the team, not a player). */
+export const playsHandicaps = (game: NextGame | null): boolean =>
+  game !== null && game.gameId === 'x01' && !isTeamFormat(game.gameId, game.config)
+
 /** The host moves people between teams and shuffles them; members only see the teams. */
 export const canSetTeam = (lobby: LobbyState, actorUserId: string): boolean => isHost(lobby, actorUserId)
 
