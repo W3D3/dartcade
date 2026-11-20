@@ -26,7 +26,7 @@ describe('WinScreen buttons', () => {
     const { body } = render(WinScreen, {
       props: {
         ...base,
-        primary: { label: 'Rematch', rematch: true, onclick: () => {} },
+        primary: { label: 'Rematch', icon: 'rematch', onclick: () => {} },
         secondary: { label: 'Back to lobby', onclick: () => {} },
         onhistory: () => {},
       },

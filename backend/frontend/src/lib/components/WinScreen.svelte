@@ -2,9 +2,10 @@
   // The match screen once a game is won: two sides face off around the score (a duel, or two
   // teams), three or more stand on a podium with the standings beside it. Confetti falls behind.
   import ReportBugButton from '$lib/components/feedback/ReportBugButton.svelte'
-  import { Check, House, RotateCcw, RotateCcwClock, Trophy } from '@lucide/svelte'
+  import { Check, RotateCcwClock, Trophy } from '@lucide/svelte'
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
+  import WinFooterButton from './WinFooterButton.svelte'
   import GameXpChip from './progress/GameXpChip.svelte'
   import Celebration from './progress/Celebration.svelte'
   import MarksGrid from './cricket/MarksGrid.svelte'
@@ -15,7 +16,7 @@
   import type { RankedExtras, RankedOutcome } from '$lib/ranked/result'
   import { profileOf } from '$lib/progress/profiles'
   import { cardColors } from '$lib/progress/look'
-  import type { Competitor, WinView } from '$lib/winScreen'
+  import type { Competitor, WinButton, WinView } from '$lib/winScreen'
 
   let {
     view,
@@ -41,10 +42,10 @@
     board: string | null
     /** The viewer played: the game is in their History. */
     saved: boolean
-    /** The main button: Rematch (the host of a lobby game), Back to lobby or Back to Play. Without buttons the screen is view-only. */
-    primary?: { label: string; rematch: boolean; onclick: () => void } | null
+    /** The main button: Rematch (the host of a lobby game), Back to lobby or Back to Play, or Next to the achievements the game unlocked. Without buttons the screen is view-only. */
+    primary?: WinButton | null
     /** Beside it: Back to lobby next to Rematch. */
-    secondary?: { label: string; onclick: () => void } | null
+    secondary?: WinButton | null
     onhistory?: (() => void) | null
     /** Shows what this game paid you (progression); null: no XP chip. */
     xpSessionId?: string | null
@@ -432,25 +433,9 @@
         </button>
       {/if}
       {#if secondary}
-        <button
-          type="button"
-          onclick={secondary.onclick}
-          class="{saved && onhistory
-            ? 'max-md:ml-auto'
-            : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-lg border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
-        >
-          {secondary.label}
-        </button>
+        <WinFooterButton button={secondary} class={saved && onhistory ? 'max-md:ml-auto' : 'ml-auto'} />
       {/if}
-      <button
-        type="button"
-        onclick={primary.onclick}
-        class="{(saved && onhistory) || secondary
-          ? ''
-          : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-lg border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-wordmark uppercase cursor-pointer hover:brightness-[1.08]"
-      >
-        {#if primary.rematch}<RotateCcw size={20} strokeWidth={2.2} />{:else}<House size={20} strokeWidth={2.2} />{/if}{primary.label}
-      </button>
+      <WinFooterButton button={primary} main class={(saved && onhistory) || secondary ? '' : 'ml-auto'} />
     </footer>
   {/if}
 </div>
