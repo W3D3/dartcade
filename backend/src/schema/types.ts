@@ -64,6 +64,10 @@ export type AdbridgeV1BridgeBackendEnvelope =
   | (BaseEnvelope & {
       kind?: "motion";
       data?: MotionData;
+    })
+  | (BaseEnvelope & {
+      kind?: "motion.state";
+      data?: MotionStateData;
     });
 /**
  * ULID, unique per visit (the physical set of darts in the board between two takeouts).
@@ -294,4 +298,14 @@ export interface MotionData {
   isTakeoutFull: boolean;
   isWaiting: boolean;
   [k: string]: unknown;
+}
+/**
+ * The board's current motion state, derived from the motion_state flags and sent only when it changes. Priority when several flags are true: takeout (partial or full), hand, dart, waiting, stable. Not stored by the backend. Older bridges never send it (unknown).
+ */
+export interface MotionStateData {
+  state: "stable" | "waiting" | "dart" | "hand" | "takeout";
+  /**
+   * Only with state=takeout.
+   */
+  takeout?: "partial" | "full";
 }

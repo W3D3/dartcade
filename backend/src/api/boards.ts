@@ -20,6 +20,7 @@ import {
   hasActiveSessionOnBoard,
 } from '../db/queries.js'
 import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
+import { motionState as defaultMotionState, type MotionState } from '../boards/motionState.js'
 import { openBigScreen, stopBigScreen } from '../boards/bigScreenOpen.js'
 import { findOwnBoard } from '../boards/own.js'
 import { newBoardToken } from '../boards/token.js'
@@ -51,6 +52,7 @@ type Opts = FastifyPluginOptions & {
   bigScreen: Pick<BigScreenService, 'revoke'>
   /** What the boards' helpers reported (tests pass their own). */
   bigScreenState?: BigScreenState
+  motionState?: MotionState
 }
 
 // A still asked for by its current version never changes
@@ -76,6 +78,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     bridgeUpdates = defaultBridgeUpdates,
     bigScreen,
     bigScreenState = defaultBigScreenState,
+    motionState = defaultMotionState,
   } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
@@ -307,6 +310,17 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const state = stateOf(res)
       if (!state) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
       return reply.send(state)
+    },
+  )
+
+  // The motion state the bridge last sent: diagnostics only, so no push. null: unknown (old bridge or offline)
+  app.get<Route<'getBoardMotion'>>(
+    '/api/boards/:id/motion',
+    { preValidation: requireAuth, schema: fromSpec('getBoardMotion') },
+    async (req, reply) => {
+      const { id } = req.params
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      return reply.send({ motion: bridgeConnections.isOnline(id) ? motionState.get(id) : null })
     },
   )
 

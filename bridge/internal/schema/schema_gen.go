@@ -1165,6 +1165,102 @@ func (j *MotionData) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
+// The board's current motion state, derived from the motion_state flags and sent
+// only when it changes. Priority when several flags are true: takeout (partial or
+// full), hand, dart, waiting, stable. Not stored by the backend. Older bridges
+// never send it (unknown).
+type MotionStateData struct {
+	// State corresponds to the JSON schema field "state".
+	State MotionStateDataState `json:"state" yaml:"state" mapstructure:"state"`
+
+	// Only with state=takeout.
+	Takeout *MotionStateDataTakeout `json:"takeout,omitempty,omitzero" yaml:"takeout,omitempty" mapstructure:"takeout,omitempty"`
+}
+
+type MotionStateDataState string
+
+const MotionStateDataStateDart MotionStateDataState = "dart"
+const MotionStateDataStateHand MotionStateDataState = "hand"
+const MotionStateDataStateStable MotionStateDataState = "stable"
+const MotionStateDataStateTakeout MotionStateDataState = "takeout"
+const MotionStateDataStateWaiting MotionStateDataState = "waiting"
+
+var enumValues_MotionStateDataState = []interface{}{
+	"stable",
+	"waiting",
+	"dart",
+	"hand",
+	"takeout",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *MotionStateDataState) UnmarshalJSON(value []byte) error {
+	var v string
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_MotionStateDataState {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_MotionStateDataState, v)
+	}
+	*j = MotionStateDataState(v)
+	return nil
+}
+
+type MotionStateDataTakeout string
+
+const MotionStateDataTakeoutFull MotionStateDataTakeout = "full"
+const MotionStateDataTakeoutPartial MotionStateDataTakeout = "partial"
+
+var enumValues_MotionStateDataTakeout = []interface{}{
+	"partial",
+	"full",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *MotionStateDataTakeout) UnmarshalJSON(value []byte) error {
+	var v string
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_MotionStateDataTakeout {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_MotionStateDataTakeout, v)
+	}
+	*j = MotionStateDataTakeout(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *MotionStateData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["state"]; raw != nil && !ok {
+		return fmt.Errorf("field state in MotionStateData: required")
+	}
+	type Plain MotionStateData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = MotionStateData(plain)
+	return nil
+}
+
 // Derived from coords. r=1 at the outer double wire. theta_deg measured
 // counterclockwise from the positive x-axis (right). Only present when coords is
 // present.

@@ -11,6 +11,7 @@ import { BRIDGE_SILENCE_MS, BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 import { LightsStore } from '../lights/store.js'
 import { BigScreenState } from '../boards/bigScreenState.js'
+import { MotionState } from '../boards/motionState.js'
 import { LobbyHub } from '../lobby/hub.js'
 
 vi.mock('../db/queries.js', () => ({
@@ -507,6 +508,45 @@ describe('Board Manager reachability', () => {
     await flush()
     expect(bridgeConnections.get('board-bm-new')?.bmUp).toBe(true)
     expect(onBoardStatus).toHaveBeenCalledWith('u-bm', 'board-bm-new', true)
+  })
+})
+
+describe('motion state', () => {
+  const frame = (seq: number, kind: string, data: object) =>
+    Buffer.from(JSON.stringify({ v: 1, seq, kind, bridge_id: 'br', boot_id: 'boot', recv_wall: '2026-01-01T10:00:00.000Z', data }))
+
+  it('is kept in memory without being stored, and cleared when the Board Manager link drops or the bridge goes', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-motion', hardware_id: null, owner_user_id: 'u-motion' } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev-m' })
+    const motionState = new MotionState()
+    const socket = new FakeSocket()
+    handleBridgeConnection(
+      socket as any,
+      { token: 'tok' },
+      { db: {} as any, engine: { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any, motionState },
+    )
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    expect(motionState.get('board-motion')).toBeNull()
+
+    socket.emit('message', frame(1, 'motion.state', { state: 'takeout', takeout: 'partial' }))
+    await flush()
+    await flush()
+    expect(motionState.get('board-motion')).toEqual({ state: 'takeout', takeout: 'partial', since: '2026-01-01T10:00:00.000Z' })
+    expect(queries.insertBridgeEvent).not.toHaveBeenCalled()
+    expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ ack: 1, boot_id: 'boot' }))
+
+    socket.emit('message', frame(2, 'bm.link', { up: false }))
+    await flush()
+    await flush()
+    expect(motionState.get('board-motion')).toBeNull()
+
+    socket.emit('message', frame(3, 'motion.state', { state: 'dart' }))
+    await flush()
+    await flush()
+    expect(motionState.get('board-motion')?.state).toBe('dart')
+    socket.emit('close')
+    expect(motionState.get('board-motion')).toBeNull()
   })
 })
 

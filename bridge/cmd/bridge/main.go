@@ -277,7 +277,12 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 
 	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart.
 	// WLEDs are only scanned when a user asks (wled.scan), never on a timer or a connect.
+	resendMotion := make(chan struct{}, 1)
 	tr.OnConnect(func() {
+		select {
+		case resendMotion <- struct{}{}:
+		default:
+		}
 		bigScreen.Announce()
 		stills.Trigger(ctx, 0)
 	})
@@ -307,7 +312,7 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAd
 		}
 	}()
 
-	runDiffer(ctx, client.Frames(), eventCh)
+	runDiffer(ctx, client.Frames(), resendMotion, eventCh)
 	log.Info("shutting down")
 }
 
@@ -321,8 +326,9 @@ func outboxPath(cfgPath string) string {
 }
 
 // runDiffer turns Board Manager frames into event batches on eventCh until ctx ends or
-// frames is closed. It is eventCh's only sender, so it closes it when it returns.
-func runDiffer(ctx context.Context, frames <-chan bm.BMFrame, eventCh chan<- []differ.Event) {
+// frames is closed. A signal on resendMotion sends the current motion state again (the backend
+// just connected). It is eventCh's only sender, so it closes it when it returns.
+func runDiffer(ctx context.Context, frames <-chan bm.BMFrame, resendMotion <-chan struct{}, eventCh chan<- []differ.Event) {
 	defer close(eventCh)
 	s := differ.State{}
 	for {
@@ -335,14 +341,21 @@ func runDiffer(ctx context.Context, frames <-chan bm.BMFrame, eventCh chan<- []d
 			}
 			var evs []differ.Event
 			s, evs = differ.Process(s, frame)
-			if len(evs) > 0 {
-				select {
-				case eventCh <- evs:
-				default:
-					log.Warn("event channel full, dropping batch", "size", len(evs))
-				}
-			}
+			sendBatch(eventCh, evs)
+		case <-resendMotion:
+			sendBatch(eventCh, differ.ReplayMotion(s))
 		}
+	}
+}
+
+func sendBatch(eventCh chan<- []differ.Event, evs []differ.Event) {
+	if len(evs) == 0 {
+		return
+	}
+	select {
+	case eventCh <- evs:
+	default:
+		log.Warn("event channel full, dropping batch", "size", len(evs))
 	}
 }
 
