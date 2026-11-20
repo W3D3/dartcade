@@ -8,6 +8,7 @@ import { createFastify } from '../api/fastify.js'
 import { achievementsApiPlugin } from '../api/achievements.js'
 import { AchievementsService } from './service.js'
 import { getProgress } from '../db/progression.js'
+import { xpForTiers } from '../shared/achievements.js'
 import type { AchievementUnlockedMessage } from '../schema/lobby-ws.js'
 
 signInAs('ann')
@@ -115,10 +116,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     const r = await row()
     expect(r).toMatchObject({ count: 12, tier: 1, game_id: `g${n}` })
     expect(r?.earned_at).not.toBeNull()
-    expect(pushed).toEqual([expect.objectContaining({ unlocked: [{ id: 'x01.bullseye', tier: 1, count: 12, tierUp: false, xp: 100 }] })])
+    expect(pushed).toEqual([expect.objectContaining({ unlocked: [{ id: 'x01.bullseye', from: 0, tier: 1, count: 12, xp: 100 }] })])
     expect((await getProgress(db, 'ann')).xp).toBe(100)
     // bob threw no bulls: nothing for him
     expect(await db.selectFrom('user_achievements').select('user_id').where('user_id', '=', 'bob').execute()).toEqual([])
+  })
+
+  it("pushes each game's tier changes with the tier before it, and nothing for a game that changed none", async () => {
+    const first = await duel(12)
+    await service.countGame(first)
+    // 15, 27, 39: still tier 1, nothing to tell
+    for (const bulls of [3, 12, 12]) await service.countGame(await duel(bulls))
+    const up = await duel(12)
+    await service.countGame(up)
+    expect(pushed.map(m => [m.sessionId, m.unlocked])).toEqual([
+      [first, [{ id: 'x01.bullseye', from: 0, tier: 1, count: 12, xp: xpForTiers(0, 1) }]],
+      [up, [{ id: 'x01.bullseye', from: 1, tier: 2, count: 51, xp: xpForTiers(1, 2) }]],
+    ])
   })
 
   it('counts without paying or pushing while the flag is off', async () => {

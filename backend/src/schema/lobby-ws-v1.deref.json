@@ -4960,9 +4960,9 @@
             "type": "object",
             "required": [
               "id",
+              "from",
               "tier",
               "count",
-              "tierUp",
               "xp"
             ],
             "additionalProperties": false,
@@ -4980,9 +4980,11 @@
                 "type": "integer",
                 "minimum": 1
               },
-              "tierUp": {
-                "type": "boolean",
-                "description": "False for the first tier."
+              "from": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4,
+                "description": "The tier before this game: 0 for a new achievement."
               },
               "xp": {
                 "type": "integer",
@@ -8558,9 +8560,9 @@
                 "type": "object",
                 "required": [
                   "id",
+                  "from",
                   "tier",
                   "count",
-                  "tierUp",
                   "xp"
                 ],
                 "additionalProperties": false,
@@ -8578,9 +8580,11 @@
                     "type": "integer",
                     "minimum": 1
                   },
-                  "tierUp": {
-                    "type": "boolean",
-                    "description": "False for the first tier."
+                  "from": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4,
+                    "description": "The tier before this game: 0 for a new achievement."
                   },
                   "xp": {
                     "type": "integer",
