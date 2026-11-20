@@ -30,7 +30,7 @@
   const name = $derived(who.name)
 </script>
 
-<PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} {rank} class="gap-2">
+<PhoneCardShell {who} label="{name}, throwing, {p.remaining} left" {pill} {seat} {rank} rules={p.rules} class="gap-2">
   {#snippet aside()}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}
   {/snippet}

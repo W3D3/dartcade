@@ -20,6 +20,7 @@
     class: className,
     aside,
     rank = null,
+    rules = null,
     children,
   }: {
     who: Who
@@ -32,6 +33,8 @@
     aside?: Snippet
     /** A ranked game: the seat's rank chip under the header. */
     rank?: SeatRank | null
+    /** A handicapped X01 game: the rules this player plays by, under the header. */
+    rules?: string | null
     children: Snippet
   } = $props()
   const name = $derived(who.name)
@@ -45,5 +48,6 @@
     {@render aside?.()}
   </div>
   {#if rank}<div class="mt-1"><RankChip rank={rank.rank} rating={rank.rating} /></div>{/if}
+  {#if rules}<span class="text-caption label-caps text-accent">{rules}</span>{/if}
   {@render children()}
 </section>

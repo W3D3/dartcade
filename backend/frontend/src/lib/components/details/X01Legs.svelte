@@ -7,12 +7,12 @@
   import type { GameDetail } from '$lib/api'
   import Chalkboard from './Chalkboard.svelte'
   import RemainingChart from './RemainingChart.svelte'
-  import { chalkboardRows, legSeries, legStarterKey, legSummary, x01Sides } from '$lib/details/x01'
+  import { chalkboardRows, legSeries, legStarterKey, legSummary, sideRules, x01Sides } from '$lib/details/x01'
 
   let { detail, leg, highlight }: { detail: GameDetail; leg: number; highlight: number | null } = $props()
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
-  const start = $derived(typeof detail.game.config.startScore === 'number' ? detail.game.config.startScore : 501)
+  const starts = $derived(sideRules(detail.game.config, sides).map(r => r.startScore))
   const starter = $derived(x01 ? legStarterKey(x01, leg, sides) : null)
   const nameOf = (seat: number) => detail.game.players.find(p => p.seat === seat)?.name ?? ''
   const forfeitedBy = $derived(detail.game.players.find(p => p.forfeited)?.name ?? null)
@@ -23,7 +23,7 @@
     <p class="text-[15px] text-text-muted">{legSummary(x01, leg, sides, nameOf, forfeitedBy)}</p>
     <div class="flex flex-col gap-4">
       <div class="min-w-0">
-        <RemainingChart series={legSeries(x01, leg, sides, start)} {sides} {start} {highlight} {starter} />
+        <RemainingChart series={legSeries(x01, leg, sides, starts)} {sides} start={Math.max(...starts)} {highlight} {starter} />
       </div>
       <div class="min-w-0">
         <Chalkboard rows={chalkboardRows(x01, leg, sides)} {sides} showThrower={!!x01.teams} {nameOf} {starter} />

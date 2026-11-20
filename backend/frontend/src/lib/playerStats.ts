@@ -1,5 +1,6 @@
 // What a player panel or row shows, computed from the game snapshot.
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
+import { rulesText, seatRules } from '$shared/handicap'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import type { Visit } from './visitHistory.js'
 import { shownScore, type ScoreUpdates } from './heldScore.js'
@@ -22,6 +23,8 @@ export const checkoutRate = (hits: number, attempts: number) => ({
 })
 
 export type X01PlayerView = {
+  /** In a handicapped game, the rules this player plays by ("301 · double in · double out"); null otherwise. */
+  rules: string | null
   remaining: number
   /** The big score: `remaining`, or held at the visit's start while it's open ("Score left: After the visit"). */
   shown: number
@@ -69,12 +72,13 @@ export function x01Player(
   const dartsLeft = DARTS_PER_VISIT - running.length
   const hint =
     o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0
-      ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout)
+      ? checkoutHint(remaining, seatRules(game.config, i).outMode, dartsLeft, o.checkout)
       : null
   const leg: Visit[] = game.legVisits.filter(v => v.seat === i)
   const last = game.lastVisit.at(i) ?? null
   const bestLeg = game.bestLeg.at(i) ?? null
   return {
+    rules: game.config.handicaps ? rulesText(seatRules(game.config, i)) : null,
     remaining,
     opened,
     shown: shownScore({
