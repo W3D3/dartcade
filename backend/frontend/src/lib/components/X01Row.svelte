@@ -44,6 +44,7 @@
   {pill}
   {seat}
   {rank}
+  rules={p.rules}
   class="{active
     ? 'grid-cols-[190px_150px_minmax(0,1fr)]'
     : 'grid-cols-[190px_120px_minmax(0,1fr)]'} @5xl:grid-cols-[200px_170px_minmax(0,1fr)]

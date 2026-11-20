@@ -15,7 +15,8 @@
   import HeatmapView from './HeatmapView.svelte'
   import X01LegStats from './X01LegStats.svelte'
   import HighlightPicker from './HighlightPicker.svelte'
-  import { x01Sides } from '$lib/details/x01'
+  import { sideRules, x01Sides } from '$lib/details/x01'
+  import { rulesText } from '$shared/handicap'
   import { highlightDefault } from '$lib/details/page'
   import { flag } from '$lib/flags'
   import { coachable } from '$shared/coach/coachable'
@@ -30,6 +31,8 @@
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
   const legs = $derived(x01?.legs.map(l => l.leg) ?? [])
+  // A handicapped game: who played by which rules
+  const handicaps = $derived(Array.isArray(detail.game.config.handicaps) ? sideRules(detail.game.config, sides) : null)
   // null = "Match" (every leg), the default.
   let legSel = $state<number | null>(null)
   let highlightPick = $state<number | null>(null)
@@ -55,6 +58,13 @@
       <!-- Heading navigation (the H key) otherwise has nothing to land on: the title-tabs below are
          buttons, not text, so this gives the section a heading without changing how it looks. -->
       <h2 class="sr-only">Match view</h2>
+      {#if handicaps}
+        <ul aria-label="Handicaps" class="flex flex-wrap gap-x-4 gap-y-1 text-small text-text-muted">
+          {#each sides as side, i (side.key)}
+            <li><span class="font-semibold text-text">{side.name}</span> {rulesText(handicaps[i])}</li>
+          {/each}
+        </ul>
+      {/if}
       <div class="flex flex-wrap gap-3 {view === 'heatmap' ? 'items-end justify-between' : 'items-center justify-between'}">
         <Tabs.List aria-label="Match view" class="flex items-end gap-[22px]">
           {#each tabs as t (t.key)}

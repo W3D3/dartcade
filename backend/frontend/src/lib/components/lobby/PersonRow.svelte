@@ -9,6 +9,8 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import { personLine } from '$lib/lobby/format'
+  import { handicapMarker } from '$lib/lobby/rules'
+  import { gameModes } from '$lib/gameModes'
   import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
 
   let {
@@ -30,6 +32,7 @@
     controls: Snippet
   } = $props()
   const line = $derived(personLine(person, lobby.people, viewerId))
+  const handicap = $derived(handicapMarker(lobby, person, $gameModes.find(g => g.id === 'x01')?.defaultConfig))
 </script>
 
 <li
@@ -60,6 +63,7 @@
       <span class="xl:hidden contents">{@render board()}</span>
       {#if line}<span class="truncate">{line}</span>{/if}
     </span>
+    {#if handicap}<span class="text-eyebrow text-accent" title="Handicap">{handicap}</span>{/if}
   </span>
   <span class="hidden xl:flex min-w-0 text-[12px] text-text-muted">{@render board()}</span>
   <span class="flex items-center justify-end gap-[6px]">{@render controls()}</span>

@@ -406,15 +406,20 @@
               you={line?.you ?? false}
               pill={up ? null : pillFor(i, true)}
               sub={rowSub(
-                up
-                  ? x01Players[i]?.canFinish
-                    ? `Throwing · can finish ${x01Players[i]?.canFinish}`
-                    : 'Throwing'
-                  : i === nextPlayer
+                [
+                  x01Players[i]?.rules,
+                  up
                     ? x01Players[i]?.canFinish
-                      ? `Up next · can finish ${x01Players[i]?.canFinish}`
-                      : 'Up next'
-                    : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
+                      ? `Throwing · can finish ${x01Players[i]?.canFinish}`
+                      : 'Throwing'
+                    : i === nextPlayer
+                      ? x01Players[i]?.canFinish
+                        ? `Up next · can finish ${x01Players[i]?.canFinish}`
+                        : 'Up next'
+                      : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
                 line,
               )}
               valueLabel="Left"

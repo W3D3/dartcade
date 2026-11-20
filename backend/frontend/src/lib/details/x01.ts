@@ -1,6 +1,7 @@
 // X01 on the details page: the sides (seats, or teams), and per leg the points-left chart, the
 // chalkboard and the one-line summary, all from the server's X01Detail.
 import type { GameSummary, Segment, X01Detail } from '../api'
+import { readRulesConfig, seatRules, type X01Rules } from '$shared/handicap'
 import { visitFx } from '../visitBand.js'
 
 export type Side = { key: number; name: string; seats: number[] }
@@ -39,11 +40,18 @@ export function legStarterKey(detail: X01Detail, leg: number, sides: Side[]): nu
   return sides.find(s => s.seats.includes(starter ?? -1))?.key ?? null
 }
 
-export function legSeries(detail: X01Detail, leg: number, sides: Side[], start: number) {
-  return sides.map(side => ({
+/** Each side's rules from a finished game's stored config: the game's own, or a handicapped player's (singles only). */
+export function sideRules(config: Record<string, unknown>, sides: Side[]): X01Rules[] {
+  const cfg = readRulesConfig(config)
+  return sides.map(side => seatRules(cfg, side.seats[0]))
+}
+
+/** Each side's points left after every visit of the leg, from its own start score (`starts`, per side). */
+export function legSeries(detail: X01Detail, leg: number, sides: Side[], starts: number[]) {
+  return sides.map((side, i) => ({
     key: side.key,
     points: [
-      { visit: 0, left: start, scored: 0 },
+      { visit: 0, left: starts[i], scored: 0 },
       ...sideVisits(detail, leg, side).map((v, i) => ({ visit: i + 1, left: v.remaining, scored: v.scored })),
     ],
   }))

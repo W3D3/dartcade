@@ -6,7 +6,7 @@ import { plural } from '../fmt.js'
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export type Mode = 'straight' | 'double' | 'master'
-export type X01Rules = { startScore: number; inMode: Mode; outMode: Mode; firstTo: number }
+export type X01Rules = { startScore: number; inMode: Mode; outMode: Mode; firstTo: number; handicaps?: unknown[] }
 export type AtcRules = { order: 'asc' | 'desc' | 'random'; finishOn: 'twenty' | 'single_bull' | 'bull'; multiplierAdvances: boolean }
 
 /** The X01 rules as parts, e.g. ["501", "Double out", "First to 3 legs"]; a team game leads with its teams ("Teams 2v2"). The last part is the match format. */
@@ -17,6 +17,8 @@ function x01RuleParts(r: X01Rules, playerCount: number, teams?: string): string[
   parts.push(String(r.startScore))
   if (r.inMode !== 'straight') parts.push(`${cap(r.inMode)} in`)
   parts.push(`${cap(r.outMode)} out`)
+  // The game's own rules; some players had their own (each player's card says which)
+  if (r.handicaps) parts.push('Handicaps')
   parts.push(playerCount === 1 ? 'Practice' : `First to ${r.firstTo} ${r.firstTo === 1 ? 'leg' : 'legs'}`)
   return parts
 }
