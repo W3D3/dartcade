@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { friendsEntry, navTabs, isActiveRoute, railLobby, railTabs, sideLinks } from '../nav.js'
+import { friendsEntry, menuSections, navTabs, isActiveRoute, railLobby, railTabs, sideLinks } from '../nav.js'
 
 describe('navTabs', () => {
   it('follows the design: Play, Tournaments, History (no Boards, no Live)', () => {
@@ -202,5 +202,60 @@ describe('railTabs', () => {
       { href: '/settings', label: 'Settings', icon: 'settings' },
       { href: '/admin', label: 'Admin', icon: 'admin' },
     ])
+  })
+})
+
+describe('menuSections', () => {
+  const names = (nav = {}) => menuSections(nav).map(s => [s.label, s.links.map(l => l.label)])
+
+  it('lists every page of the side nav, plus Friends and Boards, under four headings', () => {
+    const all = { home: true, ranked: true, coach: true, tournaments: true, stats: true, progress: 0, admin: true }
+    expect(names(all)).toEqual([
+      ['Play', ['Home', 'Play', 'Matchmaking', 'Coach', 'Tournaments']],
+      ['You', ['Progress', 'History', 'Stats']],
+      ['Social', ['Friends']],
+      ['Account', ['Boards', 'Settings', 'Admin']],
+    ])
+    const shown = menuSections(all).flatMap(s => s.links.map(l => l.label))
+    for (const link of sideLinks(all)) expect(shown).toContain(link.label)
+  })
+
+  it('leaves out what a flag or the role hides, like the side nav', () => {
+    expect(names()).toEqual([
+      ['Play', ['Play', 'Tournaments']],
+      ['You', ['History']],
+      ['Social', ['Friends']],
+      ['Account', ['Boards', 'Settings']],
+    ])
+    expect(
+      menuSections()
+        .flatMap(s => s.links)
+        .find(l => l.label === 'Tournaments'),
+    ).toMatchObject({ disabled: true, soon: true })
+  })
+
+  it('adds Invites while some are pending and badges Friends with its requests', () => {
+    expect(
+      menuSections({ invites: 2 })
+        .flatMap(s => s.links)
+        .find(l => l.label === 'Invites'),
+    ).toMatchObject({
+      href: '/invites',
+      badge: 2,
+      badgeLabel: '2 pending',
+    })
+    expect(
+      menuSections()
+        .flatMap(s => s.links)
+        .map(l => l.label),
+    ).not.toContain('Invites')
+    expect(
+      menuSections({ friendRequests: 1 })
+        .flatMap(s => s.links)
+        .find(l => l.label === 'Friends'),
+    ).toMatchObject({
+      badge: 1,
+      badgeLabel: '1 friend request',
+    })
   })
 })

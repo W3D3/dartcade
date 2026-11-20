@@ -1,16 +1,16 @@
 <script lang="ts">
   // The account badge and its menu (User-Badge board): who you are (with progression, a compact
   // version of your profile card that opens your profile), your status (Online /
-  // Invisible), Friends, Progress, Stats, Admin (admins only), Settings, Sign out; Progress, Stats,
-  // Admin and Settings only on phones, where no rail or side nav lists them. Phones: the avatar
-  // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
+  // Invisible), Friends (a page on phones, the drawer elsewhere), Settings (phones only, the rail and side nav list it), Sign out.
+  // Phones: the avatar in the header (menu below it); every other page is in the burger menu
+  // (`MobileMenu.svelte`). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
   // A bits-ui DropdownMenu: focus moves in on open and back to the badge on close, arrow keys and
   // typeahead move through the items, and Escape closes only the menu (the Friends drawer under
   // it is a lower layer and stays open).
   import { hrefs } from '$lib/routes'
   import { DropdownMenu } from 'bits-ui'
-  import { ChartColumn, ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
+  import { ChevronUp, LogOut, Settings, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -29,13 +29,11 @@
   import NavBadge from './NavBadge.svelte'
   import StatusOption from './friends/StatusOption.svelte'
   import StatusRing from './friends/StatusRing.svelte'
-  import { flag } from '$lib/flags'
 
   let { placement = 'header' }: { placement?: 'header' | 'rail' | 'sidebar' } = $props()
 
   const name = $derived($currentUser?.name ?? '')
   const email = $derived($currentUser?.email ?? '')
-  const stats = flag('stats.enabled')
   const invisible = $derived($currentUser?.invisible ?? false)
   const friends = $derived(friendsEntry($me?.friends ?? null))
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
@@ -43,8 +41,6 @@
   const level = $derived($progressXp === null ? null : levelOf($progressXp).level)
   // Your card, once progression is on and it has loaded
   const profile = $derived($currentUser && level !== null ? profileOf($currentUser.id) : null)
-  // The rail and the side nav list Progress, Stats, Admin and Settings themselves
-  const inNav = $derived(placement !== 'header')
   let statusError = $state('')
   let menuEl = $state<HTMLElement | null>(null)
 
@@ -210,44 +206,15 @@
           <DropdownMenu.Item textValue="Friends">
             {#snippet child({ props })}<a {...props} href={hrefs.friends()} class={ITEM}>{@render friendsRow()}</a>{/snippet}
           </DropdownMenu.Item>
-        {:else}
-          <DropdownMenu.Item textValue="Friends" onSelect={() => friendsDrawerOpen.set(true)} class={ITEM}
-            >{@render friendsRow()}</DropdownMenu.Item
-          >
-        {/if}
-        {#if level !== null}
-          {#if !inNav}
-            <DropdownMenu.Item textValue="Progress">
-              {#snippet child({ props })}
-                <a {...props} href={hrefs.progress()} class={ITEM}
-                  ><TrendingUp size={18} strokeWidth={1.8} />Progress<span
-                    class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span
-                  ></a
-                >
-              {/snippet}
-            </DropdownMenu.Item>
-          {/if}
-        {/if}
-        {#if $stats && !inNav}
-          <DropdownMenu.Item textValue="Stats">
-            {#snippet child({ props })}
-              <a {...props} href={hrefs.stats()} class={ITEM}><ChartColumn size={18} strokeWidth={1.8} />Stats</a>
-            {/snippet}
-          </DropdownMenu.Item>
-        {/if}
-        {#if $currentUser?.isModerator && !inNav}
-          <DropdownMenu.Item textValue="Admin">
-            {#snippet child({ props })}
-              <a {...props} href={hrefs.admin()} class={ITEM}><ShieldCheck size={18} strokeWidth={1.8} />Admin</a>
-            {/snippet}
-          </DropdownMenu.Item>
-        {/if}
-        {#if !inNav}
           <DropdownMenu.Item textValue="Settings">
             {#snippet child({ props })}
               <a {...props} href={hrefs.settings()} class={ITEM}><Settings size={18} strokeWidth={1.8} />Settings</a>
             {/snippet}
           </DropdownMenu.Item>
+        {:else}
+          <DropdownMenu.Item textValue="Friends" onSelect={() => friendsDrawerOpen.set(true)} class={ITEM}
+            >{@render friendsRow()}</DropdownMenu.Item
+          >
         {/if}
         <DropdownMenu.Separator class="h-px bg-line-3" />
         <DropdownMenu.Item
