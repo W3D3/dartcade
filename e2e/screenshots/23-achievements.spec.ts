@@ -102,19 +102,19 @@ for (const [name, view] of [
   })
 }
 
-type Unlocked = { id: string; tier: number; count: number; tierUp: boolean; xp: number }
+type Unlocked = { id: string; from: number; tier: number; count: number; xp: number }
 const UNLOCKS: [string, Unlocked[], string?][] = [
-  ['first', [{ id: 'x01.bigFish', tier: 1, count: 1, tierUp: false, xp: 100 }]],
-  ['tier-up', [{ id: 'x01.180', tier: 3, count: 10, tierUp: true, xp: 300 }]],
+  ['first', [{ id: 'x01.bigFish', from: 0, tier: 1, count: 1, xp: 100 }]],
+  ['tier-up', [{ id: 'x01.180', from: 2, tier: 3, count: 10, xp: 300 }]],
   [
     'several',
     [
-      { id: 'x01.madhouse', tier: 1, count: 1, tierUp: false, xp: 100 },
-      { id: 'x01.bullseye', tier: 2, count: 50, tierUp: true, xp: 150 },
-      { id: 'x01.tonPlus', tier: 1, count: 10, tierUp: false, xp: 100 },
+      { id: 'x01.madhouse', from: 0, tier: 1, count: 1, xp: 100 },
+      { id: 'x01.bullseye', from: 1, tier: 2, count: 50, xp: 150 },
+      { id: 'x01.tonPlus', from: 0, tier: 1, count: 10, xp: 100 },
     ],
   ],
-  ['in-match', [{ id: 'x01.bedAndBreakfast', tier: 2, count: 52, tierUp: true, xp: 150 }], 'match'],
+  ['in-match', [{ id: 'x01.bedAndBreakfast', from: 1, tier: 2, count: 52, xp: 150 }], 'match'],
 ]
 for (const [kind, unlocked, route] of UNLOCKS) {
   for (const [name, view] of [

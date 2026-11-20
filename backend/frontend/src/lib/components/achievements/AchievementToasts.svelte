@@ -3,19 +3,20 @@
   // and two actions; tier ups say old → new tier; several at once lead with the biggest and fold the
   // rest into a chip. On a phone it drops from the top with no buttons and a tap opens the page; on
   // the match screen it is a pill at the top. Six seconds, kept open while the pointer is on it.
-  // They come with achievement.unlocked, sent when a game has ended. Reduced motion: no drop.
+  // They come with achievement.unlocked, sent when a game has ended; on that game's match screen
+  // the screen after the win screen shows them instead. Reduced motion: no drop.
   import { hrefs } from '$lib/routes'
   import { onDestroy } from 'svelte'
   import { get } from 'svelte/store'
   import { location } from 'svelte-spa-router'
   import { X } from '@lucide/svelte'
   import Badge from './Badge.svelte'
-  import XpBadge from '$lib/components/progress/XpBadge.svelte'
+  import XpChip from './XpChip.svelte'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
   import { fetchAchievements, saveShowcase } from '$lib/achievements/store'
   import { toastFor, type UnlockToast } from '$lib/achievements/toasts'
-  import { fmtXp } from '$lib/progress/view'
+  import { TIER_TONE } from '$lib/achievements/view'
   import { SHOWCASE_SIZE } from '$shared/achievements.js'
 
   const SHOW_MS = 6000
@@ -51,7 +52,8 @@
   const seen = get(me.achievements)
   onDestroy(
     me.achievements.subscribe(m => {
-      if (!m || m === seen || !get(on)) return
+      // The game's own screen shows them after its win screen (GameAchievements)
+      if (!m || m === seen || !get(on) || get(location) === `/session/${m.sessionId}`) return
       const t = toastFor(m)
       if (!t) return
       queue.push(t)
@@ -60,8 +62,6 @@
   )
   onDestroy(() => clearTimeout(timer))
 
-  // Silver, gold, platinum, Dartcade; the first tier is lime
-  const TONE = ['', 'var(--color-accent)', '#c9d0d8', 'var(--color-gold)', '#8fdcec', 'var(--color-accent)']
   async function showOnProfile(id: string) {
     const ids = (await fetchAchievements())?.showcase ?? []
     if (!ids.includes(id) && ids.length < SHOWCASE_SIZE) await saveShowcase([...ids, id])
@@ -69,16 +69,9 @@
   }
 </script>
 
-{#snippet xp(n: number, tone: string)}
-  <span
-    class="shrink-0 inline-flex items-center gap-[6px] rounded-full py-[2px] pl-[10px] pr-[6px] font-display font-bold text-lead tracking-section text-accent-fg"
-    style="background: {tone}">+{fmtXp(n)}<XpBadge inverse /></span
-  >
-{/snippet}
-
 {#if current}
   {@const t = current.toast}
-  {@const tone = TONE[t.badge.tier]}
+  {@const tone = TIER_TONE[t.badge.tier]}
   {#key current.id}
     {#if inMatch}
       <div
@@ -94,7 +87,7 @@
             >{t.badge.def.name}{t.badge.oneOff ? '' : ` · Tier ${t.badge.tier}`}</span
           >
         </span>
-        {@render xp(t.xp, tone)}
+        <XpChip xp={t.totalXp} {tone} />
       </div>
     {:else}
       <div
@@ -128,15 +121,15 @@
               >{t.badge.def.description}{t.badge.oneOff ? '' : ` Tier ${t.badge.tier} of ${t.badge.def.thresholds.length}.`}</span
             >
           </div>
-          {@render xp(t.xp, tone)}
+          <XpChip xp={t.totalXp} {tone} />
         </div>
         {#if t.tierUp}
           <div class="flex items-center gap-3 text-label">
             <span class="font-semibold text-text-muted">{t.tierUp.from}</span>
             <span aria-hidden="true">→</span>
             <span class="font-semibold" style="color: {tone}">{t.tierUp.to}</span>
-            {#if t.tierUp.next && t.tierUp.target}
-              <span class="ml-auto text-caption text-text-dim">{t.tierUp.next} · {t.tierUp.count} of {t.tierUp.target}</span>
+            {#if t.next}
+              <span class="ml-auto text-caption text-text-dim">{t.next.label} · {t.next.count} of {t.next.target}</span>
             {/if}
           </div>
         {/if}

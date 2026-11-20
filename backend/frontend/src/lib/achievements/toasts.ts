@@ -1,43 +1,57 @@
-// The achievement.unlocked push as toasts (Badge-Unlock board): the biggest tier is the headline,
-// the rest collapse into a "+N more" chip. Pure; AchievementToasts.svelte shows them.
+// The achievement.unlocked push as views (Badge-Unlock board): one per achievement, for the toast
+// (the biggest tier is the headline, the rest collapse into a "+N more" chip) and for the screen
+// after the game that earned them. Pure; AchievementToasts.svelte and GameAchievements.svelte show them.
 import { achievement } from '$shared/achievements.js'
 import type { AchievementUnlockedMessage } from '$lib/api/lobby-ws'
 import { badgeOf, tierName, type Badge } from './view'
 
 export type Unlock = AchievementUnlockedMessage['unlocked'][number]
-export type UnlockToast = {
+export type UnlockView = {
   badge: Badge
   /** Kicker: "New Achievement" for a first tier, "Achievement Tier Up · Gold" after. */
   kicker: string
-  tierUp: { from: string; to: string; next: string | null; count: number; target: number | null } | null
+  tierUp: { from: string; to: string } | null
+  /** How far to the next tier; null once maxed or for a one-off. */
+  next: { label: string; count: number; target: number; unit: string } | null
   xp: number
+}
+export type UnlockToast = UnlockView & {
+  /** XP of every achievement from the same game. */
+  totalXp: number
   /** Further achievements from the same game. */
   more: number
 }
 
-/** The toast for a message; null when none of its achievements is in the catalogue. */
-export function toastFor(m: AchievementUnlockedMessage): UnlockToast | null {
-  const list = m.unlocked.flatMap(u => {
-    const def = achievement(u.id)
-    return def ? [{ ...u, def }] : []
-  })
-  // Biggest tier first (the server sends them so; kept here for a client of its own)
-  const head = list.reduce<(typeof list)[number] | undefined>((a, u) => (a === undefined || u.tier > a.tier ? u : a), undefined)
-  if (head === undefined) return null
-  const badge = badgeOf(head.def, { id: head.id, count: head.count, tier: head.tier, earnedAt: null, tierAt: null, isNew: false })
+function unlockView(u: Unlock): UnlockView | null {
+  const def = achievement(u.id)
+  if (!def) return null
+  const badge = badgeOf(def, { id: u.id, count: u.count, tier: u.tier, earnedAt: null, tierAt: null, isNew: false })
+  const target = def.thresholds.at(u.tier)
   return {
     badge,
-    kicker: head.tierUp ? `Achievement Tier Up · ${tierName(head.tier)}` : 'New Achievement',
-    tierUp: head.tierUp
-      ? {
-          from: tierName(head.tier - 1),
-          to: tierName(head.tier),
-          next: head.tier >= head.def.thresholds.length ? null : `Next: tier ${head.tier + 1} · ${tierName(head.tier + 1)}`,
-          count: head.count,
-          target: head.def.thresholds.at(head.tier) ?? null,
-        }
-      : null,
-    xp: list.reduce((a, u) => a + u.xp, 0),
-    more: list.length - 1,
+    kicker: u.from > 0 ? `Achievement Tier Up · ${tierName(u.tier)}` : 'New Achievement',
+    tierUp: u.from > 0 ? { from: tierName(u.from), to: tierName(u.tier) } : null,
+    next:
+      badge.oneOff || target === undefined
+        ? null
+        : { label: `Next: tier ${u.tier + 1} · ${tierName(u.tier + 1)}`, count: u.count, target, unit: def.unit },
+    xp: u.xp,
   }
+}
+
+/** What a game unlocked, biggest tier first (the server sends them so; kept here for a client of its own). */
+export function unlockViews(m: AchievementUnlockedMessage): UnlockView[] {
+  return m.unlocked.flatMap(u => unlockView(u) ?? []).sort((a, b) => b.badge.tier - a.badge.tier)
+}
+
+/** What the game `sessionId` unlocked, from the last message: nothing when that was another game's. */
+export function gameUnlocks(m: AchievementUnlockedMessage | null, sessionId: string): UnlockView[] {
+  return m?.sessionId === sessionId ? unlockViews(m) : []
+}
+
+/** The toast for a message; null when none of its achievements is in the catalogue. */
+export function toastFor(m: AchievementUnlockedMessage): UnlockToast | null {
+  const list = unlockViews(m)
+  const head = list.at(0)
+  return head ? { ...head, totalXp: list.reduce((a, u) => a + u.xp, 0), more: list.length - 1 } : null
 }
