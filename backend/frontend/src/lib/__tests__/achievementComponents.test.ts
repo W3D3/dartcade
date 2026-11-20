@@ -54,8 +54,10 @@ describe('AchievementCard', () => {
     ).toContain('Showcase')
   })
   it('greys the whole card of a badge not earned yet, and only that one', () => {
-    expect(render(AchievementCard, { props: { badge: at(0, 0) } }).body).toContain('grayscale')
-    expect(render(AchievementCard, { props: { badge: at(14, 3) } }).body).not.toContain('grayscale')
+    // The badge art greys itself with an inline filter, so look at the article's own class
+    const onArticle = /<article[^>]*class="[^"]*\bgrayscale\b/
+    expect(render(AchievementCard, { props: { badge: at(0, 0) } }).body).toMatch(onArticle)
+    expect(render(AchievementCard, { props: { badge: at(14, 3) } }).body).not.toMatch(onArticle)
   })
   it('marks a new tier', () => {
     expect(render(AchievementCard, { props: { badge: at(14, 3), isNew: true } }).body).toContain('aria-label="New"')
