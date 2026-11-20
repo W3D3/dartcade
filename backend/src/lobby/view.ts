@@ -43,6 +43,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
       presence: p.userId === null ? null : ctx.online.has(p.userId) ? 'online' : 'away',
       bot: p.bot,
       avatar: p.avatar,
+      handicap: p.handicap,
     })),
     invites: lobby.invites.map(i => ({
       id: i.id,

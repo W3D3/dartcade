@@ -22,6 +22,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   presence: null,
   bot: null,
   avatar: { kind: 'preset', foreground: 'classic', background: 'classic' },
+  handicap: null,
   ...over,
 })
 

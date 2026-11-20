@@ -76,6 +76,12 @@ export const FLAG_META = {
       'Lets the host of a finished game ask a friend to take over a guest seat (Claim guests on the match details), and the friend answer on Invites. Both need it: off, the API answers 404 and the invite is not shown.',
     defaultRule: 'admins',
   },
+  'lobby.handicap.enabled': {
+    kind: 'boolean',
+    description:
+      "Lets a lobby's host give one player of an X01 singles game their own start score, check-in or check-out (the cog on a player's row). Checked for the host when they set one. A handicapped game shows in history but counts for no stats, records, XP, challenges or achievements.",
+    defaultRule: 'admins',
+  },
   'progression.enabled': {
     kind: 'boolean',
     description:

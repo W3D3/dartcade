@@ -38,6 +38,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   presence: null,
   bot: null,
   avatar: { kind: 'none' },
+  handicap: null,
   ...over,
 })
 const chris = person({

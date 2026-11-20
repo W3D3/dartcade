@@ -8,6 +8,8 @@ import {
   canSetPlays,
   canSetReady,
   canSetTeam,
+  canSetHandicap,
+  playsHandicaps,
   effectiveReady,
   friendsMayJoin,
   hostBoard,
@@ -38,6 +40,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   team: null,
   bot: null,
   avatar: { kind: 'none' },
+  handicap: null,
   ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
@@ -292,6 +295,21 @@ describe('teams', () => {
   it('only the host sets teams', () => {
     expect(canSetTeam(lobby, 'chris')).toBe(true)
     expect(canSetTeam(lobby, 'lena')).toBe(false)
+  })
+})
+
+describe('handicaps', () => {
+  it('only the host gives them', () => {
+    expect(canSetHandicap(lobby, 'chris')).toBe(true)
+    expect(canSetHandicap(lobby, 'lena')).toBe(false)
+  })
+
+  it('only X01 singles plays them', () => {
+    expect(playsHandicaps({ gameId: 'x01', config: {} })).toBe(true)
+    expect(playsHandicaps({ gameId: 'x01', config: { format: 'singles' } })).toBe(true)
+    expect(playsHandicaps({ gameId: 'x01', config: { format: 'teams' } })).toBe(false)
+    expect(playsHandicaps({ gameId: 'cricket', config: {} })).toBe(false)
+    expect(playsHandicaps(null)).toBe(false)
   })
 })
 

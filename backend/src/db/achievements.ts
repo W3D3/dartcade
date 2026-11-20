@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely'
+import { gameCounts } from './counts.js'
 import type { Database } from './schema.js'
 import { ACHIEVEMENTS, achievement, modesOf, tierOf } from '../shared/achievements.js'
 
@@ -122,7 +123,7 @@ export async function uncountedGameIds(db: Kysely<Database>): Promise<string[]> 
     .select(['g.id', 'g.finished_at'])
     .distinct()
     .where('g.status', '=', 'finished')
-    .where('g.invalidated_at', 'is', null)
+    .where(gameCounts('g'))
     .where('g.finished_at', 'is not', null)
     .where('g.game_id', 'in', modes)
     .where('p.user_id', 'is not', null)

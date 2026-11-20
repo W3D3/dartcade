@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely'
+import { gameCounts } from './counts.js'
 import type { Database } from './schema.js'
 import { groupBy } from '../util/groupBy.js'
 import { toAvatar, type Avatar } from './users.js'
@@ -70,7 +71,7 @@ const x01Seats = (db: Kysely<Database>) =>
     .where('p.bot_level', 'is', null)
     .where('g.game_id', '=', 'x01')
     .where('g.status', '=', 'finished')
-    .where('g.invalidated_at', 'is', null)
+    .where(gameCounts('g'))
     .where(sql<boolean>`(p.stats->>'dartsThrown')::int > 0`)
 
 const x01Games = (db: Kysely<Database>, userId: string) =>
