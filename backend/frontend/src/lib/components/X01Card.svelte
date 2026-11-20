@@ -30,7 +30,7 @@
   const stats = $derived([{ label: 'Avg', value: p.avg }, x01Darts(p)])
 </script>
 
-<PanelShell {who} {active} portrait {pill} {seat} {rank} pillInRow>
+<PanelShell {who} {active} portrait {pill} {seat} {rank} rules={p.rules} pillInRow>
   {#snippet aside()}
     {#if p.firstTo > 1}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

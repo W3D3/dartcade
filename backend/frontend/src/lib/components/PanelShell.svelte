@@ -27,6 +27,7 @@
     label,
     pillLabel,
     rank = null,
+    rules = null,
     class: className,
   }: {
     who: Who
@@ -52,6 +53,8 @@
     pillLabel?: string
     /** A ranked game: the seat's rank chip under the name row. */
     rank?: SeatRank | null
+    /** A handicapped X01 game: the rules this player plays by, under the name. */
+    rules?: string | null
     /** A layout's own width (121's solo card is narrower below xl). */
     class?: string
   } = $props()
@@ -95,6 +98,7 @@
     </span>
   </div>
   {#if rank}<RankChip rank={rank.rank} rating={rank.rating} />{/if}
+  {#if rules}<span class="text-caption label-caps text-accent">{rules}</span>{/if}
   {#if pill && !pillInRow}<PlayerPill kind={pill} label={pillLabel} />{/if}
   {#if waiting}{@render waiting()}{:else}{@render children()}{/if}
 </section>

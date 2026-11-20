@@ -70,7 +70,7 @@
   // nothing moves focus onto the (positioned, not tabbable) tooltip itself.
   const navPoints = $derived(flattenByX(tagged, p => p.visit))
   function describe(data: Point): string {
-    if (data.visit === 0) return `${name(data.side)}: ${start} to start`
+    if (data.visit === 0) return `${name(data.side)}: ${data.left} to start`
     return `${name(data.side)}, visit ${data.visit}: scored ${data.scored}, ${data.left} left`
   }
   let chartContext = $state<PointChartState | undefined>()

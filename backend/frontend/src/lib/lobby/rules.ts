@@ -2,6 +2,7 @@
 // this mirrors it so the screens only offer what it would accept.
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 import type { components } from '../api/schema'
+import { handicapLine, isHandicap, readRulesConfig, type Handicap, type X01Rules } from '$shared/handicap'
 
 /** A change to one person (PATCH /api/lobbies/:id/people/:pid): board, who plays, ready, place. */
 export type PersonPatch = components['schemas']['UpdatePersonRequest']
@@ -151,6 +152,35 @@ export const alreadyInOrInvited = (lobby: Lobby): string[] => [
   ...lobby.people.flatMap(p => (p.userId ? [p.userId] : [])),
   ...lobby.invites.map(i => i.userId),
 ]
+
+// ---- handicaps --------------------------------------------------------------------
+
+/** Only the host gives handicaps (canSetHandicap on the server). */
+export const canSetHandicap = (lobby: Lobby, viewerId: string | null): boolean => isHost(lobby, viewerId)
+
+/** A game that plays handicaps: X01 singles (playsHandicaps on the server). */
+export const playsHandicaps = (game: Lobby['nextGame']): boolean => game !== null && game.gameId === 'x01' && game.config.format !== 'teams'
+
+/** The next X01 game's own rules, which a handicap changes: its settings over X01's defaults. */
+export function gameRules(config: Record<string, unknown>, defaults: Record<string, unknown> = {}): X01Rules {
+  const { startScore, inMode, outMode } = readRulesConfig({ ...defaults, ...config })
+  return { startScore, inMode, outMode }
+}
+
+/** What the person plays differently ("501 → 301, double in"); null without a handicap the next game plays. */
+export function handicapMarker(lobby: Lobby, person: LobbyPerson, defaults?: Record<string, unknown>): string | null {
+  if (!person.handicap || !lobby.nextGame || !playsHandicaps(lobby.nextGame)) return null
+  return handicapLine(gameRules(lobby.nextGame.config, defaults), person.handicap) || null
+}
+
+/** The handicap to send for a draft: only what differs from the game's rules; null when nothing does. */
+export function handicapPatch(game: X01Rules, draft: X01Rules): Handicap | null {
+  const h: Handicap = {}
+  if (draft.startScore !== game.startScore) h.startScore = draft.startScore
+  if (draft.inMode !== game.inMode) h.inMode = draft.inMode
+  if (draft.outMode !== game.outMode) h.outMode = draft.outMode
+  return isHandicap(h) ? h : null
+}
 
 // ---- teams ------------------------------------------------------------------------
 
