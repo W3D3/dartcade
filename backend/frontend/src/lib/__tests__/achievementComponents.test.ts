@@ -53,6 +53,10 @@ describe('AchievementCard', () => {
       render(AchievementCard, { props: { badge: at(14, 3), showcase: { shown: false, full: true, toggle: () => undefined } } }).body,
     ).toContain('Showcase')
   })
+  it('greys the whole card of a badge not earned yet, and only that one', () => {
+    expect(render(AchievementCard, { props: { badge: at(0, 0) } }).body).toContain('grayscale')
+    expect(render(AchievementCard, { props: { badge: at(14, 3) } }).body).not.toContain('grayscale')
+  })
   it('marks a new tier', () => {
     expect(render(AchievementCard, { props: { badge: at(14, 3), isNew: true } }).body).toContain('aria-label="New"')
   })
