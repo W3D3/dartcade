@@ -61,6 +61,15 @@ for (const [name, view] of [
     await s.ctx.close()
   })
 
+  test(`achievements: not earned yet ${name}`, async ({ browser }) => {
+    const s = await open(browser, 'admin', view)
+    await mock(s.page)
+    await openHash(s.page, '/progress/achievements')
+    await s.page.getByRole('article', { name: 'Double the Doubles' }).first().scrollIntoViewIfNeeded()
+    await shot(s.page, `achievements/not-earned-${name}.png`, { settle: 1000 })
+    await s.ctx.close()
+  })
+
   test(`achievements: profile ${name}`, async ({ browser }) => {
     const other = await open(browser, 'luke', VIEW.phone)
     const lukeId = await userId(other.page)
