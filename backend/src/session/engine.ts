@@ -4,7 +4,7 @@ import { applyInput, awaitsFinish, isManualReset, overflowsVisit, takeoutWins, t
 import type { GameConfig, RankedGame, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat, hasHost } from './access.js'
-import { newSeed, seededRng, shuffle } from './rng.js'
+import { newSeed, seededRng } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, resolveInputWork, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import { KeyedQueue } from '../util/keyedQueue.js'
@@ -138,8 +138,6 @@ export type NewSessionSpec = {
   /** A lobby game: its lobby and that lobby's name (for the match header). */
   lobbyId?: string | null
   lobbyName?: string | null
-  /** Random throw order: the seats are shuffled with the game's seed before they're stored. */
-  shuffleSeats?: boolean
   /** Started by the ranked queue; stored with the session, in one transaction. */
   ranked?: RankedGame
   /**
@@ -301,8 +299,7 @@ export class SessionEngine {
     // Another create may have claimed a player or board while that ran
     const avatars = await this.store.getAvatars(distinct(spec.seats.map(s => s.userId)))
     this.assertFree(spec)
-    // Stored in this order, so a replay needs no shuffle of its own
-    const seats = spec.shuffleSeats === true ? shuffle(spec.seats, seededRng(seed)) : spec.seats
+    const { seats } = spec
     const lobbyId = spec.lobbyId ?? null
     const session = newSession({
       id: sessionId,

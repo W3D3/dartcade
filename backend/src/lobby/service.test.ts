@@ -716,6 +716,33 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'B', Pia: 'A' })
     })
 
+    it('the host gives a handicap in X01 singles; the game plays it per seat', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 501 } } })
+      const lena = await personId('Lena')
+      await expect(lobbies.updatePerson('lena', id, lena, { handicap: { startScore: 301 } })).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.updatePerson('chris', id, lena, { handicap: { startScore: 301, inMode: 'double' } })
+      expect((await lobbies.view(id))?.people.map(p => p.handicap)).toEqual([null, { startScore: 301, inMode: 'double' }, null])
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(engine.getSnapshot(sessionId)?.game).toMatchObject({
+        scores: [501, 301, 501],
+        config: { handicaps: [null, { startScore: 301, inMode: 'double' }, null] },
+      })
+    })
+
+    it('a handicap: cleared by null or {}, refused outside X01 singles, off without the flag', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const lena = await personId('Lena')
+      await lobbies.updatePerson('chris', id, lena, { handicap: { outMode: 'straight' } })
+      await lobbies.updatePerson('chris', id, lena, { handicap: {} })
+      expect((await lobbies.view(id))?.people[1].handicap).toBeNull()
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      await expect(lobbies.updatePerson('chris', id, lena, { handicap: { startScore: 301 } })).rejects.toMatchObject({ statusCode: 400 })
+      await lobbies.updatePerson('chris', id, lena, { handicap: null })
+      const off = new LobbyService({ db, engine, hub, isBoardOnline: () => true, handicapsAvailable: () => Promise.resolve(false) })
+      await off.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await expect(off.updatePerson('chris', id, lena, { handicap: { startScore: 301 } })).rejects.toMatchObject({ statusCode: 403 })
+    })
+
     it("the host moves people between teams and shuffles; members can't", async () => {
       await lobbies.update('chris', id, { nextGame: teamsX01 })
       await lobbies.updatePerson('chris', id, await personId('Max'), { team: 'B' })

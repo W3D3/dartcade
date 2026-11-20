@@ -1,4 +1,5 @@
 import type { components } from '../schema/api.js'
+import type { Handicap } from '../shared/handicap.js'
 import type { Face } from '../schema/lobby-ws.js'
 import type { GameConfig } from '../session/types.js'
 
@@ -41,6 +42,8 @@ export type LobbyPerson = {
   bot: { level: number } | null
   /** {kind: 'none'} for a guest or bot (no account to carry one). */
   avatar: components['schemas']['Avatar']
+  /** The host's X01 handicap for them; null: the game's own rules. */
+  handicap: Handicap | null
 }
 
 /** Someone invited into the lobby who hasn't answered yet. */

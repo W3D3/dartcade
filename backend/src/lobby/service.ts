@@ -29,6 +29,7 @@ import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
 import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
 import { MINUTE_MS } from '../shared/time.js'
+import { handicapProblem, isHandicap, type Handicap } from '../shared/handicap.js'
 
 const CODE_ATTEMPTS = 5
 
@@ -41,7 +42,14 @@ export type LobbyPatch = {
   nextGame?: NextGame | null
   regenerateCode?: boolean
 }
-export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number; team?: TeamId }
+export type PersonPatch = {
+  boardId?: string | null
+  plays?: boolean
+  ready?: boolean
+  position?: number
+  team?: TeamId
+  handicap?: Handicap | null
+}
 
 export type LobbyDeps = {
   db: Kysely<Database>
@@ -61,6 +69,8 @@ export type LobbyDeps = {
   autoStartBoards?: (boardIds: string[]) => Promise<void>
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
   gameAvailable?: (userId: string, gameId: string) => Promise<boolean>
+  /** Whether the user may give handicaps (lobby.handicap.enabled); everyone when left out. */
+  handicapsAvailable?: (userId: string) => Promise<boolean>
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
@@ -81,6 +91,12 @@ function assertMayPatch(lobby: LobbyState, userId: string, person: LobbyPerson, 
     throw LobbyError.forbidden('only they or the host decide whether they play')
   if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
   if (patch.team !== undefined && !rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
+  if (patch.handicap !== undefined && !rules.canSetHandicap(lobby, userId)) throw LobbyError.forbidden('only the host gives handicaps')
+  if (isHandicap(patch.handicap)) {
+    if (!rules.playsHandicaps(lobby.nextGame)) throw LobbyError.badRequest('handicaps are for X01 singles')
+    const problem = handicapProblem(patch.handicap)
+    if (problem) throw LobbyError.badRequest(problem)
+  }
 }
 
 /** The person's own columns a patch sets (a new position reorders everyone, so it's written apart). */
@@ -89,6 +105,7 @@ function personColumns(patch: PersonPatch, board: BoardChange | undefined): q.Pe
   if (patch.ready !== undefined) set.ready = patch.ready
   if (patch.plays !== undefined) set.plays = patch.plays
   if (patch.team !== undefined) set.team = patch.team
+  if (patch.handicap !== undefined) set.handicap = isHandicap(patch.handicap) ? patch.handicap : null
   if (board) {
     set.board_id = board.boardId
     set.board_moved_by = board.movedBy
@@ -771,6 +788,9 @@ export class LobbyService implements GameEndedConsumer {
       if (!person) throw LobbyError.notFound('person not found')
       // Every field is checked before anything is written
       assertMayPatch(lobby, userId, person, patch)
+      if (patch.handicap !== undefined && this.deps.handicapsAvailable && !(await this.deps.handicapsAvailable(userId))) {
+        throw LobbyError.forbidden("handicaps aren't available")
+      }
       const board = patch.boardId === undefined ? undefined : await this.boardChange(lobby, userId, person, patch.boardId)
 
       const set = personColumns(patch, board)
@@ -959,7 +979,6 @@ export class LobbyService implements GameEndedConsumer {
         gameId: plan.gameId,
         config: plan.config,
         seats: plan.seats,
-        shuffleSeats: plan.shuffleSeats,
         lobbyId: lobby.id,
         lobbyName: lobby.name,
       }))

@@ -10,7 +10,6 @@ import { hiloModule } from '../games/hilo.js'
 import { cricketModule } from '../games/cricket.js'
 import { atcModule } from '../games/atc.js'
 import type { Seat } from './types.js'
-import { seededRng, shuffle } from './rng.js'
 import { minigolfModule, type MinigolfState } from '../games/minigolf.js'
 import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
@@ -1646,17 +1645,6 @@ describe('lobby games', () => {
     const { sessionId } = await engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }])
     expect(engine.getSnapshot(sessionId)).toMatchObject({ lobbyId: null, lobbyName: null })
     expect(engine.getLobbySession('l1')).toBeUndefined()
-  })
-
-  it("shuffles the seats with the game's own seed for a random throw order", async () => {
-    const store = makeStore()
-    const engine = new SessionEngine(store, push)
-    const seats = ['A', 'B', 'C', 'D', 'E', 'F'].map(n => seat(n, n.toLowerCase(), null))
-    await engine.createWithSeats({ ownerUserId: 'a', gameId: 'atc', config: {}, seats, shuffleSeats: true })
-    const stored = store.insertSession.mock.calls[0][0]
-    const names = stored.players.map((p: { name: string }) => p.name)
-    expect(names).toEqual(shuffle(seats, seededRng(stored.rng_seed)).map(s => s.name))
-    expect([...names].sort()).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
   })
 
   it('tells the started listener who is seated when a lobby game starts', async () => {

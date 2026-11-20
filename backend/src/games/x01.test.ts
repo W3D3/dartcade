@@ -1145,3 +1145,82 @@ describe('180s and ton-plus outs', () => {
     expect(s.count180).toEqual([0, 0, 1, 0])
   })
 })
+
+describe('handicaps', () => {
+  const three: Player[] = [{ name: 'Pro' }, { name: 'Novice' }, { name: 'Mid' }]
+  // Pro plays the game's 501 double out; Novice 101 straight out; Mid 301 double in
+  const cfg: X01Config = {
+    ...defaultCfg,
+    handicaps: [null, { startScore: 101, outMode: 'straight' }, { startScore: 301, inMode: 'double' }],
+  }
+  const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
+  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
+  const visit = (s: X01State, ...d: BoardEvent[]) => [opened, ...d, takeout].reduce((a, e) => x01Game.onBoardEvent(a, e).state, s)
+
+  it('each seat starts on its own score, opened by its own check-in', () => {
+    const s = x01Game.init(cfg, three)
+    expect(s.scores).toEqual([501, 101, 301])
+    expect(s.visitOpenedScores).toEqual([501, 101, 301])
+    expect(s.opened).toEqual([true, true, false])
+  })
+
+  it('a seat checks in and out by its own rules in a mixed game', () => {
+    let s = x01Game.init(cfg, three)
+    s = visit(s, T20) // Pro: 441
+    s = visit(s, T20, S20, S1) // Novice: 101 - 81 = 20
+    s = visit(s, T20, S20) // Mid hasn't hit a double: still 301
+    expect(s.scores).toEqual([441, 20, 301])
+    s = visit(s, T20) // Pro: 381
+    s = visit(s, dartEvent(20, 'Single', 1)) // Novice finishes on a single (straight out)
+    expect(s.legs).toEqual([0, 1, 0])
+    // The next leg starts every seat on its own rules again
+    expect(s.scores).toEqual([501, 101, 301])
+    expect(s.opened).toEqual([true, true, false])
+    const mid = visit({ ...s, currentPlayer: 2, turn: 2 }, D20, S20)
+    expect(mid.scores[2]).toBe(301 - 40 - 20)
+  })
+
+  it("the default seat keeps the game's double out: a single to 0 busts", () => {
+    const s = x01Game.init(cfg, three)
+    const pro = visit({ ...s, scores: [20, 101, 301], visitOpenedScores: [20, 101, 301] }, S20)
+    expect(pro.scores[0]).toBe(20)
+    expect(pro.legVisits.at(-1)?.bust).toBe(true)
+  })
+
+  it("a checkout attempt counts against the seat's own out rule", () => {
+    const s = x01Game.init(cfg, three)
+    const novice = visit({ ...s, currentPlayer: 1, turn: 1, scores: [501, 3, 301], visitOpenedScores: [501, 3, 301] }, S1)
+    // 3 is a one-dart finish straight out (S3); double out it never is
+    expect(novice.checkoutAttempts).toEqual([0, 1, 0])
+  })
+
+  it('the view carries the handicaps; a game without any has none', () => {
+    expect(x01Game.view(x01Game.init(cfg, three), three).config.handicaps).toEqual(cfg.handicaps)
+    expect(x01Game.view(x01Game.init(defaultCfg, players), players).config).not.toHaveProperty('handicaps')
+  })
+
+  it('replays to the same state', () => {
+    const events = [opened, T20, takeout, opened, T20, S20, S1, takeout, opened, D20, takeout, opened, S20, takeout]
+    const fold = () => events.reduce((a, e) => x01Game.onBoardEvent(a, e).state, x01Game.init(cfg, three))
+    expect(fold()).toEqual(fold())
+    expect(fold().scores).toEqual([421, 20, 261])
+  })
+
+  it("a corrected dart refolds under the seat's own out rule", () => {
+    const s = x01Game.init(cfg, three)
+    const committed = { ...s, currentPlayer: 1, turn: 1, scores: [501, 20, 301], visitOpenedScores: [501, 20, 301] }
+    // Corrected from S1 to S20: Novice checks out on a single
+    const refolded = refoldVisit(x01Game, committed, [opened, S20])
+    expect(x01Game.onBoardEvent(refolded, takeout).state.legs).toEqual([0, 1, 0])
+  })
+
+  it('validate: singles only, one per seat, start score in range', () => {
+    expect(x01Game.validate?.(cfg, three)).toBeNull()
+    expect(x01Game.validate?.({ ...cfg, handicaps: [null, null] }, three)).toBe('one handicap per seat')
+    expect(x01Game.validate?.({ ...cfg, handicaps: [null, { startScore: 50 }, null] }, three)).toBe('start score must be 101 to 1001')
+    const four: Player[] = [...three, { name: 'D' }]
+    expect(x01Game.validate?.({ ...cfg, format: 'teams', teams: [0, 1, 0, 1], handicaps: [null, null, null, null] }, four)).toBe(
+      'handicaps are for singles only',
+    )
+  })
+})

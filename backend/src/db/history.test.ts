@@ -5,6 +5,7 @@ import { runMigrations, insertGameSession, finishGameSession, abortGameSession, 
 import { listFinishedGames, getStatRows, getViewableGame, getBestStat } from './history.js'
 import type { Database } from './schema.js'
 import { insertUsers } from '../test/fixtures.js'
+import { getXpGame } from './progression.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
 // Own schema: Vitest runs test files in parallel, and queries.test.ts wipes the shared tables
@@ -167,6 +168,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     expect(await getBestStat(db, 'u1', 'p121', 'highestMade')).toEqual({ value: 124, finishedAt: t(7) })
     expect((await getStatRows(db, 'u1', t(0))).some(r => r.mode === 'p121' && r.finishedAt.getTime() === t(6).getTime())).toBe(false)
     await mark(null)
+  })
+
+  it('a handicapped game stays in my history but not in stats, best values or XP', async () => {
+    const config = (c: object) => db.updateTable('game_sessions').set({ config: c }).where('id', '=', 'p-1').execute()
+    const before = (await db.selectFrom('game_sessions').select('config').where('id', '=', 'p-1').executeTakeFirstOrThrow()).config
+    await config({ ...(before as object), handicaps: [null, { startScore: 301 }] })
+    const { games } = await listFinishedGames(db, 'u1', { mode: 'p121', limit: 10, after: null })
+    expect(games.some(g => g.id === 'p-1')).toBe(true)
+    expect(await getBestStat(db, 'u1', 'p121', 'highestMade')).toEqual({ value: 124, finishedAt: t(7) })
+    expect((await getStatRows(db, 'u1', t(0))).some(r => r.mode === 'p121' && r.finishedAt.getTime() === t(6).getTime())).toBe(false)
+    expect(await getXpGame(db, 'p-1')).toBeUndefined()
+    await config(before as object)
   })
 
   it('a game is viewable by its seats; private games are 404 for others until public', async () => {

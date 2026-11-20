@@ -46,7 +46,8 @@
         "team",
         "presence",
         "bot",
-        "avatar"
+        "avatar",
+        "handicap"
       ],
       "additionalProperties": false,
       "properties": {
@@ -91,6 +92,10 @@
             { "type": "null" }
           ],
           "description": "A bot's difficulty 1-20; null for a member or guest."
+        },
+        "handicap": {
+          "anyOf": [{ "$ref": "common-v1.json#/$defs/Handicap" }, { "type": "null" }],
+          "description": "Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles."
         }
       }
     },

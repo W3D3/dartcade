@@ -1,5 +1,6 @@
 // What a player's profile (popup and page) shows about them, from the viewer's side.
 import { sql, type Kysely, type NotNull } from 'kysely'
+import { gameCounts } from './counts.js'
 import type { Database } from './schema.js'
 import { toAvatar, type Avatar } from './users.js'
 import { activeBan, type PublicBan } from '../shared/bans.js'
@@ -56,7 +57,7 @@ const counted = (db: Kysely<Database>) =>
     .selectFrom('game_players as gp')
     .innerJoin('game_sessions as gs', 'gs.id', 'gp.session_id')
     .where('gs.status', '=', 'finished')
-    .where('gs.invalidated_at', 'is', null)
+    .where(gameCounts('gs'))
     .where('gp.placement', 'is not', null)
 
 /** Finished games per mode, most played first. */

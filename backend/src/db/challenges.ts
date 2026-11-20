@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely'
+import { gameCounts } from './counts.js'
 import { ulid } from 'ulid'
 import { z } from 'zod'
 import type { Database } from './schema.js'
@@ -192,7 +193,7 @@ export async function recentRates(
     .where('gp.user_id', '=', userId)
     .where('gs.game_id', '=', 'x01')
     .where('gs.status', '=', 'finished')
-    .where('gs.invalidated_at', 'is', null)
+    .where(gameCounts('gs'))
     .where('gs.finished_at', '>=', new Date(Date.parse(`${from}T00:00:00Z`)))
     .where(sql<boolean>`(gp.stats->>'dartsThrown')::int >= 9`)
     .executeTakeFirst()

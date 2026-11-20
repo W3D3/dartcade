@@ -22,6 +22,7 @@ const member = (id: string, name: string): LobbyPerson => ({
   presence: 'online',
   bot: null,
   avatar: { kind: 'none' },
+  handicap: null,
 })
 
 const lobbyOf = (people: LobbyPerson[], solo: boolean): Lobby => ({

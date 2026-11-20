@@ -61,7 +61,8 @@
         "team",
         "presence",
         "bot",
-        "avatar"
+        "avatar",
+        "handicap"
       ],
       "additionalProperties": false,
       "properties": {
@@ -245,6 +246,43 @@
             }
           ],
           "description": "A bot's difficulty 1-20; null for a member or guest."
+        },
+        "handicap": {
+          "anyOf": [
+            {
+              "title": "Handicap",
+              "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "startScore": {
+                  "type": "integer",
+                  "minimum": 101,
+                  "maximum": 1001
+                },
+                "inMode": {
+                  "type": "string",
+                  "enum": [
+                    "straight",
+                    "double",
+                    "master"
+                  ]
+                },
+                "outMode": {
+                  "type": "string",
+                  "enum": [
+                    "straight",
+                    "double",
+                    "master"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles."
         }
       }
     },
@@ -650,7 +688,8 @@
               "team",
               "presence",
               "bot",
-              "avatar"
+              "avatar",
+              "handicap"
             ],
             "additionalProperties": false,
             "properties": {
@@ -834,6 +873,43 @@
                   }
                 ],
                 "description": "A bot's difficulty 1-20; null for a member or guest."
+              },
+              "handicap": {
+                "anyOf": [
+                  {
+                    "title": "Handicap",
+                    "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "startScore": {
+                        "type": "integer",
+                        "minimum": 101,
+                        "maximum": 1001
+                      },
+                      "inMode": {
+                        "type": "string",
+                        "enum": [
+                          "straight",
+                          "double",
+                          "master"
+                        ]
+                      },
+                      "outMode": {
+                        "type": "string",
+                        "enum": [
+                          "straight",
+                          "double",
+                          "master"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles."
               }
             }
           }
@@ -1208,7 +1284,8 @@
                   "team",
                   "presence",
                   "bot",
-                  "avatar"
+                  "avatar",
+                  "handicap"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -1392,6 +1469,43 @@
                       }
                     ],
                     "description": "A bot's difficulty 1-20; null for a member or guest."
+                  },
+                  "handicap": {
+                    "anyOf": [
+                      {
+                        "title": "Handicap",
+                        "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "startScore": {
+                            "type": "integer",
+                            "minimum": 101,
+                            "maximum": 1001
+                          },
+                          "inMode": {
+                            "type": "string",
+                            "enum": [
+                              "straight",
+                              "double",
+                              "master"
+                            ]
+                          },
+                          "outMode": {
+                            "type": "string",
+                            "enum": [
+                              "straight",
+                              "double",
+                              "master"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles."
                   }
                 }
               }
@@ -1789,7 +1903,8 @@
                       "team",
                       "presence",
                       "bot",
-                      "avatar"
+                      "avatar",
+                      "handicap"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -1973,6 +2088,43 @@
                           }
                         ],
                         "description": "A bot's difficulty 1-20; null for a member or guest."
+                      },
+                      "handicap": {
+                        "anyOf": [
+                          {
+                            "title": "Handicap",
+                            "description": "An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "startScore": {
+                                "type": "integer",
+                                "minimum": 101,
+                                "maximum": 1001
+                              },
+                              "inMode": {
+                                "type": "string",
+                                "enum": [
+                                  "straight",
+                                  "double",
+                                  "master"
+                                ]
+                              },
+                              "outMode": {
+                                "type": "string",
+                                "enum": [
+                                  "straight",
+                                  "double",
+                                  "master"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Their own X01 rules for the next game, set by the host; null: the game's own. Played only in X01 singles."
                       }
                     }
                   }

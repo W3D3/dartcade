@@ -1,4 +1,5 @@
 import { sql, type Kysely, type NotNull } from 'kysely'
+import { gameCounts } from './counts.js'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
@@ -96,7 +97,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
   return by
 }
 
-/** Finished games with a result; the ones a moderator invalidated are left out unless asked for (stats and ratings never ask). */
+/** Finished games with a result; the ones that don't count (gameCounts) are left out unless asked for (stats and ratings never ask). */
 function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
   return db
     .selectFrom('game_sessions as gs')
@@ -116,7 +117,7 @@ function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
     ])
     .where('gs.status', '=', 'finished')
     .where('gs.finished_at', 'is not', null)
-    .$if(!includeInvalidated, q => q.where('gs.invalidated_at', 'is', null))
+    .$if(!includeInvalidated, q => q.where(gameCounts('gs')))
     .$narrowType<{ finished_at: NotNull }>()
 }
 

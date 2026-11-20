@@ -26,6 +26,10 @@ export type X01Game = EngineGameFields & {
     inMode: 'straight' | 'double' | 'master'
     bullValue: '25_50' | '50_50'
     botSpeed: 'fast' | 'normal' | 'slow'
+    /**
+     * Per seat, the lobby host's handicap (null: the game's own rules); absent when nobody has one.
+     */
+    handicaps?: (Handicap | null)[]
   }
   visitLocked: boolean
   bullOff: BullOffView | null
@@ -606,6 +610,14 @@ export interface Coords {
 export interface Polar {
   r: number
   theta_deg: number
+}
+/**
+ * An X01 player's own rules, set by a lobby's host: a field left out plays the game's own. Singles only.
+ */
+export interface Handicap {
+  startScore?: number
+  inMode?: 'straight' | 'double' | 'master'
+  outMode?: 'straight' | 'double' | 'master'
 }
 /**
  * A committed X01 visit.
