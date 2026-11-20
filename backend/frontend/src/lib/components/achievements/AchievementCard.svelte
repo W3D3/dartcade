@@ -14,7 +14,10 @@
   const kind = $derived(badge.oneOff ? 'one-off' : `${badge.def.thresholds.length} tiers`)
 </script>
 
-<article aria-label={badge.def.name} class="card relative box-border flex gap-4 p-4 md:p-[18px] {badge.tier === 0 ? 'opacity-90' : ''}">
+<article
+  aria-label={badge.def.name}
+  class="card relative box-border flex gap-4 p-4 md:p-[18px] {badge.tier === 0 ? 'opacity-90 grayscale' : ''}"
+>
   {#if isNew}<span class="absolute right-3 top-3 size-2 rounded-full bg-accent" title="New" aria-label="New"></span>{/if}
   <Badge {badge} size={96} fraction={!badge.oneOff && badge.next !== null} />
   <div class="flex min-w-0 flex-1 flex-col gap-[6px]">
