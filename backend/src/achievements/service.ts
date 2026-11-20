@@ -54,7 +54,7 @@ export class AchievementsService {
             id: c.id,
             tier: c.after,
             count: c.count,
-            tierUp: c.before > 0,
+            from: c.before,
             xp: xpForTiers(c.before, c.after),
           })),
         )

@@ -42,6 +42,9 @@
   import { Toast } from '$lib/components/ui/toast/index.js'
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import WinScreen from '../lib/components/WinScreen.svelte'
+  import GameAchievements from '../lib/components/achievements/GameAchievements.svelte'
+  import { gameUnlocks } from '../lib/achievements/toasts.js'
+  import type { WinButton } from '../lib/winScreen.js'
   import ModeBar from '../lib/components/tournaments/mode/ModeBar.svelte'
   import { activeMode } from '../lib/tournaments/mode'
   import { flag } from '$lib/flags'
@@ -445,6 +448,23 @@
     void push(WIN_ROUTES[next])
   }
   const winSecondary = $derived(winButtons.secondary)
+  const winPrimaryButton = $derived<WinButton>({
+    label: WIN_LABELS[winButtons.primary],
+    icon: winButtons.primary === 'rematch' ? 'rematch' : 'home',
+    onclick: () => void finishWin(winButtons.primary),
+  })
+  const winSecondaryButton = $derived(
+    winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null,
+  )
+  // What this game unlocked or levelled up for you (achievement.unlocked, pushed once as it ended, so
+  // reopening the game later shows nothing): the win screen's Next opens them, with its buttons
+  const achievementsOn = flag('achievements.enabled')
+  const unlockedMsg = me.achievements
+  const unlocks = $derived($achievementsOn ? gameUnlocks($unlockedMsg, sessionId) : [])
+  let unlocksOpenFor = $state<string | null>(null)
+  const unlocksButton = $derived<WinButton | null>(
+    unlocks.length > 0 ? { label: 'Next', icon: 'next', onclick: () => (unlocksOpenFor = sessionId) } : null,
+  )
   // A ranked game's rating card comes with the snapshot once the server recorded the result; the
   // online average and record cards come from the profile, fetched once the game is won
   const rankedResult = $derived.by(() => {
@@ -489,7 +509,9 @@
       <span class="text-text-muted text-lg">Connecting…</span>
     </div>
   {:else}
-    {#if win}
+    {#if unlocksOpenFor === sessionId && unlocks.length > 0}
+      <GameAchievements {unlocks} primary={winPrimaryButton} secondary={winSecondaryButton} />
+    {:else if win}
       <WinScreen
         view={win}
         title={view.title}
@@ -497,12 +519,8 @@
         lobbyName={snapshot.lobbyName}
         board={sharedBoard(snapshot)}
         saved={snapshot.mySeats.length > 0}
-        primary={{
-          label: WIN_LABELS[winButtons.primary],
-          rematch: winButtons.primary === 'rematch',
-          onclick: () => void finishWin(winButtons.primary),
-        }}
-        secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
+        primary={unlocksButton ?? winPrimaryButton}
+        secondary={unlocksButton ? null : winSecondaryButton}
         onhistory={() => push(`/history/${sessionId}`)}
         xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
         winnerId={$progression ? (snapshot.seats[win.competitors[0]?.seats[0] ?? -1]?.userId ?? null) : null}
@@ -554,11 +572,11 @@
           startTarget={p121.cfg.startTarget}
           standings={snapshotStandings(p121, players, snapshot.results)}
           loading={snapshot.mySeats.length > 0 && !savedFailed}
-          primary={{
+          primary={unlocksButton ?? {
             label: winButtons.primary === 'rematch' ? 'Play again' : WIN_LABELS[winButtons.primary],
             onclick: () => void finishWin(winButtons.primary),
           }}
-          secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
+          secondary={unlocksButton ? null : winSecondaryButton}
         />
       {:else}
         <MatchScreen

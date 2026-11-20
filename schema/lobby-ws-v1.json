@@ -462,13 +462,18 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["id", "tier", "count", "tierUp", "xp"],
+            "required": ["id", "from", "tier", "count", "xp"],
             "additionalProperties": false,
             "properties": {
               "id": { "type": "string", "description": "shared/achievements.ts id." },
               "tier": { "type": "integer", "minimum": 1, "maximum": 5 },
               "count": { "type": "integer", "minimum": 1 },
-              "tierUp": { "type": "boolean", "description": "False for the first tier." },
+              "from": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4,
+                "description": "The tier before this game: 0 for a new achievement."
+              },
               "xp": { "type": "integer", "minimum": 0, "description": "XP the tiers paid." }
             }
           }

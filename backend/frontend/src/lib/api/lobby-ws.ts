@@ -668,9 +668,9 @@ export interface AchievementUnlockedMessage {
     tier: number
     count: number
     /**
-     * False for the first tier.
+     * The tier before this game: 0 for a new achievement.
      */
-    tierUp: boolean
+    from: number
     /**
      * XP the tiers paid.
      */

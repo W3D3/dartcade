@@ -487,3 +487,6 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
     }
   }
 }
+
+/** A button at the foot of the win screen (and the achievements screen after it). */
+export type WinButton = { label: string; icon?: 'rematch' | 'home' | 'next'; onclick: () => void }

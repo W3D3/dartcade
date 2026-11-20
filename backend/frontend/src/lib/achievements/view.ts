@@ -43,6 +43,9 @@ export function badgesOf(data: Achievements): Badge[] {
   return ACHIEVEMENTS.map(def => badgeOf(def, rows.get(def.id)))
 }
 
+/** Each tier's colour (silver, gold, platinum, Dartcade); the first tier is lime. */
+export const TIER_TONE = ['', 'var(--color-accent)', '#c9d0d8', 'var(--color-gold)', '#8fdcec', 'var(--color-accent)']
+
 export const tierName = (tier: number): string => TIER_NAMES[tier - 1] ?? ''
 
 /** "Tier 3 · Gold", "Not earned yet", "Earned 3 Nov" for a one-off. */
