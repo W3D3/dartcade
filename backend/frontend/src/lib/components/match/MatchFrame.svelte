@@ -19,7 +19,6 @@
     duel,
     party,
     teams,
-    phoneScroll = true,
     side = {},
   }: {
     layout: MatchLayout
@@ -29,8 +28,6 @@
     duel: Snippet
     party: Snippet
     teams?: Snippet
-    /** Phones: the page scrolls (false: everything is sized to fit, the board takes what's left). */
-    phoneScroll?: boolean
     /** A side-by-side layout's padding, gaps and display, in place of `px-7 py-6 flex gap-6`. */
     side?: Partial<Record<Side, string>>
   } = $props()
@@ -46,11 +43,7 @@
 </script>
 
 {#if layout === 'phone'}
-  <main
-    class="grow min-h-0 {phoneScroll
-      ? 'overflow-y-auto'
-      : 'overflow-hidden'} box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2"
-  >
+  <main class="grow min-h-0 overflow-y-auto box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2">
     {@render phone()}
   </main>
 {:else if layout === 'portrait'}

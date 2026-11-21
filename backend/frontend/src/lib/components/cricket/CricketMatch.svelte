@@ -97,7 +97,7 @@
     bind:openDart
     board={{ inPlay }}
     class="min-h-[120px] min-w-0"
-    keypadClass="min-w-0 {variant === 'duel' ? 'min-h-[300px]' : 'min-h-0'}"
+    keypadClass="min-w-0"
   />
   {#if legend && !keypad}
     <div class="shrink-0 flex flex-wrap justify-center gap-x-4 gap-y-[6px] text-small text-text-muted">
@@ -155,7 +155,7 @@
 
 {#snippet partyLayout()}
   {@render table('flex-1 min-w-0 min-h-0 overflow-auto rounded-panel px-3 xl:px-5 pt-4 pb-2')}
-  <aside aria-label="Board" class="w-[280px] xl:w-[420px] shrink-0 min-h-0 flex flex-col gap-3">
+  <aside aria-label="Board" class="w-[280px] xl:w-[420px] shrink-0 min-h-0 flex flex-col gap-3 {keypad ? 'overflow-y-auto' : ''}">
     {@render board(true)}
     <DartSlots {slots} {onCorrect} bind:openDart />
     {@render controls(false)}
