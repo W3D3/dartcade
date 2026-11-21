@@ -12,12 +12,10 @@
     nameOf,
     starter = null,
   }: { rows: ChalkRow[]; sides: Side[]; showThrower?: boolean; nameOf: (seat: number) => string; starter?: number | null } = $props()
-  // From three sides each column keeps room for a visit's total, darts and points left (the dart chips
+  // From two sides each column keeps room for a visit's total, darts and points left (the dart chips
   // show from sm up; a phone has room for three sides, not four), so a wide table scrolls sideways instead of its cells running into each other.
   const cols = $derived(`40px repeat(${sides.length}, minmax(var(--col-min, 0px), 1fr))`)
-  const minWidth = $derived(
-    sides.length >= 4 ? '[--col-min:7.5rem] sm:[--col-min:15rem]' : sides.length === 3 ? 'sm:[--col-min:15rem]' : '',
-  )
+  const minWidth = $derived(sides.length >= 4 ? '[--col-min:7.5rem] sm:[--col-min:15rem]' : sides.length >= 2 ? 'sm:[--col-min:15rem]' : '')
 </script>
 
 <div role="table" aria-label="Visits in this leg, dart by dart" class="flex flex-col overflow-x-auto {minWidth}">
