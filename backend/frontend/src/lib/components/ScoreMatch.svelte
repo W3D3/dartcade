@@ -136,6 +136,8 @@
   // On the big screen the thrower's own card doesn't say "Can finish": the dart slots and the board already show the route
   const x01Players = $derived(viewOnly && isActive ? x01All.map((p, i) => (i === currentPlayer ? { ...p, canFinish: null } : p)) : x01All)
   const pillFor = (i: number, rows: boolean) => mv.pillFor(i, rows)
+  // Above this many players the portrait cards give way to the phone's one-line rows, so every score fits
+  const CARDS_MAX = 4
   // Portrait with teams or three or more: compact cards above the board, which give way to a waiting card
   const portraitCards = $derived(layout === 'portrait' && (teams.length > 0 || players.length > 2))
   // On a phone the players stay in seat order; when the turn passes, keep the thrower in view
@@ -146,7 +148,7 @@
     phonePlayers?.querySelector(`[data-up="${upKey}"]`)?.scrollIntoView({ block: 'nearest' })
   })
   // Around the players and the board: tighter in the tablet band (md up to xl)
-  const mainPad = 'px-5 py-[18px] gap-[18px] xl:px-7 xl:py-6 xl:gap-6'
+  const mainPad = 'px-5 py-[18px] gap-[18px] xl:px-7 xl:py-6 xl:gap-6 [@media(max-height:500px)]:py-2'
   // Party rows: the X01 thrower's row is taller; rows keep a minimum height and scroll
   const rowTemplate = $derived(
     players
@@ -192,7 +194,7 @@
   {/if}
 {/snippet}
 
-{#snippet board(minHeight: string, maxWidth: string, keypadClass = 'min-h-0', onKey = false)}
+{#snippet board(minHeight: string, maxWidth: string, onKey = false)}
   <BoardOrKeypad
     keypad={onKey}
     {darts}
@@ -217,13 +219,12 @@
     }}
     class={minHeight}
     square={maxWidth}
-    {keypadClass}
   >
     {#snippet over()}{#if !viewOnly}<BoardViewToggle bind:settings {snapshot} {cameraVersions} />{/if}{/snippet}
   </BoardOrKeypad>
 {/snippet}
 
-{#snippet keypadView(keypadClass: string)}{@render board('', '', keypadClass, true)}{/snippet}
+{#snippet keypadView()}{@render board('', '', true)}{/snippet}
 
 {#snippet portraitCenter()}
   <!-- Portrait (Match-Vertical): this visit and the slots in one strip, the controls, then the board fills the rest -->
@@ -235,7 +236,7 @@
   </div>
   {@render coach?.(true)}
   {#if keypad}
-    {@render keypadView('min-h-0')}
+    {@render keypadView()}
   {:else}
     {@render controls(false)}
     {#if remote.kind === 'waiting' && portraitCards}
@@ -266,7 +267,7 @@
   </div>
   {@render coach?.(true)}
   {#if keypad}
-    {@render keypadView('min-h-[220px]')}
+    {@render keypadView()}
   {:else}
     {@render controls(true)}
   {/if}
@@ -277,7 +278,7 @@
   {@render rankedClock()}
   {#if ranked && order}<ThrowOrderStrip {order} {who} mine={snapshot.mySeats} />{/if}
   {#if keypad}
-    {@render keypadView('min-h-0')}
+    {@render keypadView()}
   {:else if remote.kind === 'waiting' && variant === 'party'}
     <!-- Rows have no room for an overlay: the waiting card takes the board's place -->
     <div class="flex-1 min-h-0 flex rounded-popover bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
@@ -365,27 +366,70 @@
   {/if}
 {/snippet}
 
+{#snippet playerRow(i: number)}
+  {@const up = i === currentPlayer}
+  {@const line = lines[i] ?? null}
+  {#if isX01}
+    <PhonePlayerRow
+      active={up}
+      who={who[i]}
+      you={line?.you ?? false}
+      pill={up ? null : pillFor(i, true)}
+      sub={rowSub(
+        up
+          ? x01Players[i]?.canFinish
+            ? `Throwing · can finish ${x01Players[i]?.canFinish}`
+            : 'Throwing'
+          : i === nextPlayer
+            ? x01Players[i]?.canFinish
+              ? `Up next · can finish ${x01Players[i]?.canFinish}`
+              : 'Up next'
+            : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
+        line,
+      )}
+      valueLabel="Left"
+      value={String(x01Players[i]?.shown ?? '')}
+      roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
+      legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
+      rank={rankOf(i)}
+    />
+  {:else}
+    <PhonePlayerRow
+      active={up}
+      who={who[i]}
+      you={line?.you ?? false}
+      pill={up ? null : pillFor(i, true)}
+      sub={rowSub(
+        up
+          ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`
+          : i === nextPlayer
+            ? 'Up next'
+            : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`,
+        line,
+      )}
+      valueLabel="Target"
+      value={atcPlayers[i]?.target ?? ''}
+      roll={{ normal: 'up', progress: atcPlayers[i]?.done }}
+    />
+  {/if}
+{/snippet}
+
 {#snippet phoneLayout()}
   <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
            Many players scroll, and the thrower is kept in view. -->
-  <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
+  <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] [@media(max-height:599px)]:max-h-[40%] overflow-y-auto flex flex-col gap-2">
     {#if teams.length}
-      <!-- Teams: side by side, compact; with the keypad on a short screen only the throwing team's -->
+      <!-- Teams: side by side, compact -->
       <div class="grid grid-cols-2 gap-2 items-stretch">
         {#each teams as team, t (team.id)}
-          <div
-            data-up={team.active ? upKey : undefined}
-            class="flex min-w-0 {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
-          >
-            {@render teamPanel(t, true)}
-          </div>
+          <div data-up={team.active ? upKey : undefined} class="flex min-w-0">{@render teamPanel(t, true)}</div>
         {/each}
       </div>
     {:else}
       {#each who as _, i (i)}
         {@const up = i === currentPlayer}
         {@const line = lines[i] ?? null}
-        <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
+        <div data-up={up ? upKey : undefined}>
           {#if up && !keypad}
             {#if isX01}
               <PhoneX01Card
@@ -399,54 +443,14 @@
             {:else}
               <PhoneAtcCard who={who[i]} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
             {/if}
-          {:else if isX01}
-            <PhonePlayerRow
-              active={up}
-              who={who[i]}
-              you={line?.you ?? false}
-              pill={up ? null : pillFor(i, true)}
-              sub={rowSub(
-                up
-                  ? x01Players[i]?.canFinish
-                    ? `Throwing · can finish ${x01Players[i]?.canFinish}`
-                    : 'Throwing'
-                  : i === nextPlayer
-                    ? x01Players[i]?.canFinish
-                      ? `Up next · can finish ${x01Players[i]?.canFinish}`
-                      : 'Up next'
-                    : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
-                line,
-              )}
-              valueLabel="Left"
-              value={String(x01Players[i]?.shown ?? '')}
-              roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
-              legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
-              rank={rankOf(i)}
-            />
           {:else}
-            <PhonePlayerRow
-              active={up}
-              who={who[i]}
-              you={line?.you ?? false}
-              pill={up ? null : pillFor(i, true)}
-              sub={rowSub(
-                up
-                  ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`
-                  : i === nextPlayer
-                    ? 'Up next'
-                    : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`,
-                line,
-              )}
-              valueLabel="Target"
-              value={atcPlayers[i]?.target ?? ''}
-              roll={{ normal: 'up', progress: atcPlayers[i]?.done }}
-            />
+            {@render playerRow(i)}
           {/if}
         </div>
       {/each}
     {/if}
   </div>
-  <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
+  <div class="flex-1 flex flex-col gap-2">{@render phoneCenter()}</div>
 {/snippet}
 
 {#snippet portraitLayout()}
@@ -464,6 +468,8 @@
         <div data-up={i === currentPlayer ? upKey : undefined} class="flex min-w-0">
           {#if !portraitCards}
             {@render panel(i)}
+          {:else if players.length > CARDS_MAX}
+            <div class="w-full min-w-0">{@render playerRow(i)}</div>
           {:else if isX01}
             <X01Card
               who={who[i]}
@@ -491,7 +497,7 @@
 
 {#snippet soloLayout()}
   {@render panel(0)}
-  <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+  <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3 {keypad ? 'overflow-y-auto' : ''}">{@render center('solo')}</div>
   {#if $isWide}{@render coach?.(false)}{/if}
 {/snippet}
 
@@ -507,7 +513,9 @@
 
 {#snippet duelLayout()}
   {@render duelPanel(0)}
-  <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
+  <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3 {keypad ? 'overflow-y-auto' : ''}">
+    {@render center('duel')}
+  </div>
   {@render duelPanel(1)}
 {/snippet}
 
@@ -528,7 +536,9 @@
       {/if}
     {/each}
   </div>
-  <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
+  <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3 {keypad ? 'overflow-y-auto' : ''}" aria-label="Board">
+    {@render center('party')}
+  </aside>
 {/snippet}
 
 <MatchFrame
@@ -539,7 +549,6 @@
   teams={teamsLayout}
   duel={duelLayout}
   party={partyLayout}
-  phoneScroll={false}
   side={{
     duel: `${mainPad} flex`,
     party: `${mainPad} flex`,
