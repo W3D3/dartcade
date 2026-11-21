@@ -42,8 +42,8 @@
       {t.name}
     </button>
     {#if t.kind === 'community'}
-      <span class="flex items-center gap-1.5 whitespace-nowrap text-small text-text-muted">
-        <Avatar name={t.owner?.name ?? '?'} face={null} size={18} />{byLine(t)}
+      <span class="flex min-w-0 items-center gap-1.5 text-small text-text-muted" title={byLine(t)}>
+        <Avatar name={t.owner?.name ?? '?'} face={null} size={18} class="flex-none" /><span class="truncate">{byLine(t)}</span>
       </span>
     {/if}
     <span class="flex flex-wrap gap-1.5">
