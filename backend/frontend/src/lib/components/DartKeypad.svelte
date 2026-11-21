@@ -60,7 +60,7 @@
 </script>
 
 <div
-  class="h-full min-h-0 grid grid-rows-[48px_minmax(0,1fr)_48px] md:grid-rows-[64px_minmax(0,1fr)_64px] gap-px bg-line-2 border border-line-2 rounded-lg md:rounded-card overflow-hidden select-none"
+  class="h-full min-h-[276px] md:min-h-[308px] grid grid-rows-[48px_minmax(180px,1fr)_48px] md:grid-rows-[64px_minmax(180px,1fr)_64px] gap-px bg-line-2 border border-line-2 rounded-lg md:rounded-card overflow-hidden select-none"
 >
   <!-- Multiplier tabs, bull, outer bull -->
   <div class="grid grid-cols-5 gap-px">
