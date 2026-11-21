@@ -63,7 +63,7 @@
 
 <nav
   aria-label="Main"
-  class="hidden md:flex xl:hidden w-[88px] shrink-0 box-border h-dvh overflow-y-auto overflow-x-hidden flex-col items-center gap-6 pt-5 px-2 pb-4
+  class="hidden md:flex xl:hidden w-[88px] shrink-0 box-border h-dvh overflow-hidden flex-col items-center gap-3 pt-5 px-2 pb-4 [@media(min-height:800px)]:gap-6
          border-r border-line bg-surface-1"
 >
   <div class="shrink-0 flex flex-col items-center gap-2">
@@ -71,9 +71,9 @@
     <AlphaBadge />
     <PreviewBadge />
   </div>
-  <div class="shrink-0 flex flex-col gap-1">
+  <div class="min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-1">
     {#each tabs as tab (tab.href)}
-      <NavTabItem {tab} active={isActiveRoute($location, tab.href)} class="w-[72px] h-16" />
+      <NavTabItem {tab} active={isActiveRoute($location, tab.href)} class="w-[72px] h-12 shrink-0 [@media(min-height:800px)]:h-16" />
     {/each}
   </div>
 
