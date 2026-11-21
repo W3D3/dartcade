@@ -11,6 +11,9 @@
   import Mark from '$lib/components/cricket/Mark.svelte'
   import { legNumber, targetLabel, type CricketSide } from '$lib/cricket/view'
 
+  /** A player card in a column head needs about this much width (px); a column narrower than that gets a slim head. */
+  const HEAD_CARD_MIN = 118
+
   let {
     game,
     sides,
@@ -27,6 +30,10 @@
   const cp = $derived(game.currentPlayer)
   const chalk = $derived(sides.length === 2 && variant !== 'party')
   const phone = $derived(variant === 'phone')
+  // Too many columns for a player card each: name and points only
+  // (the table is fixed-layout, so a column's width doesn't depend on its head: no feedback loop)
+  let colWidth = $state(0)
+  const crowded = $derived(variant === 'party' && colWidth > 0 && colWidth < HEAD_CARD_MIN)
   const isUp = (s: CricketSide) => s.seats.includes(cp)
   const cellLabel = (m: number, closed: boolean) =>
     closed ? 'closed' : m >= 3 ? 'opened, can score' : m === 0 ? 'no marks' : m === 1 ? '1 mark' : `${m} marks`
@@ -41,20 +48,28 @@
 </script>
 
 {#snippet head(s: CricketSide)}
-  <th scope="col" class="{phone ? 'px-1 pb-[6px]' : 'px-2 pb-3'} font-normal align-bottom">
-    {#if variant === 'party'}
+  <th bind:clientWidth={colWidth} scope="col" class="{phone ? 'px-1 pb-[6px]' : 'px-2 pb-3'} font-normal align-bottom">
+    {#if variant === 'party' && !crowded}
       <CricketPanel {game} side={s} active={isUp(s)} upNext={!isUp(s) && s.seats.includes(game.nextPlayer ?? -1)} size="head" />
     {:else}
-      <span
-        class="inline-flex max-w-full items-center gap-[10px] font-semibold {phone
-          ? 'pb-1 text-[14px]'
-          : `pb-2 text-[24px] ${chalk ? '' : 'max-xl:text-lg'}`} {isUp(s)
-          ? `text-text ${phone ? 'shadow-[inset_0_-2px_0_var(--color-accent)]' : 'shadow-[inset_0_-3px_0_var(--color-accent)]'}`
-          : 'text-ink-2'}"
-      >
-        {#if isUp(s) && !phone}<span aria-hidden="true" class="size-[10px] rounded-full bg-accent"></span>{/if}<span class="truncate"
-          >{s.name}</span
+      <!-- One column wide, whatever the name: it truncates instead of running into its neighbours -->
+      <span class="flex flex-col min-w-0 {crowded ? 'items-center' : 'items-start'}">
+        <span
+          title={s.name}
+          class="max-w-full truncate font-semibold {phone || crowded
+            ? 'pb-1 text-[14px]'
+            : `pb-2 text-[24px] ${chalk ? '' : 'max-xl:text-lg'}`} {isUp(s)
+            ? `text-text ${phone ? 'shadow-[inset_0_-2px_0_var(--color-accent)]' : 'shadow-[inset_0_-3px_0_var(--color-accent)]'}`
+            : 'text-ink-2'}"
         >
+          {#if isUp(s) && !phone && !crowded}<span aria-hidden="true" class="inline-block mr-[10px] size-[10px] rounded-full bg-accent"
+            ></span>{/if}{s.name}
+        </span>
+        {#if crowded}
+          <span class="font-display font-bold text-[24px] leading-none tabular-nums {isUp(s) ? 'text-text' : 'text-ink-3'}"
+            >{game.points[s.seat]}</span
+          >
+        {/if}
       </span>
     {/if}
   </th>
