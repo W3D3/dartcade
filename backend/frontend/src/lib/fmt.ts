@@ -28,8 +28,11 @@ export { ordinal } from '$shared/ordinal'
 /** "1 leg", "3 legs", "2 people". */
 export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`
 
-/** A name's initial for its avatar: "C", or "?" for a blank name. */
-export const initial = (name: string): string => name.trim().charAt(0).toUpperCase() || '?'
+const graphemes = new Intl.Segmenter()
+
+/** A name's initial for its avatar: "C", an emoji whole, or "?" for a blank name. */
+export const initial = (name: string): string =>
+  graphemes.segment(name.trim())[Symbol.iterator]().next().value?.segment.toUpperCase() ?? '?'
 
 /** "Lena", "Lena and Max", "Lena, Max and Tom". */
 export const joinNames = (names: readonly string[]): string =>
