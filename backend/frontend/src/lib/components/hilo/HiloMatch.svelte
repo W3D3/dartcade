@@ -95,7 +95,7 @@
     {onDartMove}
     bind:openDart
     class="min-h-[160px] min-w-0"
-    keypadClass="min-h-0 min-w-0"
+    keypadClass="min-w-0"
   />
 {/snippet}
 

@@ -105,7 +105,6 @@
     {onDartMove}
     bind:openDart
     board={{ checkoutTargets: playing ? boardCheckoutTargets(slots, true) : [] }}
-    keypadClass="min-h-[220px]"
   />
 {/snippet}
 

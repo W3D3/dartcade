@@ -31,7 +31,7 @@
     over,
     class: className = 'min-h-[160px]',
     square = '',
-    keypadClass = 'min-h-0',
+    keypadClass = '',
   }: {
     keypad?: boolean
     /** The open visit's darts, drawn where they landed. */
@@ -59,7 +59,7 @@
     class?: string
     /** The board's square: a width cap. */
     square?: string
-    /** The keypad's column. */
+    /** The keypad's column (extra classes; its height floor is built in). */
     keypadClass?: string
   } = $props()
 
@@ -87,6 +87,7 @@
 <svelte:window onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && openDart !== null && !e.defaultPrevented && (openDart = null)} />
 
 {#if keypad}
+  <!-- DartKeypad's own minimum height is this column's floor: a column with less room scrolls, it never squeezes the keys -->
   <div class="flex-1 {keypadClass}">
     <DartKeypad
       onDart={keyDart}
