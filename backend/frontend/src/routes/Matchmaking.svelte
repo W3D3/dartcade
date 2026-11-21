@@ -176,7 +176,7 @@
                 {@const needsLobby = opt.id === '2v2' && !duoReady}
                 <!-- The hint's link can't sit inside the option (a button), so it floats over the card's foot -->
                 <div class="relative flex min-w-0 flex-col">
-                  <RadioGroupItem value={opt.id} variant="card" class={needsLobby ? 'grow pb-9' : 'grow'}>
+                  <RadioGroupItem value={opt.id} variant="card" class={needsLobby ? 'grow pb-9 md:pb-11' : 'grow'}>
                     <span class="flex items-center gap-[10px]">
                       <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
                         {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
