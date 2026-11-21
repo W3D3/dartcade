@@ -46,11 +46,15 @@
       <CricketPanel {game} side={s} active={isUp(s)} upNext={!isUp(s) && s.seats.includes(game.nextPlayer ?? -1)} size="head" />
     {:else}
       <span
-        class="inline-flex items-center gap-[10px] font-semibold {phone ? 'pb-1 text-[14px]' : 'pb-2 text-[24px]'} {isUp(s)
+        class="inline-flex max-w-full items-center gap-[10px] font-semibold {phone
+          ? 'pb-1 text-[14px]'
+          : `pb-2 text-[24px] ${chalk ? '' : 'max-xl:text-lg'}`} {isUp(s)
           ? `text-text ${phone ? 'shadow-[inset_0_-2px_0_var(--color-accent)]' : 'shadow-[inset_0_-3px_0_var(--color-accent)]'}`
           : 'text-ink-2'}"
       >
-        {#if isUp(s) && !phone}<span aria-hidden="true" class="size-[10px] rounded-full bg-accent"></span>{/if}{s.name}
+        {#if isUp(s) && !phone}<span aria-hidden="true" class="size-[10px] rounded-full bg-accent"></span>{/if}<span class="truncate"
+          >{s.name}</span
+        >
       </span>
     {/if}
   </th>
