@@ -29,7 +29,7 @@
 
 <section class="card flex min-w-0 flex-col gap-3 p-4 md:p-5">
   <h3 class="text-body-lg font-semibold">{title}</h3>
-  <table class="w-full text-label">
+  <table class="w-full table-fixed text-label tabular-nums">
     <thead class="text-caption text-text-muted">
       <tr>
         <th class="w-6 pb-1.5 text-left font-medium">#</th>
@@ -47,10 +47,10 @@
           class="border-t border-surface-paused {i < through ? 'text-text' : 'text-ink-2'} {r.entryId === mine ? 'bg-surface-picked' : ''}"
         >
           <td class="py-2 {i < through ? 'font-semibold text-accent' : 'text-text-muted'}">{i + 1}</td>
-          <td class="py-2">
+          <td class="min-w-0 py-2">
             <span class="flex min-w-0 items-center gap-2">
               <Avatar name={e?.name ?? '?'} face={faceOf(e)} size={22} />
-              <span class="truncate font-medium">{e?.name ?? '—'}</span>
+              <span class="truncate font-medium" title={e?.name}>{e?.name ?? '—'}</span>
             </span>
           </td>
           <td class="py-2 text-right">{r.played}</td>
