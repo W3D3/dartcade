@@ -18,12 +18,8 @@
 {#snippet side(s: DetailSide, align: 'start' | 'end')}
   <div class="flex flex-col gap-[10px] min-w-0 {align === 'end' ? 'items-end text-right' : 'items-start'}">
     <ProfilePopover userId={s.userId} name={s.name}>
-      <!-- Phones: the avatar above the name, so the name gets the column's whole width -->
-      <span
-        class="flex flex-col sm:flex-row sm:items-center gap-[6px] sm:gap-[10px] min-w-0 max-w-full {align === 'end'
-          ? 'items-end sm:flex-row-reverse'
-          : 'items-start'}"
-      >
+      <!-- The avatar above the name, so the name gets the column's whole width beside a wide score -->
+      <span class="flex flex-col gap-[6px] min-w-0 max-w-full {align === 'end' ? 'items-end' : 'items-start'}">
         <Avatar name={s.name} size={36} guest={s.guest} face={s} tone={s.me ? 'accent' : 'default'} />
         <span class="max-w-full text-[18px] md:text-[20px] font-semibold truncate {s.placement === 1 ? 'text-text' : 'text-ink-2'}"
           >{s.name}</span
@@ -54,10 +50,11 @@
 >
   {@render side(sides[0], 'start')}
   <div class="flex flex-col items-center gap-2 {solo ? '' : 'max-md:order-last max-md:col-span-2'}">
-    {#if head.big}<span class="font-display font-bold {solo ? 'text-[72px]' : 'text-[56px]'} md:text-[104px] leading-[0.85]"
+    {#if head.big}<span class="font-display font-bold {solo ? 'text-[72px]' : 'text-[56px]'} md:text-7xl xl:text-hero leading-[0.85]"
         >{head.big}</span
       >{/if}
-    {#if head.caption}<span class="text-[12px] label-caps text-text-muted text-center">{head.caption}</span>{/if}
+    {#if head.caption}<!-- w-0 min-w-full: the caption wraps to the score's width instead of widening the middle column -->
+      <span class="w-0 min-w-full text-[12px] label-caps text-text-muted text-center">{head.caption}</span>{/if}
   </div>
   {#if sides[1]}{@render side(sides[1], 'end')}{/if}
 </section>

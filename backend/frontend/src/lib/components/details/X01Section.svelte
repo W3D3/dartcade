@@ -62,7 +62,7 @@
           {/each}
         </Tabs.List>
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex min-w-0 max-w-full flex-wrap items-center gap-3">
           {#if view === 'heatmap'}
             <span class="text-[13px] text-text-dim whitespace-nowrap">Where every dart landed</span>
           {:else if party && view === 'breakdown'}
