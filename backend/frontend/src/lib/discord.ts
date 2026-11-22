@@ -13,12 +13,16 @@ export function discordSignIn(returnPath: string, origin = window.location.origi
   }
 }
 
-/** Settings' delete-account confirmation for an account without a password: sign in again, then come back to confirm. */
+/**
+ * Settings' delete-account confirmation for an account without a password: sign in again, then come
+ * back to confirm. The callback names the account that asked, because Discord may sign the browser
+ * in as another account (a shared computer), which must not be the one deleted.
+ */
 export const CONFIRM_DELETE = 'confirmDelete'
-export function discordReauth(origin = window.location.origin) {
+export function discordReauth(userId: string, origin = window.location.origin) {
   return {
     provider: 'discord',
-    callbackURL: app(origin, `/settings/profile?${CONFIRM_DELETE}=1`),
+    callbackURL: app(origin, `/settings/profile?${CONFIRM_DELETE}=${encodeURIComponent(userId)}`),
     errorCallbackURL: app(origin, '/settings/profile'),
   }
 }
