@@ -98,7 +98,7 @@
           <summary class="cursor-pointer">Sent along with your report</summary>
           <dl class="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
             <dt class="text-text-dim">Account</dt>
-            <dd class="break-all">{$currentUser?.name} · {$currentUser?.email} · {role}</dd>
+            <dd class="break-all">{$currentUser?.name} · {$currentUser?.email ?? 'no email'} · {role}</dd>
             <dt class="text-text-dim">Page</dt>
             <dd class="break-all font-mono">{context.route}</dd>
             {#if context.sessionId}

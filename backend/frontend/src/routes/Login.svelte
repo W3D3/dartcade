@@ -20,14 +20,18 @@
   import AuthFooter from '$lib/components/AuthFooter.svelte'
   import BanNotice from '$lib/components/BanNotice.svelte'
   import { banFromSignIn, type Ban } from '$lib/bans'
+  import DiscordSignIn from '$lib/components/DiscordSignIn.svelte'
+  import { socialError } from '$lib/authRedirect'
 
   const justReset = new URLSearchParams($querystring ?? '').get('reset') === '1'
   const justDeleted = new URLSearchParams($querystring ?? '').get('deleted') === '1'
+  // A failed Sign in with Discord comes back here (authRedirect moves its ?error= into the hash)
+  const discordError = new URLSearchParams($querystring ?? '').get('error')
 
   let email = $state('')
   let password = $state('')
   let keepSignedIn = $state(true)
-  let error = $state('')
+  let error = $state(discordError ? socialError(discordError) : '')
   let ban = $state<Ban | null>(null)
   let loading = $state(false)
 
@@ -194,6 +198,7 @@
             <FingerprintPattern size={18} />Sign in with a passkey
           </Button>
         {/if}
+        <DiscordSignIn />
 
         {#if import.meta.env.DEV}
           <DevUserSwitch markCurrent={false} />

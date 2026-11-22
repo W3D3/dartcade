@@ -10,6 +10,9 @@
 
   const progression = flag('progression.enabled')
 
+  const signedInWith = (methods: ('password' | 'discord')[]) =>
+    methods.map(m => (m === 'password' ? 'Email and password' : 'Discord')).join(' or ') || 'Email and password'
+
   const user = $derived($currentUser)
   const joined = $derived(new Date(user?.createdAt ?? NaN))
   const since = $derived(isNaN(joined.getTime()) ? '' : joined.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' }))
@@ -20,12 +23,13 @@
     <dl class="flex flex-col">
       <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
         <dt class="text-[14px] text-text-muted">Email</dt>
-        <dd class="min-w-0 truncate font-mono text-[14px] text-ink-2">{user.email}</dd>
+        <dd class={['min-w-0 truncate text-[14px]', user.email ? 'font-mono text-ink-2' : 'text-text-dim']}>
+          {user.email ?? 'Not shared by Discord'}
+        </dd>
       </div>
       <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
         <dt class="text-[14px] text-text-muted">Signed in with</dt>
-        <!-- shortcut: email and password is the only way to sign in today; ask the account once there's another -->
-        <dd class="text-[14px] text-ink-2">Email and password</dd>
+        <dd class="text-[14px] text-ink-2">{signedInWith(user.signInMethods)}</dd>
       </div>
       {#if since}
         <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
