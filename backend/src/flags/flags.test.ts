@@ -110,6 +110,7 @@ describe('flags', () => {
       { key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'minigolf.userCourses.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.p121.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'gamemode.catch40.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.hilo.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.cricket.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'missions.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },

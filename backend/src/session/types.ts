@@ -10,7 +10,16 @@ import type {
   BoardStatusData,
 } from '../schema/types.js'
 import type { UserAction } from '../schema/game-ws.js'
-import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, MissionView, P121ModuleView, X01ModuleView } from './views.js'
+import type {
+  AtcView,
+  Catch40ModuleView,
+  CricketModuleView,
+  HiloModuleView,
+  MinigolfView,
+  MissionView,
+  P121ModuleView,
+  X01ModuleView,
+} from './views.js'
 import type { Rng } from './rng.js'
 import type { RankedMode } from '../shared/ranked.js'
 import type { RankedClock, RankedRules } from './rankedClock.js'
@@ -103,6 +112,7 @@ export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
 export type MinigolfDetail = components['schemas']['MinigolfDetail']
 export type P121Detail = components['schemas']['P121Detail']
+export type Catch40Detail = components['schemas']['Catch40Detail']
 export type HiloDetail = components['schemas']['HiloDetail']
 export type CricketDetail = components['schemas']['CricketDetail']
 export type MissionDetail = components['schemas']['MissionDetail']
@@ -247,6 +257,7 @@ export type AnyGameModule =
   | GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail>
   | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
   | GameModule<unknown, GameConfig, P121ModuleView, 'p121', P121Detail>
+  | GameModule<unknown, GameConfig, Catch40ModuleView, 'catch40', Catch40Detail>
   | GameModule<unknown, GameConfig, MinigolfView, 'minigolf', MinigolfDetail>
   | GameModule<unknown, GameConfig, HiloModuleView, 'hilo', HiloDetail>
   | GameModule<unknown, GameConfig, CricketModuleView, 'cricket', CricketDetail>

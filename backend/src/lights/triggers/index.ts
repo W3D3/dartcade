@@ -34,6 +34,7 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
       return p121Triggers(before?.gameId === 'p121' ? before.game : null, after.game)
     case 'atc':
     case 'mission':
+    case 'catch40':
       return []
   }
 }

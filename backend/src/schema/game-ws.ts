@@ -105,6 +105,46 @@ export type AtcGame = EngineGameFields & {
   hitCounts: number[]
 }
 /**
+ * Catch 40 view plus the engine's per-session fields and the bull off.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "Catch40Game".
+ */
+export type Catch40Game = EngineGameFields & {
+  phase: 'bulloff' | 'game' | 'finished'
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  /**
+   * The seat with the highest total (the lowest seat on a tie); the places in the snapshot's results share a tie.
+   */
+  winner: number | null
+  visitLocked: boolean
+  bust: boolean
+  visitStartLeft: number
+  seats: {
+    /**
+     * The open target; 101 once all 40 are done.
+     */
+    target: number
+    left: number
+    /**
+     * Darts used by the open target's committed visits.
+     */
+    darts: number
+    tries: Catch40Try[]
+    total: number
+    /**
+     * All 40 targets are played.
+     */
+    done: boolean
+  }[]
+  lastResult: Catch40Result | null
+  bullOff: BullOffView | null
+}
+/**
  * 121 Checkout view plus the engine's per-session fields and the bull off.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -209,6 +249,14 @@ export type AtcSnapshot = SnapshotBase & {
 export type P121Snapshot = SnapshotBase & {
   gameId: 'p121'
   game: P121Game
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "Catch40Snapshot".
+ */
+export type Catch40Snapshot = SnapshotBase & {
+  gameId: 'catch40'
+  game: Catch40Game
 }
 /**
  * Higher Lower view plus the engine's per-session fields and the bull off.
@@ -504,7 +552,14 @@ export type MinigolfSnapshot = SnapshotBase & {
  * via the `definition` "Snapshot".
  */
 export type Snapshot =
-  X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot | MissionSnapshot
+  | X01Snapshot
+  | AtcSnapshot
+  | P121Snapshot
+  | Catch40Snapshot
+  | MinigolfSnapshot
+  | HiloSnapshot
+  | CricketSnapshot
+  | MissionSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "MissionSnapshot".
@@ -710,6 +765,33 @@ export interface X01Visit {
   left: number
   bust: boolean
   darts: number
+}
+/**
+ * A finished Catch 40 target.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "Catch40Try".
+ */
+export interface Catch40Try {
+  target: number
+  darts: number
+  points: number
+  /**
+   * The finishing dart's label (e.g. D14); null when the target was missed.
+   */
+  finish: string | null
+}
+/**
+ * The target that just ended; drives the result banner.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "Catch40Result".
+ */
+export interface Catch40Result {
+  seat: number
+  target: number
+  darts: number
+  points: number
 }
 /**
  * A finished 121 Checkout try.

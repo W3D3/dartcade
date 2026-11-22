@@ -5462,6 +5462,33 @@ components:
                 properties:
                   darts: { type: integer }
                   target: { type: integer }
+    Catch40Detail:
+      type: object
+      required: [mode, seats]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [catch40] }
+        seats:
+          type: array
+          description: One per seat, in seat order
+          items:
+            type: object
+            required: [tries, total]
+            additionalProperties: false
+            properties:
+              tries:
+                type: array
+                description: Every finished target, 61 upwards
+                items:
+                  type: object
+                  required: [target, darts, points, finish]
+                  additionalProperties: false
+                  properties:
+                    target: { type: integer, minimum: 61, maximum: 100 }
+                    darts: { type: integer, minimum: 0 }
+                    points: { type: integer, minimum: 0, maximum: 3 }
+                    finish: { type: string, nullable: true }
+              total: { type: integer, minimum: 0, maximum: 120 }
     HiloDetail:
       type: object
       required: [mode, start, visits, seats]
@@ -6844,6 +6871,7 @@ components:
             - $ref: '#/components/schemas/AtcDetail'
             - $ref: '#/components/schemas/MinigolfDetail'
             - $ref: '#/components/schemas/P121Detail'
+            - $ref: '#/components/schemas/Catch40Detail'
             - $ref: '#/components/schemas/HiloDetail'
             - $ref: '#/components/schemas/CricketDetail'
             - $ref: '#/components/schemas/MissionDetail'
@@ -6854,6 +6882,7 @@ components:
               atc: '#/components/schemas/AtcDetail'
               minigolf: '#/components/schemas/MinigolfDetail'
               p121: '#/components/schemas/P121Detail'
+              catch40: '#/components/schemas/Catch40Detail'
               hilo: '#/components/schemas/HiloDetail'
               cricket: '#/components/schemas/CricketDetail'
               mission: '#/components/schemas/MissionDetail'

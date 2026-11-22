@@ -1,4 +1,5 @@
 import { atcModule } from './atc.js'
+import { catch40Module } from './catch40.js'
 import { cricketModule } from './cricket.js'
 import { hiloModule } from './hilo.js'
 import { minigolfModule } from './minigolf.js'
@@ -12,7 +13,16 @@ import type { AnyGameModule } from '../session/types.js'
 const minigolfGame: AnyGameModule = { ...minigolfModule, inputWork: shotWork }
 
 /** Every game, in the order the setup screen lists them. */
-export const gameList: AnyGameModule[] = [atcModule, x01Module, p121Module, minigolfGame, hiloModule, cricketModule, missionModule]
+export const gameList: AnyGameModule[] = [
+  atcModule,
+  x01Module,
+  p121Module,
+  catch40Module,
+  minigolfGame,
+  hiloModule,
+  cricketModule,
+  missionModule,
+]
 
 /** Games by id; a lookup of an unknown id gives undefined. */
 export const games: Partial<Record<string, AnyGameModule>> = Object.fromEntries(gameList.map(m => [m.id, m]))
