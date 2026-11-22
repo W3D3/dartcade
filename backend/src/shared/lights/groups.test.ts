@@ -22,6 +22,7 @@ describe('effect groups', () => {
     expect(triggers('cricket')).toEqual(['cricket.closed'])
     expect(triggers('p121')).toEqual(['p121.made'])
     expect(triggers('atc')).toEqual([]) // Target hit was removed: nothing else to light there yet
+    expect(triggers('shanghai')).toEqual([]) // the common effects (turn, win) cover it
     expect(triggers(null)).toEqual(['turn', 'turn', 'game.won', 'bulloff.won', 'takeout.started', 'calibration.finished', 'lobby'])
   })
 })

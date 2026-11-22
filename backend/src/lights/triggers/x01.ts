@@ -21,6 +21,7 @@ type V = Pick<
 export function x01Triggers(before: V | null, after: V): Trigger[] {
   const o = visitOutcome(before, after)
   if (o === null) return []
+  if (o.kind === 'shanghai') return []
   if (o.kind === 'checkout') return [{ kind: o.match ? 'game.won' : 'checkout', seat: o.seat }]
   return [o]
 }

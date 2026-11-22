@@ -9052,6 +9052,1550 @@
       ],
       "unevaluatedProperties": false
     },
+    "ShanghaiHits": {
+      "title": "ShanghaiHits",
+      "description": "Which of single, double and treble of the round's number the open visit has landed.",
+      "type": "object",
+      "required": [
+        "single",
+        "double",
+        "treble"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "single": {
+          "type": "boolean"
+        },
+        "double": {
+          "type": "boolean"
+        },
+        "treble": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ShanghaiVisit": {
+      "title": "ShanghaiVisit",
+      "description": "A committed Shanghai visit: its round, the number it aimed at and its score.",
+      "type": "object",
+      "required": [
+        "round",
+        "target",
+        "score",
+        "shanghai"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 25
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shanghai": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ShanghaiGame": {
+      "title": "ShanghaiGame",
+      "description": "Shanghai view plus the engine's per-session fields and the bull off.",
+      "allOf": [
+        {
+          "title": "EngineGameFields",
+          "description": "What the session engine adds to every game's view: the open visit's darts and each seat's darts and visits so far.",
+          "type": "object",
+          "required": [
+            "currentVisitDarts",
+            "totalDarts",
+            "totalVisits"
+          ],
+          "properties": {
+            "currentVisitDarts": {
+              "type": "array",
+              "items": {
+                "title": "Dart",
+                "description": "A thrown dart. coords/polar are absent for manual entry and bounce-outs.",
+                "type": "object",
+                "required": [
+                  "segment",
+                  "score"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "segment": {
+                    "title": "Segment",
+                    "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "number",
+                      "bed",
+                      "multiplier"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "number": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 50
+                      },
+                      "bed": {
+                        "type": "string",
+                        "enum": [
+                          "SingleInner",
+                          "SingleOuter",
+                          "Single",
+                          "Double",
+                          "Triple",
+                          "Outside"
+                        ]
+                      },
+                      "multiplier": {
+                        "type": "integer",
+                        "enum": [
+                          0,
+                          1,
+                          2,
+                          3
+                        ]
+                      }
+                    }
+                  },
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "coords": {
+                    "title": "Coords",
+                    "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+                    "type": "object",
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "polar": {
+                    "title": "Polar",
+                    "type": "object",
+                    "required": [
+                      "r",
+                      "theta_deg"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "r": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "theta_deg": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "bouncer": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "totalDarts": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "totalVisits": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "cfg",
+            "phase",
+            "round",
+            "rounds",
+            "target",
+            "currentPlayer",
+            "nextPlayer",
+            "winner",
+            "shanghai",
+            "hits",
+            "visitScore",
+            "contenders",
+            "seats",
+            "bullOff"
+          ],
+          "properties": {
+            "cfg": {
+              "type": "object",
+              "required": [
+                "start",
+                "end",
+                "bullRound",
+                "shanghaiWins",
+                "tieBreak"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "bullRound": {
+                  "type": "boolean"
+                },
+                "shanghaiWins": {
+                  "type": "boolean"
+                },
+                "tieBreak": {
+                  "type": "string",
+                  "enum": [
+                    "bull",
+                    "shared"
+                  ]
+                }
+              }
+            },
+            "phase": {
+              "type": "string",
+              "enum": [
+                "bulloff",
+                "game",
+                "finished"
+              ]
+            },
+            "round": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based; past `rounds` it counts the sudden-death bull rounds."
+            },
+            "rounds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The regular rounds, the bull round included."
+            },
+            "target": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "description": "The number this round aims at; 25 is the bull."
+            },
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextPlayer": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+            },
+            "winner": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "shanghai": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The seat that ended the game with a Shanghai."
+            },
+            "hits": {
+              "title": "ShanghaiHits",
+              "description": "Which of single, double and treble of the round's number the open visit has landed.",
+              "type": "object",
+              "required": [
+                "single",
+                "double",
+                "treble"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "single": {
+                  "type": "boolean"
+                },
+                "double": {
+                  "type": "boolean"
+                },
+                "treble": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "visitScore": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The open visit's running score."
+            },
+            "contenders": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "The tied seats playing the sudden-death bull rounds; null before them."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "score",
+                  "place",
+                  "visits"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "place": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "description": "Null until the game is finished."
+                  },
+                  "visits": {
+                    "type": "array",
+                    "items": {
+                      "title": "ShanghaiVisit",
+                      "description": "A committed Shanghai visit: its round, the number it aimed at and its score.",
+                      "type": "object",
+                      "required": [
+                        "round",
+                        "target",
+                        "score",
+                        "shanghai"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "round": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "target": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 25
+                        },
+                        "score": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "shanghai": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "bullOff": {
+              "anyOf": [
+                {
+                  "title": "BullOffView",
+                  "type": "object",
+                  "required": [
+                    "throws",
+                    "sequence",
+                    "currentPlayer",
+                    "result"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "throws": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "title": "BullOffThrow",
+                            "type": "object",
+                            "required": [
+                              "mm",
+                              "segment",
+                              "thetaDeg",
+                              "estimated"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ],
+                                "description": "Distance from the centre; null = off the board"
+                              },
+                              "segment": {
+                                "type": "string"
+                              },
+                              "thetaDeg": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "estimated": {
+                                "type": "boolean",
+                                "description": "Distance estimated from the segment (manual entry or a corrected dart)"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "sequence": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "currentPlayer": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "result": {
+                      "anyOf": [
+                        {
+                          "title": "BullOffResult",
+                          "type": "object",
+                          "required": [
+                            "order",
+                            "rethrow"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "order": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "rethrow": {
+                              "type": "boolean"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "enum": [
+                                "tie",
+                                "bullseye",
+                                "outer_bull",
+                                "no_bull",
+                                "all_missed"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "ShanghaiSnapshot": {
+      "title": "ShanghaiSnapshot",
+      "allOf": [
+        {
+          "title": "SnapshotBase",
+          "description": "The envelope every game's snapshot shares; each <Game>Snapshot adds its gameId and game.",
+          "type": "object",
+          "required": [
+            "type",
+            "sessionId",
+            "boardId",
+            "lobbyId",
+            "lobbyName",
+            "players",
+            "bmStatus",
+            "status",
+            "finishPending",
+            "canUndoVisit",
+            "scoreBased",
+            "ownerUserId",
+            "hasHost",
+            "seats",
+            "mySeats",
+            "results",
+            "voided"
+          ],
+          "properties": {
+            "type": {
+              "const": "snapshot"
+            },
+            "sessionId": {
+              "type": "string"
+            },
+            "boardId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lobbyId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby the game was started from; null for a local game."
+            },
+            "lobbyName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby's name, for the match header; null for a local game."
+            },
+            "players": {
+              "type": "array",
+              "items": {
+                "title": "Player",
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "bmStatus": {
+              "anyOf": [
+                {
+                  "title": "BmStatus",
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "running",
+                    "event"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "running": {
+                      "type": "boolean"
+                    },
+                    "event": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Status of the board of the seat that's up."
+            },
+            "status": {
+              "title": "SessionStatus",
+              "type": "string",
+              "enum": [
+                "active",
+                "finished",
+                "aborted"
+              ]
+            },
+            "results": {
+              "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "title": "SeatPlace",
+                "description": "A seat's final place: 1 for the winner; tied seats share one; a forfeit (a team's, in a team game) ranks last.",
+                "type": "object",
+                "required": [
+                  "placement",
+                  "forfeited"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "placement": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "forfeited": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "finishPending": {
+              "type": "boolean",
+              "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+            },
+            "canUndoVisit": {
+              "type": "boolean",
+              "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+            },
+            "ownerUserId": {
+              "type": "string",
+              "description": "The host: starts the bull off, aborts the game."
+            },
+            "hasHost": {
+              "type": "boolean",
+              "description": "Whether `ownerUserId` is a host who may end the game. A ranked or tournament game has none: nobody ends it for everyone and either side starts the bull off."
+            },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "title": "SeatInfo",
+                "description": "Who acts for a seat and where its darts come from.",
+                "type": "object",
+                "required": [
+                  "controllerUserId",
+                  "userId",
+                  "avatar",
+                  "boardId",
+                  "boardName",
+                  "boardOnline",
+                  "controllerConnected",
+                  "disconnectedAt",
+                  "forfeited",
+                  "bot"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "controllerUserId": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The account the seat plays for; null for a guest."
+                  },
+                  "avatar": {
+                    "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
+                    "title": "Avatar",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "foreground",
+                          "background"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "description": "The finish of the mark in front"
+                          },
+                          "background": {
+                            "type": "string",
+                            "description": "The finish of the disc behind it"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "boardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "null: darts are entered by hand."
+                  },
+                  "boardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boardOnline": {
+                    "type": "boolean",
+                    "description": "The board's bridge is connected."
+                  },
+                  "controllerConnected": {
+                    "type": "boolean",
+                    "description": "The controller has this game open."
+                  },
+                  "disconnectedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+                  },
+                  "forfeited": {
+                    "type": "boolean"
+                  },
+                  "bot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 20
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The server throws for this seat itself, at this difficulty 1-20; null for a human or guest."
+                  }
+                }
+              },
+              "description": "Same order as players."
+            },
+            "mySeats": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Seats the viewer controls."
+            },
+            "spectators": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Friends watching the game right now (/ws?watch=1); missing: none."
+            },
+            "voided": {
+              "type": "boolean",
+              "description": "A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating."
+            },
+            "ranked": {
+              "anyOf": [
+                {
+                  "title": "RankedState",
+                  "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                  "type": "object",
+                  "required": [
+                    "now",
+                    "mode",
+                    "visitSeconds",
+                    "reserveSeconds",
+                    "manualEntry",
+                    "visitDeadline",
+                    "forfeitAt",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "now": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "mode": {
+                      "enum": [
+                        "1v1",
+                        "2v2"
+                      ],
+                      "description": "The queue the match came from."
+                    },
+                    "visitSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Time each visit gets before the reserve is used."
+                    },
+                    "reserveSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The reserve each seat (each team in a team game) starts with."
+                    },
+                    "manualEntry": {
+                      "type": "boolean",
+                      "description": "Darts may be entered by hand; when false the server rejects them."
+                    },
+                    "visitDeadline": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "When the visit of the seat that is up runs over and its reserve starts to run. null: no visit clock is running (the bull off before the first visit, a finished game, a visit held for Finish); show the time as paused."
+                    },
+                    "forfeitAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "When the seat that is up has used its whole reserve and forfeits the match. null exactly when visitDeadline is."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "Same order as players.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "reserveSeconds",
+                          "inReserve",
+                          "disconnectForfeitAt",
+                          "stakes",
+                          "rating",
+                          "rankIndex",
+                          "placement",
+                          "result"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "reserveSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                          },
+                          "inReserve": {
+                            "type": "boolean",
+                            "description": "The seat is up and its visit has run over, so its reserve is running."
+                          },
+                          "disconnectForfeitAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                          },
+                          "stakes": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "win",
+                                  "loss"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "win": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "loss": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                          },
+                          "rating": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The player's rating (RP) when the match started; null while they are still in their placement matches (the hidden placement rating is never sent) and for a guest or bot."
+                          },
+                          "rankIndex": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 29
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The rank the player held when the match started, 0 (Wood I) to 29 (Elite V) as RankedRating.rankIndex; `rank(i)` from shared/ranked gives the Rank. null while placing."
+                          },
+                          "placement": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "played",
+                                  "of"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "played": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "Placement matches played before this one."
+                                  },
+                                  "of": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "description": "Placement matches a player plays before they get a rank."
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Progress through the placement matches; null once the player has a rank."
+                          },
+                          "result": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "change",
+                                  "rankIndexBefore",
+                                  "rankIndexAfter"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "change": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "RP the match moved the player by (negative for a loss); null for a placement match, whose rating is hidden. Show `placement` progress instead, and rankIndexAfter on the match that finishes placing."
+                                  },
+                                  "rankIndexBefore": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 29
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "rankIndexAfter": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 29
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "null when the player is still placing after this match."
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "What the finished match did to the player's rating; null until the result is recorded (and for a guest, a bot, or a match that was not rated). Promoted is rankIndexAfter above rankIndexBefore."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A ranked game's rules and clock; null or missing for a game that is not ranked."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "gameId",
+            "game"
+          ],
+          "properties": {
+            "gameId": {
+              "const": "shanghai"
+            },
+            "game": {
+              "title": "ShanghaiGame",
+              "description": "Shanghai view plus the engine's per-session fields and the bull off.",
+              "allOf": [
+                {
+                  "title": "EngineGameFields",
+                  "description": "What the session engine adds to every game's view: the open visit's darts and each seat's darts and visits so far.",
+                  "type": "object",
+                  "required": [
+                    "currentVisitDarts",
+                    "totalDarts",
+                    "totalVisits"
+                  ],
+                  "properties": {
+                    "currentVisitDarts": {
+                      "type": "array",
+                      "items": {
+                        "title": "Dart",
+                        "description": "A thrown dart. coords/polar are absent for manual entry and bounce-outs.",
+                        "type": "object",
+                        "required": [
+                          "segment",
+                          "score"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "segment": {
+                            "title": "Segment",
+                            "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                            "type": "object",
+                            "required": [
+                              "name",
+                              "number",
+                              "bed",
+                              "multiplier"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 50
+                              },
+                              "bed": {
+                                "type": "string",
+                                "enum": [
+                                  "SingleInner",
+                                  "SingleOuter",
+                                  "Single",
+                                  "Double",
+                                  "Triple",
+                                  "Outside"
+                                ]
+                              },
+                              "multiplier": {
+                                "type": "integer",
+                                "enum": [
+                                  0,
+                                  1,
+                                  2,
+                                  3
+                                ]
+                              }
+                            }
+                          },
+                          "score": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "coords": {
+                            "title": "Coords",
+                            "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+                            "type": "object",
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "polar": {
+                            "title": "Polar",
+                            "type": "object",
+                            "required": [
+                              "r",
+                              "theta_deg"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "r": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "theta_deg": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "bouncer": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "totalDarts": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "totalVisits": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "cfg",
+                    "phase",
+                    "round",
+                    "rounds",
+                    "target",
+                    "currentPlayer",
+                    "nextPlayer",
+                    "winner",
+                    "shanghai",
+                    "hits",
+                    "visitScore",
+                    "contenders",
+                    "seats",
+                    "bullOff"
+                  ],
+                  "properties": {
+                    "cfg": {
+                      "type": "object",
+                      "required": [
+                        "start",
+                        "end",
+                        "bullRound",
+                        "shanghaiWins",
+                        "tieBreak"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 20
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 20
+                        },
+                        "bullRound": {
+                          "type": "boolean"
+                        },
+                        "shanghaiWins": {
+                          "type": "boolean"
+                        },
+                        "tieBreak": {
+                          "type": "string",
+                          "enum": [
+                            "bull",
+                            "shared"
+                          ]
+                        }
+                      }
+                    },
+                    "phase": {
+                      "type": "string",
+                      "enum": [
+                        "bulloff",
+                        "game",
+                        "finished"
+                      ]
+                    },
+                    "round": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "1-based; past `rounds` it counts the sudden-death bull rounds."
+                    },
+                    "rounds": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "The regular rounds, the bull round included."
+                    },
+                    "target": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 25,
+                      "description": "The number this round aims at; 25 is the bull."
+                    },
+                    "currentPlayer": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "nextPlayer": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+                    },
+                    "winner": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "shanghai": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "The seat that ended the game with a Shanghai."
+                    },
+                    "hits": {
+                      "title": "ShanghaiHits",
+                      "description": "Which of single, double and treble of the round's number the open visit has landed.",
+                      "type": "object",
+                      "required": [
+                        "single",
+                        "double",
+                        "treble"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "single": {
+                          "type": "boolean"
+                        },
+                        "double": {
+                          "type": "boolean"
+                        },
+                        "treble": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "visitScore": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The open visit's running score."
+                    },
+                    "contenders": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "description": "The tied seats playing the sudden-death bull rounds; null before them."
+                    },
+                    "seats": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "score",
+                          "place",
+                          "visits"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "score": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "place": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 1,
+                            "description": "Null until the game is finished."
+                          },
+                          "visits": {
+                            "type": "array",
+                            "items": {
+                              "title": "ShanghaiVisit",
+                              "description": "A committed Shanghai visit: its round, the number it aimed at and its score.",
+                              "type": "object",
+                              "required": [
+                                "round",
+                                "target",
+                                "score",
+                                "shanghai"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "round": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "target": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 25
+                                },
+                                "score": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "shanghai": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "bullOff": {
+                      "anyOf": [
+                        {
+                          "title": "BullOffView",
+                          "type": "object",
+                          "required": [
+                            "throws",
+                            "sequence",
+                            "currentPlayer",
+                            "result"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "throws": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "title": "BullOffThrow",
+                                    "type": "object",
+                                    "required": [
+                                      "mm",
+                                      "segment",
+                                      "thetaDeg",
+                                      "estimated"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "mm": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ],
+                                        "description": "Distance from the centre; null = off the board"
+                                      },
+                                      "segment": {
+                                        "type": "string"
+                                      },
+                                      "thetaDeg": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "estimated": {
+                                        "type": "boolean",
+                                        "description": "Distance estimated from the segment (manual entry or a corrected dart)"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "sequence": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "currentPlayer": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "title": "BullOffResult",
+                                  "type": "object",
+                                  "required": [
+                                    "order",
+                                    "rethrow"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "order": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "rethrow": {
+                                      "type": "boolean"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "tie",
+                                        "bullseye",
+                                        "outer_bull",
+                                        "no_bull",
+                                        "all_missed"
+                                      ]
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "CricketVisit": {
       "title": "CricketVisit",
       "description": "A committed Cricket visit: marks counted and points scored, for the chalkboard.",
@@ -23832,6 +25376,1050 @@
                         "visitLocked": {
                           "type": "boolean",
                           "description": "The rest of the visit doesn't count: the next step counts whole visits, a fast leg's bust, a pause, or the seat up is out."
+                        }
+                      }
+                    }
+                  ],
+                  "unevaluatedProperties": false
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "title": "ShanghaiSnapshot",
+          "allOf": [
+            {
+              "title": "SnapshotBase",
+              "description": "The envelope every game's snapshot shares; each <Game>Snapshot adds its gameId and game.",
+              "type": "object",
+              "required": [
+                "type",
+                "sessionId",
+                "boardId",
+                "lobbyId",
+                "lobbyName",
+                "players",
+                "bmStatus",
+                "status",
+                "finishPending",
+                "canUndoVisit",
+                "scoreBased",
+                "ownerUserId",
+                "hasHost",
+                "seats",
+                "mySeats",
+                "results",
+                "voided"
+              ],
+              "properties": {
+                "type": {
+                  "const": "snapshot"
+                },
+                "sessionId": {
+                  "type": "string"
+                },
+                "boardId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "lobbyId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The lobby the game was started from; null for a local game."
+                },
+                "lobbyName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The lobby's name, for the match header; null for a local game."
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "title": "Player",
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                "bmStatus": {
+                  "anyOf": [
+                    {
+                      "title": "BmStatus",
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "running",
+                        "event"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "running": {
+                          "type": "boolean"
+                        },
+                        "event": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Status of the board of the seat that's up."
+                },
+                "status": {
+                  "title": "SessionStatus",
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "finished",
+                    "aborted"
+                  ]
+                },
+                "results": {
+                  "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "title": "SeatPlace",
+                    "description": "A seat's final place: 1 for the winner; tied seats share one; a forfeit (a team's, in a team game) ranks last.",
+                    "type": "object",
+                    "required": [
+                      "placement",
+                      "forfeited"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "placement": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "forfeited": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "finishPending": {
+                  "type": "boolean",
+                  "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+                },
+                "canUndoVisit": {
+                  "type": "boolean",
+                  "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+                },
+                "ownerUserId": {
+                  "type": "string",
+                  "description": "The host: starts the bull off, aborts the game."
+                },
+                "hasHost": {
+                  "type": "boolean",
+                  "description": "Whether `ownerUserId` is a host who may end the game. A ranked or tournament game has none: nobody ends it for everyone and either side starts the bull off."
+                },
+                "scoreBased": {
+                  "type": "boolean",
+                  "description": "The game has a running score the caller announces (the game module's scoreBased)."
+                },
+                "seats": {
+                  "type": "array",
+                  "items": {
+                    "title": "SeatInfo",
+                    "description": "Who acts for a seat and where its darts come from.",
+                    "type": "object",
+                    "required": [
+                      "controllerUserId",
+                      "userId",
+                      "avatar",
+                      "boardId",
+                      "boardName",
+                      "boardOnline",
+                      "controllerConnected",
+                      "disconnectedAt",
+                      "forfeited",
+                      "bot"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "controllerUserId": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The account the seat plays for; null for a guest."
+                      },
+                      "avatar": {
+                        "description": "The account's profile picture; {kind: 'none'} for a guest or bot.",
+                        "title": "Avatar",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "foreground",
+                              "background"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "description": "The finish of the mark in front"
+                              },
+                              "background": {
+                                "type": "string",
+                                "description": "The finish of the disc behind it"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "boardId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "null: darts are entered by hand."
+                      },
+                      "boardName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boardOnline": {
+                        "type": "boolean",
+                        "description": "The board's bridge is connected."
+                      },
+                      "controllerConnected": {
+                        "type": "boolean",
+                        "description": "The controller has this game open."
+                      },
+                      "disconnectedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+                      },
+                      "forfeited": {
+                        "type": "boolean"
+                      },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 20
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The server throws for this seat itself, at this difficulty 1-20; null for a human or guest."
+                      }
+                    }
+                  },
+                  "description": "Same order as players."
+                },
+                "mySeats": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "description": "Seats the viewer controls."
+                },
+                "spectators": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Friends watching the game right now (/ws?watch=1); missing: none."
+                },
+                "voided": {
+                  "type": "boolean",
+                  "description": "A moderator voided this ranked game while it ran: it ended without a result and moved nobody's rating."
+                },
+                "ranked": {
+                  "anyOf": [
+                    {
+                      "title": "RankedState",
+                      "description": "A ranked game's time limit, disconnect timers and stakes. The clock is the server's: a screen counts down from `now` (the server's time when the snapshot was built) and corrects itself with every snapshot.",
+                      "type": "object",
+                      "required": [
+                        "now",
+                        "mode",
+                        "visitSeconds",
+                        "reserveSeconds",
+                        "manualEntry",
+                        "visitDeadline",
+                        "forfeitAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "now": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "mode": {
+                          "enum": [
+                            "1v1",
+                            "2v2"
+                          ],
+                          "description": "The queue the match came from."
+                        },
+                        "visitSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Time each visit gets before the reserve is used."
+                        },
+                        "reserveSeconds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The reserve each seat (each team in a team game) starts with."
+                        },
+                        "manualEntry": {
+                          "type": "boolean",
+                          "description": "Darts may be entered by hand; when false the server rejects them."
+                        },
+                        "visitDeadline": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "When the visit of the seat that is up runs over and its reserve starts to run. null: no visit clock is running (the bull off before the first visit, a finished game, a visit held for Finish); show the time as paused."
+                        },
+                        "forfeitAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "When the seat that is up has used its whole reserve and forfeits the match. null exactly when visitDeadline is."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "description": "Same order as players.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "reserveSeconds",
+                              "inReserve",
+                              "disconnectForfeitAt",
+                              "stakes",
+                              "rating",
+                              "rankIndex",
+                              "placement",
+                              "result"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "reserveSeconds": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Reserve left at `now`, whole seconds, counting the open visit."
+                              },
+                              "inReserve": {
+                                "type": "boolean",
+                                "description": "The seat is up and its visit has run over, so its reserve is running."
+                              },
+                              "disconnectForfeitAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Its controller has the game closed: when the seat forfeits if they do not come back; null while they are connected."
+                              },
+                              "stakes": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "win",
+                                      "loss"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "win": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "loss": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "RP the seat's side gains for a win and loses for a loss; null while placing."
+                              },
+                              "rating": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The player's rating (RP) when the match started; null while they are still in their placement matches (the hidden placement rating is never sent) and for a guest or bot."
+                              },
+                              "rankIndex": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 29
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The rank the player held when the match started, 0 (Wood I) to 29 (Elite V) as RankedRating.rankIndex; `rank(i)` from shared/ranked gives the Rank. null while placing."
+                              },
+                              "placement": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "played",
+                                      "of"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "played": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "description": "Placement matches played before this one."
+                                      },
+                                      "of": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Placement matches a player plays before they get a rank."
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Progress through the placement matches; null once the player has a rank."
+                              },
+                              "result": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "change",
+                                      "rankIndexBefore",
+                                      "rankIndexAfter"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "change": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "RP the match moved the player by (negative for a loss); null for a placement match, whose rating is hidden. Show `placement` progress instead, and rankIndexAfter on the match that finishes placing."
+                                      },
+                                      "rankIndexBefore": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 29
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "rankIndexAfter": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 29
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "null when the player is still placing after this match."
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "What the finished match did to the player's rating; null until the result is recorded (and for a guest, a bot, or a match that was not rated). Promoted is rankIndexAfter above rankIndexBefore."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "A ranked game's rules and clock; null or missing for a game that is not ranked."
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "gameId",
+                "game"
+              ],
+              "properties": {
+                "gameId": {
+                  "const": "shanghai"
+                },
+                "game": {
+                  "title": "ShanghaiGame",
+                  "description": "Shanghai view plus the engine's per-session fields and the bull off.",
+                  "allOf": [
+                    {
+                      "title": "EngineGameFields",
+                      "description": "What the session engine adds to every game's view: the open visit's darts and each seat's darts and visits so far.",
+                      "type": "object",
+                      "required": [
+                        "currentVisitDarts",
+                        "totalDarts",
+                        "totalVisits"
+                      ],
+                      "properties": {
+                        "currentVisitDarts": {
+                          "type": "array",
+                          "items": {
+                            "title": "Dart",
+                            "description": "A thrown dart. coords/polar are absent for manual entry and bounce-outs.",
+                            "type": "object",
+                            "required": [
+                              "segment",
+                              "score"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "segment": {
+                                "title": "Segment",
+                                "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                "type": "object",
+                                "required": [
+                                  "name",
+                                  "number",
+                                  "bed",
+                                  "multiplier"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 50
+                                  },
+                                  "bed": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SingleInner",
+                                      "SingleOuter",
+                                      "Single",
+                                      "Double",
+                                      "Triple",
+                                      "Outside"
+                                    ]
+                                  },
+                                  "multiplier": {
+                                    "type": "integer",
+                                    "enum": [
+                                      0,
+                                      1,
+                                      2,
+                                      3
+                                    ]
+                                  }
+                                }
+                              },
+                              "score": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "coords": {
+                                "title": "Coords",
+                                "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+                                "type": "object",
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                }
+                              },
+                              "polar": {
+                                "title": "Polar",
+                                "type": "object",
+                                "required": [
+                                  "r",
+                                  "theta_deg"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "r": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "theta_deg": {
+                                    "type": "number"
+                                  }
+                                }
+                              },
+                              "bouncer": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "totalDarts": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "totalVisits": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "cfg",
+                        "phase",
+                        "round",
+                        "rounds",
+                        "target",
+                        "currentPlayer",
+                        "nextPlayer",
+                        "winner",
+                        "shanghai",
+                        "hits",
+                        "visitScore",
+                        "contenders",
+                        "seats",
+                        "bullOff"
+                      ],
+                      "properties": {
+                        "cfg": {
+                          "type": "object",
+                          "required": [
+                            "start",
+                            "end",
+                            "bullRound",
+                            "shanghaiWins",
+                            "tieBreak"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 20
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 20
+                            },
+                            "bullRound": {
+                              "type": "boolean"
+                            },
+                            "shanghaiWins": {
+                              "type": "boolean"
+                            },
+                            "tieBreak": {
+                              "type": "string",
+                              "enum": [
+                                "bull",
+                                "shared"
+                              ]
+                            }
+                          }
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "bulloff",
+                            "game",
+                            "finished"
+                          ]
+                        },
+                        "round": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "1-based; past `rounds` it counts the sudden-death bull rounds."
+                        },
+                        "rounds": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "The regular rounds, the bull round included."
+                        },
+                        "target": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 25,
+                          "description": "The number this round aims at; 25 is the bull."
+                        },
+                        "currentPlayer": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "nextPlayer": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+                        },
+                        "winner": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "shanghai": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "description": "The seat that ended the game with a Shanghai."
+                        },
+                        "hits": {
+                          "title": "ShanghaiHits",
+                          "description": "Which of single, double and treble of the round's number the open visit has landed.",
+                          "type": "object",
+                          "required": [
+                            "single",
+                            "double",
+                            "treble"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "single": {
+                              "type": "boolean"
+                            },
+                            "double": {
+                              "type": "boolean"
+                            },
+                            "treble": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "visitScore": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The open visit's running score."
+                        },
+                        "contenders": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "description": "The tied seats playing the sudden-death bull rounds; null before them."
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "score",
+                              "place",
+                              "visits"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "score": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "place": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1,
+                                "description": "Null until the game is finished."
+                              },
+                              "visits": {
+                                "type": "array",
+                                "items": {
+                                  "title": "ShanghaiVisit",
+                                  "description": "A committed Shanghai visit: its round, the number it aimed at and its score.",
+                                  "type": "object",
+                                  "required": [
+                                    "round",
+                                    "target",
+                                    "score",
+                                    "shanghai"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "round": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "target": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 25
+                                    },
+                                    "score": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "shanghai": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "bullOff": {
+                          "anyOf": [
+                            {
+                              "title": "BullOffView",
+                              "type": "object",
+                              "required": [
+                                "throws",
+                                "sequence",
+                                "currentPlayer",
+                                "result"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "throws": {
+                                  "type": "array",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "title": "BullOffThrow",
+                                        "type": "object",
+                                        "required": [
+                                          "mm",
+                                          "segment",
+                                          "thetaDeg",
+                                          "estimated"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "mm": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ],
+                                            "description": "Distance from the centre; null = off the board"
+                                          },
+                                          "segment": {
+                                            "type": "string"
+                                          },
+                                          "thetaDeg": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
+                                          },
+                                          "estimated": {
+                                            "type": "boolean",
+                                            "description": "Distance estimated from the segment (manual entry or a corrected dart)"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "sequence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                },
+                                "currentPlayer": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "result": {
+                                  "anyOf": [
+                                    {
+                                      "title": "BullOffResult",
+                                      "type": "object",
+                                      "required": [
+                                        "order",
+                                        "rethrow"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "order": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        },
+                                        "rethrow": {
+                                          "type": "boolean"
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "tie",
+                                            "bullseye",
+                                            "outer_bull",
+                                            "no_bull",
+                                            "all_missed"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }

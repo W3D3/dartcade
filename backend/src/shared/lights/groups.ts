@@ -20,4 +20,15 @@ export const TRIGGER_GAME: Record<TriggerKind, GameId | null> = {
 }
 
 /** The order of the groups in the effects list: General first, then the games. A game with no effect has no group. */
-export const GROUP_ORDER: readonly (GameId | null)[] = [null, 'x01', 'atc', 'cricket', 'p121', 'catch40', 'minigolf', 'hilo', 'mission']
+export const GROUP_ORDER: readonly (GameId | null)[] = [
+  null,
+  'x01',
+  'atc',
+  'cricket',
+  'p121',
+  'catch40',
+  'minigolf',
+  'hilo',
+  'mission',
+  'shanghai',
+]

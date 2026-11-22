@@ -1469,6 +1469,130 @@
       ],
       "unevaluatedProperties": false
     },
+    "ShanghaiHits": {
+      "title": "ShanghaiHits",
+      "description": "Which of single, double and treble of the round's number the open visit has landed.",
+      "type": "object",
+      "required": ["single", "double", "treble"],
+      "additionalProperties": false,
+      "properties": {
+        "single": { "type": "boolean" },
+        "double": { "type": "boolean" },
+        "treble": { "type": "boolean" }
+      }
+    },
+    "ShanghaiVisit": {
+      "title": "ShanghaiVisit",
+      "description": "A committed Shanghai visit: its round, the number it aimed at and its score.",
+      "type": "object",
+      "required": ["round", "target", "score", "shanghai"],
+      "additionalProperties": false,
+      "properties": {
+        "round": { "type": "integer", "minimum": 1 },
+        "target": { "type": "integer", "minimum": 1, "maximum": 25 },
+        "score": { "type": "integer", "minimum": 0 },
+        "shanghai": { "type": "boolean" }
+      }
+    },
+    "ShanghaiGame": {
+      "title": "ShanghaiGame",
+      "description": "Shanghai view plus the engine's per-session fields and the bull off.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/EngineGameFields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "cfg",
+            "phase",
+            "round",
+            "rounds",
+            "target",
+            "currentPlayer",
+            "nextPlayer",
+            "winner",
+            "shanghai",
+            "hits",
+            "visitScore",
+            "contenders",
+            "seats",
+            "bullOff"
+          ],
+          "properties": {
+            "cfg": {
+              "type": "object",
+              "required": ["start", "end", "bullRound", "shanghaiWins", "tieBreak"],
+              "additionalProperties": false,
+              "properties": {
+                "start": { "type": "integer", "minimum": 1, "maximum": 20 },
+                "end": { "type": "integer", "minimum": 1, "maximum": 20 },
+                "bullRound": { "type": "boolean" },
+                "shanghaiWins": { "type": "boolean" },
+                "tieBreak": { "type": "string", "enum": ["bull", "shared"] }
+              }
+            },
+            "phase": { "type": "string", "enum": ["bulloff", "game", "finished"] },
+            "round": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based; past `rounds` it counts the sudden-death bull rounds."
+            },
+            "rounds": { "type": "integer", "minimum": 1, "description": "The regular rounds, the bull round included." },
+            "target": { "type": "integer", "minimum": 1, "maximum": 25, "description": "The number this round aims at; 25 is the bull." },
+            "currentPlayer": { "type": "integer", "minimum": 0 },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+            },
+            "winner": { "type": ["integer", "null"] },
+            "shanghai": { "type": ["integer", "null"], "description": "The seat that ended the game with a Shanghai." },
+            "hits": { "$ref": "#/$defs/ShanghaiHits" },
+            "visitScore": { "type": "integer", "minimum": 0, "description": "The open visit's running score." },
+            "contenders": {
+              "type": ["array", "null"],
+              "items": { "type": "integer", "minimum": 0 },
+              "description": "The tied seats playing the sudden-death bull rounds; null before them."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["score", "place", "visits"],
+                "additionalProperties": false,
+                "properties": {
+                  "score": { "type": "integer", "minimum": 0 },
+                  "place": { "type": ["integer", "null"], "minimum": 1, "description": "Null until the game is finished." },
+                  "visits": { "type": "array", "items": { "$ref": "#/$defs/ShanghaiVisit" } }
+                }
+              }
+            },
+            "bullOff": {
+              "anyOf": [{ "$ref": "#/$defs/BullOffView" }, { "type": "null" }]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "ShanghaiSnapshot": {
+      "title": "ShanghaiSnapshot",
+      "allOf": [
+        {
+          "$ref": "#/$defs/SnapshotBase"
+        },
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": { "const": "shanghai" },
+            "game": { "$ref": "#/$defs/ShanghaiGame" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "CricketVisit": {
       "title": "CricketVisit",
       "description": "A committed Cricket visit: marks counted and points scored, for the chalkboard.",
@@ -2391,6 +2515,9 @@
         },
         {
           "$ref": "#/$defs/MissionSnapshot"
+        },
+        {
+          "$ref": "#/$defs/ShanghaiSnapshot"
         }
       ]
     },

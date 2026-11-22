@@ -5,6 +5,7 @@ import { hiloModule } from './hilo.js'
 import { minigolfModule } from './minigolf.js'
 import { missionModule } from './mission.js'
 import { shotWork } from './minigolfInputWork.js'
+import { shanghaiModule } from './shanghai.js'
 import { p121Module } from './p121.js'
 import { x01Module } from './x01.js'
 import type { AnyGameModule } from '../session/types.js'
@@ -22,6 +23,7 @@ export const gameList: AnyGameModule[] = [
   hiloModule,
   cricketModule,
   missionModule,
+  shanghaiModule,
 ]
 
 /** Games by id; a lookup of an unknown id gives undefined. */

@@ -19,12 +19,14 @@ export type VisitGame = {
 /** A score counting down to 0 (X01, 121 Checkout): the visit is what it took off, 0 is a checkout. */
 export type CountdownGame = VisitGame & { scores: readonly number[]; visitStartScores: readonly number[] }
 /** A visit total counting up (Higher Lower): no checkout. */
-export type TallyGame = VisitGame & { visitTotal: number }
+export type TallyGame = VisitGame & { visitTotal: number; /** Shanghai: this visit ended the game with a Shanghai. */ shanghai?: boolean }
 export type OutcomeGame = CountdownGame | TallyGame
 
 export type VisitOutcome =
   | { kind: 'visit'; seat: number; total: number }
   | { kind: 'bust'; seat: number }
+  /** A single, double and treble of the round's number in one visit (Shanghai), which ends the game. */
+  | { kind: 'shanghai'; seat: number }
   /** `match`: this checkout wins the match; `leg`: the leg it won (1-based), null in a game without legs. */
   | { kind: 'checkout'; seat: number; match: boolean; leg: number | null }
 
@@ -49,6 +51,7 @@ export const visitTotal = (g: OutcomeGame): number =>
 export function visitEnd(g: OutcomeGame): VisitOutcome {
   const seat = g.currentPlayer
   if (g.bustThisVisit) return { kind: 'bust', seat }
+  if ('shanghai' in g && g.shanghai) return { kind: 'shanghai', seat }
   if ('scores' in g && g.visitLocked && g.scores[seat] === 0) {
     // Legs count up at the takeout, so g still has the old count: this is the leg just won
     if (g.firstTo === undefined) return { kind: 'checkout', seat, match: false, leg: null }

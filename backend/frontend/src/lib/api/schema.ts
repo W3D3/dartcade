@@ -4458,6 +4458,32 @@ export interface components {
                 }[];
             }[];
         };
+        ShanghaiDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "shanghai";
+            /** @description The numbers of the regular rounds, in order (25 is the bull round) */
+            targets: number[];
+            /** @description Every visit of the game, in order (sudden-death bull rounds included) */
+            visits: {
+                seat: number;
+                round: number;
+                target: number;
+                score: number;
+                single: boolean;
+                double: boolean;
+                treble: boolean;
+            }[];
+            /** @description One per seat, in seat order */
+            seats: {
+                place: number;
+                total: number;
+                /** @description This seat ended the game with a Shanghai */
+                shanghai: boolean;
+            }[];
+        };
         CricketDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -5396,7 +5422,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["Catch40Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["Catch40Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"] | components["schemas"]["ShanghaiDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         AdminGameDetail: {
