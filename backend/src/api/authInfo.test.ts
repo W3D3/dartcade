@@ -8,6 +8,7 @@ describe('GET /api/auth-info', () => {
     verification: boolean
     contactEmail: string | null
     feedback: boolean
+    discord: boolean
     discordInviteUrl?: string | null
   }) => {
     const app = createFastify()
@@ -17,16 +18,16 @@ describe('GET /api/auth-info', () => {
   }
 
   it('answers mail off, verification off when the deployment sends no mail', async () => {
-    expect(await get({ mail: false, verification: false, contactEmail: null, feedback: false })).toEqual({
+    expect(await get({ mail: false, verification: false, contactEmail: null, feedback: false, discord: false })).toEqual({
       status: 200,
-      body: { mail: false, verification: false, contactEmail: null, feedback: false, discordInviteUrl: null },
+      body: { mail: false, verification: false, contactEmail: null, feedback: false, discord: false, discordInviteUrl: null },
     })
   })
 
-  it('answers mail on, verification required when the deployment requires it', async () => {
-    expect(await get({ mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true })).toEqual({
+  it('answers mail on, verification required and Discord on when the deployment has them', async () => {
+    expect(await get({ mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true, discord: true })).toEqual({
       status: 200,
-      body: { mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true, discordInviteUrl: null },
+      body: { mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true, discord: true, discordInviteUrl: null },
     })
   })
 
@@ -36,6 +37,7 @@ describe('GET /api/auth-info', () => {
       verification: false,
       contactEmail: null,
       feedback: false,
+      discord: false,
       discordInviteUrl: 'https://discord.gg/x',
     })
     expect(res.body.discordInviteUrl).toBe('https://discord.gg/x')

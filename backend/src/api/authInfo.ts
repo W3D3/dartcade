@@ -20,6 +20,7 @@ export function authInfoApiPlugin(
     verification: boolean
     contactEmail: string | null
     feedback: boolean
+    discord: boolean
     discordInviteUrl: string | null
   },
   done: (err?: Error) => void,
@@ -29,6 +30,7 @@ export function authInfoApiPlugin(
     verification: opts.verification,
     contactEmail: opts.contactEmail,
     feedback: opts.feedback,
+    discord: opts.discord,
     discordInviteUrl: opts.discordInviteUrl,
   }))
   done()

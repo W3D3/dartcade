@@ -5,6 +5,7 @@ import { resolveMailConfig } from '../mail/config.js'
 import { createMailer } from '../mail/transport.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { authOptions } from './options.js'
+import { resolveDiscordConfig } from './discord.js'
 
 const trustedOrigins =
   process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
@@ -14,6 +15,8 @@ const trustedOrigins =
 export const mailConfig = resolveMailConfig(process.env)
 export const mailer = createMailer(mailConfig, warn)
 
+export const discordConfig = resolveDiscordConfig(process.env)
+
 export const auth = betterAuth(
   authOptions({
     db,
@@ -22,5 +25,6 @@ export const auth = betterAuth(
     trustedOrigins,
     baseURL: process.env.BETTER_AUTH_URL,
     passkeysEnabledFor: async userId => flagEnabled('auth.passkeys.enabled', await loadFlagUser(db, userId)),
+    discord: discordConfig,
   }),
 )

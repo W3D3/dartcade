@@ -744,6 +744,15 @@ export interface AuthSessionTable {
   token: string
   userId: string
   expiresAt: Date
+  createdAt: ColumnType<Date, Date | undefined, Date>
+}
+
+/** better-auth's sign-in methods per user (002_auth.sql): 'credential' (with a password hash) or a social provider like 'discord'; only what our own queries touch */
+export interface AuthAccountTable {
+  id: string
+  userId: string
+  providerId: string
+  password: string | null
 }
 
 /** better-auth's passkey plugin (migration 059, auth/passkeys.ts); only what our own queries and tests touch. */
@@ -777,6 +786,7 @@ export interface Database {
   user: UserTable
   session: AuthSessionTable
   passkey: PasskeyTable
+  account: AuthAccountTable
   boards: BoardsTable
   bridge_install_tokens: BridgeInstallTokensTable
   pairing_codes: PairingCodesTable

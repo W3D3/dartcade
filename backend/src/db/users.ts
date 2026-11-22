@@ -24,6 +24,8 @@ export type Account = {
   avatar: Avatar
   /** ISO 3166-1 alpha-2 code, or null for none. */
   country: string | null
+  /** How the account can sign in (better-auth's account rows): with its password, through Discord, or both. */
+  signInMethods: ('password' | 'discord')[]
 }
 
 /** The Avatar union shape from the avatar_* columns (migrations 031, 038); null columns (a left join with no account) are kind none. */
@@ -62,6 +64,27 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       'avatar_background',
       'avatar_version',
       'country',
+      eb =>
+        eb
+          .exists(
+            eb
+              .selectFrom('account')
+              .select('account.id')
+              .whereRef('account.userId', '=', 'user.id')
+              .where('account.providerId', '=', 'credential')
+              .where('account.password', 'is not', null),
+          )
+          .as('has_password'),
+      eb =>
+        eb
+          .exists(
+            eb
+              .selectFrom('account')
+              .select('account.id')
+              .whereRef('account.userId', '=', 'user.id')
+              .where('account.providerId', '=', 'discord'),
+          )
+          .as('has_discord'),
     ])
     .where('id', '=', userId)
     .executeTakeFirst()
@@ -79,6 +102,7 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       createdAt: row.createdAt.toISOString(),
       avatar: toAvatar(row),
       country: row.country,
+      signInMethods: [...(row.has_password ? (['password'] as const) : []), ...(row.has_discord ? (['discord'] as const) : [])],
     }
   )
 }
