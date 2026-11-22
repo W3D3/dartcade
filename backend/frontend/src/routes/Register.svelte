@@ -13,6 +13,7 @@
   import PasswordStrength from '$lib/components/PasswordStrength.svelte'
   import AuthFooter from '$lib/components/AuthFooter.svelte'
   import StepBars from '$lib/components/StepBars.svelte'
+  import DiscordSignIn from '$lib/components/DiscordSignIn.svelte'
   import { get } from 'svelte/store'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
@@ -137,6 +138,8 @@
         {loading ? '…' : 'Create account'}
         {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
       </Button>
+
+      <DiscordSignIn />
 
       <p class="text-body text-text-muted text-center">
         Already have an account?

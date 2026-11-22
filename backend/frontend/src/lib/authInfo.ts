@@ -3,11 +3,11 @@ import { createApi } from './api/client.js'
 
 const quietApi = createApi({ onUnauthorized: () => undefined })
 
-/** Whether this deployment sends mail and requires email verification, its contact email and whether it takes bug reports, its Discord invite (GET /api/auth-info), loaded once for the whole app. */
+/** Whether this deployment sends mail and requires email verification, its contact email, whether it takes bug reports and has Sign in with Discord, its Discord invite (GET /api/auth-info), loaded once for the whole app. */
 export const authInfo = loadOnce(
   async () => {
     const { data } = await quietApi.GET('/api/auth-info')
-    return data ?? { mail: false, verification: false, contactEmail: null, feedback: false, discordInviteUrl: null }
+    return data ?? { mail: false, verification: false, contactEmail: null, feedback: false, discord: false, discordInviteUrl: null }
   },
-  { mail: false, verification: false, contactEmail: null, feedback: false, discordInviteUrl: null },
+  { mail: false, verification: false, contactEmail: null, feedback: false, discord: false, discordInviteUrl: null },
 )
