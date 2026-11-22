@@ -8,7 +8,7 @@ import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import type { DeviceSession } from '../db/tournamentDevices.js'
 import { withAuthedSocket, socketQuery } from './authedSocket.js'
 import { isOpen, onceGone, rawText } from '../util/socket.js'
-import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
+import { canWatchSession, noLobbies, type IsLobbyMember, type SpectateReason } from '../session/access.js'
 import type { Session } from '../session/types.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
 import { WsCloseCode, type CameraMessage, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
@@ -35,7 +35,9 @@ type Opts = FastifyPluginOptions & {
   /** Camera stills of the boards (tests pass their own). */
   stills?: CameraStills
   /** Whether the user may watch this game without playing in it (Watch: flag, friendship, Invisible); default: nobody. */
-  canSpectate?: (userId: string, session: Session) => Promise<boolean>
+  canSpectate?: (userId: string, session: Session) => Promise<SpectateReason | null>
+  /** An admin who is no friend or tournament viewer was let in as a watcher (the audit row). */
+  onAdminWatch?: (userId: string, session: Session) => Promise<void>
   /** Whether a venue device (tournament mode) may open this game: it is a match of the device's own tournament. Default: never. */
   deviceMayOpen?: (device: DeviceSession, session: Session) => Promise<boolean>
 }
@@ -45,7 +47,8 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     engine,
     isLobbyMember = noLobbies,
     stills = cameraStills,
-    canSpectate = () => Promise.resolve(false),
+    canSpectate = () => Promise.resolve(null),
+    onAdminWatch,
     deviceMayOpen = () => Promise.resolve(false),
   } = opts
 
@@ -140,7 +143,8 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   })
   /** A friend's read-only socket: the game's snapshots, no actions, no camera stills (they are the owner's). */
   async function spectate(socket: WebSocket, userId: string, session: Session) {
-    if (!(await canSpectate(userId, session))) {
+    const reason = await canSpectate(userId, session)
+    if (reason === null) {
       socket.close(WsCloseCode.Forbidden, 'forbidden')
       return
     }
@@ -154,6 +158,13 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       spectators.remove(session.id, socket)
       socket.close(WsCloseCode.NotFound, 'session not found')
       return
+    }
+    if (reason === 'admin') {
+      try {
+        await onAdminWatch?.(userId, session)
+      } catch (err: unknown) {
+        app.log.error({ sessionId: session.id, err }, 'admin watch not audited')
+      }
     }
     // The watcher's own first snapshot and the players' new count, in one push
     pushSnapshot(session.id, engine)

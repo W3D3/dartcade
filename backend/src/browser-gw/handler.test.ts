@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import Fastify, { type FastifyInstance } from 'fastify'
 import type { AddressInfo } from 'net'
 import fastifyWebsocket from '@fastify/websocket'
@@ -732,6 +732,8 @@ describe('WS spectators (Watch)', () => {
     testApp = null
   })
 
+  const onAdminWatch = vi.fn().mockResolvedValue(undefined)
+  beforeEach(() => onAdminWatch.mockClear())
   async function setup(canSpectate: (userId: string) => boolean) {
     const { getAuthUser } = await import('../auth/session.js')
     // Who connects is told by the url (?as=…), so sockets opened one after the other can be different users
@@ -763,7 +765,11 @@ describe('WS spectators (Watch)', () => {
     testApp = Fastify()
     await testApp.register(fastifyWebsocket)
     const { browserGwPlugin } = await import('./handler.js')
-    await testApp.register(browserGwPlugin, { engine, canSpectate: u => Promise.resolve(canSpectate(u)) })
+    await testApp.register(browserGwPlugin, {
+      engine,
+      canSpectate: u => Promise.resolve(canSpectate(u) ? (u.startsWith('admin') ? 'admin' : 'friend') : null),
+      onAdminWatch,
+    })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
     const port = (testApp.server.address() as AddressInfo).port
     const connect = (as: string, watch = true) => {
@@ -814,6 +820,26 @@ describe('WS spectators (Watch)', () => {
     // Without ?watch=1 the old rule applies: a friend who is no player or lobby member is out
     const plain = connect('max', false)
     expect(await plain.closed).toBe(WsCloseCode.Forbidden)
+  })
+
+  it('audits an admin only once the watcher is in, not when the socket is turned away', async () => {
+    const { connect } = await setup(() => false)
+    const stranger = connect('pia')
+    expect(await stranger.closed).toBe(WsCloseCode.Forbidden)
+    expect(onAdminWatch).not.toHaveBeenCalled()
+  })
+
+  it('audits an admin let in as a watcher, once', async () => {
+    const { connect } = await setup(() => true)
+    const admin = connect('admin1')
+    await settle()
+    expect(onAdminWatch).toHaveBeenCalledTimes(1)
+    expect(onAdminWatch).toHaveBeenCalledWith('admin1', expect.objectContaining({ id: expect.any(String) }))
+    const friend = connect('max')
+    await settle()
+    expect(onAdminWatch).toHaveBeenCalledTimes(1)
+    admin.ws.close()
+    friend.ws.close()
   })
 
   it('caps the sockets of one watcher on a game', async () => {

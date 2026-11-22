@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession } from './queries.js'
-import { deleteGame, getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGameFilter } from './adminGames.js'
+import { deleteGame, getInvalidation, invalidateGame, listAllGames, recordWatch, restoreGame, type AdminGameFilter } from './adminGames.js'
 import { insertActivity } from './activity.js'
 import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
@@ -417,6 +417,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
       expect(await deleteGame(db, 'd5', 'u1')).toBe('active')
       expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'd5').execute()).toHaveLength(1)
       expect(await deleteGame(db, 'nope', 'u1')).toBe('not-found')
+    })
+  })
+
+  describe('recordWatch', () => {
+    const rows = () => db.selectFrom('admin_audit').selectAll().where('action', '=', 'game.watch').where('target', '=', 'w1').execute()
+
+    it('audits an admin starting to watch once per hour, per admin and game', async () => {
+      await recordWatch(db, 'u1', 'w1')
+      await recordWatch(db, 'u1', 'w1')
+      expect(await rows()).toHaveLength(1)
+      await recordWatch(db, 'u2', 'w1')
+      expect(await rows()).toHaveLength(2)
+      await sql`UPDATE admin_audit SET created_at = now() - interval '61 minutes' WHERE action = 'game.watch' AND admin_user_id = 'u1'`.execute(
+        db,
+      )
+      await recordWatch(db, 'u1', 'w1')
+      expect((await rows()).filter(r => r.admin_user_id === 'u1')).toHaveLength(2)
     })
   })
 })
