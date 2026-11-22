@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { shanghaiGame, shanghaiModule, dartResult, MAX_EXTRA_ROUNDS, type ShanghaiConfig, type ShanghaiState } from './shanghai.js'
+import { shanghaiGame, shanghaiModule, MAX_EXTRA_ROUNDS, type ShanghaiConfig, type ShanghaiState } from './shanghai.js'
 import type { BoardEvent } from '../session/types.js'
-import { roundTargets } from '../shared/shanghai.js'
+import { dartResult, roundTargets } from '../shared/shanghai.js'
 
 const cfg: ShanghaiConfig = { start: 1, end: 7, bullRound: false, shanghaiWins: true, tieBreak: 'bull', bullOff: 'off' }
 const dart = (number: number, multiplier: number, index = 0): BoardEvent =>

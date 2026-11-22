@@ -18,7 +18,7 @@ const VIEW = {
 type View = keyof typeof VIEW
 type Scene = { mode: string; players: number; view: View; keypad?: boolean; config?: object; name?: string; play?: string[] }
 
-const MODES = ['x01', 'atc', 'p121', 'catch40', 'hilo', 'minigolf']
+const MODES = ['x01', 'atc', 'p121', 'catch40', 'hilo', 'shanghai', 'minigolf']
 const SCENES: Scene[] = [
   ...MODES.flatMap((mode): Scene[] => [
     { mode, players: 2, view: 'desktop' },
@@ -40,6 +40,14 @@ const SCENES: Scene[] = [
     view: 'desktop',
     name: 'x01-1p-desktop-played',
     play: ['Treble 20', 'Single 19', 'Double 16', 'next', 'Single 20', 'Single 5', 'Single 1', 'next', 'Single 1', 'Single 1', 'Single 1'],
+  },
+  // Round 2 under way: a single and a double of the 2 thrown, the treble still to come
+  {
+    mode: 'shanghai',
+    players: 2,
+    view: 'desktop',
+    name: 'shanghai-2p-desktop-played',
+    play: ['Single 1', 'Double 1', 'next', 'Treble 1', 'next', 'Single 2', 'Double 2'],
   },
   { mode: 'x01', players: 4, view: 'desktop', config: { format: 'teams', teams: [0, 1, 0, 1] }, name: 'x01-teams-desktop' },
 ]

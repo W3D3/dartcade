@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { sharedBoard, winMeta, winView } from '../winScreen.js'
-import type { CricketGame, GameDetail, HiloGame, Snapshot, StatRow } from '../api'
+import type { CricketGame, GameDetail, HiloGame, ShanghaiGame, Snapshot, StatRow } from '../api'
 
 const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?: boolean } = {}) => ({
   controllerUserId: 'u1',
@@ -731,5 +731,81 @@ describe('cricketWin', () => {
   it('names the rules, and both players in a duel', () => {
     const snap = cricket(['Christoph', 'Guest 1'], { winner: 0, legs: [3, 1] })
     expect(winMeta(snap)).toBe('Standard · First to 3 · Christoph vs Guest 1')
+  })
+})
+
+describe('shanghaiWin', () => {
+  const visit = (round: number, target: number, score: number, shanghai = false) => ({ round, target, score, shanghai })
+  const shanghaiSnap = (winner: number | null, shanghai: number | null, scores: [number, number], visits: ReturnType<typeof visit>[][]) =>
+    ({
+      type: 'snapshot',
+      sessionId: 's1',
+      gameId: 'shanghai',
+      boardId: 'b1',
+      lobbyId: null,
+      lobbyName: null,
+      players: [{ name: 'Ann' }, { name: 'Ben' }],
+      game: {
+        cfg: { start: 1, end: 7, bullRound: false, shanghaiWins: true, tieBreak: 'bull' },
+        phase: 'finished',
+        round: 3,
+        rounds: 7,
+        target: 3,
+        currentPlayer: 0,
+        nextPlayer: null,
+        winner,
+        shanghai,
+        hits: { single: false, double: false, treble: false },
+        visitScore: 0,
+        contenders: null,
+        seats: scores.map((score, i) => ({ score, place: null, visits: visits[i] })),
+        bullOff: null,
+        currentVisitDarts: [],
+        totalDarts: [6, 6],
+        totalVisits: [2, 2],
+      },
+      bmStatus: null,
+      status: 'finished',
+      results: [
+        { placement: winner === 1 ? 2 : 1, forfeited: false },
+        { placement: winner === 1 ? 1 : 2, forfeited: false },
+      ],
+      finishPending: false,
+      canUndoVisit: false,
+      ownerUserId: 'u1',
+      hasHost: true,
+      seats: [seat({ userId: 'u1' }), seat({ userId: 'u2' })],
+      mySeats: [0],
+    }) as unknown as Snapshot & { game: ShanghaiGame }
+
+  it('a Shanghai win is announced, with the visit that did it', () => {
+    const v = winView(
+      shanghaiSnap(
+        1,
+        1,
+        [4, 18],
+        [
+          [visit(1, 1, 1), visit(2, 2, 3)],
+          [visit(1, 1, 0), visit(2, 2, 18, true)],
+        ],
+      ),
+      null,
+    )!
+    expect(v.mode).toBe('shanghai')
+    expect(v.kicker).toBe('Shanghai!')
+    expect(v.competitors.map(c => [c.name, c.score, c.placement])).toEqual([
+      ['Ben', 18, 1],
+      ['Ann', 4, 2],
+    ])
+    expect(v.competitors[0].sub).toBe('18 points · Shanghai')
+    expect(v.highlights[0].text).toBe('Single, double and treble of 2 in round 2.')
+    expect(v.stats.map(r => r.label)).toEqual(['Points', 'Best round', 'Shanghais'])
+  })
+
+  it('a win on points is plain', () => {
+    const v = winView(shanghaiSnap(0, null, [9, 5], [[visit(1, 1, 9)], [visit(1, 1, 5)]]), null)!
+    expect(v.kicker).toBe('Game over')
+    expect(v.highlights).toEqual([])
+    expect(v.note).toBe('Most points after the last round')
   })
 })

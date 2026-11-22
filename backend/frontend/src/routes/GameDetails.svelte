@@ -32,6 +32,7 @@
   import X01Section from '$lib/components/details/X01Section.svelte'
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import CricketSection from '$lib/components/details/CricketSection.svelte'
+  import ShanghaiSection from '$lib/components/details/ShanghaiSection.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
   import Catch40Summary from '$lib/components/catch40/Catch40Summary.svelte'
@@ -242,6 +243,7 @@
               {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
               {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
               {#if d.game.mode === 'cricket'}<CricketSection detail={d} />{/if}
+              {#if d.game.mode === 'shanghai'}<ShanghaiSection detail={d} />{/if}
               {#if d.game.mode === 'atc'}
                 <AtcTargets detail={d} />
                 {#if layout === 'party'}

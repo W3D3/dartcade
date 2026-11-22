@@ -35,7 +35,7 @@ const base = {
   ],
 }
 
-const none = { x01: null, atc: null, minigolf: null, p121: null, catch40: null, hilo: null, cricket: null, mission: null }
+const none = { x01: null, atc: null, minigolf: null, p121: null, catch40: null, hilo: null, cricket: null, mission: null, shanghai: null }
 
 describe('gameState', () => {
   it('narrows an X01 snapshot', () => {
@@ -62,6 +62,10 @@ describe('gameState', () => {
   it('narrows a Higher Lower snapshot', () => {
     const game = { phase: 'game' } as any
     expect(gameState({ ...base, gameId: 'hilo', game })).toEqual({ ...none, hilo: game })
+  })
+  it('narrows a Shanghai snapshot', () => {
+    const game = { phase: 'game' } as any
+    expect(gameState({ ...base, gameId: 'shanghai', game })).toEqual({ ...none, shanghai: game })
   })
   it('narrows a Cricket snapshot', () => {
     const game = { phase: 'game' } as any

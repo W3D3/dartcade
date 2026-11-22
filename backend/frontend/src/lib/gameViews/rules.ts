@@ -4,7 +4,7 @@
 import { z } from 'zod'
 import { isGameId, type GameId } from '$shared/gameNames'
 import { COURSES } from '$shared/minigolf/courses/index'
-import { atcRules, catch40Rules, cricketRules, hiloRules, minigolfRules, p121Rules, x01Rules } from './meta.js'
+import { atcRules, catch40Rules, cricketRules, hiloRules, minigolfRules, p121Rules, shanghaiRules, x01Rules } from './meta.js'
 
 const int = z.number().int()
 const ModeSchema = z.enum(['straight', 'double', 'master'])
@@ -23,6 +23,7 @@ const AtcConfigSchema = z.object({
 })
 const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: int, outMode: ModeSchema.catch('double') })
 const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
+const ShanghaiConfigSchema = z.object({ start: int, end: int, bullRound: z.boolean().catch(false), shanghaiWins: z.boolean().catch(true) })
 const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
 const MissionConfigSchema = z.object({
   mission: z.object({ name: z.string(), order: z.enum(['any', 'in_order']), steps: z.array(z.unknown()) }),
@@ -92,6 +93,10 @@ const RULES = {
     if (!c.success) return ''
     const { name, steps, order } = c.data.mission
     return `${name} · ${steps.length} ${steps.length === 1 ? 'step' : 'steps'} · ${order === 'any' ? 'any order' : 'in order'}`
+  },
+  shanghai: config => {
+    const c = ShanghaiConfigSchema.safeParse(config)
+    return c.success ? shanghaiRules(c.data) : ''
   },
   minigolf: (config, players, { course }) => {
     const c = MinigolfConfigSchema.safeParse(config)

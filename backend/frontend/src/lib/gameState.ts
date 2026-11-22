@@ -22,9 +22,10 @@ export function gameState(s: Snapshot | null): GameState {
     hilo: s?.gameId === 'hilo' ? s.game : null,
     cricket: s?.gameId === 'cricket' ? s.game : null,
     mission: s?.gameId === 'mission' ? s.game : null,
+    shanghai: s?.gameId === 'shanghai' ? s.game : null,
   }
 }
 
-/** The bull off that decides who throws first, while a game (X01, 121, Catch 40, Higher Lower, Cricket) is still in it; null otherwise. */
-export const bullOffOf = ({ x01, p121, catch40, hilo, cricket }: GameState) =>
-  [x01, p121, catch40, hilo, cricket].find(g => g?.phase === 'bulloff')?.bullOff ?? null
+/** The bull off that decides who throws first, while a game (X01, 121, Catch 40, Higher Lower, Cricket, Shanghai) is still in it; null otherwise. */
+export const bullOffOf = ({ x01, p121, catch40, hilo, cricket, shanghai }: GameState) =>
+  [x01, p121, catch40, hilo, cricket, shanghai].find(g => g?.phase === 'bulloff')?.bullOff ?? null

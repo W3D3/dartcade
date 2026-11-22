@@ -12,8 +12,8 @@ type VisitGame = Pick<X01Game, 'currentPlayer' | 'phase' | 'bustThisVisit' | 'vi
 /** A score counting down to 0 (X01, 121 Checkout): the visit is what it took off, 0 is a checkout. */
 type CountdownGame = VisitGame &
   Pick<X01Game, 'scores' | 'visitStartScores'> & { config: Pick<X01Game['config'], 'outMode'> & Partial<X01Game['config']> }
-/** A visit total counting up (Higher Lower): no checkout to call. */
-type TallyGame = VisitGame & { visitTotal: number }
+/** A visit total counting up (Higher Lower, Shanghai): no checkout to call. */
+type TallyGame = VisitGame & { visitTotal: number; shanghai?: boolean }
 /** What the caller reads of a game: X01's own fields; other score-based modes are read into them by callGame. */
 export type CallGame = CountdownGame | TallyGame
 
@@ -37,6 +37,14 @@ export function callGame(s: Snapshot): CallGame | null {
     case 'hilo':
       // A missed dart ends the visit and costs a life: called like a bust
       return { ...s.game, bustThisVisit: s.game.visitLocked }
+    case 'shanghai':
+      return {
+        ...s.game,
+        visitTotal: s.game.visitScore,
+        bustThisVisit: false,
+        visitLocked: s.game.shanghai !== null,
+        shanghai: s.game.shanghai !== null,
+      }
     case 'atc':
     case 'minigolf':
     case 'cricket':
@@ -82,6 +90,9 @@ function callOf(o: VisitOutcome): Call {
       // Prefer a dedicated "busted" clip; a voice without one (e.g. most Autodarts packs) falls back
       // to its own "No score" clip, same as the real Autodarts caller does on a bust.
       return [['busted', '0']]
+    case 'shanghai':
+      // A pack with a Shanghai clip says it; every other says "Game shot"
+      return [['shanghai', 'gameshot']]
     case 'checkout':
       // A game without legs (121 Checkout): the target made, nothing more to say
       if (o.leg === null) return [['gameshot']]

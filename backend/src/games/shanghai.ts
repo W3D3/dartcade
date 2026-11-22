@@ -6,7 +6,6 @@ import type {
   BoardEvent,
   CommittedVisit,
   ConfigFieldMeta,
-  Dart,
   GameModule,
   MatchStats,
   Player,
@@ -17,7 +16,7 @@ import type {
 import type { ShanghaiView } from '../session/views.js'
 import { withBullOff } from '../session/withBullOff.js'
 import { BULL_OFF_OPTION } from './commonOptions.js'
-import { BULL, roundTargets, targetOf } from '../shared/shanghai.js'
+import { isShanghai, dartResult, roundTargets, targetOf, type Hits } from '../shared/shanghai.js'
 import { validateOptions } from './configMeta.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
@@ -35,8 +34,6 @@ export type ShanghaiConfig = {
   bullOff: 'off' | 'wdc' | 'pdc'
 }
 
-/** Which of single, double and treble the open visit has landed on the round's number. */
-export type Hits = { single: boolean; double: boolean; treble: boolean }
 const NO_HITS: Hits = { single: false, double: false, treble: false }
 
 export type ShanghaiVisit = { seat: number; round: number; target: number; score: number; hits: Hits }
@@ -59,20 +56,6 @@ export type ShanghaiState = {
   /** The seat that ended the game with a Shanghai. */
   shanghai: number | null
 }
-
-/** What a dart scores on the round's target, and which of single, double or treble it was (a bull has no treble). */
-export function dartResult(dart: Dart, target: number): { score: number; kind: keyof Hits | null } {
-  const { number, multiplier } = dart.segment
-  if (multiplier === 0) return { score: 0, kind: null }
-  if (target === BULL) {
-    if (number === 50) return { score: 50, kind: 'double' }
-    return number === BULL ? { score: 25, kind: 'single' } : { score: 0, kind: null }
-  }
-  if (number !== target) return { score: 0, kind: null }
-  return { score: target * multiplier, kind: multiplier === 1 ? 'single' : multiplier === 2 ? 'double' : 'treble' }
-}
-
-export const isShanghai = (h: Hits): boolean => h.single && h.double && h.treble
 
 const regularRounds = (cfg: ShanghaiConfig) => roundTargets(cfg).length
 

@@ -2,6 +2,7 @@
 // landed (and how), a visit went bust, or the turn moved on. The match screen's sounds (the tones
 // and the thrower's sound pack) play from it.
 import type { Dart, Snapshot } from '$lib/api/game-ws'
+import { hitsTarget } from './shanghai/view.js'
 
 export type DartSound = 'hit' | 'double' | 'treble' | 'miss' | 'bust'
 /** `number` is the segment of a treble, which decides whether it gets the treble sound. */
@@ -31,6 +32,9 @@ function eventGame(s: Snapshot): EventGame {
       const r = s.game.lastResult
       return { ...s.game, bust: r && (r.outcome === 'between' || r.outcome === 'miss') ? r.seat : null }
     }
+    // A dart scores only on the round's number
+    case 'shanghai':
+      return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(d => hitsTarget(d, s.game.target)) }
     case 'minigolf':
       // Every dart is a putt
       return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(() => true) }
