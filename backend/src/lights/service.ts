@@ -75,6 +75,7 @@ function seatCountOf(snap: Snapshot): number {
     case 'atc':
       return snap.game.targets.length
     case 'p121':
+    case 'catch40':
     case 'hilo':
       return snap.game.seats.length
     case 'minigolf':

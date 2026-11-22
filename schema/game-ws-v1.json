@@ -484,6 +484,75 @@
       ],
       "unevaluatedProperties": false
     },
+    "Catch40Try": {
+      "title": "Catch40Try",
+      "description": "A finished Catch 40 target.",
+      "type": "object",
+      "required": ["target", "darts", "points", "finish"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "type": "integer", "minimum": 61, "maximum": 100 },
+        "darts": { "type": "integer", "minimum": 0 },
+        "points": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "finish": { "type": ["string", "null"], "description": "The finishing dart's label (e.g. D14); null when the target was missed." }
+      }
+    },
+    "Catch40Result": {
+      "title": "Catch40Result",
+      "description": "The target that just ended; drives the result banner.",
+      "type": "object",
+      "required": ["seat", "target", "darts", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "seat": { "type": "integer", "minimum": 0 },
+        "target": { "type": "integer", "minimum": 61, "maximum": 100 },
+        "darts": { "type": "integer", "minimum": 0 },
+        "points": { "type": "integer", "minimum": 0, "maximum": 3 }
+      }
+    },
+    "Catch40Game": {
+      "title": "Catch40Game",
+      "description": "Catch 40 view plus the engine's per-session fields and the bull off.",
+      "allOf": [
+        { "$ref": "#/$defs/EngineGameFields" },
+        {
+          "type": "object",
+          "required": ["phase", "currentPlayer", "nextPlayer", "winner", "visitLocked", "bust", "visitStartLeft", "seats", "lastResult", "bullOff"],
+          "properties": {
+            "phase": { "type": "string", "enum": ["bulloff", "game", "finished"] },
+            "currentPlayer": { "type": "integer", "minimum": 0 },
+            "nextPlayer": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+            },
+            "winner": { "type": ["integer", "null"], "description": "The seat with the highest total (the lowest seat on a tie); the places in the snapshot's results share a tie." },
+            "visitLocked": { "type": "boolean" },
+            "bust": { "type": "boolean" },
+            "visitStartLeft": { "type": "integer", "minimum": 0 },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["target", "left", "darts", "tries", "total", "done"],
+                "additionalProperties": false,
+                "properties": {
+                  "target": { "type": "integer", "minimum": 61, "maximum": 101, "description": "The open target; 101 once all 40 are done." },
+                  "left": { "type": "integer", "minimum": 0 },
+                  "darts": { "type": "integer", "minimum": 0, "description": "Darts used by the open target's committed visits." },
+                  "tries": { "type": "array", "items": { "$ref": "#/$defs/Catch40Try" } },
+                  "total": { "type": "integer", "minimum": 0, "maximum": 120 },
+                  "done": { "type": "boolean", "description": "All 40 targets are played." }
+                }
+              }
+            },
+            "lastResult": { "anyOf": [{ "$ref": "#/$defs/Catch40Result" }, { "type": "null" }] },
+            "bullOff": { "anyOf": [{ "$ref": "#/$defs/BullOffView" }, { "type": "null" }] }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "P121Try": {
       "title": "P121Try",
       "description": "A finished 121 Checkout try.",
@@ -1135,6 +1204,21 @@
             "game": {
               "$ref": "#/$defs/P121Game"
             }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Catch40Snapshot": {
+      "title": "Catch40Snapshot",
+      "allOf": [
+        { "$ref": "#/$defs/SnapshotBase" },
+        {
+          "type": "object",
+          "required": ["gameId", "game"],
+          "properties": {
+            "gameId": { "const": "catch40" },
+            "game": { "$ref": "#/$defs/Catch40Game" }
           }
         }
       ],
@@ -2273,6 +2357,9 @@
         },
         {
           "$ref": "#/$defs/P121Snapshot"
+        },
+        {
+          "$ref": "#/$defs/Catch40Snapshot"
         },
         {
           "$ref": "#/$defs/MinigolfSnapshot"

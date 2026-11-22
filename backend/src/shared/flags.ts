@@ -44,6 +44,11 @@ export const FLAG_META = {
     description: 'Shows 121, the checkout drill, on the Play page.',
     defaultRule: 'admins',
   },
+  'gamemode.catch40.enabled': {
+    kind: 'boolean',
+    description: 'Shows Catch 40, John Part\'s checkout routine (61 to 100), on the Play page.',
+    defaultRule: 'admins',
+  },
   'gamemode.hilo.enabled': {
     kind: 'boolean',
     description: 'Shows Higher Lower on the Play page.',

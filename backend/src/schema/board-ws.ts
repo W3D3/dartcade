@@ -32,7 +32,14 @@ export type BigScreenScreen =
  * Full session state, pushed after every change.
  */
 export type Snapshot =
-  X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot | MissionSnapshot
+  | X01Snapshot
+  | AtcSnapshot
+  | P121Snapshot
+  | Catch40Snapshot
+  | MinigolfSnapshot
+  | HiloSnapshot
+  | CricketSnapshot
+  | MissionSnapshot
 export type X01Snapshot = SnapshotBase & {
   gameId: 'x01'
   game: X01Game
@@ -216,6 +223,47 @@ export type P121Game = EngineGameFields & {
     done: boolean
   }[]
   lastResult: P121Result | null
+  bullOff: BullOffView | null
+}
+export type Catch40Snapshot = SnapshotBase & {
+  gameId: 'catch40'
+  game: Catch40Game
+}
+/**
+ * Catch 40 view plus the engine's per-session fields and the bull off.
+ */
+export type Catch40Game = EngineGameFields & {
+  phase: 'bulloff' | 'game' | 'finished'
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  /**
+   * The seat with the highest total (the lowest seat on a tie); the places in the snapshot's results share a tie.
+   */
+  winner: number | null
+  visitLocked: boolean
+  bust: boolean
+  visitStartLeft: number
+  seats: {
+    /**
+     * The open target; 101 once all 40 are done.
+     */
+    target: number
+    left: number
+    /**
+     * Darts used by the open target's committed visits.
+     */
+    darts: number
+    tries: Catch40Try[]
+    total: number
+    /**
+     * All 40 targets are played.
+     */
+    done: boolean
+  }[]
+  lastResult: Catch40Result | null
   bullOff: BullOffView | null
 }
 export type MinigolfSnapshot = SnapshotBase & {
@@ -856,6 +904,27 @@ export interface P121Result {
   made: boolean
   darts: number
   next: number
+}
+/**
+ * A finished Catch 40 target.
+ */
+export interface Catch40Try {
+  target: number
+  darts: number
+  points: number
+  /**
+   * The finishing dart's label (e.g. D14); null when the target was missed.
+   */
+  finish: string | null
+}
+/**
+ * The target that just ended; drives the result banner.
+ */
+export interface Catch40Result {
+  seat: number
+  target: number
+  darts: number
+  points: number
 }
 /**
  * A hole's geometry (see backend/src/shared/minigolf/types.ts).

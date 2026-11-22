@@ -46,6 +46,7 @@ export const GAMES: SampleGame[] = [
   { game: 'atc', players: ['admin', 'luke'] },
   { game: 'atc', config: { finishOn: 'bull', multiplierAdvances: true }, players: ['phil', 'michael', 'gerwyn'] },
   { game: 'p121', config: { tries: 5 }, players: ['luke', 'admin'] },
+  { game: 'catch40', players: ['phil', 'admin'] },
   { game: 'hilo', players: ['admin', 'phil', 'gerwyn'] },
   { game: 'minigolf', players: ['michael', 'admin'] },
   { game: 'cricket', players: ['luke', 'gerwyn'] },
@@ -91,6 +92,10 @@ function aim(session: Session, up: number, thrown: number): Point | UserAction {
     case 'p121': {
       const v = m.view(session.currentState, session.players)
       return v.visitLocked || thrown >= 3 ? TAKEOUT : pickTarget(v.seats[up].left, 3 - thrown, v.cfg.outMode)
+    }
+    case 'catch40': {
+      const v = m.view(session.currentState, session.players)
+      return v.visitLocked || thrown >= 3 ? TAKEOUT : pickTarget(v.seats[up].left, 3 - thrown, 'double')
     }
     // Over the high bar while it's low, else under the low one
     case 'hilo': {

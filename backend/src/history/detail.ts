@@ -3,6 +3,7 @@ import { noStats } from '../games/matchStats.js'
 import { newSession, replayPooled, StoredConfigSchema, type LoggedInput, type WarnFn } from '../session/replay.js'
 import type {
   AtcDetail,
+  Catch40Detail,
   CricketDetail,
   HiloDetail,
   MatchStats,
@@ -16,7 +17,7 @@ import { getSessionEvents } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 
-export type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | HiloDetail | CricketDetail | MissionDetail
+export type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | Catch40Detail | HiloDetail | CricketDetail | MissionDetail
 type Built = { detail: Detail; stats: MatchStats }
 
 // Bump when a mode's detail() or matchStats() output changes without its module version: every

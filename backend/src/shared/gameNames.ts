@@ -4,6 +4,7 @@ export const GAME_NAMES = {
   x01: { title: 'X01', short: 'X01' },
   atc: { title: 'Around the Clock', short: 'ATC' },
   p121: { title: '121', short: '121' },
+  catch40: { title: 'Catch 40', short: 'Catch 40' },
   hilo: { title: 'Higher Lower', short: 'Higher Lower' },
   minigolf: { title: 'Minigolf', short: 'Minigolf' },
   cricket: { title: 'Cricket', short: 'Cricket' },

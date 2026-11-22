@@ -4374,6 +4374,24 @@ export interface components {
                 } | null;
             }[];
         };
+        Catch40Detail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "catch40";
+            /** @description One per seat, in seat order */
+            seats: {
+                /** @description Every finished target, 61 upwards */
+                tries: {
+                    target: number;
+                    darts: number;
+                    points: number;
+                    finish: string | null;
+                }[];
+                total: number;
+            }[];
+        };
         HiloDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -5378,7 +5396,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["Catch40Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         AdminGameDetail: {
