@@ -199,38 +199,51 @@ describe('canSpectateSession', () => {
   const running = () => game([seat('Host', 'host', 'a'), seat('Lena', 'lena', 'b')])
 
   it('lets a friend of any seat watch', async () => {
-    expect(await canSpectateSession('max', running(), watchable)).toBe(true)
-    expect(await canSpectateSession('ina', running(), watchable)).toBe(true)
+    expect(await canSpectateSession('max', running(), watchable)).toBe('friend')
+    expect(await canSpectateSession('ina', running(), watchable)).toBe('friend')
   })
 
   it('refuses a stranger and a viewer whose friends are Invisible', async () => {
-    expect(await canSpectateSession('pia', running(), watchable)).toBe(false)
-    expect(await canSpectateSession('nobody', running(), watchable)).toBe(false)
+    expect(await canSpectateSession('pia', running(), watchable)).toBeNull()
+    expect(await canSpectateSession('nobody', running(), watchable)).toBeNull()
   })
 
   it('refuses a player of the game: they use the game socket', async () => {
-    expect(await canSpectateSession('lena', running(), watchable)).toBe(false)
-    expect(await canSpectateSession('host', running(), watchable)).toBe(false)
+    expect(await canSpectateSession('lena', running(), watchable)).toBeNull()
+    expect(await canSpectateSession('host', running(), watchable)).toBeNull()
   })
 
   it('refuses a game that has ended', async () => {
     const s = running()
     s.status = 'finished'
-    expect(await canSpectateSession('max', s, watchable)).toBe(false)
+    expect(await canSpectateSession('max', s, watchable)).toBeNull()
     s.status = 'aborted'
-    expect(await canSpectateSession('max', s, watchable)).toBe(false)
+    expect(await canSpectateSession('max', s, watchable)).toBeNull()
   })
 
   it('lets anyone who may see the tournament watch its game, friend or not', async () => {
     const s = running()
     s.tournamentMatchId = 'm1'
     const sees = (viewer: string, matchId: string) => Promise.resolve(viewer === 'pia' && matchId === 'm1')
-    expect(await canSpectateSession('pia', s, watchable, sees)).toBe(true)
-    expect(await canSpectateSession('nobody', s, watchable, sees)).toBe(false)
+    expect(await canSpectateSession('pia', s, watchable, sees)).toBe('tournament')
+    expect(await canSpectateSession('nobody', s, watchable, sees)).toBeNull()
     // Its own players still play, not watch
-    expect(await canSpectateSession('lena', s, watchable, () => Promise.resolve(true))).toBe(false)
+    expect(await canSpectateSession('lena', s, watchable, () => Promise.resolve(true))).toBeNull()
     // A game outside a tournament never asks
-    expect(await canSpectateSession('pia', running(), watchable, sees)).toBe(false)
+    expect(await canSpectateSession('pia', running(), watchable, sees)).toBeNull()
+  })
+
+  it('lets an admin watch any running game, private or a stranger’s, but not an ended one or their own', async () => {
+    const s = running()
+    s.lobbyId = 'private'
+    expect(await canSpectateSession('pia', s, watchable, undefined, true)).toBe('admin')
+    expect(await canSpectateSession('host', s, watchable, undefined, true)).toBeNull()
+    s.status = 'finished'
+    expect(await canSpectateSession('pia', s, watchable, undefined, true)).toBeNull()
+  })
+
+  it('gives a moderator or a normal user no such right', async () => {
+    expect(await canSpectateSession('pia', running(), watchable, undefined, false)).toBeNull()
   })
 
   it('asks about the controller of a guest seat too', async () => {
@@ -239,7 +252,7 @@ describe('canSpectateSession', () => {
       { ...seat('Guest', 'lena', 'a'), userId: null },
       { ...seat('Bot', 'host', null), userId: null },
     ])
-    expect(await canSpectateSession('max', remote, ask)).toBe(true)
+    expect(await canSpectateSession('max', remote, ask)).toBe('friend')
     expect(ask).toHaveBeenCalledWith('max', expect.arrayContaining(['lena', 'host']))
   })
 })

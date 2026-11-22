@@ -44,6 +44,7 @@ import { minigolfModerationApiPlugin } from './api/minigolfModeration.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
 import { applyBan } from './auth/ban.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
+import { recordWatch } from './db/adminGames.js'
 import { adminRankedApiPlugin } from './api/adminRanked.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
@@ -53,6 +54,7 @@ import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
 import { boardsWithWledDevices, rehostWledDevices } from './db/lights.js'
 import type { LightsService } from './lights/service.js'
+import { isAdmin } from './auth/admin.js'
 import { envFlagValues, envFlagsOn, flagEnabled, loadFlagUser, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
@@ -244,13 +246,16 @@ export async function buildApp({
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
     canSpectate: async (userId, session) => {
       const user = await loadFlagUser(db, userId)
+      const viewerIsAdmin = user !== null && isAdmin(user) && (await flagEnabled('watch.enabled', user))
       return canSpectateSession(
         userId,
         session,
         async (viewer, ids) => (await flagEnabled('watch.enabled', user)) && friends.watchable(viewer, ids),
         async (viewer, matchId) => (await flagEnabled('tournaments.enabled', user)) && seesTournamentOfMatch(db, matchId, viewer),
+        viewerIsAdmin,
       )
     },
+    onAdminWatch: (userId, session) => recordWatch(db, userId, session.id),
   })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
   const live = new TournamentLive(

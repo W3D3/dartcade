@@ -357,3 +357,21 @@ export async function recordVoid(db: Kysely<Database>, moderatorUserId: string, 
       .execute()
   })
 }
+
+const WATCH_AUDIT_WINDOW_MS = 60 * 60 * 1000
+
+/** Audits an admin starting to watch a game (`game.watch`), at most once per hour per admin and game. */
+export async function recordWatch(db: Kysely<Database>, adminUserId: string, sessionId: string, now: Date = new Date()): Promise<void> {
+  const since = new Date(now.getTime() - WATCH_AUDIT_WINDOW_MS)
+  const seen = await db
+    .selectFrom('admin_audit')
+    .select('id')
+    .where('admin_user_id', '=', adminUserId)
+    .where('action', '=', 'game.watch')
+    .where('target', '=', sessionId)
+    .where('created_at', '>', since)
+    .limit(1)
+    .executeTakeFirst()
+  if (seen) return
+  await db.insertInto('admin_audit').values({ admin_user_id: adminUserId, action: 'game.watch', target: sessionId, detail: '{}' }).execute()
+}
