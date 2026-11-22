@@ -5569,6 +5569,42 @@ components:
                     best: { type: integer, minimum: 0 }
                     darts: { type: integer, minimum: 0 }
                     doneAt: { type: integer, minimum: 0, nullable: true, description: The seat's mission time (ms) when the step was done }
+    ShanghaiDetail:
+      type: object
+      required: [mode, targets, visits, seats]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [shanghai] }
+        targets:
+          type: array
+          description: The numbers of the regular rounds, in order (25 is the bull round)
+          items: { type: integer, minimum: 1, maximum: 25 }
+        visits:
+          type: array
+          description: Every visit of the game, in order (sudden-death bull rounds included)
+          items:
+            type: object
+            required: [seat, round, target, score, single, double, treble]
+            additionalProperties: false
+            properties:
+              seat: { type: integer, minimum: 0 }
+              round: { type: integer, minimum: 1 }
+              target: { type: integer, minimum: 1, maximum: 25 }
+              score: { type: integer, minimum: 0 }
+              single: { type: boolean }
+              double: { type: boolean }
+              treble: { type: boolean }
+        seats:
+          type: array
+          description: One per seat, in seat order
+          items:
+            type: object
+            required: [place, total, shanghai]
+            additionalProperties: false
+            properties:
+              place: { type: integer, minimum: 1 }
+              total: { type: integer, minimum: 0 }
+              shanghai: { type: boolean, description: This seat ended the game with a Shanghai }
     CricketDetail:
       type: object
       required: [mode, targets, legs]
@@ -6875,6 +6911,7 @@ components:
             - $ref: '#/components/schemas/HiloDetail'
             - $ref: '#/components/schemas/CricketDetail'
             - $ref: '#/components/schemas/MissionDetail'
+            - $ref: '#/components/schemas/ShanghaiDetail'
           discriminator:
             propertyName: mode
             mapping:
@@ -6886,6 +6923,7 @@ components:
               hilo: '#/components/schemas/HiloDetail'
               cricket: '#/components/schemas/CricketDetail'
               mission: '#/components/schemas/MissionDetail'
+              shanghai: '#/components/schemas/ShanghaiDetail'
         stats: { $ref: '#/components/schemas/MatchStats' }
     AdminGameDetail:
       type: object

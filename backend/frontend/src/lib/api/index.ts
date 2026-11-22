@@ -73,6 +73,7 @@ export type {
   MinigolfGame,
   MinigolfHole,
   HiloGame,
+  ShanghaiGame,
   CricketGame,
 } from './game-ws'
 export { WsCloseCode } from './game-ws'

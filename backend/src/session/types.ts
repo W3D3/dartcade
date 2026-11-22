@@ -18,6 +18,7 @@ import type {
   MinigolfView,
   MissionView,
   P121ModuleView,
+  ShanghaiModuleView,
   X01ModuleView,
 } from './views.js'
 import type { Rng } from './rng.js'
@@ -114,6 +115,7 @@ export type MinigolfDetail = components['schemas']['MinigolfDetail']
 export type P121Detail = components['schemas']['P121Detail']
 export type Catch40Detail = components['schemas']['Catch40Detail']
 export type HiloDetail = components['schemas']['HiloDetail']
+export type ShanghaiDetail = components['schemas']['ShanghaiDetail']
 export type CricketDetail = components['schemas']['CricketDetail']
 export type MissionDetail = components['schemas']['MissionDetail']
 export type MatchStats = components['schemas']['MatchStats']
@@ -262,6 +264,7 @@ export type AnyGameModule =
   | GameModule<unknown, GameConfig, HiloModuleView, 'hilo', HiloDetail>
   | GameModule<unknown, GameConfig, CricketModuleView, 'cricket', CricketDetail>
   | GameModule<unknown, GameConfig, MissionView, 'mission', MissionDetail>
+  | GameModule<unknown, GameConfig, ShanghaiModuleView, 'shanghai', ShanghaiDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>

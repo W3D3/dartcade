@@ -40,6 +40,7 @@ export type Snapshot =
   | HiloSnapshot
   | CricketSnapshot
   | MissionSnapshot
+  | ShanghaiSnapshot
 export type X01Snapshot = SnapshotBase & {
   gameId: 'x01'
   game: X01Game
@@ -586,6 +587,63 @@ export type MissionStep =
   | MissionScoreStep
   | MissionAverageStep
   | MissionLegStep
+export type ShanghaiSnapshot = SnapshotBase & {
+  gameId: 'shanghai'
+  game: ShanghaiGame
+}
+/**
+ * Shanghai view plus the engine's per-session fields and the bull off.
+ */
+export type ShanghaiGame = EngineGameFields & {
+  cfg: {
+    start: number
+    end: number
+    bullRound: boolean
+    shanghaiWins: boolean
+    tieBreak: 'bull' | 'shared'
+  }
+  phase: 'bulloff' | 'game' | 'finished'
+  /**
+   * 1-based; past `rounds` it counts the sudden-death bull rounds.
+   */
+  round: number
+  /**
+   * The regular rounds, the bull round included.
+   */
+  rounds: number
+  /**
+   * The number this round aims at; 25 is the bull.
+   */
+  target: number
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  winner: number | null
+  /**
+   * The seat that ended the game with a Shanghai.
+   */
+  shanghai: number | null
+  hits: ShanghaiHits
+  /**
+   * The open visit's running score.
+   */
+  visitScore: number
+  /**
+   * The tied seats playing the sudden-death bull rounds; null before them.
+   */
+  contenders: number[] | null
+  seats: {
+    score: number
+    /**
+     * Null until the game is finished.
+     */
+    place: number | null
+    visits: ShanghaiVisit[]
+  }[]
+  bullOff: BullOffView | null
+}
 
 /**
  * Messages the backend pushes on the big-screen WebSocket (/ws/board?boardId=…). It only pushes; the owner's session cookie opens it, or a kiosk sends {type:'auth', token} as its first message. The server closes it with a WsCloseCode from game-ws-v1.json.
@@ -1197,6 +1255,23 @@ export interface MissionChip {
    */
   gain: number
   outcome: 'go' | 'done' | 'fail' | 'visit_over'
+}
+/**
+ * Which of single, double and treble of the round's number the open visit has landed.
+ */
+export interface ShanghaiHits {
+  single: boolean
+  double: boolean
+  treble: boolean
+}
+/**
+ * A committed Shanghai visit: its round, the number it aimed at and its score.
+ */
+export interface ShanghaiVisit {
+  round: number
+  target: number
+  score: number
+  shanghai: boolean
 }
 /**
  * This interface was referenced by `BoardWs`'s JSON-Schema

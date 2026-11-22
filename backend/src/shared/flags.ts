@@ -59,6 +59,11 @@ export const FLAG_META = {
     description: 'Shows Cricket on the Play page.',
     defaultRule: 'admins',
   },
+  'gamemode.shanghai.enabled': {
+    kind: 'boolean',
+    description: 'Shows Shanghai on the Play page.',
+    defaultRule: 'admins',
+  },
   'missions.enabled': {
     kind: 'boolean',
     description:

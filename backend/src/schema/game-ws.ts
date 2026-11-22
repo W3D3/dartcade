@@ -316,6 +316,70 @@ export type HiloSnapshot = SnapshotBase & {
   game: HiloGame
 }
 /**
+ * Shanghai view plus the engine's per-session fields and the bull off.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "ShanghaiGame".
+ */
+export type ShanghaiGame = EngineGameFields & {
+  cfg: {
+    start: number
+    end: number
+    bullRound: boolean
+    shanghaiWins: boolean
+    tieBreak: 'bull' | 'shared'
+  }
+  phase: 'bulloff' | 'game' | 'finished'
+  /**
+   * 1-based; past `rounds` it counts the sudden-death bull rounds.
+   */
+  round: number
+  /**
+   * The regular rounds, the bull round included.
+   */
+  rounds: number
+  /**
+   * The number this round aims at; 25 is the bull.
+   */
+  target: number
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  winner: number | null
+  /**
+   * The seat that ended the game with a Shanghai.
+   */
+  shanghai: number | null
+  hits: ShanghaiHits
+  /**
+   * The open visit's running score.
+   */
+  visitScore: number
+  /**
+   * The tied seats playing the sudden-death bull rounds; null before them.
+   */
+  contenders: number[] | null
+  seats: {
+    score: number
+    /**
+     * Null until the game is finished.
+     */
+    place: number | null
+    visits: ShanghaiVisit[]
+  }[]
+  bullOff: BullOffView | null
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "ShanghaiSnapshot".
+ */
+export type ShanghaiSnapshot = SnapshotBase & {
+  gameId: 'shanghai'
+  game: ShanghaiGame
+}
+/**
  * Cricket view plus the engine's per-session fields and the bull off.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -560,6 +624,7 @@ export type Snapshot =
   | HiloSnapshot
   | CricketSnapshot
   | MissionSnapshot
+  | ShanghaiSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "MissionSnapshot".
@@ -1107,6 +1172,29 @@ export interface HiloResult {
   outcome: 'high' | 'low' | 'between' | 'miss'
   high: number
   low: number
+}
+/**
+ * Which of single, double and treble of the round's number the open visit has landed.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "ShanghaiHits".
+ */
+export interface ShanghaiHits {
+  single: boolean
+  double: boolean
+  treble: boolean
+}
+/**
+ * A committed Shanghai visit: its round, the number it aimed at and its score.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "ShanghaiVisit".
+ */
+export interface ShanghaiVisit {
+  round: number
+  target: number
+  score: number
+  shanghai: boolean
 }
 /**
  * A committed Cricket visit: marks counted and points scored, for the chalkboard.

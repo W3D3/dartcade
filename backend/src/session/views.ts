@@ -7,6 +7,7 @@ import type {
   MinigolfGame,
   MissionGame,
   P121Game,
+  ShanghaiGame,
   X01Game,
 } from '../schema/game-ws.js'
 
@@ -45,6 +46,12 @@ export type HiloView = Omit<HiloGame, EngineViewField | 'bullOff'>
 
 /** What hiloModule.view() (Higher Lower with the bull off) returns. */
 export type HiloModuleView = HiloView & BullOffViewField
+
+/** What shanghaiGame.view() returns; withBullOff adds `bullOff` (and may set phase to 'bulloff'). */
+export type ShanghaiView = Omit<ShanghaiGame, EngineViewField | 'bullOff'>
+
+/** What shanghaiModule.view() (Shanghai with the bull off) returns. */
+export type ShanghaiModuleView = ShanghaiView & BullOffViewField
 
 /** What cricketGame.view() returns; withBullOff adds `bullOff` (and may set phase to 'bulloff'). */
 export type CricketView = Omit<CricketGame, EngineViewField | 'bullOff'>

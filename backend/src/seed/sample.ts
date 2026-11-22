@@ -50,6 +50,7 @@ export const GAMES: SampleGame[] = [
   { game: 'hilo', players: ['admin', 'phil', 'gerwyn'] },
   { game: 'minigolf', players: ['michael', 'admin'] },
   { game: 'cricket', players: ['luke', 'gerwyn'] },
+  { game: 'shanghai', players: ['admin', 'phil'] },
   { game: 'cricket', config: { mode: 'cutthroat' }, players: ['admin', 'phil', 'michael'] },
   ...COACH_GAMES.map(({ players, config, script }): SampleGame => ({ game: 'x01', config, players, script })),
   { game: 'x01', config: { startScore: 501, firstTo: 1 }, players: ['admin', 'luke', 'gerwyn', 'phil'] },
@@ -101,6 +102,11 @@ function aim(session: Session, up: number, thrown: number): Point | UserAction {
     case 'hilo': {
       const v = m.view(session.currentState, session.players)
       return v.visitLocked || thrown >= 3 ? TAKEOUT : pointFor(v.high < 100 ? 'T20' : 'S1')
+    }
+    // The round's number, one dart each at single, double and treble would be a Shanghai: keep it plain
+    case 'shanghai': {
+      const v = m.view(session.currentState, session.players)
+      return v.winner !== null || thrown >= 3 ? TAKEOUT : pointFor(v.target === 25 ? 'Bull' : `S${v.target}`)
     }
     // One putt a visit
     case 'minigolf': {
