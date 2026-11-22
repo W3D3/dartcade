@@ -31,6 +31,9 @@ export function p121Rules(r: { startTarget: number; tries: number; dartsPerTry: 
   return `${r.startTarget} · ${r.tries} tries · ${r.dartsPerTry} darts · ${cap(r.outMode)} out`
 }
 
+/** The Catch 40 rules as one line. */
+export const catch40Rules = (): string => 'Checkouts 61–100 · 6 darts each · Double out'
+
 /** The Higher Lower rules as one line, shared by the header and the lobby's next-game line, e.g. "41 / 21 · 3 lives". */
 export function hiloRules(r: { startHigh: number; startLow: number; lives: number }): string {
   return `${r.startHigh} / ${r.startLow} · ${plural(r.lives, 'life', 'lives')}`

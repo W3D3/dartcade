@@ -34,6 +34,7 @@
   import CricketSection from '$lib/components/details/CricketSection.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
+  import Catch40Summary from '$lib/components/catch40/Catch40Summary.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { api, type GameDetail } from '$lib/api'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
@@ -207,6 +208,17 @@
                 placement: s.placement,
                 highestMade: Object.hasOwn(s.values, 'highestMade') ? s.values.highestMade : null,
               }))
+              .sort((a, b) => a.placement - b.placement)}
+          />
+        {:else if d.detail.mode === 'catch40'}
+          {@const players = [...d.game.players].sort((a, b) => a.seat - b.seat)}
+          <Catch40Summary
+            detail={d.detail}
+            {players}
+            seat={highlightDefault(d)}
+            yourBest
+            standings={sides
+              .map(s => ({ name: s.name, placement: s.placement, total: Object.hasOwn(s.values, 'total') ? s.values.total : 0 }))
               .sort((a, b) => a.placement - b.placement)}
           />
         {:else}

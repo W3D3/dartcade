@@ -1,14 +1,14 @@
 <script lang="ts">
-  // The held result: the match screen's win screen (121: its session summary), view only, then the countdown to the idle screen.
+  // The held result: the match screen's win screen (121 and Catch 40: their session summary), view only, then the countdown to the idle screen.
   // Lives in the frame, like Live.
   import { tick } from 'svelte'
-  import P121Summary from '$lib/components/p121/P121Summary.svelte'
+  import PracticeSummaryScreen from '$lib/components/practice/PracticeSummaryScreen.svelte'
   import WinScreen from '$lib/components/WinScreen.svelte'
   import type { GameDetail } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { getGameView } from '$lib/gameViews'
-  import { snapshotStandings } from '$lib/p121/summary'
+  import { hasPracticeSummary } from '$lib/practice'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { Snapshot } from '$lib/ws'
   import BigHeader from './BigHeader.svelte'
@@ -21,7 +21,7 @@
   const progression = flag('progression.enabled')
   const view = $derived(getGameView(snapshot.gameId))
   const win = $derived(winView(snapshot, detail))
-  const p121 = $derived(snapshot.gameId === 'p121' ? snapshot.game : null)
+  const practice = $derived(hasPracticeSummary(snapshot))
   // The winner's own celebration plays when someone is signed in here (the owner's preview); a kiosk has no session
   // to read profiles with, and never shows anyone's XP (xpSessionId stays null)
   const winnerId = $derived(
@@ -53,8 +53,8 @@
 
 <svelte:window onresize={measure} />
 
-{#if win || p121}
-  {#if p121}<BigHeader title={view.title} meta={winMeta(snapshot)} board={sharedBoard(snapshot)} bm={board} final />{/if}
+{#if win || practice}
+  {#if practice}<BigHeader title={view.title} meta={winMeta(snapshot)} board={sharedBoard(snapshot)} bm={board} final />{/if}
   <div bind:this={box} class="min-h-0 flex-1 overflow-hidden">
     <div class="flex origin-top-left flex-col" style="width:{100 / fit}%;height:{100 / fit}%;transform:scale({fit})">
       {#if win}
@@ -67,15 +67,8 @@
           saved={false}
           {winnerId}
         />
-      {:else if p121}
-        <P121Summary
-          detail={detail?.detail.mode === 'p121' ? detail.detail : null}
-          players={snapshot.players}
-          seat={0}
-          missRule={p121.cfg.missRule}
-          startTarget={p121.cfg.startTarget}
-          standings={snapshotStandings(p121, snapshot.players, snapshot.results)}
-        />
+      {:else if practice}
+        <PracticeSummaryScreen {snapshot} saved={detail} seat={0} />
       {/if}
     </div>
   </div>

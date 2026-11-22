@@ -124,12 +124,13 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'catch40',
-    name: 'Catch 40',
-    desc: 'Checkouts 61 to 100 in six darts.',
+    name: GAME_NAMES.catch40.title,
+    desc: 'Check out 61 to 100, one try of six darts each.',
     cat: 'practice',
     img: catch40Img,
-    available: false,
+    available: true,
     small: true,
+    flag: 'gamemode.catch40.enabled',
   },
   {
     id: 'shanghai',

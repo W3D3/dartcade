@@ -18,7 +18,7 @@ const VIEW = {
 type View = keyof typeof VIEW
 type Scene = { mode: string; players: number; view: View; keypad?: boolean; config?: object; name?: string; play?: string[] }
 
-const MODES = ['x01', 'atc', 'p121', 'hilo', 'minigolf']
+const MODES = ['x01', 'atc', 'p121', 'catch40', 'hilo', 'minigolf']
 const SCENES: Scene[] = [
   ...MODES.flatMap((mode): Scene[] => [
     { mode, players: 2, view: 'desktop' },
@@ -28,7 +28,10 @@ const SCENES: Scene[] = [
   ]),
   // Minigolf has no keypad: it putts by aiming
   ...MODES.filter(m => m !== 'minigolf').map((mode): Scene => ({ mode, players: 2, view: 'desktop', keypad: true })),
-  ...['x01', 'atc', 'p121'].map((mode): Scene => ({ mode, players: 1, view: 'desktop' })),
+  ...['x01', 'atc', 'p121', 'catch40'].map((mode): Scene => ({ mode, players: 1, view: 'desktop' })),
+  // A checked-out target (T19 + D2 on 61) and a second player part-way through a target, for docs/catch40
+  { mode: 'catch40', players: 1, view: 'desktop', name: 'catch40-1p-desktop-made', play: ['Treble 19', 'Double 2'] },
+  { mode: 'catch40', players: 2, view: 'phone', name: 'catch40-2p-phone-played', play: ['Single 20'] },
   { mode: 'x01', players: 2, view: 'narrow' },
   // Visits thrown first, so the averages and the checkout show real numbers (they are dashes before the first dart)
   {

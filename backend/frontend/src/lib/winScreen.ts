@@ -82,6 +82,7 @@ export function winMeta(snapshot: Snapshot): string {
   }
   if (snapshot.gameId === 'cricket') return rulesOf('cricket', snapshot.game.config, n) + vs
   if (snapshot.gameId === 'mission') return rulesOf('mission', { mission: snapshot.game.mission }, n)
+  if (snapshot.gameId === 'catch40') return rulesOf('catch40', {}, n) + vs
   return rulesOf(snapshot.gameId, snapshot.game.cfg, n) + vs
 }
 
@@ -475,8 +476,9 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
       return minigolfWin(snapshot)
     case 'atc':
       return atcWin(snapshot)
-    // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
+    // 121 and Catch 40 get their own summary screen (P121Summary, Catch40Summary) in place of WinScreen; see the design spec.
     case 'p121':
+    case 'catch40':
       return null
     // A mission gets its own result screen (Missions part 2)
     case 'mission':

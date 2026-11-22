@@ -1,7 +1,17 @@
 // Catch 40 (John Part's routine): check out 61, 62, ... 100 in order, one attempt of 6 darts per
 // target, double out. A quicker checkout scores more (see `pointsFor`). Every seat plays each target
 // in turn before the ladder moves on.
-import type { GameModule, Player, BoardEvent, CommittedVisit, Dart, MatchStats, Catch40Detail, SeatResult, UserAction } from '../session/types.js'
+import type {
+  GameModule,
+  Player,
+  BoardEvent,
+  CommittedVisit,
+  Dart,
+  MatchStats,
+  Catch40Detail,
+  SeatResult,
+  UserAction,
+} from '../session/types.js'
 import type { Catch40View } from '../session/views.js'
 import { withBullOff } from '../session/withBullOff.js'
 import { scoreDart } from './outRules.js'
@@ -10,13 +20,7 @@ import { row, values } from './matchStats.js'
 import { nextTurn, upNext } from './turns.js'
 import { DARTS_PER_VISIT } from '../shared/darts.js'
 import { dartLabel } from './p121.js'
-
-export const FIRST_TARGET = 61
-export const LAST_TARGET = 100
-export const TARGETS = LAST_TARGET - FIRST_TARGET + 1
-export const DARTS_PER_TARGET = 6
-/** The target a 3-dart checkout scores full points on: 2 darts can't finish it. */
-const HARD_TARGET = 99
+import { FIRST_TARGET, TARGETS, DARTS_PER_TARGET, pointsFor } from '../shared/catch40.js'
 
 export type Catch40Config = { bullOff: 'off' | 'wdc' | 'pdc' }
 
@@ -47,14 +51,6 @@ export type Catch40State = {
   lastResult: Catch40Result | null
   /** The label of the dart that just checked out the open target; reset on visit.opened. */
   finishLabel: string | null
-}
-
-/** Points for checking `target` out in `darts` (null: not checked out within the darts). */
-export function pointsFor(target: number, darts: number | null): number {
-  if (darts === null) return 0
-  if (darts <= 2) return 3
-  if (darts === 3) return target === HARD_TARGET ? 3 : 2
-  return 1
 }
 
 export const targetOf = (seat: Catch40Seat) => FIRST_TARGET + seat.tries.length

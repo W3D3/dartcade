@@ -28,6 +28,12 @@ export function callGame(s: Snapshot): CallGame | null {
       const visitStartScores = scores.map((left, i) => (i === g.currentPlayer ? g.visitStartLeft : left))
       return { ...g, scores, visitStartScores, bustThisVisit: g.bust, config: { outMode: g.cfg.outMode } }
     }
+    case 'catch40': {
+      const g = s.game
+      const scores = g.seats.map(x => x.left)
+      const visitStartScores = scores.map((left, i) => (i === g.currentPlayer ? g.visitStartLeft : left))
+      return { ...g, scores, visitStartScores, bustThisVisit: g.bust, config: { outMode: 'double' } }
+    }
     case 'hilo':
       // A missed dart ends the visit and costs a life: called like a bust
       return { ...s.game, bustThisVisit: s.game.visitLocked }

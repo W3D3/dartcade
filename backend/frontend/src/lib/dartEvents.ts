@@ -24,6 +24,8 @@ function eventGame(s: Snapshot): EventGame {
       return s.game
     case 'p121':
       return { ...s.game, bust: s.game.bust ? s.game.currentPlayer : null }
+    case 'catch40':
+      return { ...s.game, bust: s.game.bust ? s.game.currentPlayer : null }
     case 'hilo': {
       // A lost life is the bust; the turn has already moved on, so it sounds for the seat that lost it
       const r = s.game.lastResult
