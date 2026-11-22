@@ -37,9 +37,11 @@ import {
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
 
+const deleteAccount = vi.fn()
+
 const app = () => {
   const a = createFastify()
-  a.register(meApiPlugin, { db: {} as any })
+  a.register(meApiPlugin, { db: {} as any, deleteAccount })
   return a
 }
 
@@ -59,6 +61,7 @@ beforeEach(() => {
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
+      signInMethods: ['password'],
     })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
@@ -90,12 +93,33 @@ describe('/api/me', () => {
       isAdmin: false,
       isModerator: false,
       impersonating: false,
+      signInMethods: ['password'],
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
       pictures: ['classic', 'chalk'],
     })
+  })
+
+  it('shows no email for a Discord account that shared none (its .invalid stand-in)', async () => {
+    vi.mocked(getAccount).mockResolvedValueOnce({
+      id: 'd',
+      name: 'Phoneonly',
+      email: '42@discord.invalid',
+      nameNeedsChange: false,
+      invisible: false,
+      showLastOnline: 'friends',
+      friendsVisibility: 'friends',
+      discoverable: true,
+      role: null,
+      createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
+      country: null,
+      signInMethods: ['discord'],
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body)).toMatchObject({ email: null })
   })
 
   it('says when an admin is viewing the app as this account', async () => {
@@ -106,6 +130,38 @@ describe('/api/me', () => {
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ impersonating: true, isAdmin: false })
+  })
+
+  describe('DELETE', () => {
+    it('deletes and passes on the cookie-clearing headers', async () => {
+      const headers = new Headers()
+      headers.append('set-cookie', 'better-auth.session_token=; Max-Age=0')
+      deleteAccount.mockResolvedValueOnce({ deleted: true, headers })
+      const res = await app().inject({ method: 'DELETE', url: '/api/me', headers: { cookie: 'c=1' } })
+      expect(res.statusCode).toBe(204)
+      expect(res.headers['set-cookie']).toEqual(['better-auth.session_token=; Max-Age=0'])
+      expect((deleteAccount.mock.calls[0][0] as Headers).get('cookie')).toBe('c=1')
+    })
+
+    it.each([
+      ['stale', 400],
+      ['has-password', 409],
+      ['signed-out', 401],
+    ])('answers %s with %i', async (reason, status) => {
+      deleteAccount.mockResolvedValueOnce({ deleted: false, reason })
+      expect((await app().inject({ method: 'DELETE', url: '/api/me' })).statusCode).toBe(status)
+    })
+
+    it('refuses an admin viewing as the account', async () => {
+      deleteAccount.mockReset()
+      vi.mocked(middleware.requireAuth).mockImplementationOnce((req, _reply, done) => {
+        req.userId = 'old'
+        req.impersonatedBy = 'boss'
+        done()
+      })
+      expect((await app().inject({ method: 'DELETE', url: '/api/me' })).statusCode).toBe(403)
+      expect(deleteAccount).not.toHaveBeenCalled()
+    })
   })
 
   it('tells admins they are', async () => {
@@ -122,6 +178,7 @@ describe('/api/me', () => {
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
+      signInMethods: ['password'],
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true, isModerator: true })
@@ -142,6 +199,7 @@ describe('/api/me', () => {
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
+      signInMethods: ['password'],
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: false, isModerator: true })
@@ -150,7 +208,7 @@ describe('/api/me', () => {
   it('renames, tells the lobby, and answers with the account as it is now', async () => {
     const onRenamed = vi.fn().mockResolvedValue(undefined)
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onRenamed })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onRenamed })
     vi.mocked(getAccount).mockResolvedValue({
       id: 'old',
       name: 'Phil_T',
@@ -164,6 +222,7 @@ describe('/api/me', () => {
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
+      signInMethods: ['password'],
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
@@ -186,7 +245,7 @@ describe('/api/me', () => {
   it('goes Invisible and tells friends', async () => {
     const onChanged = vi.fn()
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged })
     vi.mocked(getAccount).mockResolvedValue({
       id: 'old',
       name: 'Phil_T',
@@ -200,6 +259,7 @@ describe('/api/me', () => {
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       country: null,
+      signInMethods: ['password'],
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)
@@ -238,7 +298,7 @@ describe('/api/me', () => {
     const onChanged = vi.fn()
     const onAvatarChanged = vi.fn().mockResolvedValue(undefined)
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged, onAvatarChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged, onAvatarChanged })
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
     const res = await a.inject({
       method: 'PATCH',
@@ -323,7 +383,7 @@ describe('/api/me/avatar', () => {
   it('uploads a JPEG and tells friends', async () => {
     const onChanged = vi.fn()
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged })
+    a.register(meApiPlugin, { db: {} as any, deleteAccount, onChanged })
     const res = await a.inject({
       method: 'POST',
       url: '/api/me/avatar',
