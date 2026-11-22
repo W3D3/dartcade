@@ -3,20 +3,23 @@
   // history; the name stays in match history other players keep (see Settings-DeleteAccount
   // artboard). With mail on, better-auth mails a confirm link and nothing is deleted until it's
   // opened; without mail the account goes at once. A player with a passkey can confirm with it
-  // instead of the password: a fresh passkey prompt, checked by the server, deletes at once.
+  // instead of the password: a fresh passkey prompt, checked by the server, deletes at once. An
+  // account without a password (Sign in with Discord only) confirms with Discord: DeleteWithDiscord.
   import { hrefs } from '$lib/routes'
   import { FingerprintPattern, Trash } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
-  import ErrorText from '$lib/components/ErrorText.svelte'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
   import { canConfirm, canConfirmWithPasskey } from '$lib/deleteAccount'
   import { passkeyFailure } from '$lib/passkeys'
+  import DeleteAccountDialog from './DeleteAccountDialog.svelte'
+  import DeleteWithDiscord from './DeleteWithDiscord.svelte'
 
   const name = $derived($currentUser?.name ?? '')
+  const passwordless = $derived($currentUser !== null && !$currentUser.signInMethods.includes('password'))
 
   let open = $state(false)
   let typed = $state('')
@@ -39,6 +42,12 @@
     open = false
   }
 
+  function deleted() {
+    currentUser.set(null)
+    open = false
+    void push('/login?deleted=1')
+  }
+
   async function confirm() {
     if (busy || !canConfirm(typed, name, password)) return
     busy = true
@@ -58,12 +67,6 @@
     } finally {
       busy = false
     }
-  }
-
-  function deleted() {
-    currentUser.set(null)
-    open = false
-    void push('/login?deleted=1')
   }
 
   async function confirmWithPasskey() {
@@ -90,24 +93,29 @@
   }
 </script>
 
-<div class="flex flex-col gap-[10px]">
-  <h3 class="text-[14px] font-semibold text-live-text">Danger zone</h3>
-  <p class="text-kicker/normal text-text-dim">
-    Deletes your profile, boards, friends and history. Your name stays in match history other players keep.
-  </p>
-  <button
-    type="button"
-    onclick={openModal}
-    class="self-start h-11 px-4 flex items-center gap-2 rounded-md border border-danger-line text-live-text
+{#snippet trigger(onopen: () => void)}
+  <div class="flex flex-col gap-[10px]">
+    <h3 class="text-[14px] font-semibold text-live-text">Danger zone</h3>
+    <p class="text-kicker/normal text-text-dim">
+      Deletes your profile, boards, friends and history. Your name stays in match history other players keep.
+    </p>
+    <button
+      type="button"
+      onclick={onopen}
+      class="self-start h-11 px-4 flex items-center gap-2 rounded-md border border-danger-line text-live-text
  text-[14px] font-semibold cursor-pointer transition-colors hover:bg-live-soft"
-  >
-    <Trash size={16} />Delete account
-  </button>
-</div>
+    >
+      <Trash size={16} />Delete account
+    </button>
+  </div>
+{/snippet}
 
-{#if open}
-  <Modal onclose={close} showClose={false} dismissOnBackdrop={true} widthClass="max-w-[460px]">
-    {#if sent}
+{#if passwordless}
+  <DeleteWithDiscord {trigger} ondeleted={deleted} />
+{:else}
+  {@render trigger(openModal)}
+  {#if open && sent}
+    <Modal onclose={close} showClose={false} dismissOnBackdrop={true} widthClass="max-w-[460px]">
       <div class="flex flex-col gap-5">
         <h2 class="font-display font-bold text-[26px] uppercase leading-[1.1] text-live-text">Delete your account?</h2>
         <p class="text-[14px] text-ink-2">Check your inbox to confirm. Open the link in this browser, where you're signed in.</p>
@@ -115,40 +123,17 @@
           <Button variant="outline" onclick={close}>Close</Button>
         </div>
       </div>
-    {:else}
-      <form
-        class="flex flex-col gap-5"
-        onsubmit={e => {
-          e.preventDefault()
-          void confirm()
-        }}
-      >
-        <div class="flex flex-col gap-[10px]">
-          <h2 class="font-display font-bold text-[26px] uppercase leading-[1.1] text-live-text">Delete your account?</h2>
-          <p class="text-label/normal text-ink-2">This removes your profile, boards, friends, lobbies and game history.</p>
-          <p class="text-label/normal text-text-dim">Your name stays in match history other players keep.</p>
-        </div>
-        <div class="flex flex-col gap-2">
-          <label for="delete-account-confirm" class="text-[14px] font-medium text-ink-soft">
-            Type <strong class="text-text">{name}</strong> to confirm
-          </label>
-          <Input id="delete-account-confirm" type="text" bind:value={typed} placeholder={name} autocomplete="off" />
-        </div>
-        <div class="flex flex-col gap-2">
-          <label for="delete-account-password" class="text-[14px] font-medium text-ink-soft">Password</label>
-          <Input
-            id="delete-account-password"
-            type="password"
-            bind:value={password}
-            autocomplete="current-password"
-            placeholder="••••••••"
-          />
-        </div>
-        {#if error}<ErrorText>{error}</ErrorText>{/if}
-        <div class="flex gap-3 justify-end">
-          <Button type="button" variant="outline" onclick={close}>Cancel</Button>
-          <Button type="submit" variant="danger" disabled={busy || !canConfirm(typed, name, password)}>Delete account</Button>
-        </div>
+    </Modal>
+  {:else if open}
+    <DeleteAccountDialog onclose={close} onsubmit={() => void confirm()} confirmName={name} bind:typed {error}>
+      <div class="flex flex-col gap-2">
+        <label for="delete-account-password" class="text-[14px] font-medium text-ink-soft">Password</label>
+        <Input id="delete-account-password" type="password" bind:value={password} autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      {#snippet submit()}
+        <Button type="submit" variant="danger" disabled={busy || !canConfirm(typed, name, password)}>Delete account</Button>
+      {/snippet}
+      {#snippet footer()}
         {#if hasPasskey}
           <div class="flex items-center gap-3 text-[13px] text-text-dim" aria-hidden="true">
             <span class="h-px grow bg-surface-paused"></span>or<span class="h-px grow bg-surface-paused"></span>
@@ -163,7 +148,7 @@
             <FingerprintPattern size={16} />Confirm with a passkey
           </Button>
         {/if}
-      </form>
-    {/if}
-  </Modal>
+      {/snippet}
+    </DeleteAccountDialog>
+  {/if}
 {/if}
