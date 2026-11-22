@@ -39,6 +39,11 @@ export function hiloRules(r: { startHigh: number; startLow: number; lives: numbe
   return `${r.startHigh} / ${r.startLow} · ${plural(r.lives, 'life', 'lives')}`
 }
 
+/** The Shanghai rules as one line, shared by the header and the lobby's next-game line, e.g. "1–7 + Bull · Shanghai wins". */
+export function shanghaiRules(r: { start: number; end: number; bullRound: boolean; shanghaiWins: boolean }): string {
+  return `${r.start}–${r.end}${r.bullRound ? ' + Bull' : ''}${r.shanghaiWins ? ' · Shanghai wins' : ''}`
+}
+
 const CRICKET_MODE_LABEL: Record<'standard' | 'cutthroat', string> = { standard: 'Standard', cutthroat: 'Cut-throat' }
 
 /** The Cricket rules as one line, shared by the header and the lobby's next-game line, e.g. "Cut-throat · First to 3". */

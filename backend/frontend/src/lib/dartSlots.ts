@@ -137,6 +137,14 @@ export function hiloSlots(o: { darts: ThrownDart[]; hint: { need: number; high: 
   return [...done, { ...next, aria }, ...rest]
 }
 
+/** Shanghai: the thrown darts (what each scored on the round's number), then the kinds still missing for a Shanghai, treble first, while three darts can still make one. */
+export function shanghaiSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: number; suggest: string[] }): Slot[] {
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${d.score ?? 0}` : '0'))
+  const left = DARTS_PER_VISIT - done.length
+  const fits = o.suggest.length > 0 && o.suggest.length <= left
+  return [...done, ...openSlots(done.length, fits ? o.suggest.map(label => ({ label, foot: 'for a Shanghai' })) : [])]
+}
+
 /** A visit that is over early: the slots from `from` on are not thrown, with no next dart. */
 function notThrown(from: number): Slot[] {
   return openSlots(from, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${from + k + 1}: not thrown` }))

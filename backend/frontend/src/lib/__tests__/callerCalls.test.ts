@@ -294,6 +294,22 @@ describe('callGame: Higher Lower', () => {
   })
 })
 
+describe('callGame: Shanghai', () => {
+  const shanghai = (o: Record<string, unknown>) => callGame(snap('shanghai', { visitScore: 0, shanghai: null, ...o }))!
+
+  it('calls the visit score at the third dart', () => {
+    const two = shanghai({ visitScore: 3, currentVisitDarts: [dart(3), dart(0)] })
+    const three = shanghai({ visitScore: 6, currentVisitDarts: [dart(3), dart(0), dart(3)] })
+    expect(callsFor(two, three)).toEqual([['6']])
+  })
+
+  it('calls a Shanghai, which ends the game, with "Game shot" for a voice without its own clip', () => {
+    const two = shanghai({ visitScore: 9, currentVisitDarts: [dart(3), dart(6)] })
+    const won = shanghai({ visitScore: 18, phase: 'finished', shanghai: 0, currentVisitDarts: [dart(3), dart(6), dart(9)] })
+    expect(callsFor(two, won)).toEqual([['shanghai', 'gameshot']])
+  })
+})
+
 describe('callGame', () => {
   it('has no score to call in Around the Clock or minigolf', () => {
     expect(callGame(snap('atc', {}))).toBeNull()

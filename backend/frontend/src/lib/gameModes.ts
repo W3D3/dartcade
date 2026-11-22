@@ -135,11 +135,13 @@ export const GAME_MODES: GameMode[] = [
   {
     id: 'shanghai',
     name: 'Shanghai',
+    glyph: 'SHA',
     desc: 'Single, double, treble of one number wins.',
     cat: 'practice',
     img: shanghaiImg,
-    available: false,
+    available: true,
     small: true,
+    flag: 'gamemode.shanghai.enabled',
   },
   {
     id: 'killer',

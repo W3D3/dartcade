@@ -1,7 +1,7 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
 // Placements are the server's (the final snapshot's `results`); the X01 match stats (the details
 // page's, from the server) and the legs come from the saved game, once it loads.
-import type { AtcGame, CricketGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
+import type { AtcGame, CricketGame, GameDetail, HiloGame, MinigolfGame, ShanghaiGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
 import { whoOf, type Face } from './face.js'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
@@ -9,6 +9,7 @@ import { rulesOf } from './gameViews/rules.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
 import { outcomeText } from './hilo/view.js'
+import { targetLabel } from './shanghai/view.js'
 import { cricketMpr, cricketSides, type CricketSide } from './cricket/view.js'
 import { plural } from './fmt.js'
 
@@ -35,7 +36,7 @@ export type WinLeg = { n: number; name: string; face: Face | null; byWinner: boo
 export type StatRow = { label: string; values: [string, string]; share: number }
 
 export type WinView = {
-  mode: 'x01' | 'atc' | 'minigolf' | 'hilo' | 'cricket'
+  mode: 'x01' | 'atc' | 'minigolf' | 'hilo' | 'cricket' | 'shanghai'
   layout: 'duel' | 'party'
   /** By placement: the winner first. */
   competitors: Competitor[]
@@ -358,6 +359,75 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   }
 }
 
+const bestRound = (g: ShanghaiGame, seat: number) => Math.max(0, ...g.seats[seat].visits.map(v => v.score))
+const shanghaisOf = (g: ShanghaiGame, seat: number) => g.seats[seat].visits.filter(v => v.shanghai).length
+
+export function shanghaiWin(snapshot: Snapshot & { game: ShanghaiGame }): WinView {
+  const g = snapshot.game
+  const places = placesOf(snapshot)
+  const forfeited = snapshot.seats.map(s => s.forfeited)
+  const shanghai = g.shanghai
+
+  const competitors = byPlacement(
+    g.seats.map((s, i) =>
+      soloCompetitor(snapshot, i, places, {
+        score: s.score,
+        sub: shanghai === i ? `${plural(s.score, 'point')} · Shanghai` : forfeited[i] ? 'Forfeited' : plural(s.score, 'point'),
+        cells: [String(s.score), String(bestRound(g, i)), String(shanghaisOf(g, i))],
+      }),
+    ),
+  )
+  const w = competitors[0].seats[0]
+  const r = competitors.at(1)?.seats[0]
+  const stats: StatRow[] =
+    r === undefined
+      ? []
+      : [
+          {
+            label: 'Points',
+            values: pair(String(g.seats[w].score), String(g.seats[r].score)),
+            share: share(g.seats[w].score, g.seats[r].score),
+          },
+          {
+            label: 'Best round',
+            values: pair(String(bestRound(g, w)), String(bestRound(g, r))),
+            share: share(bestRound(g, w), bestRound(g, r)),
+          },
+          {
+            label: 'Shanghais',
+            values: pair(String(shanghaisOf(g, w)), String(shanghaisOf(g, r))),
+            share: share(shanghaisOf(g, w), shanghaisOf(g, r)),
+          },
+        ]
+  const hit = shanghai === null ? null : g.seats[shanghai].visits.find(v => v.shanghai)
+  return {
+    mode: 'shanghai',
+    layout: snapshot.players.length > 2 ? 'party' : 'duel',
+    competitors,
+    kicker: shanghai === null ? 'Game over' : 'Shanghai!',
+    scoreLabel: 'Points',
+    note:
+      shanghai === null
+        ? 'Most points after the last round'
+        : `${snapshot.players[shanghai].name} took it with a single, double and treble`,
+    checkout: null,
+    legs: [],
+    stats,
+    columns: ['Points', 'Best round', 'Shanghais'],
+    highlights:
+      shanghai === null || !hit
+        ? []
+        : [
+            {
+              name: snapshot.players[shanghai].name,
+              face: whoOf(snapshot)[shanghai].face,
+              label: 'Shanghai',
+              text: `Single, double and treble of ${targetLabel(hit.target)} in round ${hit.round}.`,
+            },
+          ],
+  }
+}
+
 function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
   const g = snapshot.game
   const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
@@ -486,6 +556,8 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
     // A forfeit ends Cricket without a winner too: the server's places rank the forfeited side last
     case 'cricket':
       return cricketWin(snapshot)
+    case 'shanghai':
+      return shanghaiWin(snapshot)
     default: {
       // A new game id fails to compile here until it says how it wins
       const _unknown: never = snapshot

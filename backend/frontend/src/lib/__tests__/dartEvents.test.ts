@@ -42,6 +42,14 @@ describe('dartEvent', () => {
 const snap = (gameId: Snapshot['gameId'], g: Record<string, unknown>) =>
   ({ gameId, game: { currentPlayer: 0, currentVisitDarts: [], ...g } }) as unknown as Snapshot
 
+describe('snapshotEvent: Shanghai', () => {
+  const shanghai = (o: Record<string, unknown>) => snap('shanghai', { target: 3, ...o })
+  it('sounds a dart on the round number, and a dart elsewhere as a miss', () => {
+    expect(snapshotEvent(shanghai({}), shanghai({ currentVisitDarts: [dart(3, 2)] }))).toEqual({ kind: 'double', seat: 0 })
+    expect(snapshotEvent(shanghai({}), shanghai({ currentVisitDarts: [dart(20, 3)] }))).toEqual({ kind: 'miss', seat: 0 })
+  })
+})
+
 describe('snapshotEvent', () => {
   it('sounds the darts of every game mode, not only X01 and Around the Clock', () => {
     const thrown = { currentVisitDarts: [dart(20, 3)] }

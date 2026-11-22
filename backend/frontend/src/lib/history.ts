@@ -88,6 +88,7 @@ const LIST_STAT = {
     const ms = stat(me, 'timeMs')
     return done === undefined ? null : { value: `${done}/${stat(me, 'steps') ?? done}`, label: ms ? `steps · ${fmtClock(ms)}` : 'steps' }
   },
+  shanghai: me => value(stat(me, 'total'), 'points'),
   cricket: me => {
     const mpr = stat(me, 'mpr')
     return mpr === undefined ? null : { value: mpr.toFixed(1), label: 'MPR' }
@@ -186,6 +187,11 @@ const MODE_TILES = {
       plain('Best round', strokes ? String(strokes.min) : NONE, strokes ? 'strokes' : null),
       plain('Holes in one', aces ? String(aces.sum) : NONE),
     ]
+  },
+  shanghai: s => {
+    const best = modeStat(s, 'shanghai', 'bestRound')
+    const shanghais = modeStat(s, 'shanghai', 'shanghais')
+    return [plain('Best round', best ? String(best.max) : NONE), plain('Shanghais', shanghais ? String(shanghais.sum) : NONE)]
   },
   cricket: s => {
     const mpr = modeStat(s, 'cricket', 'mpr')

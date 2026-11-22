@@ -109,6 +109,11 @@ const HEADLINE = {
   catch40: () => NO_HEADLINE,
   hilo: () => NO_HEADLINE,
   mission: () => NO_HEADLINE,
+  shanghai: (d, sides) => {
+    if (d.detail.mode !== 'shanghai') return NO_HEADLINE
+    const totals = sides.map(s => (Object.hasOwn(s.values, 'total') ? s.values.total : 0))
+    return { big: totals.join('–'), caption: d.detail.seats.some(s => s.shanghai) ? 'Points · ended with a Shanghai' : 'Points' }
+  },
 } satisfies Record<GameId, (d: GameDetail, sides: DetailSide[]) => Headline>
 
 export function headline(d: GameDetail, sides: DetailSide[]): Headline {

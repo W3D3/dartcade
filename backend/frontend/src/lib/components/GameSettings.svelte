@@ -105,6 +105,23 @@
   const setStartHigh = (n: number) => set('startHigh', clamp(n, num(config.startLow, 21) + 1, 180))
   const setStartLow = (n: number) => set('startLow', clamp(n, 0, Math.min(179, num(config.startHigh, 41) - 1)))
   const setLives = (n: number) => set('lives', clamp(n, 1, 7))
+
+  // Shanghai's rounds: a preset (1 to 7, 9 or 20) or a custom first and last number
+  const SHANGHAI_TOGGLE_ORDER = ['bullRound', 'shanghaiWins', 'tieBreak', 'bullOff'] as const
+  const SHANGHAI_PRESETS = [7, 9, 20]
+  let customRounds = $state(false)
+  const roundsValue = $derived(
+    customRounds || num(config.start, 1) !== 1 || !SHANGHAI_PRESETS.includes(num(config.end, 7)) ? 'custom' : num(config.end, 7),
+  )
+  const roundsOptions = [...SHANGHAI_PRESETS.map(n => ({ value: n, label: `1–${n}` })), { value: 'custom', label: 'Custom' }]
+  function pickRounds(v: unknown) {
+    customRounds = v === 'custom'
+    if (typeof v !== 'number') return
+    set('start', 1)
+    set('end', v)
+  }
+  const setStart = (n: number) => set('start', clamp(n, 1, num(config.end, 7)))
+  const setEnd = (n: number) => set('end', clamp(n, num(config.start, 1), 20))
 </script>
 
 {#if gameId === 'x01'}
@@ -325,6 +342,70 @@
     </div>
 
     {#each HILO_TOGGLE_ORDER as fieldKey (fieldKey)}
+      {@const field = meta[fieldKey]}
+      {#if field?.options}
+        <fieldset class="border-0 flex flex-col gap-2">
+          <legend class="flex items-center gap-2 field-label mb-2">
+            {field.label}
+            {#if field.tooltip}
+              <Tooltip text={field.tooltip} />
+            {/if}
+          </legend>
+          <SegmentedControl
+            options={field.options}
+            value={config[fieldKey]}
+            defaultValue={defaults[fieldKey]}
+            disabled={readonly}
+            onchange={(v: unknown) => set(fieldKey, v)}
+          />
+        </fieldset>
+      {/if}
+    {/each}
+  </div>
+{:else if gameId === 'shanghai'}
+  <div class={root}>
+    <fieldset class="border-0 flex flex-col gap-2">
+      <legend class="flex items-center gap-2 field-label mb-2">Rounds</legend>
+      <SegmentedControl
+        options={roundsOptions}
+        value={roundsValue}
+        disabled={readonly}
+        defaultValue={num(defaults.end, 7)}
+        onchange={pickRounds}
+      />
+    </fieldset>
+    {#if roundsValue === 'custom'}
+      <div class="flex justify-between items-center">
+        <span class="flex items-center gap-2 field-label">
+          {meta.start?.label ?? 'First round'}
+          {#if meta.start?.tooltip}<Tooltip text={meta.start.tooltip} />{/if}
+        </span>
+        <Stepper
+          value={num(config.start, 1)}
+          min={1}
+          label="first round"
+          highlight={isNonDefault('start')}
+          disabled={readonly}
+          onchange={setStart}
+        />
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="flex items-center gap-2 field-label">
+          {meta.end?.label ?? 'Last round'}
+          {#if meta.end?.tooltip}<Tooltip text={meta.end.tooltip} />{/if}
+        </span>
+        <Stepper
+          value={num(config.end, 7)}
+          min={num(config.start, 1)}
+          label="last round"
+          highlight={isNonDefault('end')}
+          disabled={readonly}
+          onchange={setEnd}
+        />
+      </div>
+    {/if}
+
+    {#each SHANGHAI_TOGGLE_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
         <fieldset class="border-0 flex flex-col gap-2">

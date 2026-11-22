@@ -5,6 +5,7 @@ import { p121Meta } from '../p121/view.js'
 import { catch40Meta } from '../catch40/view.js'
 import { hiloMeta } from '../hilo/view.js'
 import { cricketMeta } from '../cricket/view.js'
+import { shanghaiMeta } from '../shanghai/view.js'
 import { x01Meta, atcMeta, minigolfMeta } from './meta.js'
 import { rulesOf } from './rules.js'
 
@@ -35,6 +36,8 @@ function meta(s: Snapshot): string {
     case 'mission':
       // "Tungsten Gauntlet · 3 steps · any order" (Mission-Play's header)
       return rulesOf('mission', { mission: s.game.mission }, s.players.length)
+    case 'shanghai':
+      return shanghaiMeta(s.game, s.players.length)
     default: {
       // A new game id fails to compile here until it has a line; one from a newer server gets none
       const _unknown: never = s
