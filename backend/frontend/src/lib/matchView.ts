@@ -20,8 +20,8 @@ export type MatchSettings = Pick<GameSettings, 'checkoutSuggestions' | 'favourit
 export type LegendItem = { label: string; kind: 'current' | 'next' | 'others' }
 
 export function matchView(snapshot: Snapshot | null, history: VisitHistory, settings: MatchSettings) {
-  const { x01, atc, minigolf, p121, hilo } = gameState(snapshot)
-  const game = x01 ?? atc ?? minigolf ?? p121 ?? hilo
+  const { x01, atc, minigolf, p121, catch40, hilo } = gameState(snapshot)
+  const game = x01 ?? atc ?? minigolf ?? p121 ?? catch40 ?? hilo
   const players = snapshot?.players ?? []
   const isX01 = x01 !== null
   const isActive = snapshot?.status === 'active'

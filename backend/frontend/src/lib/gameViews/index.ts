@@ -2,6 +2,7 @@
 import type { Snapshot } from '../api/game-ws'
 import { GAME_NAMES, isGameId } from '$shared/gameNames'
 import { p121Meta } from '../p121/view.js'
+import { catch40Meta } from '../catch40/view.js'
 import { hiloMeta } from '../hilo/view.js'
 import { cricketMeta } from '../cricket/view.js'
 import { x01Meta, atcMeta, minigolfMeta } from './meta.js'
@@ -25,6 +26,8 @@ function meta(s: Snapshot): string {
       return minigolfMeta(s.game)
     case 'p121':
       return p121Meta(s.game, s.game.currentPlayer)
+    case 'catch40':
+      return catch40Meta(s.game, s.game.currentPlayer)
     case 'hilo':
       return hiloMeta(s.game, s.players.length)
     case 'cricket':

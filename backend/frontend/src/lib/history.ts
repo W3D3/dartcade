@@ -76,6 +76,7 @@ const LIST_STAT = {
   },
   atc: me => value(stat(me, 'dartsThrown'), 'darts to finish'),
   p121: me => value(stat(me, 'highestMade'), 'highest made'),
+  catch40: me => value(stat(me, 'total'), 'points'),
   hilo: me => {
     const livesLeft = stat(me, 'livesLeft')
     return value(livesLeft, livesLeft === 1 ? 'life left' : 'lives left')
@@ -164,6 +165,14 @@ const MODE_TILES = {
     const high = modeStat(s, 'p121', 'highestMade')
     const checkouts = modeStat(s, 'p121', 'checkouts')
     return [plain('Highest made', high ? String(high.max) : NONE), plain('Checkouts', checkouts ? String(checkouts.sum) : NONE)]
+  },
+  catch40: s => {
+    const total = modeStat(s, 'catch40', 'total')
+    const checkouts = modeStat(s, 'catch40', 'checkouts')
+    return [
+      plain('Best total', total ? String(total.max) : NONE, total ? 'of 120' : null),
+      plain('Checkouts', checkouts ? String(checkouts.sum) : NONE),
+    ]
   },
   hilo: s => {
     const high = modeStat(s, 'hilo', 'highestSet')

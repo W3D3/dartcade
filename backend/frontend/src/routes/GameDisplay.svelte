@@ -9,8 +9,8 @@
   import { getGameView } from '../lib/gameViews/index.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import MatchScreen from '$lib/components/match/MatchScreen.svelte'
-  import P121Summary from '$lib/components/p121/P121Summary.svelte'
-  import { snapshotStandings } from '$lib/p121/summary'
+  import PracticeSummaryScreen from '$lib/components/practice/PracticeSummaryScreen.svelte'
+  import { hasPracticeSummary } from '$lib/practice'
   import MissionResult from '$lib/components/missions/MissionResult.svelte'
   import { pendingRoll } from '$lib/minigolf/match'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
@@ -253,12 +253,11 @@
   const current = $derived(gameState(snapshot))
   const x01 = $derived(current.x01)
   const minigolf = $derived(current.minigolf)
-  const p121 = $derived(current.p121)
   const cricket = $derived(current.cricket)
   const game = $derived(snapshot?.game ?? null)
   const isX01 = $derived(x01 !== null)
-  // 121 ends on its session summary (P121Summary), not the win screen
-  const p121Finished = $derived(p121 !== null && snapshot?.status === 'finished')
+  // The practice modes end on their session summary, not the win screen
+  const practiceFinished = $derived(hasPracticeSummary(snapshot) && snapshot?.status === 'finished')
   // A mission ends on its own result screen (MissionResult)
   const mission = $derived(current.mission)
   const missionFinished = $derived(mission !== null && snapshot?.status === 'finished')
@@ -393,7 +392,7 @@
   // The fetch failed: 121's summary falls back to the standings alone
   let savedFailed = $state(false)
   $effect(() => {
-    if (snapshot?.status !== 'finished' || !(isX01 || p121) || snapshot.mySeats.length === 0) return
+    if (snapshot?.status !== 'finished' || !(isX01 || hasPracticeSummary(snapshot)) || snapshot.mySeats.length === 0) return
     const id = snapshot.sessionId
     if (savedFor === id) return
     savedFor = id
@@ -537,7 +536,7 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && !p121Finished && !missionFinished && picksView(remote) && manualEntry}
+        showViewToggle={!bullOff && !minigolf && !practiceFinished && !missionFinished && picksView(remote) && manualEntry}
         boards={myBoards}
         {gameId}
         scoreBased={snapshot.scoreBased}
@@ -567,15 +566,11 @@
         </div>
       {/if}
 
-      {#if p121 && p121Finished}
-        {@const saved = savedGame?.game.id === snapshot.sessionId ? savedGame : null}
-        <P121Summary
-          detail={saved?.detail.mode === 'p121' ? saved.detail : null}
-          {players}
+      {#if snapshot && practiceFinished}
+        <PracticeSummaryScreen
+          {snapshot}
+          saved={savedGame?.game.id === snapshot.sessionId ? savedGame : null}
           seat={snapshot.mySeats[0] ?? 0}
-          missRule={p121.cfg.missRule}
-          startTarget={p121.cfg.startTarget}
-          standings={snapshotStandings(p121, players, snapshot.results)}
           loading={snapshot.mySeats.length > 0 && !savedFailed}
           primary={unlocksButton ?? {
             label: winButtons.primary === 'rematch' ? 'Play again' : WIN_LABELS[winButtons.primary],

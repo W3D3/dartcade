@@ -517,7 +517,18 @@
         { "$ref": "#/$defs/EngineGameFields" },
         {
           "type": "object",
-          "required": ["phase", "currentPlayer", "nextPlayer", "winner", "visitLocked", "bust", "visitStartLeft", "seats", "lastResult", "bullOff"],
+          "required": [
+            "phase",
+            "currentPlayer",
+            "nextPlayer",
+            "winner",
+            "visitLocked",
+            "bust",
+            "visitStartLeft",
+            "seats",
+            "lastResult",
+            "bullOff"
+          ],
           "properties": {
             "phase": { "type": "string", "enum": ["bulloff", "game", "finished"] },
             "currentPlayer": { "type": "integer", "minimum": 0 },
@@ -526,7 +537,10 @@
               "minimum": 0,
               "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
             },
-            "winner": { "type": ["integer", "null"], "description": "The seat with the highest total (the lowest seat on a tie); the places in the snapshot's results share a tie." },
+            "winner": {
+              "type": ["integer", "null"],
+              "description": "The seat with the highest total (the lowest seat on a tie); the places in the snapshot's results share a tie."
+            },
             "visitLocked": { "type": "boolean" },
             "bust": { "type": "boolean" },
             "visitStartLeft": { "type": "integer", "minimum": 0 },
@@ -537,7 +551,12 @@
                 "required": ["target", "left", "darts", "tries", "total", "done"],
                 "additionalProperties": false,
                 "properties": {
-                  "target": { "type": "integer", "minimum": 61, "maximum": 101, "description": "The open target; 101 once all 40 are done." },
+                  "target": {
+                    "type": "integer",
+                    "minimum": 61,
+                    "maximum": 101,
+                    "description": "The open target; 101 once all 40 are done."
+                  },
                   "left": { "type": "integer", "minimum": 0 },
                   "darts": { "type": "integer", "minimum": 0, "description": "Darts used by the open target's committed visits." },
                   "tries": { "type": "array", "items": { "$ref": "#/$defs/Catch40Try" } },

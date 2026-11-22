@@ -18,6 +18,7 @@ const rows = {
   atc: { display: ['showMarkers'], sounds: dartSounds },
   minigolf: { display: ['aimDial', 'slowMotion'], sounds: ['soundHit', 'soundMiss', 'soundSwitch', 'soundBall'] },
   p121: { display: ['checkoutSuggestions'], sounds: withBust },
+  catch40: { display: ['checkoutSuggestions'], sounds: withBust },
   // A lost life plays the bust sound
   hilo: { display: [], sounds: withBust },
   cricket: { display: [], sounds: dartSounds },

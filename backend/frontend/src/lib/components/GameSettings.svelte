@@ -89,7 +89,7 @@
   // ATC config fields in display order — populated from backend configMeta
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
 
-  // 121 config fields in display order — populated from backend configMeta (bullOff comes from withBullOff)
+  // 121 config fields in display order (Catch 40 shows the same form, which has only the bull off) — populated from backend configMeta (bullOff comes from withBullOff)
   const P121_FIELD_ORDER = ['startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff'] as const
 
   // Higher Lower's toggles in display order — populated from backend configMeta (bullOff comes from withBullOff);
@@ -253,7 +253,7 @@
       {/if}
     {/each}
   </div>
-{:else if gameId === 'p121'}
+{:else if gameId === 'p121' || gameId === 'catch40'}
   <div class={root}>
     {#each P121_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
