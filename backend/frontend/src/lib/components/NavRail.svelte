@@ -17,6 +17,7 @@
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
   import AlphaBadge from './feedback/AlphaBadge.svelte'
+  import DiscordButton from './DiscordButton.svelte'
   import ReportBugButton from './feedback/ReportBugButton.svelte'
   import PreviewBadge from './PreviewBadge.svelte'
   import FriendsNavItem from './friends/FriendsNavItem.svelte'
@@ -132,6 +133,7 @@
         <span class="max-w-full truncate">{lobbyLink.label}</span>
       </a>
     {/if}
+    <DiscordButton variant="small" />
     <ReportBugButton variant="small" />
     <FriendsNavItem />
     <AccountMenu placement="rail" />
