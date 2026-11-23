@@ -5337,13 +5337,19 @@ components:
 
     AuthInfo:
       type: object
-      required: [mail, verification, contactEmail, feedback]
+      required: [mail, verification, contactEmail, feedback, discordInviteUrl]
       additionalProperties: false
       properties:
         feedback: { type: boolean, description: Bug reports can be sent from the app (POST /api/feedback) }
         mail: { type: boolean, description: Password reset and mailed confirmations are available }
         verification: { type: boolean, description: New accounts confirm their email before signing in }
         contactEmail: { type: string, nullable: true, description: Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set) }
+        discordInviteUrl:
+          {
+            type: string,
+            nullable: true,
+            description: "The community's Discord invite (DISCORD_INVITE_URL: an https URL; null when not set or not https)",
+          }
 
     FeedbackReport:
       type: object

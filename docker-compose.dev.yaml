@@ -49,6 +49,7 @@ services:
       LEGAL_ADDRESS: Musterstraße 1, 8010 Graz, Austria
       LEGAL_CONTACT_EMAIL: dev@dartcade.local
       LEGAL_UPDATED: '2026-10-17'
+      DISCORD_INVITE_URL: ${DISCORD_INVITE_URL:-}
     ports:
       - '3000:3000'
     depends_on:

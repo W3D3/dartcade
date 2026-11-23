@@ -56,7 +56,7 @@ import type { LightsService } from './lights/service.js'
 import { envFlagValues, envFlagsOn, flagEnabled, loadFlagUser, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
-import { authInfoApiPlugin } from './api/authInfo.js'
+import { authInfoApiPlugin, discordInviteUrl } from './api/authInfo.js'
 import { feedbackAddress, feedbackApiPlugin } from './api/feedback.js'
 import { legalApiPlugin } from './api/legal.js'
 import { loadLegal, legalValues } from './legal/load.js'
@@ -286,6 +286,7 @@ export async function buildApp({
     verification: mailConfig.verification,
     contactEmail: legalValues(process.env).contactEmail?.trim() || null,
     feedback: mailer !== null && feedbackTo !== null,
+    discordInviteUrl: discordInviteUrl(process.env),
   })
   await app.register(feedbackApiPlugin, { db, mailer, to: feedbackTo })
   await app.register(legalApiPlugin, { docs: legalDocs })
