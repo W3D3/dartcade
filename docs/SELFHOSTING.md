@@ -79,6 +79,7 @@ in Austria) through to the backend service, as in `backend/docker-compose.yaml`.
 [`DEVELOPMENT.md`](../DEVELOPMENT.md#mail-in-production)'s "Mail in production" for details.
 In-app bug reports (the Alpha badge, Settings) are mailed to `FEEDBACK_EMAIL`, or to
 `LEGAL_CONTACT_EMAIL` without it; with neither, the app hides them.
+Set `DISCORD_INVITE_URL` (an `https` URL) to show a Join our Discord link in the nav and on Home.
 
 **Admins** (the minigolf course editor, features still behind a flag) are users with
 better-auth's `admin` role. The first one comes from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (see "First

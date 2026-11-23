@@ -382,7 +382,8 @@
                     "mail",
                     "verification",
                     "contactEmail",
-                    "feedback"
+                    "feedback",
+                    "discordInviteUrl"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -402,6 +403,11 @@
                       "type": "string",
                       "nullable": true,
                       "description": "Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set)"
+                    },
+                    "discordInviteUrl": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The community's Discord invite (DISCORD_INVITE_URL: an https URL; null when not set or not https)"
                     }
                   }
                 }
@@ -83857,7 +83863,8 @@
           "mail",
           "verification",
           "contactEmail",
-          "feedback"
+          "feedback",
+          "discordInviteUrl"
         ],
         "additionalProperties": false,
         "properties": {
@@ -83877,6 +83884,11 @@
             "type": "string",
             "nullable": true,
             "description": "Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set)"
+          },
+          "discordInviteUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "The community's Discord invite (DISCORD_INVITE_URL: an https URL; null when not set or not https)"
           }
         }
       },

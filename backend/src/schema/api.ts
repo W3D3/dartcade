@@ -4348,6 +4348,8 @@ export interface components {
             verification: boolean;
             /** @description Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set) */
             contactEmail: string | null;
+            /** @description The community's Discord invite (DISCORD_INVITE_URL: an https URL; null when not set or not https) */
+            discordInviteUrl: string | null;
         };
         FeedbackReport: {
             /** @enum {string} */
