@@ -6,6 +6,7 @@
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
+  import DiscordButton from './DiscordButton.svelte'
   import ReportBugButton from './feedback/ReportBugButton.svelte'
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
@@ -69,6 +70,7 @@
 
   <div class="mt-auto flex flex-col gap-3">
     <ConnectBoardCard />
+    <DiscordButton />
     <ReportBugButton variant="row" />
     <LobbyIndicator />
   </div>
