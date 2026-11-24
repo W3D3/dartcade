@@ -47,6 +47,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   admin: [hrefs.admin()],
   adminUsers: [hrefs.adminUsers()],
   adminGames: [hrefs.adminGames(), hrefs.adminGames('g1')],
+  adminLive: [hrefs.adminLive()],
   adminFlags: [hrefs.adminFlags()],
   adminRanked: [hrefs.adminRanked()],
   adminActivity: [hrefs.adminActivity()],
