@@ -12,8 +12,6 @@ export const usersTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Users' }]
 export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
   gameTitle ? [ADMIN, { label: 'Games', href: hrefs.adminGames() }, { label: gameTitle }] : [ADMIN, { label: 'Games' }]
 
-export const liveTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Live games' }]
-
 export const rankedTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Ranked queue' }]
 
 export const minigolfReportsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Course reports' }]

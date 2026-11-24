@@ -11,6 +11,7 @@ import {
   loadQueue,
   removeFromQueue,
   restoreGame,
+  statusFromQuery,
   voidGame,
   waitText,
   type AdminGameSummary,
@@ -185,5 +186,13 @@ describe('adminCanWatch', () => {
     expect(adminCanWatch(game({ status: 'active' }), { isAdmin: true })).toBe(true)
     for (const status of ['finished', 'aborted'] as const) expect(adminCanWatch(game({ status }), { isAdmin: true })).toBe(false)
     expect(adminCanWatch(game({ status: 'active' }), { isAdmin: false })).toBe(false)
+  })
+})
+
+describe('statusFromQuery', () => {
+  it('takes the status a link names, the default for anything else', () => {
+    expect(statusFromQuery('status=active')).toBe('active')
+    expect(statusFromQuery('status=bogus')).toBe(DEFAULT_FILTERS.status)
+    expect(statusFromQuery('')).toBe(DEFAULT_FILTERS.status)
   })
 })

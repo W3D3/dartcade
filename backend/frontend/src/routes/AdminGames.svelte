@@ -5,7 +5,7 @@
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import { Ban, ChevronRight, CircleSlash, Eye, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
@@ -34,6 +34,7 @@
     restoreGame,
     RESTORE_WARNING,
     STATUS_OPTIONS,
+    statusFromQuery,
     loadGames,
     outcome,
     type AdminGameSummary,
@@ -53,7 +54,7 @@
 
   const watchOn = flag('watch.enabled')
 
-  let filters = $state<GameFilters>({ ...DEFAULT_FILTERS })
+  let filters = $state<GameFilters>({ ...DEFAULT_FILTERS, status: statusFromQuery($querystring ?? '') })
   let modes = $state<GameInfo[]>([])
   let games = $state<AdminGameSummary[]>([])
   let nextCursor = $state<string | null>(null)

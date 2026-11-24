@@ -188,7 +188,7 @@
                 </li>
               {/each}
             </ul>
-            <a href={hrefs.adminLive()} class="mt-3 inline-block text-label">Watch live games</a>
+            <a href={hrefs.adminGames(undefined, 'status=active')} class="mt-3 inline-block text-label">Watch live games</a>
           </section>
         </div>
 

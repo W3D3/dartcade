@@ -19,6 +19,10 @@ export type GameFilters = {
   to: string
 }
 
+/** The status named by `?status=` on the page's link (Activity links to the live games); the default for anything else. */
+export const statusFromQuery = (query: string): GameStatus =>
+  STATUS_OPTIONS.find(o => o.id === new URLSearchParams(query).get('status'))?.id ?? DEFAULT_FILTERS.status
+
 export const DEFAULT_FILTERS: GameFilters = { status: 'finished', mode: null, player: '', ranked: false, from: '', to: '' }
 
 export const STATUS_OPTIONS: { id: GameStatus; label: string }[] = [
