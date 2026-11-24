@@ -1,6 +1,7 @@
 <script lang="ts">
   // The Watch page's top bar: who you are watching, the game, live or offline, how many watch, and the way out.
   import { ChevronLeft, Eye } from '@lucide/svelte'
+  import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { watchingLabel, type WatchState } from '$lib/watch/view'
 
@@ -10,6 +11,7 @@
     meta = '',
     state,
     watchers,
+    asAdmin = false,
     onleave,
   }: {
     /** Who is playing: "Lena vs Max". */
@@ -19,6 +21,8 @@
     meta?: string
     state: WatchState
     watchers: number | undefined
+    /** An admin watching, who needs no friendship: said so, so it is not taken for a friend's view. */
+    asAdmin?: boolean
     onleave: () => void
   } = $props()
 
@@ -45,6 +49,7 @@
   <Eye size={18} class="shrink-0 text-accent" aria-hidden="true" />
   <p class="min-w-0 truncate text-[15px] text-text">You are watching <strong class="font-semibold">{title}</strong></p>
   <span class="hidden min-w-0 truncate text-[13px] text-text-muted sm:inline">{[game, meta].filter(Boolean).join(' · ')}</span>
+  {#if asAdmin}<Badge variant="host">Watching as admin</Badge>{/if}
   <span class="ml-auto flex items-center gap-3">
     {#if count}<span class="text-[13px] text-text-muted">{count}</span>{/if}
     {#if pill}

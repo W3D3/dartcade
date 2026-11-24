@@ -1,9 +1,10 @@
 <script lang="ts">
-  // Watch (#/watch/<game>): a friend's running game, view only. The match screen's own components under the
+  // Watch (#/watch/<game>): a friend's running game (an admin's: any running game), view only. The match screen's own components under the
   // big screen's view-only props, a bar that says whose game this is, and when the game ends its result, then back.
   import { onDestroy, onMount, untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { accountSettings } from '$lib/accountSettings'
+  import { currentUser } from '$lib/auth'
   import Result from '$lib/components/bigscreen/Result.svelte'
   import Live from '$lib/components/bigscreen/Live.svelte'
   import WatchBar from '$lib/components/watch/WatchBar.svelte'
@@ -48,7 +49,7 @@
   // Back to where the link was followed from; opened straight from a link there is no earlier page
   function leave() {
     if (history.length > 1) history.back()
-    else void push('/friends')
+    else void push($currentUser?.isAdmin ? '/admin/games' : '/friends')
   }
 
   // The result shows for a while, then the page leaves by itself
@@ -73,6 +74,7 @@
       meta={view?.meta(snapshot)}
       state={phase}
       watchers={snapshot.spectators}
+      asAdmin={$currentUser?.isAdmin === true}
       onleave={leave}
     />
     {#if phase === 'over'}

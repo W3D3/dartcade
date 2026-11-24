@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { beforeEach, vi } from 'vitest'
 import {
+  adminCanWatch,
   DEFAULT_FILTERS,
   deleteGame,
   filterQuery,
@@ -176,5 +177,13 @@ describe('voiding and the ranked queue', () => {
   it('shows a wait as minutes and seconds', () => {
     expect(waitText(65)).toBe('1:05')
     expect(waitText(9)).toBe('0:09')
+  })
+})
+
+describe('adminCanWatch', () => {
+  it('offers Watch to admins on running games only', () => {
+    expect(adminCanWatch(game({ status: 'active' }), { isAdmin: true })).toBe(true)
+    for (const status of ['finished', 'aborted'] as const) expect(adminCanWatch(game({ status }), { isAdmin: true })).toBe(false)
+    expect(adminCanWatch(game({ status: 'active' }), { isAdmin: false })).toBe(false)
   })
 })
