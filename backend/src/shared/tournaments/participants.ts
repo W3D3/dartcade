@@ -2,6 +2,7 @@
 // spots the organizers type, paste or import. Pure rules, so the API and the form say the same.
 import { CONTROL_CHARS, normalizeName } from '../names.js'
 import { cleanTeamName, cleanTeamTag, isTeamTag, teamNameProblem, type TeamColor } from '../teams.js'
+import { drawFor, type DrawSetup } from './run.js'
 import type { Problem } from './setup.js'
 
 export const SPOT_NAME_MAX = 24
@@ -77,12 +78,20 @@ export function participantProblems(entries: readonly EntryInput[], t: { teamSiz
 const ordinal = (n: number) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`
 
 /**
- * Why the tournament can't start with these entries yet, as the artboard says it, or null: too
- * few entries, or a team with empty spots.
+ * Why the tournament can't start with these entries yet, as the artboard says it, or null: fewer
+ * entries than the format draws, entries that don't split into its groups, or a team with empty spots.
  */
-export function startBlocker(entries: readonly EntryInput[], teamSize: number): string | null {
+export function startBlocker(entries: readonly EntryInput[], teamSize: number, setup: DrawSetup): string | null {
   const solo = teamSize === 1
-  if (entries.length < 2) return `Add at least 2 ${solo ? 'players' : 'teams'} before you can start.`
+  const noun = solo ? 'players' : 'teams'
+  if (!draws(entries.length, setup)) {
+    const fewest = fewestDrawn(setup)
+    if (fewest !== null && entries.length < fewest) return `Add at least ${fewest} ${noun} before you can start.`
+    const g = setup.settings.groups
+    if (setup.format === 'groups_knockout' && g)
+      return `${entries.length} ${noun} don't split into groups of ${g.size} with ${g.through} going through. Add or remove ${solo ? 'a player' : 'a team'}, or change the groups.`
+    return `This format can't be drawn with ${entries.length} ${noun}.`
+  }
   if (solo) return null
   const short = entries.filter(e => e.players.length < teamSize)
   if (short.length === 0) return null
@@ -92,4 +101,23 @@ export function startBlocker(entries: readonly EntryInput[], teamSize: number): 
   }
   const empty = short.reduce((n, e) => n + teamSize - e.players.length, 0)
   return `Every team needs ${teamSize} players before you can start. ${empty} spots are still empty.`
+}
+
+/** Whether `count` entries can be drawn in the format: the draw itself decides, so this never disagrees with the start. */
+const draws = (count: number, setup: DrawSetup): boolean => {
+  try {
+    drawFor(
+      setup,
+      Array.from({ length: count }, (_, i) => String(i)),
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** The smallest field the format draws; null when none under 12 does (every valid format draws one: groups hold at most 5). */
+function fewestDrawn(setup: DrawSetup): number | null {
+  for (let n = 2; n < 12; n++) if (draws(n, setup)) return n
+  return null
 }

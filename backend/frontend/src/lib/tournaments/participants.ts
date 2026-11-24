@@ -9,6 +9,7 @@ import { FORMAT_LONG, gameLine } from './browse'
 import type { Tournament } from './create'
 import { TEAM_COLORS, type TeamColor } from '$shared/teams'
 import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '$shared/tournaments/participants'
+import type { DrawSetup } from '$shared/tournaments/run'
 
 export type Participants = components['schemas']['TournamentParticipants']
 export type ParticipantsBody = components['schemas']['TournamentParticipantsInput']
@@ -132,8 +133,8 @@ export function draftProblems(d: ParticipantsDraft, perTeam: number, max: number
 }
 
 /** Why it couldn't start with this list yet (the artboard's line), or null. */
-export const draftBlocker = (d: ParticipantsDraft, perTeam: number): string | null =>
-  startBlocker(asEntries(toBody(d, perTeam), perTeam), perTeam)
+export const draftBlocker = (d: ParticipantsDraft, perTeam: number, setup: DrawSetup): string | null =>
+  startBlocker(asEntries(toBody(d, perTeam), perTeam), perTeam, setup)
 
 /** One pasted or imported line: a player, or a team and its players. */
 export interface ParsedLine {

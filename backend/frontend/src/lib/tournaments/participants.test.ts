@@ -85,7 +85,9 @@ describe('teams', () => {
 
   it('says a team with an empty spot blocks the start', () => {
     const d = { solo: [], teams: [newTeam(0, 'Treble Trouble', ['Anna', 'Jonas', 'Kim']), newTeam(1, 'Bar Flies', ['Sven', 'Lea'])] }
-    expect(draftBlocker(d, 3)).toBe('Bar Flies still needs a 3rd player before you can start.')
+    expect(draftBlocker(d, 3, { format: 'single_elimination', settings: { firstTo: 3, longerFinal: null, groups: null } })).toBe(
+      'Bar Flies still needs a 3rd player before you can start.',
+    )
   })
 })
 

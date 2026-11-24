@@ -171,7 +171,8 @@ export class TournamentService implements GameEndedConsumer {
       if (!t || t.status !== 'open' || t.starts_at !== null) return 'not_startable'
       if (t.play === 'in_person') {
         await releaseUnconfirmed(this.deps.db, t.id)
-        return (await this.begin(t)) ? 'started' : 'not_startable'
+        // The organizer is there to fix the list: a field the format can't draw is refused, never cancelled
+        return (await this.begin(t)) === 'started' ? 'started' : 'not_startable'
       }
       const startsAt = new Date(this.now() + (t.settings.checkInMinutes ?? 0) * 60_000)
       if (!(await setStartTime(this.deps.db, t.id, startsAt))) return 'not_startable'
@@ -203,7 +204,11 @@ export class TournamentService implements GameEndedConsumer {
       await releaseUnconfirmed(this.deps.db, t.id)
     const startAt = t.starts_at.getTime()
     if (now >= startAt) {
-      await this.begin(t)
+      // Nobody is there to fix the list: a field the format can't draw can't be played
+      if ((await this.begin(t)) === 'undrawable') {
+        this.warn('tournament cancelled at its start: its format cannot draw who is in', { tournamentId: t.id })
+        await moveTournament(this.deps.db, t.id, 'cancel')
+      }
       return
     }
     const checkIn = t.settings.checkInMinutes
@@ -241,8 +246,11 @@ export class TournamentService implements GameEndedConsumer {
     }
   }
 
-  // The start: who plays (after a check-in, only who checked in), seeded and drawn; false when it did not start
-  private async begin(t: TournamentRow): Promise<boolean> {
+  /**
+   * The start: who plays (after a check-in, only who checked in), seeded and drawn. `undrawable`:
+   * too few for the format, nothing written; `lost`: the tournament changed meanwhile.
+   */
+  private async begin(t: TournamentRow): Promise<'started' | 'undrawable' | 'lost'> {
     // Without a check-in window, the start is where an unlocked average limit is checked again
     if (t.status === 'open') await this.dropIneligible(t)
     const entries = await listEntries(this.deps.db, t.id)
@@ -251,15 +259,12 @@ export class TournamentService implements GameEndedConsumer {
     let matches
     try {
       matches = drawFor(setupOf(t), seeded)
-    } catch (err) {
-      // Too few entries for the format: nobody can play it
-      this.warn('tournament cancelled at its start', { tournamentId: t.id, entries: playing.length, error: String(err) })
-      await moveTournament(this.deps.db, t.id, 'cancel')
-      return false
+    } catch {
+      return 'undrawable'
     }
-    if (!(await writeDraw(this.deps.db, t.id, seeded, matches, new Date(this.now())))) return false
+    if (!(await writeDraw(this.deps.db, t.id, seeded, matches, new Date(this.now())))) return 'lost'
     await this.step(t.id)
-    return true
+    return 'started'
   }
 
   private async seed(t: TournamentRow, entries: RunEntry[]): Promise<string[]> {

@@ -64,23 +64,44 @@ describe('participantProblems', () => {
 })
 
 describe('startBlocker', () => {
+  const knockout = { format: 'single_elimination', settings: { firstTo: 3, longerFinal: null, groups: null } } as const
+  const groups = (size: 3 | 4 | 5, through: 1 | 2) =>
+    ({ format: 'groups_knockout', settings: { firstTo: 3, longerFinal: null, groups: { size, through } } }) as const
+
   it('needs two entries', () => {
-    expect(startBlocker(solo('Anna'), 1)).toBe('Add at least 2 players before you can start.')
+    expect(startBlocker(solo('Anna'), 1, knockout)).toBe('Add at least 2 players before you can start.')
+  })
+
+  it('needs the entries the format draws: one group with one going through is no knockout', () => {
+    expect(startBlocker(solo('Anna', 'Jonas'), 1, groups(4, 1))).toBe('Add at least 5 players before you can start.')
+    expect(startBlocker(solo('Anna', 'Jonas'), 1, groups(3, 2))).toBe('Add at least 3 players before you can start.')
+    expect(startBlocker(solo('A', 'B', 'C', 'D', 'E'), 1, groups(4, 1))).toBeNull()
+  })
+
+  it('says when the entries do not split into the groups', () => {
+    expect(startBlocker(solo('A', 'B', 'C', 'D', 'E'), 1, groups(4, 2))).toBe(
+      "5 players don't split into groups of 4 with 2 going through. Add or remove a player, or change the groups.",
+    )
+  })
+
+  it('falls back to a plain line when the setup draws no field at all', () => {
+    const broken = { format: 'groups_knockout', settings: { firstTo: 3, longerFinal: null, groups: null } } as const
+    expect(startBlocker(solo('Anna', 'Jonas'), 1, broken)).toBe("This format can't be drawn with 2 players.")
   })
 
   it('names the one team with an empty spot', () => {
-    expect(startBlocker([team('Treble Trouble', 'A', 'B', 'C'), team('Bar Flies', 'S', 'L')], 3)).toBe(
+    expect(startBlocker([team('Treble Trouble', 'A', 'B', 'C'), team('Bar Flies', 'S', 'L')], 3, knockout)).toBe(
       'Bar Flies still needs a 3rd player before you can start.',
     )
   })
 
   it('counts the empty spots of several teams', () => {
-    expect(startBlocker([team('Owls', 'A', 'B', 'C'), team('Flies', 'S', 'L'), team('Dutch')], 4)).toBe(
+    expect(startBlocker([team('Owls', 'A', 'B', 'C'), team('Flies', 'S', 'L'), team('Dutch')], 4, knockout)).toBe(
       'Every team needs 4 players before you can start. 7 spots are still empty.',
     )
   })
 
   it('lets full teams start', () => {
-    expect(startBlocker([team('Owls', 'A', 'B'), team('Flies', 'S', 'L')], 2)).toBeNull()
+    expect(startBlocker([team('Owls', 'A', 'B'), team('Flies', 'S', 'L')], 2, knockout)).toBeNull()
   })
 })

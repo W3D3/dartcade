@@ -22,6 +22,7 @@
     type ParsedLine,
     type ParticipantsDraft,
   } from '$lib/tournaments/participants'
+  import type { DrawSetup } from '$shared/tournaments/run'
   import { SPOT_NAME_MAX } from '$shared/tournaments/participants'
   import { TEAM_LIMITS } from '$shared/teams'
   import EditTeamDialog from './EditTeamDialog.svelte'
@@ -31,6 +32,7 @@
   let {
     draft = $bindable(),
     perTeam,
+    setup,
     max,
     tournamentId,
     disabled = false,
@@ -39,6 +41,8 @@
     draft: ParticipantsDraft
     /** Players per team; 1 is solo. */
     perTeam: number
+    /** The format the list is drawn into, for the start line. */
+    setup: DrawSetup
     max: number
     /** The stored tournament, for Unlink; none while it is new. */
     tournamentId?: string
@@ -51,7 +55,7 @@
   const list = $derived(teams ? draft.teams : draft.solo)
   const dropped = $derived(teams ? overflow(draft.teams, perTeam) : [])
   const fullest = $derived(fullestTeam(draft.teams))
-  const blocker = $derived(draftBlocker(draft, perTeam))
+  const blocker = $derived(draftBlocker(draft, perTeam, setup))
   let editing = $state<number | null>(null)
 
   const rows = (t: DraftEntry) => Math.max(perTeam, t.players.length)

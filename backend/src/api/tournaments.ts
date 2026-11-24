@@ -538,7 +538,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     const blocker = t.preselected ? (await participantsOf(t)).startBlocker : null
     if (blocker !== null) throw conflict(blocker)
     if ((await tournaments.organizerStart(t.id)) !== 'started')
-      throw conflict('only an open tournament without a start time is started by hand')
+      throw conflict('this tournament can’t start now: it isn’t open, has a fixed start time, or its format can’t be drawn')
     return respond(t.id, role, req.userId)
   })
 
@@ -674,7 +674,7 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
 
   const participantsOf = async (t: TournamentView) => {
     const entries = await listParticipants(db, t.id)
-    return { entries, startBlocker: startBlocker(entries, t.team_size) }
+    return { entries, startBlocker: startBlocker(entries, t.team_size, t) }
   }
 
   app.get<Route<'listTournamentParticipants'>>(
