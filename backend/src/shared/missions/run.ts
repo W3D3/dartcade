@@ -84,7 +84,7 @@ export function deadline(mission: Mission, run: MissionRun): number | null {
 const isOver = (run: MissionRun) => run.status !== 'playing'
 export const isPaused = (run: MissionRun) => run.clock.pausedAt !== null
 
-/** The time of an input: starts the clock, and fails the mission once its time is up. */
+/** The time of an input during the player's turn: starts the clock, and fails the run once its time is up. */
 export function tick(mission: Mission, run: MissionRun, now: number): MissionRun {
   if (isOver(run)) return run
   const clock = { ...run.clock, now, startedAt: run.clock.startedAt ?? now }
@@ -199,6 +199,22 @@ export function resume(run: MissionRun): MissionRun {
   const { pausedAt, now } = run.clock
   if (isOver(run) || pausedAt === null || now === null) return run
   return { ...run, clock: { ...run.clock, pausedAt: null, pausedMs: run.clock.pausedMs + (now - pausedAt) } }
+}
+
+/**
+ * Turns, with more than one player: a player's clock runs only while it is their turn, from the
+ * takeout that handed it to them (`at`) to their own takeout. Waiting stops it like a pause.
+ */
+export function endTurn(run: MissionRun, at: number): MissionRun {
+  if (isOver(run) || isPaused(run)) return run
+  return { ...run, clock: { ...run.clock, now: at, pausedAt: at } }
+}
+
+export function startTurn(run: MissionRun, at: number): MissionRun {
+  if (isOver(run)) return run
+  const { startedAt, pausedAt, pausedMs } = run.clock
+  if (startedAt === null) return { ...run, clock: { ...run.clock, now: at, startedAt: at } }
+  return { ...run, clock: { ...run.clock, now: at, pausedAt: null, pausedMs: pausedMs + (pausedAt === null ? 0 : at - pausedAt) } }
 }
 
 export function giveUp(run: MissionRun): MissionRun {

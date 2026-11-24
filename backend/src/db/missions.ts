@@ -4,7 +4,7 @@ import { sql, type Kysely } from 'kysely'
 import { ulid } from 'ulid'
 import { z } from 'zod'
 import type { Database } from './schema.js'
-import { compareRuns, type RunResult } from '../shared/missions/highscores.js'
+import { compareRuns, sameRules, type RunResult } from '../shared/missions/highscores.js'
 import { OFFICIAL_MISSIONS } from '../shared/missions/official.js'
 import { MissionSchema, type Difficulty, type Mission, type MissionVisibility } from '../shared/missions/types.js'
 
@@ -215,12 +215,18 @@ export async function createMission(
   return id
 }
 
+/** Saves the mission; a change to its rules (more than its name and description) clears its highscores. */
 export async function updateMission(db: Kysely<Database>, id: string, mission: Mission, visibility: MissionVisibility): Promise<void> {
-  await db
-    .updateTable('missions')
-    .set({ definition: JSON.stringify(mission), visibility, updated_at: new Date() })
-    .where('id', '=', id)
-    .execute()
+  await db.transaction().execute(async trx => {
+    const before = await trx.selectFrom('missions').select('definition').where('id', '=', id).forUpdate().executeTakeFirst()
+    const old = MissionSchema.safeParse(before?.definition)
+    await trx
+      .updateTable('missions')
+      .set({ definition: JSON.stringify(mission), visibility, updated_at: new Date() })
+      .where('id', '=', id)
+      .execute()
+    if (!old.success || !sameRules(old.data, mission)) await trx.deleteFrom('mission_bests').where('mission_id', '=', id).execute()
+  })
 }
 
 export async function deleteMission(db: Kysely<Database>, id: string): Promise<void> {
@@ -364,41 +370,50 @@ export const dismissMissionReports = (db: Kysely<Database>, moderatorId: string,
     return {}
   })
 
-/** A finished mission game as the rewards read it: the player and the result its seat stored. */
+/** A finished mission game as the rewards read it: each seat with an account and its stored result. */
 export type FinishedMissionGame = {
   sessionId: string
   missionId: string
   test: boolean
-  userId: string | null
-  completed: boolean
-  run: RunResult
+  /** The mission as it was played: the config's snapshot, whatever edits came since. */
+  mission: Mission
   finishedAt: Date
+  seats: { userId: string; completed: boolean; run: RunResult }[]
 }
 
 export async function finishedMissionGame(db: Kysely<Database>, sessionId: string): Promise<FinishedMissionGame | null> {
-  const r = await db
-    .selectFrom('game_sessions as g')
-    .innerJoin('game_players as p', join => join.onRef('p.session_id', '=', 'g.id').on('p.seat', '=', 0))
-    .select(['g.config', 'g.finished_at', 'p.user_id', 'p.stats'])
-    .where('g.id', '=', sessionId)
-    .where('g.game_id', '=', 'mission')
-    .where('g.status', '=', 'finished')
+  const game = await db
+    .selectFrom('game_sessions')
+    .select(['config', 'finished_at'])
+    .where('id', '=', sessionId)
+    .where('game_id', '=', 'mission')
+    .where('status', '=', 'finished')
     .executeTakeFirst()
-  const config = FinishedConfig.safeParse(r?.config)
-  const stats = SeatStats.safeParse(r?.stats)
-  if (!r?.finished_at || !config.success || !stats.success) return null
+  const config = FinishedConfig.safeParse(game?.config)
+  if (!game?.finished_at || !config.success) return null
+  const players = await db
+    .selectFrom('game_players')
+    .select(['user_id', 'stats'])
+    .where('session_id', '=', sessionId)
+    .where('user_id', 'is not', null)
+    .orderBy('seat')
+    .execute()
   return {
     sessionId,
     missionId: config.data.missionId,
     test: config.data.test,
-    userId: r.user_id,
-    completed: stats.data.completed === 1,
-    run: { timeMs: stats.data.timeMs, darts: stats.data.darts },
-    finishedAt: r.finished_at,
+    mission: config.data.mission,
+    finishedAt: game.finished_at,
+    seats: players.flatMap(p => {
+      const stats = SeatStats.safeParse(p.stats)
+      return p.user_id !== null && stats.success
+        ? [{ userId: p.user_id, completed: stats.data.completed === 1, run: { timeMs: stats.data.timeMs, darts: stats.data.darts } }]
+        : []
+    }),
   }
 }
 
-const FinishedConfig = z.object({ missionId: z.string(), test: z.boolean() })
+const FinishedConfig = z.object({ missionId: z.string(), test: z.boolean(), mission: MissionSchema })
 const SeatStats = z.object({ completed: z.number(), timeMs: z.number(), darts: z.number() })
 
 /** Mission rewards the user was paid on their local day `localDate`. */

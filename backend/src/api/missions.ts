@@ -35,6 +35,7 @@ import {
 import { MISSION_LIMITS, MissionSchema, type Mission } from '../shared/missions/types.js'
 import type { MissionConfig } from '../games/mission.js'
 import type { SessionEngine } from '../session/engine.js'
+import type { LobbyService } from '../lobby/service.js'
 import { engineApiError } from './engineErrors.js'
 import { ApiError, notFound } from './errors.js'
 import { requireFlag } from './flagGate.js'
@@ -42,7 +43,11 @@ import { RATE } from './rateLimits.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database>; engine: Pick<SessionEngine, 'createWithSeats' | 'getSessionByBoard'> }
+type Opts = FastifyPluginOptions & {
+  db: Kysely<Database>
+  engine: Pick<SessionEngine, 'createWithSeats' | 'getSessionByBoard'>
+  lobbies: Pick<LobbyService, 'startGame'>
+}
 
 /** The signed-in user as the mission rules see them, once missions.enabled is on for them (else 404). */
 async function viewerOf(db: Kysely<Database>, userId: string): Promise<MissionViewer> {
@@ -105,7 +110,7 @@ function requireReason(reason: string): string {
 }
 
 export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, engine } = opts
+  const { db, engine, lobbies } = opts
   const card = async (v: MissionViewer, id: string) => {
     const [found] = await cardsOf(db, v, [(await visible(db, id, v)).id])
     return toCard(found, v)
@@ -181,18 +186,21 @@ export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     async (req, reply) => {
       const v = await viewerOf(db, req.userId)
       const m = await visible(db, req.params.id, v)
-      const { test } = req.body
+      const { test, lobbyId, force } = req.body
       if (test && !canWrite(m, v)) throw new ApiError(403, { error: 'only its author can test a mission' })
+      if (test && lobbyId) throw new ApiError(400, { error: 'a test run is played alone' })
       // A hidden mission can still be tested by its author, not played for times
       if (!test && m.hiddenAt !== null) throw new ApiError(403, { error: 'hidden' })
-      const user = await db.selectFrom('user').select('name').where('id', '=', v.id).executeTakeFirstOrThrow()
-      const seats = await ownBoardSeats(db, [{ userId: v.id, name: user.name }], id => engine.getSessionByBoard(id) !== undefined)
       const config: MissionConfig = {
         missionId: m.id,
         test,
         mission: m.mission,
         highscores: (await highscores(db, m)).map(b => ({ userId: b.userId, name: b.name, timeMs: b.timeMs, darts: b.darts })),
       }
+      // In a lobby the host starts it for everyone who plays, taking turns (the lobby's seats and boards)
+      if (lobbyId) return reply.code(201).send(await lobbies.startGame(v.id, lobbyId, { gameId: 'mission', config }, force))
+      const user = await db.selectFrom('user').select('name').where('id', '=', v.id).executeTakeFirstOrThrow()
+      const seats = await ownBoardSeats(db, [{ userId: v.id, name: user.name }], id => engine.getSessionByBoard(id) !== undefined)
       let sessionId: string
       try {
         ;({ sessionId } = await engine.createWithSeats({ ownerUserId: v.id, gameId: 'mission', config, seats }))

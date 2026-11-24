@@ -339,7 +339,7 @@ export async function buildApp({
   await app.register(statsApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
   await app.register(minigolfModerationApiPlugin, { db })
-  await app.register(missionsApiPlugin, { db, engine })
+  await app.register(missionsApiPlugin, { db, engine, lobbies })
   await app.register(adminUsersApiPlugin, {
     db,
     onBanned: userId =>

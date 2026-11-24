@@ -206,8 +206,10 @@ export interface GameModule<
    * A game that keeps time (Missions): the server's time (ms since the epoch) of every input, before
    * the input applies, until the game is decided. Logged inputs keep their time, so a replay gives
    * the same state. A state this decides (time ran out) ends the game; the open visit doesn't count.
+   * `current` is the state with the open visit folded in: a clock the visit already stopped (a run
+   * the deciding dart ended) must not move.
    */
-  onClock?(s: S, now: number): S
+  onClock?(s: S, now: number, current: S): S
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
   view(s: S, players: Player[]): V

@@ -940,8 +940,21 @@ export class LobbyService implements GameEndedConsumer {
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.openAsHost(lobbyId, userId)
       if (!lobby.nextGame) throw LobbyError.badRequest('pick a game first')
+      await this.checkAvailable(userId, lobby.nextGame.gameId)
       const personIds = lobby.people.filter(p => p.plays).map(p => p.id)
       return this.launch(lobby, userId, { ...lobby.nextGame, personIds }, force)
+    })
+  }
+
+  /**
+   * The host starts a game the lobby didn't pick, with everyone who plays: a mission, which the
+   * missions API has checked and prepared (a mode with its own start, see OWN_START).
+   */
+  async startGame(userId: string, lobbyId: string, game: NextGame, force: boolean): Promise<{ sessionId: string }> {
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.openAsHost(lobbyId, userId)
+      const personIds = lobby.people.filter(p => p.plays).map(p => p.id)
+      return this.launch(lobby, userId, { ...game, personIds }, force)
     })
   }
 
@@ -967,7 +980,6 @@ export class LobbyService implements GameEndedConsumer {
   private async launch(lobby: LobbyState, hostUserId: string, game: StartGame, force: boolean): Promise<{ sessionId: string }> {
     const running = this.deps.engine.getLobbySession(lobby.id)
     if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
-    await this.checkAvailable(hostUserId, game.gameId)
     lobby = await this.markHostReady(lobby, hostUserId)
     const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline, starterUserId: hostUserId })
     if (!planned.ok) throw planError(planned.problem)

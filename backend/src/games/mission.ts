@@ -1,18 +1,22 @@
-// Missions: a solo game playing a mission's steps (backend/src/shared/missions/, the rules; this file
-// adapts them to the engine). The config carries a snapshot of the mission taken at the start, so an
-// edit never changes a running game. The clock is the server's time of each input (onClock).
+// Missions: one mission played by one or more players taking turns (backend/src/shared/missions/, the
+// rules; this file adapts them to the engine). Every player has their own run through the steps; the
+// mission is shared, a snapshot taken at the start, so an edit never changes a running game. Each
+// player's clock is the server's time of each input (onClock) and runs only during their turn.
+// A player who fails, gives up or runs out of time is out; the game ends when nobody is left playing.
 // Design: docs/superpowers/specs/2026-11-24-missions-design.md.
 import type { BoardEvent, CommittedVisit, Dart, GameModule, MissionDetail, Player, SeatResult, UserAction } from '../session/types.js'
 import type { MissionView } from '../session/views.js'
 import { progressOf } from '../shared/missions/steps.js'
 import {
   deadline,
+  endTurn,
   endVisit,
   giveUp,
   type MissionRun,
   pause,
   resume,
   startRun,
+  startTurn,
   stepsDone,
   switchStep,
   throwDart,
@@ -20,6 +24,8 @@ import {
 } from '../shared/missions/run.js'
 import { MissionSchema, type Mission, type MissionDart } from '../shared/missions/types.js'
 import { OFFICIAL_MISSIONS } from '../shared/missions/official.js'
+import { rankSeats } from './ranking.js'
+import { nextTurn } from './turns.js'
 
 /** A player's best completed run, as the play screen lists them. */
 export type MissionHighscore = { userId: string | null; name: string; timeMs: number; darts: number }
@@ -33,13 +39,43 @@ export type MissionConfig = {
   highscores: MissionHighscore[]
 }
 
-export type MissionState = { cfg: MissionConfig; run: MissionRun }
+export type MissionState = {
+  cfg: MissionConfig
+  /** Each seat's own run through the steps. */
+  runs: MissionRun[]
+  order: number[]
+  turn: number
+  currentPlayer: number
+  /** The latest input's time (ms since the epoch): when a takeout hands the turn on. */
+  now: number | null
+}
 
 const toMissionDart = (d: Dart): MissionDart => ({ number: d.segment.number, multiplier: d.segment.multiplier, score: d.score })
 
-const over = (s: MissionState) => s.run.status !== 'playing'
+const playing = (run: MissionRun) => run.status === 'playing'
+const finished = (s: MissionState) => !s.runs.some(playing)
 
-const withRun = (s: MissionState, run: MissionRun): MissionState => (run === s.run ? s : { ...s, run })
+// The seat up plays `run` now
+const withRun = (s: MissionState, run: MissionRun): MissionState =>
+  run === s.runs[s.currentPlayer] ? s : { ...s, runs: s.runs.map((r, i) => (i === s.currentPlayer ? run : r)) }
+
+// The turn passes to the next seat still playing, at the time of the takeout that ended it
+function advance(s: MissionState): MissionState {
+  const next = nextTurn(s.order, s.turn, seat => playing(s.runs[seat]))
+  const at = s.now
+  if (!next || next.seat === s.currentPlayer || at === null) return next ? { ...s, turn: next.turn } : s
+  const runs = s.runs.map((r, i) => (i === s.currentPlayer ? endTurn(r, at) : i === next.seat ? startTurn(r, at) : r))
+  return { ...s, runs, turn: next.turn, currentPlayer: next.seat }
+}
+
+/** Negative when seat `a` ranks ahead of `b`: more steps done, then (both completed) the faster time. */
+function compareSeats(s: MissionState, a: number, b: number): number {
+  const [ra, rb] = [s.runs[a], s.runs[b]]
+  const both = ra.status === 'completed' && rb.status === 'completed'
+  return stepsDone(rb) - stepsDone(ra) || (both ? (ra.timeMs ?? 0) - (rb.timeMs ?? 0) : 0)
+}
+
+const placementsOf = (s: MissionState) => rankSeats(s.runs.length, null, (a, b) => compareSeats(s, a, b))
 
 const first = OFFICIAL_MISSIONS[0]
 
@@ -51,100 +87,134 @@ export const missionModule: GameModule<MissionState, MissionConfig, MissionView,
   defaultConfig: { missionId: first.id, test: false, mission: first.mission, highscores: [] },
 
   validate(cfg: MissionConfig, players: Player[]): string | null {
-    if (players.length !== 1) return 'A mission is played alone'
+    if (players.length < 1) return 'At least 1 player'
+    if (cfg.test && players.length !== 1) return 'A test run is played alone'
     if (typeof cfg.missionId !== 'string' || cfg.missionId === '') return 'No mission'
     if (typeof cfg.test !== 'boolean' || !Array.isArray(cfg.highscores)) return 'Invalid mission config'
     return MissionSchema.safeParse(cfg.mission).success ? null : 'Invalid mission'
   },
 
-  init: (cfg: MissionConfig): MissionState => ({ cfg, run: startRun(cfg.mission) }),
+  init: (cfg: MissionConfig, players: Player[]): MissionState => ({
+    cfg,
+    runs: players.map(() => startRun(cfg.mission)),
+    order: players.map((_, i) => i),
+    turn: 0,
+    currentPlayer: 0,
+    now: null,
+  }),
 
-  getCurrentPlayer: () => 0,
+  getCurrentPlayer: (s: MissionState) => s.currentPlayer,
 
-  onClock: (s: MissionState, now: number): MissionState => withRun(s, tick(s.cfg.mission, s.run, now)),
+  // The open visit's deciding dart stopped the player's clock: only the turn's time moves on
+  onClock: (s: MissionState, now: number, current: MissionState): MissionState =>
+    playing(current.runs[current.currentPlayer])
+      ? { ...withRun(s, tick(s.cfg.mission, s.runs[s.currentPlayer], now)), now }
+      : { ...s, now },
 
   onBoardEvent(s: MissionState, e: BoardEvent): { state: MissionState } {
+    if (finished(s)) return { state: s }
+    const run = s.runs[s.currentPlayer]
     switch (e.kind) {
       case 'dart.detected':
-        return { state: withRun(s, throwDart(s.cfg.mission, s.run, toMissionDart(e.data.dart))) }
+        return { state: withRun(s, throwDart(s.cfg.mission, run, toMissionDart(e.data.dart))) }
       case 'takeout.finished':
       case 'visit.cleared':
-        return { state: withRun(s, endVisit(s.cfg.mission, s.run)) }
+        return { state: advance(withRun(s, endVisit(s.cfg.mission, run))) }
       default:
         return { state: s }
     }
   },
 
   onUserAction(s: MissionState, a: UserAction): { state: MissionState } {
+    if (finished(s)) return { state: s }
+    const { mission } = s.cfg
+    const run = s.runs[s.currentPlayer]
     switch (a.type) {
       case 'mission_switch':
-        return { state: withRun(s, switchStep(s.cfg.mission, s.run, a.step)) }
+        return { state: withRun(s, switchStep(mission, run, a.step)) }
       case 'mission_pause':
-        return { state: withRun(s, pause(s.cfg.mission, s.run)) }
+        return { state: withRun(s, pause(mission, run)) }
       case 'mission_resume':
-        return { state: withRun(s, resume(s.run)) }
+        return { state: withRun(s, resume(run)) }
+      // Only the player up leaves; the others play on
       case 'mission_give_up':
-        return { state: withRun(s, giveUp(s.run)) }
+        return { state: advance(withRun(s, giveUp(run))) }
+      // The engine has read the time (onClock): a player whose time ran out hands the turn on
+      case 'mission_clock':
+        return { state: playing(run) ? s : advance(s) }
       default:
-        // mission_clock only makes the engine read the time (onClock)
         return { state: s }
     }
   },
 
   view(s: MissionState): MissionView {
-    const { run, cfg } = s
+    const { mission } = s.cfg
+    const over = finished(s)
+    const placements = placementsOf(s)
+    const up = s.runs[s.currentPlayer]
+    const next = over ? null : advance(withRun(s, endVisit(mission, up)))
     return {
-      missionId: cfg.missionId,
-      test: cfg.test,
-      mission: cfg.mission,
-      highscores: cfg.highscores,
-      status: run.status,
-      failure: run.failure,
-      active: run.active,
-      steps: run.steps.map((step, i) => ({
-        attempts: step.attempts,
-        best: step.best,
-        darts: step.darts,
-        doneAt: step.doneAt,
-        progress: progressOf(cfg.mission.steps[i], step.attempt),
+      missionId: s.cfg.missionId,
+      test: s.cfg.test,
+      mission,
+      highscores: s.cfg.highscores,
+      runs: s.runs.map((run, i) => ({
+        status: run.status,
+        failure: run.failure,
+        active: run.active,
+        steps: run.steps.map((step, j) => ({
+          attempts: step.attempts,
+          best: step.best,
+          darts: step.darts,
+          doneAt: step.doneAt,
+          progress: progressOf(mission.steps[j], step.attempt),
+        })),
+        restarts: run.restarts,
+        darts: run.darts,
+        clock: { ...run.clock, deadline: i === s.currentPlayer ? deadline(mission, run) : null },
+        timeMs: run.timeMs,
+        place: over ? placements[i] : null,
       })),
-      restarts: run.restarts,
-      darts: run.darts,
-      chips: run.visit.chips,
-      clock: { ...run.clock, deadline: deadline(cfg.mission, run) },
-      timeMs: run.timeMs,
-      currentPlayer: 0,
-      winner: over(s) ? 0 : null,
-      visitLocked: run.visit.locked || run.clock.pausedAt !== null || over(s),
+      chips: up.visit.chips,
+      currentPlayer: s.currentPlayer,
+      nextPlayer: next && !finished(next) ? next.currentPlayer : null,
+      winner: over ? placements.indexOf(1) : null,
+      visitLocked: over || up.visit.locked || up.clock.pausedAt !== null || !playing(up),
     }
   },
 
-  summarize: (s: MissionState): SeatResult[] => [
-    {
-      placement: 1,
+  throwOrder: (s: MissionState) => [...s.order],
+
+  summarize: (s: MissionState): SeatResult[] => {
+    const placements = placementsOf(s)
+    return s.runs.map((run, i) => ({
+      placement: placements[i],
       stats: {
-        completed: s.run.status === 'completed' ? 1 : 0,
-        stepsDone: stepsDone(s.run),
-        steps: s.run.steps.length,
-        timeMs: s.run.timeMs ?? 0,
-        darts: s.run.darts,
+        completed: run.status === 'completed' ? 1 : 0,
+        stepsDone: stepsDone(run),
+        steps: run.steps.length,
+        timeMs: run.timeMs ?? 0,
+        darts: run.darts,
       },
-    },
-  ],
+    }))
+  },
 
   detail(_visits: CommittedVisit<MissionState>[], final: MissionState): MissionDetail {
-    const { run, cfg } = final
+    const placements = placementsOf(final)
     return {
       mode: 'mission',
-      missionId: cfg.missionId,
-      test: cfg.test,
-      mission: cfg.mission,
-      status: run.status,
-      failure: run.failure,
-      timeMs: run.timeMs,
-      darts: run.darts,
-      restarts: run.restarts,
-      steps: run.steps.map(step => ({ attempts: step.attempts, best: step.best, darts: step.darts, doneAt: step.doneAt })),
+      missionId: final.cfg.missionId,
+      test: final.cfg.test,
+      mission: final.cfg.mission,
+      seats: final.runs.map((run, i) => ({
+        place: placements[i],
+        status: run.status,
+        failure: run.failure,
+        timeMs: run.timeMs,
+        darts: run.darts,
+        restarts: run.restarts,
+        steps: run.steps.map(step => ({ attempts: step.attempts, best: step.best, darts: step.darts, doneAt: step.doneAt })),
+      })),
     }
   },
 }

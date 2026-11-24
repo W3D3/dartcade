@@ -276,7 +276,7 @@ export const teamOf = (session: Session): number[] => session.module.teamsOf?.(s
 function timeRanOut(session: Session, at: Date): boolean {
   const mod = session.module
   if (!mod.onClock || hasWinner(session, session.currentState)) return false
-  session.committedState = mod.onClock(session.committedState, at.getTime())
+  session.committedState = mod.onClock(session.committedState, at.getTime(), session.currentState)
   session.currentState = refoldVisit(mod, session.committedState, session.openVisitEvents)
   return hasWinner(session, session.currentState)
 }

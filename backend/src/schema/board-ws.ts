@@ -496,37 +496,25 @@ export type MissionGame = EngineGameFields & {
    * The mission's best results when the game started, best first.
    */
   highscores: MissionHighscore[]
-  status: 'playing' | 'completed' | 'failed'
-  failure: 'time' | 'gave_up' | null
   /**
-   * The step the darts go to.
+   * Each seat's run, in seat order.
    */
-  active: number
-  steps: MissionStepRun[]
+  runs: MissionRun[]
   /**
-   * Times every step started over (the Start over policy).
-   */
-  restarts: number
-  /**
-   * Darts thrown while the mission ran.
-   */
-  darts: number
-  /**
-   * The open visit's darts and what each did for the step.
+   * The open visit's darts and what each did for the step of the seat up.
    */
   chips: MissionChip[]
-  clock: MissionClock
-  /**
-   * Mission time when it was completed or failed.
-   */
-  timeMs: number | null
   currentPlayer: number
   /**
-   * 0 once the mission is over, completed or not (a solo game ends either way).
+   * Who throws after this visit; null when the game ends with it.
+   */
+  nextPlayer: number | null
+  /**
+   * The seat placed first once every seat is done or out; null while someone plays.
    */
   winner: number | null
   /**
-   * The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust.
+   * The rest of the visit doesn't count: the next step counts whole visits, a fast leg's bust, a pause, or the seat up is out.
    */
   visitLocked: boolean
 }
@@ -1052,6 +1040,35 @@ export interface MissionHighscore {
   darts: number
 }
 /**
+ * One seat's own run through the mission's steps.
+ */
+export interface MissionRun {
+  status: 'playing' | 'completed' | 'failed'
+  failure: 'time' | 'gave_up' | null
+  /**
+   * The step the darts go to.
+   */
+  active: number
+  steps: MissionStepRun[]
+  /**
+   * Times every step started over (the Start over policy).
+   */
+  restarts: number
+  /**
+   * Darts thrown while the mission ran.
+   */
+  darts: number
+  clock: MissionClock
+  /**
+   * Mission time when it was completed or failed.
+   */
+  timeMs: number | null
+  /**
+   * The seat's place once it is out or the game is over; null while it plays.
+   */
+  place: number | null
+}
+/**
  * How a step of the mission stands.
  */
 export interface MissionStepRun {
@@ -1079,6 +1096,19 @@ export interface MissionStepRun {
   }
 }
 /**
+ * Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.
+ */
+export interface MissionClock {
+  now: number | null
+  startedAt: number | null
+  pausedAt: number | null
+  pausedMs: number
+  /**
+   * When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits.
+   */
+  deadline: number | null
+}
+/**
  * A dart of the open visit and what it did.
  */
 export interface MissionChip {
@@ -1089,19 +1119,6 @@ export interface MissionChip {
    */
   gain: number
   outcome: 'go' | 'done' | 'fail' | 'visit_over'
-}
-/**
- * Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.
- */
-export interface MissionClock {
-  now: number | null
-  startedAt: number | null
-  pausedAt: number | null
-  pausedMs: number
-  /**
-   * When the time runs out (ms since the epoch); null without a limit or while paused.
-   */
-  deadline: number | null
 }
 /**
  * This interface was referenced by `BoardWs`'s JSON-Schema

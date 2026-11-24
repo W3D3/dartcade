@@ -40,6 +40,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     }),
     getSessionByBoard: () => undefined,
   }
+  const lobbyStarts: { userId: string; lobbyId: string; game: { gameId: string; config: unknown }; force: boolean }[] = []
+  const lobbies = {
+    startGame: (userId: string, lobbyId: string, game: { gameId: string; config: Record<string, unknown> }, force: boolean) => {
+      lobbyStarts.push({ userId, lobbyId, game, force })
+      return Promise.resolve({ sessionId: 'lobby-game' })
+    },
+  }
 
   beforeAll(async () => {
     ;({ db, close } = await openTestSchema('missions_api_test'))
@@ -62,11 +69,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     await db.deleteFrom('missions').execute()
     await db.deleteFrom('admin_audit').execute()
     started.length = 0
+    lobbyStarts.length = 0
   })
 
   function app() {
     const a = createFastify()
-    a.register(missionsApiPlugin, { db, engine })
+    a.register(missionsApiPlugin, { db, engine, lobbies })
     return a
   }
   const call = (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, who: Who, payload?: unknown) =>
@@ -251,6 +259,25 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     await db.updateTable('missions').set({ hidden_at: new Date(), hidden_reason: 'x' }).where('id', '=', id).execute()
     expect((await call('POST', `/api/missions/${id}/start`, 'owner', {})).statusCode).toBe(403)
     expect((await call('POST', `/api/missions/${id}/start`, 'owner', { test: true })).statusCode).toBe(201)
+  })
+
+  it('starts it for a lobby the user hosts: everyone who plays there takes turns; never a test run', async () => {
+    const id = await own('friends')
+    const res = await call('POST', `/api/missions/${id}/start`, 'friend', { lobbyId: 'L1' })
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toEqual({ sessionId: 'lobby-game' })
+    expect(lobbyStarts).toEqual([
+      {
+        userId: 'friend',
+        lobbyId: 'L1',
+        force: false,
+        game: { gameId: 'mission', config: expect.objectContaining({ missionId: id, test: false }) },
+      },
+    ])
+    expect(started).toEqual([])
+    expect((await call('POST', `/api/missions/${id}/start`, 'owner', { lobbyId: 'L1', test: true })).statusCode).toBe(400)
+    // Who may not see the mission can't start it for a lobby either
+    expect((await call('POST', `/api/missions/${id}/start`, 'stranger', { lobbyId: 'L1' })).statusCode).toBe(404)
   })
 
   it('lists the highscores best first, by darts for a mission ranked by darts', async () => {

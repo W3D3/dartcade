@@ -1,7 +1,8 @@
 // Whether a finished mission game pays XP (shared/progression.ts MISSION_XP): pure, so the rules are
 // tested on their own and missions/service.ts only gathers the facts.
 import { MISSION_REWARDS_PER_DAY, MISSION_XP } from '../shared/progression.js'
-import type { Difficulty, MissionVisibility } from '../shared/missions/types.js'
+import { suggestDifficulty } from '../shared/missions/difficulty.js'
+import { DIFFICULTIES, type Difficulty, type Mission, type MissionVisibility } from '../shared/missions/types.js'
 
 export type RewardFacts = {
   completed: boolean
@@ -10,7 +11,8 @@ export type RewardFacts = {
   /** null: official. */
   authorId: string | null
   visibility: MissionVisibility
-  difficulty: Difficulty
+  /** The mission as the game played it (its config's snapshot). */
+  mission: Pick<Mission, 'difficulty' | 'steps' | 'onFail' | 'timeLimit'>
   /** Mission rewards the player was paid today (their local day). */
   paidToday: number
 }
@@ -24,5 +26,13 @@ export function missionReward(
   if (f.authorId === f.playerId) return { none: 'own mission' }
   if (f.visibility === 'private') return { none: 'private' }
   if (f.paidToday >= MISSION_REWARDS_PER_DAY) return { none: 'daily cap' }
-  return { xp: MISSION_XP[f.difficulty] }
+  return { xp: MISSION_XP[paidDifficulty(f.mission)] }
+}
+
+/**
+ * The difficulty a mission pays at: its label, but never above what the server makes of its steps
+ * (suggestDifficulty), so a one-dart mission labelled expert pays as easy.
+ */
+export function paidDifficulty(m: RewardFacts['mission']): Difficulty {
+  return DIFFICULTIES[Math.min(DIFFICULTIES.indexOf(m.difficulty), DIFFICULTIES.indexOf(suggestDifficulty(m)))]
 }
