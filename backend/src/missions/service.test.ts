@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertUsers } from '../test/fixtures.js'
-import { createMission } from '../db/missions.js'
+import { createMission, updateMission } from '../db/missions.js'
 import { MISSION_REWARDS_PER_DAY, MISSION_XP } from '../shared/progression.js'
 import { MissionSchema, type Mission, type MissionVisibility } from '../shared/missions/types.js'
 import { MissionService } from './service.js'
@@ -17,7 +17,8 @@ const mission = (o: Partial<Mission> = {}): Mission =>
     onFail: 'retry',
     pause: true,
     rankBy: 'time',
-    steps: [{ type: 'hit', targets: ['S20'], hits: 3, inARow: false, order: 'any' }],
+    // Three S20s in a row: the steps rate it medium, as labelled
+    steps: [{ type: 'hit', targets: ['S20'], hits: 3, inARow: true, order: 'any' }],
     ...o,
   })
 
@@ -104,6 +105,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('mission game end: bests and XP'
     expect(progress?.xp_total).toBe(MISSION_XP.medium)
   })
 
+  it('an edit of the rules clears the highscores; one of the name keeps them', async () => {
+    const id = await make()
+    await finish(id, 'player')
+    await updateMission(db, id, mission({ name: 'Renamed', description: 'New words' }), 'public')
+    expect(await best(id, 'player')).toBeDefined()
+    await updateMission(db, id, mission({ steps: [{ type: 'hit', targets: ['S19'], hits: 3, inARow: true, order: 'any' }] }), 'public')
+    expect(await best(id, 'player')).toBeUndefined()
+  })
+
+  it('pays the run by the mission it played, not by an edit made since', async () => {
+    const id = await make()
+    await updateMission(
+      db,
+      id,
+      mission({ difficulty: 'expert', rankBy: 'darts', steps: [{ type: 'hit', targets: ['S20'], hits: 9, inARow: true, order: 'any' }] }),
+      'public',
+    )
+    await finish(id, 'player', { timeMs: 50_000, darts: 20 })
+    await finish(id, 'player', { timeMs: 60_000, darts: 10 })
+    expect(await paid('player')).toEqual([{ kind: 'mission', source_id: id, amount: MISSION_XP.medium }])
+    // Runs of the rules before the edit don't go into the fresh highscores
+    expect(await best(id, 'player')).toBeUndefined()
+  })
+
   it('pays nothing for your own mission, but keeps your best', async () => {
     const id = await make('public', 'player')
     await finish(id, 'player')
@@ -125,6 +150,48 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('mission game end: bests and XP'
     for (const id of ids) await finish(id, 'player')
     expect((await paid('player')).length).toBe(MISSION_REWARDS_PER_DAY)
     expect(await best(ids[MISSION_REWARDS_PER_DAY], 'player')).toBeDefined()
+  })
+
+  it('pays and ranks each player of a game of several on their own', async () => {
+    const id = await make()
+    const game = await finish(id, 'player', { timeMs: 50_000 })
+    // The author plays along in seat 1: their best is kept, never paid; a failed guest seat pays nobody
+    await db
+      .insertInto('game_players')
+      .values([
+        {
+          session_id: game,
+          seat: 1,
+          name: 'A',
+          user_id: 'author',
+          placement: 2,
+          stats: JSON.stringify({ completed: 1, stepsDone: 1, steps: 1, timeMs: 70_000, darts: 12 }),
+          throw_position: 1,
+          controller_user_id: 'author',
+          board_db_id: null,
+          bot_level: null,
+        },
+        {
+          session_id: game,
+          seat: 2,
+          name: 'Guest',
+          user_id: null,
+          placement: 3,
+          stats: JSON.stringify({ completed: 0, stepsDone: 0, steps: 1, timeMs: 0, darts: 3 }),
+          throw_position: 2,
+          controller_user_id: 'author',
+          board_db_id: null,
+          bot_level: null,
+        },
+      ])
+      .execute()
+    await db.deleteFrom('mission_bests').execute()
+    await db.deleteFrom('xp_ledger').execute()
+    await service.onGameEnded({ sessionId: game, status: 'finished', gameId: 'mission' })
+    expect(await paid('player')).toEqual([{ kind: 'mission', source_id: id, amount: MISSION_XP.medium }])
+    expect(await paid('author')).toEqual([])
+    expect(await best(id, 'author')).toEqual({ time_ms: 70_000, darts: 12 })
+    expect(await best(id, 'player')).toEqual({ time_ms: 50_000, darts: 10 })
   })
 
   it('a game of no mission game, or aborted, is not its business', async () => {

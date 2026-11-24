@@ -70,7 +70,20 @@ function bullOffNeedsRethrow(session: Session): boolean {
 
 const MANUAL_ACTIONS = new Set(['add_dart', 'correct_dart'])
 const BULL_OFF_ACTIONS = new Set(['bulloff_start', 'bulloff_rethrow'])
-const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip', 'p121_give_up'])
+const SEAT_ACTIONS = new Set([
+  'add_dart',
+  'undo_dart',
+  'takeout',
+  'correct_dart',
+  'bulloff_skip',
+  'p121_give_up',
+  // A mission's actions are the run of the player up
+  'mission_switch',
+  'mission_pause',
+  'mission_resume',
+  'mission_give_up',
+  'mission_clock',
+])
 
 /** The action as it may be applied (forfeit gets its seats), or null when the user may not send it. */
 export function authorizeAction(session: Session, userId: string, action: UserAction): UserAction | null {

@@ -20628,16 +20628,10 @@
                         "test",
                         "mission",
                         "highscores",
-                        "status",
-                        "failure",
-                        "active",
-                        "steps",
-                        "restarts",
-                        "darts",
+                        "runs",
                         "chips",
-                        "clock",
-                        "timeMs",
                         "currentPlayer",
+                        "nextPlayer",
                         "winner",
                         "visitLocked"
                       ],
@@ -21047,110 +21041,197 @@
                             }
                           }
                         },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "playing",
-                            "completed",
-                            "failed"
-                          ]
-                        },
-                        "failure": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "enum": [
-                            "time",
-                            "gave_up",
-                            null
-                          ]
-                        },
-                        "active": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "description": "The step the darts go to."
-                        },
-                        "steps": {
+                        "runs": {
                           "type": "array",
+                          "description": "Each seat's run, in seat order.",
                           "items": {
-                            "title": "MissionStepRun",
-                            "description": "How a step of the mission stands.",
+                            "title": "MissionRun",
+                            "description": "One seat's own run through the mission's steps.",
                             "type": "object",
                             "required": [
-                              "attempts",
-                              "best",
+                              "status",
+                              "failure",
+                              "active",
+                              "steps",
+                              "restarts",
                               "darts",
-                              "doneAt",
-                              "progress"
+                              "clock",
+                              "timeMs",
+                              "place"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                              "attempts": {
-                                "type": "integer",
-                                "minimum": 1
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "playing",
+                                  "completed",
+                                  "failed"
+                                ]
                               },
-                              "best": {
+                              "failure": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "enum": [
+                                  "time",
+                                  "gave_up",
+                                  null
+                                ]
+                              },
+                              "active": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "description": "The most progress an attempt made (a streak's best)."
+                                "description": "The step the darts go to."
+                              },
+                              "steps": {
+                                "type": "array",
+                                "items": {
+                                  "title": "MissionStepRun",
+                                  "description": "How a step of the mission stands.",
+                                  "type": "object",
+                                  "required": [
+                                    "attempts",
+                                    "best",
+                                    "darts",
+                                    "doneAt",
+                                    "progress"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "attempts": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "best": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "The most progress an attempt made (a streak's best)."
+                                    },
+                                    "darts": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "doneAt": {
+                                      "type": [
+                                        "integer",
+                                        "null"
+                                      ],
+                                      "minimum": 0,
+                                      "description": "Mission time (ms) when the step was done."
+                                    },
+                                    "progress": {
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "of"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "value": {
+                                          "type": "integer"
+                                        },
+                                        "of": {
+                                          "type": "integer",
+                                          "minimum": 1
+                                        },
+                                        "left": {
+                                          "type": "integer",
+                                          "description": "Checkout and fast leg: the score left."
+                                        },
+                                        "average": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ],
+                                          "description": "Average: the 3-dart average so far."
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "restarts": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Times every step started over (the Start over policy)."
                               },
                               "darts": {
                                 "type": "integer",
-                                "minimum": 0
+                                "minimum": 0,
+                                "description": "Darts thrown while the mission ran."
                               },
-                              "doneAt": {
+                              "clock": {
+                                "title": "MissionClock",
+                                "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
+                                "type": "object",
+                                "required": [
+                                  "now",
+                                  "startedAt",
+                                  "pausedAt",
+                                  "pausedMs",
+                                  "deadline"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "now": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ],
+                                    "minimum": 0
+                                  },
+                                  "startedAt": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ],
+                                    "minimum": 0
+                                  },
+                                  "pausedAt": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ],
+                                    "minimum": 0
+                                  },
+                                  "pausedMs": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "deadline": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ],
+                                    "minimum": 0,
+                                    "description": "When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits."
+                                  }
+                                }
+                              },
+                              "timeMs": {
                                 "type": [
                                   "integer",
                                   "null"
                                 ],
                                 "minimum": 0,
-                                "description": "Mission time (ms) when the step was done."
+                                "description": "Mission time when it was completed or failed."
                               },
-                              "progress": {
-                                "type": "object",
-                                "required": [
-                                  "value",
-                                  "of"
+                              "place": {
+                                "type": [
+                                  "integer",
+                                  "null"
                                 ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "value": {
-                                    "type": "integer"
-                                  },
-                                  "of": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                  },
-                                  "left": {
-                                    "type": "integer",
-                                    "description": "Checkout and fast leg: the score left."
-                                  },
-                                  "average": {
-                                    "type": [
-                                      "number",
-                                      "null"
-                                    ],
-                                    "description": "Average: the 3-dart average so far."
-                                  }
-                                }
+                                "minimum": 1,
+                                "description": "The seat's place once it is out or the game is over; null while it plays."
                               }
                             }
                           }
                         },
-                        "restarts": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "description": "Times every step started over (the Start over policy)."
-                        },
-                        "darts": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "description": "Darts thrown while the mission ran."
-                        },
                         "chips": {
                           "type": "array",
-                          "description": "The open visit's darts and what each did for the step.",
+                          "description": "The open visit's darts and what each did for the step of the seat up.",
                           "items": {
                             "title": "MissionChip",
                             "description": "A dart of the open visit and what it did.",
@@ -21188,65 +21269,17 @@
                             }
                           }
                         },
-                        "clock": {
-                          "title": "MissionClock",
-                          "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
-                          "type": "object",
-                          "required": [
-                            "now",
-                            "startedAt",
-                            "pausedAt",
-                            "pausedMs",
-                            "deadline"
-                          ],
-                          "additionalProperties": false,
-                          "properties": {
-                            "now": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
-                              "minimum": 0
-                            },
-                            "startedAt": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
-                              "minimum": 0
-                            },
-                            "pausedAt": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
-                              "minimum": 0
-                            },
-                            "pausedMs": {
-                              "type": "integer",
-                              "minimum": 0
-                            },
-                            "deadline": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
-                              "minimum": 0,
-                              "description": "When the time runs out (ms since the epoch); null without a limit or while paused."
-                            }
-                          }
+                        "currentPlayer": {
+                          "type": "integer",
+                          "minimum": 0
                         },
-                        "timeMs": {
+                        "nextPlayer": {
                           "type": [
                             "integer",
                             "null"
                           ],
                           "minimum": 0,
-                          "description": "Mission time when it was completed or failed."
-                        },
-                        "currentPlayer": {
-                          "type": "integer",
-                          "minimum": 0
+                          "description": "Who throws after this visit; null when the game ends with it."
                         },
                         "winner": {
                           "type": [
@@ -21254,11 +21287,11 @@
                             "null"
                           ],
                           "minimum": 0,
-                          "description": "0 once the mission is over, completed or not (a solo game ends either way)."
+                          "description": "The seat placed first once every seat is done or out; null while someone plays."
                         },
                         "visitLocked": {
                           "type": "boolean",
-                          "description": "The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust."
+                          "description": "The rest of the visit doesn't count: the next step counts whole visits, a fast leg's bust, a pause, or the seat up is out."
                         }
                       }
                     }
@@ -22174,7 +22207,191 @@
             "null"
           ],
           "minimum": 0,
-          "description": "When the time runs out (ms since the epoch); null without a limit or while paused."
+          "description": "When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits."
+        }
+      }
+    },
+    "MissionRun": {
+      "title": "MissionRun",
+      "description": "One seat's own run through the mission's steps.",
+      "type": "object",
+      "required": [
+        "status",
+        "failure",
+        "active",
+        "steps",
+        "restarts",
+        "darts",
+        "clock",
+        "timeMs",
+        "place"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "playing",
+            "completed",
+            "failed"
+          ]
+        },
+        "failure": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "time",
+            "gave_up",
+            null
+          ]
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The step the darts go to."
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "title": "MissionStepRun",
+            "description": "How a step of the mission stands.",
+            "type": "object",
+            "required": [
+              "attempts",
+              "best",
+              "darts",
+              "doneAt",
+              "progress"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "attempts": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "best": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The most progress an attempt made (a streak's best)."
+              },
+              "darts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "doneAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "Mission time (ms) when the step was done."
+              },
+              "progress": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "of"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "of": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "left": {
+                    "type": "integer",
+                    "description": "Checkout and fast leg: the score left."
+                  },
+                  "average": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Average: the 3-dart average so far."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "restarts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Times every step started over (the Start over policy)."
+        },
+        "darts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Darts thrown while the mission ran."
+        },
+        "clock": {
+          "title": "MissionClock",
+          "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
+          "type": "object",
+          "required": [
+            "now",
+            "startedAt",
+            "pausedAt",
+            "pausedMs",
+            "deadline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "now": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "startedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "pausedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "pausedMs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "deadline": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits."
+            }
+          }
+        },
+        "timeMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Mission time when it was completed or failed."
+        },
+        "place": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "The seat's place once it is out or the game is over; null while it plays."
         }
       }
     },
@@ -22315,16 +22532,10 @@
             "test",
             "mission",
             "highscores",
-            "status",
-            "failure",
-            "active",
-            "steps",
-            "restarts",
-            "darts",
+            "runs",
             "chips",
-            "clock",
-            "timeMs",
             "currentPlayer",
+            "nextPlayer",
             "winner",
             "visitLocked"
           ],
@@ -22734,110 +22945,197 @@
                 }
               }
             },
-            "status": {
-              "type": "string",
-              "enum": [
-                "playing",
-                "completed",
-                "failed"
-              ]
-            },
-            "failure": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "enum": [
-                "time",
-                "gave_up",
-                null
-              ]
-            },
-            "active": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "The step the darts go to."
-            },
-            "steps": {
+            "runs": {
               "type": "array",
+              "description": "Each seat's run, in seat order.",
               "items": {
-                "title": "MissionStepRun",
-                "description": "How a step of the mission stands.",
+                "title": "MissionRun",
+                "description": "One seat's own run through the mission's steps.",
                 "type": "object",
                 "required": [
-                  "attempts",
-                  "best",
+                  "status",
+                  "failure",
+                  "active",
+                  "steps",
+                  "restarts",
                   "darts",
-                  "doneAt",
-                  "progress"
+                  "clock",
+                  "timeMs",
+                  "place"
                 ],
                 "additionalProperties": false,
                 "properties": {
-                  "attempts": {
-                    "type": "integer",
-                    "minimum": 1
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "playing",
+                      "completed",
+                      "failed"
+                    ]
                   },
-                  "best": {
+                  "failure": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "time",
+                      "gave_up",
+                      null
+                    ]
+                  },
+                  "active": {
                     "type": "integer",
                     "minimum": 0,
-                    "description": "The most progress an attempt made (a streak's best)."
+                    "description": "The step the darts go to."
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "title": "MissionStepRun",
+                      "description": "How a step of the mission stands.",
+                      "type": "object",
+                      "required": [
+                        "attempts",
+                        "best",
+                        "darts",
+                        "doneAt",
+                        "progress"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "attempts": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "best": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "The most progress an attempt made (a streak's best)."
+                        },
+                        "darts": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "doneAt": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "description": "Mission time (ms) when the step was done."
+                        },
+                        "progress": {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "of"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "value": {
+                              "type": "integer"
+                            },
+                            "of": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "left": {
+                              "type": "integer",
+                              "description": "Checkout and fast leg: the score left."
+                            },
+                            "average": {
+                              "type": [
+                                "number",
+                                "null"
+                              ],
+                              "description": "Average: the 3-dart average so far."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "restarts": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Times every step started over (the Start over policy)."
                   },
                   "darts": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "Darts thrown while the mission ran."
                   },
-                  "doneAt": {
+                  "clock": {
+                    "title": "MissionClock",
+                    "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
+                    "type": "object",
+                    "required": [
+                      "now",
+                      "startedAt",
+                      "pausedAt",
+                      "pausedMs",
+                      "deadline"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "now": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "startedAt": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "pausedAt": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "pausedMs": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "deadline": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "description": "When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits."
+                      }
+                    }
+                  },
+                  "timeMs": {
                     "type": [
                       "integer",
                       "null"
                     ],
                     "minimum": 0,
-                    "description": "Mission time (ms) when the step was done."
+                    "description": "Mission time when it was completed or failed."
                   },
-                  "progress": {
-                    "type": "object",
-                    "required": [
-                      "value",
-                      "of"
+                  "place": {
+                    "type": [
+                      "integer",
+                      "null"
                     ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "value": {
-                        "type": "integer"
-                      },
-                      "of": {
-                        "type": "integer",
-                        "minimum": 1
-                      },
-                      "left": {
-                        "type": "integer",
-                        "description": "Checkout and fast leg: the score left."
-                      },
-                      "average": {
-                        "type": [
-                          "number",
-                          "null"
-                        ],
-                        "description": "Average: the 3-dart average so far."
-                      }
-                    }
+                    "minimum": 1,
+                    "description": "The seat's place once it is out or the game is over; null while it plays."
                   }
                 }
               }
             },
-            "restarts": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Times every step started over (the Start over policy)."
-            },
-            "darts": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Darts thrown while the mission ran."
-            },
             "chips": {
               "type": "array",
-              "description": "The open visit's darts and what each did for the step.",
+              "description": "The open visit's darts and what each did for the step of the seat up.",
               "items": {
                 "title": "MissionChip",
                 "description": "A dart of the open visit and what it did.",
@@ -22875,65 +23173,17 @@
                 }
               }
             },
-            "clock": {
-              "title": "MissionClock",
-              "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
-              "type": "object",
-              "required": [
-                "now",
-                "startedAt",
-                "pausedAt",
-                "pausedMs",
-                "deadline"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "now": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "minimum": 0
-                },
-                "startedAt": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "minimum": 0
-                },
-                "pausedAt": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "minimum": 0
-                },
-                "pausedMs": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "deadline": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "minimum": 0,
-                  "description": "When the time runs out (ms since the epoch); null without a limit or while paused."
-                }
-              }
+            "currentPlayer": {
+              "type": "integer",
+              "minimum": 0
             },
-            "timeMs": {
+            "nextPlayer": {
               "type": [
                 "integer",
                 "null"
               ],
               "minimum": 0,
-              "description": "Mission time when it was completed or failed."
-            },
-            "currentPlayer": {
-              "type": "integer",
-              "minimum": 0
+              "description": "Who throws after this visit; null when the game ends with it."
             },
             "winner": {
               "type": [
@@ -22941,11 +23191,11 @@
                 "null"
               ],
               "minimum": 0,
-              "description": "0 once the mission is over, completed or not (a solo game ends either way)."
+              "description": "The seat placed first once every seat is done or out; null while someone plays."
             },
             "visitLocked": {
               "type": "boolean",
-              "description": "The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust."
+              "description": "The rest of the visit doesn't count: the next step counts whole visits, a fast leg's bust, a pause, or the seat up is out."
             }
           }
         }
@@ -23680,16 +23930,10 @@
                     "test",
                     "mission",
                     "highscores",
-                    "status",
-                    "failure",
-                    "active",
-                    "steps",
-                    "restarts",
-                    "darts",
+                    "runs",
                     "chips",
-                    "clock",
-                    "timeMs",
                     "currentPlayer",
+                    "nextPlayer",
                     "winner",
                     "visitLocked"
                   ],
@@ -24099,110 +24343,197 @@
                         }
                       }
                     },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "playing",
-                        "completed",
-                        "failed"
-                      ]
-                    },
-                    "failure": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "enum": [
-                        "time",
-                        "gave_up",
-                        null
-                      ]
-                    },
-                    "active": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "description": "The step the darts go to."
-                    },
-                    "steps": {
+                    "runs": {
                       "type": "array",
+                      "description": "Each seat's run, in seat order.",
                       "items": {
-                        "title": "MissionStepRun",
-                        "description": "How a step of the mission stands.",
+                        "title": "MissionRun",
+                        "description": "One seat's own run through the mission's steps.",
                         "type": "object",
                         "required": [
-                          "attempts",
-                          "best",
+                          "status",
+                          "failure",
+                          "active",
+                          "steps",
+                          "restarts",
                           "darts",
-                          "doneAt",
-                          "progress"
+                          "clock",
+                          "timeMs",
+                          "place"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "attempts": {
-                            "type": "integer",
-                            "minimum": 1
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "playing",
+                              "completed",
+                              "failed"
+                            ]
                           },
-                          "best": {
+                          "failure": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "time",
+                              "gave_up",
+                              null
+                            ]
+                          },
+                          "active": {
                             "type": "integer",
                             "minimum": 0,
-                            "description": "The most progress an attempt made (a streak's best)."
+                            "description": "The step the darts go to."
+                          },
+                          "steps": {
+                            "type": "array",
+                            "items": {
+                              "title": "MissionStepRun",
+                              "description": "How a step of the mission stands.",
+                              "type": "object",
+                              "required": [
+                                "attempts",
+                                "best",
+                                "darts",
+                                "doneAt",
+                                "progress"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "attempts": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "best": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "description": "The most progress an attempt made (a streak's best)."
+                                },
+                                "darts": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "doneAt": {
+                                  "type": [
+                                    "integer",
+                                    "null"
+                                  ],
+                                  "minimum": 0,
+                                  "description": "Mission time (ms) when the step was done."
+                                },
+                                "progress": {
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "of"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "integer"
+                                    },
+                                    "of": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "left": {
+                                      "type": "integer",
+                                      "description": "Checkout and fast leg: the score left."
+                                    },
+                                    "average": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ],
+                                      "description": "Average: the 3-dart average so far."
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "restarts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Times every step started over (the Start over policy)."
                           },
                           "darts": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "description": "Darts thrown while the mission ran."
                           },
-                          "doneAt": {
+                          "clock": {
+                            "title": "MissionClock",
+                            "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
+                            "type": "object",
+                            "required": [
+                              "now",
+                              "startedAt",
+                              "pausedAt",
+                              "pausedMs",
+                              "deadline"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "now": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 0
+                              },
+                              "startedAt": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 0
+                              },
+                              "pausedAt": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 0
+                              },
+                              "pausedMs": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "deadline": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 0,
+                                "description": "When the seat up runs out of time (ms since the epoch); null without a limit, while paused, or for a seat that waits."
+                              }
+                            }
+                          },
+                          "timeMs": {
                             "type": [
                               "integer",
                               "null"
                             ],
                             "minimum": 0,
-                            "description": "Mission time (ms) when the step was done."
+                            "description": "Mission time when it was completed or failed."
                           },
-                          "progress": {
-                            "type": "object",
-                            "required": [
-                              "value",
-                              "of"
+                          "place": {
+                            "type": [
+                              "integer",
+                              "null"
                             ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "value": {
-                                "type": "integer"
-                              },
-                              "of": {
-                                "type": "integer",
-                                "minimum": 1
-                              },
-                              "left": {
-                                "type": "integer",
-                                "description": "Checkout and fast leg: the score left."
-                              },
-                              "average": {
-                                "type": [
-                                  "number",
-                                  "null"
-                                ],
-                                "description": "Average: the 3-dart average so far."
-                              }
-                            }
+                            "minimum": 1,
+                            "description": "The seat's place once it is out or the game is over; null while it plays."
                           }
                         }
                       }
                     },
-                    "restarts": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "description": "Times every step started over (the Start over policy)."
-                    },
-                    "darts": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "description": "Darts thrown while the mission ran."
-                    },
                     "chips": {
                       "type": "array",
-                      "description": "The open visit's darts and what each did for the step.",
+                      "description": "The open visit's darts and what each did for the step of the seat up.",
                       "items": {
                         "title": "MissionChip",
                         "description": "A dart of the open visit and what it did.",
@@ -24240,65 +24571,17 @@
                         }
                       }
                     },
-                    "clock": {
-                      "title": "MissionClock",
-                      "description": "Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.",
-                      "type": "object",
-                      "required": [
-                        "now",
-                        "startedAt",
-                        "pausedAt",
-                        "pausedMs",
-                        "deadline"
-                      ],
-                      "additionalProperties": false,
-                      "properties": {
-                        "now": {
-                          "type": [
-                            "integer",
-                            "null"
-                          ],
-                          "minimum": 0
-                        },
-                        "startedAt": {
-                          "type": [
-                            "integer",
-                            "null"
-                          ],
-                          "minimum": 0
-                        },
-                        "pausedAt": {
-                          "type": [
-                            "integer",
-                            "null"
-                          ],
-                          "minimum": 0
-                        },
-                        "pausedMs": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "deadline": {
-                          "type": [
-                            "integer",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "description": "When the time runs out (ms since the epoch); null without a limit or while paused."
-                        }
-                      }
+                    "currentPlayer": {
+                      "type": "integer",
+                      "minimum": 0
                     },
-                    "timeMs": {
+                    "nextPlayer": {
                       "type": [
                         "integer",
                         "null"
                       ],
                       "minimum": 0,
-                      "description": "Mission time when it was completed or failed."
-                    },
-                    "currentPlayer": {
-                      "type": "integer",
-                      "minimum": 0
+                      "description": "Who throws after this visit; null when the game ends with it."
                     },
                     "winner": {
                       "type": [
@@ -24306,11 +24589,11 @@
                         "null"
                       ],
                       "minimum": 0,
-                      "description": "0 once the mission is over, completed or not (a solo game ends either way)."
+                      "description": "The seat placed first once every seat is done or out; null while someone plays."
                     },
                     "visitLocked": {
                       "type": "boolean",
-                      "description": "The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust."
+                      "description": "The rest of the visit doesn't count: the next step counts whole visits, a fast leg's bust, a pause, or the seat up is out."
                     }
                   }
                 }

@@ -9964,8 +9964,8 @@
       ],
       "post": {
         "operationId": "startMission",
-        "summary": "Start a game of the mission on the user's board (their lobby seat's, else their usual one; else entered by hand)",
-        "description": "A test run (`test`, the author only; for an official mission, admins) counts for no times, XP, stats or history. One running game per account and per board, as for every game.",
+        "summary": "Start a game of the mission, alone or for a lobby the user hosts",
+        "description": "Alone, on the user's board (their lobby seat's, else their usual one; else entered by hand). With `lobbyId`, everyone who plays in that lobby plays it, taking turns, as the lobby's Start does (its errors too). A test run (`test`, the author only; for an official mission, admins) is played alone and counts for no times, XP, stats or history. One running game per account and per board.",
         "tags": [
           "missions"
         ],
@@ -12735,12 +12735,7 @@
           "missionId",
           "test",
           "mission",
-          "status",
-          "failure",
-          "timeMs",
-          "darts",
-          "restarts",
-          "steps"
+          "seats"
         ],
         "additionalProperties": false,
         "properties": {
@@ -12760,68 +12755,91 @@
           "mission": {
             "$ref": "#/components/schemas/Mission"
           },
-          "status": {
-            "type": "string",
-            "enum": [
-              "playing",
-              "completed",
-              "failed"
-            ],
-            "description": "playing only for a game that ended another way (aborted)"
-          },
-          "failure": {
-            "type": "string",
-            "enum": [
-              "time",
-              "gave_up",
-              null
-            ],
-            "nullable": true
-          },
-          "timeMs": {
-            "type": "integer",
-            "minimum": 0,
-            "nullable": true,
-            "description": "Mission time when it was completed or failed"
-          },
-          "darts": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "restarts": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "steps": {
+          "seats": {
             "type": "array",
-            "description": "One per step of the mission, in its order",
+            "description": "Each seat's run, in seat order",
             "items": {
               "type": "object",
               "required": [
-                "attempts",
-                "best",
+                "place",
+                "status",
+                "failure",
+                "timeMs",
                 "darts",
-                "doneAt"
+                "restarts",
+                "steps"
               ],
               "additionalProperties": false,
               "properties": {
-                "attempts": {
+                "place": {
                   "type": "integer",
                   "minimum": 1
                 },
-                "best": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "playing",
+                    "completed",
+                    "failed"
+                  ],
+                  "description": "playing only for a game that ended another way (a forfeit)"
+                },
+                "failure": {
+                  "type": "string",
+                  "enum": [
+                    "time",
+                    "gave_up",
+                    null
+                  ],
+                  "nullable": true
+                },
+                "timeMs": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "nullable": true,
+                  "description": "The seat's mission time when it completed or failed"
                 },
                 "darts": {
                   "type": "integer",
                   "minimum": 0
                 },
-                "doneAt": {
+                "restarts": {
                   "type": "integer",
-                  "minimum": 0,
-                  "nullable": true,
-                  "description": "Mission time (ms) when the step was done"
+                  "minimum": 0
+                },
+                "steps": {
+                  "type": "array",
+                  "description": "One per step of the mission, in its order",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "attempts",
+                      "best",
+                      "darts",
+                      "doneAt"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "attempts": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "best": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "darts": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "doneAt": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true,
+                        "description": "The seat's mission time (ms) when the step was done"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -23425,7 +23443,16 @@
           "test": {
             "type": "boolean",
             "default": false,
-            "description": "A test run of the user's own mission"
+            "description": "A test run of the user's own mission (alone)"
+          },
+          "lobbyId": {
+            "type": "string",
+            "description": "The user hosts this lobby; everyone who plays there plays the mission, taking turns"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Start anyway past the lobby's start problems (as the lobby's own Start)"
           }
         }
       },

@@ -1,3 +1,4 @@
+import { missionModule } from '../games/mission.js'
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -253,6 +254,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.preview(code)).toMatchObject({ host: { name: 'Chris' } })
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Chris', 'Lena'])
+    })
+
+    it('starts a mission the missions API prepared for everyone who plays (host only)', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      const mission = missionModule.defaultConfig
+      await expect(lobbies.startGame('lena', id, { gameId: 'mission', config: mission }, true)).rejects.toMatchObject({ statusCode: 403 })
+      const { sessionId } = await lobbies.startGame('chris', id, { gameId: 'mission', config: mission }, true)
+      const session = engine.getSession(sessionId)
+      expect(session?.seats.map(s => s.name)).toEqual(['Christoph', 'Lena'])
+      expect(session?.lobbyId).toBe(id)
+      await engine.deleteSession(sessionId, 'chris')
     })
 
     it("shows a member's new avatar in the lobby and on everyone's lobby indicator", async () => {

@@ -3693,8 +3693,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a game of the mission on the user's board (their lobby seat's, else their usual one; else entered by hand)
-         * @description A test run (`test`, the author only; for an official mission, admins) counts for no times, XP, stats or history. One running game per account and per board, as for every game.
+         * Start a game of the mission, alone or for a lobby the user hosts
+         * @description Alone, on the user's board (their lobby seat's, else their usual one; else entered by hand). With `lobbyId`, everyone who plays in that lobby plays it, taking turns, as the lobby's Start does (its errors too). A test run (`test`, the author only; for an official mission, admins) is played alone and counts for no times, XP, stats or history. One running game per account and per board.
          */
         post: operations["startMission"];
         delete?: never;
@@ -4416,24 +4416,28 @@ export interface components {
             /** @description A test run of the author's own mission */
             test: boolean;
             mission: components["schemas"]["Mission"];
-            /**
-             * @description playing only for a game that ended another way (aborted)
-             * @enum {string}
-             */
-            status: "playing" | "completed" | "failed";
-            /** @enum {string|null} */
-            failure: "time" | "gave_up" | null;
-            /** @description Mission time when it was completed or failed */
-            timeMs: number | null;
-            darts: number;
-            restarts: number;
-            /** @description One per step of the mission, in its order */
-            steps: {
-                attempts: number;
-                best: number;
+            /** @description Each seat's run, in seat order */
+            seats: {
+                place: number;
+                /**
+                 * @description playing only for a game that ended another way (a forfeit)
+                 * @enum {string}
+                 */
+                status: "playing" | "completed" | "failed";
+                /** @enum {string|null} */
+                failure: "time" | "gave_up" | null;
+                /** @description The seat's mission time when it completed or failed */
+                timeMs: number | null;
                 darts: number;
-                /** @description Mission time (ms) when the step was done */
-                doneAt: number | null;
+                restarts: number;
+                /** @description One per step of the mission, in its order */
+                steps: {
+                    attempts: number;
+                    best: number;
+                    darts: number;
+                    /** @description The seat's mission time (ms) when the step was done */
+                    doneAt: number | null;
+                }[];
             }[];
         };
         CricketDetail: {
@@ -7355,10 +7359,17 @@ export interface components {
         };
         MissionStartRequest: {
             /**
-             * @description A test run of the user's own mission
+             * @description A test run of the user's own mission (alone)
              * @default false
              */
             test: boolean;
+            /** @description The user hosts this lobby; everyone who plays there plays the mission, taking turns */
+            lobbyId?: string;
+            /**
+             * @description Start anyway past the lobby's start problems (as the lobby's own Start)
+             * @default false
+             */
+            force: boolean;
         };
         MissionReasonRequest: {
             /** @description The reason; blank counts as missing */

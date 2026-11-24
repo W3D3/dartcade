@@ -6,6 +6,7 @@ import {
   envFlagValues,
   flagEnabled,
   flagNumber,
+  modeAvailable,
   modeFlag,
   setupFlags,
   setOverrides,
@@ -25,6 +26,11 @@ describe('flags', () => {
     expect(await flagEnabled('gamemode.minigolf.enabled', admin)).toBe(true)
     expect(await flagEnabled('gamemode.minigolf.enabled', player)).toBe(false)
     expect(await flagEnabled('gamemode.minigolf.enabled', null)).toBe(false)
+  })
+
+  it('never lets a lobby, the Play page or POST /api/sessions pick a mode with its own start (a mission)', async () => {
+    expect(await modeAvailable('mission', admin)).toBe(false)
+    expect(await modeAvailable('x01', player)).toBe(true)
   })
 
   it('turns a flag on for everyone with FLAGS_ON', async () => {

@@ -8,3 +8,12 @@ export type RunResult = { timeMs: number; darts: number }
 export function compareRuns(rankBy: Mission['rankBy'], a: RunResult, b: RunResult): number {
   return rankBy === 'darts' ? a.darts - b.darts || a.timeMs - b.timeMs : a.timeMs - b.timeMs || a.darts - b.darts
 }
+
+/**
+ * Whether runs of `a` and `b` compare: everything but the name and description is the same. A
+ * change to the rules starts the highscores afresh.
+ */
+export function sameRules(a: Mission, b: Mission): boolean {
+  const rules = ({ name: _name, description: _description, ...rest }: Mission) => JSON.stringify(rest)
+  return rules(a) === rules(b)
+}
