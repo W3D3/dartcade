@@ -4284,6 +4284,13 @@ export interface components {
                     [key: string]: number;
                 }[];
             };
+            /** @description The span `busiest` counted (from inclusive, to exclusive), to pass on to the drill-down so a cell and its list agree */
+            busiestWindow: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+            };
             /** @description Finished games of the last 28 days: 7 rows (Monday first) of 24 UTC hours */
             busiest: number[][];
             happeningNow: {

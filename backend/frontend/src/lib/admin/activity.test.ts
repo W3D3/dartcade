@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { barHeights, busiestSlot, dayBars, formatCount, heatLevel, modeColor, percent, trend } from './activity'
+import {
+  bucketName,
+  bucketRange,
+  bucketTick,
+  bucketize,
+  busiestSlot,
+  defaultGranularity,
+  formatCount,
+  heatLevel,
+  modeColor,
+  percent,
+  trend,
+} from './activity'
 
 describe('trend', () => {
   it('shows the change in whole percent with its arrow', () => {
@@ -25,23 +37,41 @@ describe('formatCount', () => {
   })
 })
 
-describe('dayBars', () => {
-  it('scales every mode against the busiest day and skips modes with no games', () => {
-    const bars = dayBars([{ x01: 3, cricket: 1 }, { x01: 1 }], ['x01', 'cricket'], new Date('2026-11-15'))
-    expect(bars.map(b => b.total)).toEqual([4, 1])
-    expect(bars[0].parts).toEqual([
-      { mode: 'x01', count: 3, height: 75 },
-      { mode: 'cricket', count: 1, height: 25 },
-    ])
-    expect(bars[1].parts).toEqual([{ mode: 'x01', count: 1, height: 25 }])
-    expect(bars[0].day.toISOString().slice(0, 10)).toBe('2026-11-14')
-  })
-})
+describe('bucketize', () => {
+  // 2026-11-11 is a Wednesday; eight days end on Wednesday the 18th
+  const today = new Date('2026-11-18T10:00:00Z')
+  const perDay = [1, 2, 3, 4, 5, 6, 7, 8].map(n => ({ x01: n }))
 
-describe('barHeights', () => {
-  it('is all zero for an empty week instead of dividing by zero', () => {
-    expect(barHeights([0, 0])).toEqual([0, 0])
-    expect(barHeights([1, 2])).toEqual([50, 100])
+  it('keeps a day per bucket', () => {
+    const days = bucketize(perDay, today, 'day')
+    expect(days).toHaveLength(8)
+    expect(days.at(-1)).toMatchObject({ total: 8, parts: { x01: 8 } })
+    expect(bucketRange(days.at(-1)!)).toEqual({ from: '2026-11-18T00:00:00.000Z', to: '2026-11-19T00:00:00.000Z' })
+  })
+  it('adds up Monday-first weeks, the first one only for the days the range has', () => {
+    const weeks = bucketize(perDay, today, 'week')
+    expect(weeks.map(w => w.total)).toEqual([15, 21])
+    expect(weeks[0].start.toISOString()).toBe('2026-11-09T00:00:00.000Z')
+    expect(weeks[0].from.toISOString()).toBe('2026-11-11T00:00:00.000Z')
+    expect(weeks[0].to.toISOString()).toBe('2026-11-16T00:00:00.000Z')
+  })
+  it('adds up months and sums every mode', () => {
+    const months = bucketize([{ x01: 1, cricket: 2 }, { x01: 4 }], new Date('2026-12-01T00:00:00Z'), 'month')
+    expect(months.map(m => m.total)).toEqual([3, 4])
+    expect(months[0].parts).toEqual({ x01: 1, cricket: 2 })
+  })
+  it('names a bucket for the axis and the panel title', () => {
+    const [d] = bucketize([{ x01: 1 }], today, 'day')
+    expect(bucketTick(d, 'day')).toBe('Nov 18')
+    expect(bucketName(d, 'day')).toBe('Wednesday, Nov 18')
+    const [w] = bucketize([{ x01: 1 }], today, 'week')
+    expect(bucketName(w, 'week')).toBe('Week of Mon, Nov 16')
+    const [m] = bucketize([{ x01: 1 }], today, 'month')
+    expect(bucketTick(m, 'month')).toBe('Nov 2026')
+    expect(bucketName(m, 'month')).toBe('November 2026')
+  })
+  it('opens long ranges as weeks or months', () => {
+    expect([7, 30, 90, 0].map(r => defaultGranularity(r as 7))).toEqual(['day', 'day', 'week', 'month'])
   })
 })
 

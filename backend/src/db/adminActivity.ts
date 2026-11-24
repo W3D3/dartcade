@@ -6,7 +6,7 @@ import type { components } from '../schema/api.js'
 
 export type ActivityStats = Pick<
   components['schemas']['AdminActivity'],
-  'last24h' | 'newUsers' | 'newUsersPerDay' | 'gamesPerDay' | 'busiest' | 'highlights'
+  'last24h' | 'newUsers' | 'newUsersPerDay' | 'gamesPerDay' | 'busiest' | 'busiestWindow' | 'highlights'
 > & { days: number; tournaments: components['schemas']['AdminActivity']['happeningNow']['tournaments']; manualDartShare: number | null }
 
 const DAY_MS = 86_400_000
@@ -146,6 +146,7 @@ export async function activityStats(db: Kysely<Database>, asked: number, now: nu
     newUsersPerDay: dayKeys.map(k => signupsBy.get(k) ?? 0),
     gamesPerDay: { modes: [...totals.keys()].sort((a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0)), perDay },
     busiest,
+    busiestWindow: { from: month.toISOString(), to: new Date(now).toISOString() },
     highlights: { achievementsUnlocked24h: Number(achievements.n), teamsCreated7d: Number(teams.n) },
     manualDartShare: total === 0 ? null : Number(darts.manual) / total,
     tournaments: tournaments.map(t => ({

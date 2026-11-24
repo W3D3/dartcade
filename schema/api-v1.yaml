@@ -5236,7 +5236,8 @@ components:
 
     AdminActivity:
       type: object
-      required: [generatedAt, days, live, last24h, newUsers, newUsersPerDay, gamesPerDay, busiest, happeningNow, health, highlights]
+      required:
+        [generatedAt, days, live, last24h, newUsers, newUsersPerDay, gamesPerDay, busiest, busiestWindow, happeningNow, health, highlights]
       additionalProperties: false
       properties:
         generatedAt: { type: string, format: date-time }
@@ -5277,6 +5278,14 @@ components:
               type: array
               description: 'One entry per UTC day, oldest first, ending today: finished games per game id'
               items: { type: object, additionalProperties: { type: integer } }
+        busiestWindow:
+          type: object
+          description: 'The span `busiest` counted (from inclusive, to exclusive), to pass on to the drill-down so a cell and its list agree'
+          required: [from, to]
+          additionalProperties: false
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
         busiest:
           type: array
           description: 'Finished games of the last 28 days: 7 rows (Monday first) of 24 UTC hours'

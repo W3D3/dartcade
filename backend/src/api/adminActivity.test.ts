@@ -91,6 +91,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('GET /api/admin/activity', { tim
     expect(body.gamesPerDay.modes).toEqual(['x01', 'cricket'])
     expect(body.gamesPerDay.perDay.at(-1)).toEqual({ x01: 1, cricket: 1 })
     expect(body.gamesPerDay.perDay.at(-4)).toEqual({ x01: 1 })
+    expect(body.busiestWindow).toEqual({ from: new Date(NOW - 28 * 86_400_000).toISOString(), to: new Date(NOW).toISOString() })
     expect(body.busiest).toHaveLength(7)
     expect(body.busiest.flat().reduce((a: number, b: number) => a + b, 0)).toBe(3)
     expect(body.happeningNow).toMatchObject({ rankedQueue: 3, openLobbies: 4, runningGames: { x01: 2, cricket: 1 } })
