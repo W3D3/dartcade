@@ -1188,6 +1188,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/activity/drill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The people or games behind one point of an Activity chart, newest first, paginated (admin) */
+        get: operations["getAdminActivityDrill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/dart-samples": {
         parameters: {
             query?: never;
@@ -4215,6 +4232,27 @@ export interface components {
             commit: string | null;
             /** @description When the image was built (ISO 8601) */
             buildTime: string | null;
+        };
+        AdminActivityDrill: {
+            /** @enum {string} */
+            metric: "signups" | "games";
+            /** @description Everything behind the point, not only this page */
+            total: number;
+            /** @description Signups: the accounts created, empty for games */
+            users: {
+                id: string;
+                name: string;
+                /** Format: date-time */
+                at: string;
+            }[];
+            /** @description Games: the finished games started, empty for signups */
+            games: {
+                id: string;
+                mode: string;
+                /** Format: date-time */
+                at: string;
+                players: string[];
+            }[];
         };
         AdminActivity: {
             /** Format: date-time */
@@ -9164,8 +9202,8 @@ export interface operations {
     getAdminActivity: {
         parameters: {
             query?: {
-                /** @description Days the two daily charts cover, default 30 */
-                days?: 7 | 30 | 90;
+                /** @description Days the two daily charts cover, default 30; 0 is all of it, back to the first signup (at most three years) */
+                days?: 0 | 7 | 30 | 90;
             };
             header?: never;
             path?: never;
@@ -9180,6 +9218,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAdminActivityDrill: {
+        parameters: {
+            query: {
+                metric: "signups" | "games";
+                /** @description Start of the range, inclusive */
+                from: string;
+                /** @description End of the range, exclusive; at most 40 days after from */
+                to: string;
+                /** @description Games only: one game id */
+                mode?: string;
+                /** @description Games only: ISO weekday (1 Monday) of the start, UTC */
+                dow?: number;
+                /** @description Games only: hour of the start, UTC */
+                hour?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of what is behind the point */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityDrill"];
                 };
             };
             400: components["responses"]["BadRequest"];
