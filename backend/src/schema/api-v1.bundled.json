@@ -12137,6 +12137,7 @@
           "newUsersPerDay",
           "gamesPerDay",
           "busiest",
+          "busiestWindow",
           "happeningNow",
           "health",
           "highlights"
@@ -12236,6 +12237,25 @@
                     "type": "integer"
                   }
                 }
+              }
+            }
+          },
+          "busiestWindow": {
+            "type": "object",
+            "description": "The span `busiest` counted (from inclusive, to exclusive), to pass on to the drill-down so a cell and its list agree",
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time"
               }
             }
           },

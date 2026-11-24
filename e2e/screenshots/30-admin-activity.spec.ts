@@ -26,6 +26,7 @@ const activity = {
   newUsersPerDay: Array.from({ length: DAYS }, (_, i) => wave(9, i)),
   gamesPerDay: { modes: ['x01', 'cricket', 'minigolf', 'atc'], perDay },
   busiest,
+  busiestWindow: { from: '2026-10-18T19:42:10.000Z', to: '2026-11-15T19:42:10.000Z' },
   happeningNow: {
     tournaments: [
       { id: 't1', name: 'Midweek Masters #12', official: true, status: 'running', entries: 64 },
@@ -39,17 +40,43 @@ const activity = {
   highlights: { achievementsUnlocked24h: 2140, teamsCreated7d: 8 },
 }
 
+const drill = (metric: 'signups' | 'games') => ({
+  metric,
+  total: metric === 'signups' ? 14 : 212,
+  users:
+    metric === 'signups'
+      ? ['Lena', 'Marco', 'Priya', 'Tom', 'Sofia'].map((name, i) => ({ id: `u${i}`, name, at: `2026-11-14T${20 - i}:12:00.000Z` }))
+      : [],
+  games:
+    metric === 'games'
+      ? [
+          { id: 'g1', mode: 'x01', at: '2026-11-14T21:40:00.000Z', players: ['Lena', 'Marco'] },
+          { id: 'g2', mode: 'cricket', at: '2026-11-14T21:05:00.000Z', players: ['Priya', 'Tom'] },
+          { id: 'g3', mode: 'x01', at: '2026-11-14T20:31:00.000Z', players: ['Sofia', 'Lena'] },
+        ]
+      : [],
+})
+
 for (const [name, view] of [
   // tall, so the page's own scroll area shows every tile in one image
-  ['desktop', { ...VIEW.wide, height: 1900 }],
-  ['phone', { ...VIEW.phone, height: 3000 }],
+  ['desktop', { ...VIEW.wide, height: 2300 }],
+  ['phone', { ...VIEW.phone, height: 3600 }],
 ] as const) {
   test(`the activity page, ${name}`, async ({ browser }) => {
     const { ctx, page } = await open(browser, 'admin', view)
-    await page.route('**/api/admin/activity**', r => r.fulfill({ json: activity }))
+    await page.route('**/api/admin/activity?*', r => r.fulfill({ json: activity }))
+    await page.route('**/api/admin/activity/drill?*', r =>
+      r.fulfill({ json: drill(new URL(r.request().url()).searchParams.get('metric') as 'games') }),
+    )
     await page.goto('/#/admin/activity')
     await expect(page.getByText('Online now')).toBeVisible()
     await shot(page, `admin-activity/activity-${name}.png`)
+    // a click on a bar opens what is behind it under the chart, a click on a heatmap cell the games of that hour
+    await page.getByRole('img', { name: /^Games per day by mode/ }).click({ position: { x: 300, y: 120 } })
+    await expect(page.getByRole('region', { name: /^Drill-down/ })).toBeVisible()
+    await page.getByRole('button', { name: /^Sat 20:00,/ }).click()
+    await expect(page.getByRole('region', { name: /^Drill-down: Sat 20:00/ })).toBeVisible()
+    await shot(page, `admin-activity/drill-${name}.png`)
     await ctx.close()
   })
 }

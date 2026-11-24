@@ -12,18 +12,28 @@
   import { currentUser } from '$lib/auth'
   import { gameTitle } from '$shared/gameNames'
   import { activityTrail } from '$lib/admin/breadcrumbs'
+  import ActivityBars, { type Series } from '$lib/components/admin/ActivityBars.svelte'
+  import ActivityDrill from '$lib/components/admin/ActivityDrill.svelte'
+  import ActivityHeatmap from '$lib/components/admin/ActivityHeatmap.svelte'
   import {
+    GRANULARITIES,
     RANGES,
-    barHeights,
+    bucketName,
+    bucketRange,
+    bucketize,
     busiestSlot,
-    dayBars,
+    defaultGranularity,
     formatCount,
-    heatLevel,
     loadActivity,
     modeColor,
+    modeFill,
     percent,
+    rangeLabel,
     trend,
     type AdminActivity,
+    type Bucket,
+    type DrillQuery,
+    type Granularity,
     type Range,
   } from '$lib/admin/activity'
 
@@ -33,6 +43,9 @@
   })
 
   let days = $state<Range>(30)
+  let granularity = $state<Granularity>('day')
+  /** The point of a chart that was clicked: the panel under that chart lists what is behind it. */
+  let drill = $state<{ chart: 'signups' | 'games' | 'heat'; title: string; query: DrillQuery } | null>(null)
   let activity = $state<AdminActivity | null>(null)
   let loadError = $state('')
 
@@ -50,7 +63,21 @@
   }
   function pick(next: Range): void {
     days = next
+    granularity = defaultGranularity(next)
+    drill = null
     void refresh()
+  }
+  function pickBucket(chart: 'signups' | 'games', b: Bucket): void {
+    drill = { chart, title: bucketName(b, granularity), query: { metric: chart, ...bucketRange(b) } }
+  }
+  function pickCell(dow: number, hour: number): void {
+    if (!activity) return
+    const { from, to } = activity.busiestWindow
+    drill = {
+      chart: 'heat',
+      title: `${WEEKDAYS[dow - 1]} ${hour}:00 UTC, last 4 weeks`,
+      query: { metric: 'games', from, to, dow, hour },
+    }
   }
 
   const REFRESH_MS = 20_000
@@ -74,8 +101,6 @@
   })
 
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const HEAT = ['bg-surface-inset', 'bg-accent/20', 'bg-accent/40', 'bg-accent/70', 'bg-accent']
-  const dayLabel = (d: Date) => d.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' })
   const clock = (iso: string) => new Date(iso).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
 </script>
 
@@ -99,14 +124,31 @@
     <PageMain>
       <header class="flex flex-wrap items-end justify-between gap-3">
         <PageTitle as="div" trail={activityTrail()} title="Activity" sub="Who is on, what is played and what is running" />
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <div role="group" aria-label="Range" class="flex rounded-key border border-line-chip overflow-hidden">
             {#each RANGES as r (r)}
               <button
                 type="button"
-                class="h-11 px-4 text-label font-semibold {days === r ? 'bg-accent text-accent-fg' : 'text-text-muted hover:text-text'}"
+                class="h-11 px-3 sm:px-4 whitespace-nowrap text-label font-semibold {days === r
+                  ? 'bg-accent text-accent-fg'
+                  : 'text-text-muted hover:text-text'}"
                 aria-pressed={days === r}
-                onclick={() => pick(r)}>{r} days</button
+                onclick={() => pick(r)}>{rangeLabel(r)}</button
+              >
+            {/each}
+          </div>
+          <div role="group" aria-label="Group by" class="flex rounded-key border border-line-chip overflow-hidden">
+            {#each GRANULARITIES as g (g)}
+              <button
+                type="button"
+                class="h-11 px-3 sm:px-4 text-label font-semibold capitalize {granularity === g
+                  ? 'bg-accent text-accent-fg'
+                  : 'text-text-muted hover:text-text'}"
+                aria-pressed={granularity === g}
+                onclick={() => {
+                  granularity = g
+                  drill = null
+                }}>{g}</button
               >
             {/each}
           </div>
@@ -122,9 +164,20 @@
       {#if activity}
         {@const a = activity}
         {@const signups = trend(a.newUsers.last7d, a.newUsers.previous7d)}
-        {@const bars = dayBars(a.gamesPerDay.perDay, a.gamesPerDay.modes, new Date(a.generatedAt))}
-        {@const signupHeights = barHeights(a.newUsersPerDay)}
-        {@const peak = Math.max(0, ...a.busiest.flat())}
+        {@const today = new Date(a.generatedAt)}
+        {@const signupBuckets = bucketize(
+          a.newUsersPerDay.map(n => ({ signups: n })),
+          today,
+          granularity,
+        )}
+        {@const gameBuckets = bucketize(a.gamesPerDay.perDay, today, granularity)}
+        {@const gameSeries = a.gamesPerDay.modes.map((m): Series => ({
+          key: m,
+          label: gameTitle(m),
+          fill: modeFill(a.gamesPerDay.modes, m),
+          swatch: modeColor(a.gamesPerDay.modes, m),
+        }))}
+        {@const signupSeries = [{ key: 'signups', label: 'New users', fill: 'fill-accent', swatch: 'bg-accent' }]}
         {@const slot = busiestSlot(a.busiest)}
         <p class="text-small text-text-muted">Updated {clock(a.generatedAt)} · refreshes every 20 seconds</p>
 
@@ -145,16 +198,21 @@
           <section class="card p-4 md:p-5 flex flex-col gap-4 lg:col-span-2" aria-labelledby="act-users">
             {@render panel(
               'act-users',
-              'New users per day',
+              `New users per ${granularity}`,
               `last ${a.days} days · ${formatCount(a.newUsersPerDay.reduce((x, y) => x + y, 0))} total`,
             )}
-            <div class="flex items-end gap-0.5 h-40" role="img" aria-label="New users per day, {a.days} days">
-              {#each signupHeights as h, i (i)}
-                <div class="flex-1 h-full flex items-end" title="{a.newUsersPerDay[i]} new">
-                  <div class="w-full rounded-t-xs bg-accent" style:height="{h}%"></div>
-                </div>
-              {/each}
-            </div>
+            <ActivityBars
+              buckets={signupBuckets}
+              series={signupSeries}
+              {granularity}
+              yTitle="New users"
+              unit="new users"
+              label="New users per {granularity}, {a.days} days"
+              onpick={(b: Bucket) => pickBucket('signups', b)}
+            />
+            {#if drill?.chart === 'signups'}
+              <ActivityDrill title={drill.title} query={drill.query} onclose={() => (drill = null)} />
+            {/if}
           </section>
 
           <section class="card p-4 md:p-5 flex flex-col gap-3" aria-labelledby="act-now">
@@ -194,53 +252,35 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             {@render panel(
               'act-games',
-              'Games played per day',
-              `by mode · ${formatCount(bars.reduce((s, b) => s + b.total, 0))} in ${a.days} days`,
+              `Games played per ${granularity}`,
+              `by mode · ${formatCount(gameBuckets.reduce((s, b) => s + b.total, 0))} in ${a.days} days`,
             )}
-            <ul class="flex flex-wrap gap-x-4 gap-y-1 text-small text-text-muted">
-              {#each a.gamesPerDay.modes as m (m)}
-                <li class="flex items-center gap-2">
-                  <span class="size-3 rounded-xs {modeColor(a.gamesPerDay.modes, m)}"></span>{gameTitle(m)}
-                </li>
-              {/each}
-            </ul>
           </div>
           {#if a.gamesPerDay.modes.length === 0}
             <p class="text-label text-text-muted">No finished games in this range yet.</p>
           {:else}
-            <div class="flex items-end gap-0.5 h-48" role="img" aria-label="Games per day by mode, {a.days} days">
-              {#each bars as b (b.day.getTime())}
-                <div
-                  class="flex-1 h-full flex flex-col-reverse justify-start"
-                  title="{dayLabel(b.day)}: {b.total} games · {b.parts.map(p => `${gameTitle(p.mode)} ${p.count}`).join(', ')}"
-                >
-                  {#each b.parts as p (p.mode)}
-                    <div class={modeColor(a.gamesPerDay.modes, p.mode)} style:height="{p.height}%"></div>
-                  {/each}
-                </div>
-              {/each}
-            </div>
+            <ActivityBars
+              buckets={gameBuckets}
+              series={gameSeries}
+              {granularity}
+              yTitle="Games played"
+              unit="games"
+              label="Games per {granularity} by mode, {a.days} days"
+              onpick={(b: Bucket) => pickBucket('games', b)}
+            />
+            {#if drill?.chart === 'games'}
+              <ActivityDrill title={drill.title} query={drill.query} onclose={() => (drill = null)} />
+            {/if}
           {/if}
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 items-start">
           <section class="card p-4 md:p-5 flex flex-col gap-4 lg:col-span-2" aria-labelledby="act-when">
             {@render panel('act-when', 'When people play', `finished games · last 4 weeks · UTC${slot ? ` · busiest ${slot}` : ''}`)}
-            <div class="overflow-x-auto">
-              <div
-                class="grid gap-0.5 min-w-120"
-                style:grid-template-columns="auto repeat(24, minmax(0, 1fr))"
-                role="img"
-                aria-label="Games by weekday and hour"
-              >
-                {#each a.busiest as row, d (d)}
-                  <span class="pr-2 text-caption text-text-muted">{WEEKDAYS[d]}</span>
-                  {#each row as n, h (h)}
-                    <span class="h-5 rounded-xs {HEAT[heatLevel(n, peak)]}" title="{WEEKDAYS[d]} {h}:00 · {n} games"></span>
-                  {/each}
-                {/each}
-              </div>
-            </div>
+            <ActivityHeatmap grid={a.busiest} onpick={pickCell} />
+            {#if drill?.chart === 'heat'}
+              <ActivityDrill title={drill.title} query={drill.query} onclose={() => (drill = null)} />
+            {/if}
           </section>
 
           <div class="flex flex-col gap-4 md:gap-5">
