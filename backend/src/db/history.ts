@@ -161,6 +161,8 @@ export async function listFinishedGames(
     .select('me.seat as my_seat')
     .where('me.user_id', '=', userId)
     .where('me.placement', 'is not', null)
+    // A test run of one's own mission leaves no history
+    .where(sql<boolean>`NOT (gs.game_id = 'mission' AND gs.config ->> 'test' = 'true')`)
     .orderBy('gs.finished_at', 'desc')
     .orderBy('gs.id', 'desc')
     .limit(opts.limit + 1)

@@ -105,6 +105,10 @@
       "description": "Admin-only account management (list users, promote or demote admins) and feature flag overrides"
     },
     {
+      "name": "missions",
+      "description": "Missions: practice goals made of steps that players build, share (only me, friends, everyone) and race each other on. Behind missions.enabled: off, every route answers 404."
+    },
+    {
       "name": "minigolf",
       "description": "Minigolf courses and holes (admin-only drafts and writes; players read published official courses)"
     },
@@ -9640,6 +9644,566 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/missions": {
+      "get": {
+        "operationId": "listMissions",
+        "summary": "The missions the user may see, as list cards",
+        "description": "all: every mission the user may see; mine: theirs; friends: their friends'; popular: by plays; completed: the ones they have a best run of. Hidden missions are left out (but the user's own).",
+        "tags": [
+          "missions"
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "mine",
+                "friends",
+                "popular",
+                "completed"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "easy",
+                "medium",
+                "hard",
+                "expert"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The missions, at most 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMission",
+        "summary": "Make a mission (the user is its author)",
+        "tags": [
+          "missions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Made",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "'limit reached': the user has made as many missions as allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/missions/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getMission",
+        "summary": "One mission the user may see",
+        "tags": [
+          "missions"
+        ],
+        "responses": {
+          "200": {
+            "description": "The mission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionCard"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateMission",
+        "summary": "Change a mission (its author; an official one, admins). A running game keeps the mission it started with",
+        "tags": [
+          "missions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMission",
+        "summary": "Delete a mission (its author; an official one, admins), with its best runs and reports",
+        "tags": [
+          "missions"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/missions/{id}/highscores": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "missionHighscores",
+        "summary": "A mission's best runs, one per player, best first (top 10)",
+        "tags": [
+          "missions"
+        ],
+        "responses": {
+          "200": {
+            "description": "The best runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionHighscores"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/missions/{id}/report": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reportMission",
+        "summary": "Report a mission everyone can see; once per person per mission",
+        "tags": [
+          "missions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reported"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "You reported this mission already, or it is yours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/missions/{id}/start": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "startMission",
+        "summary": "Start a game of the mission on the user's board (their lobby seat's, else their usual one; else entered by hand)",
+        "description": "A test run (`test`, the author only; for an official mission, admins) counts for no times, XP, stats or history. One running game per account and per board, as for every game.",
+        "tags": [
+          "missions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The user or their board is in another game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/missions": {
+      "post": {
+        "operationId": "createOfficialMission",
+        "summary": "Make an official mission (\"by Dartcade\"; admins only). Everyone sees it",
+        "tags": [
+          "missions",
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficialMissionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Made",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/missions/reports": {
+      "get": {
+        "operationId": "listMissionReports",
+        "summary": "Missions with open reports, and the hidden ones (moderators)",
+        "tags": [
+          "missions",
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionReports"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/missions/{id}/hide": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "hideMission",
+        "summary": "Hide a player's mission from everyone but moderators and its author, with a reason its author sees; closes its reports",
+        "tags": [
+          "missions",
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Hidden"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/missions/{id}/restore": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "restoreMission",
+        "summary": "Show a hidden mission again",
+        "tags": [
+          "missions",
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Restored"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/missions/{id}/dismiss-reports": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "dismissMissionReports",
+        "summary": "Close a mission's open reports without hiding it",
+        "tags": [
+          "missions",
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Dismissed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -22637,6 +23201,305 @@
           },
           "content": {
             "$ref": "#/components/schemas/MinigolfCourseContent"
+          }
+        }
+      },
+      "MissionVisibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "friends",
+          "public"
+        ],
+        "description": "Only me, friends, everyone"
+      },
+      "MissionBest": {
+        "type": "object",
+        "description": "A player's best completed run of a mission",
+        "required": [
+          "userId",
+          "name",
+          "timeMs",
+          "darts",
+          "achievedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timeMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "darts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "achievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MissionCard": {
+        "type": "object",
+        "required": [
+          "id",
+          "mission",
+          "visibility",
+          "official",
+          "author",
+          "plays",
+          "yourBest",
+          "friendsBest",
+          "hidden",
+          "canEdit",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mission": {
+            "$ref": "#/components/schemas/Mission"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/MissionVisibility"
+          },
+          "official": {
+            "type": "boolean",
+            "description": "By Dartcade"
+          },
+          "author": {
+            "type": "object",
+            "nullable": true,
+            "description": "null for an official mission, or once the author's account is gone",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "plays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Games of it started, test runs left out"
+          },
+          "yourBest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionBest"
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "friendsBest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionBest"
+              },
+              {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "hidden": {
+            "type": "object",
+            "nullable": true,
+            "description": "A moderator hid it (shown to its author and moderators only)",
+            "required": [
+              "at",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "The user may change or delete it"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MissionList": {
+        "type": "object",
+        "required": [
+          "missions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "missions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionCard"
+            }
+          }
+        }
+      },
+      "MissionWrite": {
+        "type": "object",
+        "required": [
+          "mission",
+          "visibility"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mission": {
+            "$ref": "#/components/schemas/Mission"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/MissionVisibility"
+          }
+        }
+      },
+      "OfficialMissionWrite": {
+        "type": "object",
+        "required": [
+          "mission"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mission": {
+            "$ref": "#/components/schemas/Mission"
+          }
+        }
+      },
+      "MissionHighscores": {
+        "type": "object",
+        "required": [
+          "highscores"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "highscores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionBest"
+            }
+          }
+        }
+      },
+      "MissionStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "test": {
+            "type": "boolean",
+            "default": false,
+            "description": "A test run of the user's own mission"
+          }
+        }
+      },
+      "MissionReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The reason; blank counts as missing"
+          }
+        }
+      },
+      "MissionReports": {
+        "type": "object",
+        "required": [
+          "reported",
+          "hidden"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "reported": {
+            "type": "array",
+            "description": "Missions with open reports, the most reported first",
+            "items": {
+              "type": "object",
+              "required": [
+                "mission",
+                "reports"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "mission": {
+                  "$ref": "#/components/schemas/MissionCard"
+                },
+                "reports": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "reporterName",
+                      "reason",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "reporterName": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "hidden": {
+            "type": "array",
+            "description": "Missions a moderator hid, newest first",
+            "items": {
+              "$ref": "#/components/schemas/MissionCard"
+            }
           }
         }
       },

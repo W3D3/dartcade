@@ -460,6 +460,39 @@ export interface MinigolfCourseReportsTable {
   dismissed_at: ColumnType<Date | null, never, Date | null>
 }
 
+/** A mission (migration 078): its definition is checked by shared/missions/types.ts MissionSchema. */
+export interface MissionsTable {
+  id: string
+  /** null for an official mission (admins write it). */
+  owner_user_id: string | null
+  visibility: 'private' | 'friends' | 'public'
+  definition: unknown
+  hidden_at: ColumnType<Date | null, never, Date | null>
+  hidden_reason: ColumnType<string | null, never, string | null>
+  created_at: ColumnType<Date, never, never>
+  updated_at: ColumnType<Date, never, Date>
+}
+
+/** A player's best completed run of a mission (migration 078). */
+export interface MissionBestsTable {
+  mission_id: string
+  user_id: string
+  time_ms: number
+  darts: number
+  session_id: string | null
+  achieved_at: ColumnType<Date, Date | undefined, Date>
+}
+
+export interface MissionReportsTable {
+  id: string
+  mission_id: string
+  /** null once the reporter's account is gone. */
+  reporter_user_id: string | null
+  reason: string
+  created_at: ColumnType<Date, never, never>
+  dismissed_at: ColumnType<Date | null, never, Date | null>
+}
+
 /** A flag's override, set at runtime (migration 025); no row for a key means today's default. */
 export interface FeatureFlagOverridesTable {
   key: string
@@ -813,6 +846,9 @@ export interface Database {
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
   minigolf_course_reports: MinigolfCourseReportsTable
+  missions: MissionsTable
+  mission_bests: MissionBestsTable
+  mission_reports: MissionReportsTable
   feature_flag_overrides: FeatureFlagOverridesTable
   wled_devices: WledDevicesTable
   light_profiles: LightProfilesTable

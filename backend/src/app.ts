@@ -41,6 +41,7 @@ import { coachApiPlugin } from './api/coach.js'
 import { statsApiPlugin } from './api/stats.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
 import { minigolfModerationApiPlugin } from './api/minigolfModeration.js'
+import { missionsApiPlugin } from './api/missions.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
 import { applyBan } from './auth/ban.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
@@ -338,6 +339,7 @@ export async function buildApp({
   await app.register(statsApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
   await app.register(minigolfModerationApiPlugin, { db })
+  await app.register(missionsApiPlugin, { db, engine })
   await app.register(adminUsersApiPlugin, {
     db,
     onBanned: userId =>
