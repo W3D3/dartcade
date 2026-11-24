@@ -184,24 +184,16 @@ export function aimLines(preview: ReturnType<typeof aimPreview>): { from: Pt; di
   return preview ? [{ ...preview, current: true }] : []
 }
 
-/** Plays a 3D path once, frame by frame (or jumps to the end with reduced motion), calling
+/** Plays a 3D path once, frame by frame, calling
  *  `onFrame` with the ball's position and the chase camera's frame (the whole path and how far
  *  along it, for `Hole3D`'s `follow`) on each one. */
-export function playShot(
-  path: Pt3[],
-  onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void,
-  reducedMotion: boolean,
-): Promise<void> {
-  return new Promise<void>(onDone => playFrames(path.length, at => onFrame(path[Math.floor(at)], { path, at }), reducedMotion, { onDone }))
+export function playShot(path: Pt3[], onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void): Promise<void> {
+  return new Promise<void>(onDone => playFrames(path.length, at => onFrame(path[Math.floor(at)], { path, at }), { onDone }))
 }
 
 /** Plays a stored shot's path again, in real time, calling `onFrame` the same way as `playShot`. */
-export function playReplay(
-  path: Pt3[],
-  onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void,
-  reducedMotion: boolean,
-): Promise<void> {
-  return playPath(path, p => onFrame(p, { path, at: path.indexOf(p) }), reducedMotion)
+export function playReplay(path: Pt3[], onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void): Promise<void> {
+  return playPath(path, p => onFrame(p, { path, at: path.indexOf(p) }))
 }
 
 /** The bench's and Playtest's shared button style. */

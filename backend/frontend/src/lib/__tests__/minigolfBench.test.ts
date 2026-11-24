@@ -151,7 +151,7 @@ describe('playShot and playReplay', () => {
     let t = performance.now() - 25
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb((t += 20)), 0))
     const seen: Array<[Pt3, number]> = []
-    await playShot(path, (ball, chase) => seen.push([ball, chase.at]), false)
+    await playShot(path, (ball, chase) => seen.push([ball, chase.at]))
     expect(seen[0][0]).toEqual(path[0])
     expect(seen.at(-1)![0]).toEqual(path.at(-1))
     expect(seen.every(([, at]) => at >= 0)).toBe(true)
@@ -165,7 +165,7 @@ describe('playShot and playReplay', () => {
     let t = performance.now() - 25
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb((t += 20)), 0))
     const seen: Pt3[] = []
-    await playReplay(path, ball => seen.push(ball), false)
+    await playReplay(path, ball => seen.push(ball))
     expect(seen[0]).toEqual(path[0])
     expect(seen.at(-1)).toEqual(path.at(-1))
   })

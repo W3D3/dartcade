@@ -84,8 +84,6 @@
     show()
   }
 
-  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
   function onFrame(ball: Pt3, c: { path: Pt3[]; at: number }): void {
     shown3 = ball
     chase = c
@@ -97,7 +95,7 @@
     bench = startShot(bench)
     const result = await putt3d(hole, physics, from, coords, assist)
     if (result) {
-      await playShot(result.path, onFrame, reducedMotion())
+      await playShot(result.path, onFrame)
       chase = null
     }
     bench = finishShot(bench, result, from)
@@ -110,7 +108,7 @@
     if (bench.rolling || replaying || !shot) return
     replaying = true
     const path = shot.path.map(p => withHeight(hole, p))
-    await playReplay(path, onFrame, reducedMotion())
+    await playReplay(path, onFrame)
     chase = null
     replaying = false
     show()

@@ -112,6 +112,7 @@
     const r = current
     frame = 0
     const frames = Math.max(r.own.length, ...r.others.map(o => o.path.length))
+    // Reduced motion spares the camera's zoom and orbit; the ball still rolls
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const cup = untrack(() => rollCup(game, r))
     let zoomOut: ReturnType<typeof setTimeout> | undefined
@@ -124,7 +125,7 @@
     let dropped = false
     const play = () => {
       if (cancelled) return
-      stop = playFrames(frames, onFrame, reduced, {
+      stop = playFrames(frames, onFrame, {
         rate: i => (settings.slowMotion ? rollRate(at(r.own, i), cup) : PLAYBACK),
         onDone: () => {
           const done = () => {
