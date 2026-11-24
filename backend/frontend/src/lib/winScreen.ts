@@ -81,6 +81,7 @@ export function winMeta(snapshot: Snapshot): string {
     return rulesOf('minigolf', g.config, n, { course: { name: g.courseName, holes: g.holeCount } }) + vs
   }
   if (snapshot.gameId === 'cricket') return rulesOf('cricket', snapshot.game.config, n) + vs
+  if (snapshot.gameId === 'mission') return rulesOf('mission', { mission: snapshot.game.mission }, n)
   return rulesOf(snapshot.gameId, snapshot.game.cfg, n) + vs
 }
 
@@ -476,6 +477,9 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
       return atcWin(snapshot)
     // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
     case 'p121':
+      return null
+    // A mission gets its own result screen (Missions part 2)
+    case 'mission':
       return null
     // A forfeit ends Cricket without a winner too: the server's places rank the forfeited side last
     case 'cricket':

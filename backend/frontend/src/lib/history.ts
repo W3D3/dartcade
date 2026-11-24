@@ -80,6 +80,10 @@ const LIST_STAT = {
     return value(livesLeft, livesLeft === 1 ? 'life left' : 'lives left')
   },
   minigolf: me => value(stat(me, 'strokes'), 'strokes'),
+  mission: me => {
+    const done = stat(me, 'stepsDone')
+    return done === undefined ? null : { value: `${done}/${stat(me, 'steps') ?? done}`, label: 'steps' }
+  },
   cricket: me => {
     const mpr = stat(me, 'mpr')
     return mpr === undefined ? null : { value: mpr.toFixed(1), label: 'MPR' }
@@ -176,6 +180,8 @@ const MODE_TILES = {
     const marks = modeStat(s, 'cricket', 'marksScored')
     return [plain('MPR', mpr ? mpr.avg.toFixed(1) : NONE), plain('Marks scored', marks ? String(marks.sum) : NONE)]
   },
+  // Missions count for no stats
+  mission: () => [],
 } satisfies Record<GameId, (s: GameStats) => Tile[]>
 
 const COLUMNS_KEY = 'dartcade_history_columns_v1'

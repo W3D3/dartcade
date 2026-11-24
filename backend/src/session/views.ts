@@ -1,4 +1,4 @@
-import type { AtcGame, BullOffView, CricketGame, HiloGame, MinigolfGame, P121Game, X01Game } from '../schema/game-ws.js'
+import type { AtcGame, BullOffView, CricketGame, HiloGame, MinigolfGame, MissionGame, P121Game, X01Game } from '../schema/game-ws.js'
 
 /** Fields the engine adds to every game's view (see SessionEngine.getSnapshot). */
 export type EngineViewField = 'currentVisitDarts' | 'totalDarts' | 'totalVisits'
@@ -35,3 +35,6 @@ export type CricketView = Omit<CricketGame, EngineViewField | 'bullOff'>
 
 /** What cricketModule.view() (Cricket with the bull off) returns. */
 export type CricketModuleView = CricketView & BullOffViewField
+
+/** What missionModule.view() returns. */
+export type MissionView = Omit<MissionGame, EngineViewField>

@@ -57,9 +57,11 @@ describe('snapshots match schema/game-ws-v1.json', () => {
   // Every registered game, so a new one is checked without a case of its own here.
   // Minigolf plays the built-in test course (no database).
   const configFor = (id: string): Record<string, unknown> => (id === 'minigolf' ? { course: 'test' } : {})
+  // A mission is played alone
+  const seatsFor = (id: string) => (id === 'mission' ? players.slice(0, 1) : players)
   it.each(gameList.map(m => [m.id, m] as const))('%s, fresh and after a visit', async (id, mod) => {
     const e = engine()
-    const { sessionId } = await e.create('u1', 'board-1', id, { ...mod.defaultConfig, ...configFor(id) }, players)
+    const { sessionId } = await e.create('u1', 'board-1', id, { ...mod.defaultConfig, ...configFor(id) }, seatsFor(id))
     expectValid(e.getSnapshot(sessionId))
     const onBoard = { ...dart(0.3), dart: { ...dart(0.3).dart, coords: { x: 0, y: 0.3 } } }
     await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', onBoard])

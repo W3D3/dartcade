@@ -1,3 +1,4 @@
+import { OWN_START } from '../shared/gameNames.js'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
 import { openTestSchema } from '../db/testSchema.js'
@@ -52,7 +53,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('preview sample data', () => {
       expect(games.length, name).toBeGreaterThan(0)
     }
     const played = await db.selectFrom('game_sessions').select(['id', 'game_id']).execute()
-    expect(new Set(played.map(g => g.game_id))).toEqual(new Set(gameList.map(m => m.id)))
+    // A mission is started only by the missions API (OWN_START): the sample has none
+    expect(new Set(played.map(g => g.game_id))).toEqual(new Set(gameList.filter(m => !OWN_START.has(m.id)).map(m => m.id)))
     // Each one's details page replays it
     for (const { id, game_id } of played) {
       const game = await getFinishedGame(db, id)

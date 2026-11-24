@@ -24,6 +24,9 @@ const AtcConfigSchema = z.object({
 const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: int, outMode: ModeSchema.catch('double') })
 const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
 const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
+const MissionConfigSchema = z.object({
+  mission: z.object({ name: z.string(), order: z.enum(['any', 'in_order']), steps: z.array(z.unknown()) }),
+})
 const MinigolfConfigSchema = z.object({
   course: z.string().catch(''),
   tries: int.catch(3),
@@ -81,6 +84,13 @@ const RULES = {
   cricket: config => {
     const c = CricketConfigSchema.safeParse(config)
     return c.success ? cricketRules(c.data) : ''
+  },
+  // "Tungsten Gauntlet · 3 steps · any order"
+  mission: config => {
+    const c = MissionConfigSchema.safeParse(config)
+    if (!c.success) return ''
+    const { name, steps, order } = c.data.mission
+    return `${name} · ${steps.length} ${steps.length === 1 ? 'step' : 'steps'} · ${order === 'any' ? 'any order' : 'in order'}`
   },
   minigolf: (config, players, { course }) => {
     const c = MinigolfConfigSchema.safeParse(config)

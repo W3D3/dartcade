@@ -94,8 +94,9 @@ export function applyInput(session: Session, input: GameInput, at: Date): ApplyO
   const up = session.module.getCurrentPlayer(session.currentState)
   const bullOffBefore = session.clock !== null && inBullOff(session, session.currentState)
   const decidedBefore = bullOffBefore && bullOffDecided(session, session.currentState)
-  const outcome =
-    input.source === 'board'
+  const outcome = timeRanOut(session, at)
+    ? endNow(session)
+    : input.source === 'board'
       ? applyBoardEvent(session, input.event, at)
       : input.source === 'user'
         ? applyUserAction(session, input.action, at)
@@ -270,11 +271,25 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
 /** The team of every seat (a seat's own index in singles). */
 export const teamOf = (session: Session): number[] => session.module.teamsOf?.(session.committedState) ?? session.seats.map((_, i) => i)
 
-// The seats give up: the game ends and they place last. The visit in progress doesn't count
-// (mirrors board.resync).
+// A game that keeps time hears the input's time first (see GameModule.onClock), until it is decided.
+// True when that decided it: the time ran out before this input.
+function timeRanOut(session: Session, at: Date): boolean {
+  const mod = session.module
+  if (!mod.onClock || hasWinner(session, session.currentState)) return false
+  session.committedState = mod.onClock(session.committedState, at.getTime())
+  session.currentState = refoldVisit(mod, session.committedState, session.openVisitEvents)
+  return hasWinner(session, session.currentState)
+}
+
+// The seats give up: the game ends and they place last.
 function forfeit(session: Session, seats: number[]): ApplyOutcome {
   if (seats.length === 0) return NONE
   session.forfeited = [...new Set([...session.forfeited, ...seats])].sort((a, b) => a - b)
+  return endNow(session)
+}
+
+// The game ends now. The visit in progress doesn't count (mirrors board.resync).
+function endNow(session: Session): ApplyOutcome {
   session.undoable = []
   countDarts(session, session.currentState, -dartEvents(session).length)
   session.openVisitEvents = []

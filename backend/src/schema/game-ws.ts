@@ -503,7 +503,78 @@ export type MinigolfSnapshot = SnapshotBase & {
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "Snapshot".
  */
-export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot
+export type Snapshot =
+  X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot | MissionSnapshot
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionSnapshot".
+ */
+export type MissionSnapshot = SnapshotBase & {
+  gameId: 'mission'
+  game: MissionGame
+}
+/**
+ * A mission being played (backend/src/games/mission.ts) plus the engine's per-session fields.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionGame".
+ */
+export type MissionGame = EngineGameFields & {
+  missionId: string
+  /**
+   * A test run of the author's own mission: counts for no times, XP, stats or history.
+   */
+  test: boolean
+  mission: Mission
+  /**
+   * The mission's best results when the game started, best first.
+   */
+  highscores: MissionHighscore[]
+  status: 'playing' | 'completed' | 'failed'
+  failure: 'time' | 'gave_up' | null
+  /**
+   * The step the darts go to.
+   */
+  active: number
+  steps: MissionStepRun[]
+  /**
+   * Times every step started over (the Start over policy).
+   */
+  restarts: number
+  /**
+   * Darts thrown while the mission ran.
+   */
+  darts: number
+  /**
+   * The open visit's darts and what each did for the step.
+   */
+  chips: MissionChip[]
+  clock: MissionClock
+  /**
+   * Mission time when it was completed or failed.
+   */
+  timeMs: number | null
+  currentPlayer: number
+  /**
+   * 0 once the mission is over, completed or not (a solo game ends either way).
+   */
+  winner: number | null
+  /**
+   * The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust.
+   */
+  visitLocked: boolean
+}
+/**
+ * One step of a mission (backend/src/shared/missions/types.ts is the authority).
+ */
+export type MissionStep =
+  | MissionCheckoutStep
+  | MissionHitStep
+  | MissionMarksStep
+  | MissionVisitsStep
+  | MissionScoreStep
+  | MissionAverageStep
+  | MissionLegStep
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
@@ -519,6 +590,11 @@ export type UserAction =
   | ForfeitAction
   | MinigolfNextHoleAction
   | P121GiveUpAction
+  | MissionSwitchAction
+  | MissionPauseAction
+  | MissionResumeAction
+  | MissionGiveUpAction
+  | MissionClockAction
 
 /**
  * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
@@ -1026,6 +1102,176 @@ export interface MinigolfHole {
     r: number
   }
 }
+/**
+ * A mission's definition: what a game of it plays (backend/src/shared/missions/types.ts checks the rest).
+ */
+export interface Mission {
+  name: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  order: 'any' | 'in_order'
+  /**
+   * Seconds; left out: no limit.
+   */
+  timeLimit?: number
+  onFail: 'retry' | 'restart'
+  pause: boolean
+  rankBy: 'time' | 'darts'
+  /**
+   * 1 to 8 steps.
+   */
+  steps: MissionStep[]
+}
+/**
+ * Check out `start` within `maxDarts`; a bust fails the attempt.
+ */
+export interface MissionCheckoutStep {
+  type: 'checkout'
+  start: number
+  maxDarts: number
+  finish: 'double' | 'single' | 'master'
+}
+/**
+ * Hit each target `hits` times: in a row (a dart that adds nothing fails the attempt), in this order, within N darts or one visit.
+ */
+export interface MissionHitStep {
+  type: 'hit'
+  /**
+   * 1 to 21 targets.
+   */
+  targets: string[]
+  hits: number
+  inARow: boolean
+  order: 'any' | 'in_order'
+  /**
+   * Left out: no limit.
+   */
+  within?: number | 'visit'
+}
+/**
+ * Marks on numbers (25: the bull): a double 2, a treble 3, the outer bull 1, the inner bull 2.
+ */
+export interface MissionMarksStep {
+  type: 'marks'
+  /**
+   * 1 to 21 targets.
+   */
+  targets: number[]
+  marks: number
+  per: 'each' | 'total'
+  /**
+   * Left out: no limit.
+   */
+  within?: number
+}
+/**
+ * Every visit at least, at most, exactly or never `points`, for `visits` visits.
+ */
+export interface MissionVisitsStep {
+  type: 'visits'
+  compare: 'at_least' | 'at_most' | 'exactly' | 'not'
+  points: number
+  visits: number
+  inARow: boolean
+}
+/**
+ * Score `points` or more within `within` darts.
+ */
+export interface MissionScoreStep {
+  type: 'score'
+  points: number
+  within: number
+}
+/**
+ * A 3-dart average of at least `average` over `visits` visits.
+ */
+export interface MissionAverageStep {
+  type: 'average'
+  average: number
+  visits: number
+}
+/**
+ * Win a leg from `start` within `within` darts; a bust ends the visit, as in X01.
+ */
+export interface MissionLegStep {
+  type: 'leg'
+  start: 301 | 501 | 701
+  within: number
+  finish: 'double' | 'single'
+}
+/**
+ * A player's best completed run of a mission.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionHighscore".
+ */
+export interface MissionHighscore {
+  userId: string | null
+  name: string
+  timeMs: number
+  darts: number
+}
+/**
+ * How a step of the mission stands.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionStepRun".
+ */
+export interface MissionStepRun {
+  attempts: number
+  /**
+   * The most progress an attempt made (a streak's best).
+   */
+  best: number
+  darts: number
+  /**
+   * Mission time (ms) when the step was done.
+   */
+  doneAt: number | null
+  progress: {
+    value: number
+    of: number
+    /**
+     * Checkout and fast leg: the score left.
+     */
+    left?: number
+    /**
+     * Average: the 3-dart average so far.
+     */
+    average?: number | null
+  }
+}
+/**
+ * A dart of the open visit and what it did.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionChip".
+ */
+export interface MissionChip {
+  number: number
+  multiplier: number
+  /**
+   * Progress the dart made (a bust's can be negative).
+   */
+  gain: number
+  outcome: 'go' | 'done' | 'fail' | 'visit_over'
+}
+/**
+ * Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MissionClock".
+ */
+export interface MissionClock {
+  now: number | null
+  startedAt: number | null
+  pausedAt: number | null
+  pausedMs: number
+  /**
+   * When the time runs out (ms since the epoch); null without a limit or while paused.
+   */
+  deadline: number | null
+}
 export interface UndoDartAction {
   type: 'undo_dart'
 }
@@ -1084,6 +1330,37 @@ export interface MinigolfNextHoleAction {
  */
 export interface P121GiveUpAction {
   type: 'p121_give_up'
+}
+/**
+ * Mission (any order), between visits: play this step next.
+ */
+export interface MissionSwitchAction {
+  type: 'mission_switch'
+  step: number
+}
+/**
+ * Mission, between visits: stop the clock (when the mission allows it).
+ */
+export interface MissionPauseAction {
+  type: 'mission_pause'
+}
+/**
+ * Mission: start the clock again.
+ */
+export interface MissionResumeAction {
+  type: 'mission_resume'
+}
+/**
+ * Mission: give up; the mission ends failed.
+ */
+export interface MissionGiveUpAction {
+  type: 'mission_give_up'
+}
+/**
+ * Mission: the screen's countdown reached 0; the server checks the time itself.
+ */
+export interface MissionClockAction {
+  type: 'mission_clock'
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

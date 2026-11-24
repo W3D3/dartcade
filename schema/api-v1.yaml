@@ -4794,6 +4794,7 @@ components:
   schemas:
     Player: { $ref: 'common-v1.json#/$defs/Player' }
     Handicap: { $ref: 'common-v1.json#/$defs/Handicap' }
+    Mission: { $ref: 'common-v1.json#/$defs/Mission' }
     Dart: { $ref: 'common-v1.json#/$defs/Dart' }
     ErrorResponse: { $ref: 'common-v1.json#/$defs/ErrorResponse' }
 
@@ -5248,6 +5249,33 @@ components:
               place: { type: integer, minimum: 1 }
               outRound: { type: integer, minimum: 1, nullable: true, description: The round the seat went out in; null while still in }
               livesLeft: { type: integer, minimum: 0 }
+    MissionDetail:
+      type: object
+      description: A finished mission game (backend/src/games/mission.ts)
+      required: [mode, missionId, test, mission, status, failure, timeMs, darts, restarts, steps]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [mission] }
+        missionId: { type: string }
+        test: { type: boolean, description: A test run of the author's own mission }
+        mission: { $ref: '#/components/schemas/Mission' }
+        status: { type: string, enum: [playing, completed, failed], description: playing only for a game that ended another way (aborted) }
+        failure: { type: string, enum: [time, gave_up, null], nullable: true }
+        timeMs: { type: integer, minimum: 0, nullable: true, description: Mission time when it was completed or failed }
+        darts: { type: integer, minimum: 0 }
+        restarts: { type: integer, minimum: 0 }
+        steps:
+          type: array
+          description: One per step of the mission, in its order
+          items:
+            type: object
+            required: [attempts, best, darts, doneAt]
+            additionalProperties: false
+            properties:
+              attempts: { type: integer, minimum: 1 }
+              best: { type: integer, minimum: 0 }
+              darts: { type: integer, minimum: 0 }
+              doneAt: { type: integer, minimum: 0, nullable: true, description: Mission time (ms) when the step was done }
     CricketDetail:
       type: object
       required: [mode, targets, legs]
@@ -6552,6 +6580,7 @@ components:
             - $ref: '#/components/schemas/P121Detail'
             - $ref: '#/components/schemas/HiloDetail'
             - $ref: '#/components/schemas/CricketDetail'
+            - $ref: '#/components/schemas/MissionDetail'
           discriminator:
             propertyName: mode
             mapping:
@@ -6561,6 +6590,7 @@ components:
               p121: '#/components/schemas/P121Detail'
               hilo: '#/components/schemas/HiloDetail'
               cricket: '#/components/schemas/CricketDetail'
+              mission: '#/components/schemas/MissionDetail'
         stats: { $ref: '#/components/schemas/MatchStats' }
     AdminGameDetail:
       type: object

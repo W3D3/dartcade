@@ -39,6 +39,11 @@ function eventGame(s: Snapshot): EventGame {
       const hit = (i: number) => (currentVisitEffects[i]?.marks ?? 0) + (currentVisitEffects[i]?.points ?? 0) > 0
       return { ...s.game, currentVisitHits: currentVisitDarts.map((_, i) => hit(i)) }
     }
+    case 'mission': {
+      // A hit is a dart that moved its step on (the open visit's chips, in dart order)
+      const { chips, currentVisitDarts } = s.game
+      return { ...s.game, currentVisitHits: currentVisitDarts.map((_, i) => (chips[i]?.gain ?? 0) > 0) }
+    }
   }
 }
 

@@ -28,6 +28,8 @@ function meta(s: Snapshot): string {
       return hiloMeta(s.game, s.players.length)
     case 'cricket':
       return cricketMeta(s.game, s.players.length)
+    case 'mission':
+      return `Step ${s.game.active + 1} of ${s.game.mission.steps.length}`
     default: {
       // A new game id fails to compile here until it has a line; one from a newer server gets none
       const _unknown: never = s

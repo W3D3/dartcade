@@ -21,6 +21,7 @@ const rows = {
   // A lost life plays the bust sound
   hilo: { display: [], sounds: withBust },
   cricket: { display: [], sounds: dartSounds },
+  mission: { display: [], sounds: dartSounds },
 } satisfies Record<GameId, DrawerRows>
 
 export const drawerRows = (gameId: string): DrawerRows => (isGameId(gameId) ? rows[gameId] : { display: [], sounds: dartSounds })

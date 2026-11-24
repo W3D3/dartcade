@@ -107,6 +107,7 @@ const HEADLINE = {
   // Their result sections carry the result: no headline
   p121: () => NO_HEADLINE,
   hilo: () => NO_HEADLINE,
+  mission: () => NO_HEADLINE,
 } satisfies Record<GameId, (d: GameDetail, sides: DetailSide[]) => Headline>
 
 export function headline(d: GameDetail, sides: DetailSide[]): Headline {
