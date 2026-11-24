@@ -58,7 +58,8 @@ export type TournamentDeps = {
   warn?: (message: string, details: unknown) => void
 }
 
-export type StartOutcome = 'started' | 'not_startable'
+/** `undrawable`: the format can't draw who is in (in person, nothing changed). */
+export type StartOutcome = 'started' | 'not_startable' | 'undrawable'
 
 /** How an organizer starts a match by hand: on a board (null: scores typed in) and who throws first. */
 export type HandStart = {
@@ -168,12 +169,16 @@ export class TournamentService implements GameEndedConsumer {
   async organizerStart(tournamentId: string): Promise<StartOutcome> {
     return this.lane(tournamentId, async () => {
       const t = await getTournamentRow(this.deps.db, tournamentId)
-      if (!t || t.status !== 'open' || t.starts_at !== null) return 'not_startable'
+      if (!t || t.status !== 'open') return 'not_startable'
+      // In person the organizers start it whenever they are ready: a time on it is only for the players
       if (t.play === 'in_person') {
         await releaseUnconfirmed(this.deps.db, t.id)
         // The organizer is there to fix the list: a field the format can't draw is refused, never cancelled
-        return (await this.begin(t)) === 'started' ? 'started' : 'not_startable'
+        const began = await this.begin(t)
+        return began === 'lost' ? 'not_startable' : began
       }
+      // Online a fixed start time starts it on its own
+      if (t.starts_at !== null) return 'not_startable'
       const startsAt = new Date(this.now() + (t.settings.checkInMinutes ?? 0) * 60_000)
       if (!(await setStartTime(this.deps.db, t.id, startsAt))) return 'not_startable'
       await this.schedule(t.id)

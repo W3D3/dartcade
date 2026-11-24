@@ -477,12 +477,13 @@
           <FormSection n={inPerson ? 5 : 6} title="Schedule & rules">
             {#if inPerson}
               <p class="rounded-md border border-line bg-surface-1 p-3.5 text-label text-text-muted">
-                You start it from <b class="text-text">Tournament mode</b> when everyone’s there. Open Tournament mode on every device you want
-                to play on (tablets, laptops, phones), all logged in to your account. Each device can pick a match and run it.
+                You start it yourself on its organizer page whenever you’re ready, with or without a date. Matches are played in
+                <b class="text-text">Tournament mode</b>: open it on every device you want to play on (tablets, laptops, phones), signed in
+                to your account or paired with a code. Each device can pick a match and run it.
               </p>
               <div class="flex flex-col gap-2 md:max-w-[320px]">
                 <span class="text-label font-semibold"
-                  >Date <span class="font-normal text-text-dim">· optional, for your overview</span></span
+                  >Date <span class="font-normal text-text-dim">· optional, for your players. It never starts the tournament</span></span
                 >
                 <DatePicker
                   label="Date"

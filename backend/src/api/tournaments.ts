@@ -33,7 +33,7 @@ import {
 import { claimSpot, holdsOtherSpot, playedSoFar, reissueCode, spotByCode, type ClaimSpot } from '../db/tournamentClaim.js'
 import { listParticipants, setParticipants, unlinkSpot, type SetParticipantsResult } from '../db/tournamentParticipants.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
-import { checkIn } from '../db/tournamentRun.js'
+import { checkIn, listEntries } from '../db/tournamentRun.js'
 import { answerRequest, candidatesOf, changePlayer, registerTeam, teamEntriesOf, teamOptions } from '../db/tournamentRoster.js'
 import { getBoardsByOwner, getUsersByIds } from '../db/queries.js'
 import { x01Forms } from '../db/ranked.js'
@@ -56,7 +56,7 @@ import {
   startProblems,
   type Problem,
 } from '../shared/tournaments/setup.js'
-import { cleanEntries, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
+import { cleanEntries, drawBlocker, participantProblems, startBlocker, type EntryInput } from '../shared/tournaments/participants.js'
 import { REMIND_EVERY_MS, pickProblem, waitingFor, type Candidate, type PickProblem } from '../shared/tournaments/roster.js'
 import { prizeProblems } from '../shared/tournaments/prizes.js'
 import { isEditable } from '../shared/tournaments/state.js'
@@ -535,10 +535,20 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
 
   app.post<Route<'startTournament'>>('/api/tournaments/:id/start', { schema: fromSpec('startTournament') }, async req => {
     const { t, role } = await organized(req.params.id, req.userId)
-    const blocker = t.preselected ? (await participantsOf(t)).startBlocker : null
+    const blocker = t.play === 'in_person' ? await inPersonBlocker(t) : null
     if (blocker !== null) throw conflict(blocker)
-    if ((await tournaments.organizerStart(t.id)) !== 'started')
-      throw conflict('this tournament can’t start now: it isn’t open, has a fixed start time, or its format can’t be drawn')
+    const outcome = await tournaments.organizerStart(t.id)
+    if (outcome === 'undrawable')
+      // Who plays changed since the check (an average limit rechecked at the start)
+      throw conflict((await inPersonBlocker(t)) ?? `this format can’t be drawn with who is in`)
+    if (outcome !== 'started')
+      throw conflict(
+        t.status !== 'open'
+          ? `a ${t.status} tournament can’t be started`
+          : t.play === 'online' && t.starts_at !== null
+            ? 'an online tournament with a start time starts on its own'
+            : 'the tournament changed meanwhile: reload and try again',
+      )
     return respond(t.id, role, req.userId)
   })
 
@@ -671,6 +681,12 @@ export function tournamentsApiPlugin(app: FastifyInstance, opts: Opts, done: (er
     if (!t.preselected) throw conflict('not preselected')
     return t
   }
+
+  /** Why an in-person tournament can't start: its list as the organizers made it, or who registered (whom the start draws). */
+  const inPersonBlocker = async (t: TournamentView): Promise<string | null> =>
+    t.preselected
+      ? (await participantsOf(t)).startBlocker
+      : drawBlocker((await listEntries(db, t.id)).filter(e => e.status === 'registered').length, t.team_size, t)
 
   const participantsOf = async (t: TournamentView) => {
     const entries = await listParticipants(db, t.id)

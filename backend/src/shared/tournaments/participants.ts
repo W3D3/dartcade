@@ -82,17 +82,8 @@ const ordinal = (n: number) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 
  * entries than the format draws, entries that don't split into its groups, or a team with empty spots.
  */
 export function startBlocker(entries: readonly EntryInput[], teamSize: number, setup: DrawSetup): string | null {
-  const solo = teamSize === 1
-  const noun = solo ? 'players' : 'teams'
-  if (!draws(entries.length, setup)) {
-    const fewest = fewestDrawn(setup)
-    if (fewest !== null && entries.length < fewest) return `Add at least ${fewest} ${noun} before you can start.`
-    const g = setup.settings.groups
-    if (setup.format === 'groups_knockout' && g)
-      return `${entries.length} ${noun} don't split into groups of ${g.size} with ${g.through} going through. Add or remove ${solo ? 'a player' : 'a team'}, or change the groups.`
-    return `This format can't be drawn with ${entries.length} ${noun}.`
-  }
-  if (solo) return null
+  const drawn = drawBlocker(entries.length, teamSize, setup)
+  if (drawn !== null || teamSize === 1) return drawn
   const short = entries.filter(e => e.players.length < teamSize)
   if (short.length === 0) return null
   if (short.length === 1) {
@@ -101,6 +92,19 @@ export function startBlocker(entries: readonly EntryInput[], teamSize: number, s
   }
   const empty = short.reduce((n, e) => n + teamSize - e.players.length, 0)
   return `Every team needs ${teamSize} players before you can start. ${empty} spots are still empty.`
+}
+
+/** Why `count` entries can't be drawn in the format, or null: every in-person start asks it, whoever made the list. */
+export function drawBlocker(count: number, teamSize: number, setup: DrawSetup): string | null {
+  if (draws(count, setup)) return null
+  const solo = teamSize === 1
+  const noun = solo ? 'players' : 'teams'
+  const fewest = fewestDrawn(setup)
+  if (fewest !== null && count < fewest) return `Add at least ${fewest} ${noun} before you can start.`
+  const g = setup.settings.groups
+  if (setup.format === 'groups_knockout' && g)
+    return `${count} ${noun} don't split into groups of ${g.size} with ${g.through} going through. Add or remove ${solo ? 'a player' : 'a team'}, or change the groups.`
+  return `This format can't be drawn with ${count} ${noun}.`
 }
 
 /** Whether `count` entries can be drawn in the format: the draw itself decides, so this never disagrees with the start. */
