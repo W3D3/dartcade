@@ -3,6 +3,7 @@
 // server decides what that session may do; this is the calls and the words for them.
 import { writable } from 'svelte/store'
 import { api } from '$lib/api'
+import { quietApi } from '$lib/api/client'
 import type { components } from '$lib/api/schema'
 import { hrefs } from '$lib/routes'
 
@@ -59,7 +60,8 @@ export async function pairDevice(code: string): Promise<DeviceSession | { error:
 /** The session this browser holds, null when it holds none (or a signed-in user is using it). */
 export async function loadDeviceSession(): Promise<DeviceSession | null> {
   try {
-    return (await api.GET('/api/tournament-device')).data ?? null
+    // Signed out is the answer here (no device, or its session ended), not a reason to open the sign-in page
+    return (await quietApi.GET('/api/tournament-device')).data ?? null
   } catch {
     return null
   }

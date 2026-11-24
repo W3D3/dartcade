@@ -257,6 +257,11 @@
         checked = true
         return
       }
+      // A device whose session ended (revoked, or its tournament is over) is told so there, not sent to a login it can't use
+      if (currentHash.startsWith(hrefs.tournamentMode(''))) {
+        checked = true
+        return
+      }
       rememberReturn(sessionStore(), currentHash)
       redirectingTo = '/login'
       void push('/login')

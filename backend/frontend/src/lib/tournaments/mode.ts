@@ -133,6 +133,7 @@ export function barLine(t: Pick<Tournament, 'gameId' | 'gameConfig' | 'format' |
 
 function progress(m: LiveMessage): string {
   if (m.status === 'finished') return 'Finished'
+  if (m.status === 'cancelled') return 'Cancelled'
   if (m.status !== 'running') return 'Not started'
   const stage = m.schedule.find(s => s.state === 'now') ?? m.schedule.find(s => s.state !== 'done')
   if (!stage) return ''
