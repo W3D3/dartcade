@@ -59,6 +59,7 @@ export const hrefs = {
   admin: () => at('/admin'),
   adminUsers: () => at('/admin/users'),
   adminGames: (id?: string) => at(id ? `/admin/games/${id}` : '/admin/games'),
+  adminLive: () => at('/admin/live'),
   adminFlags: () => at('/admin/flags'),
   adminRanked: () => at('/admin/ranked'),
   adminActivity: () => at('/admin/activity'),

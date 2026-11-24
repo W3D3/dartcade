@@ -10,6 +10,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
+  import { hrefs } from '$lib/routes'
   import { gameTitle } from '$shared/gameNames'
   import { activityTrail } from '$lib/admin/breadcrumbs'
   import {
@@ -187,6 +188,7 @@
                 </li>
               {/each}
             </ul>
+            <a href={hrefs.adminLive()} class="mt-3 inline-block text-label">Watch live games</a>
           </section>
         </div>
 
