@@ -9,7 +9,7 @@ import type { Cursor } from '../history/cursor.js'
 import { groupBy } from '../util/groupBy.js'
 
 /** A game the ranked queue started (a running one has no results yet) or that moved ratings. */
-const isRanked = sql.raw(
+export const isRanked = sql.raw(
   '(EXISTS (SELECT 1 FROM ranked_matches rm WHERE rm.session_id = gs.id) OR EXISTS (SELECT 1 FROM ranked_results rr WHERE rr.session_id = gs.id))',
 )
 
