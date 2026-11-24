@@ -21,6 +21,9 @@
   import type { Tournament } from '$lib/api'
   import { flag, flagsLoaded } from '$lib/flags'
   import { hrefs } from '$lib/routes'
+  import { currentUser } from '$lib/auth'
+  import { rememberReturn, sessionStore } from '$lib/returnTo'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { loadTournament } from '$lib/tournaments/browse'
   import { deviceSessionStore, loadDeviceSession, renameDeviceSession, type DeviceSession } from '$lib/tournaments/devices'
   import type { Device, LiveMatch, LiveMessage } from '$lib/tournaments/live'
@@ -50,8 +53,9 @@
     device = await loadDeviceSession()
     deviceSessionStore.set(device)
     if (device) name = device.name
-    const r = await loadTournament(params.id)
-    t = 'tournament' in r ? r.tournament : null
+    // Neither a device nor signed in: nothing to load, and a 401 would leave for the sign-in page
+    const r = device || $currentUser ? await loadTournament(params.id) : null
+    t = r && 'tournament' in r ? r.tournament : null
   })
 
   // The server decides what a device may do: it sees only its own tournament. A signed-in organizer needs the role
@@ -75,6 +79,16 @@
       for (const stop of stops) stop()
     }
   })
+  // The state should come at once: past a few seconds without it, say so rather than spin silently
+  let slow = $state(false)
+  $effect(() => {
+    if (!mode || m) return
+    const timer = setTimeout(() => (slow = true), 8000)
+    return () => {
+      clearTimeout(timer)
+      slow = false
+    }
+  })
   const myId = $derived(mode?.deviceId ?? null)
   const groups = $derived(m ? matchGroups(m) : null)
 
@@ -91,6 +105,13 @@
     if (!mode || !match.game) return
     mode.hold(match.key, match.game.sessionId)
     void push(hrefs.session(match.game.sessionId).slice(1))
+  }
+
+  // Neither a device session nor an account: a device whose session ended, or an organizer signed out
+  const signedOut = $derived(!device && !$currentUser)
+  function signIn() {
+    rememberReturn(sessionStore(), window.location.hash)
+    void push('/login')
   }
 
   function play(match: LiveMatch) {
@@ -119,11 +140,14 @@
     <main class="grid grow place-items-center p-6">
       <EmptyState
         title="Not available"
-        text={gone && device
+        text={(gone && device) || signedOut
           ? 'This device was removed from the tournament, or the tournament is over. Ask an organizer for a new code.'
           : 'Tournament mode is for the organizers of an in-person tournament, and for devices they paired.'}
       >
         {#snippet icon()}<Trophy size={24} />{/snippet}
+        {#snippet actions()}
+          {#if signedOut}<Button variant="outline" onclick={signIn}>Sign in as an organizer</Button>{/if}
+        {/snippet}
       </EmptyState>
     </main>
   {:else if !name}
@@ -176,10 +200,22 @@
 
       {#if !m || !groups}
         <PageLoading />
+        {#if slow}<p class="text-center text-small text-text-muted">
+            Can’t reach the tournament. Still trying, check this device’s connection.
+          </p>{/if}
       {:else if tab === 'bracket'}
         <BracketTab {m} {t} />
       {:else if tab === 'players'}
         <PlayersList {m} />
+      {:else if m.status === 'cancelled' || m.status === 'finished'}
+        <section class="card flex flex-col items-start gap-2 p-5 md:max-w-xl" aria-labelledby="mode-over">
+          <h2 id="mode-over" class="type-section-title font-bold">The tournament is over</h2>
+          <p class="text-body text-ink-2">
+            {m.status === 'cancelled'
+              ? 'An organizer cancelled it. Nothing is left to play on this device.'
+              : 'Every match is played. The final bracket and places are on the Bracket and Players tabs.'}
+          </p>
+        </section>
       {:else if m.status === 'open'}
         <section class="card flex flex-col items-start gap-2 p-5 md:max-w-xl" aria-labelledby="mode-wait">
           <h2 id="mode-wait" class="type-section-title font-bold">Waiting for the organizers</h2>

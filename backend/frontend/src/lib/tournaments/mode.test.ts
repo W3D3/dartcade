@@ -90,6 +90,7 @@ describe('tournament mode', () => {
     ])
     expect(barLine(t, msg)).toBe('X01 501 · single elimination · 8 players · Quarter-finals: 2 of 4 done')
     expect(barLine(t, { ...msg, status: 'open', matches: [], schedule: [] })).toBe('X01 501 · single elimination · 8 players · Not started')
+    expect(barLine(t, { ...msg, status: 'cancelled' })).toBe('X01 501 · single elimination · 8 players · Cancelled')
   })
 
   it('groups the matches: ready, the next round, playing, finished latest first', () => {
