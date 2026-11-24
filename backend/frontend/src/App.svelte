@@ -46,7 +46,6 @@
   import Watch from './routes/Watch.svelte'
   import BigScreenFrame from './routes/BigScreenFrame.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
-  import AdminLive from './routes/AdminLive.svelte'
   import AdminGames from './routes/AdminGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
   import FinishSprite from '$lib/components/FinishSprite.svelte'
@@ -193,7 +192,6 @@
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/games': AdminGames,
-    '/admin/live': AdminLive,
     '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
     '/admin/ranked': AdminRanked,
