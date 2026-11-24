@@ -17,7 +17,6 @@ describe('playPath', () => {
         [2, 2],
       ],
       p => seen.push(p),
-      false,
     )
     expect(seen[0]).toEqual([0, 0])
     expect(seen).not.toContain(undefined)
@@ -30,7 +29,7 @@ describe('playFrames', () => {
     let t = start - 25
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb((t += 20)), 0))
     const seen: number[] = []
-    await new Promise<void>(onDone => playFrames(3, i => seen.push(i), false, { onDone }))
+    await new Promise<void>(onDone => playFrames(3, i => seen.push(i), { onDone }))
     expect(Math.min(...seen)).toBeGreaterThanOrEqual(0)
   })
 })
