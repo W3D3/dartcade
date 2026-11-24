@@ -62,6 +62,8 @@ export const hrefs = {
   adminFlags: () => at('/admin/flags'),
   adminRanked: () => at('/admin/ranked'),
   adminActivity: () => at('/admin/activity'),
+  /** The Activity page's Games played subpage; `query` holds its filters. */
+  adminActivityGames: (query?: string) => at('/admin/activity/games', query),
   adminSystem: () => at('/admin/system'),
   adminDartSamples: () => at('/admin/dart-samples'),
   adminCosmetics: () => at('/admin/cosmetics'),

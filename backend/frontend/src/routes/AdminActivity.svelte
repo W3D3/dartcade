@@ -257,6 +257,7 @@
               `Games played per ${granularity}`,
               `by mode · ${formatCount(gameBuckets.reduce((s, b) => s + b.total, 0))} in ${a.days} days`,
             )}
+            <a href={hrefs.adminActivityGames()} class="text-label font-semibold text-accent">Games played: filter and export →</a>
           </div>
           {#if a.gamesPerDay.modes.length === 0}
             <p class="text-label text-text-muted">No finished games in this range yet.</p>

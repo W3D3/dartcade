@@ -18,6 +18,12 @@ export const minigolfReportsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Co
 
 export const activityTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Activity' }]
 
+export const activityGamesTrail = (): BreadcrumbItem[] => [
+  ADMIN,
+  { label: 'Activity', href: hrefs.adminActivity() },
+  { label: 'Games played' },
+]
+
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
 export const dartSamplesTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Dart samples' }]
