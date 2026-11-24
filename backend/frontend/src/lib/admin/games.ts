@@ -22,12 +22,16 @@ export type GameFilters = {
 export const DEFAULT_FILTERS: GameFilters = { status: 'finished', mode: null, player: '', ranked: false, from: '', to: '' }
 
 export const STATUS_OPTIONS: { id: GameStatus; label: string }[] = [
+  { id: 'active', label: 'Live now' },
   { id: 'finished', label: 'Finished' },
   { id: 'all', label: 'All' },
   { id: 'aborted', label: 'Aborted' },
-  { id: 'active', label: 'Active' },
   { id: 'invalidated', label: 'Invalidated' },
 ]
+
+/** Whether an admin can Watch the game: it is running. Moderators may not (Watch is for admins). */
+export const adminCanWatch = (g: Pick<AdminGameSummary, 'status'>, viewer: { isAdmin: boolean }): boolean =>
+  viewer.isAdmin && g.status === 'active'
 
 /** Midnight (local) at the start of a yyyy-mm-dd date; null if it isn't one. */
 function startOfDate(s: string): Date | null {

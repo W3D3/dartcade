@@ -6,7 +6,7 @@
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { Ban, ChevronRight, CircleSlash, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
+  import { Ban, ChevronRight, CircleSlash, Eye, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
@@ -20,8 +20,10 @@
   import { DateRangePicker } from '$lib/components/ui/date-picker/index.js'
   import { api, type GameInfo } from '$lib/api'
   import { currentUser } from '$lib/auth'
+  import { flag } from '$lib/flags'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
   import {
+    adminCanWatch,
     DEFAULT_FILTERS,
     deleteGame,
     DELETE_WARNING,
@@ -48,6 +50,8 @@
 
   // Only the most recently started request may apply its result (a quick filter change leaves older ones in flight)
   const requests = createRequestGuard()
+
+  const watchOn = flag('watch.enabled')
 
   let filters = $state<GameFilters>({ ...DEFAULT_FILTERS })
   let modes = $state<GameInfo[]>([])
@@ -275,6 +279,11 @@
                   {:else if g.status === 'finished'}
                     <Button variant="quiet" size="icon-sm" aria-label="Restore this game" title="Restore" onclick={() => (restoring = g)}
                       ><Undo2 size={16} /></Button
+                    >
+                  {/if}
+                  {#if $watchOn && adminCanWatch(g, $currentUser)}
+                    <Button variant="quiet" size="icon-sm" aria-label="Watch this game" title="Watch" href={hrefs.watch(g.id)}
+                      ><Eye size={16} /></Button
                     >
                   {/if}
                   {#if g.status === 'active' && g.ranked}

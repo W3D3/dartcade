@@ -56,6 +56,12 @@ describe('the watched game is view only', () => {
     expect(bar.match(/<button/g)).toHaveLength(1)
   })
 
+  it('says so when an admin watches, and not for a friend', () => {
+    const props = { title: 'Lena vs Max', game: 'X01', state: 'live', watchers: 0, onleave: () => undefined } as const
+    expect(render(WatchBar, { props }).body).not.toContain('Watching as admin')
+    expect(render(WatchBar, { props: { ...props, asAdmin: true } }).body).toContain('Watching as admin')
+  })
+
   it('draws the X01 match with nothing to act on: no Undo, Next or keypad, no dart to correct', () => {
     const html = render(Live, {
       props: { snapshot, board: { online: true }, settings: defaultSettings, history: emptyHistory(), bigHeader: false },
