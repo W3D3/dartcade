@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { checkoutHint } from '../checkout.js'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIMS } from './aims.js'
 import { NOTE_THRESHOLD } from './notes.js'
@@ -199,18 +200,18 @@ describe('strategy notes: tips', () => {
 })
 
 describe('strategy notes: the book', () => {
-  it('never notes the first dart of a route in our checkout table, but S19 on 45', () => {
+  it('never notes the first dart of the route the book gives, with two or three darts left', () => {
     const number = (label: string) => (label === 'Bull' || label === '25' ? 25 : Number(label.slice(1)))
     const costly: string[] = []
-    for (const [score, entry] of Object.entries(CHECKOUTS)) {
-      const firsts = [...entry.routes.map(r => [r[0], 3] as const), ...(entry.twoDarts ? [[entry.twoDarts[0], 2] as const] : [])]
-      for (const [label, darts] of firsts) {
-        const { cost } = numberCost(evaluator(Number(score), 1)(Number(score), darts), number(label))
+    for (const score of Object.keys(CHECKOUTS).map(Number)) {
+      for (const darts of [2, 3]) {
+        const label = checkoutHint(score, 'double', darts)?.[0]
+        if (!label) continue
+        const { cost } = numberCost(evaluator(score, 1)(score, darts), number(label))
         if (cost >= NOTE_THRESHOLD) costly.push(`${score}/${darts} ${label}: ${(cost * 100).toFixed(1)}`)
       }
     }
-    // The book's second route on 45, S19 (26 left, D13), costs a semi-pro just over the threshold against its first, S13
-    expect(costly).toEqual(['45/3 S19: 5.2'])
+    expect(costly).toEqual([])
   })
 
   it('shows the book route with a note', () => {

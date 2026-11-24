@@ -1,5 +1,5 @@
 // Checkout suggestions: which darts finish the score left.
-// Double out (the usual game) follows the pros' table in checkoutTable.ts from 170 down to 41,
+// Double out (the usual game) follows the checkout chart in checkoutTable.ts from 170 down to 41,
 // and the usual ladder below that; straight and master out are computed.
 import { CHECKOUTS } from './checkoutTable.js'
 
@@ -44,12 +44,11 @@ function doubleOutHint(remaining: number, n: number, prefs: CheckoutPrefs): stri
 
   const entry = remaining in CHECKOUTS ? CHECKOUTS[remaining] : null
   if (entry) {
+    // What fits the darts left, and is no longer than the table's first route (the fewest darts)
+    const first = entry.routes[0]
+    const fits = entry.routes.filter(r => r.length <= Math.min(n, first.length))
     const fav = prefs.favouriteDouble === null ? null : finishingLabel(prefs.favouriteDouble)
-    // The favourite double's route first, then the table's order
-    const routes =
-      fav === null ? entry.routes : [...entry.routes.filter(r => r.at(-1) === fav), ...entry.routes.filter(r => r.at(-1) !== fav)]
-    if (n >= 3) return routes[0]
-    return entry.twoDarts ?? routes.find(r => r.length <= 2) ?? computedHint(remaining, 'double', 2)
+    return fits.find(r => r.at(-1) === fav) ?? fits.at(0) ?? computedHint(remaining, 'double', n)
   }
   // Above 40 and not in the table: no three-dart finish (169, 168, 166, …)
   if (remaining > 40) return null
