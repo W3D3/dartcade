@@ -48,10 +48,21 @@ for (const [name, view] of [
 ] as const) {
   test(`admin games: Watch on a running game, ${name}`, async ({ browser }) => {
     const { ctx, page } = await open(browser, 'admin', view)
-    await page.route('**/api/admin/games?*', route => route.fulfill({ json: games }))
+    await page.route('**/api/admin/games?*', route => {
+      const status = new URL(route.request().url()).searchParams.get('status')
+      return route.fulfill({ json: { ...games, games: games.games.filter(g => status === 'all' || g.status === status) } })
+    })
     await page.goto('/#/admin/games')
-    await expect(page.getByRole('link', { name: 'Watch this game' })).toHaveCount(1)
-    await shot(page, `watch/admin-games-${name}.png`)
+    // The phone's filters are a sheet: the list is shown from the live page there
+    if (name === 'desktop') {
+      await page.getByLabel('Status').click()
+      await page.getByRole('option', { name: 'Live now' }).click()
+      await expect(page.getByRole('link', { name: 'Watch this game' })).toHaveCount(1)
+      await shot(page, 'watch/admin-games-desktop.png')
+    }
+    await page.goto('/#/admin/live')
+    await expect(page.getByRole('link', { name: 'Watch' })).toHaveCount(1)
+    await shot(page, `watch/admin-live-${name}.png`)
     await ctx.close()
   })
 }
