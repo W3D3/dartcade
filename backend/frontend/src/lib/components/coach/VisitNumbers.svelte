@@ -13,7 +13,7 @@
     ['Kind', 'Kind'],
     ['Target', 'Target'],
     ['Dist', "From the target's point (mm)"],
-    ['Edge', "From the nearest point of the target's bed (mm)"],
+    ['Outside', 'Distance outside the segment you aimed for (mm, 0 on it)'],
     ['Out', 'Away from the bull (mm)'],
     ['CW', 'Clockwise (mm)'],
     ['Wedges', 'Wedges off'],

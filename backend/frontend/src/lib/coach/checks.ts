@@ -85,14 +85,6 @@ export const CHECK_GROUPS: CheckGroup[] = [
         example: 'S20 S20 S1 = 41 · your average 60: −19, Weak',
         says: 'One loose visit happens; a few in a row mean the rhythm went.',
       },
-      {
-        name: 'Spill into 1 / 5',
-        labels: ['inaccuracy'],
-        source: 'scores',
-        when: 'Two or three darts at the 20, each with more than 170 left before it, land in 1 or 5: Inaccuracy at best.',
-        example: 'S1 S20 S5',
-        says: 'The darts drift sideways off the 20: keep the release and follow-through straight.',
-      },
     ],
   },
   {

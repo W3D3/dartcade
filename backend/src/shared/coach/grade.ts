@@ -8,18 +8,18 @@ import { oneDartFinish } from './aims.js'
 import type { DartClass } from './dartClass.js'
 import { closenessBonus, groupingBonus, type Grouping } from './grouping.js'
 import type { CoachNote } from './notes.js'
-import { dartPhase, landedNumber, onFinish, type Throw } from './walk.js'
+import { dartPhase, onFinish, type Throw } from './walk.js'
 
 /** Scoring: a visit under this scores Weak at best. On the raw score: a tight group doesn't rescue a 25 */
 export const VERY_LOW = 26
 /** Scoring, the visit's rating (grouping.ts) against the average: Excellent from this far above… */
 export const SCORING_EXCELLENT_FROM = 50
 /** …Great from… */
-export const SCORING_GREAT_FROM = 25
+export const SCORING_GREAT_FROM = 30
 /** …Good from… */
 export const SCORING_GOOD_FROM = 10
-/** …OK from (below the average)… */
-export const SCORING_OK_FROM = -5
+/** …OK from (at the average)… */
+export const SCORING_OK_FROM = 0
 /** …Inaccuracy from… */
 export const SCORING_INACCURACY_FROM = -15
 /** …Weak from, Bad below */
@@ -84,9 +84,9 @@ export type VisitFacts = {
   fewest: number | null
 }
 /** What overrode or capped the value: the fewest-darts finish when it was hard (Brilliant) or not
- *  (`fewest`: lifted to Excellent), a strategy note (Bad), a very low score (Weak at best), darts
- *  spilled into 1 or 5 (Inaccuracy at best); null: the value's band */
-export type GradeRule = 'brilliant' | 'fewest' | 'note' | 'veryLow' | 'spill' | null
+ *  (`fewest`: lifted to Excellent), a strategy note (Bad), a very low score (Weak at best);
+ *  null: the value's band */
+export type GradeRule = 'brilliant' | 'fewest' | 'note' | 'veryLow' | null
 /** The rating's parts on a Scoring visit: scored + grouping + closeness = rating */
 export type ScoringValue = { scored: number; grouping: number; closeness: number; rating: number; average: number }
 /** A Setup or Doubling dart's part of the visit's points: its value change (value.ts), its
@@ -198,10 +198,6 @@ const tagOfDart = (t: Throw): VisitTag => {
  *  and Doubling when its first darts hit the setup, else Setup alone. */
 export const tagsOf = (f: VisitFacts): VisitTag[] => VISIT_TAGS.filter(tag => f.throws.some(t => tagOfDart(t) === tag))
 
-/** Darts with more than 170 left aimed at the T20 that drifted into the 1 or 5 */
-export const spilled = (f: VisitFacts) =>
-  f.throws.filter((t, i) => !onFinish(t) && f.classes[i].target?.aimId === 'T20' && [1, 5].includes(landedNumber(t.d) ?? 0)).length
-
 /** A rule over the value's band: `set` the grade, `cap` it (at best) or `floor` it (at least) */
 type Override = { rule: NonNullable<GradeRule>; applies: (f: VisitFacts) => boolean } & (
   | { set: VisitGrade }
@@ -219,7 +215,6 @@ const OVERRIDES: readonly Override[] = [
   { rule: 'fewest', floor: 'excellent', applies: f => f.fewest !== null },
   // On the raw score: a tight group doesn't rescue a 25
   { rule: 'veryLow', cap: 'weak', applies: f => scoringVisit(f) && f.scored < VERY_LOW },
-  { rule: 'spill', cap: 'inaccuracy', applies: f => scoringVisit(f) && spilled(f) >= 2 },
 ]
 const overridden = (o: Override, band: VisitGrade): VisitGrade =>
   'set' in o ? o.set : 'cap' in o ? worse(band, o.cap) : better(band, o.floor)

@@ -2,6 +2,7 @@
 // opens on and the scoring skill's grouping.
 import type { CoachLegTitle } from '$lib/api'
 import type { LegReview, ReviewVisit } from '$shared/coach'
+import { outsideSegment } from './numbers'
 import { legWhen, vsLine } from './list'
 
 /** "Leg 3 vs Lena", "Leg 1 · Solo"; `leg` is 0-based */
@@ -43,10 +44,10 @@ export function defaultVisit(visits: readonly Pick<ReviewVisit, 'grade' | 'notes
   return Math.max(i >= 0 ? i : visits.findIndex(v => v.notes.length > 0), 0)
 }
 
-/** The scoring skill's grouping: " · grouping 12 mm · edge 4 mm", empty without a placed group */
+/** The scoring skill's grouping: " · grouping 12 mm · 4 mm outside the segment you aimed for", empty without a placed group */
 export function legGroupingLine(g: LegReview['grouping']): string {
   return [
     g.spreadMm === null ? '' : ` · grouping ${Math.round(g.spreadMm)} mm`,
-    g.edgeMm === null ? '' : ` · edge ${Math.round(g.edgeMm)} mm`,
+    g.edgeMm === null ? '' : ` · ${outsideSegment(g.edgeMm)}`,
   ].join('')
 }

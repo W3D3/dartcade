@@ -273,18 +273,17 @@ at least `NOTE_THRESHOLD` lost). Every other visit is graded by its value on its
 | Class      | Setup, Doubling (Σ Δ + closeness) | Scoring (rating − average) |
 | ---------- | --------------------------------- | -------------------------- |
 | Excellent  | +60 or more (`EXCELLENT_FROM`)    | +50 or more                |
-| Great      | +20 to +60 (`GREAT_FROM`)         | +25 to +50                 |
-| Good       | +2 to +20 (`GOOD_FROM`)           | +10 to +25                 |
-| OK         | −2 to +2 (`OK_FROM`)              | −5 to +10                  |
-| Inaccuracy | −15 to −2 (`INACCURACY_FROM`)     | −15 to −5                  |
+| Great      | +20 to +60 (`GREAT_FROM`)         | +30 to +50                 |
+| Good       | +2 to +20 (`GOOD_FROM`)           | +10 to +30                 |
+| OK         | −2 to +2 (`OK_FROM`)              | 0 to +10                   |
+| Inaccuracy | −15 to −2 (`INACCURACY_FROM`)     | −15 to 0                   |
 | Weak       | −20 to −15 (`WEAK_FROM`)          | −30 to −15                 |
 | Bad        | below −20                         | below −30                  |
 
-Two scoring rules cap the value's class rather than replace it: a visit under `VERY_LOW` (26)
+One scoring rule caps the value's class rather than replacing it: a visit under `VERY_LOW` (26)
 is Weak at best (it was always Bad; with eight classes a 21 on a 36 average is a slip, not a
-blunder, and a 2 still falls to Bad by value), and two or more darts at the 20 spilled into 1 or
-5 make it Inaccuracy at best (it was Weak); below Inaccuracy the low-score text wins over the
-spill's. A bust is graded by its value as before. The low visits count, the clean leg, the take
+blunder, and a 2 still falls to Bad by value). Darts drifting into 1 or 5 are not capped: they
+are graded by the score like any other. A bust is graded by its value as before. The low visits count, the clean leg, the take
 and the Setup skill still count Weak and Bad only.
 
 ¹ Calibrated before Brilliant replaced Perfect: those six are now Brilliant or Excellent by
@@ -324,11 +323,11 @@ busting dart Bad red).
 **How the grade was worked out** (`coach.debug.enabled`, the `VisitNumbers` block): the server
 adds `ReviewVisit.value` = `{ points, scoring, rule, startChance }`: the points on the tag's
 scale, a Scoring visit's rating parts (scored + grouping bonus + closeness bonus = rating, and the
-average), the rule that overrode or capped the value (`brilliant`, `fewest`, `note`, `veryLow`, `spill`), the fewest-darts path's chance (`fewestChance`, %, on a visit that kept it) and
+average), the rule that overrode or capped the value (`brilliant`, `fewest`, `note`, `veryLow`), the fewest-darts path's chance (`fewestChance`, %, on a visit that kept it) and
 the checkout chance before the first dart. `gradeWorking` (`lib/coach/numbers.ts`, pure) turns it
 into text — "Start: 121 left, 34.0% to check out", "S20: Δ −4.4", "M17: Δ +10.8, closeness +2.3",
 "Σ +10.2 → Good (+2 to +20)"; "Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5", "Your
-average: 60.0", "Rating − average = +11.5 → Good (+10 to +25)"; "Brilliant: fewest darts, a 14% chance for an 81 average" / "Excellent floor: fewest darts (36% for an 81 average)" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
+average: 60.0", "Rating − average = +11.5 → Good (+10 to +30)"; "Brilliant: fewest darts, a 14% chance for an 81 average" / "Excellent floor: fewest darts (36% for an 81 average)" — and a bar of the scale's classes with the bounds labelled and a marker at the visit
 (hidden from screen readers: the text says it all).
 
 ## Brilliant visit

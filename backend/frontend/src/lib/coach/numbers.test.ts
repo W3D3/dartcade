@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { bedAim } from '$shared/coach/aims'
 import { NOT_COUNTED } from '$shared/coach/dartClass'
-import { FINISH_SCALE, SCORING_SCALE } from '$shared/coach/grade'
-import { bandText, gradeWorking, groupingLine, scaleText, signedPoints, whatHappened } from './numbers'
+import { FINISH_SCALE, SCORING_SCALE, VERY_LOW } from '$shared/coach/grade'
+import { bandText, outsideSegment, gradeWorking, groupingLine, scaleText, signedPoints, whatHappened } from './numbers'
 
 describe('visit numbers', () => {
   const dart = (name: string, left: number, bust = false) => ({
@@ -37,6 +37,12 @@ describe('visit numbers', () => {
     expect(scaleText(SCORING_SCALE)).toMatch(/^Excellent \+50 or more, .*, Bad below −30$/)
   })
 
+  it('says outside the segment you aimed for, and on it at 0 mm', () => {
+    expect(outsideSegment(1.4)).toBe('1 mm outside the segment you aimed for')
+    expect(outsideSegment(0)).toBe('on the segment you aimed for')
+    expect(outsideSegment(0.4)).toBe('on the segment you aimed for')
+  })
+
   it('marks the busting dart, not the last, and the darts kept after it as not counted', () => {
     // 32 left: S16, T20 busts, D8 thrown after it (reviewLeg leaves it at the start)
     expect(whatHappened({ darts: [dart('S16', 16), dart('T20', 32, true), dart('D8', 32)] })).toBe(
@@ -56,11 +62,17 @@ describe('groupingLine', () => {
   const g = { darts: 2, spreadMm: 6.4, offsetMm: 2.2, edgeMm: 1.4, rating: 75.3, expectedSpreadMm: 8.6, comment: null }
 
   it("words a visit's grouping, its target from a placed dart", () => {
-    expect(groupingLine({ darts, ...scoring, grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75')
-    expect(groupingLine({ darts, ...finish, grouping: g })).toBe('Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm')
+    expect(groupingLine({ darts, ...scoring, grouping: g })).toBe(
+      'Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · 1 mm outside the segment you aimed for · rating 75',
+    )
+    expect(groupingLine({ darts, ...finish, grouping: g })).toBe(
+      'Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · 1 mm outside the segment you aimed for',
+    )
   })
   it('leaves the spread out without a shared target, and is null without a grouping', () => {
-    expect(groupingLine({ darts, ...scoring, grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe('edge 1 mm · rating 75')
+    expect(groupingLine({ darts, ...scoring, grouping: { ...g, spreadMm: null, offsetMm: null } })).toBe(
+      '1 mm outside the segment you aimed for · rating 75',
+    )
     expect(groupingLine({ darts, ...scoring, grouping: null })).toBeNull()
   })
 })
@@ -162,14 +174,14 @@ describe('gradeWorking', () => {
         terms: [],
         band: 'good',
         bands: SCORING_SCALE,
-        rule: 'spill',
+        rule: 'veryLow',
         startChance: null,
         fewestChance: null,
       },
     })
     expect(w.parts).toEqual(['Scored 60 + grouping 7.5 + closeness 4.0 = rating 71.5', 'Your average: 60.0'])
-    expect(w.result).toBe('Rating − average = +11.5 → Good (+10 to +25)')
-    expect(w.rule).toBe('Two or more darts spilled into 1 or 5: capped at Inaccuracy')
-    expect(w.scale.ticks.map(t => t.label)).toEqual(['−30', '−15', '−5', '+10', '+25', '+50'])
+    expect(w.result).toBe('Rating − average = +11.5 → Good (+10 to +30)')
+    expect(w.rule).toBe(`Under ${VERY_LOW} scored: capped at Weak`)
+    expect(w.scale.ticks.map(t => t.label)).toEqual(['−30', '−15', '0', '+10', '+30', '+50'])
   })
 })

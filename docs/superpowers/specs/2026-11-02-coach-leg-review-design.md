@@ -254,13 +254,13 @@ every phase it went through, not the one of its start):
 makes **any** visit — Scoring, Setup or Doubling — a Mistake, before the tag's own rules below. The
 good grades (Great, Good) only apply when no bad rule matched.
 
-| Grade       | Scoring                                                      | Setup                  | Doubling                                                                                                                                         |
-| ----------- | ------------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Mistake** | scored under 26                                              | bust                   | bust · a missed match dart, when the visit did not leave a double                                                                                |
-| **Weak**    | 25+ below your average visit · 2+ darts at 20 land in 1 or 5 | —                      | 2+ darts at a double, none hit · a missed match dart that still left a double · chased down to D1 or D2 (`32 → 16 → 8 → 4 → 2` by misses inside) |
-| **Great**   | 40+ above your average visit                                 | —                      | checked out                                                                                                                                      |
-| **Good**    | 15+ above your average visit                                 | left a one-dart finish | —                                                                                                                                                |
-| **OK**      | anything else                                                | anything else          | anything else                                                                                                                                    |
+| Grade       | Scoring                      | Setup                  | Doubling                                                                                                                                         |
+| ----------- | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Mistake** | scored under 26              | bust                   | bust · a missed match dart, when the visit did not leave a double                                                                                |
+| **Weak**    | 25+ below your average visit | —                      | 2+ darts at a double, none hit · a missed match dart that still left a double · chased down to D1 or D2 (`32 → 16 → 8 → 4 → 2` by misses inside) |
+| **Great**   | 40+ above your average visit | —                      | checked out                                                                                                                                      |
+| **Good**    | 15+ above your average visit | left a one-dart finish | —                                                                                                                                                |
+| **OK**      | anything else                | anything else          | anything else                                                                                                                                    |
 
 Definitions:
 

@@ -73,6 +73,9 @@ describe('bandOf', () => {
     expect(bandOf(WEAK_FROM, FINISH_BANDS)).toBe('weak')
     expect(bandOf(WEAK_FROM - 0.1, FINISH_BANDS)).toBe('bad')
     expect(bandOf(0, SCORING_BANDS)).toBe('ok')
+    expect(bandOf(-0.01, SCORING_BANDS)).toBe('inaccuracy')
+    expect(bandOf(30, SCORING_BANDS)).toBe('great')
+    expect(bandOf(29.99, SCORING_BANDS)).toBe('good')
     expect(bandOf(-100, SCORING_BANDS)).toBe('bad')
   })
 })
@@ -134,40 +137,30 @@ describe('scoring visits', () => {
     })
   })
 
-  it('Inaccuracy at best: two darts at 20 drift into 1 or 5', () => {
-    expect(grade(501, ['S20', 'S1', 'S5'], { average: 40 })).toMatchObject({
-      tags: ['scoring'],
-      grade: 'inaccuracy',
-      text: '2 darts drifted into 1 or 5.',
-      value: { points: -14, rule: null },
-    })
-    // A spill caps a visit the value puts higher, and says so
-    expect(grade(501, ['T20', 'S1', 'S5'], { average: 40 })).toMatchObject({ grade: 'inaccuracy', value: { points: 26, rule: 'spill' } })
+  it('T20 S5 S5 is graded by its score, no cap for darts drifting into 1 or 5', () => {
+    expect(grade(501, ['T20', 'S5', 'S5'], { average: 70 })).toMatchObject({ grade: 'ok', value: { points: 0, rule: null } })
+    expect(grade(501, ['T20', 'S1', 'S5'], { average: 36 })).toMatchObject({ grade: 'great', value: { rule: null } })
   })
 
-  it('Inaccuracy: 5 to 15 below the average', () => {
+  it('Inaccuracy: up to 15 below the average', () => {
     expect(grade(501, ['S20', 'S20', 'S10'], { average: 60 })).toMatchObject({
       grade: 'inaccuracy',
       text: 'Scored 50; your usual visit is 60.',
     })
   })
 
-  it('one dart in 5 is not a spill', () => {
-    expect(grade(501, ['S20', 'S20', 'S5'], { average: 40 }).grade).toBe('ok')
-  })
-
-  it('Excellent: 50 or more above the average, Great 25 or more, naming the trebles', () => {
+  it('Excellent: 50 or more above the average, Great 30 or more, naming the trebles', () => {
     expect(grade(501, ['T20', 'T20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'excellent', text: 'Two trebles.', tip: false })
     expect(grade(501, ['T20', 'T20', 'T5'])).toMatchObject({ tags: ['scoring'], grade: 'excellent', text: 'Three trebles.', tip: false })
     expect(grade(501, ['T20', 'S20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'great', text: 'Scored 100.', tip: false })
-    expect(grade(501, ['T20', 'S20', 'S5'])).toMatchObject({ grade: 'great', text: 'Scored 85.' })
+    expect(grade(501, ['T20', 'S20', 'S10'])).toMatchObject({ grade: 'great', text: 'Scored 90.' })
   })
 
   it('Good: 10 or more above the average', () => {
     expect(grade(501, ['T20', 'S7', 'S3'])).toMatchObject({ tags: ['scoring'], grade: 'good', text: 'Scored 70.', tip: false })
   })
 
-  it('OK: from 5 below the average to 10 above', () => {
+  it('OK: from the average to 10 above', () => {
     expect(grade(501, ['S20', 'S20', 'S20'])).toMatchObject({ tags: ['scoring'], grade: 'ok', text: 'Scored 60.', tip: false })
   })
 
@@ -183,8 +176,8 @@ describe('scoring visits', () => {
       text: 'Scored 60, great grouping (6 mm), close to the target (2 mm).',
       tip: false,
     })
-    // 45 is Weak on a 70 average; rated 68 it is OK
-    expect(classifyVisit(rated(['S20', 'S20', 'S5'], 68, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
+    // 45 is Weak on a 70 average; rated 72 it is OK
+    expect(classifyVisit(rated(['S20', 'S20', 'S5'], 72, 70))).toMatchObject({ grade: 'ok', text: expect.stringMatching(/^Scored 45, /) })
     // A rating that leaves the grade alone keeps the plain text
     expect(classifyVisit(rated(['S20', 'S20', 'S20'], 64))).toMatchObject({
       tags: ['scoring'],

@@ -178,8 +178,9 @@
             <div class="flex flex-col gap-2">
               <h3 class="text-[15px] font-semibold">Dart classes</h3>
               <p class="text-[12px] text-text-muted">
-                Millimetres: Dist from the target's point, Edge from the nearest point of its bed (0 in it). Out is away from the bull, CW
-                is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points, against a
+                Millimetres: Dist from the target's point, Outside the distance outside the segment you aimed for (0 on it). Out is away
+                from the bull, CW is clockwise, both from the point. Leave is planned → actual. Δ is the change in checkout chance (points,
+                against a
                 {tierAverage}-average player from there), Close the credit for a near miss; the visit's grade adds them up.
               </p>
               <VisitNumbers {visit} />

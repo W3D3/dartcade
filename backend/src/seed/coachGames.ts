@@ -57,8 +57,8 @@ export const COACH_GAMES: CoachSample[] = [
       // 180 leaves 121, a 3-dart finish: the fewest darts, and hard (Brilliant); S5 D16 checks 57
       // out in two: the fewest too, but an easy one (Excellent)
       ['brilliant', 'bad', 'excellent'],
-      // 26 and 26 against a 26 average, spilled into 1 and 5: Inaccuracy at best
-      ['inaccuracy', 'inaccuracy'],
+      // 26 and 26 against a 26 average: right on it, OK
+      ['ok', 'ok'],
     ],
     kinds: [
       [
@@ -95,7 +95,7 @@ export const COACH_GAMES: CoachSample[] = [
     expect: [],
     grades: [
       // 100 from T20, S20, S20 in the middle of their beds: a tight group lifts it to Good
-      ['good', 'ok', 'ok', 'excellent'],
+      ['good', 'inaccuracy', 'ok', 'excellent'],
       // 140 leaves 161, still a 3-dart finish (Brilliant); from 65, 25 then S20 and S10 chase D10 down to 10
       ['brilliant', 'good', 'bad'],
       // 26 on an 88 average is Bad; 140 ends with an S20 on 57 (S17 would leave 40), graded on the darts on 170 or less: Ok
@@ -137,7 +137,7 @@ export const COACH_GAMES: CoachSample[] = [
     grades: [
       // The second visit's T20 on 137 is graded from there, not from its start of 201: Good
       ['great', 'good', 'bad', 'bad', 'excellent'],
-      ['inaccuracy', 'inaccuracy', 'inaccuracy', 'inaccuracy'],
+      ['ok', 'ok', 'ok', 'ok'],
     ],
     kinds: [
       [
