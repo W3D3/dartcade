@@ -81,7 +81,6 @@ const RULE_TEXT: Record<NonNullable<GradeRule>, (chance: number) => string> = {
   fewest: chance => `Excellent floor: fewest darts (${Math.round(chance)}% for ${REFERENCE})`,
   note: () => 'Bad: a strategy note — value ignored',
   veryLow: () => `Under ${VERY_LOW} scored: capped at Weak`,
-  spill: () => 'Two or more darts spilled into 1 or 5: capped at Inaccuracy',
 }
 
 /** The working behind a visit's grade, as the server sent it (grade.ts VisitValue). Setup and
@@ -117,7 +116,11 @@ export function gradeWorking(v: Pick<ReviewVisit, 'left' | 'bust' | 'darts' | 'v
   }
 }
 
-/** "Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · edge 1 mm · rating 75": how the visit's placed
+/** How far the darts landed outside the segment they aimed for: "3 mm outside the segment you aimed for", "on the segment you aimed for" at 0 mm */
+export const outsideSegment = (mm: number): string =>
+  Math.round(mm) === 0 ? 'on the segment you aimed for' : `${Math.round(mm)} mm outside the segment you aimed for`
+
+/** "Grouping 6 mm (target: ~9 mm) · 2 mm off T20 · 1 mm outside the segment you aimed for · rating 75": how the visit's placed
  *  darts sat together against the spread expected of the tier they're graded as, the spread and offset
  *  only when they shared a target, the rating only on a visit graded on the scoring scale
  *  (the only grade it feeds); null without a grouping. */
@@ -128,7 +131,7 @@ export function groupingLine(v: Pick<ReviewVisit, 'darts' | 'grouping'> & { valu
   return [
     g.spreadMm === null ? null : `Grouping ${Math.round(g.spreadMm)} mm (target: ~${Math.round(g.expectedSpreadMm)} mm)`,
     g.offsetMm === null ? null : `${Math.round(g.offsetMm)} mm off ${target}`,
-    `edge ${Math.round(g.edgeMm)} mm`,
+    outsideSegment(g.edgeMm),
     v.value.scoring ? `rating ${Math.round(g.rating)}` : null,
   ]
     .filter(p => p !== null)

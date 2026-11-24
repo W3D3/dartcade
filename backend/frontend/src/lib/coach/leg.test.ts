@@ -52,8 +52,9 @@ describe('leg review text', () => {
   })
 
   it("adds the leg's grouping to the scoring line, nothing without one", () => {
-    expect(legGroupingLine({ spreadMm: 12.2, edgeMm: 3.6 })).toBe(' · grouping 12 mm · edge 4 mm')
-    expect(legGroupingLine({ spreadMm: null, edgeMm: 3.6 })).toBe(' · edge 4 mm')
+    expect(legGroupingLine({ spreadMm: 12.2, edgeMm: 3.6 })).toBe(' · grouping 12 mm · 4 mm outside the segment you aimed for')
+    expect(legGroupingLine({ spreadMm: null, edgeMm: 3.6 })).toBe(' · 4 mm outside the segment you aimed for')
+    expect(legGroupingLine({ spreadMm: null, edgeMm: 0.2 })).toBe(' · on the segment you aimed for')
     expect(legGroupingLine({ spreadMm: null, edgeMm: null })).toBe('')
   })
 })

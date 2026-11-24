@@ -10,9 +10,7 @@ import {
   gradeVisit,
   NEAR_MISS_MM,
   SCORING_BANDS,
-  SCORING_INACCURACY_FROM,
   SCORING_OK_FROM,
-  spilled,
   VERY_LOW,
   type Grading,
   type VisitFacts,
@@ -58,13 +56,10 @@ function bustText(f: VisitFacts, after: readonly string[] = []): string {
 const bustBackText = (f: VisitFacts) =>
   `Busted on purpose with the ${ORDINAL[f.throws[f.throws.length - 1].dart]} dart to stay on ${f.start}${oneDartFinish(f.start) ? ` (${outName(f.start)})` : ''}.`
 
-/** Scoring: what the score, the spill or the grouping says about the grade */
+/** Scoring: what the score or the grouping says about the grade */
 function scoringText(f: VisitFacts, { grade, value: { points } }: Grading): string {
   const low = `Scored ${f.scored}; your usual visit is ${Math.round(f.average)}.`
   if (f.scored < VERY_LOW) return low
-  const n = spilled(f)
-  // Below Inaccuracy the score says more than the spill
-  if (n >= 2 && points >= SCORING_INACCURACY_FROM) return `${n} darts drifted into 1 or 5.`
   if (points < SCORING_OK_FROM) return low
   // The grouping lifted the grade above the score's: say why
   if (f.grouping && grade !== bandOf(f.scored - f.average, SCORING_BANDS))

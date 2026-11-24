@@ -45,7 +45,7 @@ dart leaves out the aims the check would flag, so the live panel and the grade a
   Doubling dart stays a Doubling visit, as before). The Setup skill counts one as Bad when its checkout chance or a note made it Bad,
   not a low score on the scoring scale; the scoring counts (low visits, grouping) take every visit graded
   on the scoring scale, a leave dart's included.
-- **Very low visit and spill** apply to the scoring scale and to darts with more than 170 left.
+- **Very low visit** applies to the scoring scale and to darts with more than 170 left.
 - A dart with more than 170 left has no value change (`delta` is null); on a mixed visit the darts on
   170 or less carry the finish grade.
 

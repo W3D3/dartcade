@@ -4773,10 +4773,10 @@ export interface components {
                     average: number;
                 } | null;
                 /**
-                 * @description What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score, darts spilled into 1 or 5
+                 * @description What overrode or capped the value, only when it moved band: fewest darts when hard (brilliant) or not (fewest: Excellent floor), a strategy note, a very low score
                  * @enum {string|null}
                  */
-                rule: "brilliant" | "fewest" | "note" | "veryLow" | "spill" | null;
+                rule: "brilliant" | "fewest" | "note" | "veryLow" | null;
             };
         };
         SkillGrade: {
