@@ -7,7 +7,7 @@ import type { components } from '../schema/api.js'
 export type ActivityStats = Pick<
   components['schemas']['AdminActivity'],
   'last24h' | 'newUsers' | 'newUsersPerDay' | 'gamesPerDay' | 'busiest' | 'highlights'
-> & { tournaments: components['schemas']['AdminActivity']['happeningNow']['tournaments']; manualDartShare: number | null }
+> & { days: number; tournaments: components['schemas']['AdminActivity']['happeningNow']['tournaments']; manualDartShare: number | null }
 
 const DAY_MS = 86_400_000
 const HOUR_MS = 3_600_000
@@ -16,7 +16,22 @@ const HOUR_MS = 3_600_000
 const dayStart = (now: number, back: number): Date => new Date(Math.floor(now / DAY_MS) * DAY_MS - back * DAY_MS)
 const dayKey = (d: Date): string => d.toISOString().slice(0, 10)
 
-export async function activityStats(db: Kysely<Database>, days: number, now: number): Promise<ActivityStats> {
+/** "All" (0 days) reaches back to the first signup, but never further than this. */
+export const ALL_DAYS_MAX = 1095
+
+/** `days` as asked (0: since the first signup) turned into a number of UTC days ending today. */
+async function spanOf(db: Kysely<Database>, asked: number, now: number): Promise<number> {
+  if (asked > 0) return asked
+  const first = await db
+    .selectFrom('user')
+    .select(sql<Date | null>`min("createdAt")`.as('at'))
+    .executeTakeFirstOrThrow()
+  const back = first.at ? Math.floor((dayStart(now, 0).getTime() - dayStart(first.at.getTime(), 0).getTime()) / DAY_MS) + 1 : 1
+  return Math.min(ALL_DAYS_MAX, Math.max(1, back))
+}
+
+export async function activityStats(db: Kysely<Database>, asked: number, now: number): Promise<ActivityStats> {
+  const days = await spanOf(db, asked, now)
   const since = dayStart(now, days - 1)
   const day = new Date(now - 24 * HOUR_MS)
   const week = new Date(now - 7 * DAY_MS)
@@ -125,6 +140,7 @@ export async function activityStats(db: Kysely<Database>, days: number, now: num
   const total = Number(darts.total)
 
   return {
+    days,
     last24h: { players: Number(players24.n), games: Number(games24.n), oneEighties: Number(ones.n) },
     newUsers: { last7d: Number(newUsers.last7d), previous7d: Number(newUsers.previous7d) },
     newUsersPerDay: dayKeys.map(k => signupsBy.get(k) ?? 0),
@@ -138,6 +154,72 @@ export async function activityStats(db: Kysely<Database>, days: number, now: num
       official: t.kind === 'official',
       status: t.status === 'check_in' ? 'check_in' : 'running',
       entries: Number(t.entries ?? 0),
+    })),
+  }
+}
+
+export type DrillQuery = {
+  metric: 'signups' | 'games'
+  from: Date
+  to: Date
+  mode?: string
+  /** ISO weekday (1 Monday to 7 Sunday) and UTC hour, to look at one cell of the busiest-hours grid. */
+  dow?: number
+  hour?: number
+  limit: number
+  offset: number
+}
+export type Drill = components['schemas']['AdminActivityDrill']
+
+/** The people or games behind one point of the Activity charts: `from` inclusive, `to` exclusive, newest first. */
+export async function activityDrill(db: Kysely<Database>, q: DrillQuery): Promise<Drill> {
+  if (q.metric === 'signups') {
+    const base = db.selectFrom('user').where('createdAt', '>=', q.from).where('createdAt', '<', q.to)
+    const [total, rows] = await Promise.all([
+      base.select(sql<string>`count(*)`.as('n')).executeTakeFirstOrThrow(),
+      base.select(['id', 'name', 'createdAt']).orderBy('createdAt', 'desc').limit(q.limit).offset(q.offset).execute(),
+    ])
+    return {
+      metric: q.metric,
+      total: Number(total.n),
+      users: rows.map(u => ({ id: u.id, name: u.name, at: u.createdAt.toISOString() })),
+      games: [],
+    }
+  }
+  let base = db
+    .selectFrom('game_sessions')
+    .where('status', '=', 'finished')
+    .where('invalidated_at', 'is', null)
+    .where('created_at', '>=', q.from)
+    .where('created_at', '<', q.to)
+  if (q.mode) base = base.where('game_id', '=', q.mode)
+  if (q.dow !== undefined) base = base.where(sql<boolean>`extract(isodow from created_at at time zone 'UTC')::int = ${q.dow}`)
+  if (q.hour !== undefined) base = base.where(sql<boolean>`extract(hour from created_at at time zone 'UTC')::int = ${q.hour}`)
+  const [total, rows] = await Promise.all([
+    base.select(sql<string>`count(*)`.as('n')).executeTakeFirstOrThrow(),
+    base.select(['id', 'game_id', 'created_at']).orderBy('created_at', 'desc').limit(q.limit).offset(q.offset).execute(),
+  ])
+  const seats = rows.length
+    ? await db
+        .selectFrom('game_players')
+        .select(['session_id', 'name'])
+        .where(
+          'session_id',
+          'in',
+          rows.map(r => r.id),
+        )
+        .orderBy('seat')
+        .execute()
+    : []
+  return {
+    metric: q.metric,
+    total: Number(total.n),
+    users: [],
+    games: rows.map(g => ({
+      id: g.id,
+      mode: g.game_id,
+      at: g.created_at.toISOString(),
+      players: seats.filter(p => p.session_id === g.id).map(p => p.name),
     })),
   }
 }

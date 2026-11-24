@@ -98,6 +98,65 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('GET /api/admin/activity', { tim
     expect(body.health).toEqual({ bridges: 2, boardsOnline: 1, manualDartShare: null })
   })
 
+  it('covers everything back to the first signup for days=0', async () => {
+    const body = (await get('admin', '?days=0')).json()
+    expect(body.days).toBe(31)
+    expect(body.newUsersPerDay).toHaveLength(31)
+    expect(body.newUsersPerDay.reduce((a: number, b: number) => a + b, 0)).toBe(4)
+  })
+
+  describe('drill', () => {
+    const q = (extra: string) =>
+      `/drill?from=${new Date(NOW - 5 * 86_400_000).toISOString()}&to=${new Date(NOW + HOUR).toISOString()}${extra}`
+    const ids = (r: { json(): { games: { id: string }[] } }) => r.json().games.map(g => g.id)
+    const getDrill = async (user: string | undefined, query: string) => {
+      const app = createFastify()
+      await app.register(adminActivityApiPlugin, { db, live: () => Promise.resolve(live), now: () => clock })
+      return app.inject({ method: 'GET', url: `/api/admin/activity${query}`, headers: user ? { 'x-user': user } : {} })
+    }
+
+    it('is admin only', async () => {
+      expect((await getDrill(undefined, q('&metric=games'))).statusCode).toBe(401)
+      expect((await getDrill('mod', q('&metric=games'))).statusCode).toBe(403)
+    })
+
+    it('lists finished games newest first with their players, and filters by mode', async () => {
+      const all = await getDrill('admin', q('&metric=games'))
+      expect(ids(all)).toEqual(['g1', 'g3', 'g2'])
+      expect(all.json().total).toBe(3)
+      expect(all.json().games[0].players).toEqual(['Player'])
+      expect(ids(await getDrill('admin', q('&metric=games&mode=cricket')))).toEqual(['g3'])
+    })
+
+    it('pages with limit and offset but reports the whole total', async () => {
+      const page = await getDrill('admin', q('&metric=games&limit=1&offset=1'))
+      expect(page.json().games).toHaveLength(1)
+      expect(page.json().total).toBe(3)
+    })
+
+    it('lists the accounts created in a range', async () => {
+      const res = await getDrill('admin', q('&metric=signups'))
+      expect(res.json().users.map((u: { id: string }) => u.id)).toEqual(['player'])
+      expect(res.json().total).toBe(1)
+    })
+
+    it('filters one cell of the weekday and hour grid', async () => {
+      const g1 = new Date(NOW - 2 * HOUR)
+      const dow = ((g1.getUTCDay() + 6) % 7) + 1
+      const hit = await getDrill('admin', q(`&metric=games&dow=${dow}&hour=${g1.getUTCHours()}`))
+      expect(ids(hit)).toContain('g1')
+      const miss = await getDrill('admin', q(`&metric=games&dow=${dow}&hour=${(g1.getUTCHours() + 12) % 24}`))
+      expect(ids(miss)).not.toContain('g1')
+    })
+
+    it('400s a backwards or oversized range', async () => {
+      const from = new Date(NOW).toISOString()
+      expect((await getDrill('admin', `/drill?metric=games&from=${from}&to=${from}`)).statusCode).toBe(400)
+      const far = new Date(NOW + 41 * 86_400_000).toISOString()
+      expect((await getDrill('admin', `/drill?metric=games&from=${from}&to=${far}`)).statusCode).toBe(400)
+    })
+  })
+
   it('reuses the table counts for a few seconds, then asks again', async () => {
     const app = createFastify()
     await app.register(adminActivityApiPlugin, { db, live: () => Promise.resolve(live), now: () => clock })
