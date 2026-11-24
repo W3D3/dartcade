@@ -47,10 +47,8 @@
   }
 
   const editable = $derived(!!t && isEditable(t.status))
-  const when = $derived.by(() => {
-    const d = t?.settings.plannedFor ? new Date(t.settings.plannedFor) : null
-    return d ? ` · ${weekday(d)} ${dayMonth(d)}` : ''
-  })
+  const planned = $derived(t?.settings.plannedFor ? new Date(t.settings.plannedFor) : null)
+  const when = $derived(planned ? ` · ${weekday(planned)} ${dayMonth(planned)}` : '')
 </script>
 
 <Layout title={t?.name ?? 'Tournament'}>
@@ -113,6 +111,12 @@
                 Starting draws the bracket from the {t.entries}
                 {t.teamSize === 1 ? 'players' : 'teams'} on the list. After that the list can’t change. Tournament mode devices can’t start it.
               </p>
+              {#if planned}
+                <p class="text-small text-text-muted">
+                  Planned for {weekday(planned)}
+                  {dayMonth(planned)}: that date is only for your players. Start whenever you’re ready.
+                </p>
+              {/if}
               {#if participants?.startBlocker}<p class="text-small text-text-muted">{participants.startBlocker}</p>{/if}
               {#if startError}<ErrorText>{startError}</ErrorText>{/if}
               <Button variant="accent" disabled={starting || !!participants?.startBlocker} onclick={() => void start()}>

@@ -109,6 +109,39 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('starting an in-person tournamen
     expect((await send('POST', '/api/tournaments/groups/devices')).statusCode).toBe(201)
   })
 
+  it('checks the format against who registered when players sign up themselves', async () => {
+    await insertTournament(db, {
+      id: 'open-door',
+      owner_user_id: 'org',
+      status: 'open',
+      play: 'in_person',
+      format: 'groups_knockout',
+      settings: settings({ size: 4, through: 1 }),
+    })
+    for (const id of ['r1', 'r2']) await insertTournamentEntry(db, { id, tournament_id: 'open-door', status: 'registered' })
+    // A team still waiting for its players doesn't play: the start releases it
+    await insertTournamentEntry(db, { id: 'r3', tournament_id: 'open-door', status: 'pending' })
+    const start = await send('POST', '/api/tournaments/open-door/start')
+    expect(start.statusCode).toBe(409)
+    expect(start.json()).toEqual({ error: 'Add at least 5 players before you can start.' })
+    expect(await status('open-door')).toBe('open')
+  })
+
+  it('starts an in-person tournament whenever the organizer wants: a time on it never gates nor starts it', async () => {
+    await venue('late', ['Anna', 'Jonas', 'Mia', 'Paul'])
+    // Even a stored start time that has passed: the runner leaves an in-person tournament to its organizers
+    await db
+      .updateTable('tournaments')
+      .set({ starts_at: new Date(Date.now() - 60_000) })
+      .where('id', '=', 'late')
+      .execute()
+    await service.tick()
+    expect(await status('late')).toBe('open')
+    const start = await send('POST', '/api/tournaments/late/start')
+    expect(start.statusCode).toBe(200)
+    expect(start.json()).toMatchObject({ status: 'running' })
+  })
+
   it('cancels a scheduled online start its format cannot draw: nobody is there to fix the list', async () => {
     await insertTournament(db, { id: 'empty', owner_user_id: 'org', status: 'open', starts_at: new Date(Date.now() - 60_000) })
     await insertTournamentEntry(db, { id: 'only', tournament_id: 'empty', status: 'registered' })
@@ -118,7 +151,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('starting an in-person tournamen
 
   it('never cancels an in-person tournament the organizer starts, even past the API check', async () => {
     await venue('race', ['Anna', 'Jonas'], { size: 4, through: 1 })
-    expect(await service.organizerStart('race')).toBe('not_startable')
+    expect(await service.organizerStart('race')).toBe('undrawable')
     expect(await status('race')).toBe('open')
   })
 })
