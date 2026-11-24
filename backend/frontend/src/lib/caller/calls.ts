@@ -34,6 +34,7 @@ export function callGame(s: Snapshot): CallGame | null {
     case 'atc':
     case 'minigolf':
     case 'cricket':
+    case 'mission':
       return null
   }
 }

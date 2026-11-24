@@ -3744,6 +3744,27 @@ export interface components {
             outMode?: "straight" | "double" | "master";
         };
         /**
+         * Mission
+         * @description A mission's definition: what a game of it plays (backend/src/shared/missions/types.ts checks the rest).
+         */
+        Mission: {
+            name: string;
+            description: string;
+            /** @enum {string} */
+            difficulty: "easy" | "medium" | "hard" | "expert";
+            /** @enum {string} */
+            order: "any" | "in_order";
+            /** @description Seconds; left out: no limit. */
+            timeLimit?: number;
+            /** @enum {string} */
+            onFail: "retry" | "restart";
+            pause: boolean;
+            /** @enum {string} */
+            rankBy: "time" | "darts";
+            /** @description 1 to 8 steps. */
+            steps: components["schemas"]["MissionStep"][];
+        };
+        /**
          * Dart
          * @description A thrown dart. coords/polar are absent for manual entry and bounce-outs.
          */
@@ -4149,6 +4170,37 @@ export interface components {
                 /** @description The round the seat went out in; null while still in */
                 outRound: number | null;
                 livesLeft: number;
+            }[];
+        };
+        /** @description A finished mission game (backend/src/games/mission.ts) */
+        MissionDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "mission";
+            missionId: string;
+            /** @description A test run of the author's own mission */
+            test: boolean;
+            mission: components["schemas"]["Mission"];
+            /**
+             * @description playing only for a game that ended another way (aborted)
+             * @enum {string}
+             */
+            status: "playing" | "completed" | "failed";
+            /** @enum {string|null} */
+            failure: "time" | "gave_up" | null;
+            /** @description Mission time when it was completed or failed */
+            timeMs: number | null;
+            darts: number;
+            restarts: number;
+            /** @description One per step of the mission, in its order */
+            steps: {
+                attempts: number;
+                best: number;
+                darts: number;
+                /** @description Mission time (ms) when the step was done */
+                doneAt: number | null;
             }[];
         };
         CricketDetail: {
@@ -5051,7 +5103,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         AdminGameDetail: {
@@ -7083,6 +7135,100 @@ export interface components {
          * @enum {string}
          */
         TeamId: "A" | "B";
+        /**
+         * MissionCheckoutStep
+         * @description Check out `start` within `maxDarts`; a bust fails the attempt.
+         */
+        MissionCheckoutStep: {
+            /** @enum {string} */
+            type: "checkout";
+            start: number;
+            maxDarts: number;
+            /** @enum {string} */
+            finish: "double" | "single" | "master";
+        };
+        /**
+         * MissionHitStep
+         * @description Hit each target `hits` times: in a row (a dart that adds nothing fails the attempt), in this order, within N darts or one visit.
+         */
+        MissionHitStep: {
+            /** @enum {string} */
+            type: "hit";
+            /** @description 1 to 21 targets. */
+            targets: string[];
+            hits: number;
+            inARow: boolean;
+            /** @enum {string} */
+            order: "any" | "in_order";
+            /** @description Left out: no limit. */
+            within?: number | "visit";
+        };
+        /**
+         * MissionMarksStep
+         * @description Marks on numbers (25: the bull): a double 2, a treble 3, the outer bull 1, the inner bull 2.
+         */
+        MissionMarksStep: {
+            /** @enum {string} */
+            type: "marks";
+            /** @description 1 to 21 targets. */
+            targets: number[];
+            marks: number;
+            /** @enum {string} */
+            per: "each" | "total";
+            /** @description Left out: no limit. */
+            within?: number;
+        };
+        /**
+         * MissionVisitsStep
+         * @description Every visit at least, at most, exactly or never `points`, for `visits` visits.
+         */
+        MissionVisitsStep: {
+            /** @enum {string} */
+            type: "visits";
+            /** @enum {string} */
+            compare: "at_least" | "at_most" | "exactly" | "not";
+            points: number;
+            visits: number;
+            inARow: boolean;
+        };
+        /**
+         * MissionScoreStep
+         * @description Score `points` or more within `within` darts.
+         */
+        MissionScoreStep: {
+            /** @enum {string} */
+            type: "score";
+            points: number;
+            within: number;
+        };
+        /**
+         * MissionAverageStep
+         * @description A 3-dart average of at least `average` over `visits` visits.
+         */
+        MissionAverageStep: {
+            /** @enum {string} */
+            type: "average";
+            average: number;
+            visits: number;
+        };
+        /**
+         * MissionLegStep
+         * @description Win a leg from `start` within `within` darts; a bust ends the visit, as in X01.
+         */
+        MissionLegStep: {
+            /** @enum {string} */
+            type: "leg";
+            /** @enum {integer} */
+            start: 301 | 501 | 701;
+            within: number;
+            /** @enum {string} */
+            finish: "double" | "single";
+        };
+        /**
+         * MissionStep
+         * @description One step of a mission (backend/src/shared/missions/types.ts is the authority).
+         */
+        MissionStep: components["schemas"]["MissionCheckoutStep"] | components["schemas"]["MissionHitStep"] | components["schemas"]["MissionMarksStep"] | components["schemas"]["MissionVisitsStep"] | components["schemas"]["MissionScoreStep"] | components["schemas"]["MissionAverageStep"] | components["schemas"]["MissionLegStep"];
         /**
          * Coords
          * @description Bull-centred, r = 1 at the outer double wire, x right, y up.

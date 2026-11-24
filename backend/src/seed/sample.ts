@@ -103,6 +103,10 @@ function aim(session: Session, up: number, thrown: number): Point | UserAction {
       if (v.paused) return { type: 'minigolf_next_hole' }
       return thrown >= 1 ? TAKEOUT : puttAt(v)
     }
+    case 'mission': {
+      const v = m.view(session.currentState, session.players)
+      return v.visitLocked || thrown >= 3 ? TAKEOUT : pointFor('T20')
+    }
   }
 }
 

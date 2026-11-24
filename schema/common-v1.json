@@ -357,6 +357,297 @@
         "incoming": { "type": "array", "items": { "$ref": "#/$defs/IncomingFriendRequest" } },
         "outgoing": { "type": "array", "items": { "$ref": "#/$defs/OutgoingFriendRequest" } }
       }
+    },
+    "MissionCheckoutStep": {
+      "title": "MissionCheckoutStep",
+      "description": "Check out `start` within `maxDarts`; a bust fails the attempt.",
+      "type": "object",
+      "required": ["type", "start", "maxDarts", "finish"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["checkout"]
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 501
+        },
+        "maxDarts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "finish": {
+          "type": "string",
+          "enum": ["double", "single", "master"]
+        }
+      }
+    },
+    "MissionHitStep": {
+      "title": "MissionHitStep",
+      "description": "Hit each target `hits` times: in a row (a dart that adds nothing fails the attempt), in this order, within N darts or one visit.",
+      "type": "object",
+      "required": ["type", "targets", "hits", "inARow", "order"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["hit"]
+        },
+        "targets": {
+          "type": "array",
+          "description": "1 to 21 targets.",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[SDT]?(?:[1-9]|1[0-9]|20)|B|DB)$",
+            "description": "20: any segment of 20; S20/D20/T20: its single, double or treble; B: either bull; DB: the inner bull."
+          }
+        },
+        "hits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "inARow": {
+          "type": "boolean"
+        },
+        "order": {
+          "type": "string",
+          "enum": ["any", "in_order"]
+        },
+        "within": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 99
+            },
+            {
+              "type": "string",
+              "enum": ["visit"]
+            }
+          ],
+          "description": "Left out: no limit."
+        }
+      }
+    },
+    "MissionMarksStep": {
+      "title": "MissionMarksStep",
+      "description": "Marks on numbers (25: the bull): a double 2, a treble 3, the outer bull 1, the inner bull 2.",
+      "type": "object",
+      "required": ["type", "targets", "marks", "per"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["marks"]
+        },
+        "targets": {
+          "type": "array",
+          "description": "1 to 21 targets.",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "marks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "per": {
+          "type": "string",
+          "enum": ["each", "total"]
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99,
+          "description": "Left out: no limit."
+        }
+      }
+    },
+    "MissionVisitsStep": {
+      "title": "MissionVisitsStep",
+      "description": "Every visit at least, at most, exactly or never `points`, for `visits` visits.",
+      "type": "object",
+      "required": ["type", "compare", "points", "visits", "inARow"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["visits"]
+        },
+        "compare": {
+          "type": "string",
+          "enum": ["at_least", "at_most", "exactly", "not"]
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180
+        },
+        "visits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "inARow": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MissionScoreStep": {
+      "title": "MissionScoreStep",
+      "description": "Score `points` or more within `within` darts.",
+      "type": "object",
+      "required": ["type", "points", "within"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["score"]
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5940
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        }
+      }
+    },
+    "MissionAverageStep": {
+      "title": "MissionAverageStep",
+      "description": "A 3-dart average of at least `average` over `visits` visits.",
+      "type": "object",
+      "required": ["type", "average", "visits"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["average"]
+        },
+        "average": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 180
+        },
+        "visits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        }
+      }
+    },
+    "MissionLegStep": {
+      "title": "MissionLegStep",
+      "description": "Win a leg from `start` within `within` darts; a bust ends the visit, as in X01.",
+      "type": "object",
+      "required": ["type", "start", "within", "finish"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["leg"]
+        },
+        "start": {
+          "type": "integer",
+          "enum": [301, 501, 701]
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "finish": {
+          "type": "string",
+          "enum": ["double", "single"]
+        }
+      }
+    },
+    "MissionStep": {
+      "title": "MissionStep",
+      "description": "One step of a mission (backend/src/shared/missions/types.ts is the authority).",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MissionCheckoutStep"
+        },
+        {
+          "$ref": "#/$defs/MissionHitStep"
+        },
+        {
+          "$ref": "#/$defs/MissionMarksStep"
+        },
+        {
+          "$ref": "#/$defs/MissionVisitsStep"
+        },
+        {
+          "$ref": "#/$defs/MissionScoreStep"
+        },
+        {
+          "$ref": "#/$defs/MissionAverageStep"
+        },
+        {
+          "$ref": "#/$defs/MissionLegStep"
+        }
+      ]
+    },
+    "Mission": {
+      "title": "Mission",
+      "description": "A mission's definition: what a game of it plays (backend/src/shared/missions/types.ts checks the rest).",
+      "type": "object",
+      "required": ["name", "description", "difficulty", "order", "onFail", "pause", "rankBy", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard", "expert"]
+        },
+        "order": {
+          "type": "string",
+          "enum": ["any", "in_order"]
+        },
+        "timeLimit": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "Seconds; left out: no limit."
+        },
+        "onFail": {
+          "type": "string",
+          "enum": ["retry", "restart"]
+        },
+        "pause": {
+          "type": "boolean"
+        },
+        "rankBy": {
+          "type": "string",
+          "enum": ["time", "darts"]
+        },
+        "steps": {
+          "type": "array",
+          "description": "1 to 8 steps.",
+          "items": {
+            "$ref": "#/$defs/MissionStep"
+          }
+        }
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import ScoreMatch from '$lib/components/ScoreMatch.svelte'
 import CricketScreen from '$lib/components/match/screens/CricketScreen.svelte'
 import HiloScreen from '$lib/components/match/screens/HiloScreen.svelte'
 import MinigolfScreen from '$lib/components/match/screens/MinigolfScreen.svelte'
+import MissionScreen from '$lib/components/match/screens/MissionScreen.svelte'
 import P121Screen from '$lib/components/match/screens/P121Screen.svelte'
 import type { MatchProps } from '$lib/components/match/types'
 
@@ -16,4 +17,5 @@ export const MATCH_SCREENS: Record<GameId, Component<MatchProps>> = {
   p121: P121Screen,
   hilo: HiloScreen,
   cricket: CricketScreen,
+  mission: MissionScreen,
 }

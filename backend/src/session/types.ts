@@ -10,7 +10,7 @@ import type {
   BoardStatusData,
 } from '../schema/types.js'
 import type { UserAction } from '../schema/game-ws.js'
-import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
+import type { AtcView, CricketModuleView, HiloModuleView, MinigolfView, MissionView, P121ModuleView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
 import type { RankedMode } from '../shared/ranked.js'
 import type { RankedClock, RankedRules } from './rankedClock.js'
@@ -105,6 +105,7 @@ export type MinigolfDetail = components['schemas']['MinigolfDetail']
 export type P121Detail = components['schemas']['P121Detail']
 export type HiloDetail = components['schemas']['HiloDetail']
 export type CricketDetail = components['schemas']['CricketDetail']
+export type MissionDetail = components['schemas']['MissionDetail']
 export type MatchStats = components['schemas']['MatchStats']
 export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'
@@ -201,6 +202,12 @@ export interface GameModule<
    *  `version` the game was created with (an older one when a stored game is replayed). */
   init(cfg: Cfg, players: Player[], rng?: Rng, version?: number): S
   getCurrentPlayer(s: S): number
+  /**
+   * A game that keeps time (Missions): the server's time (ms since the epoch) of every input, before
+   * the input applies, until the game is decided. Logged inputs keep their time, so a replay gives
+   * the same state. A state this decides (time ran out) ends the game; the open visit doesn't count.
+   */
+  onClock?(s: S, now: number): S
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
   view(s: S, players: Player[]): V
@@ -241,6 +248,7 @@ export type AnyGameModule =
   | GameModule<unknown, GameConfig, MinigolfView, 'minigolf', MinigolfDetail>
   | GameModule<unknown, GameConfig, HiloModuleView, 'hilo', HiloDetail>
   | GameModule<unknown, GameConfig, CricketModuleView, 'cricket', CricketDetail>
+  | GameModule<unknown, GameConfig, MissionView, 'mission', MissionDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>

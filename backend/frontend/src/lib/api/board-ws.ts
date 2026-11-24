@@ -31,7 +31,8 @@ export type BigScreenScreen =
 /**
  * Full session state, pushed after every change.
  */
-export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot
+export type Snapshot =
+  X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot | CricketSnapshot | MissionSnapshot
 export type X01Snapshot = SnapshotBase & {
   gameId: 'x01'
   game: X01Game
@@ -477,6 +478,69 @@ export type CricketGame = EngineGameFields & {
     legs: number
   }[]
 }
+export type MissionSnapshot = SnapshotBase & {
+  gameId: 'mission'
+  game: MissionGame
+}
+/**
+ * A mission being played (backend/src/games/mission.ts) plus the engine's per-session fields.
+ */
+export type MissionGame = EngineGameFields & {
+  missionId: string
+  /**
+   * A test run of the author's own mission: counts for no times, XP, stats or history.
+   */
+  test: boolean
+  mission: Mission
+  /**
+   * The mission's best results when the game started, best first.
+   */
+  highscores: MissionHighscore[]
+  status: 'playing' | 'completed' | 'failed'
+  failure: 'time' | 'gave_up' | null
+  /**
+   * The step the darts go to.
+   */
+  active: number
+  steps: MissionStepRun[]
+  /**
+   * Times every step started over (the Start over policy).
+   */
+  restarts: number
+  /**
+   * Darts thrown while the mission ran.
+   */
+  darts: number
+  /**
+   * The open visit's darts and what each did for the step.
+   */
+  chips: MissionChip[]
+  clock: MissionClock
+  /**
+   * Mission time when it was completed or failed.
+   */
+  timeMs: number | null
+  currentPlayer: number
+  /**
+   * 0 once the mission is over, completed or not (a solo game ends either way).
+   */
+  winner: number | null
+  /**
+   * The rest of the visit doesn't count: the next step counts whole visits, or a fast leg's bust.
+   */
+  visitLocked: boolean
+}
+/**
+ * One step of a mission (backend/src/shared/missions/types.ts is the authority).
+ */
+export type MissionStep =
+  | MissionCheckoutStep
+  | MissionHitStep
+  | MissionMarksStep
+  | MissionVisitsStep
+  | MissionScoreStep
+  | MissionAverageStep
+  | MissionLegStep
 
 /**
  * Messages the backend pushes on the big-screen WebSocket (/ws/board?boardId=…). It only pushes; the owner's session cookie opens it, or a kiosk sends {type:'auth', token} as its first message. The server closes it with a WsCloseCode from game-ws-v1.json.
@@ -880,6 +944,164 @@ export interface CricketVisit {
   marks: number
   points: number
   darts: number
+}
+/**
+ * A mission's definition: what a game of it plays (backend/src/shared/missions/types.ts checks the rest).
+ */
+export interface Mission {
+  name: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  order: 'any' | 'in_order'
+  /**
+   * Seconds; left out: no limit.
+   */
+  timeLimit?: number
+  onFail: 'retry' | 'restart'
+  pause: boolean
+  rankBy: 'time' | 'darts'
+  /**
+   * 1 to 8 steps.
+   */
+  steps: MissionStep[]
+}
+/**
+ * Check out `start` within `maxDarts`; a bust fails the attempt.
+ */
+export interface MissionCheckoutStep {
+  type: 'checkout'
+  start: number
+  maxDarts: number
+  finish: 'double' | 'single' | 'master'
+}
+/**
+ * Hit each target `hits` times: in a row (a dart that adds nothing fails the attempt), in this order, within N darts or one visit.
+ */
+export interface MissionHitStep {
+  type: 'hit'
+  /**
+   * 1 to 21 targets.
+   */
+  targets: string[]
+  hits: number
+  inARow: boolean
+  order: 'any' | 'in_order'
+  /**
+   * Left out: no limit.
+   */
+  within?: number | 'visit'
+}
+/**
+ * Marks on numbers (25: the bull): a double 2, a treble 3, the outer bull 1, the inner bull 2.
+ */
+export interface MissionMarksStep {
+  type: 'marks'
+  /**
+   * 1 to 21 targets.
+   */
+  targets: number[]
+  marks: number
+  per: 'each' | 'total'
+  /**
+   * Left out: no limit.
+   */
+  within?: number
+}
+/**
+ * Every visit at least, at most, exactly or never `points`, for `visits` visits.
+ */
+export interface MissionVisitsStep {
+  type: 'visits'
+  compare: 'at_least' | 'at_most' | 'exactly' | 'not'
+  points: number
+  visits: number
+  inARow: boolean
+}
+/**
+ * Score `points` or more within `within` darts.
+ */
+export interface MissionScoreStep {
+  type: 'score'
+  points: number
+  within: number
+}
+/**
+ * A 3-dart average of at least `average` over `visits` visits.
+ */
+export interface MissionAverageStep {
+  type: 'average'
+  average: number
+  visits: number
+}
+/**
+ * Win a leg from `start` within `within` darts; a bust ends the visit, as in X01.
+ */
+export interface MissionLegStep {
+  type: 'leg'
+  start: 301 | 501 | 701
+  within: number
+  finish: 'double' | 'single'
+}
+/**
+ * A player's best completed run of a mission.
+ */
+export interface MissionHighscore {
+  userId: string | null
+  name: string
+  timeMs: number
+  darts: number
+}
+/**
+ * How a step of the mission stands.
+ */
+export interface MissionStepRun {
+  attempts: number
+  /**
+   * The most progress an attempt made (a streak's best).
+   */
+  best: number
+  darts: number
+  /**
+   * Mission time (ms) when the step was done.
+   */
+  doneAt: number | null
+  progress: {
+    value: number
+    of: number
+    /**
+     * Checkout and fast leg: the score left.
+     */
+    left?: number
+    /**
+     * Average: the 3-dart average so far.
+     */
+    average?: number | null
+  }
+}
+/**
+ * A dart of the open visit and what it did.
+ */
+export interface MissionChip {
+  number: number
+  multiplier: number
+  /**
+   * Progress the dart made (a bust's can be negative).
+   */
+  gain: number
+  outcome: 'go' | 'done' | 'fail' | 'visit_over'
+}
+/**
+ * Server times (ms since the epoch) of the mission's clock: it starts with the first input and stops while paused.
+ */
+export interface MissionClock {
+  now: number | null
+  startedAt: number | null
+  pausedAt: number | null
+  pausedMs: number
+  /**
+   * When the time runs out (ms since the epoch); null without a limit or while paused.
+   */
+  deadline: number | null
 }
 /**
  * This interface was referenced by `BoardWs`'s JSON-Schema

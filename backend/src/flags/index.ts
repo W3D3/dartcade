@@ -7,6 +7,7 @@ import type { Database } from '../db/schema.js'
 import { getRoleAndEmail } from '../db/users.js'
 import type { FlagOverride } from '../db/flagOverrides.js'
 import { FLAG_META, type FlagKey } from '../shared/flags.js'
+import { isGameId, OWN_START } from '../shared/gameNames.js'
 import { flagDefinitions } from './definitions.js'
 
 export type FlagUser = { id: string; email: string; role: string | null } | null
@@ -113,8 +114,9 @@ export async function loadFlagUser(db: Kysely<Database>, userId: string | null):
   return u ? { id: userId, ...u } : null
 }
 
-/** Whether a game mode may be picked: modes without a flag always, flagged ones when it's on. */
+/** Whether a game mode may be picked: modes without a flag always, flagged ones when it's on, never one with its own start (OWN_START). */
 export async function modeAvailable(modeId: string, user: FlagUser): Promise<boolean> {
+  if (isGameId(modeId) && OWN_START.has(modeId)) return false
   const key = modeFlag(modeId)
   return key === null || flagEnabled(key, user)
 }

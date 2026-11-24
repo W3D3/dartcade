@@ -7,9 +7,13 @@ export const GAME_NAMES = {
   hilo: { title: 'Higher Lower', short: 'Higher Lower' },
   minigolf: { title: 'Minigolf', short: 'Minigolf' },
   cricket: { title: 'Cricket', short: 'Cricket' },
+  mission: { title: 'Mission', short: 'Mission' },
 } as const satisfies Record<string, { title: string; short: string }>
 
 export type GameId = keyof typeof GAME_NAMES
+
+/** Modes started only by their own route (a mission, from the missions API): never picked in a lobby, on the Play page or by POST /api/sessions. */
+export const OWN_START: ReadonlySet<GameId> = new Set(['mission'])
 
 export const isGameId = (id: string): id is GameId => Object.hasOwn(GAME_NAMES, id)
 

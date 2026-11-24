@@ -1,13 +1,22 @@
 import { games } from '../games/index.js'
 import { noStats } from '../games/matchStats.js'
 import { newSession, replayPooled, StoredConfigSchema, type LoggedInput, type WarnFn } from '../session/replay.js'
-import type { AtcDetail, CricketDetail, HiloDetail, MatchStats, MinigolfDetail, P121Detail, X01Detail } from '../session/types.js'
+import type {
+  AtcDetail,
+  CricketDetail,
+  HiloDetail,
+  MatchStats,
+  MinigolfDetail,
+  MissionDetail,
+  P121Detail,
+  X01Detail,
+} from '../session/types.js'
 import { getFinishedGame, getGameDetails, saveGameDetail, type HistoryGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 
-export type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | HiloDetail | CricketDetail
+export type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail | HiloDetail | CricketDetail | MissionDetail
 type Built = { detail: Detail; stats: MatchStats }
 
 // Bump when a mode's detail() or matchStats() output changes without its module version: every

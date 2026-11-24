@@ -54,6 +54,12 @@ export const FLAG_META = {
     description: 'Shows Cricket on the Play page.',
     defaultRule: 'admins',
   },
+  'missions.enabled': {
+    kind: 'boolean',
+    description:
+      'Turns on missions: practice goals made of steps that players build, share and race each other on. Off, the missions API answers 404 and no mission game can start.',
+    defaultRule: 'admins',
+  },
   'auth.passkeys.enabled': {
     kind: 'boolean',
     description: 'Lets players add passkeys to their account, sign in with one and confirm account deletion with one.',
