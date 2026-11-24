@@ -403,6 +403,7 @@
               <ParticipantsSection
                 bind:draft={participants}
                 {perTeam}
+                setup={toInput(form)}
                 max={maxEntriesOf(form)}
                 tournamentId={params.id}
                 disabled={started}
