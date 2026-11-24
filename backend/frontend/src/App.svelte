@@ -47,6 +47,7 @@
   import BigScreenFrame from './routes/BigScreenFrame.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
+  import AdminActivityGames from './routes/AdminActivityGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
   import FinishSprite from '$lib/components/FinishSprite.svelte'
   import BadgeDefs from '$lib/components/achievements/BadgeDefs.svelte'
@@ -198,6 +199,7 @@
     '/admin/minigolf/reports': AdminMinigolfReports,
     '/minigolf/browse': MinigolfBrowse,
     '/admin/activity': AdminActivity,
+    '/admin/activity/games': AdminActivityGames,
     '/admin/system': AdminSystem,
     '/admin/dart-samples': AdminDartSamples,
     '/admin/cosmetics': AdminCosmetics,
