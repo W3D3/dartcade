@@ -1171,6 +1171,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/activity/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The games played, filtered, with their count and games per day (admin)
+         * @description Backs the Activity page's Games played subpage. Lists are comma separated. `usersIn` keeps games any of those accounts played, `usersOut` drops games any played. `countriesIn`/`countriesOut` are ISO codes of the seated accounts' countries (`none`: an account with no country); `countryMatch` says whether one seat (`any`) or every account seat (`all`) must be from `countriesIn`. Guests and bots have no country.
+         */
+        get: operations["listAdminActivityGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/activity/games.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The same filtered games as CSV, at most 50 000 rows (admin)
+         * @description Takes the filters of listAdminActivityGames (not `page`).
+         */
+        get: operations["exportAdminActivityGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/activity": {
         parameters: {
             query?: never;
@@ -4519,6 +4559,44 @@ export interface components {
             /** @description Why, in the moderator's words; null when none was given */
             reason: string | null;
         } | null;
+        AdminActivityGames: {
+            /** @description Games matching the filters */
+            total: number;
+            page: number;
+            pageSize: number;
+            /** @description The CSV export stops after this many games */
+            csvMax: number;
+            /** @description Games started per UTC day, every day from the first to the last */
+            perDay: {
+                /** @description yyyy-mm-dd */
+                day: string;
+                count: number;
+            }[];
+            games: {
+                id: string;
+                mode: string;
+                /** @enum {string} */
+                status: "finished" | "aborted";
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                finishedAt: string | null;
+                ranked: boolean;
+                invalidated: boolean;
+                players: {
+                    name: string;
+                    userId: string | null;
+                    bot: boolean;
+                    country: string | null;
+                    placement: number | null;
+                }[];
+            }[];
+            /** @description The accounts the filter names, so a shared link can show them */
+            users: {
+                id: string;
+                name: string;
+            }[];
+        };
         AdminGameSummary: {
             id: string;
             mode: string;
@@ -7370,6 +7448,29 @@ export interface components {
         };
     };
     parameters: {
+        /** @description Account ids (comma separated); keeps games any of them played */
+        ActivityGamesUsersIn: string;
+        /** @description Account ids (comma separated); drops games any of them played */
+        ActivityGamesUsersOut: string;
+        /** @description Country codes of the seated accounts, `none` for an account with no country */
+        ActivityGamesCountriesIn: string;
+        /** @description Drops games with an account seat from these countries */
+        ActivityGamesCountriesOut: string;
+        /** @description any: one seat from countriesIn; all: every account seat */
+        ActivityGamesCountryMatch: "any" | "all";
+        /** @description At least this many seats */
+        ActivityGamesMinPlayers: number;
+        /** @description At most this many seats */
+        ActivityGamesMaxPlayers: number;
+        /** @description Game ids (comma separated) */
+        ActivityGamesModes: string;
+        ActivityGamesKind: "any" | "ranked" | "unranked" | "tournament" | "lobby" | "local";
+        ActivityGamesStatus: "finished" | "aborted" | "all";
+        /** @description Started at or after */
+        ActivityGamesFrom: string;
+        /** @description Started before */
+        ActivityGamesTo: string;
+        ActivityGamesIncludeInvalidated: boolean;
         BoardId: string;
         SessionId: string;
         GameId: string;
@@ -9212,6 +9313,103 @@ export interface operations {
                     "application/json": components["schemas"]["AdminSystem"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAdminActivityGames: {
+        parameters: {
+            query?: {
+                /** @description Account ids (comma separated); keeps games any of them played */
+                usersIn?: components["parameters"]["ActivityGamesUsersIn"];
+                /** @description Account ids (comma separated); drops games any of them played */
+                usersOut?: components["parameters"]["ActivityGamesUsersOut"];
+                /** @description Country codes of the seated accounts, `none` for an account with no country */
+                countriesIn?: components["parameters"]["ActivityGamesCountriesIn"];
+                /** @description Drops games with an account seat from these countries */
+                countriesOut?: components["parameters"]["ActivityGamesCountriesOut"];
+                /** @description any: one seat from countriesIn; all: every account seat */
+                countryMatch?: components["parameters"]["ActivityGamesCountryMatch"];
+                /** @description At least this many seats */
+                minPlayers?: components["parameters"]["ActivityGamesMinPlayers"];
+                /** @description At most this many seats */
+                maxPlayers?: components["parameters"]["ActivityGamesMaxPlayers"];
+                /** @description Game ids (comma separated) */
+                modes?: components["parameters"]["ActivityGamesModes"];
+                kind?: components["parameters"]["ActivityGamesKind"];
+                status?: components["parameters"]["ActivityGamesStatus"];
+                /** @description Started at or after */
+                from?: components["parameters"]["ActivityGamesFrom"];
+                /** @description Started before */
+                to?: components["parameters"]["ActivityGamesTo"];
+                includeInvalidated?: components["parameters"]["ActivityGamesIncludeInvalidated"];
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of games, the total and the per-day counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityGames"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    exportAdminActivityGames: {
+        parameters: {
+            query?: {
+                /** @description Account ids (comma separated); keeps games any of them played */
+                usersIn?: components["parameters"]["ActivityGamesUsersIn"];
+                /** @description Account ids (comma separated); drops games any of them played */
+                usersOut?: components["parameters"]["ActivityGamesUsersOut"];
+                /** @description Country codes of the seated accounts, `none` for an account with no country */
+                countriesIn?: components["parameters"]["ActivityGamesCountriesIn"];
+                /** @description Drops games with an account seat from these countries */
+                countriesOut?: components["parameters"]["ActivityGamesCountriesOut"];
+                /** @description any: one seat from countriesIn; all: every account seat */
+                countryMatch?: components["parameters"]["ActivityGamesCountryMatch"];
+                /** @description At least this many seats */
+                minPlayers?: components["parameters"]["ActivityGamesMinPlayers"];
+                /** @description At most this many seats */
+                maxPlayers?: components["parameters"]["ActivityGamesMaxPlayers"];
+                /** @description Game ids (comma separated) */
+                modes?: components["parameters"]["ActivityGamesModes"];
+                kind?: components["parameters"]["ActivityGamesKind"];
+                status?: components["parameters"]["ActivityGamesStatus"];
+                /** @description Started at or after */
+                from?: components["parameters"]["ActivityGamesFrom"];
+                /** @description Started before */
+                to?: components["parameters"]["ActivityGamesTo"];
+                includeInvalidated?: components["parameters"]["ActivityGamesIncludeInvalidated"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];

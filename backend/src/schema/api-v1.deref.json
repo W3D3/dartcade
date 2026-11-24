@@ -19768,6 +19768,816 @@
         }
       }
     },
+    "/api/admin/activity/games": {
+      "get": {
+        "operationId": "listAdminActivityGames",
+        "summary": "The games played, filtered, with their count and games per day (admin)",
+        "description": "Backs the Activity page's Games played subpage. Lists are comma separated. `usersIn` keeps games any of those accounts played, `usersOut` drops games any played. `countriesIn`/`countriesOut` are ISO codes of the seated accounts' countries (`none`: an account with no country); `countryMatch` says whether one seat (`any`) or every account seat (`all`) must be from `countriesIn`. Guests and bots have no country.",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "usersIn",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "description": "Account ids (comma separated); keeps games any of them played"
+          },
+          {
+            "name": "usersOut",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "description": "Account ids (comma separated); drops games any of them played"
+          },
+          {
+            "name": "countriesIn",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Country codes of the seated accounts, `none` for an account with no country"
+          },
+          {
+            "name": "countriesOut",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Drops games with an account seat from these countries"
+          },
+          {
+            "name": "countryMatch",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "any",
+                "all"
+              ],
+              "default": "any"
+            },
+            "description": "any: one seat from countriesIn; all: every account seat"
+          },
+          {
+            "name": "minPlayers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "At least this many seats"
+          },
+          {
+            "name": "maxPlayers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "At most this many seats"
+          },
+          {
+            "name": "modes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Game ids (comma separated)"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "any",
+                "ranked",
+                "unranked",
+                "tournament",
+                "lobby",
+                "local"
+              ],
+              "default": "any"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "finished",
+                "aborted",
+                "all"
+              ],
+              "default": "finished"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Started at or after"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Started before"
+          },
+          {
+            "name": "includeInvalidated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of games, the total and the per-day counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "total",
+                    "page",
+                    "pageSize",
+                    "csvMax",
+                    "perDay",
+                    "games",
+                    "users"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "description": "Games matching the filters"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    },
+                    "csvMax": {
+                      "type": "integer",
+                      "description": "The CSV export stops after this many games"
+                    },
+                    "perDay": {
+                      "type": "array",
+                      "description": "Games started per UTC day, every day from the first to the last",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "day",
+                          "count"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "day": {
+                            "type": "string",
+                            "description": "yyyy-mm-dd"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "games": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "mode",
+                          "status",
+                          "createdAt",
+                          "finishedAt",
+                          "ranked",
+                          "invalidated",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "mode": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "finished",
+                              "aborted"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "ranked": {
+                            "type": "boolean"
+                          },
+                          "invalidated": {
+                            "type": "boolean"
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "userId",
+                                "bot",
+                                "country",
+                                "placement"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "userId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "bot": {
+                                  "type": "boolean"
+                                },
+                                "country": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "placement": {
+                                  "type": "integer",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "users": {
+                      "type": "array",
+                      "description": "The accounts the filter names, so a shared link can show them",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/activity/games.csv": {
+      "get": {
+        "operationId": "exportAdminActivityGames",
+        "summary": "The same filtered games as CSV, at most 50 000 rows (admin)",
+        "description": "Takes the filters of listAdminActivityGames (not `page`).",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "usersIn",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "description": "Account ids (comma separated); keeps games any of them played"
+          },
+          {
+            "name": "usersOut",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "description": "Account ids (comma separated); drops games any of them played"
+          },
+          {
+            "name": "countriesIn",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Country codes of the seated accounts, `none` for an account with no country"
+          },
+          {
+            "name": "countriesOut",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Drops games with an account seat from these countries"
+          },
+          {
+            "name": "countryMatch",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "any",
+                "all"
+              ],
+              "default": "any"
+            },
+            "description": "any: one seat from countriesIn; all: every account seat"
+          },
+          {
+            "name": "minPlayers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "At least this many seats"
+          },
+          {
+            "name": "maxPlayers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "At most this many seats"
+          },
+          {
+            "name": "modes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Game ids (comma separated)"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "any",
+                "ranked",
+                "unranked",
+                "tournament",
+                "lobby",
+                "local"
+              ],
+              "default": "any"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "finished",
+                "aborted",
+                "all"
+              ],
+              "default": "finished"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Started at or after"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Started before"
+          },
+          {
+            "name": "includeInvalidated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A CSV file",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/activity": {
       "get": {
         "operationId": "getAdminActivity",
@@ -78336,6 +79146,152 @@
       }
     },
     "parameters": {
+      "ActivityGamesUsersIn": {
+        "name": "usersIn",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "description": "Account ids (comma separated); keeps games any of them played"
+      },
+      "ActivityGamesUsersOut": {
+        "name": "usersOut",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "description": "Account ids (comma separated); drops games any of them played"
+      },
+      "ActivityGamesCountriesIn": {
+        "name": "countriesIn",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "description": "Country codes of the seated accounts, `none` for an account with no country"
+      },
+      "ActivityGamesCountriesOut": {
+        "name": "countriesOut",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "description": "Drops games with an account seat from these countries"
+      },
+      "ActivityGamesCountryMatch": {
+        "name": "countryMatch",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "any",
+            "all"
+          ],
+          "default": "any"
+        },
+        "description": "any: one seat from countriesIn; all: every account seat"
+      },
+      "ActivityGamesMinPlayers": {
+        "name": "minPlayers",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "description": "At least this many seats"
+      },
+      "ActivityGamesMaxPlayers": {
+        "name": "maxPlayers",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "description": "At most this many seats"
+      },
+      "ActivityGamesModes": {
+        "name": "modes",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "description": "Game ids (comma separated)"
+      },
+      "ActivityGamesKind": {
+        "name": "kind",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "any",
+            "ranked",
+            "unranked",
+            "tournament",
+            "lobby",
+            "local"
+          ],
+          "default": "any"
+        }
+      },
+      "ActivityGamesStatus": {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "finished",
+            "aborted",
+            "all"
+          ],
+          "default": "finished"
+        }
+      },
+      "ActivityGamesFrom": {
+        "name": "from",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": "Started at or after"
+      },
+      "ActivityGamesTo": {
+        "name": "to",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": "Started before"
+      },
+      "ActivityGamesIncludeInvalidated": {
+        "name": "includeInvalidated",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
       "BoardId": {
         "name": "id",
         "in": "path",
@@ -85540,6 +86496,157 @@
             "type": "string",
             "nullable": true,
             "description": "Why, in the moderator's words; null when none was given"
+          }
+        }
+      },
+      "AdminActivityGames": {
+        "type": "object",
+        "required": [
+          "total",
+          "page",
+          "pageSize",
+          "csvMax",
+          "perDay",
+          "games",
+          "users"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Games matching the filters"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "csvMax": {
+            "type": "integer",
+            "description": "The CSV export stops after this many games"
+          },
+          "perDay": {
+            "type": "array",
+            "description": "Games started per UTC day, every day from the first to the last",
+            "items": {
+              "type": "object",
+              "required": [
+                "day",
+                "count"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "description": "yyyy-mm-dd"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "mode",
+                "status",
+                "createdAt",
+                "finishedAt",
+                "ranked",
+                "invalidated",
+                "players"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "finished",
+                    "aborted"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "finishedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "ranked": {
+                  "type": "boolean"
+                },
+                "invalidated": {
+                  "type": "boolean"
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "userId",
+                      "bot",
+                      "country",
+                      "placement"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "bot": {
+                        "type": "boolean"
+                      },
+                      "country": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "placement": {
+                        "type": "integer",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "users": {
+            "type": "array",
+            "description": "The accounts the filter names, so a shared link can show them",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       },
