@@ -13,6 +13,8 @@ export const MISSION_LIMITS = {
   description: 280,
   /** The longest time limit, in seconds (one hour). */
   timeLimit: 3600,
+  /** Missions one player may have made. */
+  perPlayer: 50,
 } as const
 
 export const DIFFICULTIES = ['easy', 'medium', 'hard', 'expert'] as const

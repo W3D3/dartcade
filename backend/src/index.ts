@@ -32,6 +32,8 @@ import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
 import { TournamentService } from './tournaments/service.js'
+import { MissionService } from './missions/service.js'
+import { seedOfficialMissions } from './db/missions.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
@@ -62,6 +64,8 @@ await initPhysics3d()
 warmPool()
 await runMigrations(db)
 await seedOfficialCourses(db)
+await seedOfficialMissions(db)
+const missions = new MissionService({ db, warn })
 setCourseSource({
   course: id => publishedCourse(db, id),
   officialHoles: () => publishedOfficialHoles(db),
@@ -176,7 +180,7 @@ const engine: SessionEngine = new SessionEngine(
     })
     bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
     // Independent: a lobby that fails to reset must not keep the ratings from moving
-    const consumers: GameEndedConsumer[] = [lobbies, matchmaking, tournaments]
+    const consumers: GameEndedConsumer[] = [lobbies, matchmaking, tournaments, missions]
     return Promise.allSettled(consumers.map(c => c.onGameEnded(ended))).then(results => {
       for (const r of results)
         if (r.status === 'rejected') warn('game-end hook failed', { sessionId: ended.sessionId, error: String(r.reason) })

@@ -32,6 +32,14 @@ export function dailyGameFactor(gameOfDay: number): number {
   return 0.1
 }
 
+/**
+ * Missions are practice and pay none of the game XP above. A mission's first completion pays this by
+ * its difficulty, and only for a mission someone else made that isn't private, never a test run; at
+ * most MISSION_REWARDS_PER_DAY a day (a completion over the cap is paid on a later day's completion).
+ */
+export const MISSION_XP = { easy: 50, medium: 100, hard: 150, expert: 250 } as const
+export const MISSION_REWARDS_PER_DAY = 3
+
 /** Games entered by hand or without a bridge: no dart XP, half game XP, this many a day (ranked games are exempt). */
 export const MANUAL_GAMES_PER_DAY = 4
 export const MANUAL_GAME_FACTOR = 0.5
