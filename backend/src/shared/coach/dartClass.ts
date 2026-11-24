@@ -1,6 +1,7 @@
 // What each dart of a coached leg most likely was: its target, its category and how far it missed.
 // It describes what probably happened; the strategy notes (notes.ts) keep the benefit of the doubt.
 import { HALF, R, SEGS } from '../board.js'
+import { checkoutHint } from '../checkout.js'
 import { CHECKOUTS } from '../checkoutTable.js'
 import { AIM_RINGS, AIMS, aimIndex, aimKind, aimPoints, aimsOn, bedAim, directOutId, isDoubleAim, oneDartFinish, type Aim } from './aims.js'
 import type { Evaluation } from './model.js'
@@ -112,8 +113,8 @@ export const setupDoubles = (left: number): number[] =>
     ? []
     : Array.from({ length: 20 }, (_, i) => i + 1).flatMap(n => (oneDartFinish(left - 2 * n) ? [aimIndex(`D${n}`)] : []))
 
-/** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the table's first
- *  darts, T16, the setup doubles and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
+/** Finish candidates (AIMS indexes) and their priors: the evaluator's top K, the book route's first
+ *  dart, T16, the setup doubles and the aims on number `landed` (the caller passes it for a typed dart only). An aim whose likeliest outcome busts
  *  is one only off a one-dart finish; when busting back is the best there is, every such aim is
  *  one, at prior 1. A dart in the bull or 25 has the two bull aims only; a dart in a setup double's
  *  bed (`doubleIn`: the number of the double it landed in) that double only, however strong the
@@ -140,10 +141,9 @@ export function finishCandidates(
     .filter(allowed)
     .sort((a, b) => v[b] - v[a] || a - b)
     .slice(0, TOP_K)
-  const entry = left in CHECKOUTS ? CHECKOUTS[left] : null
-  const firsts = [...(entry?.routes ?? []), ...(darts === 2 && entry?.twoDarts ? [entry.twoDarts] : [])].map(r =>
-    aimIndex(bedAim(r[0])?.id ?? ''),
-  )
+  // The route the book gives with the darts left, not every alternative in the table
+  const book = left in CHECKOUTS ? checkoutHint(left, 'double', darts) : null
+  const firsts = book ? [aimIndex(bedAim(book[0])?.id ?? '')] : []
   const floored = new Set([...firsts, aimIndex('T16'), ...setupDoubles(left)].filter(a => a >= 0 && allowed(a)))
   const own = new Set((landed === null ? [] : aimsOn([landed])).filter(allowed))
   const backs = new Set(!oneDartFinish(left) && busts.best ? [...busts.aims].filter(allowed) : [])
