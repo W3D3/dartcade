@@ -7941,6 +7941,7 @@
                                 "test",
                                 "mission",
                                 "highscores",
+                                "bests",
                                 "runs",
                                 "chips",
                                 "currentPlayer",
@@ -8352,6 +8353,35 @@
                                         "minimum": 0
                                       }
                                     }
+                                  }
+                                },
+                                "bests": {
+                                  "type": "object",
+                                  "description": "Each account's own best when the game started, by user id; null: none yet. The result's new personal best (the highscores hold only the top 10).",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "required": [
+                                          "timeMs",
+                                          "darts"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "timeMs": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          },
+                                          "darts": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "runs": {
@@ -16541,6 +16571,7 @@
                                 "test",
                                 "mission",
                                 "highscores",
+                                "bests",
                                 "runs",
                                 "chips",
                                 "currentPlayer",
@@ -16952,6 +16983,35 @@
                                         "minimum": 0
                                       }
                                     }
+                                  }
+                                },
+                                "bests": {
+                                  "type": "object",
+                                  "description": "Each account's own best when the game started, by user id; null: none yet. The result's new personal best (the highscores hold only the top 10).",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "required": [
+                                          "timeMs",
+                                          "darts"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "timeMs": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          },
+                                          "darts": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "runs": {
@@ -25212,6 +25272,7 @@
                                     "test",
                                     "mission",
                                     "highscores",
+                                    "bests",
                                     "runs",
                                     "chips",
                                     "currentPlayer",
@@ -25623,6 +25684,35 @@
                                             "minimum": 0
                                           }
                                         }
+                                      }
+                                    },
+                                    "bests": {
+                                      "type": "object",
+                                      "description": "Each account's own best when the game started, by user id; null: none yet. The result's new personal best (the highscores hold only the top 10).",
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "required": [
+                                              "timeMs",
+                                              "darts"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "timeMs": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "darts": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
                                     },
                                     "runs": {
@@ -33812,6 +33902,7 @@
                                     "test",
                                     "mission",
                                     "highscores",
+                                    "bests",
                                     "runs",
                                     "chips",
                                     "currentPlayer",
@@ -34223,6 +34314,35 @@
                                             "minimum": 0
                                           }
                                         }
+                                      }
+                                    },
+                                    "bests": {
+                                      "type": "object",
+                                      "description": "Each account's own best when the game started, by user id; null: none yet. The result's new personal best (the highscores hold only the top 10).",
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "required": [
+                                              "timeMs",
+                                              "darts"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "timeMs": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "darts": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
                                     },
                                     "runs": {

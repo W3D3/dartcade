@@ -191,6 +191,17 @@ export async function highscores(db: Kysely<Database>, m: Pick<MissionRow, 'id' 
   return found.map(b => ({ userId: b.user_id, name: b.name, timeMs: b.time_ms, darts: b.darts, achievedAt: b.achieved_at }))
 }
 
+/** Each of `userIds`' own best run of the mission, null for one without (every id is a key): a game's start. */
+export async function ownBests(db: Kysely<Database>, missionId: string, userIds: string[]): Promise<Record<string, RunResult | null>> {
+  const found = userIds.length === 0 ? [] : await bestsOf(db, [missionId], userIds)
+  return Object.fromEntries(
+    userIds.map(id => {
+      const b = found.find(f => f.userId === id)
+      return [id, b ? { timeMs: b.timeMs, darts: b.darts } : null]
+    }),
+  )
+}
+
 /** Missions the user wrote. */
 export async function ownedCount(db: Kysely<Database>, userId: string): Promise<number> {
   const { n } = await db

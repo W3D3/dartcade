@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
-import { insertUsers } from '../test/fixtures.js'
+import { insertLobby, insertUsers } from '../test/fixtures.js'
 import { createMission, seedOfficialMissions } from '../db/missions.js'
 import { setupFlags } from '../flags/index.js'
 import { MissionSchema, type Mission, type MissionVisibility } from '../shared/missions/types.js'
@@ -249,6 +249,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
         test: false,
         mission: mission(),
         highscores: [{ userId: 'friend', name: 'Fred', timeMs: 61_000, darts: 9 }],
+        bests: { stranger: null },
       },
     })
     expect((await call('POST', `/api/missions/${id}/start`, 'stranger', { test: true })).statusCode).toBe(403)
@@ -278,6 +279,35 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     expect((await call('POST', `/api/missions/${id}/start`, 'owner', { lobbyId: 'L1', test: true })).statusCode).toBe(400)
     // Who may not see the mission can't start it for a lobby either
     expect((await call('POST', `/api/missions/${id}/start`, 'stranger', { lobbyId: 'L1' })).statusCode).toBe(404)
+  })
+
+  it("stores each player's own best from the start, also one outside the top 10", async () => {
+    const id = await own('public')
+    const top = Array.from({ length: 10 }, (_, i) => `top${i}`)
+    await insertUsers(db, top)
+    await db
+      .insertInto('mission_bests')
+      .values([
+        ...top.map((u, i) => ({ mission_id: id, user_id: u, time_ms: 30_000 + i, darts: 9 })),
+        { mission_id: id, user_id: 'stranger', time_ms: 90_000, darts: 12 },
+      ])
+      .execute()
+    expect((await call('POST', `/api/missions/${id}/start`, 'stranger', {})).statusCode).toBe(201)
+    const solo = started.at(-1)?.config as { highscores: { userId: string }[]; bests: unknown }
+    expect(solo.highscores.map(h => h.userId)).not.toContain('stranger')
+    expect(solo.bests).toEqual({ stranger: { timeMs: 90_000, darts: 12 } })
+    // A lobby: every account among its people (guests have none), null for one without a best
+    await insertLobby(db, { id: 'L2', host_user_id: 'friend' })
+    await db
+      .insertInto('lobby_people')
+      .values([
+        { id: 'p1', lobby_id: 'L2', user_id: 'friend', added_by_user_id: 'friend', name: 'Fred', board_id: null, position: 0 },
+        { id: 'p2', lobby_id: 'L2', user_id: 'stranger', added_by_user_id: 'stranger', name: 'Stan', board_id: null, position: 1 },
+        { id: 'p3', lobby_id: 'L2', user_id: null, added_by_user_id: 'friend', name: 'Guest', board_id: null, position: 2 },
+      ])
+      .execute()
+    expect((await call('POST', `/api/missions/${id}/start`, 'friend', { lobbyId: 'L2' })).statusCode).toBe(201)
+    expect(lobbyStarts.at(-1)?.game.config).toMatchObject({ bests: { friend: null, stranger: { timeMs: 90_000, darts: 12 } } })
   })
 
   it('lists the highscores best first, by darts for a mission ranked by darts', async () => {

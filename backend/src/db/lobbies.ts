@@ -114,6 +114,17 @@ export async function getOpenLobbyIdOfUser(db: Kysely<Database>, userId: string)
   return row?.lobby_id
 }
 
+/** The accounts among a lobby's people. */
+export async function lobbyUserIds(db: Kysely<Database>, lobbyId: string): Promise<string[]> {
+  const rows = await db
+    .selectFrom('lobby_people')
+    .select('user_id')
+    .where('lobby_id', '=', lobbyId)
+    .where('user_id', 'is not', null)
+    .execute()
+  return rows.flatMap(r => (r.user_id === null ? [] : [r.user_id]))
+}
+
 export async function getOpenLobbyIds(db: Kysely<Database>): Promise<string[]> {
   const rows = await db.selectFrom('lobbies').select('id').where('closed_at', 'is', null).execute()
   return rows.map(r => r.id)

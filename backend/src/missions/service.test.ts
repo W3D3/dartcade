@@ -58,7 +58,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('mission game end: bests and XP'
         owner_user_id: userId,
         board_db_id: null,
         game_id: 'mission',
-        config: JSON.stringify({ missionId, test: o.test ?? false, mission: mission(), highscores: [] }),
+        config: JSON.stringify({ missionId, test: o.test ?? false, mission: mission(), highscores: [], bests: {} }),
         status: 'finished',
         finished_at: new Date(),
       })

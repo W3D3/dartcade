@@ -9,7 +9,7 @@ import { isAdmin, isModerator, requireAdmin, requireModerator } from '../auth/ad
 import { requireAuth } from '../auth/middleware.js'
 import { loadFlagUser } from '../flags/index.js'
 import { friendIdsOf } from '../db/friends.js'
-import { ownBoardSeats } from '../db/lobbies.js'
+import { lobbyUserIds, ownBoardSeats } from '../db/lobbies.js'
 import {
   canSee,
   canWrite,
@@ -23,6 +23,7 @@ import {
   hiddenMissionIds,
   listMissions,
   listReports,
+  ownBests,
   ownedCount,
   reportMission,
   restoreMission,
@@ -196,6 +197,8 @@ export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         test,
         mission: m.mission,
         highscores: (await highscores(db, m)).map(b => ({ userId: b.userId, name: b.name, timeMs: b.timeMs, darts: b.darts })),
+        // Everyone in the lobby, whoever plays: the lobby's own start picks the seats
+        bests: await ownBests(db, m.id, lobbyId ? await lobbyUserIds(db, lobbyId) : [v.id]),
       }
       // In a lobby the host starts it for everyone who plays, taking turns (the lobby's seats and boards)
       if (lobbyId) return reply.code(201).send(await lobbies.startGame(v.id, lobbyId, { gameId: 'mission', config }, force))

@@ -531,6 +531,15 @@ export type MissionGame = EngineGameFields & {
    */
   highscores: MissionHighscore[]
   /**
+   * Each account's own best when the game started, by user id; null: none yet. The result's new personal best (the highscores hold only the top 10).
+   */
+  bests: {
+    [k: string]: {
+      timeMs: number
+      darts: number
+    } | null
+  }
+  /**
    * Each seat's run, in seat order.
    */
   runs: MissionRun[]
