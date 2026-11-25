@@ -21,7 +21,7 @@
     <Badge variant="invited">Pending</Badge>
   </span>
   <Badge variant="sits-out">
-    <LoaderCircle size={11} strokeWidth={3} class="animate-spin motion-reduce:animate-none shrink-0" />
+    <LoaderCircle size={11} strokeWidth={3} class="animate-spin motion-reduce:animate-skeleton-soft shrink-0" />
     Invite sent
   </Badge>
 </li>

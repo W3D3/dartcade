@@ -208,7 +208,7 @@
 
       {#if pending > 0 && !loading}
         <p role="status" class="flex items-center gap-2 text-[14px] text-text-muted">
-          <LoaderCircle size={16} class="animate-spin motion-reduce:animate-none" />Reviewing your latest games… {pending} to go
+          <LoaderCircle size={16} class="animate-spin motion-reduce:animate-skeleton-soft" />Reviewing your latest games… {pending} to go
         </p>
       {/if}
 

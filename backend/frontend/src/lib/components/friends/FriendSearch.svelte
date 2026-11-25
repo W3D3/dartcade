@@ -157,7 +157,7 @@
 
 {#snippet skeleton()}
   {#each [0, 1] as i (i)}
-    <div aria-hidden="true" class="flex min-h-[64px] items-center gap-3 px-3 animate-pulse">
+    <div aria-hidden="true" class="flex min-h-[64px] items-center gap-3 px-3 animate-skeleton motion-reduce:animate-skeleton-soft">
       <span class="size-10 rounded-full bg-surface-key"></span>
       <span class="flex grow flex-col gap-2"
         ><span class="h-3 w-2/5 rounded-[4px] bg-surface-key"></span><span class="h-[10px] w-1/4 rounded-[4px] bg-surface-chip"

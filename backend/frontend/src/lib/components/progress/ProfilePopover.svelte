@@ -8,8 +8,9 @@
   import type { Snippet } from 'svelte'
   import { LinkPreview } from 'bits-ui'
   import ProfileCard from './ProfileCard.svelte'
+  import ProfileCardGate from './ProfileCardGate.svelte'
   import { flag } from '$lib/flags'
-  import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
+  import { profileFailed, profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
 
   let {
     userId,
@@ -23,6 +24,8 @@
   const profile = userId ? profileOf(userId) : null
   // svelte-ignore state_referenced_locally
   const status = userId ? statusOf(userId) : null
+  // svelte-ignore state_referenced_locally
+  const failed = userId ? profileFailed(userId) : null
 </script>
 
 {#if userId && $progression && profile}
@@ -43,10 +46,16 @@
     </LinkPreview.Trigger>
     <LinkPreview.Portal>
       <LinkPreview.Content side="bottom" align="start" sideOffset={8} collisionPadding={16} class="z-50 outline-none">
-        {#if $profile}
-          <ProfileCard profile={$profile} status={status ? $status : null} />
+        {#if failed && $failed && !$profile}
+          <div
+            class="w-[320px] max-w-full box-border rounded-popover border border-line-popover bg-surface-2 p-4 text-small text-text-muted"
+          >
+            Couldn't load this profile.
+          </div>
         {:else}
-          <div class="w-[300px] h-[200px] rounded-popover border border-line-popover bg-surface-2"></div>
+          <ProfileCardGate loading={!$profile}>
+            {#if $profile}<ProfileCard profile={$profile} status={status ? $status : null} />{/if}
+          </ProfileCardGate>
         {/if}
       </LinkPreview.Content>
     </LinkPreview.Portal>

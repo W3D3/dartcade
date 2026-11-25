@@ -26,9 +26,9 @@ describe('coach loading states', () => {
   it('keeps the count cards while their numbers load', () => {
     const loading = render(CountCards, { props: { counts: null } }).body
     expect(loading).toContain('Clean legs')
-    expect(loading).toContain('animate-pulse')
+    expect(loading).toContain('animate-skeleton')
     const loaded = render(CountCards, { props: { counts: { legs: 3, lowVisits: 1, badSetups: 0, missedDoubles: 2, cleanLegs: 1 } } }).body
-    expect(loaded).not.toContain('animate-pulse')
+    expect(loaded).not.toContain('animate-skeleton')
   })
 
   it("holds the live coach's place on the match screen while it loads", () => {

@@ -1,24 +1,29 @@
 <script lang="ts">
   // Settings' Profile: you as others see you. With progression, your profile card and the way to
   // Customise (picture, banner, colours, title), the one place to change them; without it (the
-  // profile API needs progression), or until the card loads, your avatar and name.
+  // profile API needs progression), or when the card can't load, your avatar and name. While it
+  // loads a skeleton of the card holds its place.
   import { hrefs } from '$lib/routes'
   import Avatar from '$lib/components/Avatar.svelte'
   import ProfileCard from '$lib/components/progress/ProfileCard.svelte'
+  import ProfileCardGate from '$lib/components/progress/ProfileCardGate.svelte'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
-  import { profileOf, statusOf } from '$lib/progress/profiles'
+  import { profileFailed, profileOf, statusOf } from '$lib/progress/profiles'
 
   const progression = flag('progression.enabled')
   const user = $derived($currentUser)
   const profile = $derived(user && $progression ? profileOf(user.id) : null)
   const status = $derived(user ? statusOf(user.id) : null)
+  const failed = $derived(user ? profileFailed(user.id) : null)
 </script>
 
 {#if user}
   <section aria-label="Your card" class="box-border p-4 md:p-[22px] card flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6">
-    {#if profile && $profile}
-      <div class="sm:shrink-0 max-w-full"><ProfileCard profile={$profile} status={status ? $status : null} /></div>
+    {#if profile && !($failed && !$profile)}
+      <ProfileCardGate loading={!$profile} class="sm:shrink-0 max-w-full">
+        {#if $profile}<ProfileCard profile={$profile} status={status ? $status : null} />{/if}
+      </ProfileCardGate>
     {:else}
       <div class="flex items-center gap-4 min-w-0">
         <Avatar

@@ -10,7 +10,8 @@
   import { PartyPopper, Trophy, Volume2, VolumeX } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import ProfileCardSkeleton from '$lib/components/progress/ProfileCardSkeleton.svelte'
+  import { loadingGate } from '$lib/loadingGate.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import FinishPicture from '$lib/components/FinishPicture.svelte'
@@ -56,6 +57,7 @@
   const userId = $derived($currentUser?.id ?? null)
   let profile = $derived(userId ? profileOf(userId) : null)
   let status = $derived(userId ? statusOf(userId) : null)
+  const gate = loadingGate(() => $progression && (!look || !$profile))
   $effect(() => {
     if (userId) refreshProfile(userId)
   })
@@ -268,8 +270,10 @@
 
     {#if !$progression}
       <p class="text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
-    {:else if !look || !$profile}
-      <PageLoading />
+    {:else if !look || !$profile || gate.holding}
+      <div class="flex justify-center">
+        <ProfileCardSkeleton revealed={gate.revealed} />
+      </div>
     {:else}
       <div class="flex items-center gap-4 min-w-0">
         <nav aria-label="Customise" class="flex gap-1 lg:gap-[6px] min-w-0 overflow-x-auto scrollbar-none">

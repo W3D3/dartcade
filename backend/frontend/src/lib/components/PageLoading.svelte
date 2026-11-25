@@ -3,4 +3,6 @@
   import { LoaderCircle } from '@lucide/svelte'
 </script>
 
-<div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
+<div class="flex justify-center py-10 text-text-muted">
+  <LoaderCircle class="animate-spin motion-reduce:animate-skeleton-soft" size={24} aria-label="Loading" />
+</div>
