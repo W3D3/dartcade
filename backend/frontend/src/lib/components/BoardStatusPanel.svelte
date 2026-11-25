@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   import { hrefs } from '$lib/routes'
-  import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
+  import { Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { fetchBoardStatus, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import BoardStatusDot from './BoardStatusDot.svelte'
   import { DOT_TEXT, bmDotColor, bmStatusLabel, shownStatus } from '$lib/boardStatus'
@@ -122,7 +123,7 @@
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
             {#if busy === 'start'}
-              <LoaderCircle size={13} class="animate-spin" />
+              <Spinner />
             {:else}
               <Play size={13} fill="currentColor" />
             {/if}
@@ -138,7 +139,7 @@
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
           >
             {#if busy === 'stop'}
-              <LoaderCircle size={13} class="animate-spin" />
+              <Spinner />
             {:else}
               <Square size={13} fill="currentColor" />
             {/if}
@@ -156,7 +157,7 @@
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
           {#if busy === 'reset'}
-            <LoaderCircle size={13} class="animate-spin" />
+            <Spinner />
           {:else}
             <RotateCcw size={13} />
           {/if}
@@ -173,7 +174,7 @@
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
         >
           {#if busy === 'calibrate'}
-            <LoaderCircle size={13} class="animate-spin" />
+            <Spinner />
           {:else}
             <Sun size={13} />
           {/if}

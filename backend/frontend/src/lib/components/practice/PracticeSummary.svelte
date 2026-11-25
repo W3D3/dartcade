@@ -6,6 +6,7 @@
   fills in the picked seat's summary.
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import type { Snippet } from 'svelte'
   import type { PracticeSummaryBase } from './types'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -62,7 +63,7 @@
   {#if ready}
     {@render children(buttons)}
   {:else}
-    {#if loading}<p class="text-[15px] text-text-muted">Loading the summary…</p>{/if}
+    {#if loading}<LoadingBlock label="Loading the summary" />{/if}
     {@render buttons()}
   {/if}
 </main>

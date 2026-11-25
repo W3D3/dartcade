@@ -2,13 +2,15 @@
   // The Play page's main button: Create lobby, Continue in lobby or Open lobby (disabled, with a
   // neutral label, while the page doesn't know yet which one you get).
   import { ArrowRight } from '@lucide/svelte'
+  import { Spinner } from '$lib/components/ui/spinner'
 
   let {
     label,
     busy = false,
+    loading = false,
     disabled = false,
     onclick,
-  }: { label: string; busy?: boolean; disabled?: boolean; onclick: () => void } = $props()
+  }: { label: string; busy?: boolean; loading?: boolean; disabled?: boolean; onclick: () => void } = $props()
 </script>
 
 <button
@@ -19,6 +21,7 @@
          rounded-md font-display font-bold text-[20px] md:text-[22px] tracking-cta uppercase
          border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 >
+  {#if busy || loading}<Spinner />{/if}
   {busy ? 'Opening…' : label}
   {#if !busy && !disabled}<ArrowRight size={20} strokeWidth={2.2} />{/if}
 </button>

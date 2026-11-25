@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // The audit log for one account on #/admin/users: what admins did to them or to their games.
   import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
@@ -22,7 +23,7 @@
   {#if failed}
     <ErrorText>Couldn't load the audit log.</ErrorText>
   {:else if entries === null}
-    <p class="text-[14px] text-text-dim">Loading…</p>
+    <LoadingBlock rows={3} label="Loading the audit log" />
   {:else if entries.length === 0}
     <p class="text-[14px] text-text-dim">Nothing recorded for this account.</p>
   {:else}

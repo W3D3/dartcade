@@ -9,7 +9,7 @@
   import { now as clockEvery } from '$lib/now'
   import { Check, Clock, Hourglass, MonitorSmartphone, Search, User, Users } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -114,7 +114,7 @@
     {#if search && !profile}<SearchPanel />{/if}
 
     {#if !profile && !error}
-      <PageLoading />
+      <LoadingBlock />
     {:else if profile && rec}
       <div class="grid grid-cols-2 gap-[10px] md:gap-[14px] lg:grid-cols-[1.15fr_1.15fr_1fr_0.9fr]">
         {#each cards as card (card.label)}

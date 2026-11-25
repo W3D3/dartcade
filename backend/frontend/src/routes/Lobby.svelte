@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // The lobby: who's in, on which boards, the next game, the history. It all comes from the
   // lobby socket; changes go through the REST API and come back on the socket.
   import { hrefs } from '$lib/routes'
@@ -296,7 +297,7 @@
         <LobbySidePanel lobby={l} {viewerId} {host} oninvite={invite} onaccess={(access: LobbyAccess) => void updateLobby({ access })} />
       {/snippet}
     {:else}
-      <p class="text-[15px] text-text-muted">Loading the lobby…</p>
+      <LoadingBlock label="Loading the lobby" onretry={() => void load()} />
     {/if}
   </main>
 </Layout>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
@@ -135,7 +136,7 @@
         disabled={loading || !acceptTerms || !nameSendable(nameStatus)}
         class="w-full mt-auto md:mt-0"
       >
-        {loading ? '…' : 'Create account'}
+        {#if loading}<Spinner />{/if}Create account
         {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
       </Button>
 

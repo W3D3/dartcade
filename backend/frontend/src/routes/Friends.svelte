@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // Friends (Friends, Tablet-Friends and Friends-Phone boards): your friends and what they do,
   // live from /ws/me, requests, and adding a friend by name. Tablets and desktops have tabs and a
   // right-hand column (below the list on narrow tablets); phones stack everything (add, requests,
@@ -91,7 +92,9 @@
         </div>
         <!-- One panel whatever the tab (phones show every list stacked); it follows the selected tab -->
         <Tabs.Content value={tab} id="friends-panel" class="order-2 lg:order-0 lg:col-start-1 flex flex-col gap-[14px] md:gap-5 min-w-0">
-          {#if loaded && list.friends.length === 0}
+          {#if !loaded}
+            <LoadingBlock rows={5} label="Loading your friends" />
+          {:else if list.friends.length === 0}
             <div class={tab === 'requests' ? 'md:hidden' : ''}>
               <EmptyState
                 title="No friends yet"

@@ -2,6 +2,7 @@
      caller can ask a voice for, and a preview for each one the pack has. Opened from the pack's Details
      button in Settings → Caller. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { hrefs } from '$lib/routes'
   import { onDestroy, onMount } from 'svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -83,7 +84,7 @@
     {:else if failed}
       <ErrorText>This voice couldn't be loaded. It may have been deleted.</ErrorText>
     {:else if !clips}
-      <p class="text-[15px] text-text-dim">Loading…</p>
+      <LoadingBlock label="Loading the voice" />
     {:else}
       {#each CATALOGUE as group (group.id)}
         {@const count = haveOf(group, clips)}

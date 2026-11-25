@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // Terms, Privacy Policy and Imprint (#/terms, #/privacy, #/imprint), see Legal.dc.html / Mobile-Legal.dc.html.
   import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
@@ -60,7 +61,7 @@
         {@html html}
       </div>
     {:else}
-      <p class="m-0 text-body text-text-muted">Loading…</p>
+      <LoadingBlock rows={6} label="Loading the page" />
     {/if}
   </div>
 </ScrollPage>

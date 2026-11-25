@@ -1,5 +1,6 @@
 <!-- Courses players made (`#/minigolf/browse`, behind minigolf.userCourses.enabled): search by name, play counts, and a way to report one. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { hrefs } from '$lib/routes'
   import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { onMount } from 'svelte'
@@ -66,7 +67,7 @@
     {#if notice}<p role="status" class="text-[14px] text-text-muted">{notice}</p>{/if}
 
     {#if courses === null}
-      <p class="text-[14px] text-text-muted">Loading…</p>
+      <LoadingBlock rows={4} label="Loading courses" onretry={() => void refresh()} />
     {:else if courses.length === 0}
       <p class="text-[14px] text-text-muted">
         {search.trim() ? 'No course has that name.' : 'No player has published a course yet. Make the first one under My courses.'}

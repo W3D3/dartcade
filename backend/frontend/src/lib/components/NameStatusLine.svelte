@@ -1,5 +1,6 @@
 <script lang="ts">
   // The line under a name field: the rule, a hint, "Checking…", free or taken.
+  import { Spinner } from '$lib/components/ui/spinner'
   import { nameStatusText, type NameStatus } from '$lib/names'
 
   let { id, status }: { id: string; status: NameStatus } = $props()
@@ -8,4 +9,6 @@
   )
 </script>
 
-<span {id} role="status" class="text-[13px] {tone}">{nameStatusText(status)}</span>
+<span {id} role="status" class="inline-flex items-center gap-1.5 text-[13px] {tone}"
+  >{#if status.kind === 'checking'}<Spinner />{/if}{nameStatusText(status)}</span
+>

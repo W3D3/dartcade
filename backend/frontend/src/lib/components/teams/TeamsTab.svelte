@@ -5,7 +5,7 @@
   // invites changed. `creating` opens New team (the page's header button sets it).
   import { Plus, UsersRound } from '@lucide/svelte'
   import { currentUser } from '$lib/auth'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -67,7 +67,9 @@
 </script>
 
 {#if data === null}
-  {#if failed}<ErrorText>Couldn't load your teams. Try again in a moment.</ErrorText>{:else}<PageLoading />{/if}
+  {#if failed}<ErrorText>Couldn't load your teams. Try again in a moment.</ErrorText>{:else}<LoadingBlock
+      onretry={() => void reload()}
+    />{/if}
 {:else}
   <div class="flex flex-col gap-4 md:gap-5">
     {#each data.invites as invite (invite.id)}

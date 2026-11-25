@@ -5,7 +5,7 @@
   import { Plus } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import TeamsTab from '$lib/components/teams/TeamsTab.svelte'
   import BrowseTab from '$lib/components/tournaments/BrowseTab.svelte'
@@ -73,7 +73,7 @@
     </header>
 
     {#if !$enabled && !$flagsLoaded}
-      <PageLoading />
+      <LoadingBlock onretry={() => void reloadMine()} />
     {:else if !$enabled}
       <p class="text-body text-text-muted">Tournaments aren't available yet.</p>
     {:else}
@@ -122,7 +122,7 @@
         {:else if mineFailed}
           <ErrorText>Couldn't load your tournaments. Try again in a moment.</ErrorText>
         {:else}
-          <PageLoading />
+          <LoadingBlock onretry={() => void reloadMine()} />
         {/if}
       </section>
       {#if mayCreate}

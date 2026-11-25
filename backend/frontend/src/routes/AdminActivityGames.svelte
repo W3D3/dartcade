@@ -1,9 +1,10 @@
 <!-- Games played (`#/admin/activity/games`): the Activity page's games chart with filters (users, country, seats,
      mode, kind, dates) and the matching games as a table. The filters live in the hash query, so a view can be shared. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { push, querystring, replace } from 'svelte-spa-router'
   import { SvelteMap } from 'svelte/reactivity'
-  import { Download, LoaderCircle } from '@lucide/svelte'
+  import { Download } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
@@ -248,9 +249,7 @@
           <p class="text-small text-text-muted">matching the filters{isFiltered(filters) ? '' : ' (none set)'}</p>
         </div>
         {#if loading && !data}
-          <p class="flex items-center gap-2 text-label text-text-muted" role="status">
-            <LoaderCircle size={16} class="animate-spin" /> Loading…
-          </p>
+          <LoadingBlock label="Loading the games" />
         {:else if data && data.perDay.length > 0}
           <GamesOverTime perDay={data.perDay} />
         {/if}

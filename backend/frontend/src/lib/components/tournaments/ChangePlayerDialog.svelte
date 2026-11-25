@@ -4,7 +4,7 @@
   import { Check } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { Button } from '$lib/components/ui/button'
   import { Modal } from '$lib/components/ui/modal'
   import type { Tournament } from '$lib/api'
@@ -99,7 +99,7 @@
       {/each}
     </ul>
   {:else if !error}
-    <PageLoading />
+    <LoadingBlock />
   {/if}
   {#if error}<ErrorText>{error}</ErrorText>{/if}
 

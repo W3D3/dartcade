@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // The Settings page's Caller voices card (Settings and Settings-Phone boards): storage used,
   // the user's packs (sample, delete), the built-in voices, and importing a pack from a zip
   // (drop or choose, with upload progress). The server keeps the packs and
@@ -7,7 +8,7 @@
   import { Progress } from '$lib/components/ui/progress/index.js'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy } from 'svelte'
-  import { ListMusic, LoaderCircle, Pencil, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { ListMusic, Pencil, Trash, Upload, Volume2 } from '@lucide/svelte'
   import { Input } from '$lib/components/ui/input/index.js'
   import PreviewButton from '$lib/components/PreviewButton.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -265,7 +266,7 @@
                 class="h-10 px-[10px] md:px-3 shrink-0 flex items-center gap-[6px] rounded-key border border-danger-line
  text-live-text text-[14px] font-semibold cursor-pointer disabled:opacity-50"
               >
-                {#if deleting === p.id}<LoaderCircle size={16} class="animate-spin" />{:else}<Trash size={16} strokeWidth={1.8} />{/if}
+                {#if deleting === p.id}<Spinner />{:else}<Trash size={16} strokeWidth={1.8} />{/if}
                 <span class="hidden md:inline">Delete</span>
               </button>
             </li>

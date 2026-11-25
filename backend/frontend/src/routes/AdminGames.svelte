@@ -1,12 +1,14 @@
 <!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { hrefs } from '$lib/routes'
   import { debounced, SEARCH_DEBOUNCE_MS } from '$lib/utils'
   import { SearchInput } from '$lib/components/ui/input/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { onMount } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
-  import { Ban, ChevronRight, CircleSlash, Eye, LoaderCircle, Trash, Undo2 } from '@lucide/svelte'
+  import { Ban, ChevronRight, CircleSlash, Eye, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageMain from '$lib/components/PageMain.svelte'
   import PageTitle from '$lib/components/PageTitle.svelte'
@@ -233,9 +235,7 @@
 
       <section aria-label="Games" class="flex shrink-0 flex-col overflow-hidden card">
         {#if loading}
-          <p class="flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
-            <LoaderCircle size={18} class="animate-spin" /> Loading games…
-          </p>
+          <div class="px-[22px]"><LoadingBlock rows={6} label="Loading games" onretry={() => void reload()} /></div>
         {:else if error && games.length === 0}
           <p role="alert" class="px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
         {:else if games.length === 0}
@@ -329,7 +329,7 @@
           {#if nextCursor !== null}
             <div class="flex justify-center p-4">
               <Button variant="outline" onclick={() => void more()} disabled={loadingMore}>
-                {loadingMore ? 'Loading…' : 'Load more'}
+                {#if loadingMore}<Spinner />{/if}Load more
               </Button>
             </div>
           {/if}

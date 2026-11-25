@@ -4,7 +4,7 @@
   // clears the "new" dots on the next visit. Behind achievements.enabled.
   // Rules: shared/achievements.ts, backend achievements/.
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import AchievementSummary from '$lib/components/achievements/AchievementSummary.svelte'
   import AchievementList from '$lib/components/achievements/AchievementList.svelte'
   import ProgressTabs from '$lib/components/achievements/ProgressTabs.svelte'
@@ -45,7 +45,7 @@
     {#if !$on}
       <p class="text-body text-text-muted">Achievements aren't on for your account yet.</p>
     {:else if !$achievements}
-      <PageLoading />
+      <LoadingBlock />
     {:else}
       <AchievementSummary {summary} />
 
