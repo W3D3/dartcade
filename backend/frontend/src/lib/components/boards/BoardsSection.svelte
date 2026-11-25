@@ -540,7 +540,7 @@
                   {#if selected.online}
                     {#if camOk[camIndex] === undefined}
                       <!-- Skeleton until the first frame loads (or fails) -->
-                      <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
+                      <div class="absolute inset-0 animate-skeleton motion-reduce:animate-skeleton-soft bg-line-2" aria-hidden="true"></div>
                     {/if}
                     <img
                       src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"

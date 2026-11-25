@@ -7,7 +7,8 @@
   import { hrefs } from '$lib/routes'
   import { ArrowLeft, Eye, Flame } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import ProfileCardSkeleton from '$lib/components/progress/ProfileCardSkeleton.svelte'
+  import { loadingGate } from '$lib/loadingGate.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import AvgBadge from '$lib/components/AvgBadge.svelte'
   import Flag from '$lib/components/Flag.svelte'
@@ -20,7 +21,7 @@
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { LOCALE } from '$lib/fmt'
-  import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
+  import { profileFailed, profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
   import { CARD_SURFACE, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass, titleName } from '$lib/progress/look'
   import CardFrame from '$lib/components/progress/CardFrame.svelte'
   import BanNotice from '$lib/components/BanNotice.svelte'
@@ -37,6 +38,11 @@
   // One store per player shown; read again when the page opens
   let profile = $derived(userId ? profileOf(userId) : null)
   let status = $derived(userId ? statusOf(userId) : null)
+  const failedStore = $derived(userId ? profileFailed(userId) : null)
+  const failed = $derived(failedStore ? $failedStore : false)
+  // The hero card's skeleton: after a short wait, and held for a moment once shown
+  const gate = loadingGate(() => $progression && !!userId && !failed && !($profile ?? null))
+  const own = $derived(userId !== null && userId === $currentUser?.id)
   // A friend in a running game can be watched (behind watch.enabled)
   const watchOn = flag('watch.enabled')
   const watchHref = $derived.by(() => {
@@ -70,6 +76,23 @@
   const since = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })
 </script>
 
+{#snippet backRow(self: boolean)}
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+    <button
+      type="button"
+      onclick={() => history.back()}
+      class="inline-flex items-center gap-[6px] border-0 text-[14px] font-semibold text-text-muted cursor-pointer hover:text-text"
+      ><ArrowLeft size={16} />Back</button
+    >
+    {#if self}
+      <span class="text-[13px] text-text-dim"
+        >This is how others see your profile. Friends also see your status and streak. Other players only see recent games they played with
+        you.</span
+      >
+    {/if}
+  </div>
+{/snippet}
+
 <Layout title="Profile">
   <main
     class="flex grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-5 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:py-9"
@@ -77,31 +100,24 @@
     {#if !$progression}
       {#if banOnly}<BanNotice ban={banOnly} />{/if}
       <p class="text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
-    {:else if !profile || !$profile}
-      <PageLoading />
+    {:else if failed && !$profile}
+      {@render backRow(own)}
+      <p class="text-body text-text-muted">Couldn't load this profile.</p>
+    {:else if !profile || !$profile || gate.holding}
+      {@render backRow(own)}
+      <ProfileCardSkeleton variant="hero" revealed={gate.revealed} actions={own} />
     {:else}
       {@const p = $profile}
       {@const colors = cardColors(p.look.colors)}
       {@const self = p.relation === 'self'}
       {@const dot = status ? $status : null}
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <button
-          type="button"
-          onclick={() => history.back()}
-          class="inline-flex items-center gap-[6px] border-0 text-[14px] font-semibold text-text-muted cursor-pointer hover:text-text"
-          ><ArrowLeft size={16} />Back</button
-        >
-        {#if self}
-          <span class="text-[13px] text-text-dim"
-            >This is how others see your profile. Friends also see your status and streak. Other players only see recent games they played
-            with you.</span
-          >
-        {/if}
-      </div>
+      {@render backRow(self)}
 
       <section
         aria-label="{p.name}'s card"
-        class="shrink-0 overflow-hidden rounded-popover border border-line-popover {colorsClass(p.look.colors)}"
+        class="shrink-0 overflow-hidden rounded-popover border border-line-popover {gate.waited ? 'fade-in' : ''} {colorsClass(
+          p.look.colors,
+        )}"
         style="background: {CARD_SURFACE}"
       >
         <div class="h-[110px] md:h-[200px] {bannerClass(p.look.banner)}" style={bannerStyle(p.look.banner, colors)}></div>
