@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
 import { rulesOf } from './gameViews/rules.js'
 import { isGameId, type GameId } from '$shared/gameNames'
+import { fmtClock } from './missions/view.js'
 import { LOCALE, calendarDaysAgo, dayMonth, ordinal } from './fmt.js'
 
 /** "Today" / "Yesterday" / "24 Sep", and the time, in the viewer's time zone. */
@@ -81,8 +82,10 @@ const LIST_STAT = {
   },
   minigolf: me => value(stat(me, 'strokes'), 'strokes'),
   mission: me => {
+    // "3/3 steps · 12:30"
     const done = stat(me, 'stepsDone')
-    return done === undefined ? null : { value: `${done}/${stat(me, 'steps') ?? done}`, label: 'steps' }
+    const ms = stat(me, 'timeMs')
+    return done === undefined ? null : { value: `${done}/${stat(me, 'steps') ?? done}`, label: ms ? `steps · ${fmtClock(ms)}` : 'steps' }
   },
   cricket: me => {
     const mpr = stat(me, 'mpr')
