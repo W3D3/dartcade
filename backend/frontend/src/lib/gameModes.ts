@@ -33,6 +33,8 @@ export const GAME_CATEGORIES: { id: GameCategory; name: string; sub: string }[] 
  * `glyph`: the lobby dialog's tile label (playable modes only).
  * `flag`: the feature flag that has to be on for the mode to show (see lib/flags.ts).
  * `img`: the Play page card's illustration; `small`: a strip row there, not a card.
+ * `ink`: the box the art covers in its illustration, as fractions [left, top, right, bottom], so the
+ * settings header can size and centre it. e2e/visual/game-icons.spec.ts fails when it is wrong.
  */
 export type GameMode = {
   id: string
@@ -41,14 +43,40 @@ export type GameMode = {
   desc: string
   cat: GameCategory
   img: string
+  ink: readonly [number, number, number, number]
   available: boolean
   small?: boolean
   flag?: FlagKey
 }
 
+// Width over height of a strip's illustration, a card's illustration and the header's art tile
+const STRIP_ASPECT = 120 / 80
+const CARD_ASPECT = 352 / 188
+const TILE_ASPECT = 1.115
+/** How much of the tile the art may fill each way, so nothing touches its edge */
+const ART_FILL = 0.8
+
+/** The fill every illustration starts with, so the art tile can show an image smaller than itself */
+export const ART_BACKGROUND = '#171914'
+
+/** Where the illustration sits in the settings header's art tile (percent of the tile): the whole art, in the middle. */
+export function headerArt(mode: GameMode): { width: string; left: string; top: string } {
+  const [left, top, right, bottom] = mode.ink
+  const aspect = mode.small ? STRIP_ASPECT : CARD_ASPECT
+  // The image's width and height in tiles: as big as the art may be
+  const width = Math.min(ART_FILL / (right - left), (ART_FILL * aspect) / (TILE_ASPECT * (bottom - top)))
+  const height = (width * TILE_ASPECT) / aspect
+  return {
+    width: `${100 * width}%`,
+    left: `${100 * (0.5 - ((left + right) / 2) * width)}%`,
+    top: `${100 * (0.5 - ((top + bottom) / 2) * height)}%`,
+  }
+}
+
 export const GAME_MODES: GameMode[] = [
   {
     id: 'x01',
+    ink: [0.502, 0.089, 0.965, 0.949],
     glyph: 'X01',
     name: GAME_NAMES.x01.title,
     desc: 'Count down from 501. Finish on a double.',
@@ -58,6 +86,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'atc',
+    ink: [0.519, 0.066, 0.938, 0.911],
     glyph: 'ATC',
     name: GAME_NAMES.atc.short,
     desc: 'Around the Clock: 1 to 20, then the bull.',
@@ -67,6 +96,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'cricket',
+    ink: [0.585, 0.07, 0.95, 0.868],
     glyph: 'CRI',
     name: 'Cricket',
     desc: 'Close 15 to 20 and bull, then score.',
@@ -77,6 +107,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'minigolf',
+    ink: [0.504, 0.195, 0.963, 0.802],
     glyph: 'Par 3',
     name: GAME_NAMES.minigolf.title,
     desc: 'Your dart is the putter. Sink it under par.',
@@ -87,6 +118,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'p121',
+    ink: [0.535, 0.066, 0.985, 0.907],
     glyph: '121',
     name: GAME_NAMES.p121.title,
     desc: 'Check out 121 in nine darts, then go higher.',
@@ -97,6 +129,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'bobs',
+    ink: [0.525, 0.058, 0.985, 0.918],
     name: "Bob's 27",
     desc: 'Doubles 1 to 20. Hits add, misses cost.',
     cat: 'practice',
@@ -105,6 +138,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'soccer',
+    ink: [0.452, 0.152, 0.99, 0.844],
     name: 'Soccer',
     desc: 'Win the ball, then hit the goal zone first.',
     cat: 'practice',
@@ -113,6 +147,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'hilo',
+    ink: [0.329, 0.194, 0.671, 0.806],
     glyph: 'HiLo',
     name: GAME_NAMES.hilo.title,
     desc: 'Land above the high bar or below the low bar.',
@@ -124,6 +159,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'catch40',
+    ink: [0.242, 0.113, 0.758, 0.909],
     name: GAME_NAMES.catch40.title,
     desc: 'Check out 61 to 100, one try of six darts each.',
     cat: 'practice',
@@ -134,6 +170,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'shanghai',
+    ink: [0.258, 0.138, 0.742, 0.863],
     name: 'Shanghai',
     glyph: 'SHA',
     desc: 'Single, double, treble of one number wins.',
@@ -145,6 +182,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'killer',
+    ink: [0.154, 0.106, 0.867, 0.894],
     name: 'Killer',
     desc: 'Hit your double to arm, then take lives.',
     cat: 'practice',
@@ -154,6 +192,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'halveit',
+    ink: [0.173, 0.184, 0.815, 0.816],
     name: 'Halve-it',
     desc: 'Miss the target and your score halves.',
     cat: 'practice',

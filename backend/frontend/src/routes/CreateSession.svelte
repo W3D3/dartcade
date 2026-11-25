@@ -35,7 +35,7 @@
   } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
   import { loadSettings } from '$lib/gameSettings'
-  import { GAME_CATEGORIES, GAME_MODES, gameModes, listedMode, shownModes, withDefaults } from '$lib/gameModes'
+  import { GAME_CATEGORIES, ART_BACKGROUND, GAME_MODES, gameModes, headerArt, listedMode, shownModes, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const userCoursesOn = flag('minigolf.userCourses.enabled')
@@ -315,12 +315,23 @@
           >
             <div class="flex items-center gap-3 md:gap-[18px] md:pb-[18px] md:border-b border-surface-paused">
               {#if shown}
-                <!-- The art sits in the right half of the card illustration: zoom in a little and pin it right to centre it -->
+                {@const art = headerArt(shown)}
+                <!-- Size and place the illustration so all of its art sits in the middle of the tile (the art is rarely in the middle of its illustration) -->
                 <span
                   aria-hidden="true"
-                  class="w-14 h-[50px] md:w-20 md:h-[72px] shrink-0 rounded-key md:rounded-md border border-line bg-size-[auto_112%] bg-right"
-                  style:background-image={`url("${shown.img}")`}
-                ></span>
+                  data-game-art={shown.id}
+                  class="relative overflow-hidden w-14 h-[50px] md:w-20 md:h-[72px] shrink-0 rounded-key md:rounded-md border border-line"
+                  style:background-color={ART_BACKGROUND}
+                >
+                  <img
+                    src={shown.img}
+                    alt=""
+                    class="absolute max-w-none"
+                    style:width={art.width}
+                    style:left={art.left}
+                    style:top={art.top}
+                  />
+                </span>
                 <span class="flex flex-col gap-1 min-w-0">
                   <span class="text-[11px] md:text-[12px] font-semibold label-caps text-text-dim"
                     >{GAME_CATEGORIES.find(c => c.id === shown.cat)?.name}</span
