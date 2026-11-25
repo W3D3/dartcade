@@ -304,6 +304,7 @@
     class="flex w-[300px] shrink-0 flex-col gap-3.5 overflow-y-auto rounded-panel border border-line bg-surface-panel p-5 xl:w-[360px]"
   >
     <h2 class="type-section-title font-bold leading-none">{game.mission.name}</h2>
+    {#if game.test}<span class="-mt-2 text-small text-clock">Test run · counts for no times or stats</span>{/if}
     <div role="timer" aria-label={clockLabel} class="flex flex-col gap-2 {warn ? 'text-live' : left === null ? 'text-text' : 'text-clock'}">
       <div class="flex items-baseline gap-2">
         <span class="font-display text-page-title font-bold leading-[0.9] tabular-nums">{clockText}</span>

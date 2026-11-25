@@ -86,6 +86,7 @@
   async function act(card: MissionCard, a: CardAction): Promise<void> {
     notice = ''
     if (a.kind === 'edit') void push(hrefs.missionEdit(card.id).slice(1))
+    else if (a.kind === 'duplicate') void push(hrefs.missionNew(card.id).slice(1))
     else if (a.kind === 'delete') deleting = card
     else if (a.kind === 'report') reporting = card
     else {
