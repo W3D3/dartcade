@@ -44,8 +44,7 @@
     fallback: Action
   } = $props()
 
-  // Play again: alone, or for the lobby the viewer hosts; a test run (the builder's) and a guest in
-  // someone else's lobby go back instead
+  // Play again: alone, or for the lobby the viewer hosts; a guest in someone else's lobby goes back instead
   const lobbyId = $derived(game.runs.length > 1 ? ($me?.lobby?.youHost ? $me.lobby.id : undefined) : null)
   let error = $state('')
   async function playAgain(lobby: string | null): Promise<void> {
@@ -54,8 +53,10 @@
     if ('ok' in res) void push(`/session/${res.ok}`)
     else error = res.error
   }
+  // A test run goes back to the builder it was started from
+  const toBuilder: Action = { label: 'Back to the builder', onclick: () => void push(hrefs.missionEdit(game.missionId).slice(1)) }
   const primary = $derived<Action>(
-    next ?? (game.test || lobbyId === undefined ? fallback : { label: 'Play again', onclick: () => void playAgain(lobbyId) }),
+    next ?? (game.test ? toBuilder : lobbyId === undefined ? fallback : { label: 'Play again', onclick: () => void playAgain(lobbyId) }),
   )
   const secondary = $derived<Action | null>(
     next ? null : { label: 'Back to missions', onclick: () => void push(hrefs.missions().slice(1)) },

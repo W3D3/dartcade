@@ -12,8 +12,8 @@ export const hrefs = {
   home: () => at('/'),
   play: (query?: string) => at('/play', query),
   missions: (filter?: MissionFilter) => at(filter && filter !== 'all' ? `/play/missions/${filter}` : '/play/missions'),
-  /** The mission builder (Missions part 3; a placeholder until then). */
-  missionNew: () => at('/play/missions/new'),
+  /** The mission builder; `from`: a copy of that mission. */
+  missionNew: (from?: string) => at('/play/missions/new', from ? `from=${encodeURIComponent(from)}` : undefined),
   missionEdit: (id: string) => at(`/play/missions/${id}/edit`),
   session: (id: string) => at(`/session/${id}`),
   watch: (id: string) => at(`/watch/${id}`),

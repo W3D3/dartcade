@@ -2,8 +2,8 @@
   One mission on the Missions list (Missions, Tablet-Missions, Missions-Phone artboards): the author,
   difficulty, name, pills, the steps in words, Your best and Friends' best, and Play. `compact` is the
   phone's card: no steps, the bests on one line and a chevron, the whole card opening the details.
-  The ⋯ menu: Edit, Delete and who sees it for a mission the user may change, Report for someone
-  else's mission that everyone sees.
+  The ⋯ menu: Duplicate (a new mission from this one), Edit, Delete and who sees it for a mission the
+  user may change, Report for someone else's mission that everyone sees.
 -->
 <script lang="ts">
   import { ChevronRight, Ellipsis, Play } from '@lucide/svelte'
@@ -55,7 +55,7 @@
     <span class="min-w-0 truncate text-small text-text-muted">{authorLabel(card, viewerId)}</span>
     <span class="ml-auto flex items-center gap-1">
       <MissionPill label={DIFFICULTY_LABEL[m.difficulty]} tone={DIFFICULTY_TONE[m.difficulty]} />
-      {#if card.canEdit || reportable}{@render menu()}{/if}
+      {@render menu()}
     </span>
   </div>
 {/snippet}
@@ -71,6 +71,7 @@
         sideOffset={6}
         class="z-60 flex min-w-[180px] flex-col gap-[2px] rounded-xl border border-line-popover bg-surface-hover p-[6px] [box-shadow:0_18px_44px_rgba(0,0,0,0.55)] outline-none"
       >
+        <DropdownMenu.Item class={ITEM} onSelect={() => onaction({ kind: 'duplicate' })}>Duplicate</DropdownMenu.Item>
         {#if card.canEdit}
           <DropdownMenu.Item class={ITEM} onSelect={() => onaction({ kind: 'edit' })}>Edit</DropdownMenu.Item>
           {#if !card.official}
@@ -84,7 +85,7 @@
             <DropdownMenu.Separator class="my-1 h-px bg-line-2" />
           {/if}
           <DropdownMenu.Item class="{ITEM} text-danger-text" onSelect={() => onaction({ kind: 'delete' })}>Delete</DropdownMenu.Item>
-        {:else}
+        {:else if reportable}
           <DropdownMenu.Item class={ITEM} onSelect={() => onaction({ kind: 'report' })}>Report</DropdownMenu.Item>
         {/if}
       </DropdownMenu.Content>

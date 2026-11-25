@@ -35,7 +35,12 @@ export const VISIBILITIES: readonly MissionVisibility[] = ['private', 'friends',
 export const VISIBILITY_LABEL: Record<MissionVisibility, string> = { private: 'Only me', friends: 'Friends', public: 'Everyone' }
 
 /** What a card's ⋯ menu asks for. */
-export type CardAction = { kind: 'edit' } | { kind: 'delete' } | { kind: 'report' } | { kind: 'visibility'; to: MissionVisibility }
+export type CardAction =
+  | { kind: 'edit' }
+  | { kind: 'duplicate' }
+  | { kind: 'delete' }
+  | { kind: 'report' }
+  | { kind: 'visibility'; to: MissionVisibility }
 
 export type Tone = 'neutral' | 'ice' | 'clock' | 'accent' | 'live' | 'expert'
 export type Pill = { label: string; tone: Tone }
