@@ -10,7 +10,7 @@ const PHONES = [
   { width: 390, height: 844 },
   { width: 430, height: 932 },
 ]
-const PHONE_PAGES = ['/settings/game', '/profile/customise/picture', '/history', '/matchmaking', '/friends']
+const PHONE_PAGES = ['/settings/game', '/profile/customise/picture', '/stats/history', '/play/ranked', '/friends']
 const RAILS = [
   { width: 1024, height: 768 },
   { width: 1152, height: 720 },
@@ -33,7 +33,7 @@ test('phone header shots', async ({ browser }) => {
 test('tablet rail shots', async ({ browser }) => {
   for (const view of RAILS) {
     const { ctx, page } = await open(browser, 'admin', { ...view, scale: 1 })
-    await openHash(page, '/history')
+    await openHash(page, '/stats/history')
     await expect(page.getByRole('navigation', { name: 'Main' }).locator('visible=true').first()).toBeVisible()
     await shot(page, `layout-fixes/nav-rail/${PREFIX}-${view.width}x${view.height}.png`)
     await ctx.close()

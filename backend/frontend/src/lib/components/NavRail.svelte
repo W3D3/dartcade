@@ -74,7 +74,7 @@
         >
       {:else}
         <a
-          href={hrefs.matchmaking()}
+          href={hrefs.ranked()}
           aria-label="{queue.tag}, {queue.name}. {queue.clock}"
           class="relative box-border flex h-16 w-[72px] flex-col items-center justify-center gap-1 rounded-md border border-accent-line-strong bg-surface-active text-accent no-underline"
         >

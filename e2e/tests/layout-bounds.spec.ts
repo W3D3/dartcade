@@ -16,7 +16,7 @@ async function expectInViewport(page: Page, name: string | RegExp) {
 }
 
 for (const width of [320, 390, 430]) {
-  for (const route of ['/settings/game', '/profile/customise/picture', '/friends', '/history']) {
+  for (const route of ['/settings/game', '/profile/customise/picture', '/friends', '/stats/history']) {
     test(`phone header at ${width}px on ${route} keeps its buttons on screen`, async ({ authedPage: page }) => {
       await page.setViewportSize({ width, height: 700 })
       await page.goto(`/#${route}`, { waitUntil: 'commit' })
@@ -37,8 +37,36 @@ for (const [width, height] of [
 ]) {
   test(`the rail at ${width}x${height} keeps the account button above the fold`, async ({ authedPage: page }) => {
     await page.setViewportSize({ width, height })
-    await page.goto('/#/history', { waitUntil: 'commit' })
+    await page.goto('/#/stats/history', { waitUntil: 'commit' })
     await expect(page.getByRole('navigation', { name: 'Main' }).locator('visible=true').first()).toBeVisible({ timeout: 60_000 })
     await expectInViewport(page, /^Account: /)
+  })
+}
+
+// Portrait tablets (iPad mini, Air, Pro 11, the 768 and 820 iPads): the Play page's game cards two a row
+// (Tablet-Play-Cards), each name inside its card, and nothing wider than the screen
+for (const [width, height] of [
+  [744, 1133],
+  [768, 1024],
+  [820, 1180],
+  [834, 1194],
+]) {
+  test(`the Play page at ${width}x${height} shows two game cards a row`, async ({ authedPage: page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/#/play', { waitUntil: 'commit' })
+    const cards = page.locator('button[data-game]:not(.mini)')
+    await expect(cards.first()).toBeVisible({ timeout: 60_000 })
+    const boxes = await cards.evaluateAll(els =>
+      els.map(el => {
+        const r = el.getBoundingClientRect()
+        const name = el.querySelector('.name')!.getBoundingClientRect()
+        return { top: Math.round(r.top), left: r.left, right: r.right, nameRight: name.right }
+      }),
+    )
+    const perRow = boxes.map(b => boxes.filter(o => o.top === b.top).length)
+    expect(Math.max(...perRow), 'cards a row').toBe(2)
+    for (const b of boxes) expect(b.nameRight, 'name inside its card').toBeLessThanOrEqual(b.right + 0.5)
+    expect(Math.max(...boxes.map(b => b.right)), 'cards on screen').toBeLessThanOrEqual(width)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no sideways scroll').toBe(true)
   })
 }

@@ -1,11 +1,12 @@
 <script lang="ts">
-  // The Stats page (Stats.dc.html): your X01 numbers over a range of legs or days, each compared with
+  // Stats' Overview tab (Stats.dc.html; History is the other tab): your X01 numbers over a range of legs or days, each compared with
   // the same range before. The range and filters live in the querystring (#/stats?range=days30&kind=ranked)
   // so Back, reload and a shared link keep them; the server picks the start score and out rule
   // you played most when none is asked for.
   import { hrefs } from '$lib/routes'
-  import { querystring } from 'svelte-spa-router'
+  import { querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
+  import HubTabs from '$lib/components/HubTabs.svelte'
   import { Chip } from '$lib/components/ui/chip'
   import { Select } from '$lib/components/ui/select'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
@@ -22,6 +23,10 @@
   import { DAY_RANGES, KINDS, KIND_IDS, LEG_RANGES, OUT_IDS, OUT_LABELS, RANGE_IDS, compareNote } from '$lib/stats/view'
 
   const enabled = flag('stats.enabled')
+  // Without the Overview, Stats is its History tab
+  $effect(() => {
+    if ($flagsLoaded && !$enabled) void replace(hrefs.history().slice(1))
+  })
   const requests = createRequestGuard()
 
   const range = $derived(readParam($querystring, 'range', RANGE_IDS, 'legs50'))
@@ -68,9 +73,9 @@
 
 <Layout title="Stats">
   <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:px-8 md:py-10 xl:px-11">
+    <HubTabs hub="stats" />
     <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div class="flex flex-col gap-1.5">
-        <h1 class="hidden type-page-title md:block">Stats</h1>
         <p class="text-[15px] text-text-muted">How you’ve been playing, and whether it’s getting better.</p>
       </div>
       {#if $enabled}
@@ -87,7 +92,7 @@
     {#if !$enabled && !$flagsLoaded}
       <StatsState kind="loading" />
     {:else if !$enabled}
-      <p class="text-[15px] text-text-muted">Stats aren't available yet.</p>
+      <StatsState kind="loading" />
     {:else if error}
       <StatsState kind="error" onretry={retry} />
     {:else if !stats}

@@ -16,7 +16,7 @@ const file = (size: string, scene: string) => `mobile-menu/${before ? 'before-' 
 for (const [size, view] of Object.entries(SIZES)) {
   test(`${size}: the header, the menu and the account menu`, async ({ browser }) => {
     const { ctx, page } = await open(browser, 'admin', view)
-    await openHash(page, '/history')
+    await openHash(page, '/stats/history')
     await closeToasts(page)
     const burger = page.getByRole('button', { name: 'Menu' })
     if (!before) await expect(burger).toHaveCount(size === 'tablet' ? 0 : 1)
@@ -26,9 +26,11 @@ for (const [size, view] of Object.entries(SIZES)) {
       await burger.click()
       const menu = page.getByRole('dialog')
       await expect(menu).toBeVisible()
-      for (const name of ['Home', 'Play', 'History', 'Settings', 'Admin']) await expect(menu.getByRole('link', { name })).toBeVisible()
+      for (const name of ['Home', 'Play', 'Matchmaking', 'Stats', 'History', 'Settings', 'Admin'])
+        await expect(menu.getByRole('link', { name })).toBeVisible()
       for (const gone of ['Boards', 'Progress', 'Friends']) await expect(menu.getByRole('link', { name: gone, exact: true })).toHaveCount(0)
       await expect(menu.getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page')
+      await expect(menu.getByRole('link', { name: 'Stats' })).not.toHaveAttribute('aria-current', 'page')
       await shot(page, file(size, 'open'))
       await page.keyboard.press('Escape')
       await expect(menu).toBeHidden()
@@ -41,7 +43,7 @@ for (const [size, view] of Object.entries(SIZES)) {
     }
 
     if (size !== 'tablet') {
-      await openHash(page, '/history')
+      await openHash(page, '/stats/history')
       await closeToasts(page)
       await openAccountMenu(page)
       if (!before) {

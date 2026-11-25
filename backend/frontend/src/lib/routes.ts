@@ -1,6 +1,6 @@
 // Every in-app link is built here, so a link is spelled once. `__tests__/routes.test.ts` checks each
 // builder against the router table in App.svelte; add a builder there too. Each builder returns the
-// hash href ("#/history/abc"); `query` is an already-encoded query string without its "?".
+// hash href ("#/stats/history/abc"); `query` is an already-encoded query string without its "?".
 import type { MissionFilter } from './missions/view.js'
 import type { Tab } from './progress/customise.js'
 import type { SettingsSection } from './settings/sections.js'
@@ -24,7 +24,8 @@ export const hrefs = {
   reset: () => at('/reset'),
   /** The Terms, Privacy Policy and Imprint pages. */
   legal: (page: 'terms' | 'privacy' | 'imprint') => at(`/${page}`),
-  history: (id?: string) => at(id ? `/history/${id}` : '/history'),
+  /** Stats' History tab, or a finished game's details page under it. */
+  history: (id?: string) => at(id ? `/stats/history/${id}` : '/stats/history'),
   stats: () => at('/stats'),
   coach: (query?: string) => at('/coach', query),
   coachChecks: () => at('/coach/checks'),
@@ -35,7 +36,8 @@ export const hrefs = {
   settings: (section?: SettingsSection, query?: string) => at(section ? `/settings/${section}` : '/settings', query),
   voicePack: (id: string) => at(`/voice-packs/${id}`),
   friends: () => at('/friends'),
-  matchmaking: () => at('/matchmaking'),
+  /** Play's Ranked tab: the queue, your ratings and recent ranked games. */
+  ranked: () => at('/play/ranked'),
   tournaments: (tab?: TournamentsTab) => at(tab ? `/tournaments/${tab}` : '/tournaments'),
   /** An invite link's landing: Browse with that tournament's Details open. */
   tournamentJoin: (code: string) => at(`/tournaments/join/${code}`),
@@ -52,7 +54,7 @@ export const hrefs = {
   tournamentPair: (code?: string) => at(code ? `/tournament-mode/pair/${code}` : '/tournament-mode/pair'),
   /** `saved`: say so above the form (after creating it, the page this one replaced). */
   tournamentEdit: (id: string, query?: string) => at(`/tournaments/${id}/edit`, query),
-  ranks: () => at('/matchmaking/ranks'),
+  ranks: () => at('/play/ranked/ranks'),
   progress: () => at('/progress'),
   rewards: (level?: number | string) => at(level === undefined ? '/progress/rewards' : `/progress/rewards/${level}`),
   achievements: () => at('/progress/achievements'),
@@ -79,3 +81,15 @@ export const hrefs = {
   minigolfBrowse: () => at('/minigolf/browse'),
   minigolfCourses: () => at('/minigolf/courses'),
 } as const
+
+/** Pages that moved, old path prefix first: `#/matchmaking/ranks` is `#/play/ranked/ranks` now. */
+const MOVED: [from: string, to: string][] = [
+  ['/matchmaking', '/play/ranked'],
+  ['/history', '/stats/history'],
+]
+
+/** Where an old page's path lives now (query kept by the caller); null when it never moved. */
+export function movedTo(path: string): string | null {
+  for (const [from, to] of MOVED) if (path === from || path.startsWith(`${from}/`)) return to + path.slice(from.length)
+  return null
+}

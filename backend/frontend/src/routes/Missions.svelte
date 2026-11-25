@@ -1,12 +1,13 @@
 <!--
   The Missions list (`#/play/missions/:filter?`; Missions, Tablet-Missions, Missions-Phone artboards):
   the tabs All / Mine / From friends / Popular / Completed, a difficulty filter on tablets and desktops,
-  and a card per mission. Behind missions.enabled: with it off the page goes Home.
+  and a card per mission; a tab of Play. Behind missions.enabled: with it off the page goes to Play.
 -->
 <script lang="ts">
   import { Plus } from '@lucide/svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
+  import HubTabs from '$lib/components/HubTabs.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -38,7 +39,7 @@
 
   const enabled = flag('missions.enabled')
   $effect(() => {
-    if ($flagsLoaded && !$enabled) void push('/')
+    if ($flagsLoaded && !$enabled) void replace('/play')
   })
 
   const filter = $derived(filterOf(params.filter))
@@ -110,12 +111,11 @@
   const play = (card: MissionCard) => ((open = null), (playing = card))
 </script>
 
-<Layout title="Missions">
+<Layout title="Play">
   <main class="flex min-h-0 grow flex-col gap-4 overflow-y-auto p-4 md:gap-[22px] md:px-8 md:py-10 xl:px-11">
+    <HubTabs hub="play" />
     <header class="hidden items-end justify-between gap-6 md:flex">
       <div class="flex flex-col gap-1.5">
-        <a href={hrefs.play()} class="label-caps text-caption font-semibold text-text-dim no-underline hover:text-text">Play</a>
-        <h1 class="type-page-title">Missions</h1>
         <p class="text-body text-text-muted">Practice goals made of steps. Build your own, play your friends’ and beat their best times.</p>
       </div>
       <Button variant="accent" href={hrefs.missionNew()} class="h-11"><Plus size={18} />New mission</Button>

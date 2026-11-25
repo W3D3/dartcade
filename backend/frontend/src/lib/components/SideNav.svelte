@@ -9,16 +9,13 @@
   import DiscordButton from './DiscordButton.svelte'
   import ReportBugButton from './feedback/ReportBugButton.svelte'
   import NavLink from './NavLink.svelte'
+  import SearchTimer from './SearchTimer.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
   import { NAV_ICONS, navState } from '$lib/navState'
-  import { currentUser } from '$lib/auth'
   import { me, pendingInvites } from '$lib/lobby/sockets'
-  import { queueView } from '$lib/ranked/queueCard'
-  import { tick } from '$lib/now'
 
   const inviteCount = $derived(pendingInvites($me))
 
-  const queue = $derived(queueView($me?.matchmaking ?? null, $currentUser?.id ?? null, $tick))
   const links = $derived(sideLinks($navState))
 </script>
 
@@ -37,16 +34,7 @@
         {@const Icon = NAV_ICONS[link.icon]}
         <Icon size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {link.label}
-        {#if link.icon === 'ranked' && queue?.kind === 'searching'}
-          <!-- Searching: the blinking dot and the time so far, wherever you browse -->
-          <span
-            class="ml-auto inline-flex items-center gap-[6px] font-mono text-[12px] text-accent"
-            role="timer"
-            aria-label="Searching for {queue.clock}"
-          >
-            <span class="size-[6px] rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{queue.clock}
-          </span>
-        {/if}
+        {#if link.icon === 'play'}<SearchTimer />{/if}
         {#if link.badge}
           <NavBadge count={link.badge} label={link.badgeLabel ?? ''} class="ml-auto" />
         {/if}

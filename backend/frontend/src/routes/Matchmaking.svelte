@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Matchmaking (MM-Home board): your 1v1 and 2v2 ratings and ranks, online average and record,
+  // Play's Ranked tab (MM-Home board): your 1v1 and 2v2 ratings and ranks, online average and record,
   // the Find a match panel (Searching while your search runs: MM-Searching, MM-Duo), and your last
   // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
   // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
@@ -10,6 +10,7 @@
   import { Check, Clock, Hourglass, MonitorSmartphone, Search, User, Users } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import LoadingBlock from '$lib/components/LoadingBlock.svelte'
+  import HubTabs from '$lib/components/HubTabs.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -20,12 +21,19 @@
   import { api } from '$lib/api'
   import type { components } from '$lib/api/schema'
   import { TIER_TEXT, fmtSeconds, playingOn, ratingCard, record, recentRow } from '$lib/ranked/view'
-  import { numberFlag } from '$lib/flags'
+  import { flag, flagsLoaded, numberFlag } from '$lib/flags'
+  import { replace } from 'svelte-spa-router'
   import { RESERVE_SECONDS, VISIT_SECONDS } from '$shared/ranked.js'
   import { me } from '$lib/lobby/sockets'
   import { duoLobbyReady, pausedFor, startSearch } from '$lib/ranked/queue'
 
   type Profile = components['schemas']['RankedProfile']
+
+  // Ranked is a tab of Play only while matchmaking is on; otherwise Play's New game
+  const on = flag('matchmaking.enabled')
+  $effect(() => {
+    if ($flagsLoaded && !$on) void replace('/play')
+  })
 
   let profile = $state<Profile | null>(null)
   let error = $state('')
@@ -94,13 +102,13 @@
   {/if}
 {/snippet}
 
-<Layout title="Ranked" headerAction={boardChip}>
+<Layout title="Play" headerAction={boardChip}>
   <main
     class="flex grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
+    <HubTabs hub="play" />
     <header class="flex items-end justify-between gap-6">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Matchmaking</h1>
         <p class="text-[15px] text-text-muted">
           Ranked X01 against players near your level. Wins and losses move your rating and rank.
           <a href={hrefs.ranks()} class="whitespace-nowrap font-semibold text-accent no-underline">See all ranks</a>

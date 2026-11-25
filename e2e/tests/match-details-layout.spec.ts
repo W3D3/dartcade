@@ -15,7 +15,7 @@ async function newestGameId(page: Page, mode: string): Promise<string> {
 
 async function openDetails(page: Page, id: string, size: { width: number; height: number }, ready: string): Promise<void> {
   await page.setViewportSize(size)
-  await page.goto(`/#/history/${id}`)
+  await page.goto(`/#/stats/history/${id}`)
   await expect(page.getByRole('region', { name: ready, exact: true })).toBeVisible({ timeout: 30_000 })
 }
 

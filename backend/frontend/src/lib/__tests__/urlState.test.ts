@@ -12,20 +12,21 @@ describe('readParam', () => {
 })
 
 describe('paramUrl', () => {
-  it('sets a param and keeps the others', () => expect(paramUrl('/history', 'a=1', 'mode', 'x01')).toBe('/history?a=1&mode=x01'))
+  it('sets a param and keeps the others', () =>
+    expect(paramUrl('/stats/history', 'a=1', 'mode', 'x01')).toBe('/stats/history?a=1&mode=x01'))
   it('leaves the default out of the URL', () => {
-    expect(paramUrl('/history', 'mode=x01', 'mode', null)).toBe('/history')
-    expect(paramUrl('/history', 'a=1&mode=x01', 'mode', null)).toBe('/history?a=1')
+    expect(paramUrl('/stats/history', 'mode=x01', 'mode', null)).toBe('/stats/history')
+    expect(paramUrl('/stats/history', 'a=1&mode=x01', 'mode', null)).toBe('/stats/history?a=1')
   })
 })
 
 describe('round trip', () => {
   it('a filter written to the URL reads back after coming back from a details page', () => {
     const modes = ['x01', 'atc'] as const
-    const url = paramUrl('/history', '', 'mode', 'x01')
+    const url = paramUrl('/stats/history', '', 'mode', 'x01')
     const qs = url.split('?')[1]
     expect(readParam(qs, 'mode', modes, null)).toBe('x01')
-    expect(readParam(paramUrl('/history', qs, 'mode', null).split('?')[1], 'mode', modes, null)).toBeNull()
+    expect(readParam(paramUrl('/stats/history', qs, 'mode', null).split('?')[1], 'mode', modes, null)).toBeNull()
   })
 })
 
@@ -34,20 +35,20 @@ describe('historyHref', () => {
     const m = new Map<string, string>()
     return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }
   }
-  it('is the plain list until a list URL is remembered', () => expect(historyHref(store())).toBe('#/history'))
+  it('is the plain list until a list URL is remembered', () => expect(historyHref(store())).toBe('#/stats/history'))
   it('leads back to the remembered filter', () => {
     const s = store()
     rememberHistoryUrl(s, 'mode=x01')
-    expect(historyHref(s)).toBe('#/history?mode=x01')
+    expect(historyHref(s)).toBe('#/stats/history?mode=x01')
     rememberHistoryUrl(s, '')
-    expect(historyHref(s)).toBe('#/history')
+    expect(historyHref(s)).toBe('#/stats/history')
   })
   it('ignores a remembered value that is not the History list', () => {
     const s = store()
     s.setItem('dartcade:history-url', '#/admin')
-    expect(historyHref(s)).toBe('#/history')
+    expect(historyHref(s)).toBe('#/stats/history')
   })
-  it('works without storage', () => expect(historyHref(null)).toBe('#/history'))
+  it('works without storage', () => expect(historyHref(null)).toBe('#/stats/history'))
 })
 
 describe('period and panel params', () => {

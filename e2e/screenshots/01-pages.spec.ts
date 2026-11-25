@@ -8,7 +8,7 @@ test('friends and the account menu', async ({ browser }) => {
   const luke = await open(browser, 'luke', VIEW.desktop)
   const phil = await open(browser, 'phil', VIEW.desktop)
   await luke.page.goto('/#/lobby')
-  await phil.page.goto('/#/history')
+  await phil.page.goto('/#/stats/history')
 
   for (const [view, file] of [
     [VIEW.desktop, 'friends/friends-desktop.png'],
@@ -106,7 +106,7 @@ test('sign in, play, history', async ({ browser }) => {
     await shot(page, 'tablet/shell-menu-1180x820.png')
     await page.keyboard.press('Escape')
 
-    await page.goto('/#/history')
+    await page.goto('/#/stats/history')
     await expect(page.getByRole('link', { name: /X01.*details/ }).first()).toBeVisible()
     await shot(page, 'tablet/history-1180x820.png')
     await ctx.close()

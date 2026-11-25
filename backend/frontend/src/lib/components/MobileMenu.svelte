@@ -1,18 +1,26 @@
 <script lang="ts">
   // The phone's burger menu (below md): a left drawer listing every page the desktop side nav does,
-  // Home first, then four headings, from the same data (`menuSections`). The tab bar keeps the main pages one
+  // plus shortcuts to the Matchmaking and History tabs; Home first, then four headings, from the same data (`menuSections`). The tab bar keeps the main pages one
   // tap away. A bits-ui Dialog: focus stays in the drawer, Escape, the backdrop and any navigation
   // close it, and focus goes back to the burger.
   import { Dialog } from 'bits-ui'
   import { location } from 'svelte-spa-router'
   import { Menu, X } from '@lucide/svelte'
-  import { isActiveRoute, menuSections } from '$lib/nav'
+  import { menuSections, mostSpecific } from '$lib/nav'
   import { NAV_ICONS, navState } from '$lib/navState'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
+  import SearchTimer from './SearchTimer.svelte'
 
   const sections = $derived(menuSections($navState))
   // Something to look at on the burger itself while it is closed
+  // One current item: on a tab with a shortcut of its own (Matchmaking, History) that shortcut, not Play or Stats
+  const current = $derived(
+    mostSpecific(
+      $location,
+      sections.flatMap(s => s.links.map(l => l.href)),
+    ),
+  )
   const waiting = $derived(sections.flatMap(s => s.links).reduce((n, l) => n + (l.badge ?? 0), 0))
 
   let open = $state(false)
@@ -50,10 +58,11 @@
           {#if section.label}<h3 class="px-3 pb-1 text-caption font-semibold label-caps text-text-muted">{section.label}</h3>{/if}
           {#each section.links as link (link.href)}
             {@const Icon = NAV_ICONS[link.icon]}
-            {@const active = isActiveRoute($location, link.href)}
+            {@const active = link.href === current}
             <NavLink href={`#${link.href}`} {active} disabled={link.disabled}>
               <Icon size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
               {link.label}
+              {#if link.icon === 'ranked'}<SearchTimer />{/if}
               {#if link.badge}<NavBadge count={link.badge} label={link.badgeLabel ?? ''} class="ml-auto" />{/if}
               {#if link.soon}
                 <span

@@ -7,9 +7,10 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { tick, untrack } from 'svelte'
   import { fly } from 'svelte/transition'
-  import { ChevronLeft, Goal, Users } from '@lucide/svelte'
+  import { ChevronLeft, Users } from '@lucide/svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
+  import HubTabs from '$lib/components/HubTabs.svelte'
   import GameCards from '$lib/components/GameCards.svelte'
   import GameSettings from '$lib/components/GameSettings.svelte'
   import PlayButton from '$lib/components/PlayButton.svelte'
@@ -39,7 +40,6 @@
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const userCoursesOn = flag('minigolf.userCourses.enabled')
-  const missionsOn = flag('missions.enabled')
   const X01_DEFAULTS: Record<string, unknown> = {
     format: 'singles',
     startScore: 501,
@@ -233,7 +233,7 @@
   }
 </script>
 
-<Layout title="New game">
+<Layout title="Play">
   <main class="flex grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[30px_36px] xl:p-[36px_44px]">
     <!-- Phones and tablets: the way back to your invites once the toast is closed (desktops have Invites in the nav) -->
     {#if invites > 0}<div class="xl:hidden"><InvitesBanner count={invites} /></div>{/if}
@@ -241,21 +241,17 @@
     <div class="xl:hidden empty:hidden"><ConnectBoardCard compact /></div>
 
     <!-- Header (phones: the title is in the phone header) -->
-    <header class="flex items-end justify-between {showPanel ? 'max-md:hidden' : ''}">
-      <div class="flex flex-col gap-[6px]">
-        <h1 class="hidden md:block font-display font-bold text-[44px] xl:text-[48px] leading-none uppercase tracking-title">New game</h1>
-        <p class="text-[14px] md:text-[15px] text-text-muted">
-          {#if !canEditGame}
-            The host picks the game. You play it in the lobby.
-          {:else if showPanel}
-            Set up {shownName}, then choose who plays in the lobby.
-          {:else}
-            Pick a game. Players are chosen in the lobby next.
-          {/if}
-        </p>
-      </div>
-      <!-- Missions are started from their own list, not picked here (Play › Missions) -->
-      {#if $missionsOn}<Button variant="outline" href={hrefs.missions()} class="shrink-0"><Goal size={16} />Missions</Button>{/if}
+    <header class="flex flex-col gap-3 md:gap-[22px] {showPanel ? 'max-md:hidden' : ''}">
+      <HubTabs hub="play" />
+      <p class="text-[14px] md:text-[15px] text-text-muted">
+        {#if !canEditGame}
+          The host picks the game. You play it in the lobby.
+        {:else if showPanel}
+          Set up {shownName}, then choose who plays in the lobby.
+        {:else}
+          Pick a game. Players are chosen in the lobby next.
+        {/if}
+      </p>
     </header>
 
     <!-- Every game; once one is picked, a list beside its settings from lg (only the settings below) -->

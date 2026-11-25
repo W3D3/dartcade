@@ -87,7 +87,7 @@ test('the match and the details of a handicapped game', async ({ browser }) => {
     ['phone', { width: 390, height: 1900, scale: 1 }],
   ] as const) {
     const s = await open(browser, 'admin', view)
-    await openHash(s.page, `/history/${session}`)
+    await openHash(s.page, `/stats/history/${session}`)
     await expect(s.page.getByRole('list', { name: 'Handicaps' })).toBeVisible()
     await shot(s.page, `${DIR}/details-${label}.png`, { settle: 1500 })
     await s.ctx.close()

@@ -33,12 +33,12 @@ async function finishSoloX01(page: Page): Promise<void> {
 
 /** The newest game in History; clicked at the row's corner, clear of the player badges' profile buttons. */
 async function openNewestGame(page: Page): Promise<void> {
-  await page.goto('/#/history')
+  await page.goto('/#/stats/history')
   await page
     .getByRole('link', { name: /X01.*details/ })
     .first()
     .click({ position: { x: 8, y: 8 } })
-  await page.waitForURL(url => url.hash.startsWith('#/history/'))
+  await page.waitForURL(url => url.hash.startsWith('#/stats/history/'))
 }
 
 test('a finished game opens its details from History', async ({ authedPage: page }) => {
@@ -61,13 +61,13 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await expect(page.getByText('No dart positions')).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'History' }).click()
-  await page.waitForURL(url => url.hash === '#/history')
+  await page.waitForURL(url => url.hash === '#/stats/history')
 })
 
 test('a tap on History hits what is under it when table rows are not positioned', async ({ authedPage: page }) => {
   await finishSoloX01(page)
   await finishSoloX01(page)
-  await page.goto('/#/history')
+  await page.goto('/#/stats/history')
   // Safari doesn't make a positioned <tr> the containing block of what is inside it (WebKit bug 240961)
   await page.addStyleTag({ content: 'tr { position: static !important; }' })
   const newest = page.getByRole('link', { name: /X01.*details/ }).first()
@@ -78,7 +78,7 @@ test('a tap on History hits what is under it when table rows are not positioned'
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   }
   await tap(await page.getByRole('button', { name: 'X01', exact: true }).boundingBox())
-  await expect(page).toHaveURL(/#\/history\?mode=x01$/)
+  await expect(page).toHaveURL(/#\/stats\/history\?mode=x01$/)
 
   await tap(await page.getByRole('row').filter({ has: newest }).getByRole('cell').nth(3).boundingBox())
   await page.waitForURL(url => url.hash === href)
@@ -89,7 +89,7 @@ test("a player's badge opens their profile card, in History and on the details p
   const name = `e2eadmin${testInfo.parallelIndex}`
   await finishSoloX01(page)
 
-  await page.goto('/#/history')
+  await page.goto('/#/stats/history')
   const badge = page
     .getByRole('link', { name: `${name}: profile` })
     .filter({ visible: true })
@@ -98,13 +98,13 @@ test("a player's badge opens their profile card, in History and on the details p
   await badge.hover()
   const card = page.getByRole('dialog', { name: `${name}, profile` })
   await expect(card).toBeVisible()
-  await expect(page).toHaveURL(/#\/history$/)
+  await expect(page).toHaveURL(/#\/stats\/history$/)
   await page.mouse.move(0, 0)
   await expect(card).toBeHidden()
   await badge.click()
   await expect(page).toHaveURL(/#\/profile\/[^/]+$/)
 
-  await page.goto('/#/history')
+  await page.goto('/#/stats/history')
   await openNewestGame(page)
   await page
     .getByRole('region', { name: 'Result', exact: true })
@@ -114,7 +114,7 @@ test("a player's badge opens their profile card, in History and on the details p
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {
-  await page.goto('/#/history/00000000-0000-0000-0000-000000000000')
+  await page.goto('/#/stats/history/00000000-0000-0000-0000-000000000000')
   await expect(page.getByText("This game isn't available")).toBeVisible()
   await expect(page.getByRole('link', { name: 'Back to History' })).toBeVisible()
 })
