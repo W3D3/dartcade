@@ -8,8 +8,8 @@ import { E2E_ORIGIN } from '../fixtures/origin.js'
 // requesting both in one test would sign them in on the same cookie jar.
 //
 // This flips FLAG_KEY for everyone on the shared e2e backend while it runs (cleared after): other
-// specs running in parallel mustn't assert what 121 looks like by default for a non-admin.
-const FLAG_KEY = 'gamemode.p121.enabled'
+// specs running in parallel mustn't assert what Settings looks like by default for a non-admin.
+const FLAG_KEY = 'lights.enabled'
 
 async function signIn(page: Page, email: string, name: string, password = 'TestPass1!'): Promise<void> {
   const headers = { Origin: E2E_ORIGIN }
@@ -41,17 +41,17 @@ test.afterEach(async () => {
   await admin.context().close()
 })
 
-test('an admin turns 121 on for everyone at runtime, and a player sees it with no restart', async ({ browser }, testInfo) => {
+test('an admin turns Lights on for everyone at runtime, and a player sees it with no restart', async ({ browser }, testInfo) => {
   const playerCtx = await browser.newContext()
   const player = await playerCtx.newPage()
   const ts = Date.now()
   // Short enough for the name rules (2-20 chars): fixtures/auth.ts's authedPage follows the same shape
   await signIn(player, `e2e-fp-${testInfo.workerIndex}-${ts}@test.local`, `e2efp${testInfo.workerIndex}-${ts.toString(36)}`)
 
-  const card = player.locator('main').getByRole('button', { name: /^121:/ })
+  const card = player.getByRole('link', { name: 'Lights', exact: true })
 
-  // Before: 121 is admins-only, so a plain player's Play page doesn't offer it
-  await player.goto('/#/play')
+  // Before: Lights is admins-only, so a plain player's Settings has no Lights section
+  await player.goto('/#/settings')
   await expect(card).toHaveCount(0)
 
   // The admin opens the flag's row, which opens its details card beside the table, and turns it on for everyone
@@ -67,7 +67,7 @@ test('an admin turns 121 on for everyone at runtime, and a player sees it with n
   await panel.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(panel.getByText('Live now', { exact: false })).toBeVisible()
 
-  // After: the same player, reloading, now sees the 121 card
+  // After: the same player, reloading, now sees the Lights section
   await player.reload()
   await expect(card).toBeVisible()
 

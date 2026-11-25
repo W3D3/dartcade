@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { meApiPlugin } from './me.js'
 import { ApiError } from './errors.js'
-import { setupFlags } from '../flags/index.js'
+import { setOverrides, setupFlags } from '../flags/index.js'
 import { AVATAR_FINISHES } from '../shared/avatarFinishes.js'
 import * as middleware from '../auth/middleware.js'
 
@@ -331,7 +331,7 @@ describe('/api/me', () => {
   })
 
   it('lets every picture be worn while progression is off', async () => {
-    await setupFlags(new Set())
+    await setOverrides(new Map([['progression.enabled', { mode: 'off', userIds: [] }]]))
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
     vi.mocked(hasPerk).mockResolvedValue(false)
     const res = await app().inject({
@@ -343,6 +343,7 @@ describe('/api/me', () => {
     expect(setAvatar).toHaveBeenCalled()
     expect(JSON.parse(res.body).pictures).toEqual(AVATAR_FINISHES.map(f => f.id))
     expect(unlockedPictures).not.toHaveBeenCalled()
+    await setOverrides(new Map())
   })
 
   it('answers 400 for an unknown finish, not 409 even when the other layer is locked', async () => {
