@@ -20,8 +20,10 @@ patches to the bridge.
 and brightness cap per device; the per-board master switch; the read-only built-in profile
 "Dartcade default" with ▶ Test per rule; triggers for every game.
 
-**v2 (follow-up issue):** custom profiles (Duplicate, Import, Export: part 4 of #522), the rule editor and drag to
-reorder, preset / playlist / raw JSON looks, bridge-side matching of board events for latency.
+**v2:** custom profiles (Duplicate, Import, Export: part 4 of #522), and the rule editor (Settings-Lights-Rules) with
+drag to reorder, the strip's own preset / playlist and raw JSON looks, `≤` and `between` visit filters, the effect and
+palette names each device reports, and Test on a rule not saved yet (section 7). Still open: bridge-side matching of
+board events for latency.
 
 ## Decisions
 
@@ -106,10 +108,18 @@ and lobby are always local.
 
 ```ts
 type Rule = {
-  when: { trigger: TriggerKind; total?: { op: '=' | '>='; n: number }; seats: 'any' | 'mine' | 'other'; game?: GameId }
+  when: { trigger: TriggerKind; total?: TotalFilter; seats: 'any' | 'mine' | 'other'; game?: GameId }
   type: 'scene' | 'flash'
-  look: { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number }
-  hold_ms?: number // flash only
+  enabled: boolean
+  look:
+    | { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number; ix?: number; pal?: number }
+    | { preset: string; state: WledState } // Dartcade's own preset states, by name
+    | { ps: number } // a preset saved on the strip
+    | { pl: number } // a playlist saved on the strip (WLED starts it through ps)
+    | { raw: WledState } // only the keys checkWledState allows
+  holdMs?: number // flash only
+}
+type TotalFilter = { op: '=' | '>=' | '<='; n: number } | { op: 'between'; n: number; to: number }
 }
 type Profile = { id: 'default'; name: string; rules: Rule[] }
 ```
@@ -204,8 +214,13 @@ Under `/api/boards/{id}/lights`:
 - `PUT seat-colors {seatColors: [six #rrggbb]}` (stored lower case; 400 for any other count or format), `DELETE seat-colors` (back to the built-in colours). Both resend the scene, so the strip shows the change at once.
 - `POST scan`, `POST probe {host}`, `POST blink {host} | {deviceId}`
 - `POST devices {mac, host, name, segment_mode, max_bri}` (the MAC must be in `found`), `PATCH devices/{deviceId}`, `DELETE devices/{deviceId}`
-- `POST test {rule: number}`: plays that rule of the board's profile as a flash (scenes too, held 3 s) for
-  seat 1 on every device of the board.
+- `POST test {rule: number} | {draft: Rule}`: plays that rule of the board's profile, or a rule not saved yet (checked
+  like a saved one), as a flash (scenes too, held 3 s) for seat 1 on every device of the board; 60 a minute per user.
+- `PUT profiles/{profileId} {name?, rules?}`: renames one of the player's profiles or replaces its rules (their order
+  is the order they match in; at most 100, each checked by `ruleSchema` in `shared/lights/ruleSchema.ts`, a raw look by
+  `checkWledState`); 404 for the built-in one or another player's, 409 for a taken name. Every board running it
+  resends its scene.
+- `GET` lists with each device its `effects` and `palettes` (names by WLED id), once its bridge reported them.
 
 A device found by another of the user's boards is returned with `onBoard: <board name>`.
 
@@ -213,9 +228,10 @@ A device found by another of the user's boards is returned with `onBoard: <board
 
 `{format: "dartcade-light-profile", version: 1, name, seatColors: [six #rrggbb], effects: [...]}`, an effect being
 `{trigger, seats, total?, game?, type, enabled, look, holdMs?}` with `look` a colour look (`{color, fx, bri, speed?}`) or
-`{preset: "<name>"}`. It carries nothing private: no device address, MAC, id, token or WLED state (a preset is one of the
-built-in names `180`, `Busted`, `Gameshot`, `Matchshot`, and import takes the state from the server's own copy, so a file
-can't make the bridge send arbitrary WLED JSON). Import is a trust boundary and makes a **new** profile, never overwriting:
+`{preset: "<name>"}`, `{ps}`, `{pl}` or `{raw}`. It carries nothing private: no device address, MAC, id or token. A
+Dartcade preset is one of the built-in names `180`, `Busted`, `Gameshot`, `Matchshot`, and import takes the state from
+the server's own copy; a raw look is checked against the allowlist, so a file can't make the bridge send arbitrary
+WLED JSON. Import is a trust boundary and makes a **new** profile, never overwriting:
 
 - the body is at most 128 KB (413), `format` and `version` must match (400 with the reason), at most 100 effects are read;
 - every effect is checked with zod; one with an unknown trigger or game, an unknown preset, or a bad field is ignored
@@ -250,10 +266,12 @@ The page re-fetches `GET` every 3 s while it's open.
   colour field), and **Reset to defaults**. Below it **Effects**, one list per group (General, then each game that has an effect: X01, Cricket, 121,
   Minigolf, Higher Lower), numbered across the groups: the rules
   (trigger, filter, Scene/Flash, look summary) with an **on/off switch** each (a switched-off effect is dimmed, its
-  switch is not) and **▶ Test**, which still plays a switched-off effect. The effects themselves are not editable yet. A **profile menu** (bits-ui select) lists the
+  switch is not) and **▶ Test**, which still plays a switched-off effect. The built-in profile's effects can't be edited
+  ("The built-in default can't be edited and never touches your WLED presets. Duplicate it to make your own."); a
+  profile of the player's own shows its rules instead, see section 7. A **profile menu** (bits-ui select) lists the
   built-in profile and the player's own; **Duplicate**, **Import** (a file picker, then a result dialog with the
-  summary and what was ignored or changed) and **Export** (a download) work on the profile in use, and **Delete**
-  (with a confirmation) shows for the player's own.
+  summary and what was ignored or changed) and **Export** (a download) work on the profile in use, and the ⋯ menu
+  (Rename, Reset to the default rules, Delete with a confirmation) shows for the player's own.
 - **Pair dialog** (`ui/modal`): (1) blink check: "Blinking lime now", Blink again, "Yes, it blinked" /
   "No, show me another" (next found device); (2) name (prefilled) and board; (3) segments: Whole strip /
   One per seat / Use WLED segments, with the hint "4 × 36 LEDs"; (4) max brightness, default 70%.
@@ -289,3 +307,29 @@ Three stacked PRs, each building and passing tests on its own, each referencing 
    AGENTS.md "Where to look" row. Opens the v2 follow-up issue; #135 stays open as the parent.
 
 Implementation runs with subagent-driven development on Sonnet; reviews on the main model.
+
+## 7. The rule editor (v2)
+
+Design: `project/Settings-Lights-Rules.dc.html`. Screenshots: `docs/lights/rules-*`, `editor-*`, `effect-picker-*`,
+`test-playing-*` (`e2e/screenshots/38-light-rules.spec.ts`, against a mocked lights API).
+
+- **Rules list** (a profile of the player's own, `RuleList.svelte`): the rules in match order, the first matching one
+  winning. Each row: a grip (drag, or the arrow keys on it, through `lib/actions/sortable` and `lib/lobby/reorder`),
+  the trigger and its filter chip, Scene or Flash, the look with its colours, the on/off switch, **Edit** and
+  **▶ Test**. **+ Add rule**, an empty-profile hint, "Saved" after each save. Every change (edit, add, delete,
+  reorder, reset) sends the whole list with `PUT profiles/{id}`.
+- **Edit rule** (`RuleEditor.svelte`, model `lib/lights/rules.ts`): When (every trigger the lights fire; Takeout
+  finished is left out, the lights bring the game scene back instead), a visit's total (`=`, `≥`, `≤`, between), whose
+  seat (not for lobby, takeout and calibration), which game (fixed for a game's own trigger); Scene · stays or
+  Flash · plays on top with its hold; the look: **Colour & effect** (seat, team or fixed colour; effect and palette from
+  the devices' own lists, else the common WLED list; brightness, speed, intensity), **WLED preset** (saved on the
+  strip, 1–250, or Dartcade's own), **Playlist** (1–250) or **Raw JSON** (checked as you type). A line says what the
+  rule does in words; **▶ Test on board** plays it as it stands. Closing with changes asks first, and so does leaving
+  the page.
+- **Effects from the devices:** on every `wled.devices` the bridge reads each paired device's `/json/eff` and
+  `/json/pal` (kept per MAC and WLED version) and reports `wled.effects`; the backend keeps them in memory
+  (`lights/store.ts`). A rule's effect that a device lacks shows "Not on <device>: it plays Solid instead": WLED
+  itself plays Solid for an effect id it does not have.
+- **Allowlist:** the keys a light may set (`shared/lights/wledState.ts`, and the bridge's own copy in
+  `bridge/internal/wled/allow.go`, which drops anything else from a `wled.apply`); both are tested against
+  `schema/wled-state-allowlist.json`.
