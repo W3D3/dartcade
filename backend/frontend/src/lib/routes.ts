@@ -1,6 +1,7 @@
 // Every in-app link is built here, so a link is spelled once. `__tests__/routes.test.ts` checks each
 // builder against the router table in App.svelte; add a builder there too. Each builder returns the
 // hash href ("#/history/abc"); `query` is an already-encoded query string without its "?".
+import type { MissionFilter } from './missions/view.js'
 import type { Tab } from './progress/customise.js'
 import type { SettingsSection } from './settings/sections.js'
 import type { TournamentsTab } from './tournaments/tabs.js'
@@ -10,6 +11,10 @@ const at = (path: string, query?: string): string => `#${path}${query ? `?${quer
 export const hrefs = {
   home: () => at('/'),
   play: (query?: string) => at('/play', query),
+  missions: (filter?: MissionFilter) => at(filter && filter !== 'all' ? `/play/missions/${filter}` : '/play/missions'),
+  /** The mission builder (Missions part 3; a placeholder until then). */
+  missionNew: () => at('/play/missions/new'),
+  missionEdit: (id: string) => at(`/play/missions/${id}/edit`),
   session: (id: string) => at(`/session/${id}`),
   watch: (id: string) => at(`/watch/${id}`),
   login: (query?: string) => at('/login', query),

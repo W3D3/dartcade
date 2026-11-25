@@ -6,6 +6,9 @@ import { hrefs } from '../routes'
 const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   home: [hrefs.home()],
   play: [hrefs.play(), hrefs.play('board=b1')],
+  missions: [hrefs.missions(), hrefs.missions('friends')],
+  missionNew: [hrefs.missionNew()],
+  missionEdit: [hrefs.missionEdit('m1')],
   session: [hrefs.session('s1')],
   watch: [hrefs.watch('s1')],
   login: [hrefs.login(), hrefs.login('reset=1')],

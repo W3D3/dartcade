@@ -60,6 +60,8 @@
   import AdminRanked from './routes/AdminRanked.svelte'
   import AdminMinigolfReports from './routes/AdminMinigolfReports.svelte'
   import MinigolfBrowse from './routes/MinigolfBrowse.svelte'
+  import MissionBuilder from './routes/MissionBuilder.svelte'
+  import Missions from './routes/Missions.svelte'
   import AdminActivity from './routes/AdminActivity.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import AdminDartSamples from './routes/AdminDartSamples.svelte'
@@ -140,6 +142,10 @@
   const routes = {
     '/': Root,
     '/play': CreateSession,
+    // Before /play/missions/:filter?, which would take "new" for a tab
+    '/play/missions/new': MissionBuilder,
+    '/play/missions/:id/edit': MissionBuilder,
+    '/play/missions/:filter?': Missions,
     '/session/:id': GameDisplay,
     '/watch/:id': Watch,
     '/login': Login,
