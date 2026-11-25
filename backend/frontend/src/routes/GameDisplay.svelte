@@ -11,6 +11,7 @@
   import MatchScreen from '$lib/components/match/MatchScreen.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { snapshotStandings } from '$lib/p121/summary'
+  import MissionResult from '$lib/components/missions/MissionResult.svelte'
   import { pendingRoll } from '$lib/minigolf/match'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { derived, get, readable } from 'svelte/store'
@@ -25,6 +26,7 @@
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
   import { bullOffOf, gameState } from '../lib/gameState.js'
+  import { whoOf } from '$lib/face'
   import { nextButton } from '../lib/controls.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { me } from '$lib/lobby/sockets'
@@ -257,6 +259,9 @@
   const isX01 = $derived(x01 !== null)
   // 121 ends on its session summary (P121Summary), not the win screen
   const p121Finished = $derived(p121 !== null && snapshot?.status === 'finished')
+  // A mission ends on its own result screen (MissionResult)
+  const mission = $derived(current.mission)
+  const missionFinished = $derived(mission !== null && snapshot?.status === 'finished')
   const view = $derived(getGameView(gameId))
   const winner = $derived(game?.winner ?? null)
   // Until the session ends: a winning visit (Around the Clock names its winner on the dart)
@@ -532,7 +537,7 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && !p121Finished && picksView(remote) && manualEntry}
+        showViewToggle={!bullOff && !minigolf && !p121Finished && !missionFinished && picksView(remote) && manualEntry}
         boards={myBoards}
         {gameId}
         scoreBased={snapshot.scoreBased}
@@ -577,6 +582,18 @@
             onclick: () => void finishWin(winButtons.primary),
           }}
           secondary={unlocksButton ? null : winSecondaryButton}
+        />
+      {:else if mission && missionFinished}
+        {@const seat = snapshot.mySeats[0] ?? Math.max(0, mission.winner ?? 0)}
+        <MissionResult
+          game={mission}
+          who={whoOf(snapshot)}
+          {seat}
+          own={snapshot.mySeats.length > 0}
+          {viewerId}
+          xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
+          next={unlocksButton}
+          fallback={winPrimaryButton}
         />
       {:else}
         <MatchScreen

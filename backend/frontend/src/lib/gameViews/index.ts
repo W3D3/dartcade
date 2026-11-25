@@ -5,6 +5,7 @@ import { p121Meta } from '../p121/view.js'
 import { hiloMeta } from '../hilo/view.js'
 import { cricketMeta } from '../cricket/view.js'
 import { x01Meta, atcMeta, minigolfMeta } from './meta.js'
+import { rulesOf } from './rules.js'
 
 export interface GameView {
   title: string
@@ -29,7 +30,8 @@ function meta(s: Snapshot): string {
     case 'cricket':
       return cricketMeta(s.game, s.players.length)
     case 'mission':
-      return `Step ${s.game.runs[s.game.currentPlayer].active + 1} of ${s.game.mission.steps.length}`
+      // "Tungsten Gauntlet · 3 steps · any order" (Mission-Play's header)
+      return rulesOf('mission', { mission: s.game.mission }, s.players.length)
     default: {
       // A new game id fails to compile here until it has a line; one from a newer server gets none
       const _unknown: never = s
