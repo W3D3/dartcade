@@ -12,10 +12,19 @@ export type PlayerProfile = components['schemas']['PlayerProfile']
 
 const cache = new Map<string, ReturnType<typeof writable<PlayerProfile | null>>>()
 
+// Players whose last read failed: their card stops loading (a skeleton would wait for good)
+const failed = writable<ReadonlySet<string>>(new Set())
+const setFailed = (userId: string, on: boolean) =>
+  failed.update(s => (s.has(userId) === on ? s : new Set(on ? [...s, userId] : [...s].filter(id => id !== userId))))
+
 async function load(userId: string): Promise<void> {
-  const { data } = await api.GET('/api/users/{id}/profile', { params: { path: { id: userId } } })
+  const { data } = await api.GET('/api/users/{id}/profile', { params: { path: { id: userId } } }).catch(() => ({ data: undefined }))
   if (data) cache.get(userId)?.set(data)
+  setFailed(userId, !data)
 }
+
+/** True once reading a player's profile has failed and none has loaded since. */
+export const profileFailed = (userId: string): Readable<boolean> => derived(failed, s => s.has(userId))
 
 /**
  * A player's profile; null until it has loaded (or for good while progression is off). Fetched
