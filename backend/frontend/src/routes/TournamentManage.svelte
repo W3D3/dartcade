@@ -5,7 +5,7 @@
   import { ChevronLeft, Info, Pencil, TvMinimal } from '@lucide/svelte'
   import { replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import OnsiteParticipants from '$lib/components/tournaments/OnsiteParticipants.svelte'
   import OrganizersCard from '$lib/components/tournaments/OrganizersCard.svelte'
   import DevicesCard from '$lib/components/tournaments/mode/DevicesCard.svelte'
@@ -58,7 +58,7 @@
     </a>
 
     {#if !$flagsLoaded || t === undefined}
-      <PageLoading />
+      <LoadingBlock />
     {:else if !$enabled}
       <p class="text-body text-text-muted">Tournaments aren't available yet.</p>
     {:else if !t}

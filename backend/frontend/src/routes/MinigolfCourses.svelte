@@ -6,6 +6,7 @@
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The course editor".
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { untrack } from 'svelte'
@@ -322,7 +323,7 @@
           {#if !courseId}
             <p class="text-[15px] text-text-muted">Pick a course to edit, or start a new one.</p>
           {:else if store?.status === 'loading'}
-            <p class="text-[15px] text-text-muted">Loading…</p>
+            <LoadingBlock label="Loading the course" onretry={() => void loadLists()} />
           {:else if !content}
             <div class="flex flex-col items-start gap-3">
               <p class="text-[15px] text-live-text">Couldn't load this course.</p>

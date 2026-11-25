@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // The inline panel under an Activity chart: the accounts or games behind the bar or cell that was
   // clicked, newest first, with links to the profile or the game's details; "Show more" pages on.
   import { X } from '@lucide/svelte'
@@ -48,7 +49,7 @@
     <Button variant="outline" size="sm" aria-label="Close the drill-down" class="w-9 px-0" onclick={onclose}><X size={16} /></Button>
   </div>
   {#if error}<ErrorText>{error}</ErrorText>{/if}
-  {#if !page && !error}<p class="text-small text-text-muted" role="status">Loading…</p>{/if}
+  {#if !page && !error}<LoadingBlock rows={4} label="Loading the games" />{/if}
   {#if page}
     {#if shown === 0}
       <p class="text-small text-text-muted">Nothing here.</p>

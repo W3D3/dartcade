@@ -8,7 +8,7 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import ReasonModal from '$lib/components/admin/ReasonModal.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
@@ -122,7 +122,7 @@
     </header>
 
     {#if !$enabled}
-      {#if !$flagsLoaded}<PageLoading />{/if}
+      {#if !$flagsLoaded}<LoadingBlock />{/if}
     {:else}
       <nav aria-label="Missions" class="hidden gap-1 border-b border-surface-paused md:flex">
         {#each MISSION_FILTERS as f (f)}
@@ -157,7 +157,7 @@
       {#if failed}
         <ErrorText>Couldn't load the missions. Try again in a moment.</ErrorText>
       {:else if cards === null}
-        <PageLoading />
+        <LoadingBlock onretry={() => void reload()} />
       {:else if cards.length === 0}
         <p class="rounded-card border border-dashed border-line-dashed px-5 py-8 text-center text-label text-text-muted">
           {emptyLine(filter, difficulty)}

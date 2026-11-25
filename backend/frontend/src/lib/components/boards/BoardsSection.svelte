@@ -1,23 +1,12 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
+  import { Spinner } from '$lib/components/ui/spinner'
   // Settings' Boards section (Boards, Mobile-Boards, Tablet-Boards boards): the board chips, the
   // selected board's panel and its cards (cameras, live events, lights, game, big screen, pairing). With none yet, the
   // Settings-Boards-Empty onboarding.
   import { hrefs } from '$lib/routes'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import {
-    Activity,
-    Camera,
-    Download,
-    ExternalLink,
-    Lightbulb,
-    Link2,
-    LoaderCircle,
-    Pencil,
-    Play,
-    RotateCcw,
-    Square,
-    Sun,
-  } from '@lucide/svelte'
+  import { Activity, Camera, Download, ExternalLink, Lightbulb, Link2, Pencil, Play, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { hasBoards } from '$lib/hasBoards'
@@ -334,7 +323,7 @@
  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
   >
     {#if busy === action}
-      <LoaderCircle size={14} class="animate-spin" />
+      <Spinner />
     {:else}
       {@render icon()}
     {/if}
@@ -386,14 +375,16 @@
 {#snippet gamesCell()}—{/snippet}
 
 <div class="flex grow flex-col gap-5 min-w-0">
-  {#if loaded && boards.length === 0}
+  {#if !loaded}
+    <LoadingBlock rows={3} label="Loading your boards" />
+  {:else if boards.length === 0}
     <BoardsEmpty
       onpair={(code: string) => {
         pairCode = code
         pairOpen = true
       }}
     />
-  {:else if loaded}
+  {:else}
     <BoardChips
       {boards}
       {selectedId}
@@ -482,7 +473,7 @@
           <div class="flex flex-col gap-2 text-[14px]">
             {#if updateView.kind === 'busy'}
               <span class="flex items-center gap-2 text-text-muted" role="status">
-                <LoaderCircle size={14} class="animate-spin" />
+                <Spinner />
                 {updateView.text}
               </span>
             {:else if updateView.kind === 'done'}
@@ -501,7 +492,7 @@
  text-text cursor-pointer transition-colors hover:bg-surface-active
  disabled:opacity-35 disabled:cursor-not-allowed"
                   >
-                    {#if busy === 'bridge-update'}<LoaderCircle size={14} class="animate-spin" />{:else}<Download size={14} />{/if}
+                    {#if busy === 'bridge-update'}<Spinner />{:else}<Download size={14} />{/if}
                     Update bridge
                   </button>
                 {/if}

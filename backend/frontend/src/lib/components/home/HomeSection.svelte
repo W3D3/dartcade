@@ -1,8 +1,8 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // One of Home's panels: a title, an optional link to the full page, and the section's content.
   // While `loading` it shows a spinner, and a refusal in red; the content shows once there is data.
   import type { Snippet } from 'svelte'
-  import { LoaderCircle } from '@lucide/svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
 
   let {
@@ -33,7 +33,7 @@
   {#if error}
     <ErrorText>{error}</ErrorText>
   {:else if loading}
-    <div class="flex justify-center py-6 text-text-muted"><LoaderCircle class="animate-spin" size={22} aria-label="Loading" /></div>
+    <LoadingBlock class="min-h-0" />
   {:else}
     {@render children()}
   {/if}

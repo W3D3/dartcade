@@ -6,6 +6,7 @@
   Spec: docs/superpowers/specs/2026-10-14-minigolf-course-editor-design.md, "The hole editor".
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
   import { untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
@@ -341,7 +342,7 @@
       </header>
 
       {#if !store || store.status === 'loading'}
-        <p class="p-5 text-[15px] text-text-muted">Loading…</p>
+        <LoadingBlock label="Loading the hole" />
       {:else if store.status === 'missing'}
         <div role="status" class="m-5 flex flex-col items-start gap-3">
           <p class="text-[15px]">This hole is gone: someone deleted it.</p>
@@ -415,7 +416,9 @@
             <div class="h-[200px] overflow-hidden rounded-2xl bg-bg-deep" aria-label="3D preview" role="img">
               <!-- Off while Test putt is open: a second WebGL view rendering behind it halves the putt's frame rate -->
               {#if !testPutt}
-                {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}
+                {#await import('$lib/components/minigolf/Hole3D.svelte')}
+                  <LoadingBlock label="Loading the 3D view" class="h-full" />
+                {:then { default: Hole3D }}
                   <Hole3D {hole} ball={hole.tee} />
                 {/await}
               {/if}

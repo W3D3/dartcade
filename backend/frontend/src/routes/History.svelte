@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { hrefs } from '$lib/routes'
   import { deviceStore } from '$lib/storage'
   import { onMount, untrack } from 'svelte'
   import { querystring } from 'svelte-spa-router'
   import { MediaQuery } from 'svelte/reactivity'
-  import { ChevronRight, LoaderCircle, RotateCcw } from '@lucide/svelte'
+  import { ChevronRight, RotateCcw } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type ColumnSizingState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -334,9 +336,7 @@
         >
       {/if}
       {#if loading}
-        <p class="card flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
-          <LoaderCircle size={18} class="animate-spin" /> Loading matches…
-        </p>
+        <div class="card px-[22px]"><LoadingBlock rows={6} label="Loading matches" onretry={() => void reload(mode)} /></div>
       {:else if error}
         <p role="alert" class="card px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
       {:else}
@@ -362,9 +362,9 @@
               type="button"
               onclick={() => void more()}
               disabled={loadingMore}
-              class="h-10 rounded-sm border border-line-strong px-5 text-[15px] text-text disabled:opacity-60"
+              class="inline-flex h-10 items-center gap-2 rounded-sm border border-line-strong px-5 text-[15px] text-text disabled:opacity-60"
             >
-              {loadingMore ? 'Loading…' : 'Load more'}
+              {#if loadingMore}<Spinner />{/if}Load more
             </button>
             {#if loadMoreError}<p role="alert" class="text-[13px] text-text-muted">{loadMoreError}</p>{/if}
           </div>

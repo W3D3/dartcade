@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // One challenge (Progress board), in one of three states. Going: the title with a Hard pill, "9 of
   // 15" under it, "1 to go" when it's nearly there, its XP, and a striped bar. Finished: highlighted,
   // "Complete", and a Claim button that pays its XP. Claimed: muted, "Claimed", the XP greyed. Motion
@@ -6,7 +7,7 @@
   // just finished (`fresh`) stamps its check in with a small burst. An unfinished daily can be
   // rerolled once a day.
   import { Progress } from '$lib/components/ui/progress/index.js'
-  import { Check, LoaderCircle } from '@lucide/svelte'
+  import { Check } from '@lucide/svelte'
   import XpBadge from './XpBadge.svelte'
   import type { ChallengeItem } from '$lib/progress/challenges'
 
@@ -86,7 +87,7 @@
       class="claim relative overflow-hidden shrink-0 inline-flex items-center gap-2 rounded-md border-0 bg-accent px-4 py-[9px] text-accent-fg
              font-display font-bold text-[20px] uppercase tracking-wordmark whitespace-nowrap cursor-pointer hover:bg-accent-hover disabled:cursor-default"
     >
-      {#if claiming}<LoaderCircle size={16} class="animate-spin" aria-hidden="true" />{/if}
+      {#if claiming}<Spinner />{/if}
       Claim +{item.xp}<XpBadge size={22} inverse />
       <span class="sheen absolute inset-y-0 left-0 w-2/5" aria-hidden="true"></span>
     </button>

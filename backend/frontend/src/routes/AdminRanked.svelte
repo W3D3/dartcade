@@ -1,5 +1,6 @@
 <!-- Ranked queue (`#/admin/ranked`), for admins and moderators: who is searching, for how long and at what rating, and a way to take someone out. Refreshed every 5 s while visible. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { onDestroy, onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { RefreshCw, UserMinus } from '@lucide/svelte'
@@ -77,7 +78,7 @@
 
       <section class="card flex flex-col" aria-label="Searches">
         {#if searches === null}
-          <p class="p-5 text-[14px] text-text-muted">Loading…</p>
+          <LoadingBlock label="Loading the queue" onretry={() => void refresh()} />
         {:else if searches.length === 0}
           <p class="p-5 text-[14px] text-text-muted">Nobody is searching.</p>
         {:else}

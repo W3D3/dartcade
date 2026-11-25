@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   // A finished game's details (X01-Details*, ATC-Details* boards): the result, the match stats
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
   import { hrefs } from '$lib/routes'
@@ -125,7 +126,7 @@
       </div>
     {/snippet}
     {#if phase === 'loading'}
-      <p class="p-8 text-[15px] text-text-muted">Loading the game…</p>
+      <LoadingBlock label="Loading the game" onretry={() => void load()} />
     {:else if phase === 'missing'}
       <div class="flex flex-col items-start gap-3 p-8">
         <p class="text-[17px] font-semibold">This game isn't available</p>

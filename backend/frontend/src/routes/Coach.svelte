@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // The Coach page's Review tab (Coach-Review): counts over your last 50 legs, then every coached leg,
   // filtered server-side, each opening its leg review. The filter lives in the querystring
   // (#/coach?filter=lost) so back and forward step through it.
   import { hrefs } from '$lib/routes'
   import { querystring } from 'svelte-spa-router'
-  import { ChevronRight, Clock, LoaderCircle, Sparkles, Target } from '@lucide/svelte'
+  import { ChevronRight, Clock, Sparkles, Target } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import CountCards from '$lib/components/coach/CountCards.svelte'
@@ -208,7 +209,7 @@
 
       {#if pending > 0 && !loading}
         <p role="status" class="flex items-center gap-2 text-[14px] text-text-muted">
-          <LoaderCircle size={16} class="animate-spin motion-reduce:animate-skeleton-soft" />Reviewing your latest games… {pending} to go
+          <Spinner />Reviewing your latest games… {pending} to go
         </p>
       {/if}
 
@@ -300,7 +301,7 @@
             {#if nextCursor !== null}
               <div class="flex flex-col items-center gap-2 pt-1.5">
                 <Button variant="outline" class="h-11 text-[15px] font-semibold" onclick={() => void more()} disabled={loadingMore}>
-                  {loadingMore ? 'Loading…' : 'Show 40 more legs'}
+                  {#if loadingMore}<Spinner />{/if}Show 40 more legs
                 </Button>
                 {#if loadMoreError}<p role="alert" class="text-[13px] text-text-muted">{loadMoreError}</p>{/if}
               </div>

@@ -10,7 +10,7 @@
   import { onMount } from 'svelte'
   import { MonitorSmartphone, TabletSmartphone, Trophy } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import SpotNameDialog from '$lib/components/tournaments/SpotNameDialog.svelte'
@@ -135,7 +135,7 @@
 
 <div class="flex h-dvh flex-col bg-bg text-text">
   {#if (!device && !$flagsLoaded) || device === undefined || t === undefined}
-    <PageLoading />
+    <LoadingBlock />
   {:else if (!device && !$enabled) || !t || !allowed || gone}
     <main class="grid grow place-items-center p-6">
       <EmptyState
@@ -199,7 +199,7 @@
       </div>
 
       {#if !m || !groups}
-        <PageLoading />
+        <LoadingBlock />
         {#if slow}<p class="text-center text-small text-text-muted">
             Can’t reach the tournament. Still trying, check this device’s connection.
           </p>{/if}

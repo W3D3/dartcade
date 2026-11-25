@@ -5,6 +5,7 @@
   landed for the shot delay.
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import type { ShotControls } from '$lib/components/match/types'
   import { untrack } from 'svelte'
   import { MediaQuery } from 'svelte/reactivity'
@@ -317,7 +318,9 @@
   <section aria-label="Hole" class="absolute inset-0 bg-bg-deep" data-view={view3d ? '3d' : '2d'}>
     {#if view3d}
       <div class="absolute inset-0">
-        {#await loadHole3D() then { default: Hole3D }}
+        {#await loadHole3D()}
+          <LoadingBlock label="Loading the 3D view" class="h-full" />
+        {:then { default: Hole3D }}
           <!-- A new quality opens a new view: edge smoothing is fixed when WebGL starts -->
           {#key settings.minigolfQuality}
             <Hole3D

@@ -388,7 +388,7 @@
               {#if error}<ErrorText class="mb-2 md:mb-0">{error}</ErrorText>{/if}
             </span>
             <div class="flex flex-col gap-2 md:shrink-0">
-              <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
+              <PlayButton label={playLabel(action)} {busy} {loading} disabled={loading} onclick={() => void toLobby()} />
               {#if newLobby && !loading}
                 <Button variant="ghost" size="md" disabled={busy} onclick={() => void freshLobby()}>New lobby</Button>
               {/if}

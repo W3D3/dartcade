@@ -5,7 +5,7 @@
   import { Trophy } from '@lucide/svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import type { TournamentClaim } from '$lib/api'
@@ -63,7 +63,7 @@
         <Button variant="outline" onclick={load}>Try again</Button>
       </div>
     {:else if !claim}
-      <PageLoading />
+      <LoadingBlock onretry={load} />
     {:else}
       <section class="card flex w-full max-w-[460px] flex-col gap-4 p-5" aria-labelledby="claim-title">
         <div class="flex flex-col gap-1">

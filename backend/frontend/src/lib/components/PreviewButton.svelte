@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // A play button for a sound: a spinner while the sound is still loading, then disabled and pulsing
   // for as long as it rings, so a tap always shows that something is happening.
-  import { LoaderCircle, Play } from '@lucide/svelte'
+  import { Play } from '@lucide/svelte'
   import { onDestroy } from 'svelte'
   import { Button, type ButtonSize, type ButtonVariant } from '$lib/components/ui/button/index.js'
 
@@ -45,7 +46,7 @@
 
 <Button {variant} {size} class={className} aria-label={label} aria-busy={status === 'loading'} disabled={status !== 'idle'} onclick={press}>
   {#if status === 'loading'}
-    <LoaderCircle size={iconSize} class="animate-spin" />
+    <Spinner />
   {:else}
     <Play size={iconSize} fill="currentColor" strokeWidth={0} class={status === 'playing' ? 'animate-pulse text-accent' : ''} />
   {/if}

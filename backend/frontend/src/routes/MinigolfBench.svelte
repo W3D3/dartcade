@@ -5,6 +5,7 @@
   Design: docs/superpowers/specs/2026-10-09-minigolf-core-bench-design.md
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { onMount, untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { currentUser } from '$lib/auth'
@@ -306,7 +307,9 @@
           <!-- On phones the hole and the board share the screen, so aiming and the roll both show -->
           <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
             {#if view3d}
-              {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}
+              {#await import('$lib/components/minigolf/Hole3D.svelte')}
+                <LoadingBlock label="Loading the 3D view" class="h-full" />
+              {:then { default: Hole3D }}
                 <Hole3D
                   {hole}
                   ball={shown3}

@@ -6,7 +6,7 @@
   import ChallengesSection from '$lib/components/progress/ChallengesSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ProgressTabs from '$lib/components/achievements/ProgressTabs.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import type { LevelGain } from '$lib/progress/view'
   import StreakCard from '$lib/components/progress/StreakCard.svelte'
@@ -42,7 +42,7 @@
     {#if !$progression}
       <p class="text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
     {:else if $progress === null}
-      <PageLoading />
+      <LoadingBlock />
     {:else}
       <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <LevelCard xp={$progress.xp} title={$progress.perks.equipped.title} {gain} />

@@ -1,10 +1,11 @@
 <script lang="ts">
   // Placeholder for a lazily-loaded route (App.svelte's `wrap({ asyncComponent, loadingComponent
-  // })`) while its chunk downloads — the nav stays up instead of a blank page, same loading line
+  // })`) while its chunk downloads — the nav stays up instead of a blank page, same indicator
   // GameDetails shows for its own data fetch.
   import Layout from '$lib/components/Layout.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
 </script>
 
 <Layout title="Match details">
-  <p class="p-8 text-[15px] text-text-muted">Loading the game…</p>
+  <LoadingBlock label="Loading the game" class="p-8" />
 </Layout>

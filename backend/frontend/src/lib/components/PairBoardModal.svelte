@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   import { createCopy } from '$lib/clipboard.svelte'
   import { onDestroy, onMount } from 'svelte'
-  import { ChevronRight, CircleCheck, LoaderCircle } from '@lucide/svelte'
+  import { ChevronRight, CircleCheck } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Chip } from '$lib/components/ui/chip/index.js'
@@ -167,7 +168,7 @@
           </p>
         {:else if token}
           <p class="flex items-center gap-2 text-[14px] text-text-muted">
-            <LoaderCircle size={16} class="animate-spin" /> Waiting for the bridge to connect…
+            <Spinner /> Waiting for the bridge to connect…
           </p>
         {/if}
       {/if}
@@ -274,7 +275,7 @@
     <Button variant="ghost" class="h-[54px]" onclick={onclose} disabled={loading}>Cancel</Button>
     <Button variant="primary" class="flex-1 max-w-[220px]" onclick={submit} disabled={!canSubmit}>
       {#if loading}
-        <LoaderCircle size={16} strokeWidth={2.5} class="animate-spin" />
+        <Spinner />
       {/if}
       {buttonLabel}
     </Button>

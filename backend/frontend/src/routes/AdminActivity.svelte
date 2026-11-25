@@ -1,6 +1,7 @@
 <!-- Admin Activity page (`#/admin/activity`): who is on, signups, games per day, the busiest hours and what is
      running, counted from existing tables and live state; refreshed every 20 s while the tab is visible. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { onDestroy, onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { RefreshCw } from '@lucide/svelte'
@@ -160,7 +161,7 @@
       </header>
 
       {#if loadError}<ErrorText>{loadError}</ErrorText>{/if}
-      {#if !activity && !loadError}<p class="text-label text-text-muted" role="status">Loading…</p>{/if}
+      {#if !activity && !loadError}<LoadingBlock rows={4} label="Loading the activity" onretry={() => void refresh()} />{/if}
 
       {#if activity}
         {@const a = activity}

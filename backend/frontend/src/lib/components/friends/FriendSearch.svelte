@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // One search field for the Friends page (Friends-Search boards): your friends answer at once, and
   // from 3 characters "People on Dartcade" follows from the server. A bits-ui Combobox, so the
   // arrow keys, Enter and Escape work from the field; Enter on a person does what their row says
@@ -212,7 +213,7 @@
         class="h-full min-w-0 grow bg-transparent text-[16px] text-text outline-none placeholder:text-text-faint"
       />
       {#if search.phase === 'loading'}
-        <span aria-hidden="true" class="mr-3 size-4 shrink-0 animate-spin rounded-full border-2 border-line-chip border-t-accent"></span>
+        <Spinner class="mr-3" />
       {/if}
       {#if query !== ''}
         <button

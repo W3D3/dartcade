@@ -1,6 +1,7 @@
 <!-- Admin Coach sandbox (`#/admin/coach`): a score, an optional opponent and up to three darts on
      the board, reviewed live as the coach reviews a leg. No API calls: the coach runs here. -->
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   import { push } from 'svelte-spa-router'
   import { Eraser, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -143,7 +144,9 @@
           </form>
           {#if typedError}<ErrorText>{typedError}</ErrorText>{/if}
           <p class="text-[13px] text-text-muted">
-            {#if !inputError && !loaded.models && !loaded.failed}Loading the {tier.name} model…
+            {#if !inputError && !loaded.models && !loaded.failed}<span class="inline-flex items-center gap-2"
+                ><Spinner />Loading the {tier.name} model…</span
+              >
             {:else if !result}Fix the inputs to throw.
             {:else if result.done}{visit?.bust ? 'Bust' : visit?.then === 0 ? 'Checked out' : 'Three darts thrown'}: undo or clear to throw
               again.

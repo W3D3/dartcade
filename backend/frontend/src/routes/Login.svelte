@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   import ScrollPage from '$lib/components/ScrollPage.svelte'
   import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
@@ -184,7 +185,7 @@
 
       <div class="flex flex-col gap-3 mt-auto md:mt-0">
         <Button type="submit" variant="primary" disabled={loading} class="w-full">
-          {loading ? '…' : 'Sign in'}
+          {#if loading}<Spinner />{/if}Sign in
         </Button>
 
         {#if showPasskey}

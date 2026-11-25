@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { Spinner } from '$lib/components/ui/spinner'
   // The blue Start / Stop big screen button and its hint, in the board popover and the board details.
-  import { LoaderCircle, MonitorPlay } from '@lucide/svelte'
+  import { MonitorPlay } from '@lucide/svelte'
   import { onDestroy } from 'svelte'
   import { api, type Board } from '$lib/api'
   import { bigScreenButton, bigScreenError } from '$lib/boards'
@@ -62,7 +63,7 @@
  hover:bg-big-screen-hover disabled:opacity-35 disabled:cursor-not-allowed"
   >
     {#if busy || waitingFor !== null}
-      <LoaderCircle size={13} class="animate-spin" />
+      <Spinner />
     {:else}
       <MonitorPlay size={13} />
     {/if}

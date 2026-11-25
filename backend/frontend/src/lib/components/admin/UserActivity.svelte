@@ -1,5 +1,6 @@
 <!-- The expanded row of the admin users table: bridges, games, darts and account details, loaded once when it opens. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { onMount } from 'svelte'
   import { DropdownMenu } from 'bits-ui'
   import { ChevronDown } from '@lucide/svelte'
@@ -73,7 +74,7 @@
   {#if failed}
     <ErrorText>Couldn't load the activity of {user.name}.</ErrorText>
   {:else if !activity}
-    <p class="m-0 mb-3 text-[14px] text-text-muted">Loading…</p>
+    <LoadingBlock label="Loading the activity" />
   {/if}
   {#snippet none()}<p class="text-[14px] text-text-muted">—</p>{/snippet}
   <div class="grid gap-6 sm:grid-cols-2">

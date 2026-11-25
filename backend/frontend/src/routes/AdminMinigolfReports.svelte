@@ -1,5 +1,6 @@
 <!-- Reported player courses (`#/admin/minigolf/reports`), for admins and moderators: unpublish or remove with a reason the author sees (unpublish), dismiss, or allow a taken-down course again. -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -57,7 +58,7 @@
       <section class="flex flex-col gap-3" aria-label="Reported courses">
         <h2 class="text-[11px] label-caps text-text-dim">Reported</h2>
         {#if list === null}
-          <p class="text-[14px] text-text-muted">Loading…</p>
+          <LoadingBlock rows={3} label="Loading the reports" onretry={() => void refresh()} />
         {:else if list.courses.length === 0}
           <p class="text-[14px] text-text-muted">No open reports.</p>
         {:else}

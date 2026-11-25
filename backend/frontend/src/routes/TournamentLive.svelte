@@ -8,7 +8,7 @@
   import { querystring } from 'svelte-spa-router'
   import Avatar from '$lib/components/Avatar.svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import BracketTab from '$lib/components/tournaments/live/BracketTab.svelte'
@@ -71,7 +71,7 @@
         {#snippet icon()}<Trophy size={24} />{/snippet}
       </EmptyState>
     {:else if !t || !m || !head}
-      <PageLoading />
+      <LoadingBlock />
     {:else}
       <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-5">
         <div class="flex min-w-0 flex-col gap-2">

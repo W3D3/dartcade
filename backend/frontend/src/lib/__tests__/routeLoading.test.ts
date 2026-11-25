@@ -8,8 +8,8 @@ vi.mock('$lib/components/Layout.svelte', () => import('./fixtures/PassthroughLay
 const { default: RouteLoading } = await import('../../routes/RouteLoading.svelte')
 
 describe('RouteLoading', () => {
-  it('shows the same loading line GameDetails uses for its own data fetch', () => {
+  it('holds a busy box for the page while its chunk downloads, the indicator after a short delay', () => {
     const out = render(RouteLoading).body
-    expect(out).toContain('Loading the game…')
+    expect(out).toContain('aria-busy="true"')
   })
 })

@@ -6,7 +6,7 @@
   import { ChevronLeft } from '@lucide/svelte'
   import { querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import GuestOptions from '$lib/components/tournaments/GuestOptions.svelte'
   import AvgLimitSection from '$lib/components/tournaments/AvgLimitSection.svelte'
@@ -180,7 +180,7 @@
     <h1 class="type-page-title">{editing ? 'Edit tournament' : 'Create tournament'}</h1>
 
     {#if !$flagsLoaded || (editing && stored === undefined)}
-      <PageLoading />
+      <LoadingBlock />
     {:else if !$enabled}
       <p class="text-body text-text-muted">Tournaments aren't available yet.</p>
     {:else if !editing && !mayCreate}

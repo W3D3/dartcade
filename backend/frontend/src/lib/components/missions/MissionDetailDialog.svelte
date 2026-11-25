@@ -3,6 +3,7 @@
   Your best and Friends' best, and the highscores (the top 10 best runs). Play from here too.
 -->
 <script lang="ts">
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import { Play } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
@@ -68,7 +69,7 @@
   <section aria-label="Highscores" class="flex flex-col gap-1.5">
     <h3 class="label-caps text-caption font-semibold text-text-dim">Highscores</h3>
     {#if scores === null}
-      <p class="text-small text-text-muted">Loading…</p>
+      <LoadingBlock rows={3} label="Loading the highscores" class="min-h-0 py-2" />
     {:else if scores === 'failed'}
       <p class="text-small text-text-muted">Couldn't load the highscores.</p>
     {:else if scores.length === 0}

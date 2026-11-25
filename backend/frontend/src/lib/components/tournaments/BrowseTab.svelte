@@ -5,7 +5,7 @@
   import type { Snippet } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import SegmentedControl from '$lib/components/stats/SegmentedControl.svelte'
   import { Chip } from '$lib/components/ui/chip'
@@ -154,7 +154,7 @@
   <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
     <div class="flex min-w-0 flex-col gap-4">
       {#if list === null && !failed}
-        <PageLoading />
+        <LoadingBlock onretry={() => void refresh()} />
       {:else if failed && list === null}
         <ErrorText>Couldn't load tournaments. Try again in a moment.</ErrorText>
       {:else if shown.length === 0}

@@ -5,7 +5,7 @@
   import { Check, Clock, Crown, Plus, X } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
-  import PageLoading from '$lib/components/PageLoading.svelte'
+  import LoadingBlock from '$lib/components/LoadingBlock.svelte'
   import TeamEmblem from '$lib/components/teams/TeamEmblem.svelte'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -104,7 +104,7 @@
 
 <Modal title="Register a team" subtitle="{t.name} · {entryLabel(t.teamSize).toLowerCase()}" {onclose} widthClass="md:max-w-[760px]">
   {#if teams === null}
-    {#if failed}<ErrorText>Couldn't load your teams. Try again in a moment.</ErrorText>{:else}<PageLoading />{/if}
+    {#if failed}<ErrorText>Couldn't load your teams. Try again in a moment.</ErrorText>{:else}<LoadingBlock />{/if}
   {:else}
     <section class="flex flex-col gap-2.5" aria-labelledby="reg-which">
       <h3 id="reg-which" class="type-label-caps text-text-muted">1 · Which team?</h3>
