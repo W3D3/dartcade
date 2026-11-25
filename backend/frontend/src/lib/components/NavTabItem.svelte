@@ -1,12 +1,13 @@
 <script lang="ts">
   // One item of the phone tab bar and the tablet rail: icon over label, the invites badge.
   // A disabled tab (Tournaments while its flag is off) is a dimmed span, not a link.
-  import { ChartColumn, Clock, GraduationCap, House, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
   import type { NavTab } from '$lib/nav'
+  import { NAV_ICONS } from '$lib/navState'
   import NavBadge from './NavBadge.svelte'
 
   let { tab, active, class: className = '' }: { tab: NavTab; active: boolean; class?: string } = $props()
   const on = $derived(active && !tab.disabled)
+  const Icon = $derived(NAV_ICONS[tab.icon])
 </script>
 
 <svelte:element
@@ -26,15 +27,6 @@
   {#if tab.badge}
     <NavBadge count={tab.badge} label={tab.badgeLabel ?? ''} class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1" />
   {/if}
-  {#if tab.icon === 'home'}<House size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'ranked'}<Swords size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'coach'}<GraduationCap size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'tournaments'}<Trophy size={22} strokeWidth={1.8} />
-  {:else if tab.icon === 'progress'}<TrendingUp size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'stats'}<ChartColumn size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'settings'}<Settings size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else if tab.icon === 'admin'}<ShieldCheck size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
-  {:else}<Clock size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />{/if}
+  <Icon size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {tab.label}
 </svelte:element>

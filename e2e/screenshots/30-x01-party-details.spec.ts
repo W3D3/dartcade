@@ -23,7 +23,7 @@ for (const [label, view] of Object.entries(VIEWS)) {
       const games = (await res.json()).games as { id: string; players: unknown[]; config: { format?: string } }[]
       const game = games.find(g => g.players.length === scene.players && (g.config.format === 'teams') === !!scene.teams)
       expect(game, `a ${scene.players}-player X01 game in the seed`).toBeTruthy()
-      await page.goto(`/#/history/${game!.id}`)
+      await page.goto(`/#/stats/history/${game!.id}`)
       await expect(page.getByRole('tab', { name: 'Heatmap' })).toBeVisible()
       await shot(page, `details/x01-${scene.name}-${label}.png`, { settle: 1500 })
       await ctx.close()

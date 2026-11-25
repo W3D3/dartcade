@@ -9,6 +9,7 @@
   import { ChevronRight, RotateCcw } from '@lucide/svelte'
   import { createColumnHelper, renderSnippet, type ColumnSizingState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
+  import HubTabs from '$lib/components/HubTabs.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
   import { DataTable, type Features } from '$lib/components/ui/data-table/index.js'
@@ -36,7 +37,7 @@
   const requests = createRequestGuard()
 
   let modes = $state<GameInfo[]>([])
-  // The filter lives in the URL (#/history?mode=x01), so Back from a match keeps it; All is no param.
+  // The filter lives in the URL (#/stats/history?mode=x01), so Back from a match keeps it; All is no param.
   const GAME_IDS = Object.keys(GAME_NAMES).filter(isGameId)
   const mode = $derived(readParam($querystring, 'mode', GAME_IDS, null))
   let games = $state<GameSummary[]>([])
@@ -272,17 +273,15 @@
   </div>
 {/snippet}
 
-<Layout title="History">
+<Layout title="Stats">
   <main
     bind:this={scroller}
     onscroll={saveScroll}
     class="flex min-h-0 grow flex-col gap-4 md:gap-6 overflow-auto p-4 md:px-8 xl:px-11 md:py-10"
   >
+    <HubTabs hub="stats" />
     <header class="flex flex-wrap items-end justify-between gap-6">
-      <div class="hidden md:flex flex-col gap-1.5">
-        <h1 class="type-page-title">History</h1>
-        <p class="text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
-      </div>
+      <p class="hidden text-[15px] text-text-muted md:block">Every match you played. Open one to see it leg by leg.</p>
       <div
         role="group"
         aria-label="Game mode"
@@ -292,7 +291,7 @@
           <button
             type="button"
             aria-pressed={f.id === mode}
-            onclick={() => setParam('/history', $querystring, 'mode', f.id)}
+            onclick={() => setParam('/stats/history', $querystring, 'mode', f.id)}
             class="h-10 whitespace-nowrap rounded-segment border-0 px-4 text-[15px] {f.id === mode
               ? 'bg-line font-semibold text-text'
               : 'bg-transparent text-ink-2'}"

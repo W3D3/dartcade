@@ -22,7 +22,7 @@
       ? 'bg-surface-picked border-accent'
       : 'bg-surface-active border-accent-line'}"
   >
-    <a href={hrefs.matchmaking()} class="flex min-w-0 flex-1 items-center gap-[10px] text-text no-underline">
+    <a href={hrefs.ranked()} class="flex min-w-0 flex-1 items-center gap-[10px] text-text no-underline">
       {#if queue.kind === 'searching'}<span class="size-2 shrink-0 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"
         ></span>{/if}
       <span class="min-w-0 truncate text-[14px] font-semibold {queue.kind === 'found' ? 'text-accent' : ''}">{queue.strip}</span>

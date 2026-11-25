@@ -1,6 +1,6 @@
 <script lang="ts">
   // The Play page's games by category: an illustrated card per game, a strip row for the small
-  // ones (phones: two cards a row, name only; tablets: smaller cards than desktops). Once a game
+  // ones (phones and tablets: two cards a row, name only on phones; desktops: fixed-width cards). Once a game
   // is picked (`open`, from lg) they shrink to a column of name rows beside its settings, and the
   // coming-soon ones drop out. Modes behind a feature flag that's off aren't shown.
   import GameCard from './GameCard.svelte'
@@ -56,7 +56,9 @@
 </div>
 
 <style>
-  /* Phones: two cards a row and the strips below; from md they wrap side by side; open: one column */
+  /* Phones: two cards a row and the strips below. Tablets (md until the desktop's side nav at xl): two
+     cards a row filling the width (Tablet-Play-Cards), the strips wrapping side by side; desktops: the
+     cards wrap side by side too. Open: one column */
   .cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -68,16 +70,24 @@
     gap: 6px;
   }
   @media (min-width: 768px) {
-    .cards,
+    .cards {
+      gap: 12px;
+    }
     .strips {
-      display: flex;
       flex-direction: row;
       flex-wrap: wrap;
       gap: 12px;
     }
   }
+  @media (min-width: 1280px) {
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+    }
+  }
   .cards.open,
   .strips.open {
+    display: flex;
     flex-direction: column;
     gap: 6px;
   }

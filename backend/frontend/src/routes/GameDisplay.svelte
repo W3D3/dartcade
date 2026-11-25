@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hrefs } from '$lib/routes'
   import { deviceStore } from '$lib/storage'
   import { onMount, onDestroy, untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -440,7 +441,7 @@
     rematch: '/lobby?rematch=1',
     lobby: '/lobby',
     play: '/play',
-    ranked: '/matchmaking',
+    ranked: '/play/ranked',
     matches: tmode ? `/tournament-mode/${tmode.tournamentId}` : '/',
   }
   async function finishWin(next: WinKey) {
@@ -525,7 +526,7 @@
         saved={snapshot.mySeats.length > 0}
         primary={unlocksButton ?? winPrimaryButton}
         secondary={unlocksButton ? null : winSecondaryButton}
-        onhistory={() => push(`/history/${sessionId}`)}
+        onhistory={() => push(hrefs.history(sessionId).slice(1))}
         xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
         winnerId={$progression ? (snapshot.seats[win.competitors[0]?.seats[0] ?? -1]?.userId ?? null) : null}
         rankedGame={!!snapshot.ranked}

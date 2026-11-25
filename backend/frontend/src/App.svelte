@@ -16,7 +16,6 @@
   import Reset from './routes/Reset.svelte'
   import Legal from './routes/Legal.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
-  import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
   import BootLoader from '$lib/components/BootLoader.svelte'
   import CoachLoading from './routes/CoachLoading.svelte'
@@ -30,6 +29,8 @@
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
+  import Moved from './routes/Moved.svelte'
+  import History from './routes/History.svelte'
   import Tournaments from './routes/Tournaments.svelte'
   import TournamentsRoute from './routes/TournamentsRoute.svelte'
   import TournamentCreate from './routes/TournamentCreate.svelte'
@@ -147,6 +148,8 @@
     '/play/missions/new': MissionBuilder,
     '/play/missions/:id/edit': MissionBuilder,
     '/play/missions/:filter?': Missions,
+    '/play/ranked': Matchmaking,
+    '/play/ranked/ranks': Ranks,
     '/session/:id': GameDisplay,
     '/watch/:id': Watch,
     '/login': Login,
@@ -159,9 +162,14 @@
     '/imprint': Legal,
     // Boards moved into Settings; old links (and ?pair) still land there
     '/boards': BoardsRedirect,
-    '/history/:id': wrap({ asyncComponent: loadGameDetails }),
-    '/history': History,
+    '/stats/history/:id': wrap({ asyncComponent: loadGameDetails }),
+    '/stats/history': History,
     '/stats': wrap({ asyncComponent: loadStats }),
+    // Matchmaking moved into Play, History into Stats; old links still land there
+    '/history': Moved,
+    '/history/*': Moved,
+    '/matchmaking': Moved,
+    '/matchmaking/*': Moved,
     '/coach': wrap({ asyncComponent: loadCoach }),
     '/coach/checks': wrap({ asyncComponent: loadCoachChecks }),
     '/coach/leg/:gameId/:leg': wrap({ asyncComponent: loadCoachLeg }),
@@ -173,8 +181,6 @@
     '/settings/:section': Settings,
     '/voice-packs/:id': VoicePackDetails,
     '/friends': Friends,
-    '/matchmaking': Matchmaking,
-    '/matchmaking/ranks': Ranks,
     // Before /tournaments/:tab?, which would read "join" as a tab
     '/tournaments/join/:code': Tournaments,
     '/tournaments/claim/:claim': TournamentClaim,

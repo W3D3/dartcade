@@ -28,7 +28,7 @@
     ? 'border-accent bg-surface-picked'
     : 'border-line-2 bg-surface-active'}"
 >
-  <a href={hrefs.matchmaking()} class="flex flex-col gap-2 text-text no-underline" aria-label="{view.tag}, {view.name}. {view.line}">
+  <a href={hrefs.ranked()} class="flex flex-col gap-2 text-text no-underline" aria-label="{view.tag}, {view.name}. {view.line}">
     <span class="flex items-center justify-between">
       <span class="inline-flex items-center gap-[7px] text-[11px] font-bold label-caps text-accent">
         {#if view.kind === 'searching'}<span class="size-2 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true"></span>{/if}

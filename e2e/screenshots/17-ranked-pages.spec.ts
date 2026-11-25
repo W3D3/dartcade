@@ -98,7 +98,7 @@ for (const [view, name] of [
   test(`the Matchmaking page, ${name}`, async ({ browser }) => {
     const { ctx, page } = await open(browser, 'admin', view)
     await mockRanked(page)
-    await openHash(page, '/matchmaking')
+    await openHash(page, '/play/ranked')
     await expect(page.getByText('Recent ranked').first()).toBeVisible()
     await expect(page.getByText('Anna K.')).toBeVisible()
     await shot(page, `${DIR}/${PREFIX}matchmaking-${name}.png`, { settle: 900 })
@@ -112,7 +112,7 @@ for (const [view, name] of [
   test(`the Ranks page, ${name}`, async ({ browser }) => {
     const { ctx, page } = await open(browser, 'admin', view)
     await mockRanked(page)
-    await openHash(page, '/matchmaking/ranks')
+    await openHash(page, '/play/ranked/ranks')
     await expect(page.getByRole('region', { name: /Your rank · 1v1/ })).toBeVisible()
     await shot(page, `${DIR}/${PREFIX}ranks-${name}.png`, { settle: 900 })
     await ctx.close()

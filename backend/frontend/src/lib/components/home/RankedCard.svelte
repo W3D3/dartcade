@@ -62,7 +62,7 @@
         <span class="text-text-dim">No ranked games yet</span>
       {/each}
     </div>
-    <a href={hrefs.matchmaking()} class="mt-auto inline-flex items-center gap-2 text-[14px] font-semibold text-accent no-underline"
+    <a href={hrefs.ranked()} class="mt-auto inline-flex items-center gap-2 text-[14px] font-semibold text-accent no-underline"
       >Find a ranked match<ArrowRight size={16} /></a
     >
   {/if}

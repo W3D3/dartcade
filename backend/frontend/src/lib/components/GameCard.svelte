@@ -89,6 +89,12 @@
       height: 56px;
     }
   }
+  /* Tablets: a card fills its column of the two-column grid (GameCards); strips and desktops keep a fixed width */
+  @media (min-width: 768px) and (max-width: 1279px) {
+    .pc:not(.mini) {
+      width: 100%;
+    }
+  }
   @media (min-width: 1280px) {
     .pc {
       width: 352px;

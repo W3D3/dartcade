@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import appSource from '../../App.svelte?raw'
-import { hrefs } from '../routes'
+import { hrefs, movedTo } from '../routes'
 
 // One sample call per builder; the Record type makes a new builder fail typecheck until it has one.
 const SAMPLES: Record<keyof typeof hrefs, string[]> = {
@@ -28,7 +28,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   settings: [hrefs.settings(), hrefs.settings('boards', 'pair')],
   voicePack: [hrefs.voicePack('p1')],
   friends: [hrefs.friends()],
-  matchmaking: [hrefs.matchmaking()],
+  ranked: [hrefs.ranked()],
   tournaments: [hrefs.tournaments(), hrefs.tournaments('teams')],
   tournamentJoin: [hrefs.tournamentJoin('K7Q4MD')],
   tournamentNew: [hrefs.tournamentNew()],
@@ -65,7 +65,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   minigolfCourses: [hrefs.minigolfCourses()],
 }
 
-// The router table's keys: '/history/:id', '/profile/customise/:tab?'.
+// The router table's keys: '/stats/history/:id', '/profile/customise/:tab?'.
 const patterns = [...appSource.matchAll(/^\s*'(\/[^']*)':/gm)].map(m => {
   const re = m[1].replace(/\/:\w+\?/g, '(?:/[^/]+)?').replace(/:\w+/g, '[^/]+')
   return new RegExp(`^${re}$`)
@@ -83,4 +83,22 @@ describe('hrefs', () => {
       expect(patterns.some(p => p.test(path))).toBe(true)
     },
   )
+})
+
+describe('movedTo', () => {
+  it('sends Matchmaking into Play and History into Stats, pages under them included', () => {
+    expect(movedTo('/matchmaking')).toBe('/play/ranked')
+    expect(movedTo('/matchmaking/ranks')).toBe('/play/ranked/ranks')
+    expect(movedTo('/history')).toBe('/stats/history')
+    expect(movedTo('/history/g1')).toBe('/stats/history/g1')
+  })
+  it('lands every moved page on a route', () => {
+    for (const old of ['/matchmaking', '/matchmaking/ranks', '/history', '/history/g1'])
+      expect(patterns.some(p => p.test(movedTo(old)!))).toBe(true)
+  })
+  it('leaves other paths alone', () => {
+    expect(movedTo('/historyx')).toBeNull()
+    expect(movedTo('/stats/history')).toBeNull()
+    expect(movedTo('/play')).toBeNull()
+  })
 })

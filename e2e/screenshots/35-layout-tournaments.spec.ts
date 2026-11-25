@@ -141,7 +141,7 @@ for (const [name, view] of [
 ] as const) {
   test(`matchmaking at ${name}: the Duo card's description and hint do not overlap`, async ({ browser }) => {
     const s = await open(browser, 'admin', view)
-    await openHash(s.page, '/matchmaking')
+    await openHash(s.page, '/play/ranked')
     const duo = s.page.getByRole('radio', { name: /Duo · 2v2/ })
     await expect(duo).toBeVisible()
     if (check) {

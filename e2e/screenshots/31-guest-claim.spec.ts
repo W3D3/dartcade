@@ -56,7 +56,7 @@ for (const [view, suffix] of [
     // The push is not stored: /ws/me has to be up before the host asks
     await phil.page.waitForTimeout(3000)
 
-    await openHash(michael.page, `/history/${id}`)
+    await openHash(michael.page, `/stats/history/${id}`)
     await michael.page.getByRole('button', { name: 'Claim guests' }).click()
     const dialog = michael.page.getByRole('dialog')
     await dialog.getByRole('combobox', { name: 'Friend for Pia' }).click()
@@ -70,7 +70,7 @@ for (const [view, suffix] of [
     await shot(phil.page, `guest-claim/invite-${suffix}.png`, { keepToasts: true })
     await phil.page.getByRole('listitem', { name: 'Claim Pia' }).getByRole('button', { name: 'Take over' }).click()
     await expect(phil.page.getByRole('listitem', { name: 'Claim Pia' })).toHaveCount(0)
-    await openHash(phil.page, '/history')
+    await openHash(phil.page, '/stats/history')
     await expect(phil.page.locator('tr, li').filter({ visible: true, hasText: 'Michael' }).first()).toBeVisible()
     await admin.ctx.close()
     await michael.ctx.close()

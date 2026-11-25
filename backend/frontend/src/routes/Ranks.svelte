@@ -46,8 +46,8 @@
     class="flex grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex flex-col gap-[6px]">
-      <a href={hrefs.matchmaking()} class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"
-        ><ChevronLeft size={16} />Matchmaking</a
+      <a href={hrefs.ranked()} class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"
+        ><ChevronLeft size={16} />Ranked</a
       >
       <h1 class="hidden md:block font-display font-bold text-[42px] xl:text-[48px] leading-none uppercase tracking-title">Ranks</h1>
       <p class="text-[15px] text-text-muted">

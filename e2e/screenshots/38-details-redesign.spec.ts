@@ -19,7 +19,7 @@ async function openGame(page: Page, players: number, teams: boolean): Promise<vo
   const games = (await res.json()).games as { id: string; players: unknown[]; config: { format?: string } }[]
   const game = games.find(g => g.players.length === players && (g.config.format === 'teams') === teams)
   expect(game, `a ${players}-player X01 game in the seed`).toBeTruthy()
-  await page.goto(`/#/history/${game!.id}`)
+  await page.goto(`/#/stats/history/${game!.id}`)
   await expect(page.getByRole('tab', { name: 'Statistics' })).toBeVisible()
 }
 
@@ -46,7 +46,7 @@ for (const [label, view] of Object.entries(VIEWS)) {
     const coached = games.filter(g => g.players.length === 2 && g.players.some(p => p.name === 'Phil'))
     let found = false
     for (const g of coached) {
-      await page.goto(`/#/history/${g.id}`)
+      await page.goto(`/#/stats/history/${g.id}`)
       await expect(page.getByRole('tab', { name: 'Statistics' })).toBeVisible()
       if (await page.getByRole('tab', { name: 'Review' }).count()) {
         await page.getByRole('tab', { name: 'Review' }).click()

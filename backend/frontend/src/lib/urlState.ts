@@ -1,4 +1,4 @@
-// List state (a filter, a tab) kept in the query part of the hash route, "#/history?mode=x01", so
+// List state (a filter, a tab) kept in the query part of the hash route, "#/stats/history?mode=x01", so
 // Back, reload and a shared link keep it. svelte-spa-router hands the part after "?" out as the
 // `querystring` store; `location.search` is the wrong place (see AGENTS.md).
 
@@ -37,7 +37,7 @@ const HISTORY_HREF = hrefs.history()
 /** Remembers the History list's URL, filter included, for this tab, so a details page can link back to it. */
 export function rememberHistoryUrl(storage: Store | null, qs: string | null | undefined): void {
   try {
-    storage?.setItem(HISTORY_KEY, '#' + paramUrl('/history', qs, '', null))
+    storage?.setItem(HISTORY_KEY, '#' + paramUrl('/stats/history', qs, '', null))
   } catch {
     /* not remembered: the way back is the plain list */
   }

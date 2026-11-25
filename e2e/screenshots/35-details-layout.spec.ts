@@ -32,7 +32,7 @@ for (const [label, view] of Object.entries(VIEWS)) {
         const game = games.find(g => g.players.length === scene.players)
         expect(game, `a ${scene.players}-player ${scene.mode} game in the seed`).toBeTruthy()
         if (long) await useLongNames(page, game!.id)
-        await page.goto(`/#/history/${game!.id}`)
+        await page.goto(`/#/stats/history/${game!.id}`)
         await expect(page.locator('section[aria-label="Result"], main').first()).toBeVisible({ timeout: 30_000 })
         await page.waitForTimeout(1500)
         if (!long) await shot(page, `layout-fixes/details/${scene.name}-${label}.png`, { settle: 300 })

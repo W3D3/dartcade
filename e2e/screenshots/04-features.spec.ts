@@ -111,7 +111,7 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
     [VIEW.phone, 'phone'],
   ] as const) {
     const { ctx, page } = await open(browser, 'michael', view)
-    await page.goto('/#/history')
+    await page.goto('/#/stats/history')
     // The row's corner: its middle may be a player's profile button
     await page
       .locator('tr, li')
@@ -119,7 +119,7 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
       .first()
       .getByRole('link', { name: /X01.*details/ })
       .click({ position: { x: 8, y: 8 } })
-    await page.waitForURL(url => url.hash.startsWith('#/history/'))
+    await page.waitForURL(url => url.hash.startsWith('#/stats/history/'))
     await expect(page.getByRole('tab', { name: 'Heatmap' })).toBeVisible()
     await shot(page, `details/x01-stats-${suffix}.png`, { settle: 1500 })
     await openProfile(page.getByRole('region', { name: 'Result', exact: true }), 'Gerwyn')
@@ -198,7 +198,7 @@ test('history: compact stats on a phone, the page scrolled', async ({ browser })
     [VIEW.phone, 'phone'],
   ] as const) {
     const { ctx, page } = await open(browser, 'admin', view)
-    await page.goto('/#/history')
+    await page.goto('/#/stats/history')
     await expect(
       page
         .getByRole('link', { name: /details/ })
@@ -233,13 +233,13 @@ test('history: compact stats on a phone, the page scrolled', async ({ browser })
 
 test('matchmaking and ranks', async ({ browser }) => {
   for (const [view, route, file] of [
-    [VIEW.wide, '/matchmaking', 'matchmaking/matchmaking-desktop.png'],
-    [VIEW.phone, '/matchmaking', 'matchmaking/matchmaking-phone.png'],
-    [VIEW.wide, '/matchmaking/ranks', 'matchmaking/ranks-desktop.png'],
+    [VIEW.wide, '/play/ranked', 'matchmaking/matchmaking-desktop.png'],
+    [VIEW.phone, '/play/ranked', 'matchmaking/matchmaking-phone.png'],
+    [VIEW.wide, '/play/ranked/ranks', 'matchmaking/ranks-desktop.png'],
   ] as const) {
     const { ctx, page } = await open(browser, 'admin', view)
     await page.goto(`/#${route}`)
-    await expect(page.getByRole('heading', { name: /Matchmaking|Ranks/ }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Play|Ranks/ }).first()).toBeVisible()
     await shot(page, file)
     await ctx.close()
   }
