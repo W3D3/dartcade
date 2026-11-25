@@ -8,6 +8,7 @@
   // reason as the highlight and heatmap-player picks: those views are remounted on every tab
   // switch, so a pick they held themselves would reset. The highlight picker (party games) and
   // Heatmap's "Where every dart landed" note sit alongside the title-tabs, as the artboards show.
+  import { untrack } from 'svelte'
   import type { GameDetail } from '$lib/api'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import X01Legs from './X01Legs.svelte'
@@ -21,7 +22,8 @@
   import { canReview } from '$lib/details/review'
   import X01Review from './X01Review.svelte'
 
-  let { detail, party = false }: { detail: GameDetail; party?: boolean } = $props()
+  // `focus`: a visit to ring in the breakdown (a link's ?visit=, e.g. from an achievement); the section opens on Breakdown, whose "Match" shows every leg
+  let { detail, party = false, focus = null }: { detail: GameDetail; party?: boolean; focus?: number | null } = $props()
   const coachEnabled = flag('coach.enabled')
   const canCoach = $derived(canReview(detail, $coachEnabled))
 
@@ -44,7 +46,8 @@
     { key: 'breakdown', label: 'Breakdown' },
     { key: 'heatmap', label: 'Heatmap' },
   ]
-  let view = $state<View>('stats')
+  // A link to a visit opens on the breakdown, where it is ringed
+  let view = $state<View>(untrack(() => (focus === null ? 'stats' : 'breakdown')))
   const pickView = (v: string) => (view = v === 'review' ? 'review' : (tabs.find(t => t.key === v)?.key ?? view))
 </script>
 
@@ -115,11 +118,11 @@
           {#each legs as l (l)}
             <div class="flex flex-col gap-4 min-w-0">
               <h3 class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-dim">Leg {l + 1}</h3>
-              <X01Legs {detail} leg={l} {highlight} />
+              <X01Legs {detail} leg={l} {highlight} {focus} />
             </div>
           {/each}
         {:else}
-          <X01Legs {detail} leg={legSel} {highlight} />
+          <X01Legs {detail} leg={legSel} {highlight} {focus} />
         {/if}
       {/if}
     </Tabs.Content>

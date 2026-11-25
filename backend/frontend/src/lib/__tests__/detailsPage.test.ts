@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { GameDetail } from '../api'
-import { detailSides, headline, highlightDefault, isGameDetail, layoutOf, loadPhase, metaLine } from '../details/page.js'
+import { detailSides, headline, highlightDefault, isGameDetail, layoutOf, loadPhase, metaLine, visitParam } from '../details/page.js'
 import { legMarksGame, playersBySeat } from '../details/cricket.js'
 import { cricketSides, legNumber } from '../cricket/view.js'
 
@@ -307,5 +307,19 @@ describe('loadPhase', () => {
   it('fails on anything else', () => {
     expect(loadPhase(500)).toBe('failed')
     expect(loadPhase(403)).toBe('failed')
+  })
+})
+
+describe('visitParam', () => {
+  it('reads the visit a details link points at', () => {
+    expect(visitParam('visit=12')).toBe(12)
+    expect(visitParam('visit=0')).toBe(0)
+    expect(visitParam('foo=1&visit=3')).toBe(3)
+  })
+  it('ignores anything else', () => {
+    expect(visitParam(undefined)).toBeNull()
+    expect(visitParam('')).toBeNull()
+    expect(visitParam('visit=-1')).toBeNull()
+    expect(visitParam('visit=x')).toBeNull()
   })
 })

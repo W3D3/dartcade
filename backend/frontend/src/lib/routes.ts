@@ -24,8 +24,9 @@ export const hrefs = {
   reset: () => at('/reset'),
   /** The Terms, Privacy Policy and Imprint pages. */
   legal: (page: 'terms' | 'privacy' | 'imprint') => at(`/${page}`),
-  /** Stats' History tab, or a finished game's details page under it. */
-  history: (id?: string) => at(id ? `/stats/history/${id}` : '/stats/history'),
+  /** Stats' History tab, or a finished game's details page under it; `visit` rings that visit in its breakdown (X01). */
+  history: (id?: string, visit?: number) =>
+    at(id ? `/stats/history/${id}` : '/stats/history', visit === undefined ? undefined : `visit=${visit}`),
   stats: () => at('/stats'),
   coach: (query?: string) => at('/coach', query),
   coachChecks: () => at('/coach/checks'),

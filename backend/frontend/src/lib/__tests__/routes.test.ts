@@ -17,7 +17,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   forgot: [hrefs.forgot()],
   reset: [hrefs.reset()],
   legal: [hrefs.legal('terms'), hrefs.legal('privacy'), hrefs.legal('imprint')],
-  history: [hrefs.history(), hrefs.history('g1')],
+  history: [hrefs.history(), hrefs.history('g1'), hrefs.history('g1', 4)],
   stats: [hrefs.stats()],
   coach: [hrefs.coach(), hrefs.coach('filter=lost')],
   coachChecks: [hrefs.coachChecks()],

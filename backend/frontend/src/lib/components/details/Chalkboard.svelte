@@ -1,7 +1,7 @@
 <script lang="ts">
   // Every visit of the leg, side by side: the score badge (lime ring at 100+, inverted on 180),
   // the darts, and the points left, crossed out once passed; "Out" on the checkout. In a team
-  // game each cell names who threw.
+  // game each cell names who threw. `focus` (a link's ?visit=) rings that visit and scrolls to it.
   import type { ChalkRow, Side } from '$lib/details/x01'
   import StarterDot from './StarterDot.svelte'
 
@@ -11,7 +11,18 @@
     showThrower = false,
     nameOf,
     starter = null,
-  }: { rows: ChalkRow[]; sides: Side[]; showThrower?: boolean; nameOf: (seat: number) => string; starter?: number | null } = $props()
+    focus = null,
+  }: {
+    rows: ChalkRow[]
+    sides: Side[]
+    showThrower?: boolean
+    nameOf: (seat: number) => string
+    starter?: number | null
+    focus?: number | null
+  } = $props()
+  const scrollIfFocused = (node: HTMLElement, on: boolean) => {
+    if (on) node.scrollIntoView({ block: 'center' })
+  }
   // From two sides each column keeps room for a visit's total, darts and points left (the dart chips
   // show from sm up; a phone has room for three sides, not four), so a wide table scrolls sideways instead of its cells running into each other.
   const cols = $derived(`40px repeat(${sides.length}, minmax(var(--col-min, 0px), 1fr))`)
@@ -38,10 +49,15 @@
         {#if c}
           <span
             role="cell"
+            use:scrollIfFocused={c.visit === focus}
+            aria-current={c.visit === focus ? 'true' : undefined}
             aria-label="{showThrower ? `${nameOf(c.seat)}: ` : ''}{c.darts.join(', ')} = {c.scored}{c.out
               ? ', checkout'
               : `, ${c.left} left`}{c.bust ? ', bust' : ''}"
-            class="flex items-center gap-2 min-w-0 px-2 py-1 rounded-sm {c.tier === 'max' ? 'bg-accent text-accent-fg' : ''}"
+            class="flex items-center gap-2 min-w-0 px-2 py-1 rounded-sm {c.tier === 'max' ? 'bg-accent text-accent-fg' : ''} {c.visit ===
+            focus
+              ? 'outline-2 outline-offset-2 outline-accent'
+              : ''}"
           >
             <span
               class="w-[52px] h-7 shrink-0 box-border flex items-center justify-center rounded-segment font-display font-bold text-[20px]

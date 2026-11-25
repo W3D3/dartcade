@@ -4,7 +4,7 @@
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
   import { hrefs } from '$lib/routes'
   import { onMount } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
   import { currentUser } from '$lib/auth'
@@ -41,7 +41,7 @@
   import { historyHref } from '$lib/urlState'
   import { sessionStore } from '$lib/returnTo'
   import { getGameView } from '$lib/gameViews'
-  import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
+  import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase, visitParam } from '$lib/details/page'
 
   // `admin`: opened from the admin game list, so any finished game, with every seat's account
   let { params, admin = false }: { params: { id: string }; admin?: boolean } = $props()
@@ -51,6 +51,8 @@
   let invalidated = $state<Invalidation>(null)
   let phase = $state<'loading' | 'ready' | 'missing' | 'failed'>('loading')
   let atcHighlight = $state<number | null>(null)
+  // ?visit=N: the visit a link points at (an achievement's), ringed in the X01 breakdown
+  const focusVisit = $derived(visitParam($querystring))
 
   async function fetchGame(): Promise<{ data: unknown; invalidated: Invalidation; response: Response }> {
     const path = { params: { path: { id: params.id } } }
@@ -216,7 +218,7 @@
             <ResultCard detail={d} {sides} />
             {#if x01}
               <!-- The statistics are X01's first tab: the section takes the whole width -->
-              <X01Section detail={d} party={layout === 'party'} />
+              <X01Section detail={d} party={layout === 'party'} focus={focusVisit} />
             {:else}
               <div class="flex flex-col gap-4 md:gap-6 {cricketParty ? 'xl:flex-row' : 'lg:flex-row'}">
                 <div

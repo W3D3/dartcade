@@ -9,7 +9,12 @@
   import RemainingChart from './RemainingChart.svelte'
   import { chalkboardRows, legSeries, legStarterKey, legSummary, sideRules, x01Sides } from '$lib/details/x01'
 
-  let { detail, leg, highlight }: { detail: GameDetail; leg: number; highlight: number | null } = $props()
+  let {
+    detail,
+    leg,
+    highlight,
+    focus = null,
+  }: { detail: GameDetail; leg: number; highlight: number | null; focus?: number | null } = $props()
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
   const starts = $derived(sideRules(detail.game.config, sides).map(r => r.startScore))
@@ -26,7 +31,7 @@
         <RemainingChart series={legSeries(x01, leg, sides, starts)} {sides} start={Math.max(...starts)} {highlight} {starter} />
       </div>
       <div class="min-w-0">
-        <Chalkboard rows={chalkboardRows(x01, leg, sides)} {sides} showThrower={!!x01.teams} {nameOf} {starter} />
+        <Chalkboard rows={chalkboardRows(x01, leg, sides)} {sides} showThrower={!!x01.teams} {nameOf} {starter} {focus} />
       </div>
     </div>
   </div>

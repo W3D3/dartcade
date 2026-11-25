@@ -1,11 +1,13 @@
 // X01 on the details page: the sides (seats, or teams), and per leg the points-left chart, the
 // chalkboard and the one-line summary, all from the server's X01Detail.
-import type { GameSummary, Segment, X01Detail } from '../api'
+import type { GameSummary, X01Detail } from '../api'
 import { readRulesConfig, seatRules, type X01Rules } from '$shared/handicap'
 import { visitFx } from '../visitBand.js'
 
 export type Side = { key: number; name: string; seats: number[] }
 export type ChalkCell = {
+  /** The game's visit number (the ?visit= of a link to it). */
+  visit: number
   seat: number
   scored: number
   left: number
@@ -23,9 +25,10 @@ export function x01Sides(game: GameSummary, detail: X01Detail): Side[] {
   return [...game.players].sort((a, b) => a.seat - b.seat).map(p => ({ key: p.seat, name: p.name, seats: [p.seat] }))
 }
 
-export function dartLabel(s: Segment): string {
+/** "T20", "Bull", "25", "–" for a miss. The bull is 50, or 25 doubled as Board Manager reports it. */
+export function dartLabel(s: { number: number; multiplier: number }): string {
   if (s.multiplier === 0) return '–'
-  if (s.number === 50) return 'Bull'
+  if (s.number === 50 || (s.number === 25 && s.multiplier === 2)) return 'Bull'
   if (s.number === 25) return '25'
   return `${s.multiplier === 3 ? 'T' : s.multiplier === 2 ? 'D' : 'S'}${s.number}`
 }
@@ -69,6 +72,7 @@ export function chalkboardRows(detail: X01Detail, leg: number, sides: Side[]): C
       const last = i === vs.length - 1
       const fx = visitFx(v.scored)
       return {
+        visit: v.visit,
         seat: v.seat,
         scored: v.scored,
         left: v.remaining,

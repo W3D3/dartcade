@@ -138,3 +138,9 @@ export function highlightDefault(d: GameDetail): number {
   if (d.game.mySeat !== null) return d.game.mySeat
   return d.game.players.find(p => p.placement === 1)?.seat ?? 0
 }
+
+/** The `visit` of a details link's query ("visit=12"): a whole number, else null. */
+export function visitParam(query: string | undefined): number | null {
+  const v = new URLSearchParams(query ?? '').get('visit')
+  return v !== null && /^\d+$/.test(v) ? Number(v) : null
+}

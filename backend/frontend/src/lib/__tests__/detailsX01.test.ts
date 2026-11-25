@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { render } from 'svelte/server'
+import Chalkboard from '../components/details/Chalkboard.svelte'
 import type { GameSummary, X01Detail } from '../api'
 import { chalkboardRows, dartLabel, legSeries, legSummary, remainingTicks, sideRules, x01Sides } from '../details/x01.js'
 
@@ -99,6 +101,21 @@ describe('X01 details helpers', () => {
     expect(rows[0].cells[1]).toMatchObject({ scored: 40, tier: null, darts: ['S20', 'S20', '–'], crossed: false })
     expect(rows[1].cells[0]).toMatchObject({ scored: 116, tier: 'ton', out: true, crossed: false })
     expect(rows[1].cells[1]).toBeNull()
+  })
+
+  it('rings the visit a link points at, and only that one', () => {
+    const rows = chalkboardRows(detail, 0, sides)
+    const focus = rows[0].cells[1]!.visit
+    const body = render(Chalkboard, { props: { rows, sides, nameOf: () => '', focus } }).body
+    expect(body.match(/aria-current="true"/g)).toHaveLength(1)
+    expect(body).toMatch(/aria-current="true"[^>]*aria-label="S20, S20, –/)
+    expect(render(Chalkboard, { props: { rows, sides, nameOf: () => '' } }).body).not.toContain('aria-current')
+  })
+
+  it('labels the bull either way Board Manager reports it', () => {
+    expect(dartLabel({ number: 50, multiplier: 1 })).toBe('Bull')
+    expect(dartLabel({ number: 25, multiplier: 2 })).toBe('Bull')
+    expect(dartLabel({ number: 25, multiplier: 1 })).toBe('25')
   })
 
   it('sums the leg up', () => {
