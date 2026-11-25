@@ -3,7 +3,8 @@ import type { Seg, Visit } from '../progression/challenges.js'
 import { p121Checkouts } from './countdown.js'
 
 const S = (n: number, m = 1): Seg => ({ n, m })
-const visit = (...segs: Seg[]): Visit => ({ leg: 0, segs, scored: null, bust: false })
+let visitNo = 0
+const visit = (...segs: Seg[]): Visit => ({ visit: visitNo++, leg: 0, segs, scored: null, bust: false })
 
 describe('p121Checkouts', () => {
   it('reads the finishing darts of each made try from the seat’s visits', () => {
@@ -13,17 +14,18 @@ describe('p121Checkouts', () => {
       { target: 121, made: false, darts: 6 },
       { target: 122, made: true, darts: 3 },
     ])
-    expect(out).toEqual([{ last: S(1, 2), prev: S(20, 3), value: 122, darts: 3, startScore: 122 }])
+    expect(out).toEqual([{ last: S(1, 2), prev: S(20, 3), value: 122, darts: 3, startScore: 122, visit: visits[2].visit, dart: 2 }])
   })
   it('has no second dart to show when the checkout is a visit’s only dart', () => {
-    const out = p121Checkouts([visit(S(20, 3), S(20, 3), S(1)), visit(S(25, 2))], [{ target: 61, made: true, darts: 4 }])
-    expect(out).toEqual([{ last: S(25, 2), value: 50, darts: 4, startScore: 61 }])
+    const visits = [visit(S(20, 3), S(20, 3), S(1)), visit(S(25, 2))]
+    const out = p121Checkouts(visits, [{ target: 61, made: true, darts: 4 }])
+    expect(out).toEqual([{ last: S(25, 2), value: 50, darts: 4, startScore: 61, visit: visits[1].visit, dart: 0 }])
   })
   it('values a checkout by what the finishing visit scored, not by the try’s target', () => {
     // 121 made as 60 · 41 · D10 over two visits: the finishing visit (T10 · S11 · D10) scored 61
     const visits = [visit(S(20, 3), S(0, 0), S(0, 0)), visit(S(10, 3), S(11), S(10, 2))]
     const out = p121Checkouts(visits, [{ target: 121, made: true, darts: 6 }])
-    expect(out).toEqual([{ last: S(10, 2), prev: S(11), value: 61, darts: 6, startScore: 121 }])
+    expect(out).toEqual([{ last: S(10, 2), prev: S(11), value: 61, darts: 6, startScore: 121, visit: visits[1].visit, dart: 2 }])
   })
   it('skips made tries when the seat has no darts (typed in)', () => {
     expect(p121Checkouts([], [{ target: 121, made: true, darts: 3 }])).toEqual([])

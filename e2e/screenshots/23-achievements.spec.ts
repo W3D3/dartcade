@@ -8,8 +8,7 @@ const row = (id: string, count: number, tier: number, tierAt: string | null = '2
   id,
   count,
   tier,
-  earnedAt: tierAt,
-  tierAt,
+  tiers: Array.from({ length: tier }, (_, i) => ({ tier: i + 1, reachedAt: tierAt, where: null, gameId: null, gone: false })),
   isNew: false,
 })
 const mine = {
@@ -82,6 +81,74 @@ for (const [name, view] of [
     await s.page.getByRole('tab', { name: /^Achievements/ }).click()
     await expect(s.page.getByText('You both have')).toBeVisible()
     await shot(s.page, `achievements/profile-tab-${name}.png`, { fullPage: name === 'desktop', settle: 1000 })
+    await s.ctx.close()
+  })
+}
+
+type Where = { visit: number; leg: number; legVisit: number; darts: { number: number; multiplier: number }[]; dart: null }
+/** The admin's best visit in a finished X01 game of the shot database: the unlock links point at it. */
+async function seededVisit(page: Page): Promise<{ gameId: string; where: Where }> {
+  return page.evaluate(async () => {
+    const list = await (await fetch('/api/games?mode=x01&limit=20')).json()
+    for (const g of list.games) {
+      if (g.mySeat === null) continue
+      const d = await (await fetch(`/api/games/${g.id}`)).json()
+      if (d.detail.mode !== 'x01') continue
+      type V = { visit: number; seat: number; scored: number; darts: { segment: { number: number; multiplier: number } }[] }
+      const mine = (d.detail.legs as { leg: number; visits: V[] }[]).flatMap(l =>
+        l.visits.filter(v => v.seat === g.mySeat).map((v, i) => ({ v, leg: l.leg, legVisit: i + 1 })),
+      )
+      const best = mine.sort((a, b) => b.v.scored - a.v.scored)[0]
+      if (!best) continue
+      const darts = best.v.darts.map(x => ({ number: x.segment.number, multiplier: x.segment.multiplier }))
+      return { gameId: g.id, where: { visit: best.v.visit, leg: best.leg, legVisit: best.legVisit, darts, dart: null } }
+    }
+    throw new Error('no finished X01 game of the admin')
+  })
+}
+
+// Each tier's visit on the card (a link where the game can be opened, the text where it can't, a game
+// gone), and the details page the link opens, with that visit ringed
+for (const [name, view] of [
+  ['desktop', VIEW.wide],
+  ['phone', VIEW.phone],
+] as const) {
+  test(`achievements: unlock links ${name}`, async ({ browser }) => {
+    const s = await open(browser, 'admin', view)
+    await openHash(s.page, '/progress/achievements')
+    const { gameId, where } = await seededVisit(s.page)
+    const tier = (t: number, reachedAt: string, over = {}) => ({ tier: t, reachedAt, where, gameId, gone: false, ...over })
+    const linked = {
+      ...mine,
+      achievements: mine.achievements.map(a =>
+        a.id === 'x01.180'
+          ? {
+              ...a,
+              tiers: [
+                tier(1, '2026-10-12T19:00:00Z'),
+                tier(2, '2026-10-20T19:00:00Z', { gameId: null }),
+                tier(3, '2026-11-01T19:00:00Z', { gameId: null, gone: true }),
+              ],
+            }
+          : a.id === 'x01.bigFish'
+            ? { ...a, tiers: [tier(1, '2026-11-03T10:00:00Z', { where: { ...where, dart: where.darts.length - 1 } })] }
+            : a,
+      ),
+    }
+    await s.page.route('**/api/achievements', r => r.fulfill({ json: linked }))
+    await s.page.route('**/api/achievements/seen', r => r.fulfill({ status: 204, body: '' }))
+    await s.page.reload()
+    const card = s.page.getByRole('article', { name: 'ONE HUNDRED AND EIGHTYYY' }).first()
+    await expect(card.getByText('Game no longer available')).toBeVisible()
+    await card.scrollIntoViewIfNeeded()
+    await closeToasts(s.page)
+    await shot(s.page, `achievements/unlock-links-${name}.png`, { settle: 1000 })
+    await card.getByRole('link').first().click()
+    await s.page.waitForURL(url => url.hash === `#/stats/history/${gameId}?visit=${where.visit}`)
+    const ringed = s.page.locator('[role="cell"][aria-current="true"]')
+    await expect(ringed).toHaveCount(1)
+    await expect(ringed).toBeInViewport()
+    await shot(s.page, `achievements/details-visit-${name}.png`, { settle: 1000 })
     await s.ctx.close()
   })
 }

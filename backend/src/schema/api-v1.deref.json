@@ -65713,8 +65713,7 @@
                           "id",
                           "count",
                           "tier",
-                          "earnedAt",
-                          "tierAt",
+                          "tiers",
                           "isNew"
                         ],
                         "additionalProperties": false,
@@ -65732,16 +65731,100 @@
                             "maximum": 5,
                             "description": "0 = counting, not earned yet"
                           },
-                          "earnedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
-                          "tierAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "When the current tier was reached"
+                          "tiers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "tier",
+                                "reachedAt",
+                                "where",
+                                "gameId",
+                                "gone"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "tier": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 5
+                                },
+                                "reachedAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "where": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept)",
+                                  "required": [
+                                    "visit",
+                                    "leg",
+                                    "legVisit",
+                                    "darts",
+                                    "dart"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "visit": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "The game's visit number (the details page's ?visit=)"
+                                    },
+                                    "leg": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "X01: the leg, from 0; null in a game without legs"
+                                    },
+                                    "legVisit": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "description": "The player's visit in the leg (or the game), from 1"
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "number",
+                                          "multiplier"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 50
+                                          },
+                                          "multiplier": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 3
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "dart": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "The dart of the visit that counted, from 0; null when the whole visit did"
+                                    }
+                                  }
+                                },
+                                "gameId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "The game to link to, when the viewer may open it (their own game, or a public one); null otherwise"
+                                },
+                                "gone": {
+                                  "type": "boolean",
+                                  "description": "The game was deleted or invalidated: no link"
+                                }
+                              }
+                            },
+                            "description": "Each tier reached, from tier 1"
                           },
                           "isNew": {
                             "type": "boolean",
@@ -65943,8 +66026,7 @@
                           "id",
                           "count",
                           "tier",
-                          "earnedAt",
-                          "tierAt",
+                          "tiers",
                           "isNew"
                         ],
                         "additionalProperties": false,
@@ -65962,16 +66044,100 @@
                             "maximum": 5,
                             "description": "0 = counting, not earned yet"
                           },
-                          "earnedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
-                          "tierAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "When the current tier was reached"
+                          "tiers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "tier",
+                                "reachedAt",
+                                "where",
+                                "gameId",
+                                "gone"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "tier": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 5
+                                },
+                                "reachedAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "where": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept)",
+                                  "required": [
+                                    "visit",
+                                    "leg",
+                                    "legVisit",
+                                    "darts",
+                                    "dart"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "visit": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "The game's visit number (the details page's ?visit=)"
+                                    },
+                                    "leg": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "X01: the leg, from 0; null in a game without legs"
+                                    },
+                                    "legVisit": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "description": "The player's visit in the leg (or the game), from 1"
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "number",
+                                          "multiplier"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 50
+                                          },
+                                          "multiplier": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 3
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "dart": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "The dart of the visit that counted, from 0; null when the whole visit did"
+                                    }
+                                  }
+                                },
+                                "gameId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "The game to link to, when the viewer may open it (their own game, or a public one); null otherwise"
+                                },
+                                "gone": {
+                                  "type": "boolean",
+                                  "description": "The game was deleted or invalidated: no link"
+                                }
+                              }
+                            },
+                            "description": "Each tier reached, from tier 1"
                           },
                           "isNew": {
                             "type": "boolean",
@@ -66330,8 +66496,7 @@
                           "id",
                           "count",
                           "tier",
-                          "earnedAt",
-                          "tierAt",
+                          "tiers",
                           "isNew"
                         ],
                         "additionalProperties": false,
@@ -66349,16 +66514,100 @@
                             "maximum": 5,
                             "description": "0 = counting, not earned yet"
                           },
-                          "earnedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
-                          "tierAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true,
-                            "description": "When the current tier was reached"
+                          "tiers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "tier",
+                                "reachedAt",
+                                "where",
+                                "gameId",
+                                "gone"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "tier": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 5
+                                },
+                                "reachedAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "where": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept)",
+                                  "required": [
+                                    "visit",
+                                    "leg",
+                                    "legVisit",
+                                    "darts",
+                                    "dart"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "visit": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "The game's visit number (the details page's ?visit=)"
+                                    },
+                                    "leg": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "X01: the leg, from 0; null in a game without legs"
+                                    },
+                                    "legVisit": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "description": "The player's visit in the leg (or the game), from 1"
+                                    },
+                                    "darts": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "number",
+                                          "multiplier"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 50
+                                          },
+                                          "multiplier": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 3
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "dart": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true,
+                                      "description": "The dart of the visit that counted, from 0; null when the whole visit did"
+                                    }
+                                  }
+                                },
+                                "gameId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "The game to link to, when the viewer may open it (their own game, or a public one); null otherwise"
+                                },
+                                "gone": {
+                                  "type": "boolean",
+                                  "description": "The game was deleted or invalidated: no link"
+                                }
+                              }
+                            },
+                            "description": "Each tier reached, from tier 1"
                           },
                           "isNew": {
                             "type": "boolean",
@@ -117278,8 +117527,7 @@
                 "id",
                 "count",
                 "tier",
-                "earnedAt",
-                "tierAt",
+                "tiers",
                 "isNew"
               ],
               "additionalProperties": false,
@@ -117297,16 +117545,100 @@
                   "maximum": 5,
                   "description": "0 = counting, not earned yet"
                 },
-                "earnedAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "nullable": true
-                },
-                "tierAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "nullable": true,
-                  "description": "When the current tier was reached"
+                "tiers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "tier",
+                      "reachedAt",
+                      "where",
+                      "gameId",
+                      "gone"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "tier": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "reachedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "where": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept)",
+                        "required": [
+                          "visit",
+                          "leg",
+                          "legVisit",
+                          "darts",
+                          "dart"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "visit": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "The game's visit number (the details page's ?visit=)"
+                          },
+                          "leg": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "nullable": true,
+                            "description": "X01: the leg, from 0; null in a game without legs"
+                          },
+                          "legVisit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "The player's visit in the leg (or the game), from 1"
+                          },
+                          "darts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "number",
+                                "multiplier"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 50
+                                },
+                                "multiplier": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 3
+                                }
+                              }
+                            }
+                          },
+                          "dart": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "nullable": true,
+                            "description": "The dart of the visit that counted, from 0; null when the whole visit did"
+                          }
+                        }
+                      },
+                      "gameId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The game to link to, when the viewer may open it (their own game, or a public one); null otherwise"
+                      },
+                      "gone": {
+                        "type": "boolean",
+                        "description": "The game was deleted or invalidated: no link"
+                      }
+                    }
+                  },
+                  "description": "Each tier reached, from tier 1"
                 },
                 "isNew": {
                   "type": "boolean",
@@ -117327,6 +117659,97 @@
             "type": "integer",
             "minimum": 0,
             "description": "Achievements with a tier you have not looked at yet (yours only; 0 for another player)"
+          }
+        }
+      },
+      "AchievementTier": {
+        "type": "object",
+        "required": [
+          "tier",
+          "reachedAt",
+          "where",
+          "gameId",
+          "gone"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "reachedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "where": {
+            "type": "object",
+            "nullable": true,
+            "description": "The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept)",
+            "required": [
+              "visit",
+              "leg",
+              "legVisit",
+              "darts",
+              "dart"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "visit": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The game's visit number (the details page's ?visit=)"
+              },
+              "leg": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true,
+                "description": "X01: the leg, from 0; null in a game without legs"
+              },
+              "legVisit": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The player's visit in the leg (or the game), from 1"
+              },
+              "darts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "number",
+                    "multiplier"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "number": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 50
+                    },
+                    "multiplier": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3
+                    }
+                  }
+                }
+              },
+              "dart": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true,
+                "description": "The dart of the visit that counted, from 0; null when the whole visit did"
+              }
+            }
+          },
+          "gameId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The game to link to, when the viewer may open it (their own game, or a public one); null otherwise"
+          },
+          "gone": {
+            "type": "boolean",
+            "description": "The game was deleted or invalidated: no link"
           }
         }
       },

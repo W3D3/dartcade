@@ -13,7 +13,19 @@ vi.mock('$lib/flags', () => ({ flag: () => manualDarts }))
 
 const def = ACHIEVEMENTS[0]
 const at = (count: number, tier: number) =>
-  badgeOf(def, { id: def.id, count, tier, earnedAt: '2026-11-03T10:00:00Z', tierAt: '2026-11-03T10:00:00Z', isNew: false })
+  badgeOf(def, {
+    id: def.id,
+    count,
+    tier,
+    tiers: Array.from({ length: tier }, (_, i) => ({
+      tier: i + 1,
+      reachedAt: '2026-11-03T10:00:00Z',
+      where: null,
+      gameId: null,
+      gone: false,
+    })),
+    isNew: false,
+  })
 
 describe('Badge', () => {
   it('draws the tier rim, one dot per tier and the count the tier took', () => {
@@ -58,6 +70,19 @@ describe('AchievementCard', () => {
     const onArticle = /<article[^>]*class="[^"]*\bgrayscale\b/
     expect(render(AchievementCard, { props: { badge: at(0, 0) } }).body).toMatch(onArticle)
     expect(render(AchievementCard, { props: { badge: at(14, 3) } }).body).not.toMatch(onArticle)
+  })
+  it('lists each tier reached, linking the visit where the viewer may open the game', () => {
+    const badge = at(10, 2)
+    const where = { visit: 4, leg: 0, legVisit: 3, darts: Array.from({ length: 3 }, () => ({ number: 20, multiplier: 3 })), dart: null }
+    badge.tiers = [
+      { ...badge.tiers[0], where, gameId: 'g1' },
+      { ...badge.tiers[1], where, gone: true },
+    ]
+    const body = render(AchievementCard, { props: { badge } }).body
+    expect(body).toContain('href="#/stats/history/g1?visit=4"')
+    expect(body).toContain('Leg 1, visit 3 · T20 T20 T20')
+    expect(body).toContain('Game no longer available')
+    expect(body.match(/href="#\/stats\/history/g)).toHaveLength(1)
   })
   it('marks a new tier', () => {
     expect(render(AchievementCard, { props: { badge: at(14, 3), isNew: true } }).body).toContain('aria-label="New"')

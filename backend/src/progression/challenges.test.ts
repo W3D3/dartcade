@@ -148,7 +148,7 @@ describe('applyGame', () => {
 
   it('counts six darts in a row in the same segment, across visits', () => {
     const seg = (n: number, m: number) => ({ n, m })
-    const visit = (...segs: { n: number; m: number }[]) => ({ leg: 0, segs, scored: null, bust: false })
+    const visit = (...segs: { n: number; m: number }[]) => ({ visit: 0, leg: 0, segs, scored: null, bust: false })
     const c = { templateId: 'd.six-same', progress: 0, state: {} }
     const five = [visit(seg(20, 1), seg(20, 1), seg(20, 1)), visit(seg(20, 1), seg(20, 1), seg(5, 1))]
     expect(applyGame(c, game({ visits: five }))!.progress).toBe(0)
@@ -161,7 +161,7 @@ describe('applyGame', () => {
   it('names the doubles hit so far', () => {
     const D = (n: number) => ({ n, m: 2 })
     const c = { templateId: 'd.ten-doubles', progress: 0, state: {} }
-    const after = applyGame(c, game({ visits: [{ leg: 0, segs: [D(20), D(16), D(20)], scored: null, bust: false }] }))!
+    const after = applyGame(c, game({ visits: [{ visit: 0, leg: 0, segs: [D(20), D(16), D(20)], scored: null, bust: false }] }))!
     expect(after.progress).toBe(2)
     expect(challengeTitle({ templateId: c.templateId, target: 10, state: after.state })).toBe('Hit 10 different doubles')
     expect(challengeChips({ templateId: c.templateId, state: after.state })).toEqual(['D20', 'D16'])
@@ -169,7 +169,7 @@ describe('applyGame', () => {
 
   it('counts the bull as a double', () => {
     const bull = { n: 50, m: 1 }
-    const visits = [{ leg: 0, segs: [bull, { n: 20, m: 2 }, { n: 25, m: 1 }], scored: null, bust: false }]
+    const visits = [{ visit: 0, leg: 0, segs: [bull, { n: 20, m: 2 }, { n: 25, m: 1 }], scored: null, bust: false }]
     expect(applyGame({ templateId: 'd.doubles', progress: 0, state: {} }, game({ visits }))!.progress).toBe(2)
     const ten = applyGame({ templateId: 'd.ten-doubles', progress: 0, state: {} }, game({ visits }))!
     expect(challengeChips({ templateId: 'd.ten-doubles', state: ten.state })).toEqual(['Bull', 'D20'])
@@ -190,25 +190,25 @@ describe('applyGame', () => {
     expect(legDartLimit(135)).toBe(18)
     expect(legDartLimit(null)).toBe(36)
     const hard = { templateId: 'd.leg-limit', progress: 0, state: { limit: 24 } }
-    const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 24, startScore: 501 }
+    const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 24, startScore: 501, visit: 0, dart: 0 }
     expect(applyGame(hard, game({ checkouts: [checkout] }))!.progress).toBe(1)
     expect(applyGame(hard, game({ checkouts: [{ ...checkout, darts: 27 }] }))!.progress).toBe(0)
   })
 
   it('counts bullseyes and two trebles in a visit', () => {
     const bull = { templateId: 'd.bullseye', progress: 0, state: {} }
-    expect(applyGame(bull, game({ visits: [{ leg: 0, segs: [{ n: 25, m: 2 }], scored: null, bust: false }] }))!.progress).toBe(1)
+    expect(applyGame(bull, game({ visits: [{ visit: 0, leg: 0, segs: [{ n: 25, m: 2 }], scored: null, bust: false }] }))!.progress).toBe(1)
     const two = { templateId: 'd.two-trebles', progress: 0, state: {} }
     const T = (n: number) => ({ n, m: 3 })
-    expect(applyGame(two, game({ visits: [{ leg: 0, segs: [T(20), T(20), { n: 1, m: 1 }], scored: null, bust: false }] }))!.progress).toBe(
-      1,
-    )
+    expect(
+      applyGame(two, game({ visits: [{ visit: 0, leg: 0, segs: [T(20), T(20), { n: 1, m: 1 }], scored: null, bust: false }] }))!.progress,
+    ).toBe(1)
   })
 
   it('reads visits and checkouts', () => {
-    const run = [140, 180, 140].map(scored => ({ leg: 0, segs: [T20, T20, T20], scored, bust: false }))
+    const run = [140, 180, 140].map(scored => ({ visit: 0, leg: 0, segs: [T20, T20, T20], scored, bust: false }))
     expect(applyGame({ templateId: 'd.140-run', progress: 0, state: {} }, game({ visits: run }))!.progress).toBe(1)
-    const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 18, startScore: 501 }
+    const checkout = { last: { n: 16, m: 2 }, value: 32, darts: 18, startScore: 501, visit: 0, dart: 0 }
     expect(applyGame({ templateId: 'd.d16', progress: 0, state: {} }, game({ checkouts: [checkout] }))!.progress).toBe(1)
     expect(
       applyGame({ templateId: 'w.big-checkout', progress: 0, state: {} }, game({ checkouts: [{ ...checkout, value: 60 }] }))!.progress,

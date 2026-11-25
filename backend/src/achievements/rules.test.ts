@@ -1,13 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import type { ChallengeGame, Checkout, Seg, Visit } from '../progression/challenges.js'
-import { ACHIEVEMENTS, tierOf, xpForTiers } from '../shared/achievements.js'
-import { achievementDeltas, biggestTierFirst } from './rules.js'
+import { ACHIEVEMENTS, crossings, tierOf, xpForTiers } from '../shared/achievements.js'
+import { achievementHits, biggestTierFirst } from './rules.js'
 
 const T20: Seg = { n: 20, m: 3 }
 const BULL: Seg = { n: 25, m: 2 }
 const D = (n: number): Seg => ({ n, m: 2 })
-const visit = (scored: number, segs: Seg[] = [], bust = false): Visit => ({ leg: 0, segs, scored, bust })
-const checkout = (value: number, last: Seg, prev?: Seg): Checkout => ({ last, value, darts: 9, startScore: 501, ...(prev && { prev }) })
+let visitNo = 0
+const visit = (scored: number, segs: Seg[] = [], bust = false, leg = 0): Visit => ({ visit: visitNo++, leg, segs, scored, bust })
+const checkout = (value: number, last: Seg, prev?: Seg): Checkout => ({
+  last,
+  value,
+  darts: 9,
+  startScore: 501,
+  visit: 0,
+  dart: 2,
+  ...(prev && { prev }),
+})
 const game = (over: Partial<ChallengeGame>): ChallengeGame => ({
   id: 'g',
   mode: 'x01',
@@ -22,7 +31,7 @@ const game = (over: Partial<ChallengeGame>): ChallengeGame => ({
   ...over,
 })
 
-describe('achievementDeltas', () => {
+describe('achievementHits', () => {
   const cases: [string, Partial<ChallengeGame>, Record<string, number>][] = [
     ['two 180s', { visits: [visit(180, [T20, T20, T20]), visit(180, [T20, T20, T20]), visit(60)] }, { 'x01.180': 2, 'x01.tonPlus': 2 }],
     ['a bust of 180 does not count', { visits: [visit(180, [T20, T20, T20], true)] }, {}],
@@ -54,7 +63,24 @@ describe('achievementDeltas', () => {
     ['121 has no visit scores: no 180, ton or 26', { mode: 'p121', visits: [visit(180, [T20, T20, T20]), visit(26)] }, {}],
   ]
   it.each(cases)('%s', (_name, over, expected) => {
-    expect(Object.fromEntries(achievementDeltas(game(over)))).toEqual(expected)
+    expect(Object.fromEntries([...achievementHits(game(over))].map(([id, hits]) => [id, hits.length]))).toEqual(expected)
+  })
+
+  it('names the visit of each hit: its leg, the player’s visit number in the leg, its darts and the dart that counted', () => {
+    const miss = { n: 0, m: 0 }
+    const visits = [visit(60, [T20, miss, miss], false, 0), visit(180, [T20, T20, T20], false, 1), visit(50, [miss, BULL, miss], false, 1)]
+    const hits = achievementHits(game({ visits }))
+    expect(hits.get('x01.180')).toEqual([
+      { visit: visits[1].visit, leg: 1, legVisit: 1, darts: [T20, T20, T20].map(s => ({ number: s.n, multiplier: s.m })), dart: null },
+    ])
+    expect(hits.get('x01.bullseye')).toEqual([expect.objectContaining({ visit: visits[2].visit, leg: 1, legVisit: 2, dart: 1 })])
+  })
+
+  it('has no leg in a game without legs (121)', () => {
+    const v = visit(0, [BULL])
+    expect(achievementHits(game({ mode: 'p121', visits: [v] })).get('x01.bullseye')).toEqual([
+      { visit: v.visit, leg: null, legVisit: 1, darts: [{ number: 25, multiplier: 2 }], dart: 0 },
+    ])
   })
 })
 
@@ -68,6 +94,15 @@ describe('catalogue', () => {
     expect([0, 1, 4, 5, 19, 20, 500].map(c => tierOf(t, c))).toEqual([0, 1, 1, 2, 3, 4, 5])
     expect(xpForTiers(0, 2)).toBe(250)
     expect(xpForTiers(2, 2)).toBe(0)
+  })
+  it('gives each tier crossed the add that reached it', () => {
+    const t = { thresholds: [1, 5, 10, 20, 100] }
+    expect(crossings(t, 3, ['a', 'b', 'c', 'd', 'e', 'f', 'g'])).toEqual([
+      { tier: 2, by: 'b' },
+      { tier: 3, by: 'g' },
+    ])
+    expect(crossings(t, 5, ['a'])).toEqual([])
+    expect(crossings(t, 0, ['a'])).toEqual([{ tier: 1, by: 'a' }])
   })
 })
 

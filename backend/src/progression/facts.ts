@@ -26,7 +26,7 @@ export function challengeGame(
   const scored = new Map(detail?.legs.flatMap(l => l.visits.filter(v => v.seat === seat).map(v => [v.visit, v] as const)) ?? [])
   const visits: Visit[] = raw.map(v => {
     const d = scored.get(v.visit)
-    return { leg: v.leg, segs: v.segs, scored: d?.scored ?? null, bust: d?.bust ?? false }
+    return { visit: v.visit, leg: v.leg, segs: v.segs, scored: d?.scored ?? null, bust: d?.bust ?? false }
   })
 
   const startScore =
@@ -52,6 +52,8 @@ export function challengeGame(
         last: { n: dart.number, m: dart.multiplier },
         ...(before && { prev: { n: before.number, m: before.multiplier } }),
         value: last.scored,
+        visit: last.visit,
+        dart: last.darts.length - 1,
         darts: leg.visits.filter(v => v.seat === seat).reduce((a, v) => a + v.darts.length, 0),
         startScore,
       })

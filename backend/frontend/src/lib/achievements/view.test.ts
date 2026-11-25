@@ -1,14 +1,31 @@
 import { describe, it, expect } from 'vitest'
 import { ACHIEVEMENTS } from '$shared/achievements.js'
-import { modeNote, badgeOf, badgesOf, byCategory, compare, filterBadges, progressLine, statusLine, summarize } from './view'
+import {
+  modeNote,
+  badgeOf,
+  badgesOf,
+  byCategory,
+  compare,
+  filterBadges,
+  progressLine,
+  statusLine,
+  summarize,
+  unlockLine,
+  type AchievementTier,
+} from './view'
 
 const def = ACHIEVEMENTS.find(a => a.id === 'x01.180')!
 const row = (count: number, tier: number) => ({
   id: def.id,
   count,
   tier,
-  earnedAt: '2026-11-03T10:00:00Z',
-  tierAt: '2026-11-03T10:00:00Z',
+  tiers: Array.from({ length: tier }, (_, i) => ({
+    tier: i + 1,
+    reachedAt: '2026-11-03T10:00:00Z',
+    where: null,
+    gameId: null,
+    gone: false,
+  })),
   isNew: false,
 })
 
@@ -53,5 +70,36 @@ describe('modeNote', () => {
   it('names the modes of an achievement that narrows its category', () => {
     expect(modeNote(def)).toBe('X01 only')
     expect(modeNote(ACHIEVEMENTS.find(a => a.id === 'x01.bullseye')!)).toBeNull()
+  })
+})
+
+describe('unlockLine', () => {
+  const T20 = { number: 20, multiplier: 3 }
+  const tier = (over: Partial<AchievementTier>): AchievementTier => ({
+    tier: 3,
+    reachedAt: '2026-11-12T20:00:00Z',
+    where: { visit: 17, leg: 1, legVisit: 5, darts: [T20, T20, T20], dart: null },
+    gameId: 'g1',
+    gone: false,
+    ...over,
+  })
+  it('names the tier, the day, the leg and visit with its darts, and links to that visit', () => {
+    expect(unlockLine(tier({}), false)).toEqual({
+      when: 'Gold · 12 Nov',
+      where: 'Leg 2, visit 5 · T20 T20 T20',
+      href: '#/stats/history/g1?visit=17',
+      gone: false,
+    })
+  })
+  it('names only the dart that counted, the bull as Board Manager reports it', () => {
+    const where = { visit: 3, leg: null, legVisit: 2, darts: [T20, { number: 25, multiplier: 2 }], dart: 1 }
+    expect(unlockLine(tier({ where }), true)).toMatchObject({ when: null, where: 'Visit 2 · Bull' })
+  })
+  it('has no link where the viewer may not open the game, or it is gone', () => {
+    expect(unlockLine(tier({ gameId: null }), false)).toMatchObject({ where: 'Leg 2, visit 5 · T20 T20 T20', href: null, gone: false })
+    expect(unlockLine(tier({ gameId: null, gone: true }), false)).toMatchObject({ href: null, gone: true })
+  })
+  it('has only the day for an unlock from before visits were kept', () => {
+    expect(unlockLine(tier({ where: null, gameId: null }), false)).toEqual({ when: 'Gold · 12 Nov', where: null, href: null, gone: false })
   })
 })

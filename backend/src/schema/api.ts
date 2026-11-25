@@ -6858,13 +6858,8 @@ export interface components {
                 count: number;
                 /** @description 0 = counting, not earned yet */
                 tier: number;
-                /** Format: date-time */
-                earnedAt: string | null;
-                /**
-                 * Format: date-time
-                 * @description When the current tier was reached
-                 */
-                tierAt: string | null;
+                /** @description Each tier reached, from tier 1 */
+                tiers: components["schemas"]["AchievementTier"][];
                 /** @description A tier you have not looked at yet (yours only; false for another player) */
                 isNew: boolean;
             }[];
@@ -6872,6 +6867,30 @@ export interface components {
             showcase: string[];
             /** @description Achievements with a tier you have not looked at yet (yours only; 0 for another player) */
             unseen: number;
+        };
+        AchievementTier: {
+            tier: number;
+            /** Format: date-time */
+            reachedAt: string;
+            /** @description The visit (and the dart, for a single-dart achievement) that reached the tier; null where it is not known (some unlocks from before this was kept) */
+            where: {
+                /** @description The game's visit number (the details page's ?visit=) */
+                visit: number;
+                /** @description X01: the leg, from 0; null in a game without legs */
+                leg: number | null;
+                /** @description The player's visit in the leg (or the game), from 1 */
+                legVisit: number;
+                darts: {
+                    number: number;
+                    multiplier: number;
+                }[];
+                /** @description The dart of the visit that counted, from 0; null when the whole visit did */
+                dart: number | null;
+            } | null;
+            /** @description The game to link to, when the viewer may open it (their own game, or a public one); null otherwise */
+            gameId: string | null;
+            /** @description The game was deleted or invalidated: no link */
+            gone: boolean;
         };
         Progress: {
             /** @description Total XP */

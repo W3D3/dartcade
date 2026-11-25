@@ -25,7 +25,7 @@ export type UnlockToast = UnlockView & {
 function unlockView(u: Unlock): UnlockView | null {
   const def = achievement(u.id)
   if (!def) return null
-  const badge = badgeOf(def, { id: u.id, count: u.count, tier: u.tier, earnedAt: null, tierAt: null, isNew: false })
+  const badge = badgeOf(def, { id: u.id, count: u.count, tier: u.tier, tiers: [], isNew: false })
   const target = def.thresholds.at(u.tier)
   return {
     badge,

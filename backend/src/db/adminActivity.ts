@@ -96,7 +96,7 @@ export async function activityStats(db: Kysely<Database>, asked: number, now: nu
       .where('kind', '=', 'one_eighty')
       .where('created_at', '>=', day)
       .executeTakeFirstOrThrow(),
-    db.selectFrom('user_achievements').select(count.as('n')).where('tier_at', '>=', day).executeTakeFirstOrThrow(),
+    db.selectFrom('achievement_tiers').select(count.as('n')).where('reached_at', '>=', day).executeTakeFirstOrThrow(),
     db.selectFrom('teams').select(count.as('n')).where('created_at', '>=', week).executeTakeFirstOrThrow(),
     db
       .selectFrom('game_darts as d')

@@ -12,7 +12,7 @@ type Try = { target: number; made: boolean; darts: number }
 
 /** The made tries as checkouts. `visits` are the seat's visits in order, `tries` its finished tries. */
 export function p121Checkouts(visits: Visit[], tries: Try[]): Checkout[] {
-  const darts = visits.flatMap((v, visit) => v.segs.map(seg => ({ seg, visit })))
+  const darts = visits.flatMap(v => v.segs.map((seg, index) => ({ seg, visit: v.visit, index })))
   let used = 0
   return tries.flatMap(t => {
     used += t.darts
@@ -30,6 +30,8 @@ export function p121Checkouts(visits: Visit[], tries: Try[]): Checkout[] {
         value,
         darts: t.darts,
         startScore: t.target,
+        visit: last.visit,
+        dart: last.index,
         ...(prev?.visit === last.visit && { prev: prev.seg }),
       },
     ]

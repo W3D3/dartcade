@@ -9,11 +9,13 @@ import * as xp from '../db/progression.js'
 import { playerGame } from '../progression/service.js'
 import { finishedDetail } from '../history/detail.js'
 import { countdownGame } from './countdown.js'
-import { countsFor, xpForTiers } from '../shared/achievements.js'
+import { achievement, countsFor, crossings, xpForTiers } from '../shared/achievements.js'
 import { levelOf, localDate } from '../shared/progression.js'
 import type { AchievementUnlockedMessage } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
-import { achievementDeltas, biggestTierFirst } from './rules.js'
+import type { XpGame } from '../db/progression.js'
+import type { Detail } from '../history/detail.js'
+import { achievementHits, biggestTierFirst, type AchievementSource } from './rules.js'
 
 export type AchievementsDeps = {
   db: Kysely<Database>
@@ -40,14 +42,12 @@ export class AchievementsService {
     for (const userId of userIds) {
       // Counts are kept for everyone (turning the flag on later loses nothing); XP and the push only where it is on
       const paying = !opts.backfill && (await this.deps.enabled(userId))
-      const player = playerGame(game, userId)
-      if (!player) continue
-      const manual = (await this.deps.manualDarts?.(userId)) ?? false
-      const deltas = achievementDeltas(countdownGame(game, userId, player, detail, manual))
+      const hits = await this.hitsOf(game, userId, detail)
+      if (!hits) continue
       const msg = await this.deps.db.transaction().execute(async trx => {
         await xp.lockUser(trx, userId)
         if (!(await q.claimGame(trx, userId, game.id))) return null
-        const changed = (await q.addCounts(trx, userId, game.id, game.finishedAt, deltas)).filter(c => c.after > c.before)
+        const changed = (await q.addCounts(trx, userId, game.id, game.finishedAt, hits)).filter(c => c.after > c.before)
         if (changed.length === 0) return null
         const unlocked = biggestTierFirst(
           changed.map(c => ({
@@ -97,6 +97,14 @@ export class AchievementsService {
     }
   }
 
+  /** What the game added to each achievement from the account's seat; undefined when the account has no placed seat. */
+  private async hitsOf(game: XpGame, userId: string, detail: Detail | null): Promise<Map<string, AchievementSource[]> | undefined> {
+    const player = playerGame(game, userId)
+    if (!player) return undefined
+    const manual = (await this.deps.manualDarts?.(userId)) ?? false
+    return achievementHits(countdownGame(game, userId, player, detail, manual))
+  }
+
   /**
    * Counts the finished games nobody has counted yet (from before achievements, or of a mode added to
    * them since), no XP, no push. A restart resumes: counted games are left out.
@@ -105,5 +113,41 @@ export class AchievementsService {
     const ids = await q.uncountedGameIds(this.deps.db)
     for (const id of ids) await this.countGame(id, { backfill: true })
     return ids.length
+  }
+
+  /**
+   * Once: finds the game and visit of the tiers reached before they were kept (migration 079), by
+   * counting each account's counted games again, oldest first. A tier it cannot place (its game
+   * invalidated since, or typed in) keeps what was known. A restart before the end starts over,
+   * skipping the tiers already placed.
+   */
+  async locateTiers(): Promise<number> {
+    const db = this.deps.db
+    if (await q.sourcesLocated(db)) return 0
+    const unplaced = await q.unlocatedTiers(db)
+    const open = new Set(unplaced.map(t => `${t.userId}:${t.id}:${t.tier}`))
+    const counts = new Map<string, number>()
+    let placed = 0
+    for (const { gameId, userIds } of await q.countedGames(db, [...new Set(unplaced.map(t => t.userId))])) {
+      const game = await xp.getXpGame(db, gameId)
+      if (!game) continue
+      const detail = await finishedDetail(db, game.id, this.deps.warn)
+      for (const userId of userIds) {
+        for (const [id, sources] of (await this.hitsOf(game, userId, detail)) ?? []) {
+          const def = achievement(id)
+          if (!def) continue
+          const key = `${userId}:${id}`
+          const before = counts.get(key) ?? 0
+          counts.set(key, before + sources.length)
+          for (const r of crossings(def, before, sources)) {
+            if (!open.has(`${key}:${r.tier}`)) continue
+            await q.placeTier(db, { userId, id, tier: r.tier, at: game.finishedAt, gameId: game.id, source: r.by })
+            placed++
+          }
+        }
+      }
+    }
+    await q.markSourcesLocated(db)
+    return placed
   }
 }

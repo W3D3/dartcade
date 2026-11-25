@@ -19,14 +19,17 @@ const CHALLENGE_XP: Record<Period, Record<Difficulty, number>> = {
 
 /** A dart as the challenges read it: number (25 or 50 for the bull) and multiplier (0 = a miss). */
 export type Seg = { n: number; m: number }
-/** One of your visits in the game itself, in order; `scored` and `bust` only in X01. */
-export type Visit = { leg: number; segs: Seg[]; scored: number | null; bust: boolean }
+/** One of your visits in the game itself, in order (`visit`: the game's visit number); `scored` and `bust` only in X01. */
+export type Visit = { visit: number; leg: number; segs: Seg[]; scored: number | null; bust: boolean }
 /** An X01 leg you checked out: the dart it ended on, the score it took out, your darts in the leg. */
 export type Checkout = {
   last: Seg
   value: number
   darts: number
   startScore: number
+  /** The game's visit number of the checkout visit, and its last dart's index in it. */
+  visit: number
+  dart: number
   /** The dart before the last one in the checkout visit. */ prev?: Seg
 }
 

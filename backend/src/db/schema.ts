@@ -597,9 +597,6 @@ export interface UserAchievementsTable {
   achievement_id: string
   count: number
   tier: number
-  earned_at: Date | null
-  tier_at: Date | null
-  game_id: string | null
   seen_tier: ColumnType<number, number | undefined, number>
   showcase_slot: number | null
 }
@@ -767,6 +764,20 @@ export interface AchievementGamesTable {
   game_id: string
 }
 
+export interface AchievementTiersTable {
+  user_id: string
+  achievement_id: string
+  tier: number
+  reached_at: Date
+  game_id: string | null
+  /** Where the tier was reached; null where it is not known. Written as JSON. */
+  source: ColumnType<components['schemas']['AchievementTier']['where'], string | null, string | null>
+}
+
+export interface AchievementSourceBackfillTable {
+  done_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
@@ -860,6 +871,8 @@ export interface Database {
   user_unlocks: UserUnlocksTable
   user_achievements: UserAchievementsTable
   achievement_games: AchievementGamesTable
+  achievement_tiers: AchievementTiersTable
+  achievement_source_backfill: AchievementSourceBackfillTable
   ranked_matches: RankedMatchesTable
   coach_legs: CoachLegsTable
   coach_games: CoachGamesTable

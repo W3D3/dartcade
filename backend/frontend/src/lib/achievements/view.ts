@@ -3,9 +3,12 @@
 import { ACHIEVEMENTS, TIER_NAMES, type AchievementCategory, type AchievementDef } from '$shared/achievements.js'
 import { gameTitle } from '$shared/gameNames.js'
 import type { components } from '$lib/api/schema'
+import { dartLabel } from '$lib/details/x01'
+import { hrefs } from '$lib/routes'
 
 export type Achievements = components['schemas']['Achievements']
 export type AchievementRow = Achievements['achievements'][number]
+export type AchievementTier = components['schemas']['AchievementTier']
 
 export type Badge = {
   def: AchievementDef
@@ -18,7 +21,10 @@ export type Badge = {
   next: number | null
   /** 0..1 towards the next tier (towards the first one while not earned). */
   fraction: number
+  /** When the current tier was reached. */
   earnedAt: string | null
+  /** Each tier reached, from tier 1, with where. */
+  tiers: AchievementTier[]
 }
 
 export function badgeOf(def: AchievementDef, row: AchievementRow | undefined): Badge {
@@ -33,7 +39,8 @@ export function badgeOf(def: AchievementDef, row: AchievementRow | undefined): B
     oneOff: def.thresholds.length === 1,
     next,
     fraction: next === null ? 1 : Math.min(1, Math.max(0, (count - from) / (next - from))),
-    earnedAt: row?.tierAt ?? null,
+    earnedAt: row?.tiers.at(-1)?.reachedAt ?? null,
+    tiers: row?.tiers ?? [],
   }
 }
 
@@ -60,6 +67,23 @@ export function progressLine(b: Badge): string | null {
   if (b.next === null) return null
   const to = b.tier === 0 ? 'unlock' : tierName(b.tier + 1)
   return `${fmt(b.count)} / ${fmt(b.next)} to ${to}`
+}
+
+/**
+ * How a tier was reached, for the card: "Gold · 12 Nov" (a one-off's status line has the day already),
+ * where ("Leg 2, visit 5 · Bull") and the link to that visit.
+ */
+export type UnlockLine = { when: string | null; where: string | null; href: string | null; gone: boolean }
+export function unlockLine(t: AchievementTier, oneOff: boolean): UnlockLine {
+  const w = t.where
+  const thrown = w && (w.dart !== null && w.darts[w.dart] ? dartLabel(w.darts[w.dart]) : w.darts.map(dartLabel).join(' '))
+  const at = w && (w.leg === null ? `Visit ${w.legVisit}` : `Leg ${w.leg + 1}, visit ${w.legVisit}`)
+  return {
+    when: oneOff ? null : `${tierName(t.tier)} · ${shortDate(t.reachedAt)}`,
+    where: at && (thrown ? `${at} · ${thrown}` : at),
+    href: t.gameId && !t.gone ? hrefs.history(t.gameId, w?.visit) : null,
+    gone: t.gone,
+  }
 }
 
 export const shortDate = (iso: string): string => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

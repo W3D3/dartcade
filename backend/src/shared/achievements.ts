@@ -123,6 +123,11 @@ export function tierOf(def: Pick<AchievementDef, 'thresholds'>, count: number): 
   return def.thresholds.filter(t => count >= t).length
 }
 
+/** The tiers that `adds` more on top of `count` reach, each with the add that reached it (in the order given). */
+export function crossings<T>(def: Pick<AchievementDef, 'thresholds'>, count: number, adds: readonly T[]): { tier: number; by: T }[] {
+  return def.thresholds.flatMap((t, i) => (t > count && t <= count + adds.length ? [{ tier: i + 1, by: adds[t - count - 1] }] : []))
+}
+
 /** The XP for reaching tiers `from + 1` to `to`. */
 export function xpForTiers(from: number, to: number): number {
   return TIER_XP.slice(from, to).reduce((a, b) => a + b, 0)

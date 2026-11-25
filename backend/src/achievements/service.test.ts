@@ -30,6 +30,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     await insertUsers(db, [
       { id: 'ann', emailVerified: true },
       { id: 'bob', emailVerified: true },
+      { id: 'cid', emailVerified: true },
     ])
   })
   afterAll(async () => {
@@ -38,19 +39,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
   beforeEach(async () => {
     pushed = []
     on = true
+    signInAs('ann')
     service = new AchievementsService({
       db,
       enabled: () => Promise.resolve(on),
       push: (userId, msg) => void (userId === 'ann' && pushed.push(msg)),
       warn: () => undefined,
     })
-    await sql`TRUNCATE user_achievements, achievement_games, xp_ledger, user_progress, game_sessions CASCADE`.execute(db)
+    await sql`TRUNCATE user_achievements, achievement_tiers, achievement_source_backfill, achievement_games, xp_ledger, user_progress, game_sessions CASCADE`.execute(
+      db,
+    )
   })
 
   /** A finished 1v1 where ann throws `bulls` bullseyes and fills the rest of her visits with singles. */
   async function duel(bulls: number, mode = 'x01'): Promise<string> {
     const id = `g${++n}`
-    const at = new Date('2026-10-21T12:00:00Z')
+    // One minute apart: games are counted again in the order they finished
+    const at = new Date(Date.parse('2026-10-21T12:00:00Z') + n * 60_000)
     await db
       .insertInto('game_sessions')
       .values({ id, owner_user_id: 'ann', board_db_id: null, game_id: mode, config: '{}', status: 'finished', finished_at: at })
@@ -102,6 +107,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
       .where('achievement_id', '=', 'x01.bullseye')
       .executeTakeFirst()
 
+  const tiers = () =>
+    db
+      .selectFrom('achievement_tiers')
+      .select(['tier', 'game_id', 'source'])
+      .where('user_id', '=', 'ann')
+      .where('achievement_id', '=', 'x01.bullseye')
+      .orderBy('tier')
+      .execute()
+  const bulls = Array.from({ length: 3 }, () => ({ number: 25, multiplier: 2 }))
+
   it('counts a game once, however often it is settled', async () => {
     const id = await duel(6)
     await service.countGame(id)
@@ -114,8 +129,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     await service.countGame(await duel(6))
     await service.countGame(await duel(6))
     const r = await row()
-    expect(r).toMatchObject({ count: 12, tier: 1, game_id: `g${n}` })
-    expect(r?.earned_at).not.toBeNull()
+    expect(r).toMatchObject({ count: 12, tier: 1 })
+    // the 10th bull is the second game's 4th: ann's second visit (game visit 2), its first dart
+    expect(await tiers()).toEqual([{ tier: 1, game_id: `g${n}`, source: { visit: 2, leg: 0, legVisit: 2, darts: bulls, dart: 0 } }])
     expect(pushed).toEqual([expect.objectContaining({ unlocked: [{ id: 'x01.bullseye', from: 0, tier: 1, count: 12, xp: 100 }] })])
     expect((await getProgress(db, 'ann')).xp).toBe(100)
     // bob threw no bulls: nothing for him
@@ -132,6 +148,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     expect(pushed.map(m => [m.sessionId, m.unlocked])).toEqual([
       [first, [{ id: 'x01.bullseye', from: 0, tier: 1, count: 12, xp: xpForTiers(0, 1) }]],
       [up, [{ id: 'x01.bullseye', from: 1, tier: 2, count: 51, xp: xpForTiers(1, 2) }]],
+    ])
+    // the 10th is the first game's 10th bull (ann's fourth visit, game visit 6); from 39, the 50th is the 11th
+    expect(await tiers()).toEqual([
+      { tier: 1, game_id: first, source: { visit: 6, leg: 0, legVisit: 4, darts: bulls, dart: 0 } },
+      { tier: 2, game_id: up, source: { visit: 6, leg: 0, legVisit: 4, darts: bulls, dart: 1 } },
     ])
   })
 
@@ -201,6 +222,43 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
     expect(await service.backfill()).toBe(0)
   })
 
+  it('places the tiers reached before their visits were kept, once, and keeps a tier it cannot place', async () => {
+    const first = await duel(12)
+    await service.countGame(first)
+    for (const b of [3, 12, 12]) await service.countGame(await duel(b))
+    const up = await duel(12)
+    await service.countGame(up)
+    const placed = await tiers()
+    // as migration 079 left them: tier 1 with the first time and no game, the latest tier with its game
+    const old = new Date('2026-01-01T00:00:00Z')
+    await db.updateTable('achievement_tiers').set({ source: null, game_id: null, reached_at: old }).where('tier', '=', 1).execute()
+    await db.updateTable('achievement_tiers').set({ source: null }).where('tier', '=', 2).execute()
+    // a tier no game reaches any more (its game since invalidated, say)
+    await db
+      .insertInto('user_achievements')
+      .values({ user_id: 'ann', achievement_id: 'x01.180', count: 1, tier: 1, showcase_slot: null })
+      .execute()
+    await db
+      .insertInto('achievement_tiers')
+      .values({ user_id: 'ann', achievement_id: 'x01.180', tier: 1, reached_at: old, game_id: null, source: null })
+      .execute()
+
+    expect(await service.locateTiers()).toBe(2)
+    expect(await tiers()).toEqual(placed)
+    const reached = await db
+      .selectFrom('achievement_tiers')
+      .select('reached_at')
+      .where('tier', '=', 1)
+      .where('achievement_id', '=', 'x01.bullseye')
+      .executeTakeFirstOrThrow()
+    expect(reached.reached_at).not.toEqual(old)
+    expect(
+      await db.selectFrom('achievement_tiers').select(['game_id', 'source']).where('achievement_id', '=', 'x01.180').executeTakeFirst(),
+    ).toEqual({ game_id: null, source: null })
+    // done once: a second start looks no more
+    expect(await service.locateTiers()).toBe(0)
+  })
+
   describe('API', () => {
     const app = () => {
       const a = createFastify()
@@ -231,6 +289,28 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('AchievementsService', () => {
       expect(theirs.statusCode).toBe(200)
       expect(theirs.json().achievements[0].isNew).toBe(false)
       expect((await a.inject({ method: 'GET', url: '/api/users/nobody/achievements' })).statusCode).toBe(404)
+    })
+
+    it('links each tier to its game only for a viewer who may open it, and marks a game that is gone', async () => {
+      await service.countGame(await duel(6))
+      const id = await duel(6)
+      await service.countGame(id)
+      const tierOf = async (viewer: string) => {
+        signInAs(viewer)
+        const res = await app().inject({ method: 'GET', url: '/api/users/ann/achievements' })
+        return res.json().achievements[0].tiers[0]
+      }
+      const where = { visit: 2, leg: 0, legVisit: 2, darts: bulls, dart: 0 }
+      expect(await tierOf('ann')).toMatchObject({ tier: 1, where, gameId: id, gone: false })
+      // bob played in it; cid did not, and it is not public
+      expect(await tierOf('bob')).toMatchObject({ gameId: id })
+      expect(await tierOf('cid')).toMatchObject({ where, gameId: null, gone: false })
+      await db.updateTable('game_sessions').set({ visibility: 'public' }).where('id', '=', id).execute()
+      expect(await tierOf('cid')).toMatchObject({ gameId: id })
+      await db.updateTable('game_sessions').set({ invalidated_at: new Date() }).where('id', '=', id).execute()
+      expect(await tierOf('ann')).toMatchObject({ where, gameId: null, gone: true })
+      await db.deleteFrom('game_sessions').where('id', '=', id).execute()
+      expect(await tierOf('ann')).toMatchObject({ where, gameId: null, gone: true })
     })
   })
 })

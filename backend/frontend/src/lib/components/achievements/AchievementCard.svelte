@@ -1,11 +1,12 @@
 <script lang="ts">
   // One badge in the list (Achievements board): the badge with its progress ring, name, tier and
-  // what it takes, the bar to the next tier, and on your own page the showcase button. `isNew`
-  // marks a tier you have not looked at yet.
+  // what it takes, each tier reached with the visit that reached it (a link to it in the game's
+  // details where the viewer may open that game), the bar to the next tier, and on your own page the
+  // showcase button. `isNew` marks a tier you have not looked at yet.
   import { Check, Plus } from '@lucide/svelte'
   import Badge from './Badge.svelte'
   import { CATEGORIES } from '$shared/achievements.js'
-  import { modeNote, progressLine, statusLine, type Badge as BadgeData } from '$lib/achievements/view'
+  import { modeNote, progressLine, statusLine, unlockLine, type Badge as BadgeData } from '$lib/achievements/view'
 
   type Showcase = { shown: boolean; full: boolean; toggle: () => void }
   let { badge, isNew = false, showcase = null }: { badge: BadgeData; isNew?: boolean; showcase?: Showcase | null } = $props()
@@ -30,6 +31,21 @@
     </h3>
     <span class="text-small font-semibold {badge.tier === 0 ? 'text-text-dim' : 'text-accent'}">{statusLine(badge)}</span>
     <p class="text-small text-text-muted">{badge.def.description}</p>
+    {#if badge.tiers.length > 0}
+      <ul aria-label="Unlocked" class="flex flex-col gap-[2px] text-caption text-text-muted">
+        {#each badge.tiers.map(t => unlockLine(t, badge.oneOff)) as u, i (i)}
+          {#if u.when || u.where || u.gone}
+            <li class="flex flex-wrap gap-x-2">
+              {#if u.when}<span class="text-text-dim">{u.when}</span>{/if}
+              {#if u.where && u.href}<a href={u.href} class="text-accent no-underline hover:underline">{u.where}</a>{:else if u.where}<span
+                  >{u.where}</span
+                >{/if}
+              {#if u.gone}<span class="text-text-dim">Game no longer available</span>{/if}
+            </li>
+          {/if}
+        {/each}
+      </ul>
+    {/if}
     {#if line}
       <div class="mt-auto flex flex-col gap-1 pt-1">
         <span class="h-[6px] overflow-hidden rounded-full bg-surface-inset" aria-hidden="true"

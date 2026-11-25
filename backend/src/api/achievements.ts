@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listAchievements, markSeen, setShowcase } from '../db/achievements.js'
+import { listAchievements, listTiers, markSeen, setShowcase } from '../db/achievements.js'
 import { profileUser } from '../db/profile.js'
 import { achievement, SHOWCASE_SIZE } from '../shared/achievements.js'
 import { ApiError, notFound } from './errors.js'
@@ -18,8 +18,9 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
 
   const requireAchievements = (userId: string) => requireFlag(db, 'achievements.enabled', userId)
 
-  const view = async (userId: string, self: boolean) => {
-    const rows = await listAchievements(db, userId)
+  const view = async (userId: string, viewerId: string) => {
+    const self = userId === viewerId
+    const [rows, tiers] = await Promise.all([listAchievements(db, userId), listTiers(db, userId, viewerId)])
     return {
       achievements: rows
         .filter(r => achievement(r.id))
@@ -27,8 +28,9 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
           id: r.id,
           count: r.count,
           tier: r.tier,
-          earnedAt: r.earnedAt?.toISOString() ?? null,
-          tierAt: r.tierAt?.toISOString() ?? null,
+          tiers: tiers
+            .filter(t => t.id === r.id)
+            .map(t => ({ tier: t.tier, reachedAt: t.reachedAt.toISOString(), where: t.source, gameId: t.gameId, gone: t.gone })),
           isNew: self && r.tier > r.seenTier,
         })),
       showcase: rows
@@ -44,7 +46,7 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
     { preValidation: requireAuth, schema: fromSpec('getMyAchievements') },
     async req => {
       await requireAchievements(req.userId)
-      return view(req.userId, true)
+      return view(req.userId, req.userId)
     },
   )
 
@@ -58,7 +60,7 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
       const earned = new Set((await listAchievements(db, req.userId)).filter(r => r.tier > 0).map(r => r.id))
       if (!ids.every(id => earned.has(id))) throw new ApiError(400, { error: 'only earned achievements can be shown' })
       await setShowcase(db, req.userId, ids)
-      return view(req.userId, true)
+      return view(req.userId, req.userId)
     },
   )
 
@@ -78,7 +80,7 @@ export function achievementsApiPlugin(app: FastifyInstance, opts: Opts, done: (e
     async req => {
       await requireAchievements(req.userId)
       if (!(await profileUser(db, req.params.id))) throw notFound()
-      return view(req.params.id, req.params.id === req.userId)
+      return view(req.params.id, req.userId)
     },
   )
 

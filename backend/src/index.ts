@@ -336,11 +336,13 @@ app.addHook('onClose', async () => {
   await closePool()
 })
 await app.listen({ port: PORT, host: '0.0.0.0' })
-// Games from before achievements existed are counted once, in the background
+// Games from before achievements existed are counted once, then the tiers from before their visits were kept are placed, in the background
 achievements
   .backfill()
-  .then(n => {
+  .then(async n => {
     if (n > 0) app.log.info({ games: n }, 'achievements backfill done')
+    const placed = await achievements.locateTiers()
+    if (placed > 0) app.log.info({ tiers: placed }, 'achievement tiers placed')
   })
   .catch((err: unknown) => {
     warn('achievements backfill failed', { error: String(err) })
