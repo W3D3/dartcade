@@ -24,6 +24,7 @@ import {
 } from '../shared/missions/run.js'
 import { MissionSchema, type Mission, type MissionDart } from '../shared/missions/types.js'
 import { OFFICIAL_MISSIONS } from '../shared/missions/official.js'
+import type { RunResult } from '../shared/missions/highscores.js'
 import { rankSeats } from './ranking.js'
 import { nextTurn } from './turns.js'
 
@@ -37,6 +38,11 @@ export type MissionConfig = {
   mission: Mission
   /** The mission's best results when the game started. */
   highscores: MissionHighscore[]
+  /**
+   * Each account's own best when the game started (null: none yet), by user id: the result screen's
+   * "new personal best" (the highscores hold only the top 10).
+   */
+  bests: Record<string, RunResult | null>
 }
 
 export type MissionState = {
@@ -84,13 +90,13 @@ export const missionModule: GameModule<MissionState, MissionConfig, MissionView,
   version: 1,
   // The deciding dart stops the clock; the board's takeout ends the game without a Finish button
   noFinishHold: true,
-  defaultConfig: { missionId: first.id, test: false, mission: first.mission, highscores: [] },
+  defaultConfig: { missionId: first.id, test: false, mission: first.mission, highscores: [], bests: {} },
 
   validate(cfg: MissionConfig, players: Player[]): string | null {
     if (players.length < 1) return 'At least 1 player'
     if (cfg.test && players.length !== 1) return 'A test run is played alone'
     if (typeof cfg.missionId !== 'string' || cfg.missionId === '') return 'No mission'
-    if (typeof cfg.test !== 'boolean' || !Array.isArray(cfg.highscores)) return 'Invalid mission config'
+    if (typeof cfg.test !== 'boolean' || !Array.isArray(cfg.highscores) || typeof cfg.bests !== 'object') return 'Invalid mission config'
     return MissionSchema.safeParse(cfg.mission).success ? null : 'Invalid mission'
   },
 
@@ -158,6 +164,7 @@ export const missionModule: GameModule<MissionState, MissionConfig, MissionView,
       test: s.cfg.test,
       mission,
       highscores: s.cfg.highscores,
+      bests: s.cfg.bests,
       runs: s.runs.map((run, i) => ({
         status: run.status,
         failure: run.failure,

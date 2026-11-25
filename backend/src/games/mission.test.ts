@@ -24,7 +24,7 @@ const mission = (o: Partial<Mission> = {}): Mission =>
 const oneStep = (o: Partial<Mission> = {}) =>
   mission({ steps: [{ type: 'hit', targets: ['S20'], hits: 1, inARow: false, order: 'any' }], ...o })
 
-const config = (m: Mission): MissionConfig => ({ missionId: 'm1', test: false, mission: m, highscores: [] })
+const config = (m: Mission): MissionConfig => ({ missionId: 'm1', test: false, mission: m, highscores: [], bests: {} })
 
 // oxlint-disable-next-line typescript/consistent-type-assertions -- the registry erases the state type
 const mod = missionModule as unknown as AnyGameModule
